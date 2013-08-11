@@ -17,14 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal
 
-import CypherVersion._
-import internal.commands._
-import expressions._
-import expressions.Identifier
-import internal.helpers.LabelSupport
-import internal.mutation._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.scalatest.junit.JUnitSuite
@@ -32,9 +26,15 @@ import org.junit.Test
 import org.junit.Ignore
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher._
+import org.neo4j.cypher.CypherVersion._
 import org.neo4j.cypher.internal.parser.{ParsedVarLengthRelation, ParsedEntity, ParsedRelation}
+import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
+import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.helpers.LabelSupport
+import org.neo4j.cypher.internal.mutation._
 
 class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
@@ -2786,7 +2786,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""
-    val parser = new CypherParser()
+    val parser = CypherParser()
 
     val runners = (1 to 10).toList.map(x => {
       run(() => parser.parse(q))
@@ -3069,7 +3069,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   private def testQuery(version: Option[CypherVersion], query: String, expectedQuery: AbstractQuery) {
-    val parser = new CypherParser()
+    val parser = CypherParser()
 
     val (qWithVer, message) = version match {
       case None    => (query, "Using the default parser")

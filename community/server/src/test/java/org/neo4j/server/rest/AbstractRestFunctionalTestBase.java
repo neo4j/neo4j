@@ -83,7 +83,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         String queryString = "{\"query\": \"" + script + "\","
                              + parameterString + "}";
 
-        String snippet = org.neo4j.cypher.internal.parser.prettifier.Prettifier$.MODULE$.apply(script);
+        String snippet = org.neo4j.cypher.internal.prettifier.Prettifier$.MODULE$.apply(script);
         gen().expectedStatus( status.getStatusCode() )
                 .payload( queryString )
                 .description( AsciidocHelper.createAsciiDocSnippet( "cypher", snippet ) );

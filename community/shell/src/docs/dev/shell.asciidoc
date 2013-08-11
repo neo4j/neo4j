@@ -273,7 +273,7 @@ See <<shell-options-enum>> for the traversal order option. Even relationship typ
 
 === Query with Cypher ===
 You can use Cypher to query the graph. For that, use the +start+ command. You can also use +create+ statements to create nodes and relationships and
-use the +cypher VERSION+ prefix to select a certain cypher parser.
+use the +cypher VERSION+ prefix to select a certain cypher version.
 
 [TIP]
 Cypher queries need to be terminated by a semicolon `;`.
@@ -281,7 +281,7 @@ Cypher queries need to be terminated by a semicolon `;`.
 Cypher commands are given all shell variables as parameters and the special +self+ parameter for the current node or relationship.
 
 * +start n = node(0) return n;+ will give you a listing of the node with ID 0
-* +cypher 1.8 start n = node(0) return n;+ will execute the query with the Cypher parser version 1.8
+* +cypher 1.9 start n = node(0) return n;+ will execute the query with Cypher version 1.9
 //* +profile start n = node(0) return n;+ will execute the cypher query and display profiling information
 
 * +START n = node(\{self}) MATCH (n)-[:KNOWS]->(friend) RETURN friend;+ will

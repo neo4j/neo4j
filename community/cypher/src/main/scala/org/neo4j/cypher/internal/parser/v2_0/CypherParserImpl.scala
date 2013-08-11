@@ -22,16 +22,15 @@ package org.neo4j.cypher.internal.parser.v2_0
 import org.parboiled.scala._
 import org.parboiled.errors.InvalidInputError
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher._
 import org.neo4j.cypher.internal.parser.v2_0.rules._
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands.AbstractQuery
-import org.neo4j.cypher.internal.ReattachAliasedExpressions
+import org.neo4j.cypher.internal.{CypherParser, ReattachAliasedExpressions}
 
-class CypherParserImpl extends Parser
+class CypherParserImpl extends CypherParser
+  with Parser
   with Statement
-  with Expressions
-  with ActualParser {
+  with Expressions {
 
   def SingleStatement : Rule1[ast.Statement] = rule {
     WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")

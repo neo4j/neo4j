@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.AbstractQuery
-import org.neo4j.cypher.internal.parser.ActualParser
+import org.neo4j.cypher.internal.CypherParser
 
 sealed abstract class CypherVersion(versionName: String) {
   val name = CypherVersionName.asCanonicalName(versionName)
-  def parser: ActualParser
+  def parser: CypherParser
 }
 
 object CypherVersionName {
@@ -55,24 +54,4 @@ object CypherVersion {
 
   val allVersions = Seq(v1_9, v2_0, vLegacy)
   val allVersionNames = CypherVersion.allVersions.map(_.name).mkString(", ")
-}
-
-class CypherParser(val defaultVersion: CypherVersion) {
-
-  def this() = this(CypherVersion.vDefault)
-  def this(versionName: String) = this(CypherVersion(versionName))
-
-  private val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
-
-  @throws(classOf[SyntaxException])
-  def parse(queryText: String): AbstractQuery = {
-
-    val result = queryText match {
-      case hasVersionDefined(versionName, remainingQuery) => CypherVersion(versionName).parser.parse(remainingQuery)
-      case _                                              => defaultVersion.parser.parse(queryText)
-    }
-
-    result.verifySemantics()
-    result
-  }
 }

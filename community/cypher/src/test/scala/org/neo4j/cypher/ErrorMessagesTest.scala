@@ -23,7 +23,7 @@ import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
-import CypherVersion._
+import org.neo4j.cypher.CypherVersion._
 import org.neo4j.cypher.internal.commands.expressions.StringHelper
 
 class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringHelper {

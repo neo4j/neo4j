@@ -23,7 +23,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import CypherVersion._
+import org.neo4j.cypher.CypherVersion._
 
 class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
   @Test def returnNodeThatsNotThere() {

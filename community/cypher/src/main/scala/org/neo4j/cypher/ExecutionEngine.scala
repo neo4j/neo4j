@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import internal.commands._
 import internal.executionplan.ExecutionPlanBuilder
 import internal.executionplan.verifiers.{OptionalPatternWithoutStartVerifier, HintVerifier, Verifier}
-import internal.LRUCache
+import org.neo4j.cypher.internal.{CypherParser, LRUCache}
 import internal.spi.gdsimpl.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import internal.spi.QueryContext
 import scala.collection.JavaConverters._
@@ -31,7 +31,7 @@ import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI, Inter
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.cypher.internal.parser.prettifier.Prettifier
+import org.neo4j.cypher.internal.prettifier.Prettifier
 import org.neo4j.kernel.api.operations.StatementState
 import org.neo4j.kernel.api.StatementOperationParts
 
@@ -173,10 +173,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     optGraphAs[InternalAbstractGraphDatabase]
       .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_parser_version))
       .andThen({
-      case v:String => new CypherParser(v)
-      case _        => new CypherParser()
+      case v:String => CypherParser(v)
+      case _        => CypherParser()
     })
-      .applyOrElse(graph, (_: GraphDatabaseService) => new CypherParser() )
+      .applyOrElse(graph, (_: GraphDatabaseService) => CypherParser() )
 
 
   private def getQueryCacheSize : Int =

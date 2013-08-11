@@ -24,7 +24,8 @@ import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import CypherVersion._
+import org.neo4j.cypher.CypherVersion._
+import org.neo4j.cypher.internal.CypherParser
 
 class SyntaxExceptionTest extends JUnitSuite with Assertions {
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
@@ -232,7 +233,7 @@ class SyntaxExceptionTest extends JUnitSuite with Assertions {
     }
     val errorMessage = s"Using ${versionString}: Did not get the expected syntax error, expected: ${message}"
 
-    val parser = new CypherParser()
+    val parser = CypherParser()
     try {
       val result = parser.parse(qWithVer)
       fail(errorMessage)

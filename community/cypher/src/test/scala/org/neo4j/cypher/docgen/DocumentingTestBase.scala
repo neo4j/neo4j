@@ -29,7 +29,7 @@ import org.neo4j.visualization.graphviz.{ AsciiDocStyle, GraphvizWriter, GraphSt
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
-import org.neo4j.cypher.{ CypherParser, ExecutionResult, ExecutionEngine }
+import org.neo4j.cypher.{ ExecutionResult, ExecutionEngine }
 import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
@@ -37,7 +37,8 @@ import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
 import org.neo4j.helpers.Settings
-import org.neo4j.cypher.internal.parser.prettifier.Prettifier
+import org.neo4j.cypher.internal.prettifier.Prettifier
+import org.neo4j.cypher.internal.CypherParser
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -146,7 +147,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   }
 
   var db: GraphDatabaseAPI = null
-  val parser: CypherParser = new CypherParser
+  val parser: CypherParser = CypherParser()
   var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null

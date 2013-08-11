@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.parser.legacy
 
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.parser.ActualParser
+import org.neo4j.cypher._
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.ReattachAliasedExpressions
+import org.neo4j.cypher.internal.{CypherParser, ReattachAliasedExpressions}
 
 class CypherParserImpl extends Base
 with Index
@@ -31,7 +30,7 @@ with Unions
 with QueryParser
 with Expressions
 with MatchClause
-with ActualParser {
+with CypherParser {
   @throws(classOf[SyntaxException])
   def parse(text: String): AbstractQuery = {
     parseAll(cypherQuery, text) match {

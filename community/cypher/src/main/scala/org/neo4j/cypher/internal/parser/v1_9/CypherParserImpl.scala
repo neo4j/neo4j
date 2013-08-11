@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.parser.v1_9
 
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.parser.ActualParser
+import org.neo4j.cypher.{SyntaxException}
 import org.neo4j.cypher.internal.commands._
 import expressions.AggregationExpression
-import org.neo4j.cypher.internal.ReattachAliasedExpressions
+import org.neo4j.cypher.internal.{CypherParser, ReattachAliasedExpressions}
 import org.neo4j.cypher.internal.mutation.UpdateAction
 
 class CypherParserImpl extends Base
@@ -34,7 +33,7 @@ with ReturnClause
 with SkipLimitClause
 with OrderByClause
 with Updates
-with ActualParser {
+with CypherParser {
   @throws(classOf[SyntaxException])
   def parse(text: String): AbstractQuery = {
     namer = new NodeNamer
