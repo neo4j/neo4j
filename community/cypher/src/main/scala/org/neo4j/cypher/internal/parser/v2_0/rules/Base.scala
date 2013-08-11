@@ -30,6 +30,8 @@ trait Base extends Parser {
 
   def OperatorCharacter = rule("an operator char") { anyOf("|^&<>=!:+-*/%~") }
 
+  def LegacyPropertyOperator = rule("") { group(anyOf("?!") ~ !OperatorCharacter) }
+
   def WordCharacter = rule { (Letter | ch('_') | Digit) memoMismatches }
 
   def Decimal = rule { (Integer ~ "." ~ Digits) memoMismatches }

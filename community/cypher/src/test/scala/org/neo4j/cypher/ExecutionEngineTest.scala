@@ -2804,4 +2804,21 @@ RETURN x0.name
     assert( 6 === relationships.size )
 
   }
+
+  @Test def shouldTreatExperimentalVersionAsCaseInsensitive() {
+    // when
+    val r1: Relationship =
+      parseAndExecute("""CYPHER LEGACY CREATE ({name: "Andres"})-[r:KNOWS]->({name: "Stefan"}) RETURN r""")
+      .columnAs[Relationship]("r").next()
+
+    val r2: Relationship =
+      parseAndExecute("""CYPHER legacy CREATE ({name: "Andres"})-[r:KNOWS]->({name: "Stefan"}) RETURN r""")
+        .columnAs[Relationship]("r").next()
+
+    // then
+    graph.inTx {
+      assert ( r1.getStartNode.getProperty("name") ===  r2.getStartNode.getProperty("name") )
+      assert ( r1.getEndNode.getProperty("name") ===  r2.getEndNode.getProperty("name") )
+    }
+  }
 }

@@ -82,7 +82,13 @@ case class CreateUnique(patterns: Seq[Pattern], token: InputToken) extends Updat
 case class Delete(expressions: Seq[Expression], token: InputToken) extends UpdateClause {
   def semanticCheck =
     expressions.semanticCheck(Expression.SemanticContext.Simple) then
+    warnAboutDeletingLabels then
     expressions.constrainType(NodeType(), RelationshipType(), PathType())
+
+  def warnAboutDeletingLabels =
+    expressions.filter(_.isInstanceOf[HasLabels]) map {
+      e => SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.token)
+    }
 
   def toLegacyUpdateActions = expressions.map(e => mutation.DeleteEntityAction(e.toCommand))
 }
