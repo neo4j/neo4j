@@ -19,79 +19,81 @@
  */
 package org.neo4j.cypher.internal.prettifier
 
-import org.neo4j.cypher.internal.parser.legacy.Base
+import org.parboiled.scala._
+import org.neo4j.cypher.internal.parser.v2_0.rules.Base
+import org.neo4j.cypher.internal.parser.v2_0.rules.LiteralSupport
 import org.neo4j.cypher.SyntaxException
 
-trait SyntaxToken {
-  val text: String
+sealed abstract class SyntaxToken {
+  def text: String
 
   override def toString = text
 }
 
-trait KeywordToken extends SyntaxToken {
+sealed abstract class KeywordToken extends SyntaxToken {
   override def toString = text.toUpperCase
 }
 
-case class BreakingKeywords(text: String) extends KeywordToken
+final case class BreakingKeywords(text: String) extends KeywordToken
+final case class NonBreakingKeywords(text: String) extends KeywordToken
 
-case class NonBreakingKeywords(text: String) extends KeywordToken
+sealed abstract class GroupingToken extends SyntaxToken
+final case class OpenGroup(text: String) extends GroupingToken
+final case class CloseGroup(text: String) extends GroupingToken
 
-case class AnyText(text: String) extends SyntaxToken
-
-case class EscapedText(text: String) extends SyntaxToken {
+final case class EscapedText(text: String) extends SyntaxToken {
   override def toString = s"'${text}'"
 }
 
-trait GroupingToken extends SyntaxToken
+final case class AnyText(text: String) extends SyntaxToken
 
-case class OpenGroup(text: String) extends GroupingToken
+class PrettifierParser extends Parser with Base with LiteralSupport {
 
-case class CloseGroup(text: String) extends GroupingToken
-
-class PrettifierParser extends Base {
-
-  def parseReservedKeyword: Parser[String] = KEYWORDS
-
-  def nonBreakingKeywords: Parser[String] =
-    ALL | NULL | TRUE | FALSE | DISTINCT | END | NOT | HAS | ANY | NONE | SINGLE | OR | XOR | AND | AS | INDEX | IN |
-      IS | UNIQUE | BY | ASSERT | ASC | DESC | SCAN | ON
-
-  def rep1Keywords[T](p: Parser[String])(f: String => T): Parser[T] = rep1(p) ^^ {
-    case theMatch => f(theMatch.map(_.toLowerCase).mkString(" "))
+  def reservedKeyword: Rule0 = rule("reservedKeyword") {
+    keyword("START") | keyword("CREATE") | keyword("SET") | keyword("DELETE") | keyword("FOREACH") |
+    keyword("MATCH") | keyword("WHERE") | keyword("WITH") | keyword("RETURN") | keyword("SKIP") |
+    keyword("LIMIT") | keyword("ORDER") | keyword("BY") | keyword("ASC") | keyword("DESC") |
+    keyword("ON") | keyword("WHEN") | keyword("CASE") | keyword("THEN") | keyword("ELSE") |
+    keyword("DROP") | keyword("USING") | keyword("MERGE") | keyword("CONSTRAINT") | keyword("ASSERT") |
+    keyword("SCAN") | keyword("REMOVE") | keyword("UNION")
   }
 
-  def keywordSeq[T](parsers: Parser[String]*)(f: String => T): Parser[T] =
-    parsers.reduce((a, b) => a ~ b ^^ {
-      case fst ~ snd => fst + " " + snd
-    }) ^^ (_.toLowerCase) ^^ f
+  def nonBreakingKeyword: Rule0 = rule("nonBreakingKeyword") {
+    keyword("ALL") | keyword("NULL") | keyword("TRUE") | keyword("FALSE") | keyword("DISTINCT") |
+    keyword("END") | keyword("NOT") | keyword("HAS") | keyword("ANY") | keyword("NONE") | keyword("SINGLE") |
+    keyword("OR") | keyword("XOR") | keyword("AND") | keyword("AS") | keyword("INDEX") | keyword("IN") |
+    keyword("IS") | keyword("UNIQUE") | keyword("BY") | keyword("ASSERT") | keyword("ASC") | keyword("DESC") |
+    keyword("SCAN") | keyword("ON")
+  }
 
-  def parseAllKeywords =
-  // first rule wins
-      keywordSeq(ON, CREATE)(BreakingKeywords) |
-      keywordSeq(ON, MATCH)(BreakingKeywords) |
-      keywordSeq(ORDER, BY)(BreakingKeywords) |
-      rep1Keywords(nonBreakingKeywords)(NonBreakingKeywords) |
-      rep1Keywords(parseReservedKeyword)(BreakingKeywords)
+  def allKeywords: Rule1[KeywordToken] = rule("allKeywords") {
+    ( group( keyword("ON") ~~ keyword("CREATE") ) ~> BreakingKeywords ) |
+    ( group( keyword("ON") ~~ keyword("MATCH") ) ~> BreakingKeywords ) |
+    ( group( keyword("ORDER") ~~ keyword("BY") ) ~> BreakingKeywords ) |
+    ( group( oneOrMore(nonBreakingKeyword, WS) ) ~> NonBreakingKeywords ) |
+    ( group( oneOrMore(reservedKeyword, WS) ) ~> BreakingKeywords )
+  }
 
-  def parseEscapedText: Parser[EscapedText] = string ^^ EscapedText
+  def grouping: Rule1[GroupingToken] = rule("grouping") { openGroup | closeGroup }
+  def openGroup: Rule1[OpenGroup] = rule("openGroup") { ( "(" | "[" | "{" ) ~> OpenGroup }
+  def closeGroup: Rule1[CloseGroup] = rule("closeGroup") { ( ")" | "]" | "}" ) ~> CloseGroup }
 
-  def parseOpenGroup: Parser[OpenGroup] = ("(" | "[" | "{") ^^ OpenGroup
+  def escapedText : Rule1[EscapedText] = rule("string") {
+    (((
+      ch('\'') ~ StringCharacters('\'') ~ ch('\'')
+        | ch('"') ~ StringCharacters('"') ~ ch('"')
+      ) memoMismatches) suppressSubnodes) ~~> EscapedText
+  }
 
-  def parseCloseGroup: Parser[CloseGroup] = (")" | "]" | "}") ^^ CloseGroup
+  def anyText: Rule1[AnyText] = rule("anyText") { oneOrMore( (!anyOf(" \n\r\t\f(){}[]")) ~ ANY ) ~> AnyText }
 
-  def parseGrouping: Parser[GroupingToken] = parseOpenGroup | parseCloseGroup
+  def anyToken: Rule1[SyntaxToken] = rule("anyToken") { allKeywords | grouping | escapedText | anyText }
 
-  def parseAnyText: Parser[AnyText] = """[^\s(){}\[\]]+""".r ^^ AnyText
+  def main: Rule1[Seq[SyntaxToken]] = rule("main") { zeroOrMore(anyToken, WS) }
 
-  def parseToken: Parser[SyntaxToken] = parseAllKeywords | parseGrouping | parseEscapedText | parseAnyText
-
-  def query: Parser[Seq[SyntaxToken]] = rep(parseToken)
-
-  def parse(input: String): Seq[SyntaxToken] = {
-    parseAll(query, input) match {
-      case Success(tokens, _) => tokens
-      case NoSuccess(msg, _)  => throw new SyntaxException(msg)
-    }
+  def parse(input: String): Seq[SyntaxToken] = parserunners.ReportingParseRunner(main).run(input) match {
+    case (output: ParsingResult[_]) if output.matched => output.result.get
+    case (output: ParsingResult[Seq[SyntaxToken]])    => throw new SyntaxException(output.parseErrors.mkString("\n"))
   }
 }
 

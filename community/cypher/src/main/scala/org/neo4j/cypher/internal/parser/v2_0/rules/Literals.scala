@@ -24,7 +24,7 @@ import org.parboiled.Context
 import org.parboiled.scala._
 
 trait Literals extends Parser
-  with Base {
+  with Base with LiteralSupport {
 
   def Expression : Rule1[ast.Expression]
 
@@ -85,33 +85,5 @@ trait Literals extends Parser
        ch('\'') ~ StringCharacters('\'') ~ ch('\'')
      | ch('"') ~ StringCharacters('"') ~ ch('"')
     ) memoMismatches) suppressSubnodes) ~>> token ~~> ast.StringLiteral
-  }
-
-  private def StringCharacters(c: Char) = {
-    push(new StringBuilder) ~ zeroOrMore(EscapedChar(c) | NormalChar(c)) ~~> (_.toString)
-  }
-
-  private def NormalChar(c: Char) = {
-    !(ch('\\') | ch(c)) ~ ANY ~:% withContext(appendToStringBuffer(_)(_))
-  }
-
-  private def EscapedChar(c: Char) = {
-    "\\" ~ (
-        ch('\\') ~:% withContext(appendToStringBuffer(_)(_))
-      | ch(c) ~:% withContext(appendToStringBuffer(_)(_))
-      | ch('b') ~ appendToStringBuffer('\b')
-      | ch('f') ~ appendToStringBuffer('\f')
-      | ch('n') ~ appendToStringBuffer('\n')
-      | ch('r') ~ appendToStringBuffer('\r')
-      | ch('t') ~ appendToStringBuffer('\t')
-      | Unicode ~~% withContext((code, ctx) => appendToStringBuffer(code.asInstanceOf[Char])(ctx))
-    )
-  }
-
-  private def Unicode = rule { ch('u') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
-
-  private def appendToStringBuffer(c: Any): Context[Any] => Unit = { ctx =>
-    ctx.getValueStack.peek.asInstanceOf[StringBuilder].append(c)
-    ()
   }
 }
