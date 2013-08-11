@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.parser.v2_0.rules
 
 import org.scalatest.Assertions
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.parser.v2_0.ast
 import org.parboiled.errors.InvalidInputError
 import org.neo4j.cypher.internal.parser.v2_0.InvalidInputErrorFormatter
 
-trait ParserTest[T <: ast.AstNode, J] extends Assertions {
+trait ParserTest[T, J] extends Assertions {
 
   def convert(astNode: T): J
 
