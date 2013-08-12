@@ -37,7 +37,6 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       assertions = (p) => {})
   }
 
-
   @Test def create_single_node_with_properties() {
     testQuery(
       title = "Create single node and set properties",
@@ -47,14 +46,22 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       assertions = (p) => {})
   }
 
-  @Test def create_single_node_with_labels() {
+  @Test def create_single_node_with_label() {
     testQuery(
-      title = "Create node and add labels",
-      text = "To add labels to the newly created node, you can either use +LABEL+ followed by an expression," +
-        "or you can use the labels short form syntax.",
+      title = "Create a node with a label",
+      text = "To add a label when creating a node, use the syntax below.",
       queryText = "create (n:Person)",
       returns = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 1))
+  }
+  
+  @Test def create_single_node_with_labels() {
+    testQuery(
+      title = "Create a node with multiple labels",
+      text = "To add labels when creating a node, use the syntax below. In this case, we add two labels.",
+      queryText = "create (n:Person:Swedish)",
+      returns = "Nothing is returned from this query.",
+      assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 2))
   }
 
   @Test def create_single_node_with_labels_and_properties() {
@@ -150,5 +157,38 @@ will be created. """,
         assert(r.getProperty("name") === "Node A<->Node B")
       }
     )
+  }
+  
+  @Test def create_single_node_from_map() {
+    prepareAndTestQuery(
+      title = "Create node with a parameter for the properties",
+      text = """
+You can also create a graph entity from a map.
+All the key/value pairs in the map will be set as properties on the created relationship or node.
+In this case we add a +Person+ label to the node as well.
+""",
+      prepare = { () =>
+        setParameters(Map("props" -> Map("name" -> "Andres", "position" -> "Developer")))
+      },
+      queryText = "create (n:Person {props}) return n",
+      returns = "",
+      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
+  }
+
+  @Test def create_mutiple_nodes_from_maps() {
+    prepareAndTestQuery(
+      title = "Create multiple nodes with a parameter for their properties",
+      text = """
+By providing Cypher an array of maps, it will create a node for each map.
+
+NOTE: When you do this, you can't create anything else in the same +CREATE+ statement.
+""",
+      prepare = { () =>
+        setParameters(Map("props" -> List(Map("name" -> "Andres", "position" -> "Developer"),
+          Map("name" -> "Michael", "position" -> "Developer"))))
+      },
+      queryText = "create (n {props}) return n",
+      returns = "",
+      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
   }
 }

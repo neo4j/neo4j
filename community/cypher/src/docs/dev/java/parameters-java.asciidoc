@@ -5,7 +5,7 @@ For more information on parameters see <<cypher-parameters>>.
 
 Below follows example of how to use parameters when executing Cypher queries from Java.
 
-.Parameter for node id
+.Node id
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -14,7 +14,7 @@ tag=exampleWithParameterForNodeId
 classifier=test-sources
 ----
 
-.Parameter for node object
+.Node object
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -23,7 +23,7 @@ tag=exampleWithParameterForNodeObject
 classifier=test-sources
 ----
 
-.Parameter for multiple node ids
+.Multiple node ids
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -32,7 +32,7 @@ tag=exampleWithParameterForMultipleNodeIds
 classifier=test-sources
 ----
 
-.Parameter for string literal
+.String literal
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -41,7 +41,7 @@ tag=exampleWithStringLiteralAsParameter
 classifier=test-sources
 ----
 
-.Parameter for index value
+.Index value
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -50,7 +50,7 @@ tag=exampleWithParameterForIndexValue
 classifier=test-sources
 ----
 
-.Parameter for index query
+.Index query
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -68,7 +68,7 @@ tag=exampleWithParameterForSkipLimit
 classifier=test-sources
 ----
 
-.Parameter for regular expression
+.Regular expression
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -77,7 +77,25 @@ tag=exampleWithParameterRegularExpression
 classifier=test-sources
 ----
 
-.Parameter setting properties on node
+.Create node with properties
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=create_node_from_map
+classifier=test-sources
+----
+
+.Create multiple nodes with properties
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+tag=create_multiple_nodes_from_map
+classifier=test-sources
+----
+
+.Setting all properties on node
 [snippet,java]
 ----
 component=neo4j-cypher

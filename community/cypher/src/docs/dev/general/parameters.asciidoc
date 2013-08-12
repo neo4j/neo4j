@@ -17,35 +17,45 @@ Below follows a comprehensive set of examples of parameter usage.
 The parameters are given as JSON here.
 Exactly how to submit them depends on the driver in use.
 
-== Parameter for node id == 
+== Node id == 
 
 include::includes/exampleWithParameterForNodeId.asciidoc[]
 
-== Parameter for multiple node ids ==
+== Multiple node ids ==
 
 include::includes/exampleWithParameterForMultipleNodeIds.asciidoc[]
 
-== Parameter for string literal ==
+== String literal ==
 
 include::includes/exampleWithStringLiteralAsParameter.asciidoc[]
 
-== Parameter for index value ==
+== Index value ==
 
 include::includes/exampleWithParameterForIndexValue.asciidoc[]
 
-== Parameter for index query ==
+== Index query ==
 
 include::includes/exampleWithParametersForQuery.asciidoc[]
 
-== Numeric parameters for SKIP and LIMIT ==
+== SKIP and LIMIT ==
 
 include::includes/exampleWithParameterForSkipLimit.asciidoc[]
 
-== Parameter for regular expression ==
+== Regular expression ==
 
 include::includes/exampleWithParameterRegularExpression.asciidoc[]
 
-== Parameter setting properties on node ==
+== Create node with properties ==
+
+include::includes/create_node_from_map.asciidoc[]
+
+== Create multiple nodes with properties ==
+
+include::includes/create_multiple_nodes_from_map.asciidoc[]
+
+== Setting all properties on node ==
+
+Note that this will replace all the current properties.
 
 include::includes/set_properties_on_a_node_from_a_map.asciidoc[]
 

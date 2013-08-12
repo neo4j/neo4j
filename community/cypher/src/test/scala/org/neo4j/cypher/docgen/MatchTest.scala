@@ -300,7 +300,7 @@ Cypher will try to match the relationship where the connected nodes switch sides
       title = "Match with labels",
       text = "To constrain your pattern with labels on nodes, you add it to your pattern nodes, using the label syntax.",
       queryText = "match charlie:Person-->movie:Movie where charlie.name='Charlie Sheen' return movie",
-      returns = "Return any nodes connected with Charlie that are labeled :Movie",
+      returns = "Return any nodes connected with Charlie that are labeled +Movie+.",
       assertions = p => assertEquals(List(node("WallStreet")), p.columnAs[Node]("movie").toList)
     )
   }

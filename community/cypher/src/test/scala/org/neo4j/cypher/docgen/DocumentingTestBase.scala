@@ -39,6 +39,8 @@ import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
 import org.neo4j.helpers.Settings
 import org.neo4j.cypher.internal.prettifier.Prettifier
 import org.neo4j.cypher.internal.CypherParser
+import scala.util.parsing.json.JSONObject
+import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -100,6 +102,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   }
 
   def internalTestQuery(title: String, text: String, queryText: String, returns: String, prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
+    parameters = null
     dumpGraphViz(dir, graphvizOptions.trim)
     if (!graphvizExecutedAfter) {
       dumpGraphViz(dir, graphvizOptions.trim)
@@ -126,7 +129,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     try {
       prepare.foreach { (prepareStep: () => Any) => prepareStep() }
       keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-      val result = engine.execute(query)
+      val result = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
       assertions.foreach(_.apply(result))
       tx1.failure()
     } finally {
@@ -135,7 +138,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     val tx2 = db.beginTx()
     try {
       prepare.foreach { (prepareStep: () => Any) => prepareStep() }
-      val result = engine.execute(query)
+      val result = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
       val writer: PrintWriter = createWriter(title, dir)
       dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
       if (graphvizExecutedAfter) {
@@ -158,6 +161,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   val graphvizOptions: String = ""
   val noTitle: Boolean = false
   val graphvizExecutedAfter: Boolean = false
+  var parameters: Map[String, Any] = null
 
   def section: String
   val dir = createDir(section)
@@ -181,6 +185,10 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     var query = queryText
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
     engine.execute(query)
+  }
+
+  def setParameters(params: Map[String, Any]) {
+    parameters = params
   }
 
   protected def assertIsDeleted(pc: PropertyContainer) {
@@ -258,7 +266,16 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   private def asNodeMap[T: Manifest](m: Map[String, T]): Map[Node, T] =
     m map { case (k: String, v: T) => (node(k), v) }
 
+  def mapMapValue(v: Any): Any = v match {
+    case v: Map[_, _] => v.mapValues(mapMapValue(_)).asJava
+    case seq: Seq[_] => seq.map(mapMapValue(_)).asJava
+    case v: Any => v
+  }
+
   def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: ExecutionResult, consoleData: String) {
+    if (parameters != null) {
+      writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
+    }
     val output = new StringBuilder(2048)
     output.append(".Query\n")
     output.append(createCypherSnippet(query))
@@ -274,7 +291,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     output.append('\n')
     writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".result", output.toString))
 
-    if (generateConsole) {
+    if (generateConsole && parameters == null) {
       output.clear
       writer.println(".Try this query live")
       output.append("[console]\n")

@@ -24,8 +24,9 @@ import org.neo4j.graphdb.Node
 import org.junit.Assert._
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.cypher.StatisticsChecker
 
-class DocumentationTestBaseTest extends DocumentingTestBase {
+class DocumentationTestBaseTest extends DocumentingTestBase with StatisticsChecker {
   def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E", "B BLOCKS D")
 
   override protected def getGraphvizStyle: GraphStyle =
@@ -66,5 +67,30 @@ class DocumentationTestBaseTest extends DocumentingTestBase {
     assert(graphLines.contains("Ceasar"))
     assert(graphLines.contains("KNOWS"))
     assert(graphLines.contains("BLOCKS"))
+  }
+
+  @Test def create_mutiple_nodes_from_maps() {
+    prepareAndTestQuery(
+      title = "Create multiple nodes with parameters for properties",
+      text = """
+By providing Cypher an array of maps, it will create a node for each map.
+_When you do this, you can't create anything else in the same +CREATE+ statement_.
+""",
+      prepare = { () =>
+        setParameters(Map("props" -> List(Map("name" -> "Andres", "position" -> "Developer"),
+          Map("name" -> "Michael", "position" -> "Developer"))))
+      },
+      queryText = "create ({props})",
+      returns = "",
+      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
+
+    // ensure that the parameters are printed
+    val resultSource = io.Source.fromFile("target/docs/dev/ql/internaltesting/create-multiple-nodes-with-parameters-for-properties.asciidoc", "utf-8")
+    val resultLines = resultSource.mkString
+    resultSource.close()
+    assert(resultLines.contains("\n.Parameters\n"))
+    assert(resultLines.contains("\"props\""))
+    assert(resultLines.contains("\"name\""))
+    assert(resultLines.contains("\"Michael\""))
   }
 }

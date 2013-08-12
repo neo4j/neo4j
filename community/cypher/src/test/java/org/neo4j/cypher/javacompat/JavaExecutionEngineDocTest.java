@@ -39,6 +39,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.junit.After;
@@ -106,6 +108,17 @@ public class JavaExecutionEngineDocTest
     private void index( Node n )
     {
         db.index().forNodes( "people" ).add( n, "name", n.getProperty( "name" ) );
+    }
+
+    public static String parametersToAsciidoc( final Object params ) throws JsonGenerationException,
+            JsonMappingException, IOException
+    {
+        StringBuffer sb = new StringBuffer( 2048 );
+        String prettifiedJson = WRITER.writeValueAsString( params );
+        sb.append( "\n.Parameters\n[source,javascript]\n----\n" )
+                .append( prettifiedJson )
+                .append( "\n----\n\n" );
+        return sb.toString();
     }
 
     private void dumpToFile( final String id, final String query, final Object params ) throws Exception
