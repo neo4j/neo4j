@@ -24,12 +24,15 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +55,7 @@ import javax.swing.border.BevelBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.neo4j.desktop.Neo4jDesktop;
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.Value;
 import org.neo4j.desktop.runtime.DatabaseActions;
@@ -63,6 +67,7 @@ import static java.lang.String.format;
 import static javax.swing.BoxLayout.X_AXIS;
 import static javax.swing.BoxLayout.Y_AXIS;
 import static javax.swing.JFileChooser.APPROVE_OPTION;
+import static javax.swing.JFileChooser.CUSTOM_DIALOG;
 import static javax.swing.JOptionPane.CANCEL_OPTION;
 import static javax.swing.JFileChooser.DIRECTORIES_ONLY;
 import static javax.swing.JOptionPane.showConfirmDialog;
@@ -118,7 +123,7 @@ public class MainWindow
 
         frame = init();
         
-        this.sysTray = SysTray.install( "/neo4j-db-16.png", new SysTray.Actions()
+        this.sysTray = SysTray.install( "/neo4j-systray-16.png", new SysTray.Actions()
         {
             @Override
             public void closeForReal()
@@ -175,11 +180,27 @@ public class MainWindow
         root.add( advancedPanel = initAdvancedPanel() );
 
         final JFrame frame = new JFrame( "Neo4j Desktop" );
+
+        frame.setIconImages( loadIcons( "/neo4j-cherries-%d.png" ) );
         frame.add( root );
         frame.pack();
         frame.setResizable( false );
-        
+
         return frame;
+    }
+
+    private ArrayList<Image> loadIcons( String resourcePath )
+    {
+        ArrayList<Image> icons = new ArrayList<>();
+        for ( int i = 16; i <= 256; i *= 2 )
+        {
+            Image image = loadImage( format( resourcePath, i ) );
+            if ( null != image )
+            {
+                icons.add( image );
+            }
+        }
+        return icons;
     }
 
     private String defaultPath()
@@ -205,7 +226,7 @@ public class MainWindow
         locations.add( new File( System.getProperty( "user.home" ) ) );
 
         File result = selectFirstWriteableDirectoryOrElse( locations, new File( System.getProperty( "user.dir" ) ) );
-        return new File( result, "graph" ).getAbsolutePath();
+        return new File( result, "neo4j" ).getAbsolutePath();
     }
 
     private File selectFirstWriteableDirectoryOrElse( ArrayList<File> locations, File defaultFile )
@@ -390,8 +411,9 @@ public class MainWindow
             {
                 JFileChooser jFileChooser = new JFileChooser();
                 jFileChooser.setFileSelectionMode( DIRECTORIES_ONLY );
-                String text = directoryDisplay.getText();
-                jFileChooser.setCurrentDirectory( new File( text ) );
+                jFileChooser.setCurrentDirectory( new File( directoryDisplay.getText() ) );
+                jFileChooser.setDialogTitle( "Select database" );
+                jFileChooser.setDialogType( CUSTOM_DIALOG );
 
                 while ( true )
                 {
