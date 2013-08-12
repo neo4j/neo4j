@@ -21,6 +21,7 @@ package org.neo4j.desktop.ui;
 
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -30,12 +31,12 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -46,10 +47,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
+import javax.swing.UIManager;
 import javax.swing.border.BevelBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.filechooser.FileSystemView;
 
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.Value;
@@ -57,11 +58,14 @@ import org.neo4j.desktop.runtime.DatabaseActions;
 
 import static java.awt.font.TextAttribute.UNDERLINE;
 import static java.awt.font.TextAttribute.UNDERLINE_ON;
+import static java.lang.String.format;
 
 import static javax.swing.BoxLayout.X_AXIS;
 import static javax.swing.BoxLayout.Y_AXIS;
 import static javax.swing.JFileChooser.APPROVE_OPTION;
+import static javax.swing.JOptionPane.CANCEL_OPTION;
 import static javax.swing.JFileChooser.DIRECTORIES_ONLY;
+import static javax.swing.JOptionPane.showConfirmDialog;
 import static javax.swing.JOptionPane.showMessageDialog;
 import static javax.swing.SwingConstants.HORIZONTAL;
 import static javax.swing.SwingUtilities.invokeLater;
@@ -388,17 +392,69 @@ public class MainWindow
                 jFileChooser.setFileSelectionMode( DIRECTORIES_ONLY );
                 String text = directoryDisplay.getText();
                 jFileChooser.setCurrentDirectory( new File( text ) );
-                int result = jFileChooser.showOpenDialog( selectionPanel );
 
-                if ( result == APPROVE_OPTION )
+                while ( true )
                 {
-                    File selectedFile = jFileChooser.getSelectedFile();
-                    directoryDisplay.setText( selectedFile.getAbsolutePath() );
+                    switch ( jFileChooser.showOpenDialog( selectionPanel ) ) {
+                        default:
+                            return;
+
+                        case APPROVE_OPTION:
+                            File selectedFile = jFileChooser.getSelectedFile();
+
+                            try
+                            {
+                                verifyGraphDirectory( selectedFile );
+                                directoryDisplay.setText( selectedFile.getAbsolutePath() );
+                                return;
+                            }
+                            catch ( UnsuitableGraphDatabaseDirectory error )
+                            {
+                                int result = showConfirmDialog(
+                                                frame, error.getMessage() + "\nPlease choose a different folder.",
+                                                "Invalid folder selected", JOptionPane.OK_CANCEL_OPTION );
+                                switch ( result )
+                                {
+                                    case CANCEL_OPTION:
+                                        return;
+                                    default:
+                                }
+                            }
+                    }
                 }
             }
         } );
     }
-    
+
+    private void verifyGraphDirectory( File dir ) throws UnsuitableGraphDatabaseDirectory
+    {
+        if ( !dir.isDirectory() )
+        {
+            throw new UnsuitableGraphDatabaseDirectory( "%s is not a directory", dir );
+        }
+
+        if ( !dir.canWrite() )
+        {
+            throw new UnsuitableGraphDatabaseDirectory( "%s is not writeable", dir );
+        }
+
+        String[] fileNames = dir.list();
+        if ( fileNames.length != 0 )
+        {
+            for ( String fileName : fileNames )
+            {
+                if ( fileName.startsWith( "neostore" ) )
+                {
+                    return;
+                }
+            }
+        }
+
+        throw new UnsuitableGraphDatabaseDirectory(
+                "%s is neither empty nor does it contain a neo4j graph database", dir );
+    }
+
+
     private JButton initDatabaseConfigurationButton()
     {
         JButton button = buttonWithImage( "/gear.png", "-", new ActionListener()
@@ -453,7 +509,8 @@ public class MainWindow
                     @Override
                     public void run()
                     {
-                        databaseActions.start( getCurrentPath() );
+                        String path = getCurrentPath();
+                        databaseActions.start( path );
                         goToStartedStatus();
                     }
                 } );
@@ -583,5 +640,16 @@ public class MainWindow
     private String getCurrentPath()
     {
         return directoryDisplay.getText();
+    }
+
+    private class UnsuitableGraphDatabaseDirectory extends Exception
+    {
+        private final File dir;
+
+        UnsuitableGraphDatabaseDirectory( String message, File dir )
+        {
+            super( format( message, dir.getAbsolutePath() ) );
+            this.dir = dir;
+        }
     }
 }
