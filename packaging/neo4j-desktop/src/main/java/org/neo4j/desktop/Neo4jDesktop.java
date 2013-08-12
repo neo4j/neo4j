@@ -21,6 +21,9 @@ package org.neo4j.desktop;
 
 import java.util.List;
 
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.OsSpecificEnvironment;
 import org.neo4j.desktop.config.OsSpecificExtensionPackagesConfig;
@@ -42,10 +45,36 @@ public class Neo4jDesktop
                 new OsSpecificExtensionPackagesConfig( environment ).get();
         DatabaseActions databaseActions = new DatabaseActions( extensionPackagesConfig );
         Value<Integer> heapSizeConfig = new OsSpecificHeapSizeConfig( environment ).get();
-        MainWindow window = new MainWindow( databaseActions, environment, heapSizeConfig,
-                extensionPackagesConfig );
 
+        selectPlatformUI();
+
+        MainWindow window =
+            new MainWindow( databaseActions, environment, heapSizeConfig, extensionPackagesConfig );
         window.display();
+    }
+
+    private void selectPlatformUI()
+    {
+        try
+        {
+            UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
+        }
+        catch ( ClassNotFoundException e )
+        {
+            // don't care
+        }
+        catch ( InstantiationException e )
+        {
+            // don't care
+        }
+        catch ( IllegalAccessException e )
+        {
+            // don't care
+        }
+        catch ( UnsupportedLookAndFeelException e )
+        {
+            // don't care
+        }
     }
 
     public static void main( String[] args )
