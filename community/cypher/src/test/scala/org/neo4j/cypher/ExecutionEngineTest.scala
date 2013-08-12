@@ -2806,7 +2806,7 @@ RETURN x0.name
 
   }
 
-  @Test def shouldTreatExperimentalVersionAsCaseInsensitive() {
+  @Test def shouldTreatCypherVersionAsCaseInsensitive() {
     // when
     val r1: Relationship =
       parseAndExecute("""CYPHER LEGACY CREATE ({name: "Andres"})-[r:KNOWS]->({name: "Stefan"}) RETURN r""")
@@ -2821,5 +2821,12 @@ RETURN x0.name
       assert ( r1.getStartNode.getProperty("name") ===  r2.getStartNode.getProperty("name") )
       assert ( r1.getEndNode.getProperty("name") ===  r2.getEndNode.getProperty("name") )
     }
+  }
+
+  @Test
+  def allow_queries_with_only_return() {
+    val result = parseAndExecute("RETURN 'Andres'").toList
+
+    assert(result === List(Map("'Andres'"->"Andres")))
   }
 }
