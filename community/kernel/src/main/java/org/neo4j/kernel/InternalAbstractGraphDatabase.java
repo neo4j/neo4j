@@ -635,11 +635,13 @@ public abstract class InternalAbstractGraphDatabase
     {
         try
         {
+            msgLog.info( "Shutdown started" );
+            msgLog.flush();
             life.shutdown();
         }
         catch ( LifecycleException throwable )
         {
-            msgLog.logMessage( "Shutdown failed", throwable );
+            msgLog.warn( "Shutdown failed", throwable );
         }
     }
 
