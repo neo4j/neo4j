@@ -30,6 +30,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +49,7 @@ import javax.swing.JTextField;
 import javax.swing.border.BevelBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileSystemView;
 
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.Value;
@@ -63,6 +65,7 @@ import static javax.swing.JFileChooser.DIRECTORIES_ONLY;
 import static javax.swing.JOptionPane.showMessageDialog;
 import static javax.swing.SwingConstants.HORIZONTAL;
 import static javax.swing.SwingUtilities.invokeLater;
+import static javax.swing.filechooser.FileSystemView.*;
 
 import static org.neo4j.desktop.config.OsSpecificHeapSizeConfig.getAvailableTotalPhysicalMemoryMb;
 import static org.neo4j.desktop.ui.UIHelper.loadImage;
@@ -101,8 +104,7 @@ public class MainWindow
     public MainWindow( final DatabaseActions databaseActions, Environment environment,
             Value<Integer> heapSizeConfig, Value<List<String>> extensionPackagesConfig )
     {
-        // TODO (keep the below line in for easier getting going with debugging)
-        //      Only for debugging, comment out the line below for real usage
+        // This is here only for debugging, comment out the line below to see system out
 //        debugWindow = new SystemOutDebugWindow();
         
         this.environment = environment;
@@ -152,7 +154,8 @@ public class MainWindow
     private JFrame init()
     {
         final JPanel selectionPanel = new JPanel();
-        directoryDisplay = new JTextField( new File( "." ).getAbsoluteFile().getParentFile().getAbsolutePath(), 30 );
+
+        directoryDisplay = new JTextField( defaultPath(), 30 );
         directoryDisplay.setEditable( false );
 
         selectionPanel.add( selectButton = initSelectButton( selectionPanel ) );
@@ -173,6 +176,46 @@ public class MainWindow
         frame.setResizable( false );
         
         return frame;
+    }
+
+    private String defaultPath()
+    {
+        ArrayList<File> locations = new ArrayList<>(  );
+
+        // Works according to: http://www.osgi.org/Specifications/Reference
+        String os = System.getProperty( "os.name" );
+
+        if ( os.startsWith( "Windows" ) )
+        {
+
+            // cf. http://stackoverflow.com/questions/1503555/how-to-find-my-documents-folder
+            locations.add( getFileSystemView().getDefaultDirectory() );
+        }
+
+        if ( os.startsWith( "Mac OS" ) )
+        {
+            // cf. http://stackoverflow.com/questions/567874/how-do-i-find-the-users-documents-folder-with-java-in-os-x
+            locations.add( new File( new File( System.getProperty( "user.home" ) ), "Documents" ) );
+        }
+
+        locations.add( new File( System.getProperty( "user.home" ) ) );
+
+        File result = selectFirstWriteableDirectoryOrElse( locations, new File( System.getProperty( "user.dir" ) ) );
+        return new File( result, "graph" ).getAbsolutePath();
+    }
+
+    private File selectFirstWriteableDirectoryOrElse( ArrayList<File> locations, File defaultFile )
+    {
+        File result = defaultFile.getAbsoluteFile();
+        for ( File file : locations )
+        {
+            File candidateFile = file.getAbsoluteFile();
+            if ( candidateFile.exists() && candidateFile.isDirectory() && candidateFile.canWrite() ) {
+                result = candidateFile;
+                break;
+            }
+        }
+        return result;
     }
 
     protected void shutdown()
