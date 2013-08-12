@@ -41,6 +41,12 @@ if not "%javaHomeError%" == "" (
   goto:eof
 )
 
+call:verifySupportedJavaVersion
+if not "%javaVersionError%" == "" (
+  echo %javaVersionError%
+  goto:eof
+)
+
 rem Check classpath
 echo "%classpath%" | findstr "SNAPSHOT" > NUL && echo "WARNING! Latest Development Build. Not intended for general-pupose use. May be unstable."
 
@@ -120,6 +126,35 @@ if ""%javaPath% == "" (
 goto:eof
 
 rem end function findJavaHome
+
+rem function verifySupportedJavaVersion
+:verifySupportedJavaVersion
+
+set javaVersionError=
+set javaCommand=%javaPath:"=%\bin\java.exe
+
+rem Remove leading spaces
+for /f "tokens=* delims= " %%a in ("%javaCommand%") do set javaCommand=%%a
+
+rem Find version
+for /f "usebackq tokens=3" %%g in (`"%javaCommand%" -version 2^>^&1`) do (
+    set JAVAVER=%%g
+    goto:breakJavaVersionLoop
+)
+:breakJavaVersionLoop
+
+set JAVAVER=%JAVAVER:"=%
+set "JAVAVER=%JAVAVER:~0,3%"
+
+if "%JAVAVER%"=="1.7" goto:eof
+if "%JAVAVER%"=="1.8" (
+  echo WARNING! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
+  goto:eof
+)
+set javaVersionError=ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
+goto:eof
+
+rem end function verifySupportedJavaVersion
 
 rem
 rem function checkSettings
