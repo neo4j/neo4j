@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.prettifier
 
 import org.junit.Test
-import org.neo4j.cypher.internal.parser.legacy.ParserTest
+import org.neo4j.cypher.internal.parser.v2_0.rules.ParserTest
 
-class PrettifierParserTest extends PrettifierParser with ParserTest {
+class PrettifierParserTest extends PrettifierParser with ParserTest[Seq[SyntaxToken], Seq[SyntaxToken]] {
 
-  implicit val parserToTest = query
+  implicit val parserToTest = main
+
+  def convert(values: Seq[SyntaxToken]): Seq[SyntaxToken] = values
 
   @Test
   def shouldParseKeywords() {
@@ -32,9 +34,10 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
     val keyword = "create"
 
     // when then
-    parsing[Seq[SyntaxToken]](keyword) shouldGive
+    parsing(keyword) shouldGive
       Seq(BreakingKeywords(keyword))
   }
+
 
   @Test
   def shouldNotParseAssertAsANonBreakingKeyword() {
@@ -42,8 +45,8 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
     val query = "create constraint on (person:Person) assert person.age is unique"
 
     // when then
-    parsing[Seq[SyntaxToken]](query) shouldGive
-      Seq(BreakingKeywords("create constraint on"), OpenGroup("("), AnyText("person:Person"), CloseGroup(")"), 
+    parsing(query) shouldGive
+      Seq(BreakingKeywords("create constraint on"), OpenGroup("("), AnyText("person:Person"), CloseGroup(")"),
         NonBreakingKeywords("assert"), AnyText("person.age"), NonBreakingKeywords("is unique"))
   }
 
@@ -53,7 +56,7 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
     val keyword = "index"
 
     // when then
-    parsing[Seq[SyntaxToken]](keyword) shouldGive
+    parsing(keyword) shouldGive
       Seq(NonBreakingKeywords(keyword))
   }
 
@@ -63,7 +66,7 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
     val input = "a-->b"
 
     // when then
-    parsing[Seq[SyntaxToken]](input) shouldGive
+    parsing(input) shouldGive
       Seq(AnyText(input))
   }
 
@@ -73,7 +76,7 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
     val input = "aha!"
 
     // when then
-    parsing[Seq[SyntaxToken]]("\"" + input + "\"") shouldGive
+    parsing("\"" + input + "\"") shouldGive
       Seq(EscapedText(input))
   }
 
@@ -83,7 +86,7 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
     val input = "(}{)[]"
 
     // when then
-    parsing[Seq[SyntaxToken]](input) shouldGive
+    parsing(input) shouldGive
       Seq(OpenGroup("("),
           CloseGroup("}"),
           OpenGroup("{"),
@@ -98,7 +101,7 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
     val input = "match a-->b where b.name = \"aha!\" return a.age"
 
     // when then
-    parsing[Seq[SyntaxToken]](input) shouldGive
+    parsing(input) shouldGive
       Seq(BreakingKeywords("match"), AnyText("a-->b"), BreakingKeywords("where"), AnyText("b.name"), AnyText("="),
           EscapedText("aha!"), BreakingKeywords("return"), AnyText("a.age"))
   }
@@ -109,7 +112,7 @@ class PrettifierParserTest extends PrettifierParser with ParserTest {
     val input = "merge n on create set n.age=32"
 
     // when then
-    parsing[Seq[SyntaxToken]](input) shouldGive
+    parsing(input) shouldGive
       Seq(
         BreakingKeywords("merge"), AnyText("n"),
         BreakingKeywords("on create"), BreakingKeywords("set"), AnyText("n.age=32"))
