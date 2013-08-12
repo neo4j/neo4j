@@ -24,7 +24,10 @@ import java.util.Set;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.impl.api.Transactor;
+import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.kernel.impl.transaction.TxManager;
 
 import static java.lang.String.format;
 
@@ -99,7 +102,10 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.uniqueIndexCreate( getState(), labelId, propertyKey );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( new Transactor(
+                db.getDependencyResolver().resolveDependency( TxManager.class ) ),
+                db.getDependencyResolver().resolveDependency( IndexingService.class ) );
+        creator.createUniquenessConstraintIndex( getState(), statement, labelId, propertyKey );
         commit();
 
         // when
@@ -139,11 +145,11 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldFailToCreateIndexWhereAConstraintIndexAlreadyExists() throws Exception
+    public void shouldFailToCreateIndexWhereAConstraintAlreadyExists() throws Exception
     {
         // given
         newTransaction();
-        statement.uniqueIndexCreate( getState(), labelId, propertyKey );
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKey );
         commit();
 
         // when
@@ -165,36 +171,11 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldNotBeAbleToRemoveAConstraintIndexAsIfItWasARegularIndex() throws Exception
-    {
-        // given
-        newTransaction();
-        IndexDescriptor index = statement.uniqueIndexCreate( getState(), labelId, propertyKey );
-        commit();
-
-        // when
-        try
-        {
-            newTransaction();
-            statement.indexDrop( getState(), index );
-            commit();
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( SchemaKernelException e )
-        {
-            assertEquals( "Unable to drop index on :label[5](property[8]): Index belongs to constraint: " +
-                    ":label[5](property[8])", e.getMessage() );
-        }
-    }
-
-    @Test
     public void shouldListConstraintIndexesInTheBeansAPI() throws Exception
     {
         // given
         newTransaction();
-        statement.uniqueIndexCreate( getState(), statement.labelGetOrCreateForName( getState(), "Label1" ),
+        statement.uniquenessConstraintCreate( getState(), statement.labelGetOrCreateForName( getState(), "Label1" ),
                                      statement.propertyKeyGetOrCreateForName( getState(), "property1" ) );
         commit();
 
@@ -230,7 +211,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.uniqueIndexCreate( getState(), labelId, propertyKey );
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKey );
         commit();
 
         // then/when

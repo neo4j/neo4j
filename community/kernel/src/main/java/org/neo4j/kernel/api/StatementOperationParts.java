@@ -436,11 +436,6 @@ public class StatementOperationParts
                 return schemaWriteOperations.indexCreate( state, labelId, propertyKeyId );
             }
             @Override
-            public IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
-            {
-                return schemaWriteOperations.uniqueIndexCreate( state, labelId, propertyKey );
-            }
-            @Override
             public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
             {
                 schemaWriteOperations.indexDrop( state, descriptor );

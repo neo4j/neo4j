@@ -191,15 +191,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey )
-            throws SchemaKernelException
-    {
-        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
-        state.txState().constraintIndexRuleDoAdd( rule );
-        return rule;
-    }
-
-    @Override
     public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         state.txState().indexDoDrop( descriptor );
@@ -216,7 +207,7 @@ public class StateHandlingStatementOperations implements
             throws SchemaKernelException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
-        if ( !state.txState().constraintDoUnRemove( constraint ) )
+        if ( ! state.txState().constraintDoUnRemove( constraint ) )
         {
             for ( Iterator<UniquenessConstraint> it = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
                     state, labelId, propertyKeyId ); it.hasNext(); )
