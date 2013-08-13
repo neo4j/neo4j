@@ -102,6 +102,20 @@ This will replace all existing properties on the node with the new set provided 
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 4))
   }
 
+  @Test def set_merge_all_properties_using_a_parameter() {
+    prepareAndTestQuery(
+      title = "Set multiple properties using a parameter",
+      text = """
+This will update all properties provided in the parameter-map, but will not change other properties.
+             """,
+      prepare = { () =>
+        setParameters(Map("props" -> Map("position" -> "Developer")))
+      },
+      queryText = "match n where n.name='Andres' set n = {props} return n",
+      returns = "The Andres node has updated somme properties by the properties in the +props+ parameter.",
+      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 4))
+  }
+
   @Test def set_single_label_on_a_node() {
     testQuery(
       title = "Set a label on a node",

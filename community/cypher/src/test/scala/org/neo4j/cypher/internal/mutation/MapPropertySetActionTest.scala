@@ -99,6 +99,28 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     assert(state.getStatistics.propertiesSet === 2)
   }
 
+  @Test def merge_remove_properties_from_node() {
+    val from = Map("a" -> 1, "b" -> null)
+    val to = createNode("b" -> 2)
+
+    mergeThatShit(to, from)
+
+    assert(to.getProperty("a") === 1)
+    assert(to.hasProperty("b") === false, "Expected the `b` property to removed")
+    assert(state.getStatistics.propertiesSet === 2)
+  }
+
+  @Test def merge_keep_existing_properties() {
+    val from = Map("a" -> 1)
+    val to = createNode("b" -> 2)
+
+    mergeThatShit(to, from)
+
+    assert(to.getProperty("a") === 1)
+    assert(to.getProperty("b") === 2)
+    assert(state.getStatistics.propertiesSet === 1)
+  }
+
   @Test def should_overwrite_values() {
     val from = Map("a" -> 1)
     val to = createNode("a" -> "apa")
@@ -111,6 +133,11 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
   private def setThatShit(a: PropertyContainer, m: Any) {
     val setter = MapPropertySetAction(Literal(a), Literal(m))
+    setter.exec(ExecutionContext.empty, state)
+  }
+
+  private def mergeThatShit(a: PropertyContainer, m: Any) {
+    val setter = MapPropertySetAction(Literal(a), Literal(m),mergeProperties = true)
     setter.exec(ExecutionContext.empty, state)
   }
 }

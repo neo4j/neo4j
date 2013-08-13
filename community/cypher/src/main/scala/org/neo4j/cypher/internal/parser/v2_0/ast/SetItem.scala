@@ -48,9 +48,19 @@ case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: 
 case class SetNodeItem(identifier: Identifier, expression: Expression, token: InputToken) extends SetItem {
   def semanticCheck =
     identifier.semanticCheck(Expression.SemanticContext.Simple) then
-    identifier.constrainType(NodeType()) then
+    identifier.constrainType(NodeType(), RelationshipType()) then
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.constrainType(MapType())
 
   def toLegacyUpdateAction = mutation.MapPropertySetAction(commandexpressions.Identifier(identifier.name), expression.toCommand)
+}
+
+case class MergeNodeItem(identifier: Identifier, expression: Expression, token: InputToken) extends SetItem {
+  def semanticCheck =
+    identifier.semanticCheck(Expression.SemanticContext.Simple) then
+      identifier.constrainType(NodeType(), RelationshipType()) then
+      expression.semanticCheck(Expression.SemanticContext.Simple) then
+      expression.constrainType(MapType())
+
+  def toLegacyUpdateAction = mutation.MapPropertySetAction(commandexpressions.Identifier(identifier.name), expression.toCommand, mergeProperties = true)
 }

@@ -2560,7 +2560,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       ))
   }
 
-  @Test def set_to_param() {
+  @Test def set_node_to_param() {
     val q2 = Query.
       start().
       updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"))).
@@ -2573,7 +2573,20 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(AllIdentifiers()))
   }
 
-  @Test def set_to_map() {
+  @Test def set_rel_to_param() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("r"), ParameterExpression("prop"))).
+      returns()
+
+    test("start r=relationship(0) set r = {prop}",
+      Query.
+        start(RelationshipById("r", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  @Test def set_node_to_map() {
     val q2 = Query.
       start().
       updates(MapPropertySetAction(Identifier("n"), LiteralMap(Map("key" -> Literal("value"), "foo" -> Literal(1))))).
@@ -2582,6 +2595,71 @@ class CypherParserTest extends JUnitSuite with Assertions {
     test(vFrom2_0, "start n=node(0) set n = {key: 'value', foo: 1}",
       Query.
         start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  @Test def set_rel_to_map() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("r"), LiteralMap(Map("key" -> Literal("value"), "foo" -> Literal(1))))).
+      returns()
+
+    test(vFrom2_0, "start r=relationship(0) set r = {key: 'value', foo: 1}",
+      Query.
+        start(RelationshipById("r", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  @Test def merge_node_to_param() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"), mergeProperties = true)).
+      returns()
+
+    test(v1_9, "start n=node(0) set n += {prop}",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  @Test def merge_rel_to_param() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("r"), ParameterExpression("prop"), mergeProperties = true)).
+      returns()
+
+    test(v1_9, "start r=relationship(0) set r += {prop}",
+      Query.
+        start(RelationshipById("r", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  @Test def merge_node_to_map() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("n"), LiteralMap(Map("key" -> Literal("value"), "foo" -> Literal(1))), mergeProperties = true)).
+      returns()
+
+    test(v2_0, "start n=node(0) set n += {key: 'value', foo: 1}",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  @Test def merge_rel_to_map() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("r"), LiteralMap(Map("key" -> Literal("value"), "foo" -> Literal(1))), mergeProperties = true)).
+      returns()
+
+    test(v2_0, "start r=relationship(0) set r += {key: 'value', foo: 1}",
+      Query.
+        start(RelationshipById("r", 0)).
         tail(q2).
         returns(AllIdentifiers()))
   }
