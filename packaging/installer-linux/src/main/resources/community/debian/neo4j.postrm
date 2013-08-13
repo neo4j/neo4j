@@ -26,7 +26,7 @@ case "$1" in
     ;;
     
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
-        update-rc.d neo4j-service remove
+        # let the packaging system take care of removing the init script
     ;;
 
     *)
