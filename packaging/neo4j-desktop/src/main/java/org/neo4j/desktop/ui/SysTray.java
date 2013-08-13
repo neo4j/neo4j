@@ -28,7 +28,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-
 import javax.swing.JFrame;
 
 import org.neo4j.desktop.ui.MainWindow.DatabaseStatus;
@@ -36,7 +35,7 @@ import org.neo4j.desktop.ui.MainWindow.DatabaseStatus;
 import static javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE;
 
 import static org.neo4j.desktop.ui.MainWindow.DatabaseStatus.stopped;
-import static org.neo4j.desktop.ui.UIHelper.loadImage;
+import static org.neo4j.desktop.ui.SwingHelper.loadImage;
 
 /**
  * Adds {@link SystemTray} integration to Neo4j Desktop. Call {@link #install(String, Actions, JFrame)} to install it

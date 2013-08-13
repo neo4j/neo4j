@@ -21,29 +21,19 @@ package org.neo4j.desktop.ui;
 
 import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Container;
 import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.Frame;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -51,33 +41,22 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
 import javax.swing.JTextField;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 import org.neo4j.desktop.config.Environment;
-import org.neo4j.desktop.config.Value;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
-import static java.awt.font.TextAttribute.UNDERLINE;
-import static java.awt.font.TextAttribute.UNDERLINE_ON;
 import static java.lang.String.format;
-import static javax.swing.BoxLayout.X_AXIS;
 import static javax.swing.BoxLayout.Y_AXIS;
 import static javax.swing.JFileChooser.APPROVE_OPTION;
 import static javax.swing.JFileChooser.CUSTOM_DIALOG;
 import static javax.swing.JFileChooser.DIRECTORIES_ONLY;
 import static javax.swing.JOptionPane.CANCEL_OPTION;
-import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.JOptionPane.showConfirmDialog;
-import static javax.swing.JOptionPane.showMessageDialog;
-import static javax.swing.SwingConstants.HORIZONTAL;
 import static javax.swing.SwingUtilities.invokeLater;
 import static javax.swing.filechooser.FileSystemView.getFileSystemView;
 
-import static org.neo4j.desktop.config.OsSpecificHeapSizeConfig.getAvailableTotalPhysicalMemoryMb;
-import static org.neo4j.desktop.ui.UIHelper.loadImage;
+import static org.neo4j.desktop.ui.SwingHelper.loadImage;
 
 /**
  * The main window of the Neo4j Desktop. Able to start/stop a database as well as providing access to some
@@ -85,12 +64,14 @@ import static org.neo4j.desktop.ui.UIHelper.loadImage;
  */
 public class MainWindow
 {
+    private final DesktopModel model;
+
     public static enum DatabaseStatus
     {
         stopped,
         starting,
         started,
-        stopping;
+        stopping
     }
     
     private final JFrame frame;
@@ -102,24 +83,20 @@ public class MainWindow
     private CardLayout statusPanelLayout;
     private JPanel statusPanel;
     private JTextField directoryDisplay;
-    private JTextField configFileTextField;
-    private final Value<Integer> heapSizeConfig;
     private SystemOutDebugWindow debugWindow;
     private DatabaseStatus databaseStatus; // Not used a.t.m. but may be used for something?
     private final Environment environment;
-    private final Value<List<String>> extensionPackagesConfig;
     private final SysTray sysTray;
 
-    public MainWindow( final DatabaseActions databaseActions, Environment environment,
-            Value<Integer> heapSizeConfig, Value<List<String>> extensionPackagesConfig )
+    public MainWindow( final DatabaseActions databaseActions, Environment environment, DesktopModel model )
     {
+        this.model = model;
         // This is here only for debugging, comment out the line below to see system out
 //        debugWindow = new SystemOutDebugWindow();
-        
+        model.setPrintStackTraces( debugWindow != null );
+
         this.environment = environment;
-        this.heapSizeConfig = heapSizeConfig;
         this.databaseActions = databaseActions;
-        this.extensionPackagesConfig = extensionPackagesConfig;
 
         frame = init();
         
@@ -206,20 +183,15 @@ public class MainWindow
 
     private JButton initSettingsButton()
     {
-        return buttonWithText( elipsis( "Settings"), new ActionListener()
+        return SwingHelper.buttonWithText( SwingHelper.elipsis( "Settings" ), new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent e )
             {
-                JDialog settingsDialog = new SettingsDialog( frame );
+                JDialog settingsDialog = new SettingsDialog( frame, environment, model );
                 settingsDialog.setVisible( true );
             }
         } );
-    }
-
-    private String elipsis(  String input )
-    {
-        return format( "%s\u2026", input );
     }
 
     private JPanel initSelectionPanel()
@@ -304,172 +276,6 @@ public class MainWindow
         System.exit( 0 );
     }
 
-    private JPanel initSettingsPanel()
-    {
-        JPanel settingsPanel = new JPanel();
-        settingsPanel.setLayout( new BoxLayout( settingsPanel, Y_AXIS ) );
-        settingsPanel.setBorder( BorderFactory.createTitledBorder( "Settings" ) );
-
-        settingsPanel.add( initEditConfigPanel() );
-        settingsPanel.add( initEditVmOptionsPanel() );
-        settingsPanel.add( initHeapSizePanel() );
-        settingsPanel.add( initExtensionsPanel() );
-        
-        return settingsPanel;
-    }
-
-    private Component initEditConfigPanel()
-    {
-        JPanel panel = new JPanel();
-        panel.setLayout( new FlowLayout() );
-        panel.setBorder( BorderFactory.createTitledBorder( "Configuration" ) );
-        configFileTextField = new JTextField( getDatabaseConfigurationFile().getAbsolutePath(), 30 );
-        configFileTextField.setEditable( false );
-        panel.add( configFileTextField );
-        panel.add( initEditDatabaseConfigurationButton() );
-        return panel;
-    }
-
-    private Component initEditVmOptionsPanel()
-    {
-        JPanel panel = new JPanel();
-        panel.setLayout( new FlowLayout() );
-        panel.setBorder( BorderFactory.createTitledBorder( "VM Options" ) );
-        File vmOptionsFile = getVmOptionsFile();
-        JTextField vmOptionsFileTextField =
-            new JTextField( vmOptionsFile == null ? "" : vmOptionsFile.getAbsolutePath() );
-        vmOptionsFileTextField.setEditable( false );
-        panel.add( vmOptionsFileTextField );
-        panel.add( initEditVmOptionsButton() );
-        return panel;
-    }
-
-    private File getVmOptionsFile()
-    {
-        try
-        {
-            File jarFile = new File(MainWindow.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-            return new File( jarFile.getParentFile(), ".vmoptions" );
-        }
-        catch ( URISyntaxException e )
-        {
-            if ( debugWindow != null )
-            {
-                e.printStackTrace( System.out );
-            }
-        }
-        return null;
-    }
-
-    private File getDatabaseConfigurationFile()
-    {
-        return databaseActions.getDatabaseConfigurationFile( getCurrentPath() );
-    }
-
-    private JPanel initExtensionsPanel()
-    {
-        // Extensions packages config
-        final DefaultComboBoxModel<String> extensionPackagesModel = new DefaultComboBoxModel<>(
-                extensionPackagesConfig.get().toArray( new String[0] ) );
-        final JComboBox<String> extensionPackages = new JComboBox<>( extensionPackagesModel );
-        JButton addPackageButton = buttonWithText( "+", new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                String newPackage = JOptionPane.showInputDialog( "Package containing extension(s) to include" );
-                if ( newPackage != null )
-                {
-                    extensionPackagesModel.addElement( newPackage );
-                    extensionPackagesConfig.set( itemsAsList( extensionPackagesModel ) );
-                }
-            }
-        } );
-        JButton removePackageButton = buttonWithText( "-", new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                int selectedIndex = extensionPackages.getSelectedIndex();
-                if ( selectedIndex != -1 )
-                {
-                    extensionPackagesModel.removeElementAt( selectedIndex );
-                    extensionPackagesConfig.set( itemsAsList( extensionPackagesModel ) );
-                }
-            }
-        } );
-        JPanel packagesPanel = new JPanel();
-        packagesPanel.setLayout( new BoxLayout( packagesPanel, Y_AXIS ) );
-        packagesPanel.setBorder( BorderFactory.createTitledBorder( "Server Extensions" ) );
-        packagesPanel.add( new HeadlinePanel( "Extension packages for " +
-                environment.getExtensionsDirectory().getAbsolutePath() + ")" ) );
-        JPanel packagesComponentsPanel = new JPanel();
-        packagesComponentsPanel.setLayout( new BoxLayout( packagesComponentsPanel, X_AXIS ) );
-        packagesComponentsPanel.add( extensionPackages );
-        packagesComponentsPanel.add( addPackageButton );
-        packagesComponentsPanel.add( removePackageButton );
-        packagesPanel.add( packagesComponentsPanel );
-        return packagesPanel;
-    }
-
-    private JPanel initHeapSizePanel()
-    {
-        // Heap size setting
-        int initialHeapValue = heapSizeConfig.get().intValue();
-        int availableTotalPhysicalMemory = getAvailableTotalPhysicalMemoryMb();
-        final JSlider heapSizeSlider = new JSlider( HORIZONTAL, 0, availableTotalPhysicalMemory, initialHeapValue );
-        heapSizeSlider.setEnabled( heapSizeConfig.isWritable() );
-        heapSizeSlider.setToolTipText( heapSizeToolTopText() );
-        heapSizeSlider.setPaintTicks( true );
-        heapSizeSlider.setPaintTrack( true );
-        heapSizeSlider.setPaintLabels( true );
-        int majorTickSpacing = appropriateMajorTickSpacing( availableTotalPhysicalMemory );
-        heapSizeSlider.setMajorTickSpacing( majorTickSpacing );
-        heapSizeSlider.setMinorTickSpacing( majorTickSpacing / 2 );
-        heapSizeSlider.addChangeListener( new ChangeListener()
-        {
-            @Override
-            public void stateChanged( ChangeEvent e )
-            {
-                if ( !heapSizeSlider.getValueIsAdjusting() )
-                {
-                    heapSizeConfig.set( heapSizeSlider.getValue() );
-                    heapSizeSlider.setToolTipText( heapSizeToolTopText() );
-                }
-            }
-        } );
-
-        JPanel heapSizePanel = new JPanel();
-        heapSizePanel.setLayout( new BoxLayout( heapSizePanel, Y_AXIS ) );
-        heapSizePanel.add( new HeadlinePanel( "Heap size (changes requires restart)" ) );
-        heapSizePanel.add( heapSizeSlider );
-        return heapSizePanel;
-    }
-
-    private List<String> itemsAsList( DefaultComboBoxModel<String> model )
-    {
-        List<String> list = new ArrayList<>( model.getSize() );
-        for ( int i = 0; i < model.getSize(); i++ )
-        {
-            list.add( model.getElementAt( i ) );
-        }
-        return list;
-    }
-    
-    private String heapSizeToolTopText()
-    {
-        String text = heapSizeConfig.get() + " Mb";
-        return heapSizeConfig.isWritable() ? text : text + " (not changable)";
-    }
-
-    private int appropriateMajorTickSpacing( int mb )
-    {
-        int rough = mb / 4;
-        int digits = String.valueOf( rough ).length();
-        int spacing = (int) ((int) Math.round( rough / Math.pow( 10, digits-1 ) ) * Math.pow( 10, digits-1 ));
-        return spacing;
-    }
-
     private JPanel initStatusPanel()
     {
         JPanel statusPanel = new JPanel();
@@ -479,10 +285,10 @@ public class MainWindow
         statusPanel.add( DatabaseStatus.stopped.name(), createSimpleStatusPanel(
                 new Color( 1.0f, 0.5f, 0.5f ), "Choose a graph database directory, then start the server" ) );
         statusPanel.add( DatabaseStatus.starting.name(), createSimpleStatusPanel(
-                new Color( 1.0f, 1.0f, 0.5f ), elipsis( "In just a few seconds, Neo4j will be ready" ) ) );
+                new Color( 1.0f, 1.0f, 0.5f ), SwingHelper.elipsis( "In just a few seconds, Neo4j will be ready" ) ) );
         statusPanel.add( DatabaseStatus.started.name(), createStartedStatus() );
         statusPanel.add( DatabaseStatus.stopping.name(), createSimpleStatusPanel(
-                new Color( 0.7f, 0.7f, 0.7f ), elipsis( "Neo4j is shutting down" ) ) );
+                new Color( 0.7f, 0.7f, 0.7f ), SwingHelper.elipsis( "Neo4j is shutting down" ) ) );
         statusPanel.addMouseListener( new MouseAdapter()
         {
             @Override
@@ -499,7 +305,7 @@ public class MainWindow
 
     private JButton initSelectButton( final JPanel selectionPanel )
     {
-        return buttonWithText( elipsis( "Browse" ), new ActionListener()
+        return SwingHelper.buttonWithText( SwingHelper.elipsis( "Browse" ), new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent e )
@@ -512,7 +318,8 @@ public class MainWindow
 
                 while ( true )
                 {
-                    switch ( jFileChooser.showOpenDialog( selectionPanel ) ) {
+                    switch ( jFileChooser.showOpenDialog( selectionPanel ) )
+                    {
                         default:
                             return;
 
@@ -522,15 +329,15 @@ public class MainWindow
                             try
                             {
                                 verifyGraphDirectory( selectedFile );
-                                directoryDisplay.setText( selectedFile.getAbsolutePath() );
-                                configFileTextField.setText( getDatabaseConfigurationFile().getAbsolutePath() );
+                                model.setDatabaseDirectory( selectedFile );
+                                directoryDisplay.setText( model.getDatabaseDirectory().getAbsolutePath() );
                                 return;
                             }
                             catch ( UnsuitableGraphDatabaseDirectory error )
                             {
                                 int result = showConfirmDialog(
-                                                frame, error.getMessage() + "\nPlease choose a different folder.",
-                                                "Invalid folder selected", JOptionPane.OK_CANCEL_OPTION );
+                                        frame, error.getMessage() + "\nPlease choose a different folder.",
+                                        "Invalid folder selected", JOptionPane.OK_CANCEL_OPTION );
                                 switch ( result )
                                 {
                                     case CANCEL_OPTION:
@@ -574,80 +381,15 @@ public class MainWindow
                 "%s is neither empty nor does it contain a neo4j graph database", dir );
     }
 
-
-    private JButton initEditDatabaseConfigurationButton()
-    {
-        return buttonWithText( elipsis( "Edit" ), new EditFileActionListener()
-        {
-            @Override
-            protected File getFile()
-            {
-                return getDatabaseConfigurationFile();
-            }
-        } );
-    }
-
-    private JButton initEditVmOptionsButton()
-    {
-        return buttonWithText( elipsis( "Edit" ), new EditFileActionListener()
-        {
-            @Override
-            protected File getFile()
-            {
-                return getVmOptionsFile();
-            }
-        } );
-    }
-
-    private abstract class EditFileActionListener implements ActionListener {
-
-        protected abstract File getFile();
-
-        @Override
-        public void actionPerformed( ActionEvent event )
-        {
-            File file = getFile();
-            if ( null == file )
-            {
-                showMessageDialog( frame,
-                    "Did not find location of .vmoptions file",
-                    "Error",
-                    ERROR_MESSAGE );
-            }
-            try
-            {
-                ensureFileAndParentDirectoriesExists( file );
-                environment.editFile( file );
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-                showMessageDialog( frame,
-                    format("Couldn't open %s, please open the file manually", file.getAbsolutePath() ),
-                    "Error",
-                    ERROR_MESSAGE );
-            }
-        }
-
-        private void ensureFileAndParentDirectoriesExists( File file ) throws IOException
-        {
-            file.getParentFile().mkdirs();
-            if ( !file.exists() )
-            {
-                file.createNewFile();
-            }
-        }
-    }
-
     private JButton initStartButton()
     {
-        return buttonWithText( "Start", new ActionListener()
+        return SwingHelper.buttonWithText( "Start", new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent event )
             {
                 goToStartingStatus();
-                
+
                 // Invoke later here to get visual feedback of the status change.
                 // GUI updates happens after action performed exists.
                 invokeLater( new Runnable()
@@ -655,8 +397,7 @@ public class MainWindow
                     @Override
                     public void run()
                     {
-                        String path = getCurrentPath();
-                        databaseActions.start( path );
+                        databaseActions.start();
                         goToStartedStatus();
                     }
                 } );
@@ -666,13 +407,13 @@ public class MainWindow
 
     private JButton initStopButton()
     {
-        return buttonWithText( "Stop", new ActionListener()
+        return SwingHelper.buttonWithText( "Stop", new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent e )
             {
                 goToStoppingStatus();
-                
+
                 // Invoke later here to get visual feedback of the status change.
                 // GUI updates happens after action performed exists.
                 invokeLater( new Runnable()
@@ -739,7 +480,7 @@ public class MainWindow
     private JPanel createStartedStatus()
     {
         JLabel link = new JLabel( "http://localhost:7474/" );
-        link.setFont( underlined( link.getFont() ) );
+        link.setFont( SwingHelper.underlined( link.getFont() ) );
         link.addMouseListener( new OpenBrowserMouseListener( link, environment ) );
 
         return createStatusPanel( new Color( 0.5f, 1.0f, 0.5f ), new JLabel("Neo4j is ready. Browse to "), link );
@@ -748,7 +489,7 @@ public class MainWindow
     private JPanel createStatusPanel( Color color, JComponent... components )
     {
         JPanel panel = new JPanel();
-        panel.setLayout( new FlowLayout(  ) );
+        panel.setLayout( new FlowLayout() );
         panel.setBackground( color );
         for ( JComponent component : components )
         {
@@ -757,75 +498,11 @@ public class MainWindow
         return panel;
     }
 
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    private static Font underlined( Font font )
-    {
-        Map attributes = font.getAttributes();
-        attributes.put( UNDERLINE, UNDERLINE_ON );
-        return font.deriveFont( attributes );
-    }
-
-    private JButton buttonWithText( String text, ActionListener actionListener )
-    {
-        JButton button = new JButton( text );
-        button.addActionListener( actionListener );
-        return button;
-    }
-
-    private String getCurrentPath()
-    {
-        return directoryDisplay.getText();
-    }
-
     private class UnsuitableGraphDatabaseDirectory extends Exception
     {
-        private final File dir;
-
         UnsuitableGraphDatabaseDirectory( String message, File dir )
         {
             super( format( message, dir.getAbsolutePath() ) );
-            this.dir = dir;
-        }
-    }
-
-    private class SettingsDialog extends JDialog
-    {
-        SettingsDialog( Frame owner )
-        {
-            super( owner, "Neo4j Settings", true );
-
-
-            Container dialogContainer = getContentPane();
-            JPanel content = new JPanel();
-            content.setLayout( new BoxLayout( content, Y_AXIS ) );
-            content.setBorder( BorderFactory.createEmptyBorder( 5, 5, 5, 5 ) );
-
-            JPanel actions = new JPanel();
-            actions.setLayout( new FlowLayout( FlowLayout.RIGHT ) );
-            actions.add( buttonWithText( "Close", new ActionListener()
-            {
-                @Override
-                public void actionPerformed( ActionEvent e )
-                {
-                    close();
-                }
-            } ) );
-
-
-            content.add( initEditConfigPanel() );
-            content.add( initEditVmOptionsPanel() );
-            content.add( initExtensionsPanel() );
-            content.add( Box.createVerticalStrut( 5 ) );
-            content.add( actions );
-
-            dialogContainer.add( content );
-
-            pack();
-        }
-
-        private void close()
-        {
-            setVisible( false );
         }
     }
 }

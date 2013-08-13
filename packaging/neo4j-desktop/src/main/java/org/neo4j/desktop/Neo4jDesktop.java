@@ -20,16 +20,15 @@
 package org.neo4j.desktop;
 
 import java.util.List;
-
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.OsSpecificEnvironment;
 import org.neo4j.desktop.config.OsSpecificExtensionPackagesConfig;
-import org.neo4j.desktop.config.OsSpecificHeapSizeConfig;
 import org.neo4j.desktop.config.Value;
 import org.neo4j.desktop.runtime.DatabaseActions;
+import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
 
 /**
@@ -39,17 +38,17 @@ public class Neo4jDesktop
 {
     private void start()
     {
-        Environment environment = new OsSpecificEnvironment().get();
-        
-        Value<List<String>> extensionPackagesConfig =
-                new OsSpecificExtensionPackagesConfig( environment ).get();
-        DatabaseActions databaseActions = new DatabaseActions( extensionPackagesConfig );
-        Value<Integer> heapSizeConfig = new OsSpecificHeapSizeConfig( environment ).get();
-
         selectPlatformUI();
 
-        MainWindow window =
-            new MainWindow( databaseActions, environment, heapSizeConfig, extensionPackagesConfig );
+        Environment environment = new OsSpecificEnvironment().get();
+
+        Value<List<String>> extensionPackagesConfig =
+                new OsSpecificExtensionPackagesConfig( environment ).get();
+        DesktopModel model = new DesktopModel( extensionPackagesConfig );
+
+        DatabaseActions databaseActions = new DatabaseActions( model );
+
+        MainWindow window = new MainWindow( databaseActions, environment, model );
         window.display();
     }
 
@@ -59,19 +58,7 @@ public class Neo4jDesktop
         {
             UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
         }
-        catch ( ClassNotFoundException e )
-        {
-            // don't care
-        }
-        catch ( InstantiationException e )
-        {
-            // don't care
-        }
-        catch ( IllegalAccessException e )
-        {
-            // don't care
-        }
-        catch ( UnsupportedLookAndFeelException e )
+        catch ( ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e )
         {
             // don't care
         }
