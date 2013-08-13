@@ -562,6 +562,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
                 Response<R> response = null;
                 try
                 {
+                    unmapSlave( channel );
                     response = type.getTargetCaller().call( requestTarget, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
@@ -582,7 +583,6 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
                     {
                         response.close();
                     }
-                    unmapSlave( channel, context );
                 }
             }
         };
