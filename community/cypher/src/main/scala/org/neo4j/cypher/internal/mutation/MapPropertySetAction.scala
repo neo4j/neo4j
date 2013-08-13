@@ -29,7 +29,7 @@ import collection.Map
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.ExecutionContext
 
-case class MapPropertySetAction(element: Expression, mapExpression: Expression)
+case class MapPropertySetAction(element: Expression, mapExpression: Expression, mergeProperties:Boolean = false)
   extends UpdateAction with GraphElementPropertyFunctions with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState) = {
@@ -57,6 +57,9 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
             }
         }
       })
+
+      if (mergeProperties)
+        return
 
       /*Remove all other properties from the property container*/
       pc match {
