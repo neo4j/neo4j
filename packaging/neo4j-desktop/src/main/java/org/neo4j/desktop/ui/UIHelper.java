@@ -21,6 +21,7 @@ package org.neo4j.desktop.ui;
 
 import java.awt.Image;
 import java.io.IOException;
+import java.net.URL;
 
 import javax.imageio.ImageIO;
 
