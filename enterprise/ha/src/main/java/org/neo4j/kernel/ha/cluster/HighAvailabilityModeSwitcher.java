@@ -401,8 +401,10 @@ public class
              * that may start the moment the database becomes available, where all of them will pull the same txs from
              * the master but eventually only one will get to apply them.
              */
+            console.log( "Catching up with master" );
             RequestContext context = requestContextFactory.newRequestContext( -1 );
             xaDataSourceManager.applyTransactions( checkConsistencyMaster.pullUpdates( context ) );
+            console.log( "Now consistent with master" );
             return true;
         }
         catch ( StoreUnableToParticipateInClusterException upe )

@@ -354,6 +354,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, members, clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
 
+        HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging.getConsoleLog( HighAvailabilityConsoleLogger.class ) );
+        accessGuard.addListener( highAvailabilityConsoleLogger );
+        clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
+        clusterClient.addClusterListener( highAvailabilityConsoleLogger );
+
         if ( compatibilityMode )
         {
             /*

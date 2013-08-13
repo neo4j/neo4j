@@ -1,0 +1,167 @@
+package org.neo4j.kernel.ha;
+
+import java.net.URI;
+
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.member.ClusterMemberListener;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.kernel.logging.ConsoleLogger;
+
+/**
+ * This class logs to the console whenever important cluster or high availability events
+ * are issued.
+ */
+public class HighAvailabilityConsoleLogger
+    implements ClusterMemberListener, ClusterListener, InstanceAccessGuard.AccessListener
+{
+    private ConsoleLogger console;
+
+    public HighAvailabilityConsoleLogger( ConsoleLogger console )
+    {
+        this.console = console;
+    }
+
+    // Cluster events
+    /**
+     * Logged when the instance itself joins or rejoins a cluster
+     *
+     * @param clusterConfiguration
+     */
+    @Override
+    public void enteredCluster( ClusterConfiguration clusterConfiguration )
+    {
+        console.log( "Joined cluster:"+clusterConfiguration );
+    }
+
+    /**
+     * Logged when the instance itself leaves the cluster
+     */
+    @Override
+    public void leftCluster()
+    {
+        console.log("Left cluster");
+    }
+
+    /**
+     * Logged when another instance joins the cluster
+     *
+     * @param instanceId
+     * @param member
+     */
+    @Override
+    public void joinedCluster( InstanceId instanceId, URI member )
+    {
+        console.log("Instance "+instanceId+" joined the cluster");
+    }
+
+    /**
+     * Logged when another instance leaves the cluster
+     *
+     * @param instanceId
+     */
+    @Override
+    public void leftCluster( InstanceId instanceId )
+    {
+        console.log("Instance "+instanceId+" left the cluster");
+    }
+
+    /**
+     * Logged when an instance is elected for a role, such as coordinator of a cluster.
+     *
+     * @param role
+     * @param instanceId
+     * @param electedMember
+     */
+    @Override
+    public void elected( String role, InstanceId instanceId, URI electedMember )
+    {
+        console.log("Instance "+instanceId+" was elected as "+role);
+    }
+
+    /**
+     * Logged when an instance is demoted from a role.
+     *
+     * @param role
+     * @param instanceId
+     * @param electedMember
+     */
+    @Override
+    public void unelected( String role, InstanceId instanceId, URI electedMember )
+    {
+        console.log("Instance "+instanceId+" was demoted as "+role);
+    }
+
+    // HA events
+    @Override
+    public void coordinatorIsElected( InstanceId coordinatorId )
+    {
+    }
+
+    /**
+     * Logged when a member becomes available as a role, such as MASTER or SLAVE.
+     *
+     * @param role
+     * @param availableId the role connection information for the new role holder
+     * @param atUri the URI at which the instance is available at
+     */
+    @Override
+    public void memberIsAvailable( String role, InstanceId availableId, URI atUri )
+    {
+        console.log("Instance "+availableId+" is available as "+role+" at "+atUri.toASCIIString());
+    }
+
+    /**
+     * Logged when a member becomes unavailable as a role, such as MASTER or SLAVE.
+     *
+     * @param role The role for which the member is unavailable
+     * @param unavailableId The id of the member which became unavailable for that role
+     */
+    @Override
+    public void memberIsUnavailable( String role, InstanceId unavailableId )
+    {
+        console.log("Instance "+unavailableId+" is unavailable as "+role);
+    }
+
+    /**
+     * Logged when another instance is detected as being failed.
+     *
+     * @param instanceId
+     */
+    @Override
+    public void memberIsFailed( InstanceId instanceId )
+    {
+        console.log("Instance "+instanceId+" has failed");
+    }
+
+    /**
+     * Logged when another instance is detected as being alive again.
+     *
+     * @param instanceId
+     */
+    @Override
+    public void memberIsAlive( InstanceId instanceId )
+    {
+        console.log("Instance "+instanceId+" is alive");
+    }
+
+    // InstanceAccessGuard events
+
+    /**
+     * Logged when users are allowed to access the database for transactions.
+     */
+    @Override
+    public void accessGranted()
+    {
+        console.log( "Database access granted" );
+    }
+
+    /**
+     * Logged when users are not allowed to access the database for transactions.
+     */
+    @Override
+    public void accessDenied()
+    {
+        console.log( "Database access denied" );
+    }
+}
