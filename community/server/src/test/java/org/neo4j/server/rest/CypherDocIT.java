@@ -140,9 +140,8 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( output.containsKey( "message" ) );
         assertTrue( output.containsKey( "exception" ) );
         assertTrue( output.containsKey( "stacktrace" ) );
-        assertEquals( 2, response.split( "CypherTypeException" ).length );
+        assertEquals( 3, response.split( "CypherTypeException" ).length );
     }
-
 
     /**
      * Paths can be returned
