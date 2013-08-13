@@ -7,12 +7,16 @@ consisting of a list of all rows, every row consisting of a list of REST represe
 of the field value -- +Node+, +Relationship+, +Path+ or any simple value like +String+.
 
 [TIP]
-In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever possible in order to let the server cache query plans, see <<rest-api-send-queries-with-parameters>> for details.
+In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever possible in order to let the server cache query plans, see <<rest-api-use-parameters>> for details.
 Also see <<cypher-parameters>> for where parameters can be used.
 
-include::send-queries-with-parameters.asciidoc[]
+include::use-parameters.asciidoc[]
 
 include::create-a-node.asciidoc[]
+
+include::create-a-node-with-multiple-properties.asciidoc[]
+
+include::create-mutiple-nodes-with-properties.asciidoc[]
 
 include::send-a-query.asciidoc[]
 
@@ -24,5 +28,16 @@ include::retrieve-query-metadata.asciidoc[]
 
 //include::profile-a-query.asciidoc[]
 
-include::server-errors.asciidoc[]
+include::errors.asciidoc[]
+
+// not included
+
+//include::array-property.asciidoc[]
+
+//include::nodes-are-represented-as-nodes.asciidoc[]
+
+//include::send-queries-with-errors.asciidoc[]
+
+//include::syntax-errors.asciidoc[]
+
 

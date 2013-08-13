@@ -28,7 +28,6 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.Before;
 import org.junit.Rule;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -43,9 +42,7 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
@@ -72,16 +69,21 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         gen().setGraph( graphdb() );
     }
 
-    protected String doCypherRestCall( String endpoint, String scriptTemplate, Status status,
+    @SafeVarargs
+    public final String doCypherRestCall( String endpoint, String scriptTemplate, Status status,
             Pair<String, String>... params )
     {
-        data.get();
         String parameterString = createParameterString( params );
 
+        return doCypherRestCall( endpoint, scriptTemplate, status, parameterString );
+    }
+
+    public String doCypherRestCall( String endpoint, String scriptTemplate, Status status, String parameterString )
+    {
+        data.get();
 
         String script = createScript( scriptTemplate );
-        String queryString = "{\"query\": \"" + script + "\","
-                             + parameterString + "}";
+        String queryString = "{\"query\": \"" + script + "\",\"params\":{" + parameterString + "}}";
 
         String snippet = org.neo4j.cypher.internal.prettifier.Prettifier$.MODULE$.apply(script);
         gen().expectedStatus( status.getStatusCode() )
@@ -106,16 +108,15 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return data.get().get( name ).getId();
     }
     
-    protected String createParameterString( Pair<String, String>[] params )
+    private String createParameterString( Pair<String, String>[] params )
     {
-        String paramString = "\"params\": {";
+        String paramString = "";
         for ( Pair<String, String> param : params )
         {
-            String delimiter = paramString.endsWith( "{" ) ? "" : ",";
+            String delimiter = paramString.isEmpty() || paramString.endsWith( "{" ) ? "" : ",";
 
             paramString += delimiter + "\"" + param.first() + "\":\"" + param.other() + "\"";
         }
-        paramString += "}";
 
         return paramString;
     }

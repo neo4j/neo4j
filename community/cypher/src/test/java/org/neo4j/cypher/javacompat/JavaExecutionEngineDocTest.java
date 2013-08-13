@@ -137,7 +137,7 @@ public class JavaExecutionEngineDocTest
     {
 // START SNIPPET: JavaQuery
         ExecutionEngine engine = new ExecutionEngine( db );
-        ExecutionResult result = engine.execute( "start n=node(0) where 1=1 return n" );
+        ExecutionResult result = engine.execute( "START n=node(0) WHERE 1=1 RETURN n" );
 
         assertThat( result.columns(), hasItem( "n" ) );
         Iterator<Node> n_column = result.columnAs( "n" );
@@ -153,7 +153,7 @@ public class JavaExecutionEngineDocTest
 
         ExecutionEngine engine = new ExecutionEngine( db );
 
-        ExecutionResult result = engine.execute( "start n=node(0) match n-->friend return collect(friend)" );
+        ExecutionResult result = engine.execute( "START n=node(0) MATCH n-->friend RETURN collect(friend)" );
 
         Iterable<Node> friends = (Iterable<Node>) result.columnAs( "collect(friend)" ).next();
         assertThat( friends, hasItems( andreasNode, johanNode ) );
@@ -188,7 +188,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForNodeId
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "id", 0 );
-        String query = "start n=node({id}) return n.name";
+        String query = "START n=node({id}) RETURN n.name";
         ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeId
 
@@ -204,7 +204,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForMultipleNodeIds
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "id", Arrays.asList( 0, 1, 2 ) );
-        String query = "start n=node({id}) return n.name";
+        String query = "START n=node({id}) RETURN n.name";
         ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterForMultipleNodeIds
 
@@ -225,7 +225,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithStringLiteralAsParameter
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "name", "Johan" );
-        String query = "start n=node(0,1,2) where n.name = {name} return n";
+        String query = "START n=node(0,1,2) WHERE n.name = {name} RETURN n";
         ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithStringLiteralAsParameter
 
@@ -242,7 +242,7 @@ public class JavaExecutionEngineDocTest
             // START SNIPPET: exampleWithParameterForIndexValue
             Map<String, Object> params = new HashMap<String, Object>();
             params.put( "value", "Michaela" );
-            String query = "start n=node:people(name = {value}) return n";
+            String query = "START n=node:people(name = {value}) RETURN n";
             ExecutionResult result = engine.execute( query, params );
             // END SNIPPET: exampleWithParameterForIndexValue
             assertEquals( asList( michaelaNode ), this.<Node>toList( result, "n" ) );
@@ -263,7 +263,7 @@ public class JavaExecutionEngineDocTest
             // START SNIPPET: exampleWithParametersForQuery
             Map<String, Object> params = new HashMap<String, Object>();
             params.put( "query", "name:Andreas" );
-            String query = "start n=node:people({query}) return n";
+            String query = "START n=node:people({query}) RETURN n";
             ExecutionResult result = engine.execute( query, params );
             // END SNIPPET: exampleWithParametersForQuery
             assertEquals( asList( andreasNode ), this.<Node>toList( result, "n" ) );
@@ -281,7 +281,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterForNodeObject
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "node", andreasNode );
-        String query = "start n=node({node}) return n.name";
+        String query = "START n=node({node}) RETURN n.name";
         ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeObject
 
@@ -297,7 +297,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "s", 1 );
         params.put( "l", 1 );
-        String query = "start n=node(0,1,2) return n.name skip {s} limit {l}";
+        String query = "START n=node(0,1,2) RETURN n.name SKIP {s} LIMIT {l}";
         ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterForSkipLimit
 
@@ -313,7 +313,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterRegularExpression
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "regex", ".*h.*" );
-        String query = "start n=node(0,1,2) where n.name =~ {regex} return n.name";
+        String query = "START n=node(0,1,2) WHERE n.name =~ {regex} RETURN n.name";
         ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterRegularExpression
         dumpToFile( "exampleWithParameterRegularExpression", query, params );
@@ -334,7 +334,7 @@ public class JavaExecutionEngineDocTest
 
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", props );
-        String query = "create ({props})";
+        String query = "CREATE ({props})";
         engine.execute( query, params );
         // END SNIPPET: create_node_from_map
         dumpToFile( "create_node_from_map", query, params );
@@ -350,21 +350,29 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> n1 = new HashMap<String, Object>();
         n1.put( "name", "Andres" );
         n1.put( "position", "Developer" );
+        n1.put( "awesome", true );
 
         Map<String, Object> n2 = new HashMap<String, Object>();
         n2.put( "name", "Michael" );
         n2.put( "position", "Developer" );
+        n2.put( "children", 3 );
 
         Map<String, Object> params = new HashMap<String, Object>();
         List<Map<String, Object>> maps = Arrays.asList( n1, n2 );
         params.put( "props", maps );
-        String query = "create (n {props}) return n";
+        String query = "CREATE (n:Person {props}) RETURN n";
         engine.execute( query, params );
         // END SNIPPET: create_multiple_nodes_from_map
         dumpToFile( "create_multiple_nodes_from_map", query, params );
 
-        ExecutionResult result = engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
+        ExecutionResult result = engine.execute( "match n:Person where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
         assertThat( count( result ), is( 2 ) );
+
+        result = engine.execute( "match n:Person where n.children = 3 return n" );
+        assertThat( count( result ), is( 1 ) );
+
+        result = engine.execute( "match n:Person where n.awesome = true return n" );
+        assertThat( count( result ), is( 1 ) );
     }
 
     @Test
@@ -383,7 +391,7 @@ public class JavaExecutionEngineDocTest
         // END SNIPPET: set_properties_on_a_node_from_a_map
         dumpToFile( "set_properties_on_a_node_from_a_map", query, params );
 
-        ExecutionResult result = engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
+        engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
         assertThat( michaelaNode.getProperty( "name" ).toString(), is( "Andres" ) );
     }
 
@@ -397,7 +405,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", props );
 
-        String query = "start n=node(0) create unique p = n-[:REL]->({props}) return last(p) as X";
+        String query = "START n=node(0) CREATE UNIQUE p = n-[:REL]->({props}) RETURN last(p) AS X";
         ExecutionResult result = engine.execute( query, params );
         assertThat( count( result ), is( 1 ) );
     }
@@ -417,7 +425,7 @@ public class JavaExecutionEngineDocTest
         params.put( "props1", props1 );
         params.put( "props2", props2 );
 
-        String query = "start n=node(0) create unique p = n-[:REL]->({props1})-[:LER]->({props2}) return p";
+        String query = "START n=node(0) CREATE UNIQUE p = n-[:REL]->({props1})-[:LER]->({props2}) RETURN p";
         ExecutionResult result = engine.execute( query, params );
         assertThat( count( result ), is( 1 ) );
     }
