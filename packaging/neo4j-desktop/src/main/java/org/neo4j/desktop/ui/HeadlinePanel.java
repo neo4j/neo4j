@@ -20,11 +20,9 @@
 package org.neo4j.desktop.ui;
 
 import java.awt.FlowLayout;
-
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
 
 import static javax.swing.BoxLayout.Y_AXIS;
 
@@ -36,7 +34,6 @@ public class HeadlinePanel extends JPanel
     {
         super();
         this.setLayout( new BoxLayout( this, Y_AXIS ) );
-        this.add( new JSeparator() );
         JPanel labelPanel = new JPanel();
         labelPanel.setLayout( new FlowLayout() );
         labelPanel.add( new JLabel( headline ) );
