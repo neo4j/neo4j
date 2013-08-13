@@ -383,10 +383,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
     protected void tryToFinishOffChannel( Channel channel )
     {
         Pair<RequestContext, AtomicLong> slave = null;
-        synchronized ( connectedSlaveChannels )
-        {
-            slave = connectedSlaveChannels.remove( channel );
-        }
+        slave = unmapSlave( channel );
         if ( slave == null )
         {
             return;
@@ -399,7 +396,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
         try
         {
             finishOffChannel( channel, slave );
-            unmapSlave( channel, slave );
+            unmapSlave( channel );
         }
         catch ( Throwable failure ) // Unknown error trying to finish off the tx
         {
@@ -704,11 +701,11 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
         return ChannelBuffers.dynamicBuffer();
     }
 
-    protected void unmapSlave( Channel channel, RequestContext slave )
+    protected Pair<RequestContext, AtomicLong> unmapSlave( Channel channel )
     {
         synchronized ( connectedSlaveChannels )
         {
-            connectedSlaveChannels.remove( channel );
+            return connectedSlaveChannels.remove( channel );
         }
     }
 

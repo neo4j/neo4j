@@ -307,7 +307,6 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
         public void setHighId( long id )
         {
-            // TODO Check for if it's lower than what I have?
             this.highestIdInUse = Math.max( this.highestIdInUse, id );
         }
 
