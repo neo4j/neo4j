@@ -91,10 +91,7 @@ public class MainWindow
     public MainWindow( final DatabaseActions databaseActions, Environment environment, DesktopModel model )
     {
         this.model = model;
-        // This is here only for debugging, comment out the line below to see system out
-//        debugWindow = new SystemOutDebugWindow();
-        model.setPrintStackTraces( debugWindow != null );
-
+        this.debugWindow = new SystemOutDebugWindow();
         this.environment = environment;
         this.databaseActions = databaseActions;
 
@@ -294,7 +291,7 @@ public class MainWindow
             @Override
             public void mouseClicked( MouseEvent e )
             {
-                if ( e.getButton() == MouseEvent.BUTTON1 && debugWindow != null &&  e.isAltDown() )
+                if ( MouseEvent.BUTTON1 == e.getButton() && e.isAltDown() )
                 {
                     debugWindow.show();
                 }
@@ -496,13 +493,5 @@ public class MainWindow
             panel.add( component );
         }
         return panel;
-    }
-
-    private class UnsuitableGraphDatabaseDirectory extends Exception
-    {
-        UnsuitableGraphDatabaseDirectory( String message, File dir )
-        {
-            super( format( message, dir.getAbsolutePath() ) );
-        }
     }
 }

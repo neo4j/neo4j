@@ -10,7 +10,6 @@ public class DesktopModel
 {
     private File databaseDirectory;
     private final Value<List<String>> extensionPackagesConfig;
-    private boolean printStackTraces = false;
 
     public DesktopModel( Value<List<String>> extensionPackagesConfig )
     {
@@ -36,10 +35,7 @@ public class DesktopModel
         }
         catch ( URISyntaxException e )
         {
-            if ( printStackTraces )
-            {
-                e.printStackTrace( System.out );
-            }
+            e.printStackTrace( System.out );
         }
         return null;
     }
@@ -63,15 +59,5 @@ public class DesktopModel
     public File getDatabaseConfigurationFile()
     {
         return new File( databaseDirectory, "neo4j.properties" );
-    }
-
-    public boolean printStackTraces()
-    {
-        return printStackTraces;
-    }
-
-    public void setPrintStackTraces( boolean printStackTraces )
-    {
-        this.printStackTraces = printStackTraces;
     }
 }
