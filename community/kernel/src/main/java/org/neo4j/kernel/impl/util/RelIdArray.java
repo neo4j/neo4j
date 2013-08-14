@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static java.lang.System.arraycopy;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
-
-import static java.lang.System.arraycopy;
-
-import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
 public class RelIdArray implements SizeOfObject
 {
@@ -469,10 +468,11 @@ public class RelIdArray implements SizeOfObject
         }
         
         @Override
-        protected void extendArrayTo( int numberOfItemsToCopy, int newLength )
+        protected void extendArrayTo( int length, int newCapacity )
         {
-            int[] newIds = new int[newLength];
-            arraycopy( ids, 0, newIds, 0, numberOfItemsToCopy+1 );
+            int finalSize = newCapacity + 1; // for storing length as ids[0]
+            int[] newIds = new int[finalSize];
+            arraycopy( ids, 0, newIds, 0, length+1 );
             ids = newIds;
         }
         
@@ -575,14 +575,15 @@ public class RelIdArray implements SizeOfObject
             copy.highBits = Arrays.copyOf( highBits, itemsToCopy );
             return copy;
         }
-        
+
         @Override
-        protected void extendArrayTo( int numberOfItemsToCopy, int newLength )
+        protected void extendArrayTo( int length, int newCapacity )
         {
-            int[] newIds = new int[newLength];
-            byte[] newHighBits = new byte[newLength];
-            arraycopy( ids, 0, newIds, 0, numberOfItemsToCopy+1 );
-            arraycopy( highBits, 0, newHighBits, 0, numberOfItemsToCopy+1 );
+            int finalSize = newCapacity + 1; // to keep the length info as ids[0]
+            int[] newIds = new int[finalSize];
+            byte[] newHighBits = new byte[finalSize];
+            arraycopy( ids, 0, newIds, 0, length+1 );
+            arraycopy( highBits, 0, newHighBits, 0, length+1 );
             ids = newIds;
             highBits = newHighBits;
         }
@@ -865,8 +866,8 @@ public class RelIdArray implements SizeOfObject
 
     /**
      * Optimization in the lazy loading of relationships for a node.
-     * {@link RelIdIterator#updateSource(RelIdArray)} is only called if
-     * this returns true, i.e if a {@link RelIdArray} or {@link IdBlock} might have
+     * {@link RelIdIterator#updateSource(RelIdArray, org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper)}
+     * is only called if this returns true, i.e if a {@link RelIdArray} or {@link IdBlock} might have
      * gotten upgraded to handle f.ex loops or high id ranges so that the
      * {@link RelIdIterator} gets updated accordingly.
      */

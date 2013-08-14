@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.BOTH;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.INCOMING;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,14 +39,6 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.BOTH;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.INCOMING;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
 
 // TODO Add some tests for loops, i.e. add with direction BOTH.
 public class TestRelIdArray
@@ -162,6 +162,16 @@ public class TestRelIdArray
 
         // THEN
         assertEquals( "Should see the added id after depleting two IdBlocks", asSet( 1L ), deplete( iterator ) );
+    }
+
+    @Test
+    public void shouldAcceptAddsAfterAddAllInSameDirection() throws Exception
+    {
+        RelIdArray arrayTo = RelIdArray.empty( 1 );
+        RelIdArray arrayFrom = RelIdArray.empty( 1 );
+        arrayFrom.add( 1, DirectionWrapper.INCOMING );
+        arrayTo.addAll( arrayFrom );
+        arrayTo.add( 2, DirectionWrapper.INCOMING );
     }
 
     private Set<Long> deplete( RelIdIterator iterator )
