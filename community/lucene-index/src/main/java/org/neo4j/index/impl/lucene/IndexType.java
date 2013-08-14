@@ -336,6 +336,7 @@ abstract class IndexType
         {
             field = new Field( key, value.toString(), Store.YES, analyzed );
         }
+        field.setOmitNorms( true );
         return field;
     }
     
