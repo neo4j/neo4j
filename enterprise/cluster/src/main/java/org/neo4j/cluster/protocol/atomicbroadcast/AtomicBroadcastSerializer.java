@@ -38,15 +38,14 @@ public class AtomicBroadcastSerializer
         oout.writeObject( value );
         oout.close();
         byte[] bytes = bout.toByteArray();
-        Payload payload = new Payload( bytes, bytes.length );
-        return payload;
+        return new Payload( bytes, bytes.length );
     }
 
     public Object receive( Payload payload )
         throws IOException, ClassNotFoundException
     {
         ByteArrayInputStream in = new ByteArrayInputStream( payload.getBuf(), 0, payload.getLen() );
-        ObjectInputStream oin = new ObjectInputStream( in );
+        ObjectInputStream oin = new LenientObjectInputStream( in, new VersionMapper() );
         return oin.readObject();
     }
 }
