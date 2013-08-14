@@ -35,6 +35,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
@@ -206,6 +207,52 @@ public class GlobalGraphOperations
         }
     }
 
+    /**
+     * Returns all {@link Node nodes} with a specific {@link propertyKeyRegx) and {@link propertyValueRegx).
+     * If you call this operation outside of a transaction, please take care that the returned 
+     * {@link ResourceIterable} is closed correctly to avoid potential blocking of write operations.
+
+     * @param {@link propertyKeyRegx) the property key regx for properties that returned nodes are guaranteed to matches
+     * @param {@link propertyValueRegx) the property value regx for properties that returned nodes are guaranteed to matches
+     * @return {@link Iterable} containing nodes with match the given property key regx and property value regx
+     */
+    public ResourceIterable<Node> getAllNodesWithPropertyKeyValueRegx( final String propertyKeyRegx , final String propertyValueRegx )//rafzalan
+    {
+      assertInTransaction();
+        return new ResourceIterable<Node>()
+        {
+            @Override
+            public ResourceIterator<Node> iterator()
+            {
+                return allNodesWithPropertyKeyValueRegx( propertyKeyRegx , propertyValueRegx );
+            }
+        };
+    }
+
+    private ResourceIterator<Node> allNodesWithPropertyKeyValueRegx( String propertyKeyRegx , String propertyValueRegx )//rafzalan
+    {
+        StatementOperationParts context = statementCtxProvider.getCtxForReading();
+        StatementState state = statementCtxProvider.statementForReading();
+        try
+        {
+            final PrimitiveLongIterator nodeIds = context.entityReadOperations().nodesGetForPropertyKeyValueRegx( state, propertyKeyRegx , propertyValueRegx );
+            return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
+            {
+                @Override
+                public Node apply( long nodeId )
+                {
+                    return nodeManager.getNodeById( nodeId );
+                }
+            }, nodeIds ), state );
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            // Pattern Syntax Error
+            state.close();
+            return emptyIterator();
+        }
+    }
+    
     private void assertInTransaction()
     {
         statementCtxProvider.assertInTransaction();

@@ -229,6 +229,11 @@ public class StatementOperationParts
                 return keyWriteOperations.propertyKeyGetOrCreateForName( state, propertyKeyName );
             }
             @Override
+            public PrimitiveLongIterator nodesGetForPropertyKeyValueRegx( StatementState state, String propertyKeyRegx , String propertyValueRegx ) throws PropertyKeyNotFoundException
+            {
+                return entityReadOperations.nodesGetForPropertyKeyValueRegx( state, propertyKeyRegx, propertyValueRegx );
+            }
+            @Override
             public PrimitiveLongIterator nodesGetForLabel( StatementState state, long labelId )
             {
                 return entityReadOperations.nodesGetForLabel( state, labelId );

@@ -152,6 +152,28 @@ public class StoreStatementOperationsTest
     }
 
     @Test
+    public void should_filter_all_properties() throws Exception//rafzalan
+    {
+       // GIVEN
+        Transaction tx = db.beginTx();
+        Node node1 = db.createNode();
+        node1.setProperty( "myproperty", "42i am string" );
+        Node node2 = db.createNode();
+        node2.setProperty( "myproperty", "22i am string" );
+        Node node3 = db.createNode();
+        node3.setProperty( "y", "4ing" );
+        node3.setProperty( "yproperty", "12i am string" );
+        node3.setProperty( "operty", "ing" );
+        node3.setProperty( "my", 454123 );
+        tx.success();
+        tx.finish();
+        // when
+        PrimitiveLongIterator itNodesForPropertyKeyValueRegx = statement.nodesGetForPropertyKeyValueRegx( state , "m.*" , "4.*") ;
+         //then
+        assertEquals( asSet( node1.getId(), node3.getId() ), IteratorUtil.asSet( itNodesForPropertyKeyValueRegx ) );
+    }
+    
+    @Test
     public void should_get_all_node_properties() throws Exception
     {
         // GIVEN

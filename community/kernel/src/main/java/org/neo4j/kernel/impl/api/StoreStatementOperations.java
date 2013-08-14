@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.util.regex.PatternSyntaxException;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
@@ -459,6 +462,77 @@ public class StoreStatementOperations implements
         }
     }
 
+    @Override
+    public PrimitiveLongIterator nodesGetForPropertyKeyValueRegx( StatementState state, String propertyKeyRegx , String propertyValueRegx) throws PropertyKeyNotFoundException//rafzalan
+    {
+        try
+        {
+          final Iterable<Integer> filteredIDs = propertyKeyTokenHolder.filterIdsByNameRegx( propertyKeyRegx );  
+          final NodeStore nodeStore = neoStore.getNodeStore();
+          final long highestId = nodeStore.getHighestPossibleIdInUse();
+          final Pattern p = Pattern.compile( propertyValueRegx );
+          return new AbstractPrimitiveLongIterator()
+          {
+              private long id = 0;
+              {
+                computeNext();
+              }
+              Matcher m = null;
+              @Override
+              protected void computeNext()
+              {
+                  while ( id <= highestId )
+                  {
+                      NodeRecord node = nodeStore.forceGetRecord( id++ );
+                      if ( node.inUse() )
+                      {
+                          Iterator<Property> irP  = null;
+                          Long nodeId = node.getId();
+                          irP = loadAllPropertiesOf( nodeStore.getRecord( nodeId ) );
+                          while (irP.hasNext())
+                          {
+                              Property prop = irP.next();
+                              Iterator<Integer> iroFilteredIDs = filteredIDs.iterator();
+                              while (iroFilteredIDs.hasNext())
+                              {
+                                  if(prop.propertyKeyId() == iroFilteredIDs.next())
+                                  {
+                                    Object obValue = null;
+                                    try
+                                    {
+                                      obValue = prop.value();
+                                    }
+                                    catch (PropertyNotFoundException e )
+                                    {
+                                      
+                                    }
+                                    String stValue = obValue.toString();
+                                    m = p.matcher(stValue);
+                                    if(m.matches())
+                                    {
+                                       nextValue = nodeId;
+                                       hasNext = true;
+                                       return;
+                                    }
+                                  }
+                              }
+                          }
+                      }
+                  }
+                  hasNext = false;
+              }
+          };
+        }
+        catch( TokenNotFoundException e )
+        {
+          throw new PropertyKeyNotFoundException( propertyKeyRegx, e );
+        }
+        catch( PatternSyntaxException e )
+        {
+          throw new PropertyKeyNotFoundException( e.getPattern(), e );
+        }
+    }
+    
     @Override
     public String propertyKeyGetName( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {

@@ -25,8 +25,9 @@ define(
    "./RelationshipSearcher",
    "./RelationshipsForNodeSearcher",
    "./RelationshipIndexSearcher",
+   "./AllNodesAllPropsREGXValueSearcher",
    "./CypherSearcher"], 
-  (UrlSearcher, NodeSearcher, NodeIndexSearcher, RelationshipSearcher, RelationshipsForNodeSearcher, RelationshipIndexSearcher, CypherSearcher) ->
+  (UrlSearcher, NodeSearcher, NodeIndexSearcher, RelationshipSearcher, RelationshipsForNodeSearcher, RelationshipIndexSearcher, AllNodesAllPropsREGXValueSearcher, CypherSearcher) ->
 
     class Search
 
@@ -39,6 +40,7 @@ define(
           new RelationshipSearcher(server)
           new RelationshipsForNodeSearcher(server)        
           new RelationshipIndexSearcher(server)
+          new AllNodesAllPropsREGXValueSearcher(server)
           new CypherSearcher(server)
         ]
       
