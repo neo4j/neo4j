@@ -682,6 +682,23 @@ public class TestBatchInsert
 
         inserter.shutdown();
     }
+    
+    @Test
+    public void shouldCorrectlyJudgeRelationshipType()
+    {
+        // GIVEN
+        GraphDatabaseService database = newBatchGraphDatabase();
+        DynamicRelationshipType type = DynamicRelationshipType.withName( "TEST" );
+        long relationshipId = database.createNode().createRelationshipTo( database.createNode(), type ).getId();
+
+        // WHEN restarting (guaranteeing new RelationshipType instances internally)
+        database.shutdown();
+        database = newBatchGraphDatabase();
+        Relationship relationship = database.getRelationshipById( relationshipId );
+
+        // THEN
+        assertTrue( "Relationship#isType returned false for the correct type", relationship.isType( type ) );
+    }
 
     private void setAndGet( BatchInserter inserter, Object value )
     {
