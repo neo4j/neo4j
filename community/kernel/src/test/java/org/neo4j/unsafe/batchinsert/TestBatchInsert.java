@@ -49,6 +49,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
@@ -681,7 +682,42 @@ public class TestBatchInsert
         tx.finish();
         db.shutdown();
     }
+    
+    @Test
+    public void batchDbShouldBeAbleToSetPropertyOnNodeWithNoProperties()
+    {
+        // GIVEN
+        GraphDatabaseService database = newBatchGraphDatabase();
+        Node node = database.createNode();
+        database.shutdown();
+        database = newBatchGraphDatabase();
+        node = database.getNodeById( node.getId() );
+        
+        // WHEN
+        node.setProperty( "test", "test" );
+        
+        // THEN
+        assertEquals( "test", node.getProperty( "test" ) );
+    }
 
+    @Test
+    public void batchDbShouldBeAbleToSetPropertyOnRelationshipWithNoProperties()
+    {
+        // GIVEN
+        GraphDatabaseService database = newBatchGraphDatabase();
+        Relationship relationship = database.createNode().createRelationshipTo(
+                database.createNode(), MyRelTypes.TEST );
+        database.shutdown();
+        database = newBatchGraphDatabase();
+        relationship = database.getRelationshipById( relationship.getId() );
+        
+        // WHEN
+        relationship.setProperty( "test", "test" );
+        
+        // THEN
+        assertEquals( "test", relationship.getProperty( "test" ) );
+    }
+    
     @Test
     public void messagesLogGetsClosed() throws Exception
     {
