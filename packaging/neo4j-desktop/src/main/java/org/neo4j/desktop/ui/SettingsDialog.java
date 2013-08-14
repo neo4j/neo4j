@@ -10,23 +10,28 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ListModel;
 
 import org.neo4j.desktop.config.Environment;
 
-import static javax.swing.BoxLayout.X_AXIS;
+import static java.lang.String.format;
 import static javax.swing.BoxLayout.Y_AXIS;
 
+import static org.neo4j.desktop.ui.Components.createHorizontalSpacing;
 import static org.neo4j.desktop.ui.Components.createPanel;
+import static org.neo4j.desktop.ui.Components.createSpacingBorder;
 import static org.neo4j.desktop.ui.Components.createTextButton;
 import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
 import static org.neo4j.desktop.ui.Components.createVerticalSpacing;
 import static org.neo4j.desktop.ui.Components.ellipsis;
+import static org.neo4j.desktop.ui.Components.withBorder;
 import static org.neo4j.desktop.ui.Components.withBoxLayout;
 import static org.neo4j.desktop.ui.Components.withFlowLayout;
 import static org.neo4j.desktop.ui.Components.withSpacingBorder;
@@ -71,7 +76,7 @@ class SettingsDialog extends JDialog
     private Component createEditConfigPanel( JButton configurationButton )
     {
         String configFilePath = model.getDatabaseConfigurationFile().getAbsolutePath();
-        return withFlowLayout( withTitledBorder( "Configuration",
+        return withFlowLayout( withTitledBorder( "Database Configuration",
             createPanel( createUnmodifiableTextField( configFilePath ), configurationButton ) ) );
     }
 
@@ -80,57 +85,61 @@ class SettingsDialog extends JDialog
         File vmOptionsFile = model.getVmOptionsFile();
         String vmOptionsPath = vmOptionsFile == null ? "" : vmOptionsFile.getAbsolutePath();
 
-        return withFlowLayout( withTitledBorder( "VM Options",
-            createPanel( createUnmodifiableTextField( vmOptionsPath ), editVmOptionsButton ) ) );
+        return withFlowLayout( withTitledBorder( "Java VM Options",
+                createPanel( createUnmodifiableTextField( vmOptionsPath ), editVmOptionsButton ) ) );
     }
 
     private JPanel createExtensionsPanel()
     {
         // Extensions packages config
-        final DefaultComboBoxModel<String> extensionPackagesModel =
-                new DefaultComboBoxModel<>( model.getExtensionPackagesConfigAsArray() );
-        final JComboBox<String> extensionPackages = new JComboBox<>( extensionPackagesModel );
-        JButton addPackageButton = createTextButton( "+", new ActionListener()
+        final DefaultListModel<String> packageListModel = new DefaultListModel<>();
+        for ( String packageName : model.getExtensionPackagesConfig() )
         {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                String newPackage = JOptionPane.showInputDialog( "Package containing extension(s) to include" );
-                if ( newPackage != null )
+            packageListModel.addElement( packageName );
+        }
+
+        final JList<String> packageList = new JList<>( packageListModel );
+        JPanel packageListButtons = withBoxLayout( BoxLayout.Y_AXIS, createPanel(
+                createTextButton( "+", new ActionListener()
                 {
-                    extensionPackagesModel.addElement( newPackage );
-                    model.setExtensionPackagesConfig( itemsAsList( extensionPackagesModel ) );
-                }
-            }
-        } );
-        JButton removePackageButton = createTextButton( "-", new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                int selectedIndex = extensionPackages.getSelectedIndex();
-                if ( selectedIndex != -1 )
+                    @Override
+                    public void actionPerformed( ActionEvent e )
+                    {
+                        String newPackage = JOptionPane.showInputDialog( "Package containing extension(s) to include" );
+                        if ( newPackage != null )
+                        {
+                            packageListModel.addElement( newPackage );
+                            model.setExtensionPackagesConfig( itemsAsList( packageListModel ) );
+                        }
+                    }
+                } ),
+                createTextButton( "-", new ActionListener()
                 {
-                    extensionPackagesModel.removeElementAt( selectedIndex );
-                    model.setExtensionPackagesConfig( itemsAsList( extensionPackagesModel ) );
-                }
-            }
-        } );
-        JPanel packagesPanel = new JPanel();
-        packagesPanel.setLayout( new BoxLayout( packagesPanel, Y_AXIS ) );
-        packagesPanel.setBorder( BorderFactory.createTitledBorder( "Server Extensions" ) );
-        packagesPanel.add( new HeadlinePanel( "Extension packages for " +
-                environment.getExtensionsDirectory().getAbsolutePath() + ")" ) );
-        JPanel packagesComponentsPanel = new JPanel();
-        packagesComponentsPanel.setLayout( new BoxLayout( packagesComponentsPanel, X_AXIS ) );
-        packagesComponentsPanel.add( extensionPackages );
-        packagesComponentsPanel.add( addPackageButton );
-        packagesComponentsPanel.add( removePackageButton );
-        packagesPanel.add( packagesComponentsPanel );
-        return packagesPanel;
+                    @Override
+                    public void actionPerformed( ActionEvent e )
+                    {
+                        int selectedIndex = packageList.getSelectedIndex();
+                        if ( selectedIndex != -1 )
+                        {
+                            packageListModel.removeElementAt( selectedIndex );
+                            model.setExtensionPackagesConfig( itemsAsList( packageListModel ) );
+                        }
+                    }
+                } )
+        ) );
+
+        return withBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(
+                    format( "Server Extensions (at %s)", environment.getExtensionsDirectory().getAbsolutePath() ) ),
+                    createSpacingBorder( 2 ) ),
+            withBoxLayout( BoxLayout.X_AXIS, createPanel(
+                new JScrollPane( packageList ), createHorizontalSpacing(), packageListButtons ) ) );
     }
 
-    private List<String> itemsAsList( DefaultComboBoxModel<String> model )
+
+
+    private List<String> itemsAsList( ListModel<String> model )
     {
         List<String> list = new ArrayList<>( model.getSize() );
         for ( int i = 0; i < model.getSize(); i++ )

@@ -32,6 +32,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.border.Border;
 
 import static java.awt.font.TextAttribute.UNDERLINE;
 import static java.awt.font.TextAttribute.UNDERLINE_ON;
@@ -40,6 +41,9 @@ import static java.lang.String.format;
 @SuppressWarnings("MagicConstant")
 public class Components
 {
+    public static final int BASE_SPACING_SIZE = 5;
+    public static final int DEFAULT_TEXT_COLUMNS = 35;
+
     private Components()
     {
     }
@@ -83,8 +87,19 @@ public class Components
 
     static JPanel withSpacingBorder( JPanel panel )
     {
-        panel.setBorder( BorderFactory.createEmptyBorder( 5, 5, 5, 5 ) );
+        return withBorder( createSpacingBorder( 1 ), panel );
+    }
+
+    static JPanel withBorder( Border border, JPanel panel )
+    {
+        panel.setBorder( border );
         return panel;
+    }
+
+    static Border createSpacingBorder( int size )
+    {
+        int inset = BASE_SPACING_SIZE * size;
+        return BorderFactory.createEmptyBorder( inset, inset, inset, inset );
     }
 
     static JPanel withTitledBorder( String title, JPanel panel )
@@ -93,15 +108,19 @@ public class Components
         return panel;
     }
 
-    static Component createVerticalSpacing()
+    static Component createHorizontalSpacing()
     {
-        return Box.createVerticalStrut( 5 );
+        return Box.createHorizontalStrut( BASE_SPACING_SIZE );
     }
 
+    static Component createVerticalSpacing()
+    {
+        return Box.createVerticalStrut( BASE_SPACING_SIZE );
+    }
 
     static JTextField createUnmodifiableTextField( String text )
     {
-        JTextField textField = new JTextField( text, 35 );
+        JTextField textField = new JTextField( text, DEFAULT_TEXT_COLUMNS );
         textField.setEditable( false );
         return textField;
     }

@@ -47,12 +47,6 @@ public class DesktopModel
         return extensionPackagesConfig.get();
     }
 
-    public String[] getExtensionPackagesConfigAsArray()
-    {
-        List<String> list = getExtensionPackagesConfig();
-        return list.toArray( new String[list.size()] );
-    }
-
     public void setExtensionPackagesConfig( List<String> value )
     {
         extensionPackagesConfig.set( value );
