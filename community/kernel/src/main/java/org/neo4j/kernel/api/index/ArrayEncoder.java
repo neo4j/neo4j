@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.lang.reflect.Array;
 
+import org.neo4j.kernel.impl.util.Charsets;
 import sun.misc.BASE64Encoder;
 
 public class ArrayEncoder
@@ -54,7 +55,7 @@ public class ArrayEncoder
             {
                 type = "L";
                 String str = o.toString();
-                builder.append( base64Encoder.encode( str.getBytes() ) );
+                builder.append( base64Encoder.encode( str.getBytes( Charsets.UTF_8 ) ) );
             }
             builder.append( "|" );
         }

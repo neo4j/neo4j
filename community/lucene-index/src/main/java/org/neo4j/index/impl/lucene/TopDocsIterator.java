@@ -50,15 +50,14 @@ class TopDocsIterator extends AbstractIndexHits<Document>
     private TopDocs toTopDocs( Query query, QueryContext context, IndexSearcher searcher ) throws IOException
     {
         Sort sorting = context != null ? context.getSorting() : null;
-        TopDocs topDocs = null;
+        TopDocs topDocs;
         if ( sorting == null && context != null )
         {
             topDocs = searcher.search( query, context.getTop() );
         }
         else
         {
-            boolean forceScore = context == null || !context.getTradeCorrectnessForSpeed();
-            if ( forceScore )
+            if ( context == null || !context.getTradeCorrectnessForSpeed() )
             {
                 TopFieldCollector collector = LuceneDataSource.scoringCollector( sorting, context.getTop() );
                 searcher.search( query, collector );

@@ -165,7 +165,7 @@ public class OutputFormat
                 {
                     if ( e instanceof NodeNotFoundException || e instanceof RelationshipNotFoundException )
                     {
-                        new WebApplicationException( notFound( e ) );
+                        throw new WebApplicationException( notFound( e ) );
                     }
                     if ( e instanceof BadInputException )
                     {
