@@ -19,35 +19,78 @@
  */
 package org.neo4j.desktop.ui;
 
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Image;
+import java.awt.LayoutManager;
 import java.awt.event.ActionListener;
-import java.io.IOException;
 import java.util.Map;
-import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JPanel;
 
 import static java.awt.font.TextAttribute.UNDERLINE;
 import static java.awt.font.TextAttribute.UNDERLINE_ON;
 import static java.lang.String.format;
 
-public class SwingHelper
+public class Components
 {
-    public static Image loadImage( String resource )
-    {
-        try
-        {
-            return ImageIO.read( SwingHelper.class.getResource( resource ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-    
-    private SwingHelper()
+    private Components()
     {
     }
+
+    static JPanel createPanel( Component... components )
+    {
+        JPanel panel = new JPanel();
+        for ( Component component : components )
+        {
+            panel.add( component );
+        }
+        return panel;
+    }
+
+    static JPanel withBackground( Color color, JPanel panel )
+    {
+        panel.setBackground( color );
+        return panel;
+    }
+
+    static JPanel withLayout( LayoutManager layout, JPanel panel )
+    {
+        panel.setLayout( layout );
+        return panel;
+    }
+
+    static JPanel withBoxLayout( int axis, JPanel panel )
+    {
+        return withLayout( new BoxLayout( panel, axis ), panel );
+    }
+
+    static JPanel withFlowLayout( int alignment, JPanel panel )
+    {
+        return withLayout( new FlowLayout( alignment ), panel );
+    }
+
+    static JPanel withSpacingBorder( JPanel panel )
+    {
+        panel.setBorder( BorderFactory.createEmptyBorder( 5, 5, 5, 5 ) );
+        return panel;
+    }
+
+    static JPanel withTitledBorder( String title, JPanel panel )
+    {
+        panel.setBorder( BorderFactory.createTitledBorder( title ) );
+        return panel;
+    }
+
+    static Component createVerticalSpacing()
+    {
+        return Box.createVerticalStrut( 5 );
+    }
+
 
     static JButton buttonWithText( String text, ActionListener actionListener )
     {

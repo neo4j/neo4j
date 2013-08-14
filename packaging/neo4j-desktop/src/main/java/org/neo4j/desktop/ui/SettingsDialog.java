@@ -25,8 +25,8 @@ import org.neo4j.desktop.config.Environment;
 import static javax.swing.BoxLayout.X_AXIS;
 import static javax.swing.BoxLayout.Y_AXIS;
 
-import static org.neo4j.desktop.ui.SwingHelper.buttonWithText;
-import static org.neo4j.desktop.ui.SwingHelper.elipsis;
+import static org.neo4j.desktop.ui.Components.buttonWithText;
+import static org.neo4j.desktop.ui.Components.elipsis;
 
 class SettingsDialog extends JDialog
 {
@@ -156,7 +156,7 @@ class SettingsDialog extends JDialog
 
     private JButton initEditDatabaseConfigurationButton()
     {
-        return SwingHelper.buttonWithText( elipsis( "Edit" ), new EditFileActionListener( this, environment )
+        return Components.buttonWithText( elipsis( "Edit" ), new EditFileActionListener( this, environment )
         {
             @Override
             protected File getFile()
@@ -168,7 +168,7 @@ class SettingsDialog extends JDialog
 
     private JButton initEditVmOptionsButton()
     {
-        return SwingHelper.buttonWithText( elipsis( "Edit" ), new EditFileActionListener( this, environment )
+        return Components.buttonWithText( elipsis( "Edit" ), new EditFileActionListener( this, environment )
         {
             @Override
             protected File getFile()

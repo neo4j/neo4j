@@ -11,8 +11,9 @@ public class DesktopModel
     private File databaseDirectory;
     private final Value<List<String>> extensionPackagesConfig;
 
-    public DesktopModel( Value<List<String>> extensionPackagesConfig )
+    public DesktopModel( File databaseDirectory, Value<List<String>> extensionPackagesConfig )
     {
+        this.databaseDirectory = databaseDirectory;
         this.extensionPackagesConfig = extensionPackagesConfig;
     }
 
@@ -21,8 +22,9 @@ public class DesktopModel
         return databaseDirectory;
     }
 
-    public void setDatabaseDirectory( File databaseDirectory )
+    public void setDatabaseDirectory( File databaseDirectory ) throws UnsuitableGraphDatabaseDirectory
     {
+        verifyGraphDirectory( databaseDirectory );
         this.databaseDirectory = databaseDirectory;
     }
 
@@ -59,5 +61,35 @@ public class DesktopModel
     public File getDatabaseConfigurationFile()
     {
         return new File( databaseDirectory, "neo4j.properties" );
+    }
+
+    private void verifyGraphDirectory( File dir ) throws UnsuitableGraphDatabaseDirectory
+    {
+        if ( !dir.isDirectory() )
+        {
+            throw new UnsuitableGraphDatabaseDirectory( "%s is not a directory", dir );
+        }
+
+        if ( !dir.canWrite() )
+        {
+            throw new UnsuitableGraphDatabaseDirectory( "%s is not writeable", dir );
+        }
+
+        String[] fileNames = dir.list();
+        if ( 0 == fileNames.length )
+        {
+            return;
+        }
+
+        for ( String fileName : fileNames )
+        {
+            if ( fileName.startsWith( "neostore" ) )
+            {
+                return;
+            }
+        }
+
+        throw new UnsuitableGraphDatabaseDirectory(
+                "%s is neither empty nor does it contain a neo4j graph database", dir );
     }
 }
