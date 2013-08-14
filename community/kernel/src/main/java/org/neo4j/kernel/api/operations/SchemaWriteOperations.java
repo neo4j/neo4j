@@ -32,22 +32,14 @@ public interface SchemaWriteOperations
      */
     IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId ) throws SchemaKernelException;
 
-    /**
-     * Creates an index for use with a uniqueness constraint. The index indexes properties with the given
-     * {@code propertyKeyId} for nodes with the given {@code labelId}, and assumes that the database provides it with
-     * unique property values. If unique property values are not provided by the database, the index will notify
-     * through an exception and enter a "bad state". (This notification facility is used during the verification phase
-     * of uniqueness constraint creation).
-     *
-     * This method is not used from the outside. It is used internally when
-     * {@link #uniquenessConstraintCreate(long, long) creating a uniqueness constraint}, invoked through a separate
-     * transaction (the separate transaction is why it has to be exposed in this API).
-     */
-    IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException;
-
     /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException;
 
+    /**
+     * This should not be used, it is exposed to allow an external job to clean up constraint indexes.
+     * That external job should become an internal job, at which point this operation should go away.
+     */
+    @Deprecated
     void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException;
 
     UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )

@@ -56,7 +56,6 @@ public class ConstraintIndexCreatorTest
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
         StatementState state = mockedState();
-        when( indexCreationContext.schemaWriteOperations().uniqueIndexCreate( state, 123, 456 ) ).thenReturn( descriptor );
 
         IndexingService indexingService = mock( IndexingService.class );
         StubTransactor transactor = new StubTransactor( state, indexCreationContext );
@@ -72,7 +71,6 @@ public class ConstraintIndexCreatorTest
 
         // then
         assertEquals( 2468l, indexId );
-        verify( indexCreationContext.schemaWriteOperations() ).uniqueIndexCreate( state, 123, 456 );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
@@ -89,7 +87,6 @@ public class ConstraintIndexCreatorTest
         StatementState state = mockedState();
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
-        when( indexCreationContext.schemaWriteOperations().uniqueIndexCreate( state, 123, 456 ) ).thenReturn( descriptor );
 
         IndexingService indexingService = mock( IndexingService.class );
         StubTransactor transactor = new StubTransactor( state, indexCreationContext, indexDestructionContext );
@@ -115,11 +112,9 @@ public class ConstraintIndexCreatorTest
             assertEquals( "Existing data does not satisfy CONSTRAINT ON ( n:label[123] ) ASSERT n.property[456] IS UNIQUE.",
                           e.getMessage() );
         }
-        verify( indexCreationContext.schemaWriteOperations() ).uniqueIndexCreate( state, 123, 456 );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
-        verify( indexDestructionContext.schemaWriteOperations() ).uniqueIndexDrop( state, descriptor );
         verifyNoMoreInteractions( indexDestructionContext.schemaWriteOperations() );
     }
 
@@ -141,7 +136,6 @@ public class ConstraintIndexCreatorTest
 
         // then
         verifyZeroInteractions( indexingService );
-        verify( indexDestructionTransaction.schemaWriteOperations() ).uniqueIndexDrop( state, descriptor );
         verifyNoMoreInteractions( indexDestructionTransaction.schemaWriteOperations() );
     }
 

@@ -83,13 +83,6 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
-    {
-        state.locks().acquireSchemaWriteLock();
-        return schemaWriteDelegate.uniqueIndexCreate( state, labelId, propertyKey );
-    }
-
-    @Override
     public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         state.locks().acquireSchemaWriteLock();

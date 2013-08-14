@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
@@ -94,20 +95,6 @@ public class DataIntegrityValidatingStatementOperations implements
         return schemaWriteDelegate.indexCreate( state, labelId, propertyKey );
     }
 
-    @Override
-    public IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
-    {
-        try
-        {
-            checkIndexExistence( state, labelId, propertyKey );
-        }
-        catch ( KernelException e )
-        {
-            throw new AddIndexFailureException(labelId, propertyKey, e);
-        }
-        return schemaWriteDelegate.uniqueIndexCreate( state, labelId, propertyKey );
-    }
-
     private void checkIndexExistence( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
     {
         for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )
@@ -143,6 +130,12 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.indexDrop( state, descriptor );
     }
 
+    @Override
+    public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    {
+        schemaWriteDelegate.uniqueIndexDrop( state, descriptor );
+    }
+
     private void assertIsNotUniqueIndex( IndexDescriptor descriptor, Iterator<IndexDescriptor> uniqueIndexes )
             throws IndexBelongsToConstraintException
 
@@ -158,20 +151,6 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
-    {
-        try
-        {
-            assertIndexExists( descriptor, schemaReadDelegate.uniqueIndexesGetForLabel( state, descriptor.getLabelId() ) );
-        }
-        catch ( NoSuchIndexException e )
-        {
-            throw new DropIndexFailureException( descriptor, e );
-        }
-        schemaWriteDelegate.uniqueIndexDrop( state, descriptor );
-    }
-
-    @Override
     public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKey )
             throws SchemaKernelException
     {
@@ -181,6 +160,17 @@ public class DataIntegrityValidatingStatementOperations implements
         {
             throw new AlreadyConstrainedException( constraints.next() );
         }
+
+        // It is not allowed to create uniqueness constraints on indexed label/property pairs
+        try
+        {
+            checkIndexExistence( state, labelId, propertyKey );
+        }
+        catch ( KernelException e )
+        {
+            throw new ConstraintCreationKernelException(new UniquenessConstraint( labelId, propertyKey ), e);
+        }
+
         return schemaWriteDelegate.uniquenessConstraintCreate( state, labelId, propertyKey );
     }
 

@@ -107,34 +107,6 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowReAddingConstraintIndex() throws Exception
-    {
-        // GIVEN
-        long label = 0, propertyKey = 7;
-        IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
-        SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
-        SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
-        DataIntegrityValidatingStatementOperations ctx =
-                new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( innerRead.uniqueIndexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
-
-        // WHEN
-        try
-        {
-            ctx.uniqueIndexCreate( state, label, propertyKey );
-            fail( "Should have thrown exception." );
-        }
-        catch ( AddIndexFailureException e )
-        {
-            assertThat(e.getCause(), instanceOf( AlreadyConstrainedException.class) );
-        }
-
-        // THEN
-        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
-    }
-
-    @Test
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // GIVEN

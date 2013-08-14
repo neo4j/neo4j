@@ -649,6 +649,8 @@ public final class TxStateImpl implements TxState
             // TODO: someone needs to make sure that the index we created gets dropped.
             // I think this can wait until commit/rollback, but we need to be able to know that the index was created...
         }
+
+        constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.property() ));
         constraintsChangesForLabel( constraint.label() ).remove( constraint );
         hasChanges = true;
     }
@@ -657,7 +659,12 @@ public final class TxStateImpl implements TxState
     public boolean constraintDoUnRemove( UniquenessConstraint constraint )
     {
         // hasChanges should already be set correctly when this is called
-        return constraintsChanges().unRemove( constraint );
+        if(constraintsChanges().unRemove( constraint ))
+        {
+            constraintIndexChanges.unRemove( new IndexDescriptor( constraint.label(), constraint.property() ) );
+            return true;
+        }
+        return false;
     }
 
     @Override

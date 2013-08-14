@@ -137,12 +137,6 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
-    {
-        throw notInTransaction();
-    }
-
-    @Override
     public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw notInTransaction();

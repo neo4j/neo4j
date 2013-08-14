@@ -47,6 +47,9 @@ public class ConstraintIndexCreator
         this.indexingService = indexingService;
     }
 
+    /**
+     * You MUST hold a schema write lock before you call this method.
+     */
     public long createUniquenessConstraintIndex( StatementState state, SchemaReadOperations schema,
             long labelId, long propertyKeyId )
             throws SchemaKernelException, ConstraintVerificationFailedKernelException, TransactionalException
@@ -113,6 +116,9 @@ public class ConstraintIndexCreator
         }
     }
 
+    /**
+     * You MUST hold a schema write lock before you call this method.
+     */
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws SchemaKernelException, TransactionalException
     {
@@ -156,8 +162,13 @@ public class ConstraintIndexCreator
             public IndexDescriptor perform( StatementOperationParts statement, StatementState kernelStatement ) throws
                     SchemaKernelException
             {
-                return statement.schemaWriteOperations().uniqueIndexCreate(
-                        kernelStatement, labelId, propertyKeyId );
+                // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
+                // write lock. It is assumed that the transaction that invoked this "inner" transaction
+                // holds a schema write lock, and that it will wait for this inner transaction to do its
+                // work.
+                IndexDescriptor rule = new IndexDescriptor( labelId, propertyKeyId );
+                kernelStatement.txState().constraintIndexRuleDoAdd( rule );
+                return rule;
             }
         };
     }
@@ -170,7 +181,11 @@ public class ConstraintIndexCreator
             @Override
             public Void perform( StatementOperationParts statement, StatementState kernelStatement ) throws SchemaKernelException
             {
-                statement.schemaWriteOperations().uniqueIndexDrop( kernelStatement, descriptor );
+                // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
+                // write lock. It is assumed that the transaction that invoked this "inner" transaction
+                // holds a schema write lock, and that it will wait for this inner transaction to do its
+                // work.
+                kernelStatement.txState().constraintIndexDoDrop( descriptor );
                 return null;
             }
         };
