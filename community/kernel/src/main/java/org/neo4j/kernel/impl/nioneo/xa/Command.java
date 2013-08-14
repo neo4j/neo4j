@@ -980,7 +980,6 @@ public abstract class Command extends XaCommand
                 {
                     return null;
                 }
-                assert !read.inUse() : read + " is kinda weird";
                 record.addDeletedRecord( read );
             }
 

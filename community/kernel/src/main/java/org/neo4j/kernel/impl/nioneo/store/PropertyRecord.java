@@ -111,6 +111,7 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public void addDeletedRecord( DynamicRecord record )
     {
+        assert !record.inUse();
         deletedRecords.add( record );
     }
 
