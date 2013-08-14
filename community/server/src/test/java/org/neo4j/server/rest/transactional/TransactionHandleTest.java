@@ -75,14 +75,14 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.execute( statements( new Statement( "query", map(), null ) ), output );
+        handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
 
         // then
         verify( executionEngine ).execute( "query", map() );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).statementResult( executionResult, (ResultDataContent[])null );
+        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -108,7 +108,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.execute( statements( new Statement( "query", map(), null ) ), output );
+        handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
 
         // then
         InOrder transactionOrder = inOrder( transactionContext, registry );
@@ -117,7 +117,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).statementResult( executionResult, (ResultDataContent[])null );
+        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -141,13 +141,13 @@ public class TransactionHandleTest
                 StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
-        handle.execute( statements( new Statement( "query", map(), null ) ), output );
+        handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
         reset( transactionContext, registry, executionEngine, output );
         ExecutionResult executionResult = mock( ExecutionResult.class );
         when( executionEngine.execute( "query", map() ) ).thenReturn( executionResult );
 
         // when
-        handle.execute( statements( new Statement( "query", map(), null ) ), output );
+        handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
 
         // then
         InOrder order = inOrder( transactionContext, registry, executionEngine );
@@ -158,7 +158,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).statementResult( executionResult, (ResultDataContent[])null );
+        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -184,7 +184,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.commit( statements( new Statement( "query", map(), null ) ), output );
+        handle.commit( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
 
         // then
         InOrder transactionOrder = inOrder( transactionContext, registry );
@@ -192,7 +192,7 @@ public class TransactionHandleTest
         transactionOrder.verify( registry ).forget( 1337l );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).statementResult( result, (ResultDataContent[])null );
+        outputOrder.verify( output ).statementResult( result, false, (ResultDataContent[])null );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -247,14 +247,14 @@ public class TransactionHandleTest
         verifyZeroInteractions( kernel );
 
         // when
-        handle.execute( statements( new Statement( "query", map(), null ) ), output );
+        handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
 
         // then
         verify( kernel ).newTransaction();
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).statementResult( executionResult, (ResultDataContent[])null );
+        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -310,7 +310,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.execute( statements( new Statement( "query", map(), null ) ), output );
+        handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
 
         // then
         verify( transactionContext ).rollback();
@@ -344,14 +344,14 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.commit( statements( new Statement( "query", map(), null ) ), output );
+        handle.commit( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
 
         // then
         verify( log ).error( eq( "Failed to commit transaction." ), any( NullPointerException.class ) );
         verify( registry ).forget( 1337l );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).statementResult( executionResult, (ResultDataContent[])null );
+        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.INTERNAL_COMMIT_TRANSACTION_ERROR ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -375,7 +375,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.commit( statements( new Statement( "matsch (n) return n", map(), null ) ), output );
+        handle.commit( statements( new Statement( "matsch (n) return n", map(), false, (ResultDataContent[])null ) ), output );
 
         // then
         verify( registry ).forget( 1337l );

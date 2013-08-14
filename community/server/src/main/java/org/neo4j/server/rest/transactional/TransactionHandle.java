@@ -256,7 +256,7 @@ public class TransactionHandle
                     // cypher.execute( ctx, statement, resultVisitor );
                     // ctx.close()
 
-                    output.statementResult( result, statement.resultDataContents() );
+                    output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                 }
                 catch ( CypherException e )
                 {

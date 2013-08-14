@@ -91,7 +91,7 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
-        serializer.statementResult( executionResult );
+        serializer.statementResult( executionResult, false );
         serializer.finish();
 
         // then
@@ -112,7 +112,7 @@ public class ExecutionResultSerializerTest
                 "column2", "value2" ) );
 
         // when
-        serializer.statementResult( executionResult );
+        serializer.statementResult( executionResult, false );
         serializer.finish();
 
         // then
@@ -134,7 +134,7 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
-        serializer.statementResult( executionResult );
+        serializer.statementResult( executionResult, false );
         serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
@@ -158,7 +158,7 @@ public class ExecutionResultSerializerTest
                 "column2", "value2" ) );
 
         // when
-        serializer.statementResult( executionResult );
+        serializer.statementResult( executionResult, false );
         serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
@@ -236,7 +236,7 @@ public class ExecutionResultSerializerTest
                 "column2", "value4" ) );
 
         // when
-        serializer.statementResult( executionResult );
+        serializer.statementResult( executionResult, false );
         serializer.finish();
 
         // then
@@ -261,8 +261,8 @@ public class ExecutionResultSerializerTest
                 "column4", "value4" ) );
 
         // when
-        serializer.statementResult( executionResult1 );
-        serializer.statementResult( executionResult2 );
+        serializer.statementResult( executionResult1, false );
+        serializer.statementResult( executionResult2, false );
         serializer.finish();
 
         // then
@@ -289,7 +289,7 @@ public class ExecutionResultSerializerTest
                 property( "e", new String[]{"a", "b", "ääö"} ) ) ) ) );
 
         // when
-        serializer.statementResult( executionResult );
+        serializer.statementResult( executionResult, false );
         serializer.finish();
 
         // then
@@ -310,7 +310,7 @@ public class ExecutionResultSerializerTest
                 "path", mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) ) ) );
 
         // when
-        serializer.statementResult( executionResult );
+        serializer.statementResult( executionResult, false );
         serializer.finish();
 
         // then
@@ -341,7 +341,7 @@ public class ExecutionResultSerializerTest
         // when
         try
         {
-            serializer.statementResult( executionResult );
+            serializer.statementResult( executionResult, false );
             fail( "should have thrown exception" );
         }
         catch ( RuntimeException e )
@@ -380,7 +380,7 @@ public class ExecutionResultSerializerTest
         // when
         try
         {
-            serializer.statementResult( executionResult );
+            serializer.statementResult( executionResult, false );
             fail( "should have thrown exception" );
         }
         catch ( RuntimeException e )
@@ -417,7 +417,7 @@ public class ExecutionResultSerializerTest
         // when
         serializer.statementResult( mockExecutionResult(
                 map( "node", node[0], "rel", rel[0] ),
-                map( "node", node[2], "rel", rel[1] ) ), ResultDataContent.row, ResultDataContent.graph );
+                map( "node", node[2], "rel", rel[1] ) ), false, ResultDataContent.row, ResultDataContent.graph );
         serializer.finish();
 
         // then

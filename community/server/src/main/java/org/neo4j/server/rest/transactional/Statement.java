@@ -25,12 +25,15 @@ public class Statement
 {
     private final String statement;
     private final Map<String, Object> parameters;
+    private final boolean includeStats;
     private final ResultDataContent[] resultDataContents;
 
-    public Statement( String statement, Map<String, Object> parameters, ResultDataContent... resultDataContents )
+    public Statement( String statement, Map<String, Object> parameters, boolean includeStats,
+                      ResultDataContent... resultDataContents )
     {
         this.statement = statement;
         this.parameters = parameters;
+        this.includeStats = includeStats;
         this.resultDataContents = resultDataContents;
     }
 
@@ -47,5 +50,10 @@ public class Statement
     public ResultDataContent[] resultDataContents()
     {
         return resultDataContents;
+    }
+
+    public boolean includeStats()
+    {
+        return includeStats;
     }
 }

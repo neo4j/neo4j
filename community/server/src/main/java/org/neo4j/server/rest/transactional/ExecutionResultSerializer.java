@@ -31,6 +31,7 @@ import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.QueryStatistics;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -40,7 +41,7 @@ import org.neo4j.server.rest.transactional.error.Neo4jError;
  * order, as follows:
  * <ul>
  * <li>{@link #transactionCommitUri(URI) transactionId}{@code ?}</li>
- * <li>{@link #statementResult(ExecutionResult, ResultDataContent...) statementResult}{@code *}</li>
+ * <li>{@link #statementResult(org.neo4j.cypher.javacompat.ExecutionResult, boolean, ResultDataContent...) statementResult}{@code *}</li>
  * <li>{@link #errors(Iterable) errors}{@code ?}</li>
  * <li>{@link #transactionStatus(long expiryDate)}{@code ?}</li>
  * <li>{@link #finish() finish}</li>
@@ -87,7 +88,8 @@ public class ExecutionResultSerializer
      * Will get called at most once per statement. Throws IOException so that upstream executor can decide whether
      * to execute further statements.
      */
-    public void statementResult( ExecutionResult result, ResultDataContent... resultDataContents ) throws IOException
+    public void statementResult( ExecutionResult result, boolean includeStats, ResultDataContent... resultDataContents )
+            throws IOException
     {
         try
         {
@@ -98,6 +100,10 @@ public class ExecutionResultSerializer
                 Iterable<String> columns = result.columns();
                 writeColumns( columns );
                 writeRows( columns, result.iterator(), configureWriters( resultDataContents ) );
+                if ( includeStats )
+                {
+                    writeStats( result.getQueryStatistics() );
+                }
             }
             finally
             {
@@ -110,8 +116,32 @@ public class ExecutionResultSerializer
         }
     }
 
+    private void writeStats( QueryStatistics stats ) throws IOException
+    {
+        out.writeObjectFieldStart( "stats" );
+        try
+        {
+            out.writeBooleanField( "contains_updates", stats.containsUpdates() );
+            out.writeNumberField( "nodes_created", stats.getNodesCreated() );
+            out.writeNumberField( "nodes_deleted", stats.getDeletedNodes() );
+            out.writeNumberField( "properties_set", stats.getPropertiesSet() );
+            out.writeNumberField( "relationships_created", stats.getRelationshipsCreated() );
+            out.writeNumberField( "relationship_deleted", stats.getDeletedRelationships() );
+            out.writeNumberField( "labels_added", stats.getLabelsAdded() );
+            out.writeNumberField( "labels_removed", stats.getLabelsRemoved() );
+            out.writeNumberField( "indexes_added", stats.getIndexesAdded() );
+            out.writeNumberField( "indexes_removed", stats.getIndexesRemoved() );
+            out.writeNumberField( "constraints_added", stats.getConstraintsAdded() );
+            out.writeNumberField( "constraints_removed", stats.getConstraintsRemoved() );
+        }
+        finally
+        {
+            out.writeEndObject();
+        }
+    }
+
     /**
-     * Will get called once if any errors occurred, after {@link #statementResult(ExecutionResult, ResultDataContent...)}  statementResults}
+     * Will get called once if any errors occurred, after {@link #statementResult(org.neo4j.cypher.javacompat.ExecutionResult, boolean, ResultDataContent...)}  statementResults}
      * has been called This method is not allowed to throw exceptions. If there are network errors or similar, the
      * handler should take appropriate action, but never fail this method.
      */

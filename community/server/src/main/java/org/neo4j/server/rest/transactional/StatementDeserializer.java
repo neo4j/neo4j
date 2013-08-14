@@ -105,6 +105,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
                     String statement = null;
                     Map<String, Object> parameters = null;
                     List<Object> resultsDataContents = null;
+                    boolean includeStats = false;
                     JsonToken tok;
 
                     while ( (tok = input.nextToken()) != null && tok != END_OBJECT )
@@ -129,6 +130,11 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
                         case "resultDataContents":
                             resultsDataContents = readArray( input );
                             break;
+                        case "includeStats":
+                            includeStats = input.getBooleanValue();
+                            break;
+                        default:
+                            discardValue( input );
                         }
                     }
 
@@ -137,7 +143,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
                         addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new DeserializationException( "No statement provided." ) ) );
                         return null;
                     }
-                    return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters,
+                    return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters, includeStats,
                                           ResultDataContent.fromNames( resultsDataContents ) );
 
 
@@ -157,6 +163,12 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
             addError( new Neo4jError( StatusCode.NETWORK_ERROR, e ) );
             return null;
         }
+    }
+
+    private void discardValue( JsonParser input ) throws IOException
+    {
+        // This could be done without building up an object
+        input.readValueAs( Object.class );
     }
 
     @SuppressWarnings("unchecked")
