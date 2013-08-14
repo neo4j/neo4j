@@ -33,6 +33,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
@@ -385,9 +386,10 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals("Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS " +
-                    "UNIQUE:\n" +
-                    "Already indexed :MY_LABEL(my_property_key).", e.getMessage() );
+            assertEquals( format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label" +
+                    ".my_property_key IS " +
+                    "UNIQUE:%n" +
+                    "Already indexed :MY_LABEL(my_property_key)." ), e.getMessage() );
         }
     }
 
@@ -415,7 +417,7 @@ public class SchemaAcceptanceTest
         catch ( ConstraintViolationException e )
         {
             assertEquals(
-                String.format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
+                format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
                         "IS UNIQUE:%nMultiple nodes with label `MY_LABEL` have property `my_property_key` = " +
                         "'value1':%n" +
                         "  node(1)%n" +
