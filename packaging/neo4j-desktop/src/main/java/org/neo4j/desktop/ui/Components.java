@@ -31,11 +31,13 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 import static java.awt.font.TextAttribute.UNDERLINE;
 import static java.awt.font.TextAttribute.UNDERLINE_ON;
 import static java.lang.String.format;
 
+@SuppressWarnings("MagicConstant")
 public class Components
 {
     private Components()
@@ -74,6 +76,11 @@ public class Components
         return withLayout( new FlowLayout( alignment ), panel );
     }
 
+    static JPanel withFlowLayout( JPanel panel )
+    {
+        return withLayout( new FlowLayout(), panel );
+    }
+
     static JPanel withSpacingBorder( JPanel panel )
     {
         panel.setBorder( BorderFactory.createEmptyBorder( 5, 5, 5, 5 ) );
@@ -92,14 +99,21 @@ public class Components
     }
 
 
-    static JButton buttonWithText( String text, ActionListener actionListener )
+    static JTextField createUnmodifiableTextField( String text )
+    {
+        JTextField textField = new JTextField( text, 35 );
+        textField.setEditable( false );
+        return textField;
+    }
+
+    static JButton createTextButton( String text, ActionListener actionListener )
     {
         JButton button = new JButton( text );
         button.addActionListener( actionListener );
         return button;
     }
 
-    static String elipsis( String input )
+    static String ellipsis( String input )
     {
         return format( "%s\u2026", input );
     }

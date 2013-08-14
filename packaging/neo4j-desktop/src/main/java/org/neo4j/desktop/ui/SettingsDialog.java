@@ -1,7 +1,6 @@
 package org.neo4j.desktop.ui;
 
 import java.awt.Component;
-import java.awt.Container;
 import java.awt.FlowLayout;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
@@ -10,7 +9,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -18,15 +16,21 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 
 import org.neo4j.desktop.config.Environment;
 
 import static javax.swing.BoxLayout.X_AXIS;
 import static javax.swing.BoxLayout.Y_AXIS;
 
-import static org.neo4j.desktop.ui.Components.buttonWithText;
-import static org.neo4j.desktop.ui.Components.elipsis;
+import static org.neo4j.desktop.ui.Components.createPanel;
+import static org.neo4j.desktop.ui.Components.createTextButton;
+import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
+import static org.neo4j.desktop.ui.Components.createVerticalSpacing;
+import static org.neo4j.desktop.ui.Components.ellipsis;
+import static org.neo4j.desktop.ui.Components.withBoxLayout;
+import static org.neo4j.desktop.ui.Components.withFlowLayout;
+import static org.neo4j.desktop.ui.Components.withSpacingBorder;
+import static org.neo4j.desktop.ui.Components.withTitledBorder;
 
 class SettingsDialog extends JDialog
 {
@@ -39,32 +43,24 @@ class SettingsDialog extends JDialog
         this.environment = environment;
         this.model = model;
 
-        Container dialogContainer = getContentPane();
-        JPanel content = new JPanel();
-        content.setLayout( new BoxLayout( content, Y_AXIS ) );
-        content.setBorder( BorderFactory.createEmptyBorder( 5, 5, 5, 5 ) );
-
-        JPanel actions = new JPanel();
-        actions.setLayout( new FlowLayout( FlowLayout.RIGHT ) );
-        actions.add( buttonWithText( "Close", new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                close();
-            }
-        } ) );
-
-
-        content.add( initEditConfigPanel() );
-        content.add( initEditVmOptionsPanel() );
-        content.add( initExtensionsPanel() );
-        content.add( Box.createVerticalStrut( 5 ) );
-        content.add( actions );
-
-        dialogContainer.add( content );
+       getContentPane().add( withSpacingBorder( withBoxLayout( Y_AXIS, createPanel(
+            createEditConfigPanel( createEditDatabaseConfigurationButton() ),
+            createEditVmOptionsPanel( createEditVmOptionsButton() ),
+            createExtensionsPanel(),
+            createVerticalSpacing(),
+            withFlowLayout( FlowLayout.RIGHT, createPanel(
+                createTextButton( "Close", new ActionListener()
+                {
+                    @Override
+                    public void actionPerformed( ActionEvent e )
+                    {
+                        close();
+                    }
+                } ) ) )
+        ) ) ) );
 
         pack();
+        setResizable( false );
     }
 
     private void close()
@@ -72,39 +68,29 @@ class SettingsDialog extends JDialog
         setVisible( false );
     }
 
-    private Component initEditConfigPanel()
+    private Component createEditConfigPanel( JButton configurationButton )
     {
-        JPanel panel = new JPanel();
-        panel.setLayout( new FlowLayout() );
-        panel.setBorder( BorderFactory.createTitledBorder( "Configuration" ) );
-        JTextField configFileTextField = new JTextField( model.getDatabaseConfigurationFile().getAbsolutePath(), 30 );
-        configFileTextField.setEditable( false );
-        panel.add( configFileTextField );
-        panel.add( initEditDatabaseConfigurationButton() );
-        return panel;
+        String configFilePath = model.getDatabaseConfigurationFile().getAbsolutePath();
+        return withFlowLayout( withTitledBorder( "Configuration",
+            createPanel( createUnmodifiableTextField( configFilePath ), configurationButton ) ) );
     }
 
-    private Component initEditVmOptionsPanel()
+    private Component createEditVmOptionsPanel( JButton editVmOptionsButton )
     {
-        JPanel panel = new JPanel();
-        panel.setLayout( new FlowLayout() );
-        panel.setBorder( BorderFactory.createTitledBorder( "VM Options" ) );
         File vmOptionsFile = model.getVmOptionsFile();
-        JTextField vmOptionsFileTextField =
-                new JTextField( vmOptionsFile == null ? "" : vmOptionsFile.getAbsolutePath() );
-        vmOptionsFileTextField.setEditable( false );
-        panel.add( vmOptionsFileTextField );
-        panel.add( initEditVmOptionsButton() );
-        return panel;
+        String vmOptionsPath = vmOptionsFile == null ? "" : vmOptionsFile.getAbsolutePath();
+
+        return withFlowLayout( withTitledBorder( "VM Options",
+            createPanel( createUnmodifiableTextField( vmOptionsPath ), editVmOptionsButton ) ) );
     }
 
-    private JPanel initExtensionsPanel()
+    private JPanel createExtensionsPanel()
     {
         // Extensions packages config
         final DefaultComboBoxModel<String> extensionPackagesModel =
                 new DefaultComboBoxModel<>( model.getExtensionPackagesConfigAsArray() );
         final JComboBox<String> extensionPackages = new JComboBox<>( extensionPackagesModel );
-        JButton addPackageButton = buttonWithText( "+", new ActionListener()
+        JButton addPackageButton = createTextButton( "+", new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent e )
@@ -117,7 +103,7 @@ class SettingsDialog extends JDialog
                 }
             }
         } );
-        JButton removePackageButton = buttonWithText( "-", new ActionListener()
+        JButton removePackageButton = createTextButton( "-", new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent e )
@@ -154,9 +140,9 @@ class SettingsDialog extends JDialog
         return list;
     }
 
-    private JButton initEditDatabaseConfigurationButton()
+    private JButton createEditDatabaseConfigurationButton()
     {
-        return Components.buttonWithText( elipsis( "Edit" ), new EditFileActionListener( this, environment )
+        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, environment )
         {
             @Override
             protected File getFile()
@@ -166,9 +152,9 @@ class SettingsDialog extends JDialog
         } );
     }
 
-    private JButton initEditVmOptionsButton()
+    private JButton createEditVmOptionsButton()
     {
-        return Components.buttonWithText( elipsis( "Edit" ), new EditFileActionListener( this, environment )
+        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, environment )
         {
             @Override
             protected File getFile()

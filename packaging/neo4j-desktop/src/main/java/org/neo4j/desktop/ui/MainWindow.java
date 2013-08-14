@@ -50,8 +50,9 @@ import static javax.swing.JOptionPane.showConfirmDialog;
 import static javax.swing.SwingUtilities.invokeLater;
 
 import static org.neo4j.desktop.ui.Components.createPanel;
+import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
 import static org.neo4j.desktop.ui.Components.createVerticalSpacing;
-import static org.neo4j.desktop.ui.Components.elipsis;
+import static org.neo4j.desktop.ui.Components.ellipsis;
 import static org.neo4j.desktop.ui.Components.withBoxLayout;
 import static org.neo4j.desktop.ui.Components.withFlowLayout;
 import static org.neo4j.desktop.ui.Components.withLayout;
@@ -93,7 +94,7 @@ public class MainWindow
         this.frame.setIconImages( Graphics.loadIcons() );
         this.sysTray = SysTray.install( new SysTrayActions(), frame );
 
-        this.directoryDisplay = new JTextField( model.getDatabaseDirectory().getAbsolutePath(), 30 );
+        this.directoryDisplay = createUnmodifiableTextField( model.getDatabaseDirectory().getAbsolutePath() );
         this.browseButton = createBrowseButton();
         this.statusPanelLayout = new CardLayout();
         this.statusPanel = createStatusPanel( statusPanelLayout );
@@ -114,9 +115,9 @@ public class MainWindow
     private JPanel createRootPanel( JTextField directoryDisplay, JButton browseButton, Component statusPanel,
                                     JButton startButton, JButton stopButton, JButton settingsButton )
     {
-        return withSpacingBorder( withBoxLayout( BoxLayout.Y_AXIS, createPanel(
-                createLogoPanel(), createSelectionPanel( directoryDisplay, browseButton ), statusPanel,
-                createVerticalSpacing(), createActionPanel( startButton, stopButton, settingsButton ) ) ) );
+        return withSpacingBorder( withBoxLayout( BoxLayout.Y_AXIS,
+            createPanel( createLogoPanel(), createSelectionPanel( directoryDisplay, browseButton ), statusPanel,
+                         createVerticalSpacing(), createActionPanel( startButton, stopButton, settingsButton ) ) ) );
     }
 
     public void display()
@@ -139,7 +140,7 @@ public class MainWindow
 
     private JButton createSettingsButton()
     {
-        return Components.buttonWithText( elipsis( "Settings" ), new ActionListener()
+        return Components.createTextButton( ellipsis( "Settings" ), new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent e )
@@ -152,9 +153,8 @@ public class MainWindow
 
     private JPanel createSelectionPanel( JTextField directoryDisplay, JButton selectButton )
     {
-        directoryDisplay.setEditable( false );
-        return withTitledBorder( "Database location", withBoxLayout( BoxLayout.LINE_AXIS, createPanel(
-            directoryDisplay, selectButton ) ) );
+        return withTitledBorder( "Database location", withBoxLayout( BoxLayout.LINE_AXIS,
+            createPanel( directoryDisplay, selectButton ) ) );
     }
 
     protected void shutdown()
@@ -197,7 +197,7 @@ public class MainWindow
 
     private JButton createBrowseButton()
     {
-        return Components.buttonWithText( elipsis( "Browse" ), new ActionListener()
+        return Components.createTextButton( ellipsis( "Browse" ), new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent e )
@@ -244,7 +244,7 @@ public class MainWindow
 
     private JButton createStartButton()
     {
-        return Components.buttonWithText( "Start", new ActionListener()
+        return Components.createTextButton( "Start", new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent event )
@@ -266,7 +266,7 @@ public class MainWindow
 
     private JButton createStopButton()
     {
-        return Components.buttonWithText( "Stop", new ActionListener()
+        return Components.createTextButton( "Stop", new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent e )

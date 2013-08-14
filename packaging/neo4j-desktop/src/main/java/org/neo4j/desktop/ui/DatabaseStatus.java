@@ -9,7 +9,7 @@ import javax.swing.JPanel;
 import org.neo4j.desktop.config.Environment;
 
 import static org.neo4j.desktop.ui.Components.createPanel;
-import static org.neo4j.desktop.ui.Components.elipsis;
+import static org.neo4j.desktop.ui.Components.ellipsis;
 import static org.neo4j.desktop.ui.Components.withBackground;
 import static org.neo4j.desktop.ui.Components.withLayout;
 
@@ -31,11 +31,11 @@ public enum DatabaseStatus
                 return createTextStatusDisplay( STOPPED_COLOR, "Choose a graph database directory, " +
                         "then start the server" );
             case STARTING:
-                return createTextStatusDisplay( CHANGING_COLOR, elipsis( "In just a few seconds, Neo4j will be ready" ) );
+                return createTextStatusDisplay( CHANGING_COLOR, ellipsis( "In just a few seconds, Neo4j will be ready" ) );
             case STARTED:
                 return createStartedStatusDisplay( environment );
             case STOPPING:
-                return createTextStatusDisplay( CHANGING_COLOR, elipsis( "Neo4j is shutting down" ) );
+                return createTextStatusDisplay( CHANGING_COLOR, ellipsis( "Neo4j is shutting down" ) );
             default:
                 throw new IllegalStateException();
         }

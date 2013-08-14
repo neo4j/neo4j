@@ -68,9 +68,11 @@ public class Neo4jDesktop
         {
             UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
         }
-        catch ( ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e )
+        catch ( ClassNotFoundException | InstantiationException
+                | IllegalAccessException | UnsupportedLookAndFeelException e )
         {
             // don't care
+            e.printStackTrace( System.out );
         }
     }
 
