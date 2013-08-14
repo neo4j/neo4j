@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.rest;
 
+import java.io.UnsupportedEncodingException;
+import java.util.Collection;
+import java.util.Map;
+
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -33,13 +39,9 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 
-import javax.ws.rs.core.Response.Status;
-
-import java.io.UnsupportedEncodingException;
-import java.util.Collection;
-import java.util.Map;
-
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.IsNot.not;
@@ -140,7 +142,6 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( output.containsKey( "message" ) );
         assertTrue( output.containsKey( "exception" ) );
         assertTrue( output.containsKey( "stacktrace" ) );
-        assertEquals( 3, response.split( "CypherTypeException" ).length );
     }
 
     /**
