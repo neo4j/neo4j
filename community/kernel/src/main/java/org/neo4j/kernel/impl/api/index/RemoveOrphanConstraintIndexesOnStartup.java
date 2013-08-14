@@ -34,6 +34,10 @@ import org.neo4j.kernel.logging.Logging;
  * Used to assert that Indexes required by Uniqueness Constraints don't remain if the constraint never got created.
  * Solves the case where the database crashes after the index for the constraint has been created but before the
  * constraint itself has been committed.
+ *
+ * TODO: This forces the KernelAPI to expose methods that should not be accessed from outside the kernel,
+ * make this an internal job to run during the Kernel startup cycle, rather than an external job that runs
+ * "on top" of the kernel.
  */
 public class RemoveOrphanConstraintIndexesOnStartup
 {

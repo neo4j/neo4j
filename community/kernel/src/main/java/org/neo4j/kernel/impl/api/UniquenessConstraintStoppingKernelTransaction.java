@@ -69,12 +69,6 @@ public class UniquenessConstraintStoppingKernelTransaction extends DelegatingKer
         }
 
         @Override
-        public IndexDescriptor uniqueIndexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
         public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
         {
             throw unsupportedOperation();
