@@ -29,7 +29,7 @@ import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
-import org.neo4j.desktop.config.Value;
+
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.NeoServer;
@@ -47,10 +47,10 @@ public class DesktopBootstrapper extends Bootstrapper
 {
     private final File databaseLocation;
     private final File propertiesFileLocation;
-    private final Value<List<String>> extensionPackages;
+    private final List<String> extensionPackages;
 
     public DesktopBootstrapper( File databaseLocation, File propertiesFileLocation,
-            Value<List<String>> extensionPackages )
+            List<String> extensionPackages )
     {
         this.databaseLocation = databaseLocation;
         this.propertiesFileLocation = propertiesFileLocation;
@@ -69,7 +69,7 @@ public class DesktopBootstrapper extends Bootstrapper
         final Map<String, String> map = new HashMap<String, String>();
         map.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseLocation.getAbsolutePath() );
         
-        List<String> packages = extensionPackages.get();
+        List<String> packages = extensionPackages;
         if ( !packages.isEmpty() )
         {
             map.put( Configurator.THIRD_PARTY_PACKAGES_KEY, toCommaSeparatedString( packages ) );

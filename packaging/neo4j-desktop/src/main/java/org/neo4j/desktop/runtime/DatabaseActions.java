@@ -19,10 +19,7 @@
  */
 package org.neo4j.desktop.runtime;
 
-import java.io.File;
-import java.util.List;
-
-import org.neo4j.desktop.config.Value;
+import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
 import org.neo4j.server.Bootstrapper;
 
@@ -32,31 +29,28 @@ import org.neo4j.server.Bootstrapper;
  */
 public class DatabaseActions
 {
+    private final DesktopModel model;
     private Bootstrapper server;
-    private final Value<List<String>> extensionPackages;
-    
-    public DatabaseActions( Value<List<String>> extensionPackages )
+
+    public DatabaseActions( DesktopModel model )
     {
-        this.extensionPackages = extensionPackages;
+        this.model = model;
     }
 
-    public void start( String path )
+    public void start()
     {
         if ( isRunning() )
         {
             throw new IllegalStateException( "Already started" );
         }
 
-        server = new DesktopBootstrapper( new File( path ),
-                getDatabaseConfigurationFile( path ), extensionPackages );
+        server = new DesktopBootstrapper(
+                model.getDatabaseDirectory(),
+                model.getDatabaseConfigurationFile(),
+                model.getExtensionPackagesConfig() );
         server.start();
     }
     
-    public File getDatabaseConfigurationFile( String path )
-    {
-        return new File( path, "neo4j.properties" );
-    }
-
     public void stop()
     {
         if ( !isRunning() )

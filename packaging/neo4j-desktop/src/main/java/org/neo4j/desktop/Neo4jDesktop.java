@@ -19,37 +19,46 @@
  */
 package org.neo4j.desktop;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
-
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.OsSpecificEnvironment;
 import org.neo4j.desktop.config.OsSpecificExtensionPackagesConfig;
-import org.neo4j.desktop.config.OsSpecificHeapSizeConfig;
 import org.neo4j.desktop.config.Value;
 import org.neo4j.desktop.runtime.DatabaseActions;
+import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
+
+import static javax.swing.filechooser.FileSystemView.getFileSystemView;
 
 /**
  * The main class for starting the Neo4j desktop app window. The different components and wired up and started.
  */
 public class Neo4jDesktop
 {
+    public static void main( String[] args )
+    {
+        new Neo4jDesktop().start();
+    }
+
     private void start()
     {
-        Environment environment = new OsSpecificEnvironment().get();
-        
-        Value<List<String>> extensionPackagesConfig =
-                new OsSpecificExtensionPackagesConfig( environment ).get();
-        DatabaseActions databaseActions = new DatabaseActions( extensionPackagesConfig );
-        Value<Integer> heapSizeConfig = new OsSpecificHeapSizeConfig( environment ).get();
-
         selectPlatformUI();
 
-        MainWindow window =
-            new MainWindow( databaseActions, environment, heapSizeConfig, extensionPackagesConfig );
+        Environment environment = new OsSpecificEnvironment().get();
+
+        Value<List<String>> extensionPackagesConfig =
+                new OsSpecificExtensionPackagesConfig( environment ).get();
+
+        DesktopModel model = new DesktopModel( defaultDatabaseDirectory(), extensionPackagesConfig );
+
+        DatabaseActions databaseActions = new DatabaseActions( model );
+
+        MainWindow window = new MainWindow( databaseActions, environment, model );
         window.display();
     }
 
@@ -59,26 +68,51 @@ public class Neo4jDesktop
         {
             UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
         }
-        catch ( ClassNotFoundException e )
+        catch ( ClassNotFoundException | InstantiationException
+                | IllegalAccessException | UnsupportedLookAndFeelException e )
         {
             // don't care
-        }
-        catch ( InstantiationException e )
-        {
-            // don't care
-        }
-        catch ( IllegalAccessException e )
-        {
-            // don't care
-        }
-        catch ( UnsupportedLookAndFeelException e )
-        {
-            // don't care
+            e.printStackTrace( System.out );
         }
     }
 
-    public static void main( String[] args )
+    private File defaultDatabaseDirectory()
     {
-        new Neo4jDesktop().start();
+        ArrayList<File> locations = new ArrayList<>(  );
+
+        // Works according to: http://www.osgi.org/Specifications/Reference
+        String os = System.getProperty( "os.name" );
+
+        if ( os.startsWith( "Windows" ) )
+        {
+
+            // cf. http://stackoverflow.com/questions/1503555/how-to-find-my-documents-folder
+            locations.add( getFileSystemView().getDefaultDirectory() );
+        }
+
+        if ( os.startsWith( "Mac OS" ) )
+        {
+            // cf. http://stackoverflow.com/questions/567874/how-do-i-find-the-users-documents-folder-with-java-in-os-x
+            locations.add( new File( new File( System.getProperty( "user.home" ) ), "Documents" ) );
+        }
+
+        locations.add( new File( System.getProperty( "user.home" ) ) );
+
+        File result = selectFirstWritableDirectoryOrElse( locations, new File( System.getProperty( "user.dir" ) ) );
+        return new File( result, "neo4j" );
+    }
+
+    private File selectFirstWritableDirectoryOrElse( ArrayList<File> locations, File defaultFile )
+    {
+        File result = defaultFile.getAbsoluteFile();
+        for ( File file : locations )
+        {
+            File candidateFile = file.getAbsoluteFile();
+            if ( candidateFile.exists() && candidateFile.isDirectory() && candidateFile.canWrite() ) {
+                result = candidateFile;
+                break;
+            }
+        }
+        return result;
     }
 }
