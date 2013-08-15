@@ -72,7 +72,7 @@ public abstract class EditFileActionListener implements ActionListener
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private void ensureFileAndParentDirectoriesExists( File file ) throws IOException
+    protected void ensureFileAndParentDirectoriesExists( File file ) throws IOException
     {
         file.getParentFile().mkdirs();
         if ( !file.exists() )

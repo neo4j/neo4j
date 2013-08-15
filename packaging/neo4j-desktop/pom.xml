@@ -17,6 +17,10 @@
   <name>Neo4j Desktop</name>
   <description>Easy-to-use Neo4j database in an .exe</description>
 
+  <properties>
+    <config.destination>${project.build.outputDirectory}/org/neo4j/server/config/community</config.destination>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j.app</groupId>
@@ -81,6 +85,20 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
+          <execution>
+            <id>include-default-config</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target name="include-default-config">
+                <mkdir dir="${config.destination}" />
+                <copy file="${project.basedir}/../standalone/standalone-community/src/main/distribution/text/community/conf/neo4j.properties"
+                      toFile="${config.destination}/neo4j-default.properties"/>
+              </target>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 

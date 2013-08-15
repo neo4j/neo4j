@@ -27,6 +27,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -42,6 +43,7 @@ import javax.swing.JTextField;
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
+import static java.lang.String.format;
 import static javax.swing.JFileChooser.APPROVE_OPTION;
 import static javax.swing.JFileChooser.CUSTOM_DIALOG;
 import static javax.swing.JFileChooser.DIRECTORIES_ONLY;
@@ -130,7 +132,8 @@ public class MainWindow
     private JPanel createLogoPanel()
     {
         return withFlowLayout( FlowLayout.LEFT, createPanel(
-            new JLabel( new ImageIcon( loadImage( Graphics.LOGO_32 ) ) ), new JLabel( "Neo4j") ) );
+                new JLabel( new ImageIcon( loadImage( Graphics.LOGO_32 ) ) ),
+                new JLabel( format( "Neo4j %s", model.getNeo4jVersion() ) ) ) );
     }
 
     private JPanel createActionPanel( JButton startButton, JButton stopButton, JButton settingsButton )
@@ -259,13 +262,14 @@ public class MainWindow
                     {
                         try
                         {
-                            model.verifyGraphDirectory( model.getDatabaseDirectory() );
+                            model.prepareGraphDirectoryForStart();
+
                             databaseActions.start();
                             updateStatus( DatabaseStatus.STARTED );
                         }
-                        catch ( UnsuitableGraphDatabaseDirectory unsuitableGraphDatabaseDirectory )
+                        catch ( UnsuitableGraphDatabaseDirectory | IOException e )
                         {
-                            alert( unsuitableGraphDatabaseDirectory.getMessage() );
+                            alert( e.getMessage() );
                             updateStatus( DatabaseStatus.STOPPED );
                         }
                     }

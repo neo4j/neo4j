@@ -21,10 +21,15 @@ package org.neo4j.desktop.ui;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.desktop.config.DatabaseConfiguration;
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.Value;
+import org.neo4j.kernel.Version;
+
+import static java.lang.String.format;
 
 public class DesktopModel
 {
@@ -37,6 +42,11 @@ public class DesktopModel
         this.environment = environment;
         this.databaseDirectory = databaseDirectory;
         this.extensionPackagesConfig = extensionPackagesConfig;
+    }
+
+    public String getNeo4jVersion()
+    {
+        return format( "Community %s", Version.getKernel().getReleaseVersion() );
     }
 
     public File getDatabaseDirectory()
@@ -70,6 +80,22 @@ public class DesktopModel
         return new File( databaseDirectory, "neo4j.properties" );
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void prepareGraphDirectoryForStart() throws UnsuitableGraphDatabaseDirectory, IOException
+    {
+        verifyGraphDirectory( databaseDirectory );
+        if ( !databaseDirectory.exists() )
+        {
+            databaseDirectory.mkdirs();
+        }
+
+        File configurationFile = getDatabaseConfigurationFile();
+        if ( !configurationFile.exists() )
+        {
+            DatabaseConfiguration.copyDefaultDatabaseConfigurationProperties( configurationFile );
+        }
+    }
+
     public void verifyGraphDirectory( File dir ) throws UnsuitableGraphDatabaseDirectory
     {
         if ( !dir.isDirectory() )
@@ -97,7 +123,7 @@ public class DesktopModel
 
         for ( String fileName : fileNames )
         {
-            if ( fileName.startsWith( "neostore" ) )
+            if ( fileName.startsWith( "neostore" ) || fileName.equals( "neo4j.properties" ) )
             {
                 return;
             }

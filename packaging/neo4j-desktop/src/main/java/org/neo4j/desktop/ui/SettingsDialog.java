@@ -24,15 +24,14 @@ import java.awt.FlowLayout;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -42,6 +41,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListModel;
 
+import org.neo4j.desktop.config.DatabaseConfiguration;
 import org.neo4j.desktop.config.Environment;
 
 import static java.lang.String.format;
@@ -109,7 +109,7 @@ class SettingsDialog extends JDialog
         File vmOptionsFile = model.getVmOptionsFile();
         String vmOptionsPath = vmOptionsFile == null ? "" : vmOptionsFile.getAbsolutePath();
 
-        return withFlowLayout( withTitledBorder( "Java VM Options",
+        return withFlowLayout( withTitledBorder( "Java VM Options (effective on restart)",
                 createPanel( createUnmodifiableTextField( vmOptionsPath ), editVmOptionsButton ) ) );
     }
 
@@ -228,6 +228,17 @@ class SettingsDialog extends JDialog
             protected File getFile()
             {
                 return model.getDatabaseConfigurationFile();
+            }
+
+            @SuppressWarnings("ResultOfMethodCallIgnored")
+            @Override
+            protected void ensureFileAndParentDirectoriesExists( File file ) throws IOException
+            {
+                file.getParentFile().mkdirs();
+                if (!file.exists())
+                {
+                    DatabaseConfiguration.copyDefaultDatabaseConfigurationProperties( file );
+                }
             }
         } );
     }
