@@ -19,14 +19,10 @@
  */
 package org.neo4j.server.rest;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.Version;
@@ -36,6 +32,12 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
+
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
 {
@@ -49,7 +51,7 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @Graph("I know you")
-    @Title( "Get service root" )
+    @Title("Get service root")
     public void assert200OkFromGet() throws Exception
     {
         long referenceNodeId = setReferenceNodeIdToI();
@@ -62,10 +64,10 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         assertNotNull( map.get( "extensions_info" ) );
         assertNotNull( map.get( "batch" ) );
         assertNotNull( map.get( "cypher" ) );
-        assertEquals( Version.getKernelRevision(), map.get( "neo4j_version" ) );
+        assertEquals( Version.getKernel().getReleaseVersion(), map.get( "neo4j_version" ) );
 
         // Make sure advertised urls work
-            JaxRsResponse response = RestRequest.req().get( getDataUri() );
+        JaxRsResponse response;
         if ( map.get( "reference_node" ) != null )
         {
             response = RestRequest.req().get(
@@ -90,15 +92,17 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.getStatus() );
         response.close();
 
-        response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"START n=node(" + referenceNodeId + ") RETURN n\"}" );
+        response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"START n=node(" +
+                referenceNodeId + ") RETURN n\"}" );
         assertEquals( 200, response.getStatus() );
         response.close();
     }
 
-    private long setReferenceNodeIdToI() {
-        InternalAbstractGraphDatabase db = (InternalAbstractGraphDatabase)graphdb();
+    private long setReferenceNodeIdToI()
+    {
+        InternalAbstractGraphDatabase db = (InternalAbstractGraphDatabase) graphdb();
         Transaction tx = db.beginTx();
-        long referenceNodeId = data.get().get("I").getId();
+        long referenceNodeId = data.get().get( "I" ).getId();
         db.getNodeManager().setReferenceNodeId( referenceNodeId );
         tx.success();
         tx.finish();
@@ -110,7 +114,7 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
      * better performance and lower memory overhead on the server side. To use
      * it, adjust the request headers for every call, see the example below for
      * details.
-     * 
+     * <p/>
      * CAUTION: This feature is new, and you should make yourself comfortable
      * with the streamed response style versus the non-streamed API where
      * results are delivered in a single large response. Expect future releases
@@ -140,6 +144,6 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         String body = responseEntity.entity();
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         assertEquals( getDataUri() + "node", map.get( "node" ) );
-        assertNotNull(map.get("reference_node")); // See DatabaseRepresentation#serialize
+        assertNotNull( map.get( "reference_node" ) ); // See DatabaseRepresentation#serialize
     }
 }
