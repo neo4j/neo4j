@@ -47,7 +47,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     val a = createNode()
     val m = Map("meaning_of_life" -> 420)
 
-    setThatShit(a, m)
+    performSet(a, m)
 
     assert(a.getProperty("meaning_of_life") === 420)
     assert(state.getStatistics.propertiesSet === 1)
@@ -57,7 +57,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     val a = createNode()
     val m = Map("A" -> 1, "b" -> 2)
 
-    setThatShit(a, m)
+    performSet(a, m)
 
     assert(a.getProperty("A") === 1)
     assert(a.getProperty("b") === 2)
@@ -70,7 +70,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
     val m = Map("A" -> 1, "b" -> 2)
 
-    setThatShit(r, m)
+    performSet(r, m)
 
     assert(r.getProperty("A") === 1)
     assert(r.getProperty("b") === 2)
@@ -81,7 +81,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     val from = createNode("foo" -> "bar", "buzz" -> 42)
     val to = createNode()
 
-    setThatShit(to, from)
+    performSet(to, from)
 
     assert(to.getProperty("foo") === "bar")
     assert(to.getProperty("buzz") === 42)
@@ -92,25 +92,52 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     val from = Map("a" -> 1)
     val to = createNode("b" -> 2)
 
-    setThatShit(to, from)
+    performSet(to, from)
 
     assert(to.getProperty("a") === 1)
     assert(to.hasProperty("b") === false, "Expected the `b` property to removed")
     assert(state.getStatistics.propertiesSet === 2)
   }
 
+  @Test def merge_remove_properties_from_node() {
+    val from = Map("a" -> 1, "b" -> null)
+    val to = createNode("b" -> 2)
+
+    performMerge(to, from)
+
+    assert(to.getProperty("a") === 1)
+    assert(to.hasProperty("b") === false, "Expected the `b` property to removed")
+    assert(state.getStatistics.propertiesSet === 2)
+  }
+
+  @Test def merge_keep_existing_properties() {
+    val from = Map("a" -> 1)
+    val to = createNode("b" -> 2)
+
+    performMerge(to, from)
+
+    assert(to.getProperty("a") === 1)
+    assert(to.getProperty("b") === 2)
+    assert(state.getStatistics.propertiesSet === 1)
+  }
+
   @Test def should_overwrite_values() {
     val from = Map("a" -> 1)
     val to = createNode("a" -> "apa")
 
-    setThatShit(to, from)
+    performSet(to, from)
 
     assert(to.getProperty("a") === 1)
     assert(state.getStatistics.propertiesSet === 1)
   }
 
-  private def setThatShit(a: PropertyContainer, m: Any) {
+  private def performSet(a: PropertyContainer, m: Any) {
     val setter = MapPropertySetAction(Literal(a), Literal(m))
+    setter.exec(ExecutionContext.empty, state)
+  }
+
+  private def performMerge(a: PropertyContainer, m: Any) {
+    val setter = MapPropertySetAction(Literal(a), Literal(m),mergeProperties = true)
     setter.exec(ExecutionContext.empty, state)
   }
 }
