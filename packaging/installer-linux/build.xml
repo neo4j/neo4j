@@ -52,7 +52,7 @@
 
             <!-- Make the init scripts available to debuild -->
             <copy toDir="${project.build.outputDirectory}/@{name}/server">
-                <fileset dir="${project.build.sourceDirectory}/../resources/etc/init.d/">
+                <fileset dir="${project.build.sourceDirectory}/../resources/@{name}/debian/">
                     <include name="*-service"/>
                 </fileset>
             </copy>
