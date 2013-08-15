@@ -104,6 +104,14 @@
         </dependency>
 
         <dependency>
+            <!-- We need this one, or transitive dependencies of kernel
+              will end up in the test scope. -->
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-kernel</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
             <version>${project.version}</version>
