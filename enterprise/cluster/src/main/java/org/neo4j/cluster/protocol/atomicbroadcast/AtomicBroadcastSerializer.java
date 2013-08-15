@@ -34,7 +34,7 @@ public class AtomicBroadcastSerializer
         throws IOException
     {
         ByteArrayOutputStream bout = new ByteArrayOutputStream(  );
-        ObjectOutputStream oout = new ObjectOutputStream( bout );
+        ObjectOutputStream oout = new LenientObjectOutputStream( bout, new VersionMapper() );
         oout.writeObject( value );
         oout.close();
         byte[] bytes = bout.toByteArray();

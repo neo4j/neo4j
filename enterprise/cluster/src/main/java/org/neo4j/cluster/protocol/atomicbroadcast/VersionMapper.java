@@ -23,23 +23,26 @@ package org.neo4j.cluster.protocol.atomicbroadcast;
 import java.util.HashMap;
 import java.util.Map;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 public class VersionMapper
 {
     private static final Map<Long, Long> versionMapping = new HashMap<Long, Long>();
 
     static
     {
-        versionMapping.put(-2826926850135965485l, 977671511575679253l);
+        long v1_9_1MemberIsUnavailable = -2826926850135965485l;
+        long v1_9_3MemberIsUnavailable = 977671511575679253l;
+
+        versionMapping.put( v1_9_1MemberIsUnavailable, v1_9_3MemberIsUnavailable );
+        versionMapping.put( v1_9_3MemberIsUnavailable, v1_9_1MemberIsUnavailable );
     }
 
-    public boolean hasMappingFor(long oldSUID) {
-        return versionMapping.containsKey(oldSUID);
+    public boolean hasMappingFor( long oldSUID )
+    {
+        return versionMapping.containsKey( oldSUID );
     }
 
     public long map( long oldSUID )
     {
-        return versionMapping.get(oldSUID);
+        return versionMapping.get( oldSUID );
     }
 }
