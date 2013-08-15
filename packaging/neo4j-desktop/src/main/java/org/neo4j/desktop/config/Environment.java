@@ -1,41 +1,82 @@
-/**
- * Copyright (c) 2002-2013 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package org.neo4j.desktop.config;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
-/**
- * General environment concerns, for example {@link Environment#openBrowser(String) opening a browser} or
- * {@link Environment#getAppFile() getting the executable file} used to launch this JVM
- * (where the classes might live inside it).
- */
-public interface Environment
+import static java.awt.Desktop.getDesktop;
+import static java.awt.Desktop.isDesktopSupported;
+import static java.lang.Runtime.getRuntime;
+import static java.lang.String.format;
+
+import static org.neo4j.desktop.ui.Components.alert;
+
+public class Environment
 {
-    boolean isRunByApp();
+    private final File appFile;
 
-    File getAppFile();
-    
-    File getExtensionsDirectory();
-    
-    void openBrowser( String link );
-    
-    void editFile( File file ) throws IOException;
+    public Environment() throws URISyntaxException
+    {
+        appFile = new File( Environment.class.getProtectionDomain().getCodeSource().getLocation().toURI() );
+    }
+
+    public File getExtensionsDirectory()
+    {
+        return new File( getBaseDirectory(), "extensions" );
+    }
+
+    public File getBaseDirectory()
+    {
+        return appFile != null ? appFile.getParentFile() : new File( "." ).getAbsoluteFile().getParentFile();
+    }
+
+    public void openBrowser( String link )
+    {
+        if ( desktopSupports( Desktop.Action.BROWSE ) )
+        {
+            try
+            {
+                getDesktop().browse( new URI( link ) );
+            }
+            catch ( IOException | URISyntaxException e )
+            {
+                e.printStackTrace();
+            }
+        }
+        else
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public void editFile( File file ) throws IOException
+    {
+        if ( desktopSupports( Desktop.Action.EDIT ) )
+        {
+            try
+            {
+                getDesktop().edit( file );
+                return;
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+        }
+
+        if ( OperatingSystemFamily.WINDOWS.isDetected() )
+        {
+            getRuntime().exec( new String[] { "rundll32", "url.dll,FileProtocolHandler", file.getAbsolutePath() } );
+            return;
+        }
+
+        alert( format( "Could not edit file %s", file.getAbsoluteFile() ) ) ;
+    }
+
+    private boolean desktopSupports( Desktop.Action action )
+    {
+        return isDesktopSupported() && getDesktop().isSupported( action );
+    }
 }

@@ -20,14 +20,15 @@
 package org.neo4j.desktop;
 
 import java.io.File;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.neo4j.desktop.config.Environment;
-import org.neo4j.desktop.config.OsSpecificEnvironment;
-import org.neo4j.desktop.config.OsSpecificExtensionPackagesConfig;
+import org.neo4j.desktop.config.ExtensionPackagesConfig;
+import org.neo4j.desktop.config.OperatingSystemFamily;
 import org.neo4j.desktop.config.Value;
 import org.neo4j.desktop.runtime.DatabaseActions;
 import org.neo4j.desktop.ui.DesktopModel;
@@ -52,9 +53,20 @@ public class Neo4jDesktop
     {
         selectPlatformUI();
 
-        Environment environment = new OsSpecificEnvironment().get();
-        Value<List<String>> extensionPackagesConfig = new OsSpecificExtensionPackagesConfig( environment ).get();
-        DesktopModel model = new DesktopModel( defaultDatabaseDirectory(), extensionPackagesConfig );
+        Environment environment;
+        try
+        {
+            environment = new Environment();
+        }
+        catch ( URISyntaxException e )
+        {
+            alert( e.getMessage() );
+            e.printStackTrace();
+            return;
+        }
+
+        Value<List<String>> extensionPackagesConfig = new ExtensionPackagesConfig( environment );
+        DesktopModel model = new DesktopModel( environment, defaultDatabaseDirectory(), extensionPackagesConfig );
         DatabaseActions databaseActions = new DatabaseActions( model );
 
         MainWindow window = new MainWindow( databaseActions, environment, model );
@@ -85,20 +97,16 @@ public class Neo4jDesktop
     {
         ArrayList<File> locations = new ArrayList<>(  );
 
-        // Works according to: http://www.osgi.org/Specifications/Reference
-        String os = System.getProperty( "os.name" );
-
-        if ( os.startsWith( "Windows" ) )
+        switch ( OperatingSystemFamily.detect() )
         {
-
-            // cf. http://stackoverflow.com/questions/1503555/how-to-find-my-documents-folder
-            locations.add( getFileSystemView().getDefaultDirectory() );
-        }
-
-        if ( os.startsWith( "Mac OS" ) )
-        {
-            // cf. http://stackoverflow.com/questions/567874/how-do-i-find-the-users-documents-folder-with-java-in-os-x
-            locations.add( new File( new File( System.getProperty( "user.home" ) ), "Documents" ) );
+            case WINDOWS:
+                // cf. http://stackoverflow.com/questions/1503555/how-to-find-my-documents-folder
+                locations.add( getFileSystemView().getDefaultDirectory() );
+                break;
+            case MAC_OS:
+                // cf. http://stackoverflow.com/questions/567874/how-do-i-find-the-users-documents-folder-with-java-in-os-x
+                locations.add( new File( new File( System.getProperty( "user.home" ) ), "Documents" ) );
+                break;
         }
 
         locations.add( new File( System.getProperty( "user.home" ) ) );

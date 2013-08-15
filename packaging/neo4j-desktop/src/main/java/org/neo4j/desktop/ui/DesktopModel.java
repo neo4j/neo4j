@@ -21,18 +21,20 @@ package org.neo4j.desktop.ui;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.net.URISyntaxException;
 import java.util.List;
 
+import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.Value;
 
 public class DesktopModel
 {
+    private final Environment environment;
     private File databaseDirectory;
     private final Value<List<String>> extensionPackagesConfig;
 
-    public DesktopModel( File databaseDirectory, Value<List<String>> extensionPackagesConfig )
+    public DesktopModel( Environment environment, File databaseDirectory, Value<List<String>> extensionPackagesConfig )
     {
+        this.environment = environment;
         this.databaseDirectory = databaseDirectory;
         this.extensionPackagesConfig = extensionPackagesConfig;
     }
@@ -50,16 +52,7 @@ public class DesktopModel
 
     public File getVmOptionsFile()
     {
-        try
-        {
-            File jarFile = new File(MainWindow.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-            return new File( jarFile.getParentFile(), ".vmoptions" );
-        }
-        catch ( URISyntaxException e )
-        {
-            e.printStackTrace( System.out );
-        }
-        return null;
+        return new File( environment.getBaseDirectory(), "neo4j-desktop.vmoptions" );
     }
 
     public List<String> getExtensionPackagesConfig()
