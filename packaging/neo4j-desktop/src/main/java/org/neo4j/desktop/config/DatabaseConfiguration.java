@@ -19,10 +19,12 @@
  */
 package org.neo4j.desktop.config;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 
 import org.neo4j.desktop.ui.DesktopModel;
 
@@ -30,24 +32,24 @@ public class DatabaseConfiguration
 {
     public static void copyDefaultDatabaseConfigurationProperties( File file ) throws IOException
     {
-        InputStream input = null;
-        FileOutputStream output = null;
+        InputStream inputStream = getDefaultDatabaseConfigurationContent();
+        if ( inputStream == null )
+        {
+            // Default configuration could not be found. This can safely be ignored because
+            // the default configuration contains only comments.
+            return;
+        }
+
+        BufferedReader reader = null;
+        PrintWriter writer = null;
         try
         {
-            input = getDefaultDatabaseConfigurationContent();
-            if ( input == null )
+            reader = new BufferedReader( new InputStreamReader( inputStream ) );
+            writer = new PrintWriter( file );
+
+            for ( String line; (line = reader.readLine()) != null; )
             {
-                // Default configuration could not be found. This can safely be ignored because
-                // the default configuration contains only comments.
-                return;
-            }
-            output = new FileOutputStream( file );
-            int bufferSize = 4096;
-            byte[] buffer = new byte[bufferSize];
-            int bytesRead;
-            while ( (bytesRead = input.read( buffer )) != -1 )
-            {
-                output.write( buffer, 0, bytesRead );
+                writer.println( line );
             }
         }
         catch ( IOException e )
@@ -57,10 +59,10 @@ public class DatabaseConfiguration
         }
         finally
         {
-            if ( input != null )
-                input.close();
-            if ( output != null )
-                output.close();
+            if ( reader != null )
+                reader.close();
+            if ( writer != null )
+                writer.close();
         }
     }
 
