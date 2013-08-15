@@ -35,6 +35,8 @@ import org.neo4j.kernel.logging.Logging;
  * Creates a key within its own transaction, such that the command(s) for creating the key
  * will be alone in a transaction. If there is a running a transaction while calling this
  * it will be temporarily suspended meanwhile.
+ *
+ * TODO This is ugly, right? Should just happen inside the running transaction
  */
 public abstract class IsolatedTransactionTokenCreator implements TokenCreator
 {

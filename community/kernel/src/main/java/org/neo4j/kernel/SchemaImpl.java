@@ -176,7 +176,8 @@ public class SchemaImpl implements Schema
                 }
                 break;
             }
-        } while ( System.currentTimeMillis() < timeout );
+            now = System.currentTimeMillis();
+        } while ( now < timeout );
         throw new IllegalStateException( "Expected index to come online within a reasonable time." );
     }
 
