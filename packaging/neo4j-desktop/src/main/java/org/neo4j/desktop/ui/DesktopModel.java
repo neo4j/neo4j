@@ -20,6 +20,7 @@
 package org.neo4j.desktop.ui;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.net.URISyntaxException;
 import java.util.List;
 
@@ -76,7 +77,7 @@ public class DesktopModel
         return new File( databaseDirectory, "neo4j.properties" );
     }
 
-    private void verifyGraphDirectory( File dir ) throws UnsuitableGraphDatabaseDirectory
+    public void verifyGraphDirectory( File dir ) throws UnsuitableGraphDatabaseDirectory
     {
         if ( !dir.isDirectory() )
         {
@@ -88,7 +89,14 @@ public class DesktopModel
             throw new UnsuitableGraphDatabaseDirectory( "%s is not writeable", dir );
         }
 
-        String[] fileNames = dir.list();
+        String[] fileNames = dir.list( new FilenameFilter()
+        {
+            @Override public boolean accept( File dir, String name )
+            {
+                return ! name.startsWith( "." );
+            }
+        } );
+
         if ( 0 == fileNames.length )
         {
             return;

@@ -30,6 +30,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
@@ -143,5 +144,10 @@ public class Components
         Map attributes = font.getAttributes();
         attributes.put( UNDERLINE, UNDERLINE_ON );
         return font.deriveFont( attributes );
+    }
+
+    public static void alert( String message )
+    {
+        JOptionPane.showMessageDialog( null, message, "Alert", JOptionPane.WARNING_MESSAGE );
     }
 }

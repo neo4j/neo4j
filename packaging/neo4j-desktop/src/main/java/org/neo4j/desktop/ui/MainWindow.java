@@ -49,6 +49,7 @@ import static javax.swing.JOptionPane.CANCEL_OPTION;
 import static javax.swing.JOptionPane.showConfirmDialog;
 import static javax.swing.SwingUtilities.invokeLater;
 
+import static org.neo4j.desktop.ui.Components.alert;
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
 import static org.neo4j.desktop.ui.Components.createVerticalSpacing;
@@ -256,8 +257,17 @@ public class MainWindow
                     @Override
                     public void run()
                     {
-                        databaseActions.start();
-                        updateStatus( DatabaseStatus.STARTED );
+                        try
+                        {
+                            model.verifyGraphDirectory( model.getDatabaseDirectory() );
+                            databaseActions.start();
+                            updateStatus( DatabaseStatus.STARTED );
+                        }
+                        catch ( UnsuitableGraphDatabaseDirectory unsuitableGraphDatabaseDirectory )
+                        {
+                            alert( unsuitableGraphDatabaseDirectory.getMessage() );
+                            updateStatus( DatabaseStatus.STOPPED );
+                        }
                     }
                 } );
             }

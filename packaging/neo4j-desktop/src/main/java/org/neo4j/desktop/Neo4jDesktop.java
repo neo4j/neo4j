@@ -33,7 +33,10 @@ import org.neo4j.desktop.runtime.DatabaseActions;
 import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
 
+import static java.lang.String.format;
 import static javax.swing.filechooser.FileSystemView.getFileSystemView;
+
+import static org.neo4j.desktop.ui.Components.alert;
 
 /**
  * The main class for starting the Neo4j desktop app window. The different components and wired up and started.
@@ -50,12 +53,8 @@ public class Neo4jDesktop
         selectPlatformUI();
 
         Environment environment = new OsSpecificEnvironment().get();
-
-        Value<List<String>> extensionPackagesConfig =
-                new OsSpecificExtensionPackagesConfig( environment ).get();
-
+        Value<List<String>> extensionPackagesConfig = new OsSpecificExtensionPackagesConfig( environment ).get();
         DesktopModel model = new DesktopModel( defaultDatabaseDirectory(), extensionPackagesConfig );
-
         DatabaseActions databaseActions = new DatabaseActions( model );
 
         MainWindow window = new MainWindow( databaseActions, environment, model );
@@ -78,6 +77,12 @@ public class Neo4jDesktop
 
     private File defaultDatabaseDirectory()
     {
+        return ensureIsDirectory( "Neo4j database directory",
+            new File( defaultNeo4jDataDirectory(), "default.graphdb" ) );
+    }
+
+    private File defaultNeo4jDataDirectory()
+    {
         ArrayList<File> locations = new ArrayList<>(  );
 
         // Works according to: http://www.osgi.org/Specifications/Reference
@@ -98,8 +103,10 @@ public class Neo4jDesktop
 
         locations.add( new File( System.getProperty( "user.home" ) ) );
 
-        File result = selectFirstWritableDirectoryOrElse( locations, new File( System.getProperty( "user.dir" ) ) );
-        return new File( result, "neo4j" );
+        File documents = selectFirstWritableDirectoryOrElse( locations, new File( System.getProperty( "user.dir" ) ) );
+        File neo4jData = new File( documents, "Neo4j" );
+
+        return ensureIsDirectory( "Neo4j data directory", neo4jData );
     }
 
     private File selectFirstWritableDirectoryOrElse( ArrayList<File> locations, File defaultFile )
@@ -114,5 +121,21 @@ public class Neo4jDesktop
             }
         }
         return result;
+    }
+
+    private File ensureIsDirectory( String description, File file )
+    {
+        if ( file.exists() )
+        {
+            if ( !file.isDirectory() )
+            {
+                alert( format( "%s already exists but is not a %s.", description, file.getAbsolutePath() ) );
+            }
+        }
+        else if ( !file.mkdir() )
+        {
+            alert( format( "Could not make %s %s", description, file.getAbsolutePath() ) );
+        }
+        return file;
     }
 }
