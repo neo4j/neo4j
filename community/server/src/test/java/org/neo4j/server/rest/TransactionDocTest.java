@@ -35,6 +35,7 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -193,6 +194,41 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     }
 
     /**
+     * Return results in graph format
+     *
+     * If you want to understand the graph structure of nodes and relationships returned by your query,
+     * you can specify the "graph" results data format. For example, this is useful when you want to visualise the
+     * graph structure. The format collates all the nodes and relationships from all columns of the result,
+     * and also flattens collections of nodes and relationships, including paths.
+     */
+    @Test
+    @Documented
+    public void return_results_in_graph_format() throws PropertyValueException
+    {
+        // Document
+        ResponseEntity response = gen.get()
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( quotedJson( "{'statements':[{'statement':" +
+                        "'CREATE ( bike:Bike { weight: 10 } )" +
+                        "CREATE ( frontWheel:Wheel { spokes: 3 } )" +
+                        "CREATE ( backWheel:Wheel { spokes: 32 } )" +
+                        "CREATE p1 = bike -[:HAS { position: 1 } ]-> frontWheel " +
+                        "CREATE p2 = bike -[:HAS { position: 2 } ]-> backWheel " +
+                        "RETURN bike, p1, p2', " +
+                        "'resultDataContents': ['row','graph']}] }" ) )
+                        .post( getDataUri() + "transaction/commit" );
+
+        // Then
+        Map<String, Object> result = jsonToMap( response.entity() );
+        assertNoErrors( result );
+
+        Map<String, List<Object>> row = graphRow( result, 0 );
+        assertEquals( 3, row.get( "nodes" ).size() );
+        assertEquals( 2, row.get( "relationships" ).size() );
+    }
+
+    /**
      * Rollback an open transaction
      *
      * Given that you have an open transaction, you can send a roll back request. The server will roll back the
@@ -289,6 +325,14 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         Map<String, Object> result = ((List<Map<String, Object>>) response.get( "results" )).get( 0 );
         List<Map<String,List>> data = (List<Map<String,List>>) result.get( "data" );
         return (T) data.get( row ).get( "row" ).get( column );
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, List<Object>> graphRow( Map<String, Object> response, int row )
+    {
+        Map<String, Object> result = ((List<Map<String, Object>>) response.get( "results" )).get( 0 );
+        List<Map<String,List>> data = (List<Map<String,List>>) result.get( "data" );
+        return (Map<String,List<Object>>) data.get( row ).get( "graph" );
     }
 
     private String quotedJson( String singleQuoted )
