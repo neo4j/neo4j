@@ -141,12 +141,17 @@ public class BackupToolTest
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        new BackupTool( service, systemOut ).run( args );
-
-        // then
-        verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
-        verify( systemOut ).println( "Backup failed." );
-        verify( systemOut ).println( format( MISMATCHED_STORE_ID, expected, encountered ) );
+        try
+        {
+            new BackupTool( service, systemOut ).run( args );
+        }
+        catch ( BackupTool.ToolFailureException e )
+        {
+            // then
+            verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
+            verify( systemOut ).println( "Backup failed." );
+            assertEquals( format( MISMATCHED_STORE_ID, expected, encountered ), e.getMessage()  );
+        }
     }
 
     @Test
@@ -303,4 +308,5 @@ public class BackupToolTest
 
         verifyZeroInteractions( service );
     }
+
 }
