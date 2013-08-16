@@ -51,12 +51,6 @@ public class CombinedRelIdIterator implements RelIdIterator
     }
 
     @Override
-    public RelIdArray getIds()
-    {
-        return srcIterator.getIds();
-    }
-
-    @Override
     public RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction )
     {
         srcIterator = srcIterator.updateSource( newSource, direction );

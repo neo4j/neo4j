@@ -1,3 +1,7 @@
+1.9.3
+-----
+o Stop keeping norms in Lucene indexes, saving space and memory
+
 1.9.RC1 (2013-04-15)
 --------------------
 o Lucene upgraded to 3.6.2

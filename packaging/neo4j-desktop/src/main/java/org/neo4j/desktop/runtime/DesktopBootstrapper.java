@@ -90,6 +90,12 @@ public class DesktopBootstrapper extends Bootstrapper
             }
 
             @Override
+            public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
+            {
+                return Collections.emptySet();
+            }
+
+            @Override
             public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
             {
                 return Collections.emptySet();

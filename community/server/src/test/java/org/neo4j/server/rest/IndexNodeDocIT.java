@@ -910,10 +910,11 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
     {
         final String index = "people", key = "name", value = "Mattias";
         helper.createNodeIndex( index );
+        String uri = functionalTestHelper.nodeIndexUri() + index + "?unique";
         gen().expectedStatus( 201 /* created */ )
                  .payloadType( MediaType.APPLICATION_JSON_TYPE )
                  .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
-                 .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
+                 .post( uri );
     }
 
     private static <T> T assertCast( Class<T> type, Object object )

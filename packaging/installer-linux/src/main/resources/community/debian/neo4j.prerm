@@ -23,8 +23,6 @@ case "$1" in
         # Stop the neo4j service
         invoke-rc.d neo4j-service stop
 
-        # Tell neo4j to uninstall itself
-        /var/lib/neo4j/bin/neo4j -h -u neo4j remove
     ;;
 
     failed-upgrade)

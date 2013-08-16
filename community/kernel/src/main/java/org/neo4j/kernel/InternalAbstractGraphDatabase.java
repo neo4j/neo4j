@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -152,6 +151,7 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
@@ -728,11 +728,13 @@ public abstract class InternalAbstractGraphDatabase
     {
         try
         {
+            msgLog.info( "Shutdown started" );
+            msgLog.flush();
             life.shutdown();
         }
         catch ( LifecycleException throwable )
         {
-            msgLog.error( "Shutdown failed", throwable );
+            msgLog.warn( "Shutdown failed", throwable );
         }
     }
 
