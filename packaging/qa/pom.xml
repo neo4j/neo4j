@@ -13,6 +13,11 @@
   <groupId>org.neo4j.qa</groupId>
   <artifactId>neo4j-server-qa</artifactId>
   <packaging>jar</packaging>
+  
+  <properties>
+    <maven.site.skip>true</maven.site.skip>
+    <maven.site.deploy.skip>true</maven.site.deploy.skip>
+  </properties>
 
   <dependencies>
     <dependency>

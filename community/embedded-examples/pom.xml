@@ -197,22 +197,6 @@
     </plugins>
   </build>
 
-  <reporting>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <reportSets>
-          <reportSet>
-            <id>javadoc-aggregated-report</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </reportSet>
-        </reportSets>
-      </plugin>
-    </plugins>
-  </reporting>
-
   <distributionManagement>
     <site>
       <id>neo4j-site</id>

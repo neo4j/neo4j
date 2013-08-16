@@ -130,18 +130,6 @@ the relevant Commercial Agreement.
     </plugins>
   </build>
 
-  <reporting>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <!-- Override parent to include impl package in javadocs. -->
-          <excludePackageNames>*.dummy</excludePackageNames>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
-
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
