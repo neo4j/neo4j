@@ -1,3 +1,7 @@
+1.9.3
+-----
+o Fixes problems with extra columns showing up in some conditions
+
 1.9.2 (2013-07-16)
 -----------------
 o Fixes problem where Cypher would see changes while the query was running

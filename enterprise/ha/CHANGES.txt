@@ -1,3 +1,9 @@
+1.9.3
+-----
+o Fix for wrong snapshot processing on cluster join, leading to failure to switch to Slave
+o Fix in SlaveIdGenerator which could lead to records being marked as not in use
+o Important cluster events are now properly included in the console
+
 1.9.1 (2013-06-24)
 ------------------
 o Access guard is now raised during recovery

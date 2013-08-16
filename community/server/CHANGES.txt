@@ -1,3 +1,8 @@
+1.9.3
+-----
+o Reintroduces, deprecated, the Configurator.getThirdpartyJaxRsClasses. Fixes, among other things, the authentication-extension
+o Server now properly returns the version when asked through REST
+
 1.9.2 (2013-07-16)
 ------------------
 o The Content-Type is now correctly used to set the text encoding, not Content-Encoding

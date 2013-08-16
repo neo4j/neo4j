@@ -1,5 +1,31 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9.3
+-----
+HA:
+o Fix for wrong snapshot processing on cluster join, leading to failure to switch to Slave
+o Fix in SlaveIdGenerator which could lead to records being marked as not in use
+o Important cluster events are now properly included in the console
+
+Kernel:
+o Remove hard dependency on Logback
+o Introduction of logical_log_rotation_threshold to control log rotation.
+o Autoconfigurator can handle cases where physical memory is less than the configured JVM heap
+o Fixes index out of bounds errors when iterating over relationships
+
+Cypher:
+o Fixes problems with extra columns showing up in some conditions
+
+Server:
+o Reintroduces, deprecated, the Configurator.getThirdpartyJaxRsClasses. Fixes, among other things, the authentication-extension
+o Server now properly returns the version when asked through REST
+
+Index:
+o Stop keeping norms in Lucene indexes, saving space and memory
+
+Com:
+o Fix for a race between Slave shutting down a channel and Master reaping it, which led to exceptions on the Master side
+
 1.9.2 (2013-07-16)
 ------------------
 Cluster:
