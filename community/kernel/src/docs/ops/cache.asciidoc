@@ -30,15 +30,7 @@ Since the operation of the cache is tightly related to the data it stores, a sho
 Neo4j stores data in multiple files and relies on the underlying file system to handle this efficiently.
 Each Neo4j storage file contains uniform fixed size records of a particular type:
 
-[options="header",grid="none",frame="none",cols="<,>m,<", width="50%"]
-|============================================
-| Store file         | Record size | Contents
-| nodestore          |         9 B | Nodes
-| relstore           |        33 B | Relationships
-| propstore          |        41 B | Properties for nodes and relationships
-| stringstore        |       128 B | Values of string properties
-| arraystore         |       128 B | Values of array properties
-|============================================
+include::includes/record_sizes_table.asciidoc[]
 
 For strings and arrays, where data can be of variable length, data is stored in one or more 120B chunks, with 8B record overhead.
 The sizes of these blocks can actually be configured when the store is created using the `string_block_size` and `array_block_size` parameters.

@@ -360,4 +360,18 @@ public class FileUtils
     {
         return new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), charset) );
     }
+
+    public static File path( String root, String... path )
+    {
+        return path( new File( root ), path );
+    }
+
+    public static File path( File root, String... path )
+    {
+        for ( String part : path )
+        {
+            root = new File( root, part );
+        }
+        return root;
+    }
 }
