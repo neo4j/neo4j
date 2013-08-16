@@ -3,7 +3,7 @@
   <parent>
     <artifactId>parent-central</artifactId>
     <groupId>org.neo4j.build</groupId>
-    <version>39</version>
+    <version>40</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j.build</groupId>
@@ -16,6 +16,8 @@
 
   <properties>
     <short-name>licenses</short-name>
+    <maven.site.skip>true</maven.site.skip>
+    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
 
   <scm>
