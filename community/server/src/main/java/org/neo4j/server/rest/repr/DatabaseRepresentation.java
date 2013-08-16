@@ -66,6 +66,6 @@ public class DatabaseRepresentation extends MappingRepresentation implements Ext
         serializer.putUri( "batch", "batch" );
         serializer.putUri( "cypher", "cypher" );
         serializer.putUri( "transaction", "transaction" );
-        serializer.putString( "neo4j_version", Version.getKernelRevision() );
+        serializer.putString( "neo4j_version", Version.getKernel().getReleaseVersion() );
     }
 }

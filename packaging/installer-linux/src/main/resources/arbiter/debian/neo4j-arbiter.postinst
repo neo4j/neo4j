@@ -35,9 +35,9 @@ case "$1" in
         chown -R $NEO_USER:adm /var/lib/neo4j-arbiter /var/log/neo4j-arbiter /etc/neo4j-arbiter /usr/share/neo4j-arbiter
         chmod u+rwx /var/lib/neo4j-arbiter /var/log/neo4j-arbiter /etc/neo4j-arbiter /usr/share/neo4j-arbiter
 
-        # Tell neo4j-arbiter to install itself as a service using headless (-h) mode
-        # with user (-u) neo4j as running user.
-        /var/lib/neo4j-arbiter/bin/neo4j-arbiter -h -u neo4j install
+        update-rc.d neo4j-arbiter-service defaults
+
+        invoke-rc.d neo4j-arbiter-service start
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

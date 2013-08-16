@@ -25,8 +25,6 @@ public interface RelIdIterator
 {
     int getType();
 
-    RelIdArray getIds();
-
     RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction );
 
     boolean hasNext();

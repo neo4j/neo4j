@@ -26,6 +26,7 @@ case "$1" in
     ;;
     
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        # let the packaging system take care of removing the init script
     ;;
 
     *)

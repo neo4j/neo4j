@@ -27,6 +27,13 @@ o BREAKING CHANGE: The BatchInserter and the BatchGraphDatabase are not binary c
 o Adds support for adding, listing, removing, and testing of labels
 o Adds support for creating, querying, and dropping label-based indexes
 
+1.9.3
+-----
+o Remove hard dependency on Logback
+o Introduction of logical_log_rotation_threshold to control log rotation.
+o Autoconfigurator can handle cases where physical memory is less than the configured JVM heap
+o Fixes index out of bounds errors when iterating over relationships
+
 1.9.2 (2013-07-16)
 ------------------
 o When flushing persistent windows, do so only if dirty. This is a performance improvement

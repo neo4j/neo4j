@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
+
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
@@ -113,6 +114,9 @@ public interface Configurator
 
     Map<String, String> getDatabaseTuningProperties();
 
+    @Deprecated
+    Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses();
+
     Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages();
 
     DiagnosticsExtractor<Configurator> DIAGNOSTICS = new DiagnosticsExtractor<Configurator>()
@@ -150,6 +154,12 @@ public interface Configurator
 
     public static abstract class Adapter implements Configurator
     {
+        @Override
+        public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
+        {
+            return getThirdpartyJaxRsPackages();
+        }
+
         @Override
         public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
         {
