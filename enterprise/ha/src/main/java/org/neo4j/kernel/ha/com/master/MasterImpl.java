@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -49,7 +50,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
@@ -67,7 +67,6 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.SchemaLock;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -498,15 +497,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, String name )
     {
-        try
-        {
-            graphDb.getRelationshipTypeTokenHolder().getOrCreateId( name );
-            return packResponse( context, graphDb.getRelationshipTypeTokenHolder().getIdByName( name ) );
-        }
-        catch ( TokenNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Mattias", "Relationship type create failed for some reason" );
-        }
+        graphDb.getRelationshipTypeTokenHolder().getOrCreateId( name );
+        return packResponse( context, graphDb.getRelationshipTypeTokenHolder().getIdByName( name ) );
     }
 
     @Override

@@ -40,13 +40,13 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
@@ -93,14 +93,17 @@ public class SchemaImpl implements Schema
         {
             List<IndexDefinition> definitions = new ArrayList<>();
             long labelId = context.keyReadOperations().labelGetForName( state, label.name() );
+
+            if(labelId == KeyReadOperations.NO_SUCH_LABEL)
+            {
+                return emptyList();
+            }
+
             addDefinitions( definitions, context, state, context.schemaReadOperations().indexesGetForLabel( state,
                     labelId ), false );
-            addDefinitions( definitions, context, state, context.schemaReadOperations().uniqueIndexesGetForLabel( state, labelId ), true );
+            addDefinitions( definitions, context, state, context.schemaReadOperations().uniqueIndexesGetForLabel(
+                    state, labelId ), true );
             return definitions;
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            return emptyList();
         }
         finally
         {
@@ -217,6 +220,17 @@ public class SchemaImpl implements Schema
         {
             long labelId = context.keyReadOperations().labelGetForName( state, index.getLabel().name() );
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, propertyKey );
+
+            if(labelId == KeyReadOperations.NO_SUCH_LABEL)
+            {
+                throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
+            }
+
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            {
+                throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
+            }
+
             IndexDescriptor descriptor =
                     schemaReading.indexesGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
             InternalIndexState indexState = schemaReading.indexGetState( state, descriptor );
@@ -231,14 +245,6 @@ public class SchemaImpl implements Schema
             default:
                 throw new IllegalArgumentException( String.format( "Illegal index state %s", indexState ) );
             }
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
-        }
-        catch ( PropertyKeyNotFoundException e )
-        {
-            throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
@@ -263,16 +269,19 @@ public class SchemaImpl implements Schema
         {
             long labelId = context.keyReadOperations().labelGetForName( state, index.getLabel().name() );
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, propertyKey );
+
+            if(labelId == KeyReadOperations.NO_SUCH_LABEL)
+            {
+                throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
+            }
+
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            {
+                throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
+            }
+
             IndexDescriptor indexId = context.schemaReadOperations().indexesGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
             return context.schemaReadOperations().indexGetFailure( state, indexId );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
-        }
-        catch ( PropertyKeyNotFoundException e )
-        {
-            throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
@@ -320,13 +329,14 @@ public class SchemaImpl implements Schema
         StatementState state = ctxProvider.statementForReading();
         try
         {
+            long labelId = context.keyReadOperations().labelGetForName( state, label.name() );
+            if(labelId == KeyReadOperations.NO_SUCH_LABEL)
+            {
+                return emptyList();
+            }
             Iterator<UniquenessConstraint> constraints = context.schemaReadOperations().constraintsGetForLabel(
-                    state, context.keyReadOperations().labelGetForName( state, label.name() ) );
+                    state, labelId );
             return asConstraintDefinitions( context, state, constraints );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            return emptyList();
         }
         finally
         {
@@ -419,21 +429,17 @@ public class SchemaImpl implements Schema
             {
                 long labelId = context.keyReadOperations().labelGetForName( state, label.name() );
                 long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, propertyKey );
-                context.schemaWriteOperations().indexDrop( state,
-                        context.schemaReadOperations().indexesGetForLabelAndPropertyKey( state, labelId, propertyKeyId ) );
+
+                if(labelId != KeyReadOperations.NO_SUCH_LABEL && propertyKeyId != KeyReadOperations.NO_SUCH_PROPERTY)
+                {
+                    context.schemaWriteOperations().indexDrop( state,
+                            context.schemaReadOperations().indexesGetForLabelAndPropertyKey( state, labelId, propertyKeyId ) );
+                }
             }
             catch ( SchemaKernelException e )
             {
                 throw new ConstraintViolationException( String.format(
                         "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
-            }
-            catch ( LabelNotFoundKernelException e )
-            {
-                throw new ThisShouldNotHappenError( "Mattias", "Label " + label.name() + " should exist here" );
-            }
-            catch ( PropertyKeyNotFoundException e )
-            {
-                throw new ThisShouldNotHappenError( "Mattias", "Property " + propertyKey + " should exist here" );
             }
             finally
             {

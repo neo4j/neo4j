@@ -34,7 +34,7 @@ import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementOperationParts;
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
@@ -185,25 +185,24 @@ public class GlobalGraphOperations
     {
         StatementOperationParts context = statementCtxProvider.getCtxForReading();
         StatementState state = statementCtxProvider.statementForReading();
-        try
+
+        long labelId = context.keyReadOperations().labelGetForName( state, label );
+
+        if(labelId == KeyReadOperations.NO_SUCH_LABEL)
         {
-            long labelId = context.keyReadOperations().labelGetForName( state, label );
-            final PrimitiveLongIterator nodeIds = context.entityReadOperations().nodesGetForLabel( state, labelId );
-            return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
-            {
-                @Override
-                public Node apply( long nodeId )
-                {
-                    return nodeManager.getNodeById( nodeId );
-                }
-            }, nodeIds ), state );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            // That label hasn't been created yet, there cannot possibly be any nodes labeled with it
             state.close();
             return emptyIterator();
         }
+
+        final PrimitiveLongIterator nodeIds = context.entityReadOperations().nodesGetForLabel( state, labelId );
+        return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
+        {
+            @Override
+            public Node apply( long nodeId )
+            {
+                return nodeManager.getNodeById( nodeId );
+            }
+        }, nodeIds ), state );
     }
 
     private void assertInTransaction()

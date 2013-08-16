@@ -61,7 +61,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -154,6 +153,8 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.lang.String.format;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.api.operations.KeyReadOperations.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
 /**
@@ -1475,14 +1476,10 @@ public abstract class InternalAbstractGraphDatabase
         StatementOperationParts ctx = statementContextProvider.getCtxForReading();
         StatementState state = statementContextProvider.statementForReading();
 
-        long propertyId;
-        long labelId;
-        try
-        {
-            propertyId = ctx.keyReadOperations().propertyKeyGetForName( state, key );
-            labelId = ctx.keyReadOperations().labelGetForName( state, myLabel.name() );
-        }
-        catch ( KernelException e )
+        long propertyId = ctx.keyReadOperations().propertyKeyGetForName( state, key );
+        long labelId = ctx.keyReadOperations().labelGetForName( state, myLabel.name() );
+
+        if(propertyId == NO_SUCH_PROPERTY || labelId == NO_SUCH_LABEL)
         {
             state.close();
             return IteratorUtil.emptyIterator();
