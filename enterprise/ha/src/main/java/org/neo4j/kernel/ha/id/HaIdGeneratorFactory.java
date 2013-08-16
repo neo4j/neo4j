@@ -28,7 +28,6 @@ import org.neo4j.com.Response;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.ha.cluster.HighAvailability;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
@@ -45,7 +44,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     private final StringLogger logger;
     private IdGeneratorState globalState = IdGeneratorState.PENDING;
 
-    public HaIdGeneratorFactory( Master master, HighAvailability highAvailability, Logging logging )
+    public HaIdGeneratorFactory( Master master, Logging logging )
     {
         this.master = master;
         this.logger = logging.getMessagesLog( getClass() );
@@ -58,7 +57,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         if ( previous != null )
             previous.close();
         
-        IdGenerator initialIdGenerator = null;
+        IdGenerator initialIdGenerator;
         switch ( globalState )
         {
         case MASTER:
@@ -86,7 +85,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     {
         return generators.get( idType );
     }
-    
+
     public void switchToMaster()
     {
         globalState = IdGeneratorState.MASTER;
@@ -288,7 +287,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             long nextId = nextLocalId();
             if ( nextId == VALUE_REPRESENTING_NULL )
             {
-                // If we dont have anymore grabbed ids from master, grab a bunch
+                // If we don't have anymore grabbed ids from master, grab a bunch
                 Response<IdAllocation> response = master.allocateIds( idType );
                 try
                 {
@@ -312,7 +311,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
         private long storeLocally( IdAllocation allocation )
         {
-            this.highestIdInUse = allocation.getHighestIdInUse();
+            setHighId( allocation.getHighestIdInUse() );
             this.defragCount = allocation.getDefragCount();
             this.idQueue = new IdRangeIterator( allocation.getIdRange() );
             return idQueue.next();
@@ -326,8 +325,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public void setHighId( long id )
         {
-            // TODO Check for if it's lower than what I have?
-            this.highestIdInUse = id;
+            this.highestIdInUse = Math.max( this.highestIdInUse, id );
         }
 
         @Override

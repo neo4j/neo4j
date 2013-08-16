@@ -86,8 +86,8 @@ public class RelIdArray implements SizeOfObject
     public static final RelIdArray EMPTY = new EmptyRelIdArray( -1 );
     
     private final int type;
-    private IdBlock lastOutBlock;
-    private IdBlock lastInBlock;
+    private IdBlock outBlock;
+    private IdBlock inBlock;
     
     public RelIdArray( int type )
     {
@@ -96,7 +96,7 @@ public class RelIdArray implements SizeOfObject
     
     public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return withObjectOverhead( 8 /*type (padded)*/ + sizeOfBlockWithReference( lastOutBlock ) + sizeOfBlockWithReference( lastInBlock ) ); 
+        return withObjectOverhead( 8 /*type (padded)*/ + sizeOfBlockWithReference( outBlock ) + sizeOfBlockWithReference( inBlock ) );
     }
     
     static int sizeOfBlockWithReference( IdBlock block )
@@ -112,15 +112,15 @@ public class RelIdArray implements SizeOfObject
     protected RelIdArray( RelIdArray from )
     {
         this( from.type );
-        this.lastOutBlock = from.lastOutBlock;
-        this.lastInBlock = from.lastInBlock;
+        this.outBlock = from.outBlock;
+        this.inBlock = from.inBlock;
     }
     
     protected RelIdArray( int type, IdBlock out, IdBlock in )
     {
         this( type );
-        this.lastOutBlock = out;
-        this.lastInBlock = in;
+        this.outBlock = out;
+        this.inBlock = in;
     }
     
     /*
@@ -132,7 +132,7 @@ public class RelIdArray implements SizeOfObject
         long highBits = id&0xFFFFFFFF00000000L;
         if ( lastBlock == null || lastBlock.getHighBits() != highBits )
         {
-            IdBlock newLastBlock = null;
+            IdBlock newLastBlock;
             if ( highBits == 0 && lastBlock == null )
             {
                 newLastBlock = new LowIdBlock();
@@ -179,9 +179,9 @@ public class RelIdArray implements SizeOfObject
     
     public RelIdArray shrink()
     {
-        IdBlock shrunkOut = lastOutBlock != null ? lastOutBlock.shrink() : null;
-        IdBlock shrunkIn = lastInBlock != null ? lastInBlock.shrink() : null;
-        return shrunkOut == lastOutBlock && shrunkIn == lastInBlock ? this : 
+        IdBlock shrunkOut = outBlock != null ? outBlock.shrink() : null;
+        IdBlock shrunkIn = inBlock != null ? inBlock.shrink() : null;
+        return shrunkOut == outBlock && shrunkIn == inBlock ? this :
                 new RelIdArray( type, shrunkOut, shrunkIn );
     }
     
@@ -262,7 +262,7 @@ public class RelIdArray implements SizeOfObject
     
     public boolean isEmpty()
     {
-        return lastOutBlock == null && lastInBlock == null && getLastLoopBlock() == null ;
+        return outBlock == null && inBlock == null && getLastLoopBlock() == null ;
     }
     
     public RelIdIterator iterator( DirectionWrapper direction )
@@ -290,13 +290,13 @@ public class RelIdArray implements SizeOfObject
             @Override
             IdBlock getLastBlock( RelIdArray ids )
             {
-                return ids.lastOutBlock;
+                return ids.outBlock;
             }
 
             @Override
             void setLastBlock( RelIdArray ids, IdBlock block )
             {
-                ids.lastOutBlock = block;
+                ids.outBlock = block;
             }
         },
         INCOMING( Direction.INCOMING )
@@ -310,13 +310,13 @@ public class RelIdArray implements SizeOfObject
             @Override
             IdBlock getLastBlock( RelIdArray ids )
             {
-                return ids.lastInBlock;
+                return ids.inBlock;
             }
 
             @Override
             void setLastBlock( RelIdArray ids, IdBlock block )
             {
-                ids.lastInBlock = block;
+                ids.inBlock = block;
             }
         },
         BOTH( Direction.BOTH )
@@ -497,7 +497,7 @@ public class RelIdArray implements SizeOfObject
         @Override
         long transform( int id )
         {
-            return (long)(id&0xFFFFFFFFL);
+            return id & 0xFFFFFFFFL;
         }
         
         @Override
@@ -670,12 +670,6 @@ public class RelIdArray implements SizeOfObject
         }
         
         @Override
-        public RelIdArray getIds()
-        {
-            return ids;
-        }
-        
-        @Override
         public RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction )
         {
             if ( ids != newSource || newSource.couldBeNeedingUpdate() )
@@ -809,7 +803,7 @@ public class RelIdArray implements SizeOfObject
             {
                 return null;
             }
-            RelIdArray newArray = null;
+            RelIdArray newArray;
             if ( src != null )
             {
                 newArray = src.newSimilarInstance();
@@ -867,14 +861,14 @@ public class RelIdArray implements SizeOfObject
 
     /**
      * Optimization in the lazy loading of relationships for a node.
-     * {@link RelIdIterator#updateSource(RelIdArray)} is only called if
-     * this returns true, i.e if a {@link RelIdArray} or {@link IdBlock} might have
+     * {@link RelIdIterator#updateSource(RelIdArray, org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper)}
+     * is only called if this returns true, i.e if a {@link RelIdArray} or {@link IdBlock} might have
      * gotten upgraded to handle f.ex loops or high id ranges so that the
      * {@link RelIdIterator} gets updated accordingly.
      */
     public boolean couldBeNeedingUpdate()
     {
-        return (lastOutBlock != null && lastOutBlock.getPrev() != null) ||
-                (lastInBlock != null && lastInBlock.getPrev() != null);
+        return (outBlock != null && outBlock.getPrev() != null) ||
+                (inBlock != null && inBlock.getPrev() != null);
     }
 }

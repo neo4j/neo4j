@@ -22,7 +22,10 @@ package org.neo4j.kernel.ha;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+
+import static org.neo4j.helpers.Listeners.notifyListeners;
 
 /**
  * The instance guard is what ensures that the database will only take calls when it is in an ok state. It changes
@@ -31,6 +34,14 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
  */
 public class InstanceAccessGuard
 {
+    private Iterable<AccessListener> listeners = Listeners.newListeners();
+
+    public interface AccessListener
+    {
+        void accessGranted();
+        void accessDenied();
+    }
+
     private volatile CountDownLatch latch;
 
     public InstanceAccessGuard()
@@ -45,6 +56,15 @@ public class InstanceAccessGuard
             return;
         }
         latch = new CountDownLatch( 1 );
+
+        notifyListeners( listeners, new Listeners.Notification<AccessListener>()
+        {
+            @Override
+            public void notify( AccessListener listener )
+            {
+                listener.accessDenied();
+            }
+        } );
     }
 
     public boolean await( long millis )
@@ -72,6 +92,15 @@ public class InstanceAccessGuard
         }
         latch.countDown();
         latch = null;
+
+        notifyListeners( listeners, new Listeners.Notification<AccessListener>()
+        {
+            @Override
+            public void notify( AccessListener listener )
+            {
+                listener.accessGranted();
+            }
+        } );
     }
 
     public void setState( HighAvailabilityMemberState state )
@@ -84,5 +113,15 @@ public class InstanceAccessGuard
         {
             enter();
         }
+    }
+
+    public void addListener(AccessListener listener)
+    {
+        listeners = Listeners.addListener( listener, listeners );
+    }
+
+    public void removeListener(AccessListener listener)
+    {
+        listeners = Listeners.removeListener( listener, listeners );
     }
 }

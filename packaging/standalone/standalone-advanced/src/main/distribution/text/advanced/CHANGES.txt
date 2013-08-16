@@ -37,6 +37,24 @@ o Added support for labels across all APIs: Cypher, Core Java and REST
 o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
 o Improvements to shell, including import/export of small graphs via cypher statements
 
+1.9.3
+-----
+Kernel:
+o Remove hard dependency on Logback
+o Introduction of logical_log_rotation_threshold to control log rotation.
+o Autoconfigurator can handle cases where physical memory is less than the configured JVM heap
+o Fixes index out of bounds errors when iterating over relationships
+
+Cypher:
+o Fixes problems with extra columns showing up in some conditions
+
+Server:
+o Reintroduces, deprecated, the Configurator.getThirdpartyJaxRsClasses. Fixes, among other things, the authentication-extension
+o Server now properly returns the version when asked through REST
+
+Index:
+o Stop keeping norms in Lucene indexes, saving space and memory
+
 1.9.2 (2013-07-16)
 ------------------
 Kernel:

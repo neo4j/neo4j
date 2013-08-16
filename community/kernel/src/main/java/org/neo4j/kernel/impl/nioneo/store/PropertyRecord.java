@@ -38,7 +38,7 @@ public class PropertyRecord extends Abstract64BitRecord
     private long entityId = -1;
     private Boolean nodeIdSet;
     private boolean isChanged;
-    private final List<DynamicRecord> deletedRecords = new LinkedList<DynamicRecord>();
+    private final List<DynamicRecord> deletedRecords = new LinkedList<>();
 
     public PropertyRecord( long id )
     {
@@ -117,6 +117,7 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public void addDeletedRecord( DynamicRecord record )
     {
+        assert !record.inUse();
         deletedRecords.add( record );
     }
 
