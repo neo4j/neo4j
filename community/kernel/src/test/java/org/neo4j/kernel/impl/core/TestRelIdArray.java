@@ -148,7 +148,7 @@ public class TestRelIdArray
                 0L, 1L, justOverIntMax, justOverIntMax+1 ) ), new HashSet<>( asList( all ) ) );
     }
     
-    @Test @Ignore("2013-08-16 Needs fix")
+    @Test
     public void iterateThroughMultipleHighBitsSignaturesWhereIdsAreAdded() throws Exception
     {
         // GIVEN
