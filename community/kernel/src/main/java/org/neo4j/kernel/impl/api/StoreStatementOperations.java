@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -54,6 +53,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -187,16 +187,15 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public long labelGetForName( StatementState state, String label ) throws LabelNotFoundKernelException
+    public long labelGetForName( StatementState state, String label )
     {
-        try
+        int id = labelTokenHolder.getIdByName( label );
+
+        if(id == LabelTokenHolder.NO_ID)
         {
-            return labelTokenHolder.getIdByName( label );
+            return NO_SUCH_LABEL;
         }
-        catch ( TokenNotFoundException e )
-        {
-            throw new LabelNotFoundKernelException( label, e );
-        }
+        return id;
     }
 
     @Override
@@ -447,16 +446,14 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public long propertyKeyGetForName( StatementState state, String propertyKey ) throws PropertyKeyNotFoundException
+    public long propertyKeyGetForName( StatementState state, String propertyKey )
     {
-        try
+        int id = propertyKeyTokenHolder.getIdByName( propertyKey );
+        if(id == TokenHolder.NO_ID)
         {
-            return propertyKeyTokenHolder.getIdByName( propertyKey );
+            return NO_SUCH_PROPERTY_KEY;
         }
-        catch ( TokenNotFoundException e )
-        {
-            throw new PropertyKeyNotFoundException( propertyKey, e );
-        }
+        return id;
     }
 
     @Override

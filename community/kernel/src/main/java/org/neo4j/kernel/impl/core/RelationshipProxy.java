@@ -33,9 +33,9 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -221,21 +221,13 @@ public class RelationshipProxy implements Relationship
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                throw new NotFoundException( String.format("No such property, '%s'.", key) );
+            }
             return ctxForReading.entityReadOperations().relationshipGetProperty( state, relId, propertyId ).value();
         }
-        catch ( EntityNotFoundException e )
-        {
-            throw new IllegalStateException( e );
-        }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
-        catch ( PropertyKeyNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
-        catch ( PropertyNotFoundException e )
+        catch ( EntityNotFoundException | PropertyKeyIdNotFoundException | PropertyNotFoundException e )
         {
             throw new NotFoundException( e );
         }
@@ -258,6 +250,10 @@ public class RelationshipProxy implements Relationship
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                return defaultValue;
+            }
             return ctxForReading.entityReadOperations().relationshipGetProperty( state, relId, propertyId ).value(defaultValue);
         }
         catch ( EntityNotFoundException e )
@@ -265,10 +261,6 @@ public class RelationshipProxy implements Relationship
             throw new IllegalStateException( e );
         }
         catch ( PropertyKeyIdNotFoundException e )
-        {
-            return defaultValue;
-        }
-        catch ( PropertyKeyNotFoundException e )
         {
             return defaultValue;
         }
@@ -289,17 +281,14 @@ public class RelationshipProxy implements Relationship
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
-            return ctxForReading.entityReadOperations().relationshipHasProperty( state, relId, propertyId );
+            return propertyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY &&
+                   ctxForReading.entityReadOperations().relationshipHasProperty( state, relId, propertyId );
         }
         catch ( EntityNotFoundException e )
         {
             throw new IllegalStateException( e );
         }
         catch ( PropertyKeyIdNotFoundException e )
-        {
-            return false;
-        }
-        catch ( PropertyKeyNotFoundException e )
         {
             return false;
         }

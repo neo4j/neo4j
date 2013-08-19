@@ -44,9 +44,9 @@ import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -272,6 +272,10 @@ public class NodeProxy implements Node
         try
         {
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                return defaultValue;
+            }
             return context.entityReadOperations().nodeGetProperty( state, nodeId, propertyKeyId ).value(defaultValue);
         }
         catch ( EntityNotFoundException e )
@@ -279,10 +283,6 @@ public class NodeProxy implements Node
             throw new NotFoundException( e );
         }
         catch ( PropertyKeyIdNotFoundException e )
-        {
-            return defaultValue;
-        }
-        catch ( PropertyKeyNotFoundException e )
         {
             return defaultValue;
         }
@@ -368,21 +368,13 @@ public class NodeProxy implements Node
         try
         {
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                return false;
+            }
             return context.entityReadOperations().nodeGetProperty( state, nodeId, propertyKeyId ).value();
         }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
-        catch ( PropertyKeyNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
-        catch ( PropertyNotFoundException e )
+        catch ( EntityNotFoundException | PropertyKeyIdNotFoundException | PropertyNotFoundException e )
         {
             throw new NotFoundException( e );
         }
@@ -403,6 +395,10 @@ public class NodeProxy implements Node
         try
         {
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                return false;
+            }
             return context.entityReadOperations().nodeHasProperty( state, nodeId, propertyKeyId );
         }
         catch ( EntityNotFoundException e )
@@ -410,10 +406,6 @@ public class NodeProxy implements Node
             throw new NotFoundException( e );
         }
         catch ( PropertyKeyIdNotFoundException e )
-        {
-            return false;
-        }
-        catch ( PropertyKeyNotFoundException e )
         {
             return false;
         }
@@ -536,11 +528,10 @@ public class NodeProxy implements Node
         try
         {
             long labelId = context.keyReadOperations().labelGetForName( state, label.name() );
-            context.entityWriteOperations().nodeRemoveLabel( state, getId(), labelId );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            return;
+            if(labelId != KeyReadOperations.NO_SUCH_LABEL)
+            {
+                context.entityWriteOperations().nodeRemoveLabel( state, getId(), labelId );
+            }
         }
         catch ( EntityNotFoundException e )
         {
@@ -559,11 +550,10 @@ public class NodeProxy implements Node
         StatementState state = statementCtxProvider.statementForReading();
         try
         {
-            return context.entityReadOperations().nodeHasLabel( state, getId(), context.keyReadOperations().labelGetForName( state, label.name() ) );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            return false;
+            long labelId = context.keyReadOperations().labelGetForName( state, label.name() );
+
+            return labelId != KeyReadOperations.NO_SUCH_LABEL &&
+                   context.entityReadOperations().nodeHasLabel( state, getId(), labelId );
         }
         catch ( EntityNotFoundException e )
         {

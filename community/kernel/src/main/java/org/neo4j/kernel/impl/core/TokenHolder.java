@@ -30,6 +30,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
 {
+    public static final int NO_ID = -1;
     private final Map<String,Integer> nameToId = new CopyOnWriteHashMap<String, Integer>();
     private final Map<Integer, TOKEN> idToToken = new CopyOnWriteHashMap<Integer, TOKEN>();
 
@@ -136,17 +137,19 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         return idToToken.containsKey( id );
     }
 
-    public final int idOf( TOKEN token ) throws TokenNotFoundException
+    /** Returns the id, or {@link #NO_ID} if no token with this name exists. */
+    public final int idOf( TOKEN token )
     {
         return getIdByName( token.name() );
     }
 
-    public int getIdByName( String name ) throws TokenNotFoundException
+    /** Returns the id, or {@link #NO_ID} if no token with this name exists. */
+    public int getIdByName( String name )
     {
         Integer id = nameToId.get( name );
         if ( id == null )
         {
-            throw new TokenNotFoundException( name );
+            return NO_ID;
         }
         return id;
     }
