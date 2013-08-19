@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -194,7 +193,7 @@ public class StatementOperationParts
         return new StatementOperations()
         {
             @Override
-            public long labelGetForName( StatementState state, String labelName ) throws LabelNotFoundKernelException
+            public long labelGetForName( StatementState state, String labelName )
             {
                 return keyReadOperations.labelGetForName( state, labelName );
             }
@@ -204,7 +203,7 @@ public class StatementOperationParts
                 return keyReadOperations.labelGetName( state, labelId );
             }
             @Override
-            public long propertyKeyGetForName( StatementState state, String propertyKeyName ) throws PropertyKeyNotFoundException
+            public long propertyKeyGetForName( StatementState state, String propertyKeyName )
             {
                 return keyReadOperations.propertyKeyGetForName( state, propertyKeyName );
             }

@@ -37,7 +37,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -250,15 +250,10 @@ public class StoreStatementOperationsTest
     public void should_fail_if_get_non_existent_property_key() throws Exception
     {
         // WHEN
-        try
-        {
-            statement.propertyKeyGetForName( state, "non-existent-property-key" );
-            fail( "Should have failed with property key not found exception" );
-        }
-        catch ( PropertyKeyNotFoundException e )
-        {
-            // Good
-        }
+        long propertyKey = statement.propertyKeyGetForName( state, "non-existent-property-key" );
+
+        // THEN
+        assertEquals( KeyReadOperations.NO_SUCH_PROPERTY_KEY, propertyKey );
     }
 
     @Test

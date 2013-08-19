@@ -35,9 +35,9 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
@@ -118,13 +118,13 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                return false;
+            }
             return ctxForReading.entityReadOperations().graphHasProperty( state, propertyId );
         }
         catch ( PropertyKeyIdNotFoundException e )
-        {
-            return false;
-        }
-        catch ( PropertyKeyNotFoundException e )
         {
             return false;
         }
@@ -147,9 +147,13 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                return false;
+            }
             return ctxForReading.entityReadOperations().graphGetProperty( state, propertyId ).value();
         }
-        catch ( PropertyKeyIdNotFoundException | PropertyKeyNotFoundException | PropertyNotFoundException e )
+        catch ( PropertyKeyIdNotFoundException | PropertyNotFoundException e )
         {
             throw new NotFoundException( e );
         }
@@ -162,8 +166,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public Object getProperty( String key, Object defaultValue )
     {
-        // TODO: Push this check to getPropertyKeyId
-        // ^^^^^ actually, if the key is null, we could fail before getting the statement context...
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
@@ -172,13 +174,13 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                return false;
+            }
             return ctxForReading.entityReadOperations().graphGetProperty( state, propertyId ).value(defaultValue);
         }
         catch ( PropertyKeyIdNotFoundException e )
-        {
-            return defaultValue;
-        }
-        catch ( PropertyKeyNotFoundException e )
         {
             return defaultValue;
         }

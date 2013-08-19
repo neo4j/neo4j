@@ -35,8 +35,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -48,11 +46,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
@@ -205,21 +202,10 @@ public class IndexCRUDIT
         @Override
         public void add( long nodeId, Object propertyValue )
         {
-            try
-            {
-                StatementOperations context = ctxProvider.getCtxForReading().asStatementOperations();
-                StatementState state = ctxProvider.statementForReading();
-                updates.add( NodePropertyUpdate.add( nodeId, context.propertyKeyGetForName( state, propertyKey ),
-                        propertyValue, new long[] {context.labelGetForName( state, myLabel.name() )} ) );
-            }
-            catch ( PropertyKeyNotFoundException e )
-            {
-                throw new RuntimeException( e );
-            }
-            catch ( LabelNotFoundKernelException e )
-            {
-                throw new RuntimeException( e );
-            }
+            StatementOperations context = ctxProvider.getCtxForReading().asStatementOperations();
+            StatementState state = ctxProvider.statementForReading();
+            updates.add( NodePropertyUpdate.add( nodeId, context.propertyKeyGetForName( state, propertyKey ),
+                    propertyValue, new long[] {context.labelGetForName( state, myLabel.name() )} ) );
         }
 
         @Override
