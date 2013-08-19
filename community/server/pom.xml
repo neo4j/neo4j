@@ -861,30 +861,6 @@
         </profile>
     </profiles>
 
-    <reporting>
-        <plugins>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <groups>
-                        <group>
-                            <title>Server</title>
-                            <packages>org.neo4j.server:org.neo4j.server.*</packages>
-                        </group>
-                        <group>
-                            <title>Server REST Interface</title>
-                            <packages>org.neo4j.server.rest:org.neo4j.server.rest.*</packages>
-                        </group>
-                        <group>
-                            <title>Server Admin Interface</title>
-                            <packages>org.neo4j.server.webadmin:org.neo4j.server.webadmin.*</packages>
-                        </group>
-                    </groups>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
-
     <repositories>
         <repository>
             <id>java.net</id>

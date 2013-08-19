@@ -481,15 +481,6 @@
 
   </profiles>
 
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </reporting>
-
   <repositories>
     <repository>
       <id>selenium-repository</id>
