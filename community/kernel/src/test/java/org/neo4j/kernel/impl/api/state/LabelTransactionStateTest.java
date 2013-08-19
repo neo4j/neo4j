@@ -318,7 +318,7 @@ public class LabelTransactionStateTest
         return new Labels( nodeId, labelIds );
     }
 
-    private void commitLabels( Labels... labels ) throws EntityNotFoundException
+    private void commitLabels( Labels... labels ) throws Exception
     {
         Map<Long, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
@@ -348,12 +348,12 @@ public class LabelTransactionStateTest
         }
     }
 
-    private void commitNoLabels() throws EntityNotFoundException
+    private void commitNoLabels() throws Exception
     {
         commitLabels( new Long[0] );
     }
 
-    private void commitLabels( Long... labels ) throws EntityNotFoundException
+    private void commitLabels( Long... labels ) throws Exception
     {
         commitLabels( labels( nodeId, labels ) );
     }

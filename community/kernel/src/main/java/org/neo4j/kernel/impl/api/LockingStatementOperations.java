@@ -30,12 +30,13 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class LockingStatementOperations implements
@@ -62,7 +63,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public boolean nodeAddLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( StatementState state, long nodeId, long labelId )
+            throws EntityNotFoundException, ConstraintValidationKernelException
     {
         state.locks().acquireNodeWriteLock( nodeId );
         return entityWriteDelegate.nodeAddLabel( state, nodeId, labelId );
@@ -218,8 +220,8 @@ public class LockingStatementOperations implements
     }
     
     @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, Property property ) throws PropertyKeyIdNotFoundException,
-            EntityNotFoundException
+    public Property nodeSetProperty( StatementState state, long nodeId, Property property )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException
     {
         state.locks().acquireNodeWriteLock( nodeId );
         return entityWriteDelegate.nodeSetProperty( state, nodeId, property );

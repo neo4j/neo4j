@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
+import org.neo4j.kernel.api.operations.ConstraintEnforcingEntityWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -112,8 +113,11 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction 
                 parts.schemaReadOperations(),
                 auxStoreOperations,
                 constraintIndexCreator );
+        ConstraintEnforcingEntityWriteOperations constraintEnforcingEntityWriteOperations =
+                new ConstraintEnforcingEntityWriteOperations( stateHandlingContext, stateHandlingContext, stateHandlingContext );
+
         parts = parts.override(
-                null, null, stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
+                null, null, stateHandlingContext, constraintEnforcingEntityWriteOperations, stateHandlingContext, stateHandlingContext,
                 new SchemaStateConcern( schemaState ) );
                 
         // done

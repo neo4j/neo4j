@@ -27,6 +27,12 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
 
+/**
+ * Constraint verification happens when a new constraint is created, and the database verifies that existing
+ * data adheres to the new constraint.
+ *
+ * @see ConstraintViolationKernelException
+ */
 public class ConstraintVerificationFailedKernelException extends KernelException
 {
     private final UniquenessConstraint constraint;

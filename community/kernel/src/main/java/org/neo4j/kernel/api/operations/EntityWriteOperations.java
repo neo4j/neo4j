@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.operations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 
 public interface EntityWriteOperations
 {
@@ -34,21 +35,22 @@ public interface EntityWriteOperations
     /**
      * Labels a node with the label corresponding to the given label id.
      * If the node already had that label nothing will happen. Label ids
-     * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(String)} or {@link
-     * KeyReadOperations#labelGetForName(String)}.
+     * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(StatementState, String)} or {@link
+     * KeyReadOperations#labelGetForName(StatementState, String)}.
      */
-    boolean nodeAddLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException;
+    boolean nodeAddLabel( StatementState state, long nodeId, long labelId )
+            throws EntityNotFoundException, ConstraintValidationKernelException;
 
     /**
      * Removes a label with the corresponding id from a node.
      * If the node doesn't have that label nothing will happen. Label ids
-     * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(String)} or {@link
-     * KeyReadOperations#labelGetForName(String)}.
+     * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(StatementState, String)} or {@link
+     * KeyReadOperations#labelGetForName(StatementState, String)}.
      */
     boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException;
 
     Property nodeSetProperty( StatementState state, long nodeId, Property property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException;
 
     Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;

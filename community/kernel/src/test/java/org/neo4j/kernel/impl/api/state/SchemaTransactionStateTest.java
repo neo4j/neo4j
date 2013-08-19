@@ -31,9 +31,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
@@ -52,6 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -262,7 +263,7 @@ public class SchemaTransactionStateTest
         return new Labels( nodeId, labelIds );
     }
 
-    private void commitLabels( Labels... labels ) throws EntityNotFoundException
+    private void commitLabels( Labels... labels ) throws Exception
     {
         Map<Long, Collection<Long>> allLabels = new HashMap<Long, Collection<Long>>();
         for ( Labels nodeLabels : labels )
@@ -291,12 +292,12 @@ public class SchemaTransactionStateTest
         }
     }
 
-    private void commitNoLabels() throws EntityNotFoundException
+    private void commitNoLabels() throws Exception
     {
         commitLabels( new Long[0] );
     }
 
-    private void commitLabels( Long... labels ) throws EntityNotFoundException
+    private void commitLabels( Long... labels ) throws Exception
     {
         commitLabels( labels( nodeId, labels ) );
     }

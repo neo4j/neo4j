@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.Token;
 
@@ -324,7 +325,8 @@ public class StatementOperationParts
                 entityWriteOperations.relationshipDelete( state, relationshipId );
             }
             @Override
-            public boolean nodeAddLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
+            public boolean nodeAddLabel( StatementState state, long nodeId, long labelId )
+                    throws EntityNotFoundException, ConstraintValidationKernelException
             {
                 return entityWriteOperations.nodeAddLabel( state, nodeId, labelId );
             }
@@ -334,8 +336,8 @@ public class StatementOperationParts
                 return entityWriteOperations.nodeRemoveLabel( state, nodeId, labelId );
             }
             @Override
-            public Property nodeSetProperty( StatementState state, long nodeId, Property property ) throws PropertyKeyIdNotFoundException,
-                    EntityNotFoundException
+            public Property nodeSetProperty( StatementState state, long nodeId, Property property )
+                    throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException
             {
                 return entityWriteOperations.nodeSetProperty( state, nodeId, property );
             }
