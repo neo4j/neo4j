@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -83,7 +84,7 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstan
 
 public class TestBatchInsert
 {
-    private static Map<String,Object> properties = new HashMap<String,Object>();
+    private static Map<String,Object> properties = new HashMap<>();
 
     private static enum RelTypes implements RelationshipType
     {
@@ -389,7 +390,42 @@ public class TestBatchInsert
         }
         inserter.shutdown();
     }
+    
+    @Test
+    public void shouldBeAbleToRemoveDynamicProperty()
+    {
+        // Only triggered if assertions are enabled
+        
+        // GIVEN
+        BatchInserter batchInserter = newBatchInserter();
+        String key = "tags";
+        long nodeId = batchInserter.createNode( MapUtil.map( key, new String[] { "one", "two", "three" } ) );
+        
+        // WHEN
+        batchInserter.removeNodeProperty( nodeId, key );
+        
+        // THEN
+        assertFalse( batchInserter.getNodeProperties( nodeId ).containsKey( key ) );
+    }
 
+    @Test
+    public void shouldBeAbleToOverwriteDynamicProperty()
+    {
+        // Only triggered if assertions are enabled
+        
+        // GIVEN
+        BatchInserter batchInserter = newBatchInserter();
+        String key = "tags";
+        long nodeId = batchInserter.createNode( MapUtil.map( key, new String[] { "one", "two", "three" } ) );
+        
+        // WHEN
+        String[] secondValue = new String[] { "four", "five", "six" };
+        batchInserter.setNodeProperty( nodeId, key, secondValue );
+        
+        // THEN
+        assertTrue( Arrays.equals( secondValue, (String[]) batchInserter.getNodeProperties( nodeId ).get( key ) ) );
+    }
+    
     @Test
     public void testMore()
     {
@@ -618,7 +654,7 @@ public class TestBatchInsert
         Node startNode = graphDb.createNode();
         setProperties( startNode );
         Node endNodes[] = new Node[25];
-        Set<Relationship> rels = new HashSet<Relationship>();
+        Set<Relationship> rels = new HashSet<>();
         for ( int i = 0; i < 25; i++ )
         {
             endNodes[i] = graphDb.createNode();
@@ -697,7 +733,42 @@ public class TestBatchInsert
         tx.finish();
         db.shutdown();
     }
+    
+    @Test
+    public void batchDbShouldBeAbleToSetPropertyOnNodeWithNoProperties()
+    {
+        // GIVEN
+        GraphDatabaseService database = newBatchGraphDatabase();
+        Node node = database.createNode();
+        database.shutdown();
+        database = newBatchGraphDatabase();
+        node = database.getNodeById( node.getId() );
+        
+        // WHEN
+        node.setProperty( "test", "test" );
+        
+        // THEN
+        assertEquals( "test", node.getProperty( "test" ) );
+    }
 
+    @Test
+    public void batchDbShouldBeAbleToSetPropertyOnRelationshipWithNoProperties()
+    {
+        // GIVEN
+        GraphDatabaseService database = newBatchGraphDatabase();
+        Relationship relationship = database.createNode().createRelationshipTo(
+                database.createNode(), MyRelTypes.TEST );
+        database.shutdown();
+        database = newBatchGraphDatabase();
+        relationship = database.getRelationshipById( relationship.getId() );
+        
+        // WHEN
+        relationship.setProperty( "test", "test" );
+        
+        // THEN
+        assertEquals( "test", relationship.getProperty( "test" ) );
+    }
+    
     @Test
     public void messagesLogGetsClosed() throws Exception
     {
@@ -955,6 +1026,23 @@ public class TestBatchInsert
         return nodeId;
     }
 
+    @Test
+    public void shouldCorrectlyJudgeRelationshipType()
+    {
+        // GIVEN
+        GraphDatabaseService database = newBatchGraphDatabase();
+        DynamicRelationshipType type = DynamicRelationshipType.withName( "TEST" );
+        long relationshipId = database.createNode().createRelationshipTo( database.createNode(), type ).getId();
+
+        // WHEN restarting (guaranteeing new RelationshipType instances internally)
+        database.shutdown();
+        database = newBatchGraphDatabase();
+        Relationship relationship = database.getRelationshipById( relationshipId );
+
+        // THEN
+        assertTrue( "Relationship#isType returned false for the correct type", relationship.isType( type ) );
+    }
+
     private void setAndGet( BatchInserter inserter, Object value )
     {
         long nodeId = inserter.createNode( map( "key", value ) );
@@ -998,7 +1086,7 @@ public class TestBatchInsert
     private Pair<Label[],Set<String>> manyLabels( int count )
     {
         Label[] labels = new Label[count];
-        Set<String> expectedLabelNames = new HashSet<String>();
+        Set<String> expectedLabelNames = new HashSet<>();
         for ( int i = 0; i < labels.length; i++ )
         {
             String labelName = "bach label " + i;

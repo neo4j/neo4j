@@ -3,7 +3,7 @@ server/LICENSES.txt var/lib/neo4j
 server/README.txt   var/lib/neo4j
 server/UPGRADE.txt  var/lib/neo4j
 
-server/data/README.txt  var/lib/neo4j/data
+server/data/README.txt var/lib/neo4j/data
 
 server/doc          var/lib/neo4j
 server/bin          var/lib/neo4j
@@ -13,3 +13,4 @@ server/plugins      usr/share/neo4j
 server/system       usr/share/neo4j
 
 server/conf/*       etc/neo4j
+server/neo4j-service    etc/init.d
