@@ -451,7 +451,7 @@ public class StoreStatementOperations implements
         int id = propertyKeyTokenHolder.getIdByName( propertyKey );
         if(id == TokenHolder.NO_ID)
         {
-            return NO_SUCH_PROPERTY;
+            return NO_SUCH_PROPERTY_KEY;
         }
         return id;
     }

@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
@@ -226,7 +227,7 @@ public class SchemaImpl implements Schema
                 throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
             }
 
-            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
             }
@@ -275,7 +276,7 @@ public class SchemaImpl implements Schema
                 throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
             }
 
-            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
             }
@@ -430,7 +431,7 @@ public class SchemaImpl implements Schema
                 long labelId = context.keyReadOperations().labelGetForName( state, label.name() );
                 long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, propertyKey );
 
-                if(labelId != KeyReadOperations.NO_SUCH_LABEL && propertyKeyId != KeyReadOperations.NO_SUCH_PROPERTY)
+                if(labelId != KeyReadOperations.NO_SUCH_LABEL && propertyKeyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
                 {
                     context.schemaWriteOperations().indexDrop( state,
                             context.schemaReadOperations().indexesGetForLabelAndPropertyKey( state, labelId, propertyKeyId ) );

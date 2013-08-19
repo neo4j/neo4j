@@ -27,6 +27,7 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -52,7 +53,12 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
@@ -247,7 +253,7 @@ public class StoreStatementOperationsTest
         long propertyKey = statement.propertyKeyGetForName( state, "non-existent-property-key" );
 
         // THEN
-        assertEquals( KeyReadOperations.NO_SUCH_PROPERTY, propertyKey );
+        assertEquals( KeyReadOperations.NO_SUCH_PROPERTY_KEY, propertyKey );
     }
 
     @Test

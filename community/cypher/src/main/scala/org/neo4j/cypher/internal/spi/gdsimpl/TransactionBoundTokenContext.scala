@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 
 import org.neo4j.cypher.internal.spi.TokenContext
 import org.neo4j.kernel.api.exceptions.{PropertyKeyNotFoundException, LabelNotFoundKernelException}
-import org.neo4j.kernel.api.StatementOperations
 import org.neo4j.kernel.api.operations.StatementState
-import org.neo4j.kernel.api.StatementOperationParts
 import org.neo4j.kernel.api.operations.KeyReadOperations
 
 abstract class TransactionBoundTokenContext(ctx: KeyReadOperations, state: StatementState) extends TokenContext
@@ -33,7 +31,7 @@ abstract class TransactionBoundTokenContext(ctx: KeyReadOperations, state: State
 
   def getPropertyKeyId(propertyKeyName: String) = {
     val propertyId: Long = ctx.propertyKeyGetForName(state, propertyKeyName)
-    if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY)
+    if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY)
     {
       throw new PropertyKeyNotFoundException("No such property.", null)
     }

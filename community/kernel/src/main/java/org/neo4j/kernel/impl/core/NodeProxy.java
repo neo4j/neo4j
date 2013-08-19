@@ -272,7 +272,7 @@ public class NodeProxy implements Node
         try
         {
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
-            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return defaultValue;
             }
@@ -368,7 +368,7 @@ public class NodeProxy implements Node
         try
         {
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
-            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
             }
@@ -395,7 +395,7 @@ public class NodeProxy implements Node
         try
         {
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
-            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
             }

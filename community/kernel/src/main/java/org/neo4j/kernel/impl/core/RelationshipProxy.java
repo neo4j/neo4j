@@ -221,7 +221,7 @@ public class RelationshipProxy implements Relationship
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
-            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new NotFoundException( String.format("No such property, '%s'.", key) );
             }
@@ -250,7 +250,7 @@ public class RelationshipProxy implements Relationship
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
-            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return defaultValue;
             }
@@ -281,7 +281,7 @@ public class RelationshipProxy implements Relationship
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
-            return propertyId != KeyReadOperations.NO_SUCH_PROPERTY &&
+            return propertyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY &&
                    ctxForReading.entityReadOperations().relationshipHasProperty( state, relId, propertyId );
         }
         catch ( EntityNotFoundException e )

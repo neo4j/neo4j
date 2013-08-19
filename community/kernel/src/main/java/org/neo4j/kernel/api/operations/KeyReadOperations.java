@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.core.Token;
 public interface KeyReadOperations
 {
     long NO_SUCH_LABEL = -1;
-    long NO_SUCH_PROPERTY = -1;
+    long NO_SUCH_PROPERTY_KEY = -1;
 
     /** Returns a label id for a label name. If the label doesn't exist, {@link #NO_SUCH_LABEL} will be returned. */
     long labelGetForName( StatementState state, String labelName );
@@ -38,7 +38,7 @@ public interface KeyReadOperations
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist,
-     * {@link #NO_SUCH_PROPERTY} will be returned.
+     * {@link #NO_SUCH_PROPERTY_KEY} will be returned.
      */
     long propertyKeyGetForName( StatementState state, String propertyKeyName );
 

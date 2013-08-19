@@ -118,7 +118,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
-            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
             }
@@ -147,7 +147,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
-            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
             }
@@ -174,7 +174,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         try
         {
             long propertyId = ctxForReading.keyReadOperations().propertyKeyGetForName( state, key );
-            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY)
+            if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
             }
