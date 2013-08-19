@@ -23,25 +23,24 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.impl.core.Token;
 
 public interface KeyReadOperations
 {
-    /**
-     * Returns a label id for a label name. If the label doesn't exist a
-     * {@link org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException} will be thrown.
-     */
-    long labelGetForName( StatementState state, String labelName ) throws LabelNotFoundKernelException;
+    long NO_SUCH_LABEL = -1;
+    long NO_SUCH_PROPERTY = -1;
+
+    /** Returns a label id for a label name. If the label doesn't exist, {@link #NO_SUCH_LABEL} will be returned. */
+    long labelGetForName( StatementState state, String labelName );
 
     /** Returns the label name for the given label id. */
     String labelGetName( StatementState state, long labelId ) throws LabelNotFoundKernelException;
 
     /**
-     * Returns a property key id for the given property key. If the property key doesn't exist a
-     * {@link org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException} will be thrown.
+     * Returns a property key id for the given property key. If the property key doesn't exist,
+     * {@link #NO_SUCH_PROPERTY} will be returned.
      */
-    long propertyKeyGetForName( StatementState state, String propertyKeyName ) throws PropertyKeyNotFoundException;
+    long propertyKeyGetForName( StatementState state, String propertyKeyName );
 
     /** Returns the name of a property given its property key id */
     String propertyKeyGetName( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException;
