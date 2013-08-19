@@ -949,7 +949,20 @@ public abstract class Command extends XaCommand
             
             if ( !readDynamicRecords( byteChannel, buffer, record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER ) )
                 return null;
-            
+
+            buffer.flip();
+            int deletedRecords = buffer.getInt(); // 4
+            assert deletedRecords >= 0;
+            while ( deletedRecords-- > 0 )
+            {
+                DynamicRecord read = readDynamicRecord( byteChannel, buffer );
+                if ( read == null )
+                {
+                    return null;
+                }
+                record.addDeletedRecord( read );
+            }
+
             if ( ( inUse && !record.inUse() ) || ( !inUse && record.inUse() ) )
             {
                 throw new IllegalStateException( "Weird, inUse was read in as "

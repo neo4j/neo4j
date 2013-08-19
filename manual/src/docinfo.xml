@@ -65,6 +65,11 @@
           <link linkend="rest-api">REST API</link>
         </para>
       </listitem>
+      <listitem>
+        <para>
+          <link linkend="security-server">Server Security</link>
+        </para>
+      </listitem>
     </itemizedlist>
   </para>
 </abstract>

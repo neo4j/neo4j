@@ -360,6 +360,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, members, clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
 
+        HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging.getConsoleLog( HighAvailabilityConsoleLogger.class ) );
+        accessGuard.addListener( highAvailabilityConsoleLogger );
+        clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
+        clusterClient.addClusterListener( highAvailabilityConsoleLogger );
+
         if ( compatibilityMode )
         {
             /*
@@ -416,8 +421,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-
-        idGeneratorFactory = new HaIdGeneratorFactory( master, memberStateMachine, logging );
+        idGeneratorFactory = new HaIdGeneratorFactory( master, logging );
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, logging, updateableSchemaState );

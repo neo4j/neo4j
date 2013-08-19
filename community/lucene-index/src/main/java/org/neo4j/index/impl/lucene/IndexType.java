@@ -40,11 +40,13 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Version;
+
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.KEY_TO_LOWER_CASE;
 
 public abstract class IndexType
@@ -79,7 +81,7 @@ public abstract class IndexType
             if ( value != null )
             {
                 String stringValue = value.toString();
-                values = new HashSet<String>( Arrays.asList(
+                values = new HashSet<>( Arrays.asList(
                         document.getValues( key ) ) );
                 if ( !values.remove( stringValue ) )
                 {
@@ -158,7 +160,7 @@ public abstract class IndexType
             if ( value != null )
             {
                 String stringValue = value.toString();
-                values = new HashSet<String>( Arrays.asList( document.getValues( exactKey ) ) );
+                values = new HashSet<>( Arrays.asList( document.getValues( exactKey ) ) );
                 if ( !values.remove( stringValue ) )
                 {
                     return;
@@ -337,6 +339,7 @@ public abstract class IndexType
         {
             field = new Field( key, value.toString(), Store.YES, analyzed );
         }
+        field.setOmitNorms( true );
         return field;
     }
     

@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.Math.max;
-import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static java.lang.Math.max;
+
+import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a
@@ -85,9 +86,9 @@ public class IdGeneratorImpl implements IdGenerator
     private final FileSystemAbstraction fs;
     private FileChannel fileChannel = null;
     // defragged ids read from file (freed in a previous session).
-    private final LinkedList<Long> idsReadFromFile = new LinkedList<Long>();
+    private final LinkedList<Long> idsReadFromFile = new LinkedList<>();
     // ids freed in this session that havn't been flushed to disk yet
-    private final LinkedList<Long> releasedIdList = new LinkedList<Long>();
+    private final LinkedList<Long> releasedIdList = new LinkedList<>();
     
     private final long max;
     private final boolean aggressiveReuse;
@@ -233,11 +234,9 @@ public class IdGeneratorImpl implements IdGenerator
         defragIds = new long[count];
         System.arraycopy( tmpArray, 0, defragIds, 0, count );
 
-        int sizeLeftForRange = size-count;
+        int sizeLeftForRange = size - count;
         long start = highId.get();
-        long newHighId = start + sizeLeftForRange;
-        assertIdWithinCapacity( newHighId );
-        highId.set( newHighId );
+        setHighId( start + sizeLeftForRange );
         return new IdRange( defragIds, start, sizeLeftForRange );
     }
 

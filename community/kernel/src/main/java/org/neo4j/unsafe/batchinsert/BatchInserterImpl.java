@@ -442,6 +442,7 @@ public class BatchInserterImpl implements BatchInserter
                 getPropertyStore().ensureHeavy( target );
                 for ( DynamicRecord dynRec : target.getValueRecords() )
                 {
+                    dynRec.setInUse( false );
                     current.addDeletedRecord( dynRec );
                 }
                 break;
@@ -456,6 +457,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         else
         {
+            current.setInUse( false );
             return unlinkPropertyRecord( current, primitive );
         }
     }
@@ -541,6 +543,7 @@ public class BatchInserterImpl implements BatchInserter
                 getPropertyStore().ensureHeavy( removed );
                 for ( DynamicRecord dynRec : removed.getValueRecords() )
                 {
+                    dynRec.setInUse( false );
                     thatHas.addDeletedRecord( dynRec );
                 }
                 getPropertyStore().updateRecord( thatHas );

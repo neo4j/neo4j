@@ -1,3 +1,7 @@
+1.9.3
+-----
+o Fix for a race between Slave shutting down a channel and Master reaping it, which led to exceptions on the Master side
+
 1.9.1 (2013-06-24)
 ------------------
 o Client now uses heap buffers, reduces GC requirements and out of memory errors

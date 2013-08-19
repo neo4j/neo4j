@@ -61,6 +61,7 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
         this.currentTypeIndex = 0;
     }
 
+    @Override
     public Iterator<Relationship> iterator()
     {
         return this;
@@ -74,22 +75,25 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
         {
             if ( currentTypeIterator.hasNext() )
             {
+                // There are more relationships loaded of this relationship type, let's return it
                 long nextId = currentTypeIterator.next();
                 try
                 {
                     return nodeManager.newRelationshipProxyById( nextId );
                 }
                 catch ( NotFoundException e )
-                { // ok deleted 
+                { // OK, deleted. Skip it and move on
                 }
             }
             
             LoadStatus status;
             while ( !currentTypeIterator.hasNext() )
             {
-                if ( ++currentTypeIndex < rels.length )
+                // There aren't any more relationships loaded of this relationship type
+                if ( currentTypeIndex+1 < rels.length )
                 {
-                    currentTypeIterator = rels[currentTypeIndex];
+                    // There are other relationship types to try to get relationships from, go to the next type
+                    currentTypeIterator = rels[++currentTypeIndex];
                 }
                 else if ( (status = fromNode.getMoreRelationships( nodeManager )).loaded()
                         // This is here to guard for that someone else might have loaded
@@ -99,8 +103,11 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
                         // isn't fully loaded when starting iterating.
                         || lastTimeILookedThereWasMoreToLoad )
                 {
+                    // There aren't any more relationship types to try to get relationships from,
+                    // but it's likely there are more relationships to load for this node,
+                    // so try to go and load more relationships
                     lastTimeILookedThereWasMoreToLoad = status.hasMoreToLoad();
-                    Map<Integer,RelIdIterator> newRels = new HashMap<Integer,RelIdIterator>();
+                    Map<Integer,RelIdIterator> newRels = new HashMap<>();
                     for ( RelIdIterator itr : rels )
                     {
                         int type = itr.getType();
@@ -144,11 +151,14 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
                 }
                 else
                 {
+                    // There aren't any more relationship types to try to get relationships from
+                    // and there are no more relationships to load for this node
                     break;
                 }
             }
         } while ( currentTypeIterator.hasNext() );
-        // no next element found
+
+        // Denotes the end of the iterator
         return null;
     }
 }

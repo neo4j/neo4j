@@ -1,0 +1,118 @@
+require 'rbconfig'
+require 'net/http'
+require 'uri'
+require 'rubygems'
+require 'zip/zip'
+
+directory 'target'
+
+platform = RbConfig::CONFIG["target_os"]
+version = ENV['VERSION']
+parent_dir = File.join(File.dirname(__FILE__), '..')
+
+EDITIONS=['community', 'advanced', 'enterprise']
+
+def connect_to_rest_api(version)
+  uri = URI.parse("http://localhost:7474/db/data/")
+  response = Net::HTTP.get(uri)
+  unless response.match(/neo4j_version/)
+    raise "Couldn't find a Neo4j server in the following response: #{response}"
+  end
+end
+
+def unpack_tarball(edition, version)
+  # assume that the tarballs are already in target
+  artifact = "neo4j-#{edition}-#{version}-unix.tar.gz"
+  unpacked = "neo4j-#{edition}-#{version}"
+  sh "cd target && tar -xf #{artifact}"
+  "./#{unpacked}/bin/neo4j"
+end
+
+def installing_from_tarball(edition, version)
+  neo_script = unpack_tarball(edition, version)
+  message = nil
+  begin
+    sh "cd target && #{neo_script} install"
+    sh "launchctl start org.neo4j.server.7474"
+    sleep 20
+    connect_to_rest_api(version)
+  rescue Exception => e
+    message = "Ooops, something happened: #{e.message}"
+  ensure
+    sh "launchctl stop org.neo4j.server.7474 || true"
+    sh "cd target && #{neo_script} remove"
+  end
+  raise message if message
+end
+
+def running_from_tarball(edition, version)
+  neo_script = unpack_tarball(edition, version)
+  sh "(cd target && #{neo_script} start)"
+  connect_to_rest_api(version)
+  sh "(cd target && #{neo_script} stop)"
+end
+
+def file_spec(parent_dir, extension, mod = 'standalone')
+  File.join(parent_dir, mod, 'target', "*.#{extension}")
+end
+
+def unzip(file, destination)
+  Zip::ZipFile.open(file) do |zip_file|
+    zip_file.each do |file|
+      f_path=File.join(destination, file.name)
+      FileUtils.mkdir_p(File.dirname(f_path))
+      zip_file.extract(file, f_path) unless File.exist?(f_path)
+    end
+  end
+end
+
+task :debian_setup do
+  sh "echo force-confold | sudo tee -a /etc/dpkg/dpkg.cfg.d/force-confold" unless File.exists? '/etc/dpkg/dpkg.cfg.d/force-confold'
+end
+
+task :tarballs => 'target' do
+  Dir.glob(file_spec(parent_dir, 'tar.gz')).each { |pkg| cp pkg, 'target' }
+end
+
+desc "Tests the start scripts on OSX, for all 3 editions"
+task :darwin => :tarballs do
+  EDITIONS.each do |edition|
+    installing_from_tarball(edition, version)
+    running_from_tarball(edition, version)
+  end
+end
+
+task :debs => 'target' do
+  Dir.glob(file_spec(parent_dir, 'deb', 'installer-linux')).each { |pkg| cp pkg, 'target' }
+end
+
+desc "Tests debian packages on ubuntu"
+task :linux => [:debian_setup, :debs, :tarballs] do
+  sh "sudo dpkg --purge neo4j"
+  sh "sudo dpkg --purge neo4j-advanced"
+  sh "sudo dpkg --purge neo4j-enterprise"
+
+  sh "sudo apt-get install -y gdebi-core"
+
+  EDITIONS.each do |edition|
+    name = edition == 'community' ? 'neo4j' : "neo4j-#{edition}"
+    munged_version = version.sub(/\-/, '.')
+    sh "sudo gdebi -n target/#{name}_#{munged_version}_all.deb"
+    connect_to_rest_api(version)
+    sh "sudo dpkg -r #{name}"
+
+    running_from_tarball(edition,version)
+  end
+end
+
+task :zips do
+  Dir.glob(file_spec(parent_dir, 'zip')).each { |pkg| cp pkg, 'target' }
+end
+
+task :windows => :zips do
+  EDITIONS.each do |edition|
+    unzip "target/neo4j-#{edition}-#{version}-windows.zip", "neo4j-#{edition}-#{version}"
+  end
+end
+
+task :default => platform.to_sym
