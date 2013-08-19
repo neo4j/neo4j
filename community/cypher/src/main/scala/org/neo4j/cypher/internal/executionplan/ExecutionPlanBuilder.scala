@@ -31,7 +31,6 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
 import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.internal.commands.expressions.ExpressionResolver
-import org.neo4j.cypher.internal.helpers.IsMap
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
@@ -75,7 +74,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   def buildQuery(inputQuery: Query, context: PlanContext): PipeAndIsUpdating = {
-    val initialPSQ = PartiallySolvedQuery(inputQuery).rewrite(ExpressionResolver(context))
+    val plainPSQ = PartiallySolvedQuery(inputQuery)
+    val initialPSQ = plainPSQ.rewrite(ExpressionResolver(context))
 
     var continue = true
     var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)

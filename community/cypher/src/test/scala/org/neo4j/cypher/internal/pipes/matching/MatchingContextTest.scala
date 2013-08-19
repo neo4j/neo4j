@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions with PatternGraphBuilder {
   var a: Node = null
@@ -270,7 +271,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", Seq("t1"), Direction.OUTGOING, true))
     createMatchingContextWithNodes(patterns, Seq("a"))
 
-    assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> null, "r" -> null))
+    assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> UnboundValue, "r" -> null))
   }
 
   @Test def doubleOptional() {

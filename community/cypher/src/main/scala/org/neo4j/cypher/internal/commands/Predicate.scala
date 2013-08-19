@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{Literal, Expression}
+import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{CastSupport, IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import values.KeyToken
+import org.neo4j.cypher.internal.commands.values.{UnboundValue, KeyToken}
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx)
@@ -90,7 +90,6 @@ object And {
     case (_, _)          => new And(a, b)
   }
 }
-
 
 class And(val a: Predicate, val b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = a.isMatch(m) && b.isMatch(m)
@@ -231,10 +230,11 @@ case class True() extends Predicate {
 
 case class Has(identifier: Expression, propertyKey: KeyToken) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = identifier(m) match {
-    case pc: Node         => propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc, _))
-    case pc: Relationship => propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc, _))
-    case null             => false
-    case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
+    case pc: Node                => propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc, _))
+    case pc: Relationship        => propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc, _))
+    case null                    => false
+    case x if UnboundValue.is(x) => false
+    case _                       => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }
 
   override def toString: String = "hasProp(" + propertyKey.name + ")"
@@ -319,10 +319,14 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
 }
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with CollectionSupport {
+
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val value = entity(m)
 
-    if(value == null)
+    if (value == UnboundValue)
+      return true
+
+    if (value == null)
       return false
 
     val node           = CastSupport.erasureCastOrFail[Node](value)
