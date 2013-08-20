@@ -614,7 +614,7 @@ public final class TxStateImpl implements TxState
             @Override
             public boolean accept( UniquenessConstraint item )
             {
-                return item.property() == propertyKey;
+                return item.propertyKeyId() == propertyKey;
             }
         } );
     }
@@ -650,7 +650,7 @@ public final class TxStateImpl implements TxState
             // I think this can wait until commit/rollback, but we need to be able to know that the index was created...
         }
 
-        constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.property() ));
+        constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.propertyKeyId() ));
         constraintsChangesForLabel( constraint.label() ).remove( constraint );
         hasChanges = true;
     }
@@ -661,7 +661,7 @@ public final class TxStateImpl implements TxState
         // hasChanges should already be set correctly when this is called
         if(constraintsChanges().unRemove( constraint ))
         {
-            constraintIndexChanges.unRemove( new IndexDescriptor( constraint.label(), constraint.property() ) );
+            constraintIndexChanges.unRemove( new IndexDescriptor( constraint.label(), constraint.propertyKeyId() ) );
             return true;
         }
         return false;
@@ -680,7 +680,7 @@ public final class TxStateImpl implements TxState
                    @Override
                    public IndexDescriptor apply( UniquenessConstraint constraint )
                    {
-                       return new IndexDescriptor( constraint.label(), constraint.property() );
+                       return new IndexDescriptor( constraint.label(), constraint.propertyKeyId() );
                    }
                }, constraintMap.keySet() );
            }

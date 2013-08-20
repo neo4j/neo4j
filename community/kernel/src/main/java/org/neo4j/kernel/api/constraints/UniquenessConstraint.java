@@ -62,7 +62,7 @@ public class UniquenessConstraint
         return labelId;
     }
 
-    public long property()
+    public long propertyKeyId()
     {
         return propertyKeyId;
     }

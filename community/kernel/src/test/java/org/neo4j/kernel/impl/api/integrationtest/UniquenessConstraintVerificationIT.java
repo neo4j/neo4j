@@ -25,7 +25,6 @@ import java.util.concurrent.Executors;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -44,7 +42,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
+public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
 {
     @Test
     public void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
@@ -140,35 +138,6 @@ public class UniquenessConstraintEvaluationIT extends KernelIntegrationTest
             assertEquals( asSet( new ConstraintVerificationFailedKernelException.Evidence(
                     new PreexistingIndexEntryConflictException( "foo", node1, node2 ) ) ),
                           ((ConstraintVerificationFailedKernelException) cause).evidence() );
-        }
-    }
-
-    @Test
-    public void shouldEnforceUniquenessConstraint() throws Exception
-    {
-        // given
-        newTransaction();
-        db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
-        long foo = statement.labelGetForName( getState(), "Foo" );
-        long name = statement.propertyKeyGetForName( getState(), "name" );
-        commit();
-        newTransaction();
-        statement.uniquenessConstraintCreate( getState(), foo, name );
-        commit();
-
-        newTransaction();
-
-        // when
-        try
-        {
-            db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
-
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( ConstraintViolationException ex )
-        {
-            assertThat( ex.getMessage(), containsString( "\"name\"=[foo]" ) );
         }
     }
 }

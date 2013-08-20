@@ -98,7 +98,7 @@ public class ConstraintVerificationFailedKernelException extends KernelException
             IndexEntryConflictException conflict = evidenceItem.conflict;
             message.append( conflict.evidenceMessage(
                     tokenNameLookup.labelGetName( constraint.label() ),
-                    tokenNameLookup.propertyKeyGetName( constraint.property() ) ) );
+                    tokenNameLookup.propertyKeyGetName( constraint.propertyKeyId() ) ) );
         }
         return message.toString();
     }

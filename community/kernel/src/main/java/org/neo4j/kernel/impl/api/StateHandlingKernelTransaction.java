@@ -235,7 +235,7 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction 
                     clearState.set( true );
                     long constraintId = schemaStorage.newRuleId();
                     persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
-                            constraintId, element.label(), element.property(), indexId ) );
+                            constraintId, element.label(), element.propertyKeyId(), indexId ) );
                     persistenceManager.setConstraintIndexOwner( indexId, constraintId );
                 }
 
@@ -246,7 +246,7 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction 
                     {
                         clearState.set( true );
                         UniquenessConstraintRule rule = schemaStorage
-                                .uniquenessConstraint( element.label(), element.property() );
+                                .uniquenessConstraint( element.label(), element.propertyKeyId() );
                         persistenceManager.dropSchemaRule( rule.getId() );
                     }
                     catch ( SchemaRuleNotFoundException e )
@@ -256,7 +256,7 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction 
                                 "have been validated earlier and the schema should have been locked." );
                     }
                     // Remove the index for the constraint as well
-                    visitRemovedIndex( new IndexDescriptor( element.label(), element.property() ), true );
+                    visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
                 }
             } );
             if ( clearState.get() )

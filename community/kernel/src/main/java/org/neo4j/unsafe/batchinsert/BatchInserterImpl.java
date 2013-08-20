@@ -404,11 +404,11 @@ public class BatchInserterImpl implements BatchInserter
         long constraintRuleId = schemaStore.nextId();
 
         IndexRule indexRule = IndexRule.constraintIndexRule(
-                indexRuleId, constraint.label(), constraint.property(),
+                indexRuleId, constraint.label(), constraint.propertyKeyId(),
                 this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
                 constraintRuleId );
         UniquenessConstraintRule constraintRule = UniquenessConstraintRule.uniquenessConstraintRule(
-                schemaStore.nextId(), constraint.label(), constraint.property(), indexRuleId );
+                schemaStore.nextId(), constraint.label(), constraint.propertyKeyId(), indexRuleId );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
         {

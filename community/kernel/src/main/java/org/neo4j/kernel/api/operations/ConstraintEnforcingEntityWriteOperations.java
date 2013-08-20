@@ -65,6 +65,25 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
     public boolean nodeAddLabel( StatementState state, long nodeId, long labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
+        Iterator<UniquenessConstraint> constraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
+        while ( constraints.hasNext() )
+        {
+            UniquenessConstraint constraint = constraints.next();
+            long propertyKeyId = constraint.propertyKeyId();
+            Property property;
+            try
+            {
+                property = entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
+            }
+            catch ( PropertyKeyIdNotFoundException e )
+            {
+                throw new UnableToValidateConstraintKernelException( e );
+            }
+            if ( !property.isNoProperty() )
+            {
+                validateNoExistingNodeWithLabelAndProperty( state, labelId, property );
+            }
+        }
         return entityWriteOperations.nodeAddLabel( state, nodeId, labelId );
     }
 
@@ -87,21 +106,7 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
                     schemaReadOperations.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
             if ( constraintIterator.hasNext() )
             {
-                try
-                {
-                    Object value = property.value();
-                    PrimitiveLongIterator existingNodes = entityReadOperations.nodesGetFromIndexLookup(
-                            state, new IndexDescriptor( labelId, propertyKeyId ), value );
-                    if ( existingNodes.hasNext() )
-                    {
-                        throw new UniqueConstraintViolationKernelException( labelId, propertyKeyId, value,
-                                existingNodes.next() );
-                    }
-                }
-                catch ( IndexNotFoundKernelException | PropertyNotFoundException e )
-                {
-                    throw new UnableToValidateConstraintKernelException( e );
-                }
+                validateNoExistingNodeWithLabelAndProperty( state, labelId, property );
             }
         }
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
@@ -137,5 +142,25 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
     public Property graphRemoveProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
         return entityWriteOperations.graphRemoveProperty( state, propertyKeyId );
+    }
+
+    private void validateNoExistingNodeWithLabelAndProperty( StatementState state, long labelId, Property property )
+            throws ConstraintValidationKernelException
+    {
+        try
+        {
+            Object value = property.value();
+            PrimitiveLongIterator existingNodes = entityReadOperations.nodesGetFromIndexLookup(
+                    state, new IndexDescriptor( labelId, property.propertyKeyId() ), value );
+            if ( existingNodes.hasNext() )
+            {
+                throw new UniqueConstraintViolationKernelException( labelId, property.propertyKeyId(), value,
+                        existingNodes.next() );
+            }
+        }
+        catch ( IndexNotFoundKernelException | PropertyNotFoundException e )
+        {
+            throw new UnableToValidateConstraintKernelException( e );
+        }
     }
 }
