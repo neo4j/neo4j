@@ -26,7 +26,7 @@ import org.junit.Assert._
 import collection.JavaConverters._
 import org.neo4j.kernel.api.StatementOperations
 
-class UniqueConstraintAcceptanceTest
+class UniqueConstraintVerificationAcceptanceTest
   extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
 
   @Test
