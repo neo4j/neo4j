@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.scalatest.Assertions
 import org.junit.Test
+import org.neo4j.kernel.api.exceptions.schema.{NoSuchIndexException, DropIndexFailureException}
 
 class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions {
   @Test def createIndex() {
@@ -44,6 +45,8 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
 
   @Test def drop_index_that_does_not_exist() {
     // WHEN
-    intercept[CouldNotDropIndexException](parseAndExecute("DROP INDEX ON :Person(name)"))
+    val e = intercept[CypherExecutionException](parseAndExecute("DROP INDEX ON :Person(name)"))
+    assert(e.getCause.isInstanceOf[DropIndexFailureException])
+    assert(e.getCause.getCause.isInstanceOf[NoSuchIndexException])
   }
 }

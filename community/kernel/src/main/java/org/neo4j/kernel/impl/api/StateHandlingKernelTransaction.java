@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -227,7 +227,7 @@ public class StateHandlingKernelTransaction extends DelegatingKernelTransaction 
                     {
                         constraintIndexCreator.validateConstraintIndex( element, indexId );
                     }
-                    catch ( ConstraintCreationKernelException e )
+                    catch ( CreateConstraintFailureException e )
                     {
                         // TODO: Revisit decision to rethrow as RuntimeException.
                         throw new ConstraintCreationException( e );

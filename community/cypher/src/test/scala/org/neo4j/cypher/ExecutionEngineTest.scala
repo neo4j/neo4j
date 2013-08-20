@@ -32,6 +32,7 @@ import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, T
 import org.neo4j.cypher.internal.commands.values.TokenType._
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.CypherParser
+import org.neo4j.kernel.api.exceptions.schema.{AddIndexFailureException, AlreadyIndexedException}
 
 class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker {
 
@@ -2520,7 +2521,9 @@ RETURN x0.name
     parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
     // WHEN
-    intercept[IndexAlreadyDefinedException](parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})"""))
+    val e = intercept[CypherExecutionException](parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})"""))
+    assert(e.getCause.isInstanceOf[AddIndexFailureException])
+    assert(e.getCause.getCause.isInstanceOf[AlreadyIndexedException])
   }
 
   @Test def union_ftw() {

@@ -60,15 +60,6 @@ public enum StatusCode
     STATEMENT_MISSING_PARAMETER(
             42002 ),
 
-    COULD_NOT_CREATE_INDEX(
-            42101 ),
-    COULD_NOT_DROP_INDEX(
-            42102 ),
-    COULD_NOT_CREATE_CONSTRAINT(
-            42103 ),
-    COULD_NOT_DROP_CONSTRAINT(
-            42104 ),
-
     //
     // 5xxxxx Database errors
     //

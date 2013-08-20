@@ -24,12 +24,12 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.Transactor;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -87,7 +87,7 @@ public class ConstraintIndexCreator
     }
 
     public void validateConstraintIndex( UniquenessConstraint constraint, long indexId )
-            throws ConstraintCreationKernelException
+            throws CreateConstraintFailureException
     {
         try
         {
@@ -103,16 +103,16 @@ public class ConstraintIndexCreator
             Throwable failure = e.getCause();
             if ( failure instanceof ConstraintVerificationFailedKernelException )
             {
-                throw new ConstraintCreationKernelException( constraint, failure );
+                throw new CreateConstraintFailureException( constraint, failure );
             }
             if ( failure instanceof IndexEntryConflictException )
             {
                 IndexEntryConflictException conflict = (IndexEntryConflictException) failure;
-                throw new ConstraintCreationKernelException(
+                throw new CreateConstraintFailureException(
                         constraint, new ConstraintVerificationFailedKernelException( constraint, singleton(
                         new ConstraintVerificationFailedKernelException.Evidence( conflict ) ) ) );
             }
-            throw new ConstraintCreationKernelException( constraint, failure );
+            throw new CreateConstraintFailureException( constraint, failure );
         }
     }
 

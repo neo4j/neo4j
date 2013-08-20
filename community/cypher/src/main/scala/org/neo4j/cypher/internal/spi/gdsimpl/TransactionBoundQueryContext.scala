@@ -29,16 +29,12 @@ import org.neo4j.cypher._
 import org.neo4j.tooling.GlobalGraphOperations
 import collection.mutable
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
-import org.neo4j.helpers.collection.IteratorUtil.singleOrNull
-import org.neo4j.helpers.collection.IteratorUtil
-import org.neo4j.kernel.api.operations.StatementTokenNameLookup
-import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.exceptions.schema.{SchemaKernelException, DropIndexFailureException}
 import org.neo4j.kernel.api.operations.StatementState
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator
 import scala.collection.Iterator
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport.mapToScala
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
                                    ctx: StatementOperationParts, theState: StatementState)
@@ -209,26 +205,11 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
   def getOrCreatePropertyKeyId(propertyKey: String) =
     ctx.keyWriteOperations.propertyKeyGetOrCreateForName(theState, propertyKey)
 
-  def addIndexRule(labelIds: Long, propertyKeyId: Long) {
-    try {
-      ctx.schemaWriteOperations.indexCreate(theState, labelIds, propertyKeyId)
-    } catch {
-      case e: SchemaKernelException =>
-        val labelName = getLabelName(labelIds)
-        val propName = ctx.keyReadOperations.propertyKeyGetName(theState, propertyKeyId)
-        throw new IndexAlreadyDefinedException(labelName, propName, e)
-    }
-  }
+  def addIndexRule(labelIds: Long, propertyKeyId: Long) =
+    ctx.schemaWriteOperations.indexCreate(theState, labelIds, propertyKeyId)
 
-  def dropIndexRule(labelId: Long, propertyKeyId: Long) {
-    try {
-      ctx.schemaWriteOperations.indexDrop(theState, new IndexDescriptor(labelId, propertyKeyId))
-    } catch {
-      case e: DropIndexFailureException =>
-        throw new CouldNotDropIndexException(
-          e.getUserMessage(new StatementTokenNameLookup(theState, ctx.keyReadOperations)), e)
-    }
-  }
+  def dropIndexRule(labelId: Long, propertyKeyId: Long) =
+    ctx.schemaWriteOperations.indexDrop(theState, new IndexDescriptor(labelId, propertyKeyId))
 
   def upgrade(context: QueryContext): LockingQueryContext = new RepeatableReadQueryContext(context, new Locker {
     private val locks = new mutable.ListBuffer[Lock]
@@ -264,24 +245,9 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
 
   def schemaStateContains(key: String) = ctx.schemaStateOperations.schemaStateContains(theState, key)
 
-  def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
-    try {
-      ctx.schemaWriteOperations.uniquenessConstraintCreate(theState, labelId, propertyKeyId)
-    } catch {
-        case e: KernelException =>
-          throw new CouldNotCreateConstraintException(
-            e.getUserMessage(new StatementTokenNameLookup(theState, ctx.keyReadOperations)), e)
-    }
-  }
+  def createUniqueConstraint(labelId: Long, propertyKeyId: Long) =
+    ctx.schemaWriteOperations.uniquenessConstraintCreate(theState, labelId, propertyKeyId)
 
-  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
-    val constraint = singleOrNull(ctx.schemaReadOperations
-                                     .constraintsGetForLabelAndPropertyKey(theState, labelId, propertyKeyId))
-
-    if (constraint == null) {
-      throw new MissingConstraintException()
-    }
-
-    ctx.schemaWriteOperations.constraintDrop(theState, constraint)
-  }
+  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) =
+    ctx.schemaWriteOperations.constraintDrop(theState, new UniquenessConstraint(labelId, propertyKeyId))
 }

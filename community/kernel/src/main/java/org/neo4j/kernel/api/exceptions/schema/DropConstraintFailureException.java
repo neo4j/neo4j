@@ -23,13 +23,13 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
 
-public class ConstraintCreationKernelException extends SchemaKernelException
+public class DropConstraintFailureException extends SchemaKernelException
 {
     private final UniquenessConstraint constraint;
 
-    public ConstraintCreationKernelException( UniquenessConstraint constraint, Throwable cause )
+    public DropConstraintFailureException( UniquenessConstraint constraint, Throwable cause )
     {
-        super( cause, "Unable to create constraint %s: %s", constraint, cause.getMessage() );
+        super( cause, "Unable to drop constraint %s: %s", constraint, cause.getMessage() );
         this.constraint = constraint;
     }
 
@@ -41,7 +41,7 @@ public class ConstraintCreationKernelException extends SchemaKernelException
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        String message = "Unable to create " + constraint.userDescription( tokenNameLookup );
+        String message = "Unable to drop " + constraint.userDescription( tokenNameLookup );
         if ( getCause() instanceof KernelException )
         {
             KernelException cause = (KernelException) getCause();

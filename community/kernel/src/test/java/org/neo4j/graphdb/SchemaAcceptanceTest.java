@@ -34,6 +34,7 @@ import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.lang.String.format;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
@@ -112,7 +113,7 @@ public class SchemaAcceptanceTest
             }
             catch ( ConstraintViolationException e )
             {
-                assertEquals( "Unable to add index on [label: MY_LABEL, my_property_key] : Already " +
+                assertEquals( "Unable to add index :MY_LABEL(my_property_key) : Already " +
                         "indexed :MY_LABEL(my_property_key).", e.getMessage() );
             }
             tx.success();
@@ -458,7 +459,7 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "Unable to add index on [label: MY_LABEL, my_property_key] : Already constrained CONSTRAINT" +
+            assertEquals( "Unable to add index :MY_LABEL(my_property_key) : Already constrained CONSTRAINT" +
                     " ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS UNIQUE.", e.getMessage() );
         }
     }
@@ -477,7 +478,7 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "Unable to add index on [label: MY_LABEL, my_property_key] : Already indexed " +
+            assertEquals( "Unable to add index :MY_LABEL(my_property_key) : Already indexed " +
                     ":MY_LABEL(my_property_key).", e.getMessage() );
         }
     }

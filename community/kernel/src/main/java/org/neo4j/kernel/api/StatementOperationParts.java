@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -453,7 +454,7 @@ public class StatementOperationParts
                 return schemaWriteOperations.uniquenessConstraintCreate( state, labelId, propertyKeyId );
             }
             @Override
-            public void constraintDrop( StatementState state, UniquenessConstraint constraint )
+            public void constraintDrop( StatementState state, UniquenessConstraint constraint ) throws DropConstraintFailureException
             {
                 schemaWriteOperations.constraintDrop( state, constraint );
             }

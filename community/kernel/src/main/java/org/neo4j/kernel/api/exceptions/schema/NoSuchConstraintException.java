@@ -17,15 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.kernel.api.exceptions.schema;
 
-class SchemaModificationException(message:String, cause:Throwable) extends CypherException(message, cause)
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
 
-class IndexAlreadyDefinedException(labelName:String, property:String, cause:Throwable)
-  extends SchemaModificationException(s"Property `$property` is already indexed for label `$labelName`.", cause)
+import static java.lang.String.format;
 
-class CouldNotDropIndexException(message:String, cause:Throwable)
-  extends SchemaModificationException(message, cause)
+public class NoSuchConstraintException extends SchemaKernelException
+{
+    private final UniquenessConstraint constraint;
+    private final static String message = "No such constraint %s.";
 
-class CouldNotCreateConstraintException(message:String, cause:Throwable)
-  extends SchemaModificationException(message, cause)
+    public NoSuchConstraintException( UniquenessConstraint constraint )
+    {
+        super( format( message, constraint ) );
+        this.constraint = constraint;
+    }
+
+    @Override
+    public String getUserMessage( TokenNameLookup tokenNameLookup )
+    {
+        return format( message, constraint.userDescription( tokenNameLookup ) );
+    }
+}

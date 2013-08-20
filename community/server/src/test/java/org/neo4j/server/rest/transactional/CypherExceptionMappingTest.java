@@ -21,7 +21,6 @@ package org.neo4j.server.rest.transactional;
 
 import org.junit.Test;
 
-import org.neo4j.cypher.CouldNotCreateConstraintException;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InternalException;
 import org.neo4j.cypher.ParameterNotFoundException;
@@ -30,7 +29,6 @@ import org.neo4j.server.rest.transactional.error.StatusCode;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.server.rest.transactional.error.StatusCode.COULD_NOT_CREATE_CONSTRAINT;
 import static org.neo4j.server.rest.transactional.error.StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR;
 import static org.neo4j.server.rest.transactional.error.StatusCode.STATEMENT_EXECUTION_ERROR;
 import static org.neo4j.server.rest.transactional.error.StatusCode.STATEMENT_MISSING_PARAMETER;
@@ -48,12 +46,6 @@ public class CypherExceptionMappingTest
     public void shouldMap_ParameterNotFoundException_to_STATEMENT_MISSING_PARAMETER() throws Exception
     {
         assertEquals( STATEMENT_MISSING_PARAMETER, map( new ParameterNotFoundException( "message" ) ));
-    }
-
-    @Test
-    public void shouldMap_CouldNotCreateConstraintException_to_COULD_NOT_CREATE_CONSTRAINT() throws Exception
-    {
-        assertEquals( COULD_NOT_CREATE_CONSTRAINT, map( new CouldNotCreateConstraintException( "message", new Exception() ) ));
     }
 
     @Test

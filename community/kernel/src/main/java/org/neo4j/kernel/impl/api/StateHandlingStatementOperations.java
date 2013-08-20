@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -226,7 +226,7 @@ public class StateHandlingStatementOperations implements
             }
             catch ( TransactionalException | KernelException e )
             {
-                throw new ConstraintCreationKernelException( constraint, e );
+                throw new CreateConstraintFailureException( constraint, e );
             }
         }
         return constraint;

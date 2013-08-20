@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.neo4j.cypher.CouldNotCreateConstraintException;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InternalException;
 import org.neo4j.cypher.ParameterNotFoundException;
@@ -37,9 +36,6 @@ public class CypherExceptionMapping implements Function<CypherException, StatusC
 
         if ( SyntaxException.class.isInstance( e ) )
             return StatusCode.STATEMENT_SYNTAX_ERROR;
-
-        if ( CouldNotCreateConstraintException.class.isInstance( e ) )
-            return StatusCode.COULD_NOT_CREATE_CONSTRAINT;
 
         if ( InternalException.class.isInstance( e ) )
             return StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR;

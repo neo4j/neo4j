@@ -23,9 +23,12 @@ import java.util.Iterator;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.SchemaStorage;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -34,9 +37,12 @@ import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 import static java.util.Collections.singletonList;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -51,18 +57,18 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         newTransaction();
 
         // when
-        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
 
         // then
-        assertEquals( constraint, single( statement.constraintsGetForLabelAndPropertyKey( getState(), label, propertyKey ) ) );
-        assertEquals( constraint, single( statement.constraintsGetForLabel( getState(), label ) ) );
+        assertEquals( constraint, single( statement.constraintsGetForLabelAndPropertyKey( getState(), labelId, propertyKeyId ) ) );
+        assertEquals( constraint, single( statement.constraintsGetForLabel( getState(), labelId ) ) );
 
         // given
         commit();
         newTransaction();
 
         // when
-        Iterator<UniquenessConstraint> constraints = statement.constraintsGetForLabelAndPropertyKey( getState(), label, propertyKey );
+        Iterator<UniquenessConstraint> constraints = statement.constraintsGetForLabelAndPropertyKey( getState(), labelId, propertyKeyId );
 
         // then
         assertEquals( constraint, single( constraints ) );
@@ -74,14 +80,14 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // given
         newTransaction();
 
-        statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
 
         // when
         rollback();
         newTransaction();
 
         // then
-        Iterator<UniquenessConstraint> constraints = statement.constraintsGetForLabelAndPropertyKey( getState(), label, propertyKey );
+        Iterator<UniquenessConstraint> constraints = statement.constraintsGetForLabelAndPropertyKey( getState(), labelId, propertyKeyId );
         assertFalse( "should not have any constraints", constraints.hasNext() );
     }
 
@@ -91,20 +97,20 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // given
         newTransaction();
 
-        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
 
         // when
         statement.constraintDrop( getState(), constraint );
 
         // then
-        assertFalse( "should not have any constraints", statement.constraintsGetForLabelAndPropertyKey( getState(), label, propertyKey ).hasNext() );
+        assertFalse( "should not have any constraints", statement.constraintsGetForLabelAndPropertyKey( getState(), labelId, propertyKeyId ).hasNext() );
 
         // when
         commit();
         newTransaction();
 
         // then
-        assertFalse( "should not have any constraints", statement.constraintsGetForLabelAndPropertyKey( getState(), label, propertyKey ).hasNext() );
+        assertFalse( "should not have any constraints", statement.constraintsGetForLabelAndPropertyKey( getState(), labelId, propertyKeyId ).hasNext() );
     }
 
     @Test
@@ -112,14 +118,14 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
         commit();
 
         // when
         newTransaction();
         try
         {
-            statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+            statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
             fail( "Should not have validated" );
         }
         // then
@@ -134,19 +140,19 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
         commit();
         SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
         newTransaction();
 
         // when
         statement.constraintDrop( getState(), constraint );
-        statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
         commit();
         newTransaction();
 
         // then
-        assertEquals( singletonList( constraint ), asCollection( statement.constraintsGetForLabelAndPropertyKey( getState(), label, propertyKey ) ) );
+        assertEquals( singletonList( constraint ), asCollection( statement.constraintsGetForLabelAndPropertyKey( getState(), labelId, propertyKeyId ) ) );
         schemaState.assertNotCleared();
     }
 
@@ -159,7 +165,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         newTransaction();
 
         // when
-        statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
         commit();
 
         // then
@@ -172,7 +178,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
         commit();
 
         SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
@@ -193,12 +199,12 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // when
         newTransaction();
-        statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
         commit();
 
         // then
         newTransaction();
-        assertEquals( asSet( new IndexDescriptor( label, propertyKey ) ), asSet( statement.uniqueIndexesGetAll( getState() ) ) );
+        assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), asSet( statement.uniqueIndexesGetAll( getState() ) ) );
     }
 
     @Test
@@ -206,8 +212,8 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        statement.uniquenessConstraintCreate( getState(), label, propertyKey );
-        assertEquals( asSet( new IndexDescriptor( label, propertyKey ) ), asSet( statement.uniqueIndexesGetAll( getState() ) ) );
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
+        assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), asSet( statement.uniqueIndexesGetAll( getState() ) ) );
 
         // when
         rollback();
@@ -223,8 +229,8 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // given
         newTransaction();
-        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), label, propertyKey );
-        assertEquals( asSet( new IndexDescriptor( label, propertyKey ) ), asSet( statement.uniqueIndexesGetAll( getState() ) ) );
+        UniquenessConstraint constraint = statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
+        assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), asSet( statement.uniqueIndexesGetAll( getState() ) ) );
         commit();
 
         // when
@@ -239,29 +245,54 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     }
 
     @Test
+    public void shouldNotDropConstraintThatDoesNotExist() throws Exception
+    {
+        // given
+
+        // when
+        newTransaction();
+
+        try
+        {
+            statement.constraintDrop( getState(), new UniquenessConstraint( labelId, propertyKeyId ) );
+            fail( "Should not have dropped constraint" );
+        }
+        catch ( DropConstraintFailureException e )
+        {
+            assertThat( e.getCause(), instanceOf( NoSuchConstraintException.class ) );
+        }
+        commit();
+
+        // then
+        newTransaction();
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll( getState() ) ) );
+        commit();
+    }
+
+    @Test
     public void committedConstraintRuleShouldCrossReferenceTheCorrespondingIndexRule() throws Exception
     {
         // when
         newTransaction();
-        statement.uniquenessConstraintCreate( getState(), label, propertyKey );
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
         commit();
 
         // then
         SchemaStorage schema = new SchemaStorage( neoStore().getSchemaStore() );
-        IndexRule indexRule = schema.indexRule( label, propertyKey );
-        UniquenessConstraintRule constraintRule = schema.uniquenessConstraint( label, propertyKey );
+        IndexRule indexRule = schema.indexRule( labelId, propertyKeyId );
+        UniquenessConstraintRule constraintRule = schema.uniquenessConstraint( labelId, propertyKeyId );
         assertEquals( constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
         assertEquals( indexRule.getId(), constraintRule.getOwnedIndex() );
     }
 
-    private long label, propertyKey;
+    private long labelId, propertyKeyId;
 
     @Before
     public void createKeys() throws SchemaKernelException
     {
         newTransaction();
-        this.label = statement.labelGetOrCreateForName( getState(), "Foo" );
-        this.propertyKey = statement.propertyKeyGetOrCreateForName( getState(), "bar" );
+        this.labelId = statement.labelGetOrCreateForName( getState(), "Foo" );
+        this.propertyKeyId = statement.propertyKeyGetOrCreateForName( getState(), "bar" );
         commit();
     }
 

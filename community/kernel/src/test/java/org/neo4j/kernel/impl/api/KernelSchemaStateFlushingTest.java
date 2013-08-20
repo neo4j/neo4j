@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -39,7 +40,7 @@ import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class KernelSchemaStateFlushingTest
 {
@@ -146,7 +147,7 @@ public class KernelSchemaStateFlushingTest
         return descriptor;
     }
 
-    private void dropConstraint( UniquenessConstraint descriptor )
+    private void dropConstraint( UniquenessConstraint descriptor ) throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
         KernelTransaction txc = txManager.getKernelTransaction();

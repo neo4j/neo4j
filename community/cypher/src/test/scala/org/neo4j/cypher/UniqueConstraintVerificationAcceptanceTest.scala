@@ -25,6 +25,7 @@ import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
 import org.neo4j.kernel.api.StatementOperations
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
 
 class UniqueConstraintVerificationAcceptanceTest
   extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
@@ -129,7 +130,8 @@ class UniqueConstraintVerificationAcceptanceTest
     // THEN
     catch
     {
-      case ex: CouldNotCreateConstraintException =>
+      case ex: CypherExecutionException =>
+        assert(ex.getCause.isInstanceOf[CreateConstraintFailureException])
     }
 
     graph.inTx {

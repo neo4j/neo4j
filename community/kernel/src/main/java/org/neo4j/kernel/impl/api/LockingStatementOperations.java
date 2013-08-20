@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -214,6 +215,7 @@ public class LockingStatementOperations implements
 
     @Override
     public void constraintDrop( StatementState state, UniquenessConstraint constraint )
+            throws DropConstraintFailureException
     {
         state.locks().acquireSchemaWriteLock();
         schemaWriteDelegate.constraintDrop( state, constraint );
@@ -228,8 +230,8 @@ public class LockingStatementOperations implements
     }
     
     @Override
-    public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
-            EntityNotFoundException
+    public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         state.locks().acquireNodeWriteLock( nodeId );
         return entityWriteDelegate.nodeRemoveProperty( state, nodeId, propertyKeyId );

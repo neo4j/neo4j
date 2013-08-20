@@ -279,8 +279,8 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     graph.createIndex("LabelName", "Prop")
 
     expectError("CREATE INDEX ON :LabelName(Prop)",
-      vLegacy -> "Property `Prop` is already indexed for label `LabelName`.",
-      v2_0 -> "Property `Prop` is already indexed for label `LabelName`."
+      vLegacy -> "Already indexed :LabelName(Prop)",
+      v2_0 -> "Already indexed :LabelName(Prop)"
     )
   }
 
@@ -318,7 +318,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def drop_a_non_existent_constraint() {
     expectError("DROP CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
-      v2_0 -> "Constraint not found"
+      v2_0 -> "No such constraint"
     )
   }
 

@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
@@ -70,7 +70,7 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( ConstraintCreationKernelException ex )
+        catch ( CreateConstraintFailureException ex )
         {
             assertEquals( new UniquenessConstraint( foo, name ), ex.constraint() );
             Throwable cause = ex.getCause();
@@ -130,7 +130,7 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
         {
             Throwable cause = ex.getCause();
             assertThat( cause, instanceOf( ConstraintCreationException.class ) );
-            ConstraintCreationKernelException creationException = (ConstraintCreationKernelException) cause.getCause();
+            CreateConstraintFailureException creationException = (CreateConstraintFailureException) cause.getCause();
 
             assertEquals( new UniquenessConstraint( foo, name ), creationException.constraint() );
             cause = creationException.getCause();

@@ -19,24 +19,35 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
-public class AlreadyIndexedException extends SchemaKernelException
+public class CreateConstraintFailureException extends SchemaKernelException
 {
-    private static final String MESSAGE = "Already indexed %s.";
+    private final UniquenessConstraint constraint;
 
-    private final IndexDescriptor descriptor;
-
-    public AlreadyIndexedException( IndexDescriptor descriptor )
+    public CreateConstraintFailureException( UniquenessConstraint constraint, Throwable cause )
     {
-        super( String.format( MESSAGE, descriptor ) );
-        this.descriptor = descriptor;
+        super( cause, "Unable to create constraint %s: %s", constraint, cause.getMessage() );
+        this.constraint = constraint;
+    }
+
+    public UniquenessConstraint constraint()
+    {
+        return constraint;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return String.format( String.format( MESSAGE, descriptor.userDescription( tokenNameLookup ) ) );
+        String message = "Unable to create " + constraint.userDescription( tokenNameLookup );
+        if ( getCause() instanceof KernelException )
+        {
+            KernelException cause = (KernelException) getCause();
+
+            return String.format( "%s:%n%s", message, cause.getUserMessage( tokenNameLookup ) );
+        }
+        return message;
     }
 }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
 public class ConstraintCreationException extends RuntimeException
 {
-    public ConstraintCreationException( ConstraintCreationKernelException cause )
+    public ConstraintCreationException( CreateConstraintFailureException cause )
     {
         super( cause );
     }

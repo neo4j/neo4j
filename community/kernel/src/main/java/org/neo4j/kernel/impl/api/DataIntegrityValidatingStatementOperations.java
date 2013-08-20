@@ -26,16 +26,18 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintCreationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
+import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -65,15 +67,6 @@ public class DataIntegrityValidatingStatementOperations implements
         return keyWriteDelegate.propertyKeyGetOrCreateForName( state, checkValidTokenName( propertyKey ) );
     }
 
-    private String checkValidTokenName( String name ) throws IllegalTokenNameException
-    {
-        if ( name == null || name.isEmpty() )
-        {
-            throw new IllegalTokenNameException( name );
-        }
-        return name;
-    }
-
     @Override
     public long labelGetOrCreateForName( StatementState state, String label ) throws SchemaKernelException
     {
@@ -93,25 +86,6 @@ public class DataIntegrityValidatingStatementOperations implements
             throw new AddIndexFailureException(labelId, propertyKey, e);
         }
         return schemaWriteDelegate.indexCreate( state, labelId, propertyKey );
-    }
-
-    private void checkIndexExistence( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
-    {
-        for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )
-        {
-            if ( descriptor.getPropertyKeyId() == propertyKey )
-            {
-                throw new AlreadyIndexedException( descriptor );
-            }
-        }
-        for ( IndexDescriptor descriptor : loop( schemaReadDelegate.uniqueIndexesGetForLabel( state, labelId ) ) )
-        {
-            if ( descriptor.getPropertyKeyId() == propertyKey )
-            {
-                throw new AlreadyConstrainedException(
-                        new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
-            }
-        }
     }
 
     @Override
@@ -136,20 +110,6 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.uniqueIndexDrop( state, descriptor );
     }
 
-    private void assertIsNotUniqueIndex( IndexDescriptor descriptor, Iterator<IndexDescriptor> uniqueIndexes )
-            throws IndexBelongsToConstraintException
-
-    {
-        while ( uniqueIndexes.hasNext() )
-        {
-            IndexDescriptor uniqueIndex = uniqueIndexes.next();
-            if ( uniqueIndex.getPropertyKeyId() == descriptor.getPropertyKeyId() )
-            {
-                throw new IndexBelongsToConstraintException( descriptor );
-            }
-        }
-    }
-
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKey )
             throws SchemaKernelException
@@ -168,10 +128,67 @@ public class DataIntegrityValidatingStatementOperations implements
         }
         catch ( KernelException e )
         {
-            throw new ConstraintCreationKernelException(new UniquenessConstraint( labelId, propertyKey ), e);
+            throw new CreateConstraintFailureException(new UniquenessConstraint( labelId, propertyKey ), e);
         }
 
         return schemaWriteDelegate.uniquenessConstraintCreate( state, labelId, propertyKey );
+    }
+
+    @Override
+    public void constraintDrop( StatementState state, UniquenessConstraint constraint ) throws DropConstraintFailureException
+    {
+        try
+        {
+            assertConstraintExists( constraint, schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
+                    state, constraint.label(), constraint.propertyKeyId() ) );
+        }
+        catch ( NoSuchConstraintException e )
+        {
+            throw new DropConstraintFailureException( constraint, e );
+        }
+        schemaWriteDelegate.constraintDrop( state, constraint );
+    }
+
+    private void checkIndexExistence( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
+    {
+        for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )
+        {
+            if ( descriptor.getPropertyKeyId() == propertyKey )
+            {
+                throw new AlreadyIndexedException( descriptor );
+            }
+        }
+        for ( IndexDescriptor descriptor : loop( schemaReadDelegate.uniqueIndexesGetForLabel( state, labelId ) ) )
+        {
+            if ( descriptor.getPropertyKeyId() == propertyKey )
+            {
+                throw new AlreadyConstrainedException(
+                        new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
+            }
+        }
+    }
+
+    private String checkValidTokenName( String name ) throws IllegalTokenNameException
+    {
+        if ( name == null || name.isEmpty() )
+        {
+            throw new IllegalTokenNameException( name );
+        }
+        return name;
+    }
+
+    private void assertIsNotUniqueIndex( IndexDescriptor descriptor, Iterator<IndexDescriptor> uniqueIndexes )
+            throws IndexBelongsToConstraintException
+
+    {
+        while ( uniqueIndexes.hasNext() )
+        {
+            IndexDescriptor uniqueIndex = uniqueIndexes.next();
+            if ( uniqueIndex.getPropertyKeyId() == descriptor.getPropertyKeyId() )
+            {
+                throw new IndexBelongsToConstraintException( descriptor );
+            }
+        }
     }
 
     private void assertIndexExists( IndexDescriptor descriptor, Iterator<IndexDescriptor> indexes )
@@ -186,12 +203,17 @@ public class DataIntegrityValidatingStatementOperations implements
         }
         throw new NoSuchIndexException( descriptor );
     }
-    
-    // === TODO Below is unnecessary delegate methods
 
-    @Override
-    public void constraintDrop( StatementState state, UniquenessConstraint constraint )
+    private void assertConstraintExists( UniquenessConstraint constraint, Iterator<UniquenessConstraint> constraints )
+            throws NoSuchConstraintException
     {
-        schemaWriteDelegate.constraintDrop( state, constraint );
+        for ( UniquenessConstraint existing : loop( constraints ) )
+        {
+            if ( existing.equals( constraint.label(), constraint.propertyKeyId() ) )
+            {
+                return;
+            }
+        }
+        throw new NoSuchConstraintException( constraint );
     }
 }
