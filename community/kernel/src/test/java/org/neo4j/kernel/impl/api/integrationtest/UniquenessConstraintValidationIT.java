@@ -24,12 +24,15 @@ import org.junit.Test;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 {
@@ -157,6 +160,28 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         {
             assertThat( e.getMessage(), containsString( "\"key1\"=[value2]" ) );
         }
+    }
+
+    @Test
+    public void shouldAllowCreationOfNonConflictingData() throws Exception
+    {
+        // given
+        constrainedNode( "Label1", "key1", "value1" );
+
+        newTransaction();
+        // when
+        db.createNode().setProperty( "key1", "value1" );
+        db.createNode( label( "Label2" ) ).setProperty( "key1", "value1" );
+        db.createNode( label( "Label1" ) ).setProperty( "key1", "value2" );
+        db.createNode( label( "Label1" ) ).setProperty( "key2", "value1" );
+
+        commit();
+
+        // then
+        newTransaction();
+        db.getReferenceNode().delete();
+        assertEquals( "number of nodes", 5, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+        rollback();
     }
 
     private Node constrainedNode( String labelName, String propertyKey, Object propertyValue ) throws

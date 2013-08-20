@@ -125,4 +125,21 @@ class UniqueConstraintValidationAcceptanceTest
       seq += 1
     }
   }
+
+  @Test
+  def should_allow_creation_of_non_conflicting_data() {
+    // GIVEN
+    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
+    parseAndExecute("create ( node:Label1 { key1:'value1' } )")
+
+    // WHEN
+    parseAndExecute("create ( node { key1:'value1' } )")
+    parseAndExecute("create ( node:Label2 { key1:'value1' } )")
+    parseAndExecute("create ( node:Label1 { key1:'value2' } )")
+    parseAndExecute("create ( node:Label1 { key2:'value1' } )")
+
+    // THEN
+    val result: ExecutionResult = parseAndExecute("match (n) where id(n) <> 0 return count(*) as nodeCount")
+    assertEquals(List(5), result.columnAs[Int]("nodeCount").toList)
+  }
 }
