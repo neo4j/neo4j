@@ -24,7 +24,7 @@ import internal.executionplan.ExecutionPlanBuilder
 import internal.executionplan.verifiers.{OptionalPatternWithoutStartVerifier, HintVerifier, Verifier}
 import org.neo4j.cypher.internal.{CypherParser, LRUCache}
 import internal.spi.gdsimpl.{TransactionBoundPlanContext, TransactionBoundQueryContext}
-import internal.spi.QueryContext
+import org.neo4j.cypher.internal.spi.{ExceptionTranslatingQueryContext, QueryContext}
 import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI, InternalAbstractGraphDatabase}
@@ -83,7 +83,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     .statementForWriting()
     
   private def createQueryContext(tx: Transaction, ctx: StatementOperationParts, state: StatementState) = {
-    new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, ctx, state)
+    new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, ctx, state))
   }
 
   @throws(classOf[SyntaxException])

@@ -24,7 +24,6 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
-import org.neo4j.kernel.impl.api.constraints.ConstraintViolationKernelException
 
 class UniqueConstraintValidationAcceptanceTest
   extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
@@ -43,8 +42,8 @@ class UniqueConstraintValidationAcceptanceTest
     }
     catch
     {
-      case e: ConstraintViolationKernelException =>
-        assertThat(e.getMessage, containsString("already exists"))
+      case e: CypherExecutionException =>
+        assertThat(e.getMessage, containsString( "\"key1\"=[value1]" ))
     }
   }
 
@@ -62,8 +61,8 @@ class UniqueConstraintValidationAcceptanceTest
     }
     catch
     {
-      case e: ConstraintViolationKernelException =>
-        assertThat(e.getMessage, containsString("already exists"))
+      case e: CypherExecutionException =>
+        assertThat(e.getMessage, containsString( "\"key1\"=[value1]" ))
     }
   }
 
@@ -81,8 +80,8 @@ class UniqueConstraintValidationAcceptanceTest
     }
     catch
     {
-      case e: ConstraintViolationKernelException =>
-        assertThat(e.getMessage, containsString("already exists"))
+      case e: CypherExecutionException =>
+        assertThat(e.getMessage, containsString( "\"key1\"=[value1]" ))
     }
   }
 
@@ -99,8 +98,8 @@ class UniqueConstraintValidationAcceptanceTest
     }
     catch
     {
-      case e: ConstraintViolationKernelException =>
-        assertThat(e.getMessage, containsString("already exists"))
+      case e: CypherExecutionException =>
+        assertThat(e.getMessage, containsString( "\"key1\"=[value1]" ))
     }
   }
 
@@ -110,11 +109,20 @@ class UniqueConstraintValidationAcceptanceTest
     parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
     parseAndExecute("create ( node:Label1 { seq:1, key1:'value1' } )")
 
-    // WHEN
-    parseAndExecute("match toRemove:Label1 where toRemove.key1 = 'value1' delete toRemove create ( toAdd:Label1 { seq: 2, key1: 'value1' } )")
+    var seq = 2
+    for (resolve <- List("delete toRemove", "remove toRemove.key1", "remove toRemove:Label1", "set toRemove.key1 = 'value2'"))
+    {
+      // WHEN
+      parseAndExecute(
+        "match toRemove:Label1 where toRemove.key1 = 'value1' " +
+          resolve +
+          " create ( toAdd:Label1 { seq: {seq}, key1: 'value1' } )",
+        "seq" -> seq)
 
-    // THEN
-    val result: ExecutionResult = parseAndExecute("match n:Label1 where n.key1 = 'value1' return n.seq as seq")
-    assertEquals(List(2), result.columnAs[Int]("seq").toList)
+      // THEN
+      val result: ExecutionResult = parseAndExecute("match n:Label1 where n.key1 = 'value1' return n.seq as seq")
+      assertEquals(List(seq), result.columnAs[Int]("seq").toList)
+      seq += 1
+    }
   }
 }

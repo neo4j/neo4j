@@ -21,10 +21,13 @@ package org.neo4j.cypher
 
 import internal.commands.expressions.Expression
 import internal.commands.SchemaIndex
+import org.neo4j.kernel.api.exceptions.KernelException
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(message:String) = this(message, null)
 }
+
+class CypherExecutionException(message: String, cause: KernelException) extends CypherException(message, cause)
 
 class UniquePathNotUniqueException(message:String) extends CypherException(message)
 
@@ -34,7 +37,7 @@ class CypherTypeException(message: String, cause: Throwable = null) extends Cyph
 
 class IterableRequiredException(message:String, cause:Throwable) extends CypherException(message, cause) {
   def this(message:String) = this(message, null)
-  def this(expression:Expression) = this("Expected " + expression + " to be an collection, but it is not.", null)
+  def this(expression:Expression) = this("Expected " + expression + " to be a collection, but it is not.", null)
 }
 
 class ParameterNotFoundException(message:String, cause:Throwable) extends CypherException(message, cause) {
