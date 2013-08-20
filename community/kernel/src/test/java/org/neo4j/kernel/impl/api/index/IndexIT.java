@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.Transactor;
@@ -29,12 +30,11 @@ import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.transaction.TxManager;
 
-import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -164,9 +164,9 @@ public class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( format( "Unable to add index on [label: %s, %s] : Already constrained " +
-                    "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE.",
-                    labelId, propertyKey, labelId, propertyKey ), e.getMessage() );
+            assertEquals( "Unable to add index :label[5](property[8]) : " +
+                    "Already constrained CONSTRAINT ON ( n:label[5] ) " +
+                    "ASSERT n.property[8] IS UNIQUE.", e.getMessage() );
         }
     }
 
