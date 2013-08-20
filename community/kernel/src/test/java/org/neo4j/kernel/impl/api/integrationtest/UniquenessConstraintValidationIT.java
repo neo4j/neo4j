@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -36,29 +37,22 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     public void shouldEnforceUniquenessConstraintOnSetProperty() throws Exception
     {
         // given
-        newTransaction();
-        db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
-        long foo = statement.labelGetForName( getState(), "Foo" );
-        long name = statement.propertyKeyGetForName( getState(), "name" );
-        commit();
-        newTransaction();
-        statement.uniquenessConstraintCreate( getState(), foo, name );
-        commit();
+        constrainedNode( "Label1", "key1", "value1" );
 
         newTransaction();
 
         // when
-        Node node = db.createNode( label( "Foo" ) );
+        Node node = db.createNode( label( "Label1" ) );
         try
         {
-            node.setProperty( "name", "foo" );
+            node.setProperty( "key1", "value1" );
 
             fail( "should have thrown exception" );
         }
         // then
-        catch ( ConstraintViolationException ex )
+        catch ( ConstraintViolationException e )
         {
-            assertThat( ex.getMessage(), containsString( "\"name\"=[foo]" ) );
+            assertThat( e.getMessage(), containsString( "\"key1\"=[value1]" ) );
         }
     }
 
@@ -66,30 +60,117 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     public void shouldEnforceUniquenessConstraintOnAddLabel() throws Exception
     {
         // given
-        newTransaction();
-        db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
-        long foo = statement.labelGetForName( getState(), "Foo" );
-        long name = statement.propertyKeyGetForName( getState(), "name" );
-        commit();
-        newTransaction();
-        statement.uniquenessConstraintCreate( getState(), foo, name );
-        commit();
+        constrainedNode( "Label1", "key1", "value1" );
 
         newTransaction();
 
         // when
         Node node = db.createNode();
-        node.setProperty( "name", "foo" );
+        node.setProperty( "key1", "value1" );
         try
         {
-            node.addLabel( label( "Foo" ) );
+            node.addLabel( label( "Label1" ) );
 
             fail( "should have thrown exception" );
         }
         // then
-        catch ( ConstraintViolationException ex )
+        catch ( ConstraintViolationException e )
         {
-            assertThat( ex.getMessage(), containsString( "\"name\"=[foo]" ) );
+            assertThat( e.getMessage(), containsString( "\"key1\"=[value1]" ) );
         }
+    }
+
+    @Test
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode() throws Exception
+    {
+        // given
+        Node node = constrainedNode( "Label1", "key1", "value1" );
+
+        newTransaction();
+
+        // when
+        node.delete();
+        db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+        commit();
+    }
+
+    @Test
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel() throws Exception
+    {
+        // given
+        Node node = constrainedNode( "Label1", "key1", "value1" );
+
+        newTransaction();
+
+        // when
+        node.removeLabel( label( "Label1" ) );
+        db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+        commit();
+    }
+
+    @Test
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty() throws Exception
+    {
+        // given
+        Node node = constrainedNode( "Label1", "key1", "value1" );
+
+        newTransaction();
+
+        // when
+        node.removeProperty( "key1" );
+        db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+        commit();
+    }
+
+    @Test
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty() throws Exception
+    {
+        // given
+        Node node = constrainedNode( "Label1", "key1", "value1" );
+
+        newTransaction();
+
+        // when
+        node.setProperty( "key1", "value2" );
+        db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+        commit();
+    }
+
+    @Test
+    public void shouldPreventConflictingDataInSameTransaction() throws Exception
+    {
+        // given
+        constrainedNode( "Label1", "key1", "value1" );
+
+        newTransaction();
+
+        // when
+        db.createNode( label( "Label1" ) ).setProperty( "key1", "value2" );
+        try
+        {
+            db.createNode( label( "Label1" ) ).setProperty( "key1", "value2" );
+
+            fail( "expected exception" );
+        }
+        // then
+        catch ( ConstraintViolationException e )
+        {
+            assertThat( e.getMessage(), containsString( "\"key1\"=[value2]" ) );
+        }
+    }
+
+    private Node constrainedNode( String labelName, String propertyKey, Object propertyValue ) throws
+            SchemaKernelException
+    {
+        newTransaction();
+        Node node = db.createNode( label( labelName ) );
+        node.setProperty( propertyKey, propertyValue );
+        long labelId = statement.labelGetForName( getState(), labelName );
+        long propertyKeyId = statement.propertyKeyGetForName( getState(), propertyKey );
+        commit();
+        newTransaction();
+        statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
+        commit();
+        return node;
     }
 }
