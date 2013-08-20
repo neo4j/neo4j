@@ -39,6 +39,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
 import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -320,6 +321,52 @@ public class IndexingAcceptanceTest
         // THEN
         assertThat( sizeBeforeDelete, equalTo(1l) );
         assertThat( sizeAfterDelete, equalTo(2l) );
+    }
+
+    @Test
+    public void shouldBeAbleToQuerySupportedPropertyTypes() throws Exception
+    {
+        // GIVEN
+        String property = "name";
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        createIndex( db, MY_LABEL, property );
+
+        // WHEN & THEN
+        assertCanCreateAndFind( db, MY_LABEL, property, "A String" );
+        assertCanCreateAndFind( db, MY_LABEL, property, true );
+        assertCanCreateAndFind( db, MY_LABEL, property, new Boolean(false) );
+        assertCanCreateAndFind( db, MY_LABEL, property, (short)12 );
+        assertCanCreateAndFind( db, MY_LABEL, property, (int)12 );
+        assertCanCreateAndFind( db, MY_LABEL, property, (long)12l );
+        assertCanCreateAndFind( db, MY_LABEL, property, (float)12. );
+        assertCanCreateAndFind( db, MY_LABEL, property, (double)12. );
+
+        assertCanCreateAndFind( db, MY_LABEL, property, new String[]{"A String"} );
+        assertCanCreateAndFind( db, MY_LABEL, property, new boolean[]{true} );
+        assertCanCreateAndFind( db, MY_LABEL, property, new Boolean[]{false} );
+        assertCanCreateAndFind( db, MY_LABEL, property, new short[]{12} );
+        assertCanCreateAndFind( db, MY_LABEL, property, new int[]{12} );
+        assertCanCreateAndFind( db, MY_LABEL, property, new long[]{12l} );
+        assertCanCreateAndFind( db, MY_LABEL, property, new float[]{(float)12.} );
+        assertCanCreateAndFind( db, MY_LABEL, property, new double[]{12.} );
+
+    }
+
+    private void assertCanCreateAndFind( GraphDatabaseService db, Label label, String propertyKey, Object value )
+    {
+        Node created = createNode( db, map( propertyKey, value ), label );
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node found = single( db.findNodesByLabelAndProperty( label, propertyKey, value ) );
+            assertThat(found, equalTo(created));
+            found.delete();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
