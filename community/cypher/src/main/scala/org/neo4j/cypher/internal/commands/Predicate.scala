@@ -230,11 +230,11 @@ case class True() extends Predicate {
 
 case class Has(identifier: Expression, propertyKey: KeyToken) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = identifier(m) match {
-    case pc: Node                => propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc, _))
-    case pc: Relationship        => propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc, _))
-    case null                    => false
-    case x if UnboundValue.is(x) => false
-    case _                       => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
+    case pc: Node         => propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc, _))
+    case pc: Relationship => propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc, _))
+    case null             => false
+    case UnboundValue     => false
+    case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }
 
   override def toString: String = "hasProp(" + propertyKey.name + ")"

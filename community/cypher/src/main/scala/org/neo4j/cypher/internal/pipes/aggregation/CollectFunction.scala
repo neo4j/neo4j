@@ -31,9 +31,9 @@ class CollectFunction(value:Expression) extends AggregationFunction {
 
   def apply(data: ExecutionContext)(implicit state:QueryState) {
     value(data) match {
-      case null                    =>
-      case x if UnboundValue.is(x) =>
-      case v                       => collection += v
+      case null         =>
+      case UnboundValue =>
+      case v            => collection += v
     }
   }
 

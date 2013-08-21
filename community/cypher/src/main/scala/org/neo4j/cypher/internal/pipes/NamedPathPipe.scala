@@ -37,8 +37,8 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
   // TODO: This is duplicated with PathExtractor
   private def getPath(ctx: ExecutionContext): Path = {
     def get(x: String): PropertyContainer = ctx(x) match {
-      case x if UnboundValue.is(x) => null
-      case x                       => x.asInstanceOf[PropertyContainer]
+      case UnboundValue => null
+      case x            => x.asInstanceOf[PropertyContainer]
     }
 
     val p: Seq[PropertyContainer] = entities.foldLeft(get(firstNode) :: Nil)((soFar, p) => p match {

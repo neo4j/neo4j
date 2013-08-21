@@ -29,9 +29,9 @@ class CountFunction(value: Expression) extends AggregationFunction {
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     value(data) match {
-      case null                    =>
-      case x if UnboundValue.is(x) =>
-      case _                       => count += 1
+      case null         =>
+      case UnboundValue =>
+      case _            => count += 1
     }
   }
 
