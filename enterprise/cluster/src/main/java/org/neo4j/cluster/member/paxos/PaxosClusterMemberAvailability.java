@@ -27,6 +27,8 @@ import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -44,13 +46,18 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     private BindingNotifier binding;
     private AtomicBroadcast atomicBroadcast;
     private BindingListener bindingListener;
+    private ObjectInputStreamFactory objectInputStreamFactory;
+    private ObjectOutputStreamFactory objectOutputStreamFactory;
 
     public PaxosClusterMemberAvailability( InstanceId myId, BindingNotifier binding, AtomicBroadcast atomicBroadcast,
-                                           Logging logging )
+                                           Logging logging, ObjectInputStreamFactory objectInputStreamFactory,
+                                           ObjectOutputStreamFactory objectOutputStreamFactory )
     {
         this.myId = myId;
         this.binding = binding;
         this.atomicBroadcast = atomicBroadcast;
+        this.objectInputStreamFactory = objectInputStreamFactory;
+        this.objectOutputStreamFactory = objectOutputStreamFactory;
         this.logger = logging.getMessagesLog( getClass() );
 
         bindingListener = new BindingListener()
@@ -68,7 +75,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     public void init()
             throws Throwable
     {
-        serializer = new AtomicBroadcastSerializer();
+        serializer = new AtomicBroadcastSerializer( objectInputStreamFactory, objectOutputStreamFactory );
 
         binding.addBindingListener( bindingListener );
     }

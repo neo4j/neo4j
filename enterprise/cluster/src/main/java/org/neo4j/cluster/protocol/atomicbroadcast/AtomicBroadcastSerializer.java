@@ -30,13 +30,21 @@ import java.io.ObjectOutputStream;
  */
 public class AtomicBroadcastSerializer
 {
-    private static final VersionMapper versionMapper = new VersionMapper();
+    private ObjectInputStreamFactory objectInputStreamFactory;
+    private ObjectOutputStreamFactory objectOutputStreamFactory;
+
+    public AtomicBroadcastSerializer( ObjectInputStreamFactory objectInputStreamFactory,
+                                      ObjectOutputStreamFactory objectOutputStreamFactory )
+    {
+        this.objectInputStreamFactory = objectInputStreamFactory;
+        this.objectOutputStreamFactory = objectOutputStreamFactory;
+    }
 
     public Payload broadcast(Object value)
         throws IOException
     {
         ByteArrayOutputStream bout = new ByteArrayOutputStream(  );
-        ObjectOutputStream oout = new LenientObjectOutputStream( bout, versionMapper );
+        ObjectOutputStream oout = objectOutputStreamFactory.create(bout);
         oout.writeObject( value );
         oout.close();
         byte[] bytes = bout.toByteArray();
@@ -47,7 +55,7 @@ public class AtomicBroadcastSerializer
         throws IOException, ClassNotFoundException
     {
         ByteArrayInputStream in = new ByteArrayInputStream( payload.getBuf(), 0, payload.getLen() );
-        ObjectInputStream oin = new LenientObjectInputStream( in, versionMapper );
+        ObjectInputStream oin = objectInputStreamFactory.create( in );
         return oin.readObject();
     }
 }

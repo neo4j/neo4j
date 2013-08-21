@@ -51,6 +51,7 @@ import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -458,8 +459,13 @@ public class ClusterManager
                 Config config1 = new Config( config );
                 Logging clientLogging =life.add( new LogbackService(
                         config1, (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory() ) );
+
+
+                ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
+
                 life.add( new FutureLifecycleAdapter<ClusterClient>( new ClusterClient( ClusterClient.adapt( config1 ),
-                        clientLogging, new NotElectableElectionCredentialsProvider() ) ) );
+                        clientLogging, new NotElectableElectionCredentialsProvider() , objectStreamFactory,
+                        objectStreamFactory ) ) );
             }
         }
 

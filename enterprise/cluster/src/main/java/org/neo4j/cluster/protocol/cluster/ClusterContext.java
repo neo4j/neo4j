@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
@@ -58,12 +60,16 @@ public class ClusterContext
     URI boundAt;
     private boolean joinDenied;
 
+    private ObjectInputStreamFactory objectInputStreamFactory;
+    private ObjectOutputStreamFactory objectOutputStreamFactory;
+
     public ClusterContext( InstanceId me, ProposerContext proposerContext,
                            LearnerContext learnerContext,
                            ClusterConfiguration configuration,
                            Timeouts timeouts, Executor executor,
-                           Logging logging
-    )
+                           Logging logging,
+                           ObjectInputStreamFactory objectInputStreamFactory,
+                           ObjectOutputStreamFactory objectOutputStreamFactory )
     {
         this.me = me;
         this.proposerContext = proposerContext;
@@ -72,6 +78,8 @@ public class ClusterContext
         this.timeouts = timeouts;
         this.executor = executor;
         this.logging = logging;
+        this.objectInputStreamFactory = objectInputStreamFactory;
+        this.objectOutputStreamFactory = objectOutputStreamFactory;
     }
 
     // Cluster API
@@ -223,6 +231,19 @@ public class ClusterContext
     public Iterable<URI> getJoiningInstances()
     {
         return joiningInstances;
+    }
+
+//    public VersionMapper getVersionMapper()
+//    {
+//        return versionMapper;
+//    }
+
+    public ObjectOutputStreamFactory getObjectOutputStreamFactory() {
+        return objectOutputStreamFactory;
+    }
+
+    public ObjectInputStreamFactory getObjectInputStreamFactory() {
+        return objectInputStreamFactory;
     }
 
     public List<ClusterMessage.ConfigurationRequestState> getDiscoveredInstances()

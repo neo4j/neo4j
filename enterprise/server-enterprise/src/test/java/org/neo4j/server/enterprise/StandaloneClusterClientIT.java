@@ -48,6 +48,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
@@ -147,7 +148,8 @@ public class StandaloneClusterClientIT
                     return new ConsoleLogger( StringLogger.SYSTEM );
                 }
             };
-            final ClusterClient client = new ClusterClient( adapt( new Config( config ) ), logging, new ServerIdElectionCredentialsProvider() );
+            ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
+            final ClusterClient client = new ClusterClient( adapt( new Config( config ) ), logging, new ServerIdElectionCredentialsProvider(),objectStreamFactory, objectStreamFactory );
             final CountDownLatch latch = new CountDownLatch( 1 );
             client.addClusterListener( new ClusterListener.Adapter()
             {

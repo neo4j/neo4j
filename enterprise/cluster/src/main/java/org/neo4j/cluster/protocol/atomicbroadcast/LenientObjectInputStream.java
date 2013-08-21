@@ -38,7 +38,9 @@ public class LenientObjectInputStream extends ObjectInputStream
     protected ObjectStreamClass readClassDescriptor() throws IOException, ClassNotFoundException
     {
         ObjectStreamClass wireClassDescriptor = super.readClassDescriptor();
+        System.out.println( "incoming message: " + wireClassDescriptor );
         if(!versionMapper.hasMappingFor( wireClassDescriptor.getName() )) {
+            System.out.println( "add mapping for: " + wireClassDescriptor );
             versionMapper.addMappingFor( wireClassDescriptor.getName(), wireClassDescriptor.getSerialVersionUID() );
         }
 

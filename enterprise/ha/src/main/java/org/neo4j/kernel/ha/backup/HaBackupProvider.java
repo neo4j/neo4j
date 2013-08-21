@@ -36,6 +36,7 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
@@ -99,11 +100,12 @@ public final class HaBackupProvider extends BackupExtensionService
         final Config config = new Config( params,
                 ClusterSettings.class, OnlineBackupSettings.class );
 
+        ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
         final ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
-                new NotElectableElectionCredentialsProvider() ) );
+                new NotElectableElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, new SystemOutLogging(),
-                Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE(), null ) );
+                Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE(), null, objectStreamFactory, objectStreamFactory ) );
 
         // Refresh the snapshot once we join
         clusterClient.addClusterListener( new ClusterListener.Adapter()

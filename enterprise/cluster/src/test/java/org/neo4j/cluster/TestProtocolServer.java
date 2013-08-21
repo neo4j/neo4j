@@ -28,6 +28,7 @@ import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionListener;
@@ -57,7 +58,7 @@ public class TestProtocolServer
         stateMachineExecutor = new DelayedDirectExecutor();
 
         server = factory.newProtocolServer( instanceId, timeoutStrategy, receiver, sender, acceptorInstanceStore,
-                electionCredentialsProvider, stateMachineExecutor );
+                electionCredentialsProvider, stateMachineExecutor, new ObjectStreamFactory(), new ObjectStreamFactory() );
 
         server.listeningAt( serverUri );
     }
