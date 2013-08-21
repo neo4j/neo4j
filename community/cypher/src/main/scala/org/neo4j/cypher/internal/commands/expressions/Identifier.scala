@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 object Identifier {
   def isNamed(x: String) = !notNamed(x)
@@ -35,7 +36,7 @@ case class Identifier(entityName: String) extends Expression with Typed {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
     ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`.".format(entityName)))
 
-  override def toString(): String = entityName
+  override def toString: String = entityName
 
   def rewrite(f: (Expression) => Expression) = f(this)
 

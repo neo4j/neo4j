@@ -1590,11 +1590,18 @@ RETURN x0.name
     assert(List(Map("abs(-1)" -> 1)) === result.toList)
   }
 
-  @Test def shouldBeAbleToDoDistinctOnNull() {
-    val a = createNode()
+  @Test def shouldBeAbleToDoDistinctOnUnboundNode() {
+    createNode()
 
     val result = parseAndExecute("start a=node(1) match a-[?]->b return count(distinct b)")
     assert(List(Map("count(distinct b)" -> 0)) === result.toList)
+  }
+
+  @Test def shouldBeAbleToDoDistinctOnNull() {
+    createNode()
+
+    val result = parseAndExecute("start a=node(1) return count(distinct a.foo)")
+    assert(List(Map("count(distinct a.foo)" -> 0)) === result.toList)
   }
 
   @Test def exposesIssue198() {
@@ -1624,6 +1631,14 @@ RETURN x0.name
         fail("wut?")
       }
     })
+  }
+
+  @Test def functions_should_return_null_if_they_get_unb_in() {
+    createNode()
+
+    val result = parseAndExecute("start a=node(1) match p=a-[r?]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
+
+    assert(List(Map("length(p)" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
   }
 
   @Test def functions_should_return_null_if_they_get_null_in() {
@@ -2454,7 +2469,7 @@ RETURN x0.name
     relate(a, b2)
 
     // WHEN
-    val result = parseAndExecute("START a=node(1) MATCH a-->b:foo RETURN b")
+    val result = parseAndExecute(s"START a=node(${nodeId(a)}) MATCH a-->b:foo RETURN b")
 
     // THEN
     assert(result.toList === List(Map("b" -> b1)))
