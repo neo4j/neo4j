@@ -202,8 +202,7 @@ In Cypher, you may need to use the backtick (``) syntax to avoid clashes with Cy
 By convention, labels are written with CamelCase notation, with the first letter in upper case.
 For instance, 'User' or 'CarOwner'.
 
-Labels currently share id space with property keys, meaning the maximum number of labels the database can contain depends on the number of property keys it stores.
-The combined number of property keys and labels that can be stored at the same time is 2^24^ (&#8764; 16 000 000)
+Labels have an id space of an int, meaning the maximum number of labels the database can contain is roughly 2 billion.
 
 [[graphdb-neo4j-paths]]
 == Paths ==
