@@ -106,7 +106,7 @@ public abstract class GraphDatabaseSettings
     @Description("Enable this to specify a parser other than the default one.")
     public static final OptionsSetting cypher_parser_version = new CypherParserSetting( setting(
             "cypher_parser_version",
-            options( CypherParserSetting.v1_9, CypherParserSetting.v2_0 ), NO_DEFAULT ) );
+            options( CypherParserSetting.v1_9, CypherParserSetting.v2_0, CypherParserSetting.vLegacy ), NO_DEFAULT ) );
 
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static GraphDatabaseSetting<Integer> query_cache_size = new IntegerSetting( setting("query_cache_size", INTEGER, "100", min( 0 ) ));
@@ -426,6 +426,9 @@ public abstract class GraphDatabaseSettings
 
         @Description("Cypher v2.0 syntax.")
         public static final String v2_0 = "2.0";
+
+        @Description("Cypher v2.0 syntax with old parser")
+        public static final String vLegacy = "legacy";
 
         public CypherParserSetting( Setting<String> setting )
         {
