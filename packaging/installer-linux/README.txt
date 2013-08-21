@@ -61,16 +61,16 @@ rename the file like so:
 
   mv jdk-7u25-linux-x64.gz jdk-7u25-linux-x64.tar.gz
 
-Packaging the JDK requires the `java-packaging` package to be
-installed. `java-packaging` is a "contrib" package, so "contrib" has
+Packaging the JDK requires the `java-package` package to be
+installed. `java-package` is a "contrib" package, so "contrib" has
 to be added to:
 
   /etc/apt/sources.list
 
-Then you can install `java-packaging`:
+Then you can install `java-package`:
 
   sudo apt-get update
-  sudo apt-get install java-packaging
+  sudo apt-get install java-package
 
 Now you are ready to package the JRE or JDK:
 
