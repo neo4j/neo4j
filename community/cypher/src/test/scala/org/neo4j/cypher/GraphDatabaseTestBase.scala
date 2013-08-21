@@ -28,9 +28,7 @@ import org.neo4j.kernel.ThreadToStatementContextBridge
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.PlanContext
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.scalatest.Assertions
-import org.neo4j.kernel.api.StatementOperations
 import org.neo4j.kernel.api.operations.StatementState
 import org.neo4j.kernel.api.StatementOperationParts
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
@@ -65,6 +63,10 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   def indexRel(r: Relationship, idxName: String, key: String, value: String) {
     graph.inTx(r.getGraphDatabase.index.forRelationships(idxName).add(r, key, value))
   }
+
+  def nodeId(n: Node) = graph.inTx { n.getId }
+
+  def relationshipId(r: Relationship) = graph.inTx { r.getId }
 
   def createNode(): Node = createNode(Map[String, Any]())
 

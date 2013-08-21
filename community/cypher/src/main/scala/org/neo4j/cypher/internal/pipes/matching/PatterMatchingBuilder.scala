@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.commands.Predicate
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
   def getMatches(sourceRow: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
@@ -37,15 +38,15 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
       filter(_.dir == Direction.BOTH)
 
     val mandatoryPattern: Traversable[ExecutionContext] = if (undirectedBoundRelationships.isEmpty) {
-      createPatternMatcher(boundPairs, false, sourceRow, state)
+      createPatternMatcher(boundPairs, includeOptionals = false, sourceRow, state)
     } else {
       val boundRels: Seq[Map[String, MatchingPair]] = createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships, bindings)
 
-      boundRels.map(relMap => createPatternMatcher(relMap ++ boundPairs, false, sourceRow, state)).reduceLeft(_ ++ _)
+      boundRels.map(relMap => createPatternMatcher(relMap ++ boundPairs, includeOptionals = false, sourceRow, state)).reduceLeft(_ ++ _)
     }
 
     if (patternGraph.containsOptionalElements)
-      mandatoryPattern.flatMap(innerMatch => createPatternMatcher(extractBoundMatchingPairs(innerMatch), true, sourceRow, state))
+      mandatoryPattern.flatMap(innerMatch => createPatternMatcher(extractBoundMatchingPairs(innerMatch), includeOptionals = true, sourceRow, state))
     else
       mandatoryPattern
   }
@@ -69,7 +70,7 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
   }
 
   private def createNullValuesForOptionalElements(matchedGraph: ExecutionContext): ExecutionContext = {
-    val m = (patternGraph.keySet -- matchedGraph.keySet).map(_ -> null).toStream
+    val m = (patternGraph.keySet -- matchedGraph.keySet).map(_ -> UnboundValue).toStream
     matchedGraph.newWith(m)
   }
 
