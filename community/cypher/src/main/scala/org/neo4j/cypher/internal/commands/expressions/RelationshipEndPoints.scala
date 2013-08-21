@@ -27,13 +27,15 @@ import org.neo4j.cypher.internal.helpers.CastSupport.erasureCastOrFail
 import org.neo4j.graphdb.Relationship
 
 case class RelationshipEndPoints(relExpression: Expression, start: Boolean) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val rel = erasureCastOrFail[Relationship](relExpression(ctx))
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = relExpression(ctx) match {
+    case null => null
+    case value =>
+      val rel = erasureCastOrFail[Relationship](value)
 
-    if (start)
-      rel.getStartNode
-    else
-      rel.getEndNode
+      if (start)
+        rel.getStartNode
+      else
+        rel.getEndNode
   }
 
   def children: Seq[AstNode[_]] = Seq(relExpression)

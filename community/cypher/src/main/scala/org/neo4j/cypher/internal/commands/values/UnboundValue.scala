@@ -27,15 +27,14 @@ package org.neo4j.cypher.internal.commands.values
  *
  * Semantics:
  *
- * [X] You can't compare it, two unbound are always unequal
- * [X] You can't return it. It will always be mapped to null prior to returning any value.
- * [ ] UnboundValue equals null
- * [ ] Figure out the type. Candidate: UnboundType() subtype of nothing. Alternative: Just use AnyType()
- * [ ] You cannot ask for labels from an unbound value.
- * [ ] Unbound values are invalid arguments to expressions that compute a result value
- * [ ] You cannot get properties from an unbound value.
- * [ ] You cannot remove properties from an unbound value.
- * [ ] You cannot set properties to an unbound value.
+ * - You can't compare it, two unbound are always unequal.
+ * - You can't return it. It will always be mapped to null prior to returning any value.
+ * - UnboundValue equals null.
+ * - Most functions treat unbound values similarly to null, except:
+ *   + labels(UnboundValue) returns null.
+ *   + str(UnboundValue) returns "UNBOUND_VALUE".
+ * - Getting properties from an unbound value returns null.
+ * - Setting/Removing properties on an unbound value has no effect.
  */
 case object UnboundValue {
   def is(v: Any): Boolean = v == this

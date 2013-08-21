@@ -1633,7 +1633,7 @@ RETURN x0.name
     })
   }
 
-  @Test def functions_should_return_null_if_they_get_unb_in() {
+  @Test def functions_should_return_null_if_they_get_path_containing_unbound() {
     createNode()
 
     val result = parseAndExecute("start a=node(1) match p=a-[r?]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
@@ -1641,7 +1641,7 @@ RETURN x0.name
     assert(List(Map("length(p)" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
   }
 
-  @Test def functions_should_return_null_if_they_get_null_in() {
+  @Test def functions_should_return_null_if_they_get_path_containing_null() {
     createNode()
 
     val result = parseAndExecute("start a=node(1) match p=a-[r?]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList

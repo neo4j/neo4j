@@ -58,7 +58,9 @@ object Predicate {
 case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = {
     val nullValue = exp.find {
-      case (e, res) => e(m) == null
+      case (e, res) =>
+        val eVal = e(m)
+        eVal == null || UnboundValue.is(eVal)
     }
 
     nullValue match {
@@ -207,7 +209,12 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
 }
 
 case class IsNull(expression: Expression) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = expression(m) == null
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = expression(m) match {
+    case null         => true
+    case UnboundValue => true
+    case _            => false
+  }
+
   override def toString(): String = expression + " IS NULL"
   def containsIsNull = true
   def rewrite(f: (Expression) => Expression) = IsNull(expression.rewrite(f))
@@ -320,27 +327,27 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with CollectionSupport {
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
-    val value = entity(m)
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = entity(m) match {
 
-    if (value == UnboundValue)
-      return true
+    case UnboundValue =>
+      true
 
-    if (value == null)
-      return false
+    case null =>
+      false
 
-    val node           = CastSupport.erasureCastOrFail[Node](value)
-    val nodeId         = node.getId
-    val queryCtx       = state.query
+    case value =>
+      val node           = CastSupport.erasureCastOrFail[Node](value)
+      val nodeId         = node.getId
+      val queryCtx       = state.query
 
-    val labelId = try {
-      label.getOrCreateId(state.query)
-    } catch {
-      // If we are running in a query were we can't write changes,
-      // just return false for this predicate.
-      case _: NotInTransactionException => return false
-    }
-    queryCtx.isLabelSetOnNode(labelId, nodeId)
+      val labelId = try {
+        label.getOrCreateId(state.query)
+      } catch {
+        // If we are running in a query were we can't write changes,
+        // just return false for this predicate.
+        case _: NotInTransactionException => return false
+      }
+      queryCtx.isLabelSetOnNode(labelId, nodeId)
   }
 
   override def toString = s"hasLabel(${entity}: ${label.name})"

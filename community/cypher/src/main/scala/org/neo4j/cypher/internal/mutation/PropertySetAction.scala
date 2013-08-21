@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
+import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 case class PropertySetAction(prop: Property, e: Expression)
   extends UpdateAction with GraphElementPropertyFunctions {
@@ -33,10 +34,8 @@ case class PropertySetAction(prop: Property, e: Expression)
     implicit val s = state
 
     val value = makeValueNeoSafe(e(context))
-    val entity = mapExpr(context).asInstanceOf[PropertyContainer]
     val qtx = state.query
-
-    entity match {
+    mapExpr(context) match {
       case (n: Node) =>
         if ( null == value )
           propertyKey.getOptId(qtx).foreach(qtx.nodeOps.removeProperty(n, _))
@@ -47,6 +46,7 @@ case class PropertySetAction(prop: Property, e: Expression)
           propertyKey.getOptId(qtx).foreach(qtx.relationshipOps.removeProperty(r, _))
         else
           qtx.relationshipOps.setProperty(r, propertyKey.getOrCreateId(qtx), value)
+      case UnboundValue =>
     }
 
     Iterator(context)

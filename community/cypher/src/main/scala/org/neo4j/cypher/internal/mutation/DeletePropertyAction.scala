@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.symbols.{SymbolTable, MapType}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.KeyToken
+import org.neo4j.cypher.internal.commands.values.{UnboundValue, KeyToken}
 
 case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
   extends UpdateAction {
@@ -34,21 +34,25 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
     propertyKey.getOptId(state.query) match {
       case Some(propertyKeyId) =>
         element(context)(state) match {
-          case n: Node => if (state.query.nodeOps.hasProperty(n, propertyKeyId)) {
-            state.query.nodeOps.removeProperty(n, propertyKeyId)
-          }
+          case n: Node =>
+            if (state.query.nodeOps.hasProperty(n, propertyKeyId)) {
+              state.query.nodeOps.removeProperty(n, propertyKeyId)
+            }
 
-          case r: Relationship => if (state.query.relationshipOps.hasProperty(r, propertyKeyId)) {
-            state.query.relationshipOps.removeProperty(r, propertyKeyId)
-          }
+          case r: Relationship  =>
+            if (state.query.relationshipOps.hasProperty(r, propertyKeyId)) {
+              state.query.relationshipOps.removeProperty(r, propertyKeyId)
+            }
 
-          case _ => throw new ThisShouldNotHappenError("Andres", "This should be a node or a relationship")
+          case UnboundValue =>
+
+          case _ =>
+            throw new ThisShouldNotHappenError("Andres", "This should be a node or a relationship")
         }
 
-        Iterator(context)
       case None =>
-        Iterator.empty
     }
+    Iterator(context)
   }
 
   def identifiers = Nil
