@@ -23,7 +23,6 @@ import java.util.concurrent.Future;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -37,28 +36,14 @@ import org.neo4j.test.OtherThreadRule;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.rules.RuleChain.outerRule;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.test.OtherThreadRule.isBlocked;
+import static org.neo4j.test.OtherThreadRule.isWaiting;
 
 public class UniquenessConstraintValidationConcurrencyIT
 {
-    @Rule
-    public TestRule evaluationOrder()
-    {
-        return outerRule( database ).around( otherThread );
-    }
-
-    private final DatabaseRule database = new ImpermanentDatabaseRule();
-    private final OtherThreadRule<GraphDatabaseService> otherThread = new OtherThreadRule<GraphDatabaseService>()
-    {
-        @Override
-        protected GraphDatabaseService initialState()
-        {
-            return database.getGraphDatabaseService();
-        }
-    };
+    public final @Rule DatabaseRule database = new ImpermanentDatabaseRule();
+    public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Test
     public void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception
@@ -73,7 +58,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             public Future<Boolean> apply( GraphDatabaseService db )
             {
                 db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-                return otherThread.execute( createNode( "Label1", "key1", "value2" ) );
+                return otherThread.execute( createNode( db, "Label1", "key1", "value2" ) );
             }
         } );
 
@@ -96,11 +81,11 @@ public class UniquenessConstraintValidationConcurrencyIT
                 db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
                 try
                 {
-                    return otherThread.execute( createNode( "Label1", "key1", "value1" ) );
+                    return otherThread.execute( createNode( db, "Label1", "key1", "value1" ) );
                 }
                 finally
                 {
-                    assertThat( otherThread, isBlocked() );
+                    assertThat( otherThread, isWaiting() );
                 }
             }
         } );
@@ -124,11 +109,11 @@ public class UniquenessConstraintValidationConcurrencyIT
                 db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
                 try
                 {
-                    return otherThread.execute( createNode( "Label1", "key1", "value1" ) );
+                    return otherThread.execute( createNode( db, "Label1", "key1", "value1" ) );
                 }
                 finally
                 {
-                    assertThat( otherThread, isBlocked() );
+                    assertThat( otherThread, isWaiting() );
                 }
             }
         } );
@@ -151,13 +136,13 @@ public class UniquenessConstraintValidationConcurrencyIT
         };
     }
 
-    private static OtherThreadExecutor.WorkerCommand<GraphDatabaseService, Boolean> createNode(
-            final String label, final String propertyKey, final Object propertyValue )
+    public static OtherThreadExecutor.WorkerCommand<Void, Boolean> createNode(
+            final GraphDatabaseService db, final String label, final String propertyKey, final Object propertyValue )
     {
-        return new OtherThreadExecutor.WorkerCommand<GraphDatabaseService, Boolean>()
+        return new OtherThreadExecutor.WorkerCommand<Void, Boolean>()
         {
             @Override
-            public Boolean doWork( GraphDatabaseService db ) throws Exception
+            public Boolean doWork( Void nothing ) throws Exception
             {
                 Transaction tx = db.beginTx();
                 try

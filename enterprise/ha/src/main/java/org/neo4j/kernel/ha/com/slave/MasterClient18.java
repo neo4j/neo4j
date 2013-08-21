@@ -19,15 +19,11 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.IOException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -43,8 +39,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.HaRequestType18;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
@@ -54,6 +48,10 @@ import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.writeString;
 
 /**
  * The {@link org.neo4j.kernel.ha.com.master.Master} a slave should use to communicate with its master. It
@@ -78,17 +76,6 @@ public class MasterClient18 extends Client<Master> implements MasterClient
                 readTimeoutSeconds, maxConcurrentChannels, Math.min( maxConcurrentChannels,
                 DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), chunkSize );
         this.lockReadTimeout = lockReadTimeout;
-    }
-
-    public MasterClient18( URI masterUri, Logging logging, StoreId storeId, Config config )
-    {
-        this( masterUri.getHost(), masterUri.getPort(), logging, storeId,
-                config.get( HaSettings.read_timeout ),
-                config.get( HaSettings.lock_read_timeout ),
-                config.get( HaSettings.max_concurrent_channels_per_slave ),
-                config.get( HaSettings.com_chunk_size ).intValue() );
-        
-        new Exception().printStackTrace();
     }
 
     @Override
@@ -244,6 +231,13 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     }
 
     @Override
+    public Response<LockResult> acquireIndexEntryWriteLock( RequestContext context, long labelId, long propertyKeyId,
+                                                            String propertyValue )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
+
+    @Override
     public Response<Long> commitSingleResourceTransaction( RequestContext context,
                                                            final String resource, final TxExtractor txGetter )
     {
@@ -297,7 +291,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
                  * This is effectively the use case of awaiting a lock that isn't granted
                  * within the lock read timeout period.
                  */
-                return new Response<Void>( null, getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+                return new Response<>( null, getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
             }
             throw e;
         }

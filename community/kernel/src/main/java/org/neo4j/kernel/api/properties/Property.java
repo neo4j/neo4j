@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import java.lang.reflect.Array;
+
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -72,6 +74,26 @@ public abstract class Property
     public abstract String stringValue() throws PropertyNotFoundException;
 
     public abstract String stringValue( String defaultValue );
+
+    public String valueAsString() throws PropertyNotFoundException
+    {
+        Object value = value();
+        if ( value.getClass().isArray() )
+        {
+            StringBuilder result = new StringBuilder( "[" );
+            String sep = "";
+            for ( int size = Array.getLength( value ), i = 0; i < size; size++ )
+            {
+                result.append( sep ).append( Array.get( value, i ) );
+                sep = ", ";
+            }
+            return result.append( ']' ).toString();
+        }
+        else
+        {
+            return value.toString();
+        }
+    }
 
     public abstract Number numberValue() throws PropertyNotFoundException;
 

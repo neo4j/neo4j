@@ -38,10 +38,9 @@ import org.neo4j.graphdb.Traverser;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.SchemaLock;
+import org.neo4j.kernel.impl.locking.IndexEntryLock;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
-
-import static java.lang.String.format;
 
 public class LockHolderImpl implements LockHolder
 {
@@ -117,7 +116,7 @@ public class LockHolderImpl implements LockHolder
     }
 
     @Override
-    public void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, Object propertyValue )
+    public void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, String propertyValue )
     {
         IndexEntryLock resource = new IndexEntryLock( labelId, propertyKeyId, propertyValue );
         lockManager.getWriteLock( resource, tx );
@@ -250,6 +249,7 @@ public class LockHolderImpl implements LockHolder
     
     // Have them be releasable also since they are internal and will save the
     // amount of garbage produced
+    @SuppressWarnings( "deprecation" )
     private class NodeLock extends EntityLock implements Node
     {
         public NodeLock( long id )
@@ -451,52 +451,6 @@ public class LockHolderImpl implements LockHolder
         {
             return o instanceof GraphProperties &&
                    this.getNodeManager().equals( ((GraphProperties) o).getNodeManager() );
-        }
-    }
-
-    private final class IndexEntryLock
-    {
-        private final long labelId;
-        private final long propertyKeyId;
-        private final Object propertyValue;
-
-        public IndexEntryLock( long labelId, long propertyKeyId, Object propertyValue )
-        {
-            this.labelId = labelId;
-            this.propertyKeyId = propertyKeyId;
-            this.propertyValue = propertyValue;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "IndexEntryLock{labelId=%d, propertyKeyId=%d, propertyValue=%s}",
-                           labelId, propertyKeyId, propertyValue );
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( this == obj )
-            {
-                return true;
-            }
-            if ( obj instanceof IndexEntryLock )
-            {
-                IndexEntryLock that = (IndexEntryLock) obj;
-                return labelId == that.labelId && propertyKeyId == that.propertyKeyId &&
-                       propertyValue.equals( that.propertyValue );
-            }
-            return false;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = (int) (labelId ^ (labelId >>> 32));
-            result = 31 * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
-            result = 31 * result + propertyValue.hashCode();
-            return result;
         }
     }
 }

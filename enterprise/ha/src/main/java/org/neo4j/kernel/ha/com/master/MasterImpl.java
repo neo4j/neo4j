@@ -24,12 +24,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -68,6 +68,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.SchemaLock;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.IndexEntryLock;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -92,8 +93,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private final StringLogger msgLog;
     private final Config config;
 
-    private Map<RequestContext, MasterTransaction> transactions = new ConcurrentHashMap<RequestContext,
-            MasterTransaction>();
+    private Map<RequestContext, MasterTransaction> transactions = new ConcurrentHashMap<>();
     private ScheduledExecutorService unfinishedTransactionsExecutor;
     private long unfinishedTransactionThresholdMillis;
     private final GraphProperties graphProperties;
@@ -164,7 +164,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
                 Map<RequestContext, MasterTransaction> transactions = MasterImpl.this.transactions;
                 synchronized ( transactions )
                 {
-                    return new HashMap<RequestContext, MasterTransaction>( transactions ).entrySet();
+                    return new HashMap<>( transactions ).entrySet();
                 }
             }
         }, UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
@@ -197,7 +197,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
         Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
+            @SuppressWarnings("deprecation")
             LockManager lockManager = graphDb.getLockManager();
+            @SuppressWarnings("deprecation")
             TransactionState state = ((AbstractTransactionManager)graphDb.getTxManager()).getTransactionState();
             for ( Object entity : entities )
             {
@@ -252,11 +254,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             transactions.put( txId, new MasterTransaction( tx ) );
             return tx;
         }
-        catch ( NotSupportedException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( SystemException e )
+        catch ( NotSupportedException | SystemException e )
         {
             throw new RuntimeException( e );
         }
@@ -430,6 +428,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<IdAllocation> allocateIds( IdType idType )
     {
+        @SuppressWarnings("deprecation")
         IdGenerator generator = graphDb.getIdGeneratorFactory().get( idType );
         IdAllocation result = new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ), generator.getHighId(),
                 generator.getDefragCount() );
@@ -443,8 +442,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
         Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
-            XaDataSource dataSource = graphDb.getXaDataSourceManager()
-                    .getXaDataSource( resource );
+            @SuppressWarnings("deprecation")
+            XaDataSource dataSource = graphDb.getXaDataSourceManager().getXaDataSource( resource );
             final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
             Predicate<Long> upUntilThisTx = new Predicate<Long>()
             {
@@ -494,6 +493,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return packResponse( context, null );
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, String name )
     {
@@ -524,8 +524,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<Pair<Integer, Long>> getMasterIdForCommittedTx( long txId, StoreId storeId )
     {
-        XaDataSource nioneoDataSource = graphDb.getXaDataSourceManager()
-                .getNeoStoreDataSource();
+        @SuppressWarnings("deprecation")
+        XaDataSource nioneoDataSource = graphDb.getXaDataSourceManager().getNeoStoreDataSource();
         try
         {
             Pair<Integer, Long> masterId = nioneoDataSource.getMasterForCommittedTx( txId );
@@ -599,13 +599,21 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         return acquireLock( context, WRITE_LOCK_GRABBER, new SchemaLock() );
     }
-    
+
+    @Override
+    public Response<LockResult> acquireIndexEntryWriteLock( RequestContext context, long labelId, long propertyKeyId,
+                                                            String propertyValue )
+    {
+        return acquireLock( context, WRITE_LOCK_GRABBER, new IndexEntryLock( labelId, propertyKeyId, propertyValue ) );
+    }
+
+    @SuppressWarnings("deprecation")
     @Override
     public Response<Void> pushTransaction( RequestContext context, String resourceName, long tx )
     {
         graphDb.getTxIdGenerator().committed( graphDb.getXaDataSourceManager().getXaDataSource( resourceName ),
                 context.getEventIdentifier(), tx, context.machineId() );
-        return new Response<Void>( null, graphDb.getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+        return new Response<>( null, graphDb.getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 
     // =====================================================================
@@ -615,13 +623,14 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     public Map<Integer, Collection<RequestContext>> getOngoingTransactions()
     {
-        Map<Integer, Collection<RequestContext>> result = new HashMap<Integer, Collection<RequestContext>>();
-        for ( RequestContext context : transactions.keySet().toArray( new RequestContext[0] ) )
+        Map<Integer, Collection<RequestContext>> result = new HashMap<>();
+        Set<RequestContext> contexts = transactions.keySet();
+        for ( RequestContext context : contexts.toArray( new RequestContext[contexts.size()] ) )
         {
             Collection<RequestContext> txs = result.get( context.machineId() );
             if ( txs == null )
             {
-                txs = new ArrayList<RequestContext>();
+                txs = new ArrayList<>();
                 result.put( context.machineId(), txs );
             }
             txs.add( context );

@@ -100,7 +100,7 @@ public class WritableStatementState implements StatementState
         }
 
         @Override
-        public void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, Object propertyValue )
+        public void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, String propertyValue )
         {
             throw placeHolderException();
         }

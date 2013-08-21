@@ -90,4 +90,7 @@ public interface Master
     Response<LockResult> acquireSchemaReadLock( RequestContext context );
 
     Response<LockResult> acquireSchemaWriteLock( RequestContext context );
+
+    Response<LockResult> acquireIndexEntryWriteLock( RequestContext context,
+                                                     long labelId, long propertyKeyId, String propertyValue );
 }

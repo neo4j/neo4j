@@ -35,7 +35,11 @@ public interface LockHolder
 
     void acquireSchemaWriteLock();
 
-    void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, Object propertyValue );
+    /**
+     * @param propertyValue is a string for serialization purposes (HA). There can be clashes, but these are rare
+     *                      enough, transient, and does not affect correctness.
+     */
+    void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, String propertyValue );
 
     void releaseLocks();
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -255,5 +256,15 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
             }
         }
         return true;
+    }
+
+    void printStackTrace( PrintStream out )
+    {
+        Thread thread = getThread();
+        out.println( thread );
+        for ( StackTraceElement trace : thread.getStackTrace() )
+        {
+            out.println( "\tat " + trace );
+        }
     }
 }

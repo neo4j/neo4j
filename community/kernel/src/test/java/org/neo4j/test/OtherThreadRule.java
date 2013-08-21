@@ -67,7 +67,7 @@ public class OtherThreadRule<STATE> implements TestRule
         return null;
     }
 
-    public static Matcher<OtherThreadRule> isBlocked()
+    public static Matcher<OtherThreadRule> isWaiting()
     {
         return new TypeSafeMatcher<OtherThreadRule>()
         {
@@ -76,11 +76,12 @@ public class OtherThreadRule<STATE> implements TestRule
             {
                 try
                 {
-                    rule.executor.waitUntilWaiting();
+                    rule.executor.waitUntilThreadState( Thread.State.WAITING, Thread.State.TIMED_WAITING );
                     return true;
                 }
                 catch ( TimeoutException e )
                 {
+                    rule.executor.printStackTrace( System.err );
                     return false;
                 }
             }

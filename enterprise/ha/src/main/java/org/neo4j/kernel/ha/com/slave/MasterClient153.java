@@ -19,19 +19,14 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
-import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
@@ -55,6 +50,11 @@ import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
+
 /**
  * The {@link org.neo4j.kernel.ha.com.master.Master} a slave should use to communicate with its master. It
  * serializes requests and sends them to the master, more specifically
@@ -68,18 +68,6 @@ public class MasterClient153 extends Client<Master> implements Master, MasterCli
      * Version 2 since 2012-01-24 */
     public static final byte PROTOCOL_VERSION = 2;
 
-    static final ObjectSerializer<LockResult> LOCK_SERIALIZER = new ObjectSerializer<LockResult>()
-    {
-        @Override
-        public void write( LockResult responseObject, ChannelBuffer result ) throws IOException
-        {
-            result.writeByte( responseObject.getStatus().ordinal() );
-            if ( responseObject.getStatus().hasMessage() )
-            {
-                writeString( result, responseObject.getDeadlockMessage() );
-            }
-        }
-    };
     protected static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
     {
         @Override
@@ -224,7 +212,14 @@ public class MasterClient153 extends Client<Master> implements Master, MasterCli
     {
         throw new UnsupportedOperationException( "Should never be called from the client side" );
     }
-    
+
+    @Override
+    public Response<LockResult> acquireIndexEntryWriteLock( RequestContext context, long labelId, long propertyKeyId,
+                                                            String propertyValue )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
+
     @Override
     public Response<Long> commitSingleResourceTransaction( RequestContext context, final String resource,
             final TxExtractor txGetter )
@@ -278,7 +273,7 @@ public class MasterClient153 extends Client<Master> implements Master, MasterCli
                  * This is effectively the use case of awaiting a lock that isn't granted
                  * within the lock read timeout period.
                  */
-                return new Response<Void>( null, getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+                return new Response<>( null, getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
             }
             throw e;
         }

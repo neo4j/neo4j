@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -37,7 +34,6 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.StoreWriter;
-import org.neo4j.com.TargetCaller;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
@@ -51,6 +47,10 @@ import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.writeString;
 
 /**
  * The {@link org.neo4j.kernel.ha.com.master.Master} a slave should use to communicate with its master. It
@@ -216,7 +216,14 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     {
         throw new UnsupportedOperationException( "Should never be called from the client side" );
     }
-    
+
+    @Override
+    public Response<LockResult> acquireIndexEntryWriteLock( RequestContext context, long labelId, long propertyKeyId,
+                                                            String propertyValue )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
+
     @Override
     public Response<Long> commitSingleResourceTransaction( RequestContext context,
             final String resource, final TxExtractor txGetter )
@@ -270,7 +277,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
                  * This is effectively the use case of awaiting a lock that isn't granted
                  * within the lock read timeout period.
                  */
-                return new Response<Void>( null, getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+                return new Response<>( null, getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
             }
             throw e;
         }
@@ -399,22 +406,5 @@ public class MasterClient17 extends Client<Master> implements MasterClient
             writeString( buffer, index );
             writeString( buffer, key );
         }
-    }
-
-    static abstract class AquireLockCall implements TargetCaller<Master, LockResult>
-    {
-        @Override
-        public Response<LockResult> call( Master master, RequestContext context,
-                ChannelBuffer input, ChannelBuffer target )
-        {
-            long[] ids = new long[input.readInt()];
-            for ( int i = 0; i < ids.length; i++ )
-            {
-                ids[i] = input.readLong();
-            }
-            return lock( master, context, ids );
-        }
-
-        abstract Response<LockResult> lock( Master master, RequestContext context, long... ids );
     }
 }

@@ -100,7 +100,7 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
         try
         {
             Object value = property.value();
-            state.locks().acquireIndexEntryWriteLock( labelId, property.propertyKeyId(), value );
+            state.locks().acquireIndexEntryWriteLock( labelId, property.propertyKeyId(), property.valueAsString() );
             PrimitiveLongIterator existingNodes = entityReadOperations.nodesGetFromIndexLookup(
                     state, new IndexDescriptor( labelId, property.propertyKeyId() ), value );
             if ( existingNodes.hasNext() )
