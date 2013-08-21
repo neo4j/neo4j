@@ -27,25 +27,33 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public class RuleUpdateFilterIndexProxy extends DelegatingIndexProxy
 {
-    private final Predicate<NodePropertyUpdate> ruleMatchingUpdates =  new Predicate<NodePropertyUpdate>()
-    {
-        @Override
-        public boolean accept( NodePropertyUpdate item )
-        {
-            IndexDescriptor descriptor = RuleUpdateFilterIndexProxy.this.getDescriptor();
-            return
-                item.getPropertyKeyId() == descriptor.getPropertyKeyId() && item.forLabel( descriptor.getLabelId() );
-        }
-    };
+    private final Predicate<NodePropertyUpdate> ruleMatchingUpdates;
 
     public RuleUpdateFilterIndexProxy( IndexProxy delegate )
     {
         super( delegate );
+        ruleMatchingUpdates = new Predicate<NodePropertyUpdate>()
+        {
+            private final IndexDescriptor descriptor = RuleUpdateFilterIndexProxy.this.getDescriptor();
+
+            @Override
+            public boolean accept( NodePropertyUpdate item )
+            {
+                return item.getPropertyKeyId() == descriptor.getPropertyKeyId() &&
+                       item.forLabel( descriptor.getLabelId() );
+            }
+        };
     }
 
     @Override
     public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
-        super.update( new FilteringIterable<NodePropertyUpdate>( updates, ruleMatchingUpdates ) );
+        super.update( new FilteringIterable<>( updates, ruleMatchingUpdates ) );
+    }
+
+    @Override
+    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
+    {
+        super.recover( new FilteringIterable<>( updates, ruleMatchingUpdates ) );
     }
 }
