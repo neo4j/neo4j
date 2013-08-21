@@ -98,7 +98,13 @@ public class WritableStatementState implements StatementState
         {
             throw placeHolderException();
         }
-        
+
+        @Override
+        public void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, Object propertyValue )
+        {
+            throw placeHolderException();
+        }
+
         @Override
         public void acquireSchemaWriteLock()
         {

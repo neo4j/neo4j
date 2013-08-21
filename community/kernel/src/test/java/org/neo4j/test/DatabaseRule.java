@@ -22,9 +22,12 @@ package org.neo4j.test;
 import java.io.IOException;
 
 import org.junit.rules.ExternalResource;
+
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 
@@ -32,9 +35,38 @@ public abstract class DatabaseRule extends ExternalResource
 {
     GraphDatabaseAPI database;
 
+    public <T> T transaction( Function<GraphDatabaseService, T> function )
+    {
+        return transaction( function, true );
+    }
+
+    public <T> T failingTransaction( Function<GraphDatabaseService, T> function )
+    {
+        return transaction( function, false );
+    }
+
+    public <T> T transaction( Function<GraphDatabaseService, T> function, boolean commit )
+    {
+        Transaction tx = database.beginTx();
+        try
+        {
+            T result = function.apply( database );
+
+            if ( commit )
+            {
+                tx.success();
+            }
+            return result;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
     @Override
     protected void before()
-        throws Throwable
+            throws Throwable
     {
         create();
     }
@@ -46,7 +78,7 @@ public abstract class DatabaseRule extends ExternalResource
     }
 
     public void create()
-        throws IOException
+            throws IOException
     {
         createResources();
         try
@@ -71,7 +103,7 @@ public abstract class DatabaseRule extends ExternalResource
     protected void createResources() throws IOException
     {
     }
-    
+
     protected abstract GraphDatabaseFactory newFactory();
 
     protected abstract GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory );
@@ -80,12 +112,12 @@ public abstract class DatabaseRule extends ExternalResource
     {
         // Override to configure the database factory
     }
-    
+
     protected void configure( GraphDatabaseBuilder builder )
     {
         // Override to configure the database
     }
-    
+
     public GraphDatabaseService getGraphDatabaseService()
     {
         return database;
@@ -101,7 +133,9 @@ public abstract class DatabaseRule extends ExternalResource
         try
         {
             if ( database != null )
+            {
                 database.shutdown();
+            }
         }
         finally
         {
@@ -109,7 +143,7 @@ public abstract class DatabaseRule extends ExternalResource
             database = null;
         }
     }
-    
+
     public void clearCache()
     {
         getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.Direction;
@@ -42,11 +41,13 @@ import org.neo4j.kernel.impl.core.SchemaLock;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 
+import static java.lang.String.format;
+
 public class LockHolderImpl implements LockHolder
 {
     private final LockManager lockManager;
     private final Transaction tx;
-    private final List<LockReleaseCallback> locks = new ArrayList<LockReleaseCallback>();
+    private final List<LockReleaseCallback> locks = new ArrayList<>();
     private final NodeManager nodeManager;
 
     public LockHolderImpl( LockManager lockManager, Transaction tx, NodeManager nodeManager )
@@ -114,7 +115,15 @@ public class LockHolderImpl implements LockHolder
         lockManager.getWriteLock( resource, tx );
         locks.add( new LockReleaseCallback( LockType.WRITE, resource ) );
     }
-    
+
+    @Override
+    public void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, Object propertyValue )
+    {
+        IndexEntryLock resource = new IndexEntryLock( labelId, propertyKeyId, propertyValue );
+        lockManager.getWriteLock( resource, tx );
+        locks.add( new LockReleaseCallback( LockType.WRITE, resource ) );
+    }
+
     @Override
     public void releaseLocks()
     {
@@ -134,13 +143,13 @@ public class LockHolderImpl implements LockHolder
                 releaseFailures.add( lockElement );
             }
         }
-        
+
         if ( releaseException != null )
         {
             throw new RuntimeException( "Unable to release locks: " + releaseFailures + ".", releaseException );
         }
     }
-    
+
     private final class LockReleaseCallback
     {
         private final LockType lockType;
@@ -369,11 +378,7 @@ public class LockHolderImpl implements LockHolder
         @Override
         public boolean equals( Object o )
         {
-            if ( !(o instanceof Node) )
-            {
-                return false;
-            }
-            return this.getId() == ((Node) o).getId();
+            return o instanceof Node && this.getId() == ((Node) o).getId();
         }
         // NOTE hashCode is implemented in super
     }
@@ -424,11 +429,7 @@ public class LockHolderImpl implements LockHolder
         @Override
         public boolean equals( Object o )
         {
-            if ( !(o instanceof Relationship) )
-            {
-                return false;
-            }
-            return this.getId() == ((Relationship) o).getId();
+            return o instanceof Relationship && this.getId() == ((Relationship) o).getId();
         }
     }
     
@@ -448,11 +449,54 @@ public class LockHolderImpl implements LockHolder
         @Override
         public boolean equals( Object o )
         {
-            if ( !(o instanceof GraphProperties) )
+            return o instanceof GraphProperties &&
+                   this.getNodeManager().equals( ((GraphProperties) o).getNodeManager() );
+        }
+    }
+
+    private final class IndexEntryLock
+    {
+        private final long labelId;
+        private final long propertyKeyId;
+        private final Object propertyValue;
+
+        public IndexEntryLock( long labelId, long propertyKeyId, Object propertyValue )
+        {
+            this.labelId = labelId;
+            this.propertyKeyId = propertyKeyId;
+            this.propertyValue = propertyValue;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "IndexEntryLock{labelId=%d, propertyKeyId=%d, propertyValue=%s}",
+                           labelId, propertyKeyId, propertyValue );
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( this == obj )
             {
-                return false;
+                return true;
             }
-            return this.getNodeManager().equals( ((GraphProperties)o).getNodeManager() );
+            if ( obj instanceof IndexEntryLock )
+            {
+                IndexEntryLock that = (IndexEntryLock) obj;
+                return labelId == that.labelId && propertyKeyId == that.propertyKeyId &&
+                       propertyValue.equals( that.propertyValue );
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = (int) (labelId ^ (labelId >>> 32));
+            result = 31 * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+            result = 31 * result + propertyValue.hashCode();
+            return result;
         }
     }
 }

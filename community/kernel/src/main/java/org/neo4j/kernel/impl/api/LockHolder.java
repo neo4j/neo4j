@@ -21,19 +21,21 @@ package org.neo4j.kernel.impl.api;
 
 public interface LockHolder
 {
-    public abstract void acquireNodeReadLock( long nodeId );
+    void acquireNodeReadLock( long nodeId );
 
-    public abstract void acquireNodeWriteLock( long nodeId );
+    void acquireNodeWriteLock( long nodeId );
 
-    public abstract void acquireRelationshipReadLock( long relationshipId );
+    void acquireRelationshipReadLock( long relationshipId );
 
-    public abstract void acquireRelationshipWriteLock( long relationshipId );
+    void acquireRelationshipWriteLock( long relationshipId );
 
-    public abstract void acquireGraphWriteLock();
+    void acquireGraphWriteLock();
 
-    public abstract void acquireSchemaReadLock();
+    void acquireSchemaReadLock();
 
-    public abstract void acquireSchemaWriteLock();
+    void acquireSchemaWriteLock();
 
-    public abstract void releaseLocks();
+    void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, Object propertyValue );
+
+    void releaseLocks();
 }

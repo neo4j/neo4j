@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.operations.ConstraintEnforcingEntityWriteOperations;
 
 /**
  * Adds constraint checking to the kernel implementation, for instance ensuring label names are valid.
@@ -41,11 +42,14 @@ public class ConstraintValidatingKernelTransaction extends DelegatingKernelTrans
         StatementOperationParts parts = delegate.newStatementOperations();
         
         // + Constraints
+        ConstraintEnforcingEntityWriteOperations constraintEnforcingEntityWriteOperations =
+                new ConstraintEnforcingEntityWriteOperations( parts.entityWriteOperations(), parts.entityReadOperations(), parts.schemaReadOperations() );
+        // + Data integrity
         DataIntegrityValidatingStatementOperations dataIntegrityContext = new DataIntegrityValidatingStatementOperations(
                 parts.keyWriteOperations(),
                 parts.schemaReadOperations(),
                 parts.schemaWriteOperations() );
 
-        return parts.override( null, dataIntegrityContext, null, null, null, dataIntegrityContext, null );
+        return parts.override( null, dataIntegrityContext, null, constraintEnforcingEntityWriteOperations, null, dataIntegrityContext, null );
     }
 }

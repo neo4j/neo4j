@@ -50,18 +50,6 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
     }
 
     @Override
-    public void nodeDelete( StatementState state, long nodeId )
-    {
-        entityWriteOperations.nodeDelete( state, nodeId );
-    }
-
-    @Override
-    public void relationshipDelete( StatementState state, long relationshipId )
-    {
-        entityWriteOperations.relationshipDelete( state, relationshipId );
-    }
-
-    @Override
     public boolean nodeAddLabel( StatementState state, long nodeId, long labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
@@ -88,14 +76,8 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
     }
 
     @Override
-    public boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
-    {
-        return entityWriteOperations.nodeRemoveLabel( state, nodeId, labelId );
-    }
-
-    @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, Property property ) throws
-            PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException
+    public Property nodeSetProperty( StatementState state, long nodeId, Property property )
+            throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException
     {
         PrimitiveLongIterator labelIds = entityReadOperations.nodeGetLabels( state, nodeId );
         while ( labelIds.hasNext() )
@@ -110,6 +92,48 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
             }
         }
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
+    }
+
+    private void validateNoExistingNodeWithLabelAndProperty( StatementState state, long labelId, Property property )
+            throws ConstraintValidationKernelException
+    {
+        try
+        {
+            Object value = property.value();
+            state.locks().acquireIndexEntryWriteLock( labelId, property.propertyKeyId(), value );
+            PrimitiveLongIterator existingNodes = entityReadOperations.nodesGetFromIndexLookup(
+                    state, new IndexDescriptor( labelId, property.propertyKeyId() ), value );
+            if ( existingNodes.hasNext() )
+            {
+
+                throw new UniqueConstraintViolationKernelException( labelId, property.propertyKeyId(), value,
+                                                                    existingNodes.next() );
+            }
+        }
+        catch ( IndexNotFoundKernelException | PropertyNotFoundException e )
+        {
+            throw new UnableToValidateConstraintKernelException( e );
+        }
+    }
+
+    // Simply delegate the rest of the invocations
+
+    @Override
+    public void nodeDelete( StatementState state, long nodeId )
+    {
+        entityWriteOperations.nodeDelete( state, nodeId );
+    }
+
+    @Override
+    public void relationshipDelete( StatementState state, long relationshipId )
+    {
+        entityWriteOperations.relationshipDelete( state, relationshipId );
+    }
+
+    @Override
+    public boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
+    {
+        return entityWriteOperations.nodeRemoveLabel( state, nodeId, labelId );
     }
 
     @Override
@@ -142,25 +166,5 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
     public Property graphRemoveProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
         return entityWriteOperations.graphRemoveProperty( state, propertyKeyId );
-    }
-
-    private void validateNoExistingNodeWithLabelAndProperty( StatementState state, long labelId, Property property )
-            throws ConstraintValidationKernelException
-    {
-        try
-        {
-            Object value = property.value();
-            PrimitiveLongIterator existingNodes = entityReadOperations.nodesGetFromIndexLookup(
-                    state, new IndexDescriptor( labelId, property.propertyKeyId() ), value );
-            if ( existingNodes.hasNext() )
-            {
-                throw new UniqueConstraintViolationKernelException( labelId, property.propertyKeyId(), value,
-                        existingNodes.next() );
-            }
-        }
-        catch ( IndexNotFoundKernelException | PropertyNotFoundException e )
-        {
-            throw new UnableToValidateConstraintKernelException( e );
-        }
     }
 }

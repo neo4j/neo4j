@@ -86,7 +86,13 @@ public class ReadOnlyStatementState implements StatementState
         {
             throw readOnlyTransaction();
         }
-        
+
+        @Override
+        public void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, Object propertyValue )
+        {
+            throw readOnlyTransaction();
+        }
+
         @Override
         public void acquireSchemaWriteLock()
         {
