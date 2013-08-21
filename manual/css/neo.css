@@ -435,14 +435,15 @@ button.cypherconsole img {
   height: 16px;
 }
 
-iframe.console,iframe.cypherdoc-console {
+iframe.console,#console {
   width: 80em;
   max-width: 95%;
   height: 23em;
   display: block;
+  border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
-iframe.cypherdoc-console {
+#console {
   top: 0;
   left: 0;
   width: 99.7%;
@@ -511,4 +512,80 @@ div.openblock+p.cypherconsole+button.cypherconsole {
 #disqus_thread {
   margin-top: 1em;
   max-width: 100%;
+}
+
+a.resize-toggle {
+    position: absolute;
+    right: 0;
+    bottom: -26px;
+}
+
+#console-wrapper, p.cypherdoc-console {
+    height: 23em;
+}
+
+#console-wrapper {
+    position: relative;
+}
+
+#console {
+    height: 100%;
+    width: 100%;
+}
+
+#console-wrapper {
+    left: 0;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+#console-wrapper.fixed-console {
+    position: fixed;
+}
+
+#console-label {
+    display: none;
+}
+
+p.cypherdoc-console.fixed-console > #console-label {
+    display: inline;
+}
+
+p.cypherdoc-console.fixed-console {
+    height: 24px;
+    margin-bottom: 24px;
+}
+
+#content.internet-explorer #console-wrapper.fixed-console {
+    width: 98%;
+}
+
+p.cypherdoc-console {
+    margin-bottom: 48px;
+    background: #eeeeee url('loading.gif') no-repeat center center;
+}
+
+p.cypherdoc-console>span.loading {
+    display: block;
+    margin: 0 auto;
+    width: 100%;
+    padding: 4em 0 0 0;
+    text-align: center;
+}
+
+a.btn {
+  color: #000000;
+  padding: 2px 6px;
+  background: #eeeeee;
+  border: 1px solid #666666;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.query-outer-wrapper > a.btn {
+  margin-right: 8px;
+  position: relative;
+  top: -10px;
 }

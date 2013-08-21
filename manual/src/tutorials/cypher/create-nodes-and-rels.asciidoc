@@ -8,9 +8,12 @@ Create a node for the actor Tom Hanks:
 ----
 CREATE (n:Actor {name:"Tom Hanks"});
 ----
+
+////
 Nodes created: 1
 Properties set: 1
 Labels added: 1
+////
 
 Let's find the node we created:
 
@@ -20,8 +23,11 @@ MATCH (actor:Actor)
 WHERE actor.name = "Tom Hanks"
 RETURN actor;
 ----
+
+////
 Tom Hanks
 1 row
+////
 
 Now let's create a movie and connect it to the Tom Hanks node with an `ACTED_IN` relationship:
 
@@ -32,10 +38,13 @@ WHERE actor.name = "Tom Hanks"
 CREATE (movie:Movie {title:'Sleepless in Seattle'})
 CREATE (actor)-[:ACTED_IN]->(movie);
 ----
+
+////
 Nodes created: 1
 Relationships created: 1
 Properties set: 1
 Labels added: 1
+////
 
 This is how our graph looks now:
 
@@ -52,10 +61,13 @@ WHERE actor.name = "Tom Hanks"
 CREATE UNIQUE (actor)-[r:ACTED_IN]->(movie:Movie {title:"Forrest Gump"})
 RETURN r;
 ----
+
+////
 Nodes created: 1
 Relationships created: 1
 Properties set: 1
 Labels added: 1
+////
 
 Set a property on a node:
 
@@ -66,19 +78,27 @@ WHERE actor.name = "Tom Hanks"
 SET actor.DoB = 1944
 RETURN actor.name, actor.DoB;
 ----
+
+////
 Tom Hanks
 1944
 Properties set: 1
+////
 
 The labels 'Actor' and 'Movie' help us organize the graph.
 Let's list all 'Movie' nodes:
 
-[source,cypher,includeresult]
+[source,cypher]
 ----
 MATCH (movie:Movie)
 RETURN movie AS `All Movies`;
 ----
+
+////
 Sleepless in Seattle
 Forrest Gump
+////
+
+// table
 
 

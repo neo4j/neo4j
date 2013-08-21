@@ -22,10 +22,8 @@ package org.neo4j.doc.cypherdoc;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.graphdb.GraphDatabaseService;
 
-class Block
+final class Block
 {
     public final List<String> lines;
     public final BlockType type;
@@ -36,9 +34,9 @@ class Block
         this.type = type;
     }
 
-    String process( ExecutionEngine engine, GraphDatabaseService database )
+    String process( State state )
     {
-        return type.process( this, engine, database );
+        return type.process( this, state );
     }
 
     @Override
@@ -57,7 +55,6 @@ class Block
                 return new Block( lines, type );
             }
         }
-        throw new IllegalArgumentException(
-                "Unidentifiable block, starting with:\n" + lines.get( 0 ) );
+        throw new IllegalArgumentException( "Unidentifiable block, starting with:\n" + lines.get( 0 ) );
     }
 }

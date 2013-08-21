@@ -26,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
@@ -47,16 +45,95 @@ enum BlockType
         }
 
         @Override
-        String process( Block block, ExecutionEngine engine,
-                GraphDatabaseService database )
+        String process( Block block, State state )
         {
             String title = block.lines.get( 0 )
                     .replace( "=", "" )
                     .trim();
-            String id = "cypherdoc-" + title.toLowerCase()
-                    .replace( ' ', '-' );
+            String id = "cypherdoc-" + title.toLowerCase().replace( ' ', '-' );
             return "[[" + id + "]]" + CypherDoc.EOL + "= " + title + " ="
                    + CypherDoc.EOL;
+        }
+    },
+    HIDE
+    {
+        @Override
+        String process( Block block, State state )
+        {
+            return OutputHelper.passthroughMarker( "hide-query", "span", "simpara" );
+        }
+
+        @Override
+        boolean isA( List<String> block )
+        {
+            return isACommentWith( block, "hide" );
+        }
+    },
+    SETUP
+    {
+        @Override
+        String process( Block block, State state )
+        {
+            return OutputHelper.passthroughMarker( "setup-query", "span", "simpara" );
+        }
+
+        @Override
+        boolean isA( List<String> block )
+        {
+            return isACommentWith( block, "setup" );
+        }
+    },
+    OUTPUT
+    {
+        @Override
+        String process( Block block, State state )
+        {
+            return OutputHelper.passthroughMarker( "query-output", "span", "simpara" );
+        }
+
+        @Override
+        boolean isA( List<String> block )
+        {
+            return isACommentWith( block, "output" );
+        }
+    },
+    TABLE
+    {
+        @Override
+        String process( Block block, State state )
+        {
+            return AsciidocHelper.createQueryResultSnippet( state.latestResult );
+        }
+
+        @Override
+        boolean isA( List<String> block )
+        {
+            return isACommentWith( block, "table" );
+        }
+    },
+    TEST
+    {
+        @Override
+        String process( Block block, State state )
+        {
+            List<String> tests = block.lines.subList( 1, block.lines.size() - 1 );
+            String result = state.latestResult;
+            for ( String test : tests )
+            {
+                if ( !result.contains( test ) )
+                {
+                    throw new IllegalArgumentException( "Query result doesn't contain the string: '" + test
+                                                        + "'. The query:" + block.toString() + CypherDoc.EOL
+                                                        + CypherDoc.EOL + result );
+                }
+            }
+            return "";
+        }
+
+        @Override
+        boolean isA( List<String> block )
+        {
+            return isACommentWith( block, "//" );
         }
     },
     QUERY
@@ -65,7 +142,7 @@ enum BlockType
         boolean isA( List<String> block )
         {
             String first = block.get( 0 );
-            if ( !first.startsWith( "[" ) )
+            if ( first.charAt( 0 ) != '[' )
             {
                 return false;
             }
@@ -85,29 +162,16 @@ enum BlockType
         }
 
         @Override
-        String process( Block block, ExecutionEngine engine,
-                GraphDatabaseService database )
+        String process( Block block, State state )
         {
             List<String> queryHeader = new ArrayList<String>();
             List<String> queryLines = new ArrayList<String>();
-            List<String> testLines = new ArrayList<String>();
-            boolean includeResult = false;
             boolean queryStarted = false;
-            boolean queryEnded = false;
             for ( String line : block.lines )
             {
                 if ( !queryStarted )
                 {
-                    if ( line.startsWith( "[" ) && line.contains( "source" )
-                         && line.contains( "cypher" )
-                         && line.contains( "includeresult" ) )
-                    {
-                        includeResult = true;
-                        // "includeresult" isn't valid AsciiDoc, let's get rid
-                        // of it
-                        line = "[source,cypher]";
-                    }
-                    if ( line.startsWith( "----" ) )
+                    if ( line.startsWith( CODE_BLOCK ) )
                     {
                         queryStarted = true;
                     }
@@ -116,52 +180,33 @@ enum BlockType
                         queryHeader.add( line );
                     }
                 }
-                else if ( queryStarted && !queryEnded )
+                else if ( queryStarted )
                 {
-                    if ( line.startsWith( "----" ) )
+                    if ( line.startsWith( CODE_BLOCK ) )
                     {
-                        queryEnded = true;
+                        break;
                     }
                     else
                     {
                         queryLines.add( line );
                     }
                 }
-                else if ( queryEnded )
-                {
-                    testLines.add( line );
-                }
             }
             String query = StringUtils.join( queryLines, CypherDoc.EOL );
-            String result = engine.execute( query )
-                    .dumpToString();
-            for ( String test : testLines )
-            {
-                if ( !result.contains( test ) )
-                {
-                    throw new IllegalArgumentException(
-                            "Query result doesn't contain the string: '" + test
-                                    + "'. The query:" + block.toString()
-                                    + CypherDoc.EOL + CypherDoc.EOL + result );
-                }
-
-            }
-            String prettifiedQuery = engine.prettify( query );
+            String result = state.engine.execute( query ).dumpToString();
+            state.latestResult = result;
+            String prettifiedQuery = state.engine.prettify( query );
             StringBuilder output = new StringBuilder( 512 );
             output.append( StringUtils.join( queryHeader, CypherDoc.EOL ) )
                     .append( CypherDoc.EOL )
-                    .append( "----" )
+                    .append( CODE_BLOCK )
                     .append( CypherDoc.EOL )
                     .append( prettifiedQuery )
                     .append( CypherDoc.EOL )
-                    .append( "----" )
+                    .append( CODE_BLOCK )
                     .append( CypherDoc.EOL )
                     .append( CypherDoc.EOL );
 
-            if ( includeResult )
-            {
-                output.append( AsciidocHelper.createQueryResultSnippet( result ) );
-            }
             return output.toString();
         }
     },
@@ -170,23 +215,28 @@ enum BlockType
         @Override
         boolean isA( List<String> block )
         {
-            String first = block.get( 0 );
-            return first.startsWith( "//" ) && first.contains( "graph:" );
+            return isACommentWith( block, "graph" );
         }
 
         @Override
-        String process( Block block, ExecutionEngine engine,
-                GraphDatabaseService database )
+        String process( Block block, State state )
         {
             String first = block.lines.get( 0 );
-            String id = first.substring( first.indexOf( "graph:" ) + 6 )
-                    .trim();
+            String id = "";
+            if ( first.length() > 8 )
+            {
+                id = first.substring( first.indexOf( "graph" ) + 5 ).trim();
+                if ( id.indexOf( ':' ) != -1 )
+                {
+                    id = first.substring( first.indexOf( ':' ) + 1 ).trim();
+                }
+            }
             GraphvizWriter writer = new GraphvizWriter(
                     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             try
             {
-                writer.emit( out, Walker.fullGraph( database ) );
+                writer.emit( out, Walker.fullGraph( state.database ) );
             }
             catch ( IOException e )
             {
@@ -216,28 +266,14 @@ enum BlockType
         @Override
         boolean isA( List<String> block )
         {
-            String first = block.get( 0 );
-            return first.startsWith( "//" ) && first.contains( "console" );
+            return isACommentWith( block, "console" );
         }
 
         @Override
-        String process( Block block, ExecutionEngine engine,
-                GraphDatabaseService database )
+        String process( Block block, State state )
         {
-            return StringUtils.join(
-                    new String[] {
-                            "ifdef::backend-html,backend-html5,backend-xhtml11,backend-deckjs[]",
-                            "++++",
-                            "<p class=\"cypherdoc-console\"></p>",
-                            "++++", "endif::[]",
-                            "ifndef::backend-html,backend-html5,backend-xhtml11,backend-deckjs[]",
-                            "++++",
-                            "<simpara role=\"cypherdoc-console\"></simpara>",
-                            "++++", "endif::[]" },
-                    CypherDoc.EOL )
-                   + CypherDoc.EOL;
+            return OutputHelper.passthroughMarker( "cypherdoc-console", "p", "simpara" );
         }
-
     },
     TEXT
     {
@@ -246,13 +282,23 @@ enum BlockType
         {
             return true;
         }
+
+        @Override
+        String process( Block block, State state )
+        {
+            return StringUtils.join( block.lines, CypherDoc.EOL ) + CypherDoc.EOL;
+        }
     };
+
+    private static final String CODE_BLOCK = "----";
 
     abstract boolean isA( List<String> block );
 
-    String process( Block block, ExecutionEngine engine,
-            GraphDatabaseService database )
+    abstract String process( Block block, State state );
+
+    private static boolean isACommentWith( List<String> block, String command )
     {
-        return StringUtils.join( block.lines, CypherDoc.EOL ) + CypherDoc.EOL;
+        String first = block.get( 0 );
+        return first.startsWith( "//" + command ) || first.startsWith( "// " + command );
     }
 }

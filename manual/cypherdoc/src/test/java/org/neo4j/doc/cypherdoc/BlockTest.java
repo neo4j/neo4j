@@ -21,14 +21,14 @@ package org.neo4j.doc.cypherdoc;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.Matchers.containsString;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -45,15 +45,21 @@ public class BlockTest
 {
     private GraphDatabaseService database;
     private ExecutionEngine engine;
+    private State state;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    private static final String COMMENT_BLOCK = "////";
+    private static final List<String> ADAM_QUERY = Arrays.asList( "[source, cypher]", "----",
+            "CREATE (n:Person {name:\"Ad\" + \"am\"})", "RETURN n;", "----" );
 
     @Before
     public void setup()
     {
         database = new TestGraphDatabaseFactory().newImpermanentDatabase();
         engine = new ExecutionEngine( database );
+        state = new State( engine, database );
         CypherDoc.removeReferenceNode( database );
     }
 
@@ -85,7 +91,7 @@ public class BlockTest
     {
         Block block = Block.getBlock( Arrays.asList( "= Title here =" ) );
         assertThat( block.type, sameInstance( BlockType.TITLE ) );
-        String output = block.process( engine, database );
+        String output = block.process( state );
         assertThat( output, containsString( "[[cypherdoc-title-here]]" ) );
         assertThat( output, containsString( "= Title here =" ) );
     }
@@ -95,43 +101,39 @@ public class BlockTest
     {
         Block block = Block.getBlock( Arrays.asList( "Title here", "==========" ) );
         assertThat( block.type, sameInstance( BlockType.TITLE ) );
-        String output = block.process( engine, database );
+        String output = block.process( state );
         assertThat( output, containsString( "[[cypherdoc-title-here]]" ) );
         assertThat( output, containsString( "= Title here =" ) );
     }
 
     @Test
+    public void queryWithResultAndTest()
+    {
+        Block block = Block.getBlock( ADAM_QUERY );
+        block.process( state );
+        assertThat( state.latestResult, containsString( "Adam" ) );
+        block = Block.getBlock( Arrays.asList( COMMENT_BLOCK, "Adam", COMMENT_BLOCK ) );
+        assertThat( block.type, sameInstance( BlockType.TEST ) );
+        block.process( state );
+        block = Block.getBlock( Arrays.asList( "// table" ) );
+        assertThat( block.type, sameInstance( BlockType.TABLE ) );
+        String output = block.process( state );
+        assertThat(
+                output,
+                allOf( containsString( "Adam" ), containsString( "[queryresult]" ), containsString( "Node" ),
+                        containsString( "created" ) ) );
+    }
+
+    @Test
     public void queryWithTestFailure()
     {
-        Block block = Block.getBlock( Arrays.asList(
-                "[source, cypher, includeresult]", "----",
-                "CREATE (n:Person {name:\"Adam\"})", "RETURN n;", "----",
-                "Nobody" ) );
+        Block block = Block.getBlock( ADAM_QUERY );
         assertThat( block.type, sameInstance( BlockType.QUERY ) );
+        block.process( state );
+        block = Block.getBlock( Arrays.asList( COMMENT_BLOCK, "Nobody", COMMENT_BLOCK ) );
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( containsString( "Query result doesn't contain the string" ) );
-        block.process( engine, database );
-    }
-
-    @Test
-    public void queryWithResult()
-    {
-        Block block = Block.getBlock( Arrays.asList(
-                "[source, cypher, includeresult]", "----",
-                "CREATE (n:Person {name:\"Ad\" + \"am\"})", "RETURN n;",
-                "----", "Adam" ) );
-        String output = block.process( engine, database );
-        assertThat( output, containsString( "Adam" ) );
-    }
-
-    @Test
-    public void queryWithoutResult()
-    {
-        Block block = Block.getBlock( Arrays.asList( "[source, cypher]",
-                "----", "CREATE (n:Person {name:\"Ad\" + \"am\"})",
-                "RETURN n;", "----", "Adam" ) );
-        String output = block.process( engine, database );
-        assertThat( output, not( containsString( "Adam" ) ) );
+        block.process( state );
     }
 
     @Test
@@ -144,7 +146,7 @@ public class BlockTest
         String output;
         try
         {
-            output = block.process( engine, database );
+            output = block.process( state );
         }
         finally
         {
@@ -156,13 +158,35 @@ public class BlockTest
                         containsString( "cypherdoc-xyz" ),
                         containsString( ".svg" ), containsString( "neoviz" ) ) );
     }
+   
+    @Test
+    public void graphWithoutId()
+    {
+        engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
+        Block block = Block.getBlock( Arrays.asList( "//graph" ) );
+        assertThat( block.type, sameInstance( BlockType.GRAPH ) );
+        Transaction transaction = database.beginTx();
+        String output;
+        try
+        {
+            output = block.process( state );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+        assertThat(
+                output,
+                allOf( startsWith( "[\"dot\"" ), containsString( "Adam" ), containsString( "cypherdoc--" ),
+                        containsString( ".svg" ), containsString( "neoviz" ) ) );
+    }
 
     @Test
     public void console()
     {
         Block block = Block.getBlock( Arrays.asList( "// console" ) );
         assertThat( block.type, sameInstance( BlockType.CONSOLE ) );
-        String output = block.process( engine, database );
+        String output = block.process( state );
         assertThat(
                 output,
                 allOf( startsWith( "ifdef::" ), endsWith( "endif::[]"
@@ -177,7 +201,7 @@ public class BlockTest
     {
         Block block = Block.getBlock( Arrays.asList( "NOTE: just random asciidoc." ) );
         assertThat( block.type, sameInstance( BlockType.TEXT ) );
-        String output = block.process( engine, database );
+        String output = block.process( state );
         assertThat( output, equalTo( "NOTE: just random asciidoc."
                                      + CypherDoc.EOL ) );
     }

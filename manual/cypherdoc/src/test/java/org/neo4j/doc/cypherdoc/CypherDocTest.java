@@ -21,6 +21,8 @@ package org.neo4j.doc.cypherdoc;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.allOf;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,13 +31,17 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class CypherDocTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void fullDocumentParsing() throws IOException
+    public void fullDocumentBlockParsing() throws IOException
     {
         String content = FileUtils.readFileToString( new File(
                 "src/test/resources/hello-world.asciidoc" ) );
@@ -45,8 +51,34 @@ public class CypherDocTest
         {
             types.add( block.type );
         }
-        assertThat( types, equalTo( Arrays.asList( BlockType.TITLE,
-                BlockType.TEXT, BlockType.CONSOLE, BlockType.QUERY,
-                BlockType.GRAPH, BlockType.TEXT, BlockType.QUERY ) ) );
+        assertThat( types, equalTo( Arrays.asList( BlockType.TITLE, BlockType.TEXT, BlockType.CONSOLE, BlockType.HIDE,
+                BlockType.SETUP, BlockType.QUERY, BlockType.TEST, BlockType.TABLE, BlockType.GRAPH, BlockType.TEXT,
+                BlockType.OUTPUT, BlockType.QUERY, BlockType.TEST ) ) );
+    }
+
+    @Test
+    public void toLittleContentBlockParsing()
+    {
+        expectedException.expect( IllegalArgumentException.class );
+        CypherDoc.parseBlocks( "x\ny\n" );
+    }
+
+    @Test
+    public void fullDocumentParsing() throws IOException
+    {
+        String content = FileUtils.readFileToString( new File( "src/test/resources/hello-world.asciidoc" ) );
+        String output = CypherDoc.parse( content );
+        assertThat(
+                output,
+                allOf( containsString( "[[cypherdoc-hello-world]]" ),
+                        containsString( "<p class=\"cypherdoc-console\"></p>" ), containsString( "[source,cypher]" ),
+                        containsString( "[queryresult]" ), containsString( "{Person|name = \\'Adam\\'\\l}" ),
+                        containsString( "= Hello World =" ) ) );
+        assertThat(
+                output,
+                allOf( containsString( "<span class=\"hide-query\"></span>" ),
+                        containsString( "<span class=\"setup-query\"></span>" ),
+                        containsString( "<span class=\"query-output\"></span>" ),
+                        containsString( "<simpara role=\"query-output\"></simpara>" ) ) );
     }
 }

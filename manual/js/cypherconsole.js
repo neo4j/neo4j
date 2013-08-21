@@ -33,7 +33,7 @@ function createCypherConsoles( $ )
   var URL_BASE = "http://console-test.neo4j.org/";
   var REQUEST_BASE = URL_BASE + "?";
   
-  $('pre.cypher').wrap('<div class="query-wrapper" />').each( function()
+  $('pre.cypher').wrap('<div class="query-outer-wrapper"><div class="query-wrapper" /></div>').each( function()
   {
     var pre = $(this);
     pre.parent().data('query', pre.text());
@@ -65,33 +65,10 @@ function createCypherConsoles( $ )
 
   $('p.cypherdoc-console').first().each( function()
   {
-    var context = $( this );
-    var url = getUrl( "none", "none", "\n\nClick the play buttons to run the queries!" );
-    var iframe = $( "<iframe/>" ).attr( "id", "cypherdoc-console" ).addClass( "cypherdoc-console" ).attr( "src", url );
-    context.append( iframe );
-    context.height( iframe.height() );
-    var button = $('<button class="run-query" title="Execute query"><img src="images/play.png" /></button>');
-    $('div.query-wrapper').append(button.clone().click(function()
-    {
-      var query = $(this).parent().data('query');
-      $('iframe.cypherdoc-console')[0].contentWindow.postMessage(query, '*');
-    }));
-    $window = $(window);
-    var pathname = window.location.pathname;
-    if ( pathname !== "/" && ( pathname.length < 11 || pathname.substr( -11 ) !== "/index.html" ) )
-    {
-      $window.scroll( function()
-      {
-        if ( $window.scrollTop() > 150 )
-        {
-          iframe.css( 'position', 'fixed' );
-        }
-        else
-        {
-          iframe.css( 'position', 'static' );
-        }
-      } );
-    }
+    CypherConsole( {
+      'consoleClass' : 'cypherdoc-console',
+      'contentMoveSelector' : 'html'
+    });
   });
   
   function getUrl( database, command, message )
