@@ -2,8 +2,6 @@
 
 Text here.
 
-// console
-
 // hide
 // setup
 [[init]]

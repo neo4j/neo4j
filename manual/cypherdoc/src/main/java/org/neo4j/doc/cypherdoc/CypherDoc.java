@@ -74,11 +74,20 @@ public final class CypherDoc
 
             removeReferenceNode( database );
 
+            boolean hasConsole = false;
             for ( Block block : blocks )
             {
+                if ( block.type == BlockType.CONSOLE )
+                {
+                    hasConsole = true;
+                }
                 output.append( block.process( state ) )
                         .append( EOL )
                         .append( EOL );
+            }
+            if ( !hasConsole )
+            {
+                output.append( BlockType.CONSOLE.process( null, state ) );
             }
 
             return output.toString();

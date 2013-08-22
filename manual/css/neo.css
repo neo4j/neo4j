@@ -451,10 +451,6 @@ iframe.console,#console {
   z-index: 1000;
 }
 
-p.cypherdoc-console {
-  margin-bottom: 3.5em;
-}
-
 div.query-wrapper {
   position: relative;
 }
@@ -562,7 +558,7 @@ p.cypherdoc-console.fixed-console {
 }
 
 p.cypherdoc-console {
-    margin-bottom: 48px;
+    margin: 24px 0 48px 0;
     background: #eeeeee url('loading.gif') no-repeat center center;
 }
 
@@ -588,4 +584,8 @@ a.btn {
   margin-right: 8px;
   position: relative;
   top: -10px;
+}
+
+#console-label {
+  visibility: hidden;
 }

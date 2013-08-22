@@ -40,8 +40,8 @@ enum BlockType
         {
             int size = block.size();
             return size > 0 && ( block.get( 0 )
-                    .startsWith( "=" ) || ( size > 1 && block.get( 1 )
-                    .startsWith( "=" ) ) );
+                    .startsWith( "=" ) || size > 1 && block.get( 1 )
+                    .startsWith( "=" ) );
         }
 
         @Override

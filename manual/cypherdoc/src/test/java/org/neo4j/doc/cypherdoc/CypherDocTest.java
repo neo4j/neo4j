@@ -51,7 +51,7 @@ public class CypherDocTest
         {
             types.add( block.type );
         }
-        assertThat( types, equalTo( Arrays.asList( BlockType.TITLE, BlockType.TEXT, BlockType.CONSOLE, BlockType.HIDE,
+        assertThat( types, equalTo( Arrays.asList( BlockType.TITLE, BlockType.TEXT, BlockType.HIDE,
                 BlockType.SETUP, BlockType.QUERY, BlockType.TEST, BlockType.TABLE, BlockType.GRAPH, BlockType.TEXT,
                 BlockType.OUTPUT, BlockType.QUERY, BlockType.TEST ) ) );
     }
