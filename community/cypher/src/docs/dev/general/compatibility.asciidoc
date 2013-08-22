@@ -10,8 +10,8 @@ and old ones changed to fit into new possibilities. To guard you from having to 
 Cypher allows you to use an older parser, but still gain the speed from new optimizations.
 
 There are two ways you can select which parser to use. You can configure your database with the configuration parameter
-+cypher_parser_version+, and enter which parser you'd like to use (1.9 and 2.0 are supported now). Any Cypher query
-that doesn't explicitly say anything else, will get the parser you have configured.
++cypher_parser_version+, and enter which parser you'd like to use (1.9, 2.0 and legacy are supported now). Any Cypher
+query that doesn't explicitly say anything else, will get the parser you have configured.
 
 The other way is on a query by query basis. By simply pre-pending your query with +"CYPHER 1.9"+, that particular query
 will be parsed with the 1.9 version of the parser. Example:
@@ -23,3 +23,7 @@ WHERE n.foo = "bar"
 RETURN n
 ----
 
+NOTE:
+Neo4j 2.0 introduced a brand new parser, which is significantly faster than the old one. However, as with any large
+piece of new code, there may still be bugs hidden in it. If you run into issues with the parser, please report them
+to us. As a preventive measure, you can select 'legacy' as your parser version, which will enable the old parser again.
