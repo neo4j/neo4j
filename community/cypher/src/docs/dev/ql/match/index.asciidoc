@@ -69,3 +69,6 @@ include::named-path.asciidoc[]
 
 include::matching-on-a-bound-relationship.asciidoc[]
 
+include::match-unbound-nodes-exceptions.asciidoc[]
+
+

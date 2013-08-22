@@ -24,17 +24,6 @@ package org.neo4j.cypher.internal.commands.values
  *
  * It currently only may occur due to patterns containing optional relationships which may introduce
  * unbound identifiers.  It mainly serves to differentiate this situation from plain null values.
- *
- * Semantics:
- *
- * - You can't compare it, two unbound are always unequal.
- * - You can't return it. It will always be mapped to null prior to returning any value.
- * - UnboundValue equals null.
- * - Most functions treat unbound values similarly to null, except:
- *   + labels(UnboundValue) returns null.
- *   + str(UnboundValue) returns "UNBOUND_VALUE".
- * - Getting properties from an unbound value returns null.
- * - Setting/Removing properties on an unbound value has no effect.
  */
 case object UnboundValue {
   def is(v: Any): Boolean = v == this
