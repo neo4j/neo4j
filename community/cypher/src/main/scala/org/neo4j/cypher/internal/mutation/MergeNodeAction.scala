@@ -50,15 +50,21 @@ case class MergeNodeAction(identifier: String,
       val createdNode: Node = query.createNode()
       val newContext = context += (identifier -> createdNode)
 
-      onCreate.foreach {
-        action => action.exec(newContext, state)
+      if ( ! onCreate.exists( ! _.isMissingUnboundDependencies(newContext, state) ) ) {
+        onCreate.foreach {
+          action => action.exec(newContext, state)
+        }
       }
 
       Iterator(newContext)
     } else {
       foundNodes.map {
         nextContext =>
-          onMatch.foreach(_.exec(nextContext, state))
+
+          if ( ! onMatch.exists( ! _.isMissingUnboundDependencies(nextContext, state) ) ) {
+            onMatch.foreach(_.exec(nextContext, state))
+          }
+
           nextContext
       }
     }

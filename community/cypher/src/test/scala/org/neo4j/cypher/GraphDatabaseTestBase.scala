@@ -32,6 +32,7 @@ import org.scalatest.Assertions
 import org.neo4j.kernel.api.operations.StatementState
 import org.neo4j.kernel.api.StatementOperationParts
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
+import org.neo4j.tooling.GlobalGraphOperations
 
 class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
@@ -68,6 +69,12 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
   def relationshipId(r: Relationship) = graph.inTx { r.getId }
 
+  def labels(n: Node) = graph.inTx { n.getLabels.iterator().asScala.map(_.toString).toSet }
+
+  def countNodes() = graph.inTx { GlobalGraphOperations.at(graph).getAllNodes.asScala.size }
+
+  def countRelationships() = graph.inTx { GlobalGraphOperations.at(graph).getAllRelationships.asScala.size }
+
   def createNode(): Node = createNode(Map[String, Any]())
 
   def createNode(name: String): Node = createNode(Map[String, Any]("name" -> name))
@@ -100,6 +107,20 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   def createLabeledNode(labels: String*): Node = createLabeledNode(Map[String, Any](), labels: _*)
 
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
+
+  def deleteAllEntities() = graph.inTx {
+    val relIterator = GlobalGraphOperations.at(graph).getAllRelationships.iterator()
+
+    while ( relIterator.hasNext ) {
+      relIterator.next().delete()
+    }
+
+    val nodeIterator = GlobalGraphOperations.at(graph).getAllNodes.iterator()
+    while ( nodeIterator.hasNext ) {
+      nodeIterator.next().delete()
+    }
+  }
+
 
   def execStatement[T](f: (StatementOperationParts => T)): T = {
     val tx = graph.beginTx
