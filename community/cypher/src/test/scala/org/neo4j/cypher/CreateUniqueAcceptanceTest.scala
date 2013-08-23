@@ -294,13 +294,6 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
   }
 
   @Test
-  def handle_optional_nulls() {
-    createNode()
-
-    intercept[CypherTypeException](parseAndExecute("start a = node(1) match a-[?]->b create unique b-[:X]->c"))
-  }
-
-  @Test
   def creates_single_node_if_it_is_missing() {
     val a = createNode()
     val b = createNode()
