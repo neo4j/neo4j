@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.Expression
-import org.neo4j.cypher.internal.mutation.{GraphElementPropertyFunctions, UpdateAction}
+import org.neo4j.cypher.internal.mutation.{UpdateActionHelper, GraphElementPropertyFunctions, UpdateAction}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
@@ -37,6 +37,9 @@ case object LabelRemoveOp extends LabelOp
 //TODO: Should take single label
 case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToken])
   extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport {
+
+  override def isMissingUnboundDependencies(context: ExecutionContext, state: QueryState): Boolean =
+    ! UpdateActionHelper.isUnbound(entity)(context, state)
 
   def children = labels.flatMap(_.children) :+ entity
 

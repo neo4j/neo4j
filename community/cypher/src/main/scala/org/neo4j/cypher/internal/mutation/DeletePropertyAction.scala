@@ -25,10 +25,13 @@ import org.neo4j.cypher.internal.symbols.{SymbolTable, MapType}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.{UnboundValue, KeyToken}
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
 case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
   extends UpdateAction {
+
+  override def isMissingUnboundDependencies(context: ExecutionContext, state: QueryState): Boolean =
+    ! UpdateActionHelper.isUnbound(element)(context, state)
 
   def exec(context: ExecutionContext, state: QueryState) = {
     propertyKey.getOptId(state.query) match {
@@ -43,8 +46,6 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
             if (state.query.relationshipOps.hasProperty(r, propertyKeyId)) {
               state.query.relationshipOps.removeProperty(r, propertyKeyId)
             }
-
-          case UnboundValue =>
 
           case _ =>
             throw new ThisShouldNotHappenError("Andres", "This should be a node or a relationship")

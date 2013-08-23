@@ -189,6 +189,8 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   def rels = Seq(rel.name)
 
+  def names = Seq(start.name, end.name, rel.name)
+
   /**
    * Either returns a unique link where the expectation is respected,
    * or throws an exception if a contradiction is found.

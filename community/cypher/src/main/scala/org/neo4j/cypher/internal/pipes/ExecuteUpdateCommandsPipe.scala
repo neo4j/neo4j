@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, val commands: Seq[UpdateAction])
   extends PipeWithSource(source) with CollectionSupport {
@@ -39,11 +40,20 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, val comm
     case ctx => executeMutationCommands(ctx, state, commands.size == 1)
   }
 
+  val allKeys = commands.flatMap( c => c.identifiers.map(_._1) )
+
   private def executeMutationCommands(ctx: ExecutionContext,
                                       state: QueryState,
                                       singleCommand: Boolean): Iterator[ExecutionContext] =
     try {
-      commands.foldLeft(Iterator(ctx))((context, cmd) => context.flatMap(c => exec(cmd, c, state, singleCommand)))
+      if ( commands.exists( ! _.isMissingUnboundDependencies(ctx, state) ) ) {
+        for ( key <- allKeys if ! ctx.contains(key)) {
+          ctx.put(key, UnboundValue)
+        }
+        Iterator(ctx)
+      } else {
+        commands.foldLeft(Iterator(ctx))((context, cmd) => context.flatMap(c => exec(cmd, c, state, singleCommand)))
+      }
     } catch {
       case e: NotInTransactionException => throw new InternalException("Expected to be in a transaction at this point", e)
     }

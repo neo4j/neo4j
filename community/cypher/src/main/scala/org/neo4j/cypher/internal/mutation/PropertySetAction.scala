@@ -24,11 +24,15 @@ import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.UnboundValue
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class PropertySetAction(prop: Property, e: Expression)
   extends UpdateAction with GraphElementPropertyFunctions {
+
   val Property(mapExpr, propertyKey) = prop
+
+  override def isMissingUnboundDependencies(context: ExecutionContext, state: QueryState): Boolean =
+    ! UpdateActionHelper.isUnbound(mapExpr)(context, state)
 
   def exec(context: ExecutionContext, state: QueryState) = {
     implicit val s = state
@@ -46,7 +50,8 @@ case class PropertySetAction(prop: Property, e: Expression)
           propertyKey.getOptId(qtx).foreach(qtx.relationshipOps.removeProperty(r, _))
         else
           qtx.relationshipOps.setProperty(r, propertyKey.getOrCreateId(qtx), value)
-      case UnboundValue =>
+      case _ =>
+        throw new ThisShouldNotHappenError("Stefan", "This should be a node or a relationship")
     }
 
     Iterator(context)

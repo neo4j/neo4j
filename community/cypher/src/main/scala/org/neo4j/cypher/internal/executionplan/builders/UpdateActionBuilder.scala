@@ -47,7 +47,6 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with Upd
     )
   }
 
-
   private def extractValidStartItems(plan: ExecutionPlanInProgress, p: Pipe): Seq[QueryToken[StartItem]] = {
     plan.query.start.filter(cmd => cmd.unsolved && cmd.token.mutating && cmd.token.symbolDependenciesMet(p.symbols))
   }

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.symbols.{SymbolTable, RelationshipType}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.KeyToken
+import org.neo4j.cypher.internal.commands.values.{UnboundValue, KeyToken}
 
 object RelationshipEndpoint {
   def apply(name:String) = new RelationshipEndpoint(Identifier(name), Map.empty, Seq.empty, true)
@@ -57,16 +57,22 @@ extends UpdateAction
       from.props.map(_._2) ++ to.props.map(_._2) ++ to.labels.flatMap(_.children) ++ from.labels.flatMap(_.children)
 
   override def rewrite(f: (Expression) => Expression) = {
-      val newFrom = from.rewrite(f)
-      val newTo = to.rewrite(f)
-      val newProps = props.mapValues(_.rewrite(f))
+    val newFrom = from.rewrite(f)
+    val newTo = to.rewrite(f)
+    val newProps = props.mapValues(_.rewrite(f))
 
-      CreateRelationship(key, newFrom, newTo, typ, newProps)
-    }
+    CreateRelationship(key, newFrom, newTo, typ, newProps)
+  }
+
+  override def isMissingUnboundDependencies(context: ExecutionContext, state: QueryState): Boolean =
+    ! ( UpdateActionHelper.isUnbound(from.node)(context, state) || UpdateActionHelper.isUnbound(to.node)(context, state) )
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    val f = from.node(context)(state).asInstanceOf[Node]
-    val t = to.node(context)(state).asInstanceOf[Node]
+    val fromVal = from.node(context)(state)
+    val toVal = to.node(context)(state)
+
+    val f = fromVal.asInstanceOf[Node]
+    val t = toVal.asInstanceOf[Node]
     val relationship = state.query.createRelationship(f, t, typ)
     setProperties(relationship, props, context, state)
     context.put(key, relationship)
