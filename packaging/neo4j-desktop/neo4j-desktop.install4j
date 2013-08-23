@@ -19,20 +19,20 @@
     <filesets />
     <roots />
     <mountPoints>
-      <mountPoint id="152" root="" location="Neo4j Desktop Launcher" mode="755" />
-      <mountPoint id="158" root="" location="Licenses" mode="755" />
+      <mountPoint id="262" root="" location="bin" mode="755" />
+      <mountPoint id="210" root="" location="" mode="755" />
     </mountPoints>
     <entries>
-      <fileEntry mountPoint="152" file="./target/neo4j-desktop-@NEO4J_VERSION@.jar" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="true" />
-      <fileEntry mountPoint="158" file="./src/../LICENSES.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
-      <fileEntry mountPoint="158" file="./src/../NOTICE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
-      <fileEntry mountPoint="158" file="./src/../../../community/LICENSE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/neo4j-desktop-@NEO4J_VERSION@.jar" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="true" />
+      <fileEntry mountPoint="210" file="./src/../LICENSES.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="210" file="./src/../NOTICE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="210" file="./src/../../../community/LICENSE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
     </entries>
     <components>
       <component name="Neo4j Desktop Launcher" id="155" customizedId="" displayDescription="false" hideHelpButton="false" selected="true" changeable="false" downloadable="false" hidden="false">
         <description />
         <include all="false">
-          <entry location="Neo4j Desktop Launcher" fileType="regular" />
+          <entry location="bin" fileType="regular" />
         </include>
         <dependencies>
           <component id="157" />
@@ -41,7 +41,9 @@
       <component name="Neo4j License Files" id="157" customizedId="" displayDescription="false" hideHelpButton="false" selected="true" changeable="false" downloadable="false" hidden="false">
         <description />
         <include all="false">
-          <entry location="Licenses" fileType="regular" />
+          <entry location="LICENSES.txt" fileType="regular" />
+          <entry location="NOTICE.txt" fileType="regular" />
+          <entry location="LICENSE.txt" fileType="regular" />
         </include>
         <dependencies />
       </component>
@@ -49,7 +51,7 @@
   </files>
   <launchers>
     <launcher name="neo4j-desktop" id="24" customizedId="" external="false" excludeFromMenu="false" unixMode="755" menuName="Neo4j Desktop" icnsFile="" customMacBundleIdentifier="false" macBundleIdentifier="" swtApp="false" fileset="" macBundleBinary="JavaApplicationStub" addMacEntitlements="false" macEntitlementsFile="">
-      <executable name="neo4j-desktop" type="1" iconSet="true" iconFile="./src/main/resources/neo4j-cherries.ico" executableDir="Neo4j Desktop Launcher" redirectStderr="true" stderrFile="error.log" stderrMode="overwrite" redirectStdout="false" stdoutFile="output.log" stdoutMode="overwrite" failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="true" serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" checkConsoleParameter="false" globalSingleInstance="false">
+      <executable name="neo4j-desktop" type="1" iconSet="true" iconFile="./src/main/resources/neo4j-cherries.ico" executableDir="bin" redirectStderr="true" stderrFile="error.log" stderrMode="overwrite" redirectStdout="false" stdoutFile="output.log" stdoutMode="overwrite" failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="true" serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" checkConsoleParameter="false" globalSingleInstance="false">
         <versionInfo include="false" fileVersion="" fileDescription="" legalCopyright="" internalName="" productName="" />
       </executable>
       <splashScreen show="false" autoOff="true" alwaysOnTop="true" width="0" height="0" bitmapFile="" java6SplashScreen="false">
@@ -60,7 +62,7 @@
       </splashScreen>
       <java mainClass="org.neo4j.desktop.Neo4jDesktop" vmParameters="-Xmx1g" arguments="" allowVMPassthroughParameters="true" preferredVM="server" bundleRuntime="true">
         <classPath>
-          <archive location="Neo4j Desktop Launcher/neo4j-desktop-@NEO4J_VERSION@.jar" failOnError="false" />
+          <archive location="bin/neo4j-desktop-@NEO4J_VERSION@.jar" failOnError="false" />
         </classPath>
         <nativeLibraryDirectories />
       </java>
