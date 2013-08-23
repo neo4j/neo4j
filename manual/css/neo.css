@@ -560,6 +560,7 @@ p.cypherdoc-console.fixed-console {
 p.cypherdoc-console {
     margin: 24px 0 48px 0;
     background: #eeeeee url('loading.gif') no-repeat center center;
+    display: none;
 }
 
 p.cypherdoc-console>span.loading {

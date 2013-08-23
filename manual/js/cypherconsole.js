@@ -65,6 +65,7 @@ function createCypherConsoles( $ )
 
   $('p.cypherdoc-console').first().each( function()
   {
+    $(this).css('display', 'block');
     CypherConsole( {
       'consoleClass' : 'cypherdoc-console',
       'contentMoveSelector' : 'html'

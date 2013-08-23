@@ -18,6 +18,13 @@ include::{importdir}/cypherdoc/create-nodes-and-rels.asciidoc[]
 
 :leveloffset: 2
 
+include::{importdir}/cypherdoc/movie-db.asciidoc[]
+
+:leveloffset: 2
+
 include::{importdir}/cypherdoc/social-movie-db.asciidoc[]
 
+:leveloffset: 2
+
+include::{importdir}/cypherdoc/finding-paths.asciidoc[]
 

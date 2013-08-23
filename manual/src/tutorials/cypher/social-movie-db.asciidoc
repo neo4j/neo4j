@@ -1,10 +1,10 @@
-= Movie Database =
+= Social Movie Database
 
 Our example graph consists of movies with title and year and actors with a name.
 Actors have +ACTS_IN+ relationships to movies, which represents the role they played.
 This relationship also has a role attribute.
 
-We'll go with three movies and three actors:
+So far, we queried the movie data; now let's _update the graph_ too.
 
 [source,cypher]
 ----
@@ -25,105 +25,153 @@ CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix2)
 CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix3)
 ----
 
-This gives us the following graph to play with:
-
-//graph
+////
+Nodes created: 6
+Relationships created: 9
+Properties set: 18
+////
 
 //console
 
-Let's check how many nodes we have now:
+We will add ourselves, friends and movie ratings.
+
+Here's how to add a node for yourself and return it, let's say your name is ``Me'':
 
 [source,cypher]
 ----
-START n=node(*) 
-RETURN "Hello Graph with " + count(*) + " Nodes!" AS welcome;
+CREATE (me:User {name: "Me"}) 
+RETURN me;
 ----
 
-Return a single node, by name:
-
-[source,cypher]
-----
-MATCH (movie:Movie)
-RETURN movie;
-----
-
-Return the title and date of the matrix node:
-
-[source,cypher]
-----
-MATCH (movie:Movie)
-WHERE movie.title = 'The Matrix'
-RETURN movie.title, movie.year;
-----
-
-Which results in:
+////
+Nodes created: 1
+////
 
 //table
 
-Show all actors:
+Let's check if the node is there:
 
 [source,cypher]
 ----
-MATCH (actor:Actor)
-RETURN actor;
+MATCH me:User
+WHERE me.name = "Me"
+RETURN me.name;
 ----
-Return just the name, and order them by name:
+
+////
+1 row
+Me
+////
+
+Add a movie rating:
 
 [source,cypher]
 ----
-MATCH (actor:Actor)
-RETURN actor.name
-ORDER BY actor.name;
+MATCH me:User, movie:Movie
+WHERE me.name = "Me" AND movie.title = "The Matrix"
+CREATE (me)-[:RATED {stars : 5, comment : "I love that movie!"}]->(movie);
 ----
 
-Count the actors:
+////
+Relationships created: 1
+Properties set: 2
+////
 
-[source,cypher]
-----
-MATCH (actor:Actor)
-RETURN count(*);
-----
-
-Get only the actors whose names end with ``s'':
+Which movies did I rate?
 
 [source,cypher]
 ----
-MATCH (actor:Actor)
-WHERE actor.name =~ ".*s$" 
-RETURN actor.name;
+MATCH me:User, (me)-[rating:RATED]->(movie)
+WHERE me.name = "Me"
+RETURN movie.title, rating.stars, rating.comment;
 ----
 
-Here's some exploratory queries for unknown datasets.
-_Don't do this on live production databases!_
-
-Count nodes:
-
-[source,cypher]
-----
-START n=node(*)  
-RETURN count(*);
-----
-
-Count relationship types:
-
-[source,cypher]
-----
-START n=node(*)  
-MATCH (n)-[r]->()
-RETURN type(r), count(*);
-----
+////
+1 row
+////
 
 //table
 
-List all nodes and their relationships:
+We need a friend!
 
 [source,cypher]
 ----
-START n=node(*)    
-MATCH (n)-[r]->(m)
-RETURN n AS from, r AS `->`, m AS to;
+CREATE (friend:User {name: "A Friend"})
+RETURN friend;
 ----
+
+Add our friendship idempotently, so we can re-run the query without adding it several times.
+We return the relationship to check that it has not been created several times.
+
+[source,cypher]
+----
+MATCH me:User, friend:User
+WHERE me.name = "Me" AND friend.name = "A Friend"
+CREATE UNIQUE (me)-[friendship:FRIEND]->(friend)
+RETURN friendship;
+----
+
+////
+Relationships created: 1
+////
+
+You can rerun the query, see that it doesn't change anything the second time!
+
+Let's update our friendship with a +since+ property:
+
+[source,cypher]
+----
+MATCH me:User, friend:User, (me)-[friendship:FRIEND]->(friend)
+WHERE me.name = "Me" AND friend.name = "A Friend"
+SET friendship.since='forever'
+RETURN friendship;
+----
+
+////
+Properties set: 1
+////
+
+Let's pretend us being our friend and wanting to see which movies our friends have rated.
+
+[source,cypher]
+----
+MATCH me:User, (me)-[:FRIEND]-(friend)-[rating:RATED]->(movie)
+WHERE me.name = "A Friend"
+RETURN movie.title, avg(rating.stars) as stars, collect(rating.comment) as comments, count(*);
+----
+
+////
+1 row
+////
 
 //table
 
+That's too little data, let's add some more friends and friendships.
+
+[source,cypher]
+----
+MATCH me:User
+WHERE me.name = "Me"
+FOREACH (i in range(1,10) |
+  CREATE (friend:User {name: "Friend " + i}), (me)-[:FRIEND]->(friend));
+----
+
+////
+Nodes created: 10
+Relationships created: 10
+Properties set: 10
+////
+
+Show all our friends:
+
+[source,cypher]
+----
+MATCH me:User, (me)-[r:FRIEND]->(friend)
+WHERE me.name = "Me" 
+RETURN type(r) as friendship, friend.name;
+----
+
+////
+11 rows
+////
 
