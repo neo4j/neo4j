@@ -475,7 +475,7 @@ public class ExecutionResultSerializerTest
         // when
         serializer.statementResult( mockExecutionResult(
                 map( "node", node[0], "rel", rel[0], "path", path, "map", map( "n1", node[1], "r1", rel[1] ) )
-        ), ResultDataContent.rest );
+        ), false, ResultDataContent.rest );
         serializer.finish();
 
         // then
