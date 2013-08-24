@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.UnboundValue
+import org.neo4j.cypher.internal.commands.values.NotBound
 
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
   val seen = scala.collection.mutable.Set[Any]()
@@ -31,7 +31,7 @@ class DistinctFunction(value: Expression, inner: AggregationFunction) extends Ag
   def apply(ctx: ExecutionContext)(implicit state: QueryState) {
     val data = value(ctx)
 
-    if (data == null || UnboundValue.is(data)) {
+    if (NotBound.orNull(data)) {
       if (!seenNullOrUnbound) {
         seenNullOrUnbound = true
         inner(ctx)

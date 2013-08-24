@@ -24,18 +24,21 @@ import org.neo4j.cypher.internal.{ExecutionContext, Comparer}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.IsCollection
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.UnboundValue
+import org.neo4j.cypher.internal.commands.values.{NotBound, Ternary, NotApplicable}
 
-abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
+abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends TernaryPredicate with Comparer {
   def compare(comparisonResult: Int): Boolean
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary = {
     val l: Any = left(m)
     val r: Any = right(m)
 
-    val comparisonResult: Int = compare(l, r)
-
-    compare(comparisonResult)
+    if (NotBound(l) || NotBound(r) || NotApplicable(l) || NotApplicable(r)) {
+      NotApplicable
+    } else {
+      val comparisonResult: Int = compare(l, r)
+      Ternary(compare(comparisonResult))
+    }
   }
 
   def sign: String
@@ -52,22 +55,24 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
   def symbolTableDependencies = left.symbolTableDependencies ++ right.symbolTableDependencies
 }
 
-case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
+case class Equals(a: Expression, b: Expression) extends TernaryPredicate with Comparer {
   def other(x:Expression):Option[Expression] = {
     if      (x == a) Some(b)
     else if (x == b) Some(a)
     else             None
   }
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary = {
     val a1 = a(m)
     val b1 = b(m)
 
     val result = (a1, b1) match {
-      case (IsCollection(l), IsCollection(r)) => l == r
-      case (UnboundValue, x)                  => x == null
-      case (x, UnboundValue)                  => x == null
-      case _                                  => a1 == b1
+      case (IsCollection(l), IsCollection(r)) => Ternary(l == r)
+      case (NotBound, x)                     => NotApplicable
+      case (x, NotBound)                     => NotApplicable
+      case (NotApplicable, x)                     => NotApplicable
+      case (x, NotApplicable)                     => NotApplicable
+      case _                                  => Ternary(a1 == b1)
     }
     result
   }

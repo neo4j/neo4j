@@ -23,7 +23,7 @@ import org.junit.Assert._
 import org.neo4j.graphdb._
 import org.junit.{Before, Test}
 
-class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
+class UnknownAcceptanceTest extends ExecutionEngineHelper {
 
   @Before
   def delete_all_data() {
@@ -31,7 +31,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_return_unbound_node_as_null() {
+  def should_return_unknown_node_as_null() {
     // given
     createLabeledNode("Person")
 
@@ -43,7 +43,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_return_unbound_relationship_as_null() {
+  def should_return_unknown_relationship_as_null() {
     // given
     createLabeledNode("Person")
 
@@ -55,7 +55,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_not_fail_due_to_label_test_on_unbound() {
+  def should_not_fail_due_to_label_test_on_unknown() {
     // given
     createLabeledNode("Person")
 
@@ -69,33 +69,34 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_compare_unbound_as_non_equal() {
+  def should_compare_same_unknown_as_unknown() {
     // given
     createLabeledNode("Person")
 
     // when
-    val result = parseAndExecute("START n=node(*) MATCH (n:Person)-[r?]->(m) RETURN m = m AS result" )
+    val result = parseAndExecute("START n=node(*) MATCH (n:Person)-[r?]->(m) RETURN str(m = m) AS result" )
 
     // then
-    val next: Boolean = result.columnAs[Boolean]("result").next()
-    assertFalse( "unbound should not be equal to itself", next )
+    // then
+    val next: String = result.columnAs[String]("result").next()
+    assert( "<not_applicable>" === next )
   }
 
   @Test
-  def should_compare_two_different_unbounds_as_non_equal() {
+  def should_compare_two_different_unknowns_as_unknown() {
     // given
     createLabeledNode("Person")
 
     // when
-    val result = parseAndExecute("START n=node(*) MATCH (n:Person)-[r?]->(m), (n)-[l?]->(k) RETURN m = k AS result" )
+    val result = parseAndExecute("START n=node(*) MATCH (n:Person)-[r?]->(m), (n)-[l?]->(k) RETURN str(m = k) AS result" )
 
     // then
-    val next: Boolean = result.columnAs[Boolean]("result").next()
-    assertFalse( "unbound values should not be equal", next )
+    val next: String = result.columnAs[String]("result").next()
+    assert( "<not_applicable>" === next )
   }
 
   @Test
-  def should_compare_unbound_and_null_as_equal() {
+  def should_compare_unknown_and_null_as_equal() {
     // given
     createLabeledNode("Person")
 
@@ -104,7 +105,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
 
     // then
     val next: Boolean = result.columnAs[Boolean]("result").next()
-    assertTrue( "unbound should be equal to null", next )
+    assertTrue( "unknown should be equal to null", next )
   }
 
   @Test
@@ -158,7 +159,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_return_null_when_getting_properties_from_unbound_nodes() {
+  def should_return_null_when_getting_properties_from_unknown_nodes() {
     // given
     createLabeledNode(Map("key1" -> "value1"), "Person")
 
@@ -170,7 +171,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_return_empty_set_for_labels_of_unbound_nodes() {
+  def should_return_empty_set_for_labels_of_unknown_nodes() {
     // given
     createLabeledNode(Map("key1" -> "value1"), "Person")
 
@@ -182,7 +183,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_setting_properties_on_unbound_nodes() {
+  def should_ignore_setting_properties_on_unknown_nodes() {
     // given
     createLabeledNode("Person")
 
@@ -194,7 +195,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_setting_property_to_null_on_unbound_nodes() {
+  def should_ignore_setting_property_to_null_on_unknown_nodes() {
     // given
     createLabeledNode("Person")
 
@@ -206,7 +207,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_removing_properties_on_unbound_nodes() {
+  def should_ignore_removing_properties_on_unknown_nodes() {
     // given
     createLabeledNode(Map("key1" -> "value1"), "Person")
 
@@ -218,7 +219,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_setting_labels_on_unbound_nodes() {
+  def should_ignore_setting_labels_on_unknown_nodes() {
     // given
     val a = createLabeledNode(Map("key1" -> "value1"), "Person")
 
@@ -231,7 +232,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_removing_labels_from_unbound_nodes() {
+  def should_ignore_removing_labels_from_unknown_nodes() {
     // given
     val a = createLabeledNode(Map("key1" -> "value1"), "Person")
 
@@ -244,7 +245,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_using_unbound_nodes_in_create() {
+  def should_ignore_using_unknown_nodes_in_create() {
     // given
     createLabeledNode("Person")
 
@@ -261,7 +262,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_using_unbound_nodes_in_create_but_not_bound_ones() {
+  def should_ignore_using_unknown_nodes_in_create_but_not_bound_ones() {
     // given
     val a = createLabeledNode("Person")
     val b = createLabeledNode("Person")
@@ -279,7 +280,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_using_unbound_nodes_in_create_but_not_bound_ones_when_using_foreach() {
+  def should_ignore_using_unknown_nodes_in_create_but_not_bound_ones_when_using_foreach() {
     // given
     val a = createLabeledNode("Person")
     val b = createLabeledNode("Person")
@@ -298,7 +299,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_using_unbound_nodes_in_create_unique() {
+  def should_ignore_using_unknown_nodes_in_create_unique() {
     // given
     createLabeledNode("Person")
 
@@ -314,7 +315,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_using_unbound_nodes_in_create_unique_but_not_bound_ones() {
+  def should_ignore_using_unknown_nodes_in_create_unique_but_not_bound_ones() {
     // given
     val a = createLabeledNode("Person")
     val b = createLabeledNode("Person")
@@ -333,7 +334,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_using_unbound_nodes_in_delete() {
+  def should_ignore_using_unknown_nodes_in_delete() {
     // given
     val a = createLabeledNode("Person")
 
@@ -349,7 +350,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_using_unbound_nodes_in_complex_delete() {
+  def should_ignore_using_unknown_nodes_in_complex_delete() {
     // given
     val a = createLabeledNode("Person")
     val b = createLabeledNode("Person")
@@ -368,7 +369,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_coalesce_unbound_values() {
+  def should_coalesce_unknown_values() {
     // given
     createLabeledNode(Map("key1" -> "value1"), "Person")
 
@@ -380,7 +381,21 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_reveal_unbound_value_through_str_function() {
+  def should_not_reveal_unknown_value_through_str_function() {
+    // given
+    createLabeledNode(Map("key1" -> "value1"), "Person")
+
+    // when
+    val result = parseAndExecute("START n=node(*) MATCH (n:Person)-[r?]-(m) RETURN STR(m=n) as result" )
+
+    // then
+    assert( List("<not_applicable>") === result.columnAs[Node]("result").toList)
+  }
+
+  // WHERE str(o) = "not_applicable"
+
+  @Test
+  def should_not_reveal_unbound_value_through_str_function() {
     // given
     createLabeledNode(Map("key1" -> "value1"), "Person")
 
@@ -388,7 +403,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
     val result = parseAndExecute("START n=node(*) MATCH (n:Person)-[r?]-(m) RETURN STR(m) as result" )
 
     // then
-    assert( List("UNBOUND_VALUE") === result.columnAs[Node]("result").toList)
+    assert( List("<null>") === result.columnAs[Node]("result").toList)
   }
 
   @Test
@@ -416,7 +431,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_treat_unbound_as_null_in_is_null() {
+  def should_treat_unknown_as_null_in_is_null() {
     // given
     createLabeledNode("Person")
 
@@ -428,7 +443,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_using_unbound_nodes_in_merge_on_match() {
+  def should_ignore_using_unknown_nodes_in_merge_on_match() {
     // given
     val a = createNode()
     val b = createLabeledNode("Person")
@@ -441,7 +456,7 @@ class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
   }
 
   @Test
-  def should_ignore_using_unbound_nodes_in_merge_on_create() {
+  def should_ignore_using_unknown_nodes_in_merge_on_create() {
     // given
     val a = createNode()
 

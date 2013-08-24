@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.cypher.internal.commands.values.UnboundValue
+import org.neo4j.cypher.internal.commands.values.NotBound
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, val commands: Seq[UpdateAction])
   extends PipeWithSource(source) with CollectionSupport {
@@ -48,7 +48,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, val comm
     try {
       if ( commands.exists( ! _.isMissingUnboundDependencies(ctx, state) ) ) {
         for ( key <- allKeys if ! ctx.contains(key)) {
-          ctx.put(key, UnboundValue)
+          ctx.put(key, NotBound)
         }
         Iterator(ctx)
       } else {

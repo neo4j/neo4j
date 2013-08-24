@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.commands.{True, Predicate}
+import org.neo4j.cypher.internal.commands.Predicate
 import collection.Map
-import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 
@@ -164,8 +163,10 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
 
   private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
-    val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.symbolTableDependencies.forall(m contains))
-    predicate.forall(_.isMatch(m)(state))
+    val predicate = predicates.filter(predicate=> !predicate.containsIsNull)
+    predicate.forall( (p: Predicate) =>
+      p.isMatch(m.newWithUnknownEntries(p.symbolTableDependencies))(state)
+    )
   }
 
   private def traverseNextNodeOrYield[U](remaining: Set[MatchingPair], history: History, yielder: ExecutionContext => U): Boolean = {

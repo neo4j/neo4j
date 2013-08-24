@@ -17,24 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes.aggregation
+package org.neo4j.cypher
 
-import collection.mutable.ListBuffer
-import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.NotBound
+import org.junit.{Ignore, Test}
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.values.{NotBound, NotApplicable}
 
+class TernaryPredicateLogicTest extends Assertions {
 
-class CollectFunction(value:Expression) extends AggregationFunction {
-  val collection = new ListBuffer[Any]()
+  @Test @Ignore
+  def should_evaluate_equal_of_unknowns_as_unknown() {
+    // given
+    val ctx = ExecutionContext.from("a" -> NotBound, "b" -> NotBound)
 
-  def apply(data: ExecutionContext)(implicit state:QueryState) {
-    value(data) match {
-      case v if NotBound.orNull(v) =>
-      case v                        => collection += v
-    }
+    // when
+    val predicate = Equals(Identifier("a"), Identifier("b"))
+
+    // then
+    assert( NotApplicable === predicate(ctx)(null) )
   }
-
-  def result: Any = collection.toSeq
 }

@@ -16,7 +16,7 @@ Additionally, expressions that take unbound nodes as an argument behave as if ca
 
 * Checking if a label is present on an unbound node is always true.
 * Calling +labels+ on an unbound node returns +null+.
-* Calling +str+ on an unbound node returns "UNBOUND_VALUE".
+* Calling +str+ on an unbound node returns "unknown".
 
 
 

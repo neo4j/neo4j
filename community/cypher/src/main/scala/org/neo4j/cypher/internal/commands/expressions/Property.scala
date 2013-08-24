@@ -24,7 +24,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.helpers.IsMap
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.{UnboundValue, KeyToken}
+import org.neo4j.cypher.internal.commands.values.{NotBound, NotApplicable, KeyToken}
 
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.cypher.EntityNotFoundException
@@ -60,17 +60,20 @@ class Property(val mapExpr: Expression,
 
   override def toString = ScalaRunTime._toString(this)
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = mapExpr(ctx) match {
-    case null           => null
-    case UnboundValue   => null
-    case IsMap(mapFunc) => try {
-      mapFunc(state.query).apply(propertyKey.name)
-    } catch {
-      case _: EntityNotFoundException if nullOnNotFound => null
-      case _: NotFoundException if nullOnNotFound => null
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+    val entity = mapExpr(ctx)
+    entity match {
+        case null           => null
+        case NotBound      => NotApplicable
+        case IsMap(mapFunc) => try {
+          mapFunc(state.query).apply(propertyKey.name)
+        } catch {
+          case _: EntityNotFoundException if nullOnNotFound => null
+          case _: NotFoundException if nullOnNotFound => null
+        }
+        case _              => throw new ThisShouldNotHappenError("Andres", "Need something with properties")
+      }
     }
-    case _              => throw new ThisShouldNotHappenError("Andres", "Need something with properties")
-  }
 
   def rewrite(f: (Expression) => Expression) = f(new Property(mapExpr.rewrite(f), propertyKey.rewrite(f), nullOnNotFound))
 

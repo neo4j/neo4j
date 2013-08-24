@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.spi.QueryContext
-import org.neo4j.cypher.internal.commands.values.UnboundValue
+import org.neo4j.cypher.internal.commands.values.NotBound
 
 case class LabelsFunction(nodeExpr: Expression) extends Expression {
 
@@ -33,7 +33,7 @@ case class LabelsFunction(nodeExpr: Expression) extends Expression {
     case n: Node =>
       val queryCtx: QueryContext = state.query
       queryCtx.getLabelsForNode(n.getId).map { queryCtx.getLabelName }.toList
-    case UnboundValue =>
+    case NotBound =>
       null
     case _ =>
       throw new CypherTypeException("labels() expected a Node but was called with something else")
