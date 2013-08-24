@@ -78,6 +78,11 @@ public class GraphMock
         return mockRelationship( id, start, type, end, properties( properties ) );
     }
 
+    public static Link link( Relationship relationship, Node node )
+    {
+        return Link.link( relationship, node );
+    }
+
     public static Path path( Node node, Link... links )
     {
         List<Node> nodes = new ArrayList<>( links.length + 1 );

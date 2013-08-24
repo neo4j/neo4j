@@ -181,6 +181,11 @@ public class OutputFormat
         };
     }
 
+    public static void write( Representation representation, RepresentationFormat format, URI baseUri )
+    {
+        representation.serialize( format, baseUri, null );
+    }
+
     private byte[] toBytes( String entity, boolean mustFail )
     {
         byte[] entityAsBytes;

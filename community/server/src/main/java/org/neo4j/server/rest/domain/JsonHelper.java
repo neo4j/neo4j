@@ -115,4 +115,9 @@ public class JsonHelper
             throw new JsonBuildRuntimeException( e );
         }
     }
+
+    public static String prettyPrint( Object item ) throws IOException
+    {
+        return OBJECT_MAPPER.writer().withDefaultPrettyPrinter().writeValueAsString( item );
+    }
 }

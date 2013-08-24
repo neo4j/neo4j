@@ -21,6 +21,7 @@ package org.neo4j.server.rest.transactional;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.kernel.api.KernelAPI;
@@ -54,14 +55,16 @@ public class TransactionFacade
     private final ExecutionEngine engine;
     private final TransactionRegistry registry;
     private final StringLogger log;
+    private final URI baseUri;
 
     public TransactionFacade( KernelAPI kernel, ExecutionEngine engine,
-                              TransactionRegistry registry, StringLogger log )
+                              TransactionRegistry registry, URI baseUri, StringLogger log )
     {
         this.kernel = kernel;
         this.engine = engine;
         this.registry = registry;
         this.log = log;
+        this.baseUri = baseUri;
     }
 
     public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme ) throws TransactionLifecycleException
@@ -81,6 +84,6 @@ public class TransactionFacade
 
     public ExecutionResultSerializer serializer( OutputStream output )
     {
-        return new ExecutionResultSerializer( output, log );
+        return new ExecutionResultSerializer( output, baseUri, log );
     }
 }

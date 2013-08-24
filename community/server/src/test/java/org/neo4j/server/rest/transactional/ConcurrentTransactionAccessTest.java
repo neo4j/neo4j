@@ -47,7 +47,7 @@ public class ConcurrentTransactionAccessTest
                 new TransactionHandleRegistry( mock( Clock.class), 0, StringLogger.DEV_NULL );
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
         when(kernel.newTransaction()).thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
-        TransactionFacade actions = new TransactionFacade( kernel, null, registry, null );
+        TransactionFacade actions = new TransactionFacade( kernel, null, registry, null, null );
 
         final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme() );
 
