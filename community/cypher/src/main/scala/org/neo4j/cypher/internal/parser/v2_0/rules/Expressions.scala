@@ -127,7 +127,7 @@ trait Expressions extends Parser
     Expression2 ~ oneOrMore(WS ~ PropertyLookup : ReductionRule1[ast.Expression, ast.Property])
   }
 
-  private def PropertyLookup : ReductionRule1[ast.Expression, ast.Property] = rule("property lookup") {
+  private def PropertyLookup : ReductionRule1[ast.Expression, ast.Property] = rule("'.'") {
     operator(".") ~~ (
       (group(Identifier ~~ LegacyPropertyOperator ~> ((s:String) => s)) ~>> token ~~> ast.LegacyProperty.make)
         | (Identifier ~>> token ~~> ast.Property)
