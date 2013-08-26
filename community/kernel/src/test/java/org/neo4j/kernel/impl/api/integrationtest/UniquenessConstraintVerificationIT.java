@@ -31,6 +31,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
@@ -77,7 +78,32 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
             assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
             assertEquals( asSet( new ConstraintVerificationFailedKernelException.Evidence(
                     new PreexistingIndexEntryConflictException( "foo", node1, node2 ) ) ),
-                          ((ConstraintVerificationFailedKernelException) cause).evidence() );
+                    ((ConstraintVerificationFailedKernelException) cause).evidence() );
+        }
+    }
+
+    @Test
+    public void shouldAbortConstraintCreationIfTheTransactionHasDataModificationsPertainingToTheConstraint()
+            throws Exception
+    {
+        // given
+        newTransaction();
+        db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
+        long foo = statement.labelGetForName( getState(), "Foo" );
+        long name = statement.propertyKeyGetForName( getState(), "name" );
+
+        // when
+        try
+        {
+            statement.uniquenessConstraintCreate( getState(), foo, name );
+
+            fail( "expected exception" );
+        }
+        // then
+        catch ( CreateConstraintFailureException e )
+        {
+            assertEquals( new UniquenessConstraint( foo, name ), e.constraint() );
+            assertThat( e.getCause(), instanceOf( SchemaAndDataModificationInSameTransactionException.class ) );
         }
     }
 

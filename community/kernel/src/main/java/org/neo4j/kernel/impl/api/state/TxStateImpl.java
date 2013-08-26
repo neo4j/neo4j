@@ -515,6 +515,12 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
+    public Map<Long, Object> nodesWithChangedProperty( long propertyKeyId )
+    {
+        return legacyState.getNodesWithChangedProperty( propertyKeyId );
+    }
+
+    @Override
     public DiffSets<Long> nodesDeletedInTx()
     {
         if ( !hasDeletedNodesDiffSets() )

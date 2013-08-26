@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
@@ -45,50 +48,62 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     public DiffSets<Long> getNodesWithChangedProperty( long propertyKey, Object value )
     {
         DiffSets<Long> diff = new DiffSets<Long>();
-        Iterable<WritableTransactionState.CowNodeElement> changedNodes = state.getChangedNodes();
-
-        for ( WritableTransactionState.CowNodeElement changedNode : changedNodes )
+        for ( WritableTransactionState.CowNodeElement changedNode : state.getChangedNodes() )
         {
-
             // All nodes where the property has been removed altogether
-            ArrayMap<Integer, PropertyData> propRmMap = changedNode.getPropertyRemoveMap( false );
-            if ( propRmMap != null )
+            PropertyData removed = propertyChange( changedNode.getPropertyRemoveMap( false ), propertyKey );
+            if ( removed != null && removed.getValue().equals( value ) )
             {
-                for ( PropertyData propertyData : propRmMap.values() )
-                {
-                    if ( propertyData.getIndex() == propertyKey && propertyData.getValue().equals( value ) )
-                    {
-                        diff.remove( changedNode.getId() );
-                    }
-                }
+                diff.remove( changedNode.getId() );
             }
 
             // All nodes where property has been added or changed
             if ( !changedNode.isDeleted() )
             {
-                ArrayMap<Integer, PropertyData> propAddMap = changedNode.getPropertyAddMap( false );
-                if ( propAddMap != null )
+                PropertyData added = propertyChange( changedNode.getPropertyAddMap( false ), propertyKey );
+                if ( added != null )
                 {
-                    for ( PropertyData propertyData : propAddMap.values() )
+                    if ( added.getValue().equals( value ) )
                     {
-                        if ( propertyData.getIndex() == propertyKey )
-                        {
-                            // Added if value is the same, removed if value is different.
-                            if ( propertyData.getValue().equals( value ) )
-                            {
-                                diff.add( changedNode.getId() );
-                            }
-                            else
-                            {
-                                diff.remove( changedNode.getId() );
-                            }
-                        }
+                        diff.add( changedNode.getId() );
+                    }
+                    else
+                    {
+                        diff.remove( changedNode.getId() );
                     }
                 }
             }
         }
-
         return diff;
+    }
+
+    @Override
+    public Map<Long, Object> getNodesWithChangedProperty( long propertyKeyId )
+    {
+        HashMap<Long, Object> result = new HashMap<>();
+        for ( WritableTransactionState.CowNodeElement changedNode : state.getChangedNodes() )
+        {
+            if ( changedNode.isDeleted() )
+            {
+                result.put( changedNode.getId(), new Object() );
+                continue;
+            }
+            PropertyData added = propertyChange( changedNode.getPropertyAddMap( false ), propertyKeyId );
+            if ( added != null )
+            {
+                result.put( changedNode.getId(), added.getValue() );
+            }
+            else if ( null != propertyChange( changedNode.getPropertyRemoveMap( false ), propertyKeyId ) )
+            {
+                result.put( changedNode.getId(), new Object() );
+            }
+        }
+        return result;
+    }
+
+    private static PropertyData propertyChange( ArrayMap<Integer, PropertyData> propertyDataMap, long propertyKeyId )
+    {
+        return propertyDataMap == null ? null : propertyDataMap.get( (int) propertyKeyId );
     }
 
     @Override

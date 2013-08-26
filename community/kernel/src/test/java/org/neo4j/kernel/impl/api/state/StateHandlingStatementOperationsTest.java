@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -41,6 +42,7 @@ import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -92,6 +94,8 @@ public class StateHandlingStatementOperationsTest
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
         StatementOperations delegate = mock( StatementOperations.class );
         TxState txState = mock( TxState.class );
+        when( txState.nodesWithLabelChanged( anyLong() ) ).thenReturn( DiffSets.<Long>emptyDiffSets() );
+        when( txState.nodesWithChangedProperty( anyLong() ) ).thenReturn( Collections.<Long, Object>emptyMap() );
         StatementState state = mockedState( txState );
         when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( asList( constraint ) ) );
@@ -103,7 +107,6 @@ public class StateHandlingStatementOperationsTest
 
         // then
         verify( txState ).constraintDoUnRemove( any( UniquenessConstraint.class ) );
-        verifyNoMoreInteractions( txState );
     }
 
     @Test

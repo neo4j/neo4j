@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Map;
+
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -55,4 +57,6 @@ public interface OldTxStateBridge
     void relationshipRemoveProperty( long relationshipId, Property removedProperty );
 
     void graphRemoveProperty( Property removedProperty );
+
+    Map<Long, Object> getNodesWithChangedProperty( long propertyKeyId );
 }

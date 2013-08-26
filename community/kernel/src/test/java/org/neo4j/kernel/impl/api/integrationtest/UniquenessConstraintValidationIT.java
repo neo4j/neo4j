@@ -23,10 +23,13 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.impl.api.constraints.UnableToValidateConstraintKernelException;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -182,6 +185,35 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         db.getReferenceNode().delete();
         assertEquals( "number of nodes", 5, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
         rollback();
+    }
+
+    @Test
+    public void shouldPreventModifyingDataRelatedToTheConstraintInTheSameTransactionAsTheConstraintWasCreated()
+            throws Exception
+    {
+        // given
+        newTransaction();
+        db.schema().constraintFor( label( "Label1" ) ).unique().on( "key1" ).create();
+
+        // when
+        try
+        {
+            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+
+            fail( "expected exception" );
+        }
+        // then
+        catch ( ConstraintViolationException e )
+        {
+            assertThat( e.getMessage(), containsString( "Unable to validate constraint." ) );
+            assertThat( e.getCause(), instanceOf( UnableToValidateConstraintKernelException.class ) );
+            assertThat( grandCause( e ), instanceOf( SchemaAndDataModificationInSameTransactionException.class ) );
+        }
+    }
+
+    private static Throwable grandCause( Throwable e )
+    {
+        return e.getCause().getCause();
     }
 
     private Node constrainedNode( String labelName, String propertyKey, Object propertyValue ) throws

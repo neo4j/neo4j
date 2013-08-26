@@ -27,12 +27,12 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
 
@@ -207,29 +208,45 @@ public class StateHandlingStatementOperations implements
             throws SchemaKernelException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
-        if ( ! state.txState().constraintDoUnRemove( constraint ) )
+        try
         {
-            for ( Iterator<UniquenessConstraint> it = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
-                    state, labelId, propertyKeyId ); it.hasNext(); )
+            verifyNoDataChanges( state, labelId, propertyKeyId );
+            if ( !state.txState().constraintDoUnRemove( constraint ) )
             {
-                if ( it.next().equals( labelId, propertyKeyId ) )
+                for ( Iterator<UniquenessConstraint> it = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
+                        state, labelId, propertyKeyId ); it.hasNext(); )
                 {
-                    return constraint;
+                    if ( it.next().equals( labelId, propertyKeyId ) )
+                    {
+                        return constraint;
+                    }
                 }
-            }
-            
-            try
-            {
                 long indexId = constraintIndexCreator.createUniquenessConstraintIndex(
                         state, this, labelId, propertyKeyId );
                 state.txState().constraintDoAdd( constraint, indexId );
             }
-            catch ( TransactionalException | KernelException e )
+            return constraint;
+        }
+        catch ( TransactionalException | ConstraintVerificationFailedKernelException |
+                SchemaAndDataModificationInSameTransactionException e )
+        {
+            throw new CreateConstraintFailureException( constraint, e );
+        }
+    }
+
+    private void verifyNoDataChanges( StatementState state, long labelId, long propertyKeyId )
+            throws SchemaAndDataModificationInSameTransactionException
+
+    {
+        if ( state.hasTxState() )
+        {
+            TxState txState = state.txState();
+            if ( !(txState.nodesWithLabelChanged( labelId ).isEmpty()
+                    && txState.nodesWithChangedProperty( propertyKeyId ).isEmpty()) )
             {
-                throw new CreateConstraintFailureException( constraint, e );
+                throw new SchemaAndDataModificationInSameTransactionException();
             }
         }
-        return constraint;
     }
 
     @Override

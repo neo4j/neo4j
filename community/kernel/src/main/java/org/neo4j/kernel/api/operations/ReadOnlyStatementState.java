@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.operations;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.NotInTransactionException;
@@ -258,7 +259,13 @@ public class ReadOnlyStatementState implements StatementState
         {
             return DiffSets.emptyDiffSets();
         }
-        
+
+        @Override
+        public Map<Long, Object> nodesWithChangedProperty( long propertyKeyId )
+        {
+            return Collections.emptyMap();
+        }
+
         @Override
         public Iterable<NodeState> nodeStates()
         {

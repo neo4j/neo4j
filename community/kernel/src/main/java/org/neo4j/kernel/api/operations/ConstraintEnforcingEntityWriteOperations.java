@@ -25,6 +25,8 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -100,9 +102,11 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
         try
         {
             Object value = property.value();
+            IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, property.propertyKeyId() );
+            verifyIndexOnline( state, indexDescriptor );
             state.locks().acquireIndexEntryWriteLock( labelId, property.propertyKeyId(), property.valueAsString() );
             PrimitiveLongIterator existingNodes = entityReadOperations.nodesGetFromIndexLookup(
-                    state, new IndexDescriptor( labelId, property.propertyKeyId() ), value );
+                    state, indexDescriptor, value );
             if ( existingNodes.hasNext() )
             {
 
@@ -110,9 +114,19 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
                                                                     existingNodes.next() );
             }
         }
-        catch ( IndexNotFoundKernelException e )
+        catch ( IndexNotFoundKernelException | SchemaAndDataModificationInSameTransactionException e )
         {
             throw new UnableToValidateConstraintKernelException( e );
+        }
+    }
+
+    private void verifyIndexOnline( StatementState state, IndexDescriptor indexDescriptor )
+            throws IndexNotFoundKernelException, SchemaAndDataModificationInSameTransactionException
+    {
+        if ( schemaReadOperations.indexGetState( state, indexDescriptor ) != InternalIndexState.ONLINE )
+        {
+            // The only case where the index would not be online is if the constraint was created in this transaction.
+            throw new SchemaAndDataModificationInSameTransactionException();
         }
     }
 

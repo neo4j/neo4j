@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -158,6 +159,8 @@ public interface TxState
     public abstract boolean nodeIsDeletedInThisTx( long nodeId );
 
     public abstract DiffSets<Long> nodesWithChangedProperty( long propertyKeyId, Object value );
+
+    public abstract Map<Long, Object> nodesWithChangedProperty( long propertyKeyId );
 
     public abstract boolean relationshipIsAddedInThisTx( long relationshipId );
 

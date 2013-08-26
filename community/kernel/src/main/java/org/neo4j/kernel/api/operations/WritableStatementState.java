@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -289,7 +290,13 @@ public class WritableStatementState implements StatementState
         {
             throw placeHolderException();
         }
-        
+
+        @Override
+        public Map<Long, Object> nodesWithChangedProperty( long propertyKeyId )
+        {
+            throw placeHolderException();
+        }
+
         @Override
         public Iterable<NodeState> nodeStates()
         {
