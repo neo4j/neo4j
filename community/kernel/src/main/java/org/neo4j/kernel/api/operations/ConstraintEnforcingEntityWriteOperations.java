@@ -24,9 +24,9 @@ import java.util.Iterator;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.constraints.UnableToValidateConstraintKernelException;
@@ -69,14 +69,14 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
             }
             if ( !property.isNoProperty() )
             {
-                validateNoExistingNodeWithLabelAndProperty( state, labelId, property );
+                validateNoExistingNodeWithLabelAndProperty( state, labelId, (SafeProperty)property );
             }
         }
         return entityWriteOperations.nodeAddLabel( state, nodeId, labelId );
     }
 
     @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, Property property )
+    public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException
     {
         PrimitiveLongIterator labelIds = entityReadOperations.nodeGetLabels( state, nodeId );
@@ -94,7 +94,7 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
-    private void validateNoExistingNodeWithLabelAndProperty( StatementState state, long labelId, Property property )
+    private void validateNoExistingNodeWithLabelAndProperty( StatementState state, long labelId, SafeProperty property )
             throws ConstraintValidationKernelException
     {
         try
@@ -110,7 +110,7 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
                                                                     existingNodes.next() );
             }
         }
-        catch ( IndexNotFoundKernelException | PropertyNotFoundException e )
+        catch ( IndexNotFoundKernelException e )
         {
             throw new UnableToValidateConstraintKernelException( e );
         }
@@ -137,14 +137,14 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
     }
 
     @Override
-    public Property relationshipSetProperty( StatementState state, long relationshipId, Property property ) throws
+    public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property ) throws
             PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         return entityWriteOperations.relationshipSetProperty( state, relationshipId, property );
     }
 
     @Override
-    public Property graphSetProperty( StatementState state, Property property ) throws PropertyKeyIdNotFoundException
+    public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
     {
         return entityWriteOperations.graphSetProperty( state, property );
     }

@@ -25,11 +25,12 @@ import java.util.Collection;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
@@ -275,12 +276,11 @@ public class PropertyEqualityTest
 
     private static class Test
     {
-        final Property property;
+        final SafeProperty property;
         final Object value;
         final boolean shouldMatch;
 
-
-        private Test( Property property, Object value, boolean shouldMatch )
+        private Test( SafeProperty property, Object value, boolean shouldMatch )
         {
             this.property = property;
             this.value = value;
@@ -290,16 +290,9 @@ public class PropertyEqualityTest
         @Override
         public String toString()
         {
-            try
-            {
-                return String.format( "%s (%s) %s %s (%s)",
-                        property.value(), property.value().getClass().getSimpleName(), shouldMatch ? "==" : "!=", value,
-                        value.getClass().getSimpleName() );
-            }
-            catch ( PropertyNotFoundException e )
-            {
-                throw new RuntimeException( e );
-            }
+            return String.format( "%s (%s) %s %s (%s)",
+                    property.value(), property.value().getClass().getSimpleName(), shouldMatch ? "==" : "!=", value,
+                    value.getClass().getSimpleName() );
         }
 
         void checkAssertion()
@@ -307,7 +300,8 @@ public class PropertyEqualityTest
             if ( shouldMatch )
             {
                 assertEquality( property, value );
-            } else
+            }
+            else
             {
                 assertNonEquality( property, value );
             }

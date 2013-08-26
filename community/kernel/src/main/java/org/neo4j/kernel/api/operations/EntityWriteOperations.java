@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.operations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 
 public interface EntityWriteOperations
@@ -49,13 +50,13 @@ public interface EntityWriteOperations
      */
     boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException;
 
-    Property nodeSetProperty( StatementState state, long nodeId, Property property )
+    Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException;
 
-    Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
+    Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException;
     
-    Property graphSetProperty( StatementState state, Property property )
+    Property graphSetProperty( StatementState state, SafeProperty property )
             throws PropertyKeyIdNotFoundException;
 
     /**

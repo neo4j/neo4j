@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -442,134 +442,92 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, Property property )
+    public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
-        try
+        Property existingProperty = nodeGetProperty( state, nodeId, property.propertyKeyId() );
+        if ( existingProperty.isNoProperty() )
         {
-            Property existingProperty = nodeGetProperty( state, nodeId, property.propertyKeyId() );
-            if ( existingProperty.isNoProperty() )
-            {
-                auxStoreOps.nodeAddStoreProperty( nodeId, property );
-            }
-            else
-            {
-                auxStoreOps.nodeChangeStoreProperty( nodeId, existingProperty, property );
-            }
-            state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
-            return existingProperty;
+            auxStoreOps.nodeAddStoreProperty( nodeId, property );
         }
-        catch ( PropertyNotFoundException e )
+        else
         {
-            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+            auxStoreOps.nodeChangeStoreProperty( nodeId, (SafeProperty)existingProperty, property );
         }
+        state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
+        return existingProperty;
     }
 
     @Override
-    public Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
+    public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
-        try
+        Property existingProperty = relationshipGetProperty( state, relationshipId, property.propertyKeyId() );
+        if ( existingProperty.isNoProperty() )
         {
-            Property existingProperty = relationshipGetProperty( state, relationshipId, property.propertyKeyId() );
-            if ( existingProperty.isNoProperty() )
-            {
-                auxStoreOps.relationshipAddStoreProperty( relationshipId, property );
-            }
-            else
-            {
-                auxStoreOps.relationshipChangeStoreProperty( relationshipId, existingProperty, property );
-            }
-            state.txState().relationshipDoReplaceProperty( relationshipId, existingProperty, property );
-            return existingProperty;
+            auxStoreOps.relationshipAddStoreProperty( relationshipId, property );
         }
-        catch ( PropertyNotFoundException e )
+        else
         {
-            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+            auxStoreOps.relationshipChangeStoreProperty( relationshipId, (SafeProperty)existingProperty, property );
         }
+        state.txState().relationshipDoReplaceProperty( relationshipId, existingProperty, property );
+        return existingProperty;
     }
     
     @Override
-    public Property graphSetProperty( StatementState state, Property property ) throws PropertyKeyIdNotFoundException
+    public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
     {
-        try
+        Property existingProperty = graphGetProperty( state, property.propertyKeyId() );
+        if ( existingProperty.isNoProperty() )
         {
-            Property existingProperty = graphGetProperty( state, property.propertyKeyId() );
-            if ( existingProperty.isNoProperty() )
-            {
-                auxStoreOps.graphAddStoreProperty( property );
-            }
-            else
-            {
-                auxStoreOps.graphChangeStoreProperty( existingProperty, property );
-            }
-            state.txState().graphDoReplaceProperty( existingProperty, property );
-            return existingProperty;
+            auxStoreOps.graphAddStoreProperty( property );
         }
-        catch ( PropertyNotFoundException e )
+        else
         {
-            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
+            auxStoreOps.graphChangeStoreProperty( (SafeProperty)existingProperty, property );
         }
+        state.txState().graphDoReplaceProperty( existingProperty, property );
+        return existingProperty;
     }
 
     @Override
     public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
-        try
+        Property existingProperty = nodeGetProperty( state, nodeId, propertyKeyId );
+        if ( !existingProperty.isNoProperty() )
         {
-            Property existingProperty = nodeGetProperty( state, nodeId, propertyKeyId );
-            if ( !existingProperty.isNoProperty() )
-            {
-                auxStoreOps.nodeRemoveStoreProperty( nodeId, existingProperty );
-            }
-            state.txState().nodeDoRemoveProperty( nodeId, existingProperty );
-            return existingProperty;
+            auxStoreOps.nodeRemoveStoreProperty( nodeId, (SafeProperty)existingProperty );
         }
-        catch ( PropertyNotFoundException e )
-        {
-            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
-        }
+        state.txState().nodeDoRemoveProperty( nodeId, existingProperty );
+        return existingProperty;
     }
 
     @Override
     public Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
-        try
+        Property existingProperty = relationshipGetProperty( state, relationshipId, propertyKeyId );
+        if ( !existingProperty.isNoProperty() )
         {
-            Property existingProperty = relationshipGetProperty( state, relationshipId, propertyKeyId );
-            if ( !existingProperty.isNoProperty() )
-            {
-                auxStoreOps.relationshipRemoveStoreProperty( relationshipId, existingProperty );
-            }
-            state.txState().relationshipDoRemoveProperty( relationshipId, existingProperty );
-            return existingProperty;
+            auxStoreOps.relationshipRemoveStoreProperty( relationshipId, (SafeProperty)existingProperty );
         }
-        catch ( PropertyNotFoundException e )
-        {
-            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
-        }
+        state.txState().relationshipDoRemoveProperty( relationshipId, existingProperty );
+        return existingProperty;
     }
     
     @Override
     public Property graphRemoveProperty( StatementState state, long propertyKeyId )
             throws PropertyKeyIdNotFoundException
     {
-        try
+        Property existingProperty = graphGetProperty( state, propertyKeyId );
+        if ( !existingProperty.isNoProperty() )
         {
-            Property existingProperty = graphGetProperty( state, propertyKeyId );
-            if ( !existingProperty.isNoProperty() )
-            {
-                auxStoreOps.graphRemoveStoreProperty( existingProperty );
-            }
-            state.txState().graphDoRemoveProperty( existingProperty );
-            return existingProperty;
+            auxStoreOps.graphRemoveStoreProperty( (SafeProperty)existingProperty );
         }
-        catch ( PropertyNotFoundException e )
-        {
-            throw new IllegalArgumentException( "Property used for setting should not be NoProperty", e );
-        }
+        state.txState().graphDoRemoveProperty( existingProperty );
+        return existingProperty;
     }
     
     @Override
@@ -589,7 +547,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            Iterator<Property> properties = nodeGetAllProperties( state, nodeId );
+            Iterator<SafeProperty> properties = nodeGetAllProperties( state, nodeId );
             while ( properties.hasNext() )
             {
                 Property property = properties.next();
@@ -612,7 +570,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<Property> nodeGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
+    public Iterator<SafeProperty> nodeGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -651,7 +609,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            Iterator<Property> properties = relationshipGetAllProperties( state, relationshipId );
+            Iterator<SafeProperty> properties = relationshipGetAllProperties( state, relationshipId );
             while ( properties.hasNext() )
             {
                 Property property = properties.next();
@@ -673,7 +631,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<Property> relationshipGetAllProperties( StatementState state, long relationshipId ) throws EntityNotFoundException
+    public Iterator<SafeProperty> relationshipGetAllProperties( StatementState state, long relationshipId ) throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -710,7 +668,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public Property graphGetProperty( StatementState state, long propertyKeyId )
     {
-        Iterator<Property> properties = graphGetAllProperties( state );
+        Iterator<SafeProperty> properties = graphGetAllProperties( state );
         while ( properties.hasNext() )
         {
             Property property = properties.next();
@@ -729,7 +687,7 @@ public class StateHandlingStatementOperations implements
     }
     
     @Override
-    public Iterator<Property> graphGetAllProperties( StatementState state )
+    public Iterator<SafeProperty> graphGetAllProperties( StatementState state )
     {
         if ( state.hasTxStateWithChanges() )
         {

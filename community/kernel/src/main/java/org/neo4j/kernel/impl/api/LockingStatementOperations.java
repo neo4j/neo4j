@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
@@ -222,7 +223,7 @@ public class LockingStatementOperations implements
     }
     
     @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, Property property )
+    public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException
     {
         state.locks().acquireNodeWriteLock( nodeId );
@@ -238,7 +239,7 @@ public class LockingStatementOperations implements
     }
     
     @Override
-    public Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
+    public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         state.locks().acquireRelationshipWriteLock( relationshipId );
@@ -254,7 +255,7 @@ public class LockingStatementOperations implements
     }
     
     @Override
-    public Property graphSetProperty( StatementState state, Property property ) throws PropertyKeyIdNotFoundException
+    public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
     {
         state.locks().acquireGraphWriteLock();
         return entityWriteDelegate.graphSetProperty( state, property );

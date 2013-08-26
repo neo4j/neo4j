@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -290,7 +291,7 @@ public class StatementOperationParts
                 return entityReadOperations.nodeGetPropertyKeys( state, nodeId );
             }
             @Override
-            public Iterator<Property> nodeGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
+            public Iterator<SafeProperty> nodeGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
             {
                 return entityReadOperations.nodeGetAllProperties( state, nodeId );
             }
@@ -300,7 +301,7 @@ public class StatementOperationParts
                 return entityReadOperations.relationshipGetPropertyKeys( state, relationshipId );
             }
             @Override
-            public Iterator<Property> relationshipGetAllProperties( StatementState state, long relationshipId )
+            public Iterator<SafeProperty> relationshipGetAllProperties( StatementState state, long relationshipId )
                     throws EntityNotFoundException
             {
                 return entityReadOperations.relationshipGetAllProperties( state, relationshipId );
@@ -311,7 +312,7 @@ public class StatementOperationParts
                 return entityReadOperations.graphGetPropertyKeys(state);
             }
             @Override
-            public Iterator<Property> graphGetAllProperties( StatementState state )
+            public Iterator<SafeProperty> graphGetAllProperties( StatementState state )
             {
                 return entityReadOperations.graphGetAllProperties(state);
             }
@@ -337,19 +338,19 @@ public class StatementOperationParts
                 return entityWriteOperations.nodeRemoveLabel( state, nodeId, labelId );
             }
             @Override
-            public Property nodeSetProperty( StatementState state, long nodeId, Property property )
+            public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
                     throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException
             {
                 return entityWriteOperations.nodeSetProperty( state, nodeId, property );
             }
             @Override
-            public Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
+            public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
                     throws PropertyKeyIdNotFoundException, EntityNotFoundException
             {
                 return entityWriteOperations.relationshipSetProperty( state, relationshipId, property );
             }
             @Override
-            public Property graphSetProperty( StatementState state, Property property ) throws PropertyKeyIdNotFoundException
+            public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
             {
                 return entityWriteOperations.graphSetProperty( state, property );
             }

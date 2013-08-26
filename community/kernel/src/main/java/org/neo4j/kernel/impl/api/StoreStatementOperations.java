@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -470,7 +470,7 @@ public class StoreStatementOperations implements
     }
     
     @Override
-    public Iterator<Property> nodeGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
+    public Iterator<SafeProperty> nodeGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
     {
         try
         {
@@ -483,7 +483,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<Property> relationshipGetAllProperties( StatementState state, long relationshipId ) throws EntityNotFoundException
+    public Iterator<SafeProperty> relationshipGetAllProperties( StatementState state, long relationshipId ) throws EntityNotFoundException
     {
         try
         {
@@ -496,19 +496,19 @@ public class StoreStatementOperations implements
     }
     
     @Override
-    public Iterator<Property> graphGetAllProperties( StatementState state )
+    public Iterator<SafeProperty> graphGetAllProperties( StatementState state )
     {
         return loadAllPropertiesOf( neoStore.asRecord() );
     }
 
-    private Iterator<Property> loadAllPropertiesOf( PrimitiveRecord primitiveRecord )
+    private Iterator<SafeProperty> loadAllPropertiesOf( PrimitiveRecord primitiveRecord )
     {
         Collection<PropertyRecord> records = propertyStore.getPropertyRecordChain( primitiveRecord.getNextProp() );
         if ( null == records )
         {
             return IteratorUtil.emptyIterator();
         }
-        List<Property> properties = new ArrayList<>();
+        List<SafeProperty> properties = new ArrayList<>();
         for ( PropertyRecord record : records )
         {
             for ( PropertyBlock block : record.getPropertyBlocks() )
@@ -527,29 +527,26 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public void nodeAddStoreProperty( long nodeId, Property property )
-            throws PropertyNotFoundException
+    public void nodeAddStoreProperty( long nodeId, SafeProperty property )
 
     {
         persistenceManager.nodeAddProperty( nodeId, (int) property.propertyKeyId(), property.value() );
     }
 
     @Override
-    public void relationshipAddStoreProperty( long relationshipId, Property property )
-            throws PropertyNotFoundException
+    public void relationshipAddStoreProperty( long relationshipId, SafeProperty property )
     {
         persistenceManager.relAddProperty( relationshipId, (int) property.propertyKeyId(), property.value() );
     }
     
     @Override
-    public void graphAddStoreProperty( Property property ) throws PropertyNotFoundException
+    public void graphAddStoreProperty( SafeProperty property )
     {
         persistenceManager.graphAddProperty( (int) property.propertyKeyId(), property.value() );
     }
 
     @Override
-    public void nodeChangeStoreProperty( long nodeId, Property previousProperty, Property property )
-            throws PropertyNotFoundException
+    public void nodeChangeStoreProperty( long nodeId, SafeProperty previousProperty, SafeProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -558,8 +555,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public void relationshipChangeStoreProperty( long relationshipId, Property previousProperty, Property property )
-            throws PropertyNotFoundException
+    public void relationshipChangeStoreProperty( long relationshipId, SafeProperty previousProperty, SafeProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -569,8 +565,7 @@ public class StoreStatementOperations implements
     }
     
     @Override
-    public void graphChangeStoreProperty( Property previousProperty, Property property )
-            throws PropertyNotFoundException
+    public void graphChangeStoreProperty( SafeProperty previousProperty, SafeProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -579,7 +574,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public void nodeRemoveStoreProperty( long nodeId, Property property )
+    public void nodeRemoveStoreProperty( long nodeId, SafeProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -588,7 +583,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public void relationshipRemoveStoreProperty( long relationshipId, Property property )
+    public void relationshipRemoveStoreProperty( long relationshipId, SafeProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -597,7 +592,7 @@ public class StoreStatementOperations implements
     }
     
     @Override
-    public void graphRemoveStoreProperty( Property property )
+    public void graphRemoveStoreProperty( SafeProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -606,19 +601,19 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, Property property )
+    public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
     {
         throw shouldCallAuxiliaryInstead();
     }
 
     @Override
-    public Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
+    public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
     {
         throw shouldCallAuxiliaryInstead();
     }
     
     @Override
-    public Property graphSetProperty( StatementState state, Property property )
+    public Property graphSetProperty( StatementState state, SafeProperty property )
     {
         throw shouldCallAuxiliaryInstead();
     }

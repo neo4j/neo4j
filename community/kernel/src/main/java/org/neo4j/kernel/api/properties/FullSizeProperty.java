@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.properties;
 
-abstract class FullSizeProperty extends PropertyWithValue
+abstract class FullSizeProperty extends SafeProperty
 {
     final long propertyKeyId;
 

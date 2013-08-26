@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
  */
-final class CharProperty extends PropertyWithValue
+final class CharProperty extends SafeProperty
 {
     private final char value;
     private final long propertyKeyId;

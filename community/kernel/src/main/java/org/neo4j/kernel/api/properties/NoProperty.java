@@ -24,8 +24,6 @@ import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 
-import static java.lang.String.format;
-
 final class NoProperty extends Property
 {
     private final long propertyKeyId;
@@ -42,8 +40,18 @@ final class NoProperty extends Property
     @Override
     public String toString()
     {
-        return format( "%s[propertyKeyId=%s, %sId=%s]", getClass().getSimpleName(),
-                propertyKeyId, entityType.name().toLowerCase(), entityId );
+        StringBuilder string = new StringBuilder( getClass().getSimpleName() );
+        string.append( "[" ).append( entityType.name().toLowerCase() );
+        if ( entityType == EntityType.GRAPH )
+        {
+            string.append( "Property" );
+        }
+        else
+        {
+            string.append( "Id=" ).append( entityId );
+        }
+        string.append( ", propertyKeyId=" ).append( propertyKeyId );
+        return string.append( "]" ).toString();
     }
 
     @Override
@@ -89,6 +97,12 @@ final class NoProperty extends Property
     }
 
     @Override
+    public String valueAsString() throws PropertyNotFoundException
+    {
+        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
+    }
+
+    @Override
     public Number numberValue( Number defaultValue )
     {
         return defaultValue;
@@ -115,37 +129,37 @@ final class NoProperty extends Property
     @Override
     public Object value() throws PropertyNotFoundException
     {
-        throw new PropertyNotFoundException( propertyKeyId );
+        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
     }
 
     @Override
     public String stringValue() throws PropertyNotFoundException
     {
-        throw new PropertyNotFoundException( propertyKeyId );
+        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
     }
 
     @Override
     public boolean booleanValue() throws PropertyNotFoundException
     {
-        throw new PropertyNotFoundException( propertyKeyId );
+        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
     }
 
     @Override
     public Number numberValue() throws PropertyNotFoundException
     {
-        throw new PropertyNotFoundException( propertyKeyId );
+        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
     }
 
     @Override
     public int intValue() throws PropertyNotFoundException
     {
-        throw new PropertyNotFoundException( propertyKeyId );
+        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
     }
 
     @Override
     public long longValue() throws PropertyNotFoundException
     {
-        throw new PropertyNotFoundException( propertyKeyId );
+        throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
     }
     
     @Override

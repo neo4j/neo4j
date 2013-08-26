@@ -54,6 +54,7 @@ import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -77,26 +78,26 @@ public class CachingStatementOperations implements
             return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
         }
     };
-    private final CacheLoader<Iterator<Property>> nodePropertyLoader = new CacheLoader<Iterator<Property>>()
+    private final CacheLoader<Iterator<SafeProperty>> nodePropertyLoader = new CacheLoader<Iterator<SafeProperty>>()
     {
         @Override
-        public Iterator<Property> load( StatementState state, long id ) throws EntityNotFoundException
+        public Iterator<SafeProperty> load( StatementState state, long id ) throws EntityNotFoundException
         {
             return entityReadDelegate.nodeGetAllProperties( state, id );
         }
     };
-    private final CacheLoader<Iterator<Property>> relationshipPropertyLoader = new CacheLoader<Iterator<Property>>()
+    private final CacheLoader<Iterator<SafeProperty>> relationshipPropertyLoader = new CacheLoader<Iterator<SafeProperty>>()
     {
         @Override
-        public Iterator<Property> load( StatementState state, long id ) throws EntityNotFoundException
+        public Iterator<SafeProperty> load( StatementState state, long id ) throws EntityNotFoundException
         {
             return entityReadDelegate.relationshipGetAllProperties( state, id );
         }
     };
-    private final CacheLoader<Iterator<Property>> graphPropertyLoader = new CacheLoader<Iterator<Property>>()
+    private final CacheLoader<Iterator<SafeProperty>> graphPropertyLoader = new CacheLoader<Iterator<SafeProperty>>()
     {
         @Override
-        public Iterator<Property> load( StatementState state, long id ) throws EntityNotFoundException
+        public Iterator<SafeProperty> load( StatementState state, long id ) throws EntityNotFoundException
         {
             return entityReadDelegate.graphGetAllProperties(state);
         }
@@ -236,7 +237,7 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public Iterator<Property> nodeGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
+    public Iterator<SafeProperty> nodeGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
     {
         return persistenceCache.nodeGetProperties( state, nodeId, nodePropertyLoader );
     }
@@ -263,7 +264,7 @@ public class CachingStatementOperations implements
     }
     
     @Override
-    public Iterator<Property> relationshipGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
+    public Iterator<SafeProperty> relationshipGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
     {
         return persistenceCache.relationshipGetProperties( state, nodeId, relationshipPropertyLoader );
     }
@@ -287,7 +288,7 @@ public class CachingStatementOperations implements
     }
     
     @Override
-    public Iterator<Property> graphGetAllProperties( StatementState state )
+    public Iterator<SafeProperty> graphGetAllProperties( StatementState state )
     {
         return persistenceCache.graphGetProperties( state, graphPropertyLoader );
     }

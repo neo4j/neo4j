@@ -19,15 +19,33 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
+import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.operations.TokenNameLookup;
+
+import static java.lang.String.format;
+
 public class PropertyNotFoundException extends KernelException
 {
-    public PropertyNotFoundException( long propertyKeyId, Throwable cause )
+    private final String entity;
+    private final long propertyKeyId;
+
+    public PropertyNotFoundException( long propertyKeyId, EntityType entityType, long entityId )
     {
-        super( cause, "No property with propertyKeyId=%s", propertyKeyId );
+        this( entityType == EntityType.GRAPH ? "GraphProperties" : entityType.name() + "[" + entityId + "]",
+              propertyKeyId );
     }
 
-    public PropertyNotFoundException( long propertyKeyId )
+    private PropertyNotFoundException( String entity, long propertyKeyId )
     {
-        super( "No property with propertyKeyId=%s", propertyKeyId );
+        super( "%s has no property with propertyKeyId=%s.", entity, propertyKeyId );
+        this.entity = entity;
+        this.propertyKeyId = propertyKeyId;
+    }
+
+    @Override
+    public String getUserMessage( TokenNameLookup tokenNameLookup )
+    {
+        return format( "%s has no property with propertyKey=\"%s\".", entity,
+                       tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
     }
 }

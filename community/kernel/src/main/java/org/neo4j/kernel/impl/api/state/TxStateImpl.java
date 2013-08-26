@@ -28,9 +28,8 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -215,19 +214,19 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<Property> nodePropertyDiffSets( long nodeId )
+    public DiffSets<SafeProperty> nodePropertyDiffSets( long nodeId )
     {
         return getOrCreateNodeState( nodeId ).propertyDiffSets();
     }
 
     @Override
-    public DiffSets<Property> relationshipPropertyDiffSets( long relationshipId )
+    public DiffSets<SafeProperty> relationshipPropertyDiffSets( long relationshipId )
     {
         return getOrCreateRelationshipState( relationshipId ).propertyDiffSets();
     }
 
     @Override
-    public DiffSets<Property> graphPropertyDiffSets()
+    public DiffSets<SafeProperty> graphPropertyDiffSets()
     {
         return getOrCreateGraphState().propertyDiffSets();
     }
@@ -273,15 +272,14 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
-            throws PropertyNotFoundException, EntityNotFoundException
+    public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, SafeProperty newProperty )
     {
         if ( ! newProperty.isNoProperty() )
         {
-            DiffSets<Property> diffSets = nodePropertyDiffSets( nodeId );
+            DiffSets<SafeProperty> diffSets = nodePropertyDiffSets( nodeId );
             if ( ! replacedProperty.isNoProperty() )
             {
-                diffSets.remove( replacedProperty );
+                diffSets.remove( (SafeProperty)replacedProperty );
             }
             diffSets.add( newProperty );
             legacyState.nodeSetProperty( nodeId, newProperty.asPropertyDataJustForIntegration() );
@@ -290,15 +288,14 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty, Property newProperty )
-            throws PropertyNotFoundException, EntityNotFoundException
+    public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty, SafeProperty newProperty )
     {
         if ( ! newProperty.isNoProperty() )
         {
-            DiffSets<Property> diffSets = relationshipPropertyDiffSets( relationshipId );
+            DiffSets<SafeProperty> diffSets = relationshipPropertyDiffSets( relationshipId );
             if ( ! replacedProperty.isNoProperty() )
             {
-                diffSets.remove( replacedProperty );
+                diffSets.remove( (SafeProperty)replacedProperty );
             }
             diffSets.add( newProperty );
             legacyState.relationshipSetProperty( relationshipId, newProperty.asPropertyDataJustForIntegration() );
@@ -307,15 +304,14 @@ public final class TxStateImpl implements TxState
     }
     
     @Override
-    public void graphDoReplaceProperty( Property replacedProperty, Property newProperty )
-            throws PropertyNotFoundException
+    public void graphDoReplaceProperty( Property replacedProperty, SafeProperty newProperty )
     {
         if ( ! newProperty.isNoProperty() )
         {
-            DiffSets<Property> diffSets = graphPropertyDiffSets();
+            DiffSets<SafeProperty> diffSets = graphPropertyDiffSets();
             if ( ! replacedProperty.isNoProperty() )
             {
-                diffSets.remove( replacedProperty );
+                diffSets.remove( (SafeProperty)replacedProperty );
             }
             diffSets.add( newProperty );
             legacyState.graphSetProperty( newProperty.asPropertyDataJustForIntegration() );
@@ -325,11 +321,10 @@ public final class TxStateImpl implements TxState
 
     @Override
     public void nodeDoRemoveProperty( long nodeId, Property removedProperty )
-            throws PropertyNotFoundException, EntityNotFoundException
     {
         if ( ! removedProperty.isNoProperty() )
         {
-            nodePropertyDiffSets( nodeId ).remove( removedProperty );
+            nodePropertyDiffSets( nodeId ).remove( (SafeProperty)removedProperty );
             legacyState.nodeRemoveProperty( nodeId, removedProperty );
             hasChanges = true;
         }
@@ -337,11 +332,10 @@ public final class TxStateImpl implements TxState
 
     @Override
     public void relationshipDoRemoveProperty( long relationshipId, Property removedProperty )
-            throws PropertyNotFoundException, EntityNotFoundException
     {
         if ( ! removedProperty.isNoProperty() )
         {
-            relationshipPropertyDiffSets( relationshipId ).remove( removedProperty );
+            relationshipPropertyDiffSets( relationshipId ).remove( (SafeProperty)removedProperty );
             legacyState.relationshipRemoveProperty( relationshipId, removedProperty );
             hasChanges = true;
         }
@@ -349,11 +343,10 @@ public final class TxStateImpl implements TxState
 
     @Override
     public void graphDoRemoveProperty( Property removedProperty )
-            throws PropertyNotFoundException
     {
         if ( ! removedProperty.isNoProperty() )
         {
-            graphPropertyDiffSets().remove( removedProperty );
+            graphPropertyDiffSets().remove( (SafeProperty)removedProperty );
             legacyState.graphRemoveProperty( removedProperty );
             hasChanges = true;
         }

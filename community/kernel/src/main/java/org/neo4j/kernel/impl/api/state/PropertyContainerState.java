@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.DiffSets;
 
 public class PropertyContainerState extends EntityState
 {
-    private DiffSets<Property> propertyDiffSets;
+    private DiffSets<SafeProperty> propertyDiffSets;
 
     public PropertyContainerState( long id )
     {
         super( id );
     }
 
-    public DiffSets<Property> propertyDiffSets()
+    public DiffSets<SafeProperty> propertyDiffSets()
     {
         if ( null == propertyDiffSets )
         {

@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 
 /**
  * A more optimized way of storing built-up transaction state (usually when it's time for commit), instead of
@@ -31,25 +30,23 @@ import org.neo4j.kernel.api.properties.Property;
  */
 public interface AuxiliaryStoreOperations
 {
-    void nodeAddStoreProperty( long nodeId, Property property ) throws PropertyNotFoundException;
+    void nodeAddStoreProperty( long nodeId, SafeProperty property );
 
-    void nodeChangeStoreProperty( long nodeId, Property previousProperty, Property property )
-            throws PropertyNotFoundException;
+    void nodeChangeStoreProperty( long nodeId, SafeProperty previousProperty, SafeProperty property );
 
-    void relationshipAddStoreProperty( long relationshipId, Property property ) throws PropertyNotFoundException;
+    void relationshipAddStoreProperty( long relationshipId, SafeProperty property );
 
-    void relationshipChangeStoreProperty( long relationshipId, Property previousProperty, Property property )
-            throws PropertyNotFoundException;
+    void relationshipChangeStoreProperty( long relationshipId, SafeProperty previousProperty, SafeProperty property );
 
-    void nodeRemoveStoreProperty( long nodeId, Property property ) throws PropertyNotFoundException;
+    void nodeRemoveStoreProperty( long nodeId, SafeProperty property );
 
-    void relationshipRemoveStoreProperty( long relationshipId, Property property ) throws PropertyNotFoundException;
+    void relationshipRemoveStoreProperty( long relationshipId, SafeProperty property );
 
-    void graphAddStoreProperty( Property property ) throws PropertyNotFoundException;
+    void graphAddStoreProperty( SafeProperty property );
 
-    void graphChangeStoreProperty( Property previousProperty, Property property ) throws PropertyNotFoundException;
+    void graphChangeStoreProperty( SafeProperty previousProperty, SafeProperty property );
 
-    void graphRemoveStoreProperty( Property property );
+    void graphRemoveStoreProperty( SafeProperty property );
 
     void nodeDelete( long nodeId );
 

@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -114,7 +115,7 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
         when( store.nodeGetProperty( eq( state ), anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property.noNodeProperty( 1, propertyKeyId ) );
-        when( store.nodeGetAllProperties( eq( state ), anyLong() ) ).thenReturn( IteratorUtil.<Property>emptyIterator() );
+        when( store.nodeGetAllProperties( eq( state ), anyLong() ) ).thenReturn( IteratorUtil.<SafeProperty>emptyIterator() );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( false );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
@@ -142,7 +143,7 @@ public class IndexQueryTransactionStateTest
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( false );
-        Property stringProperty = Property.stringProperty( propertyKeyId, value );
+        SafeProperty stringProperty = Property.stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( state, 1l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( eq( state ), anyLong() ) ).thenReturn( iterator( stringProperty ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
@@ -169,7 +170,7 @@ public class IndexQueryTransactionStateTest
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( true );
 
-        Property stringProperty = Property.stringProperty( propertyKeyId, value );
+        SafeProperty stringProperty = Property.stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( state, 1l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( eq( state ), anyLong() ) ).thenReturn( iterator( stringProperty ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );

@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 /**
  * Base class for properties that have a value.
  */
-abstract class PropertyWithValue extends Property
+public abstract class SafeProperty extends Property
 {
     @Override
     public abstract Object value();
@@ -40,12 +40,28 @@ abstract class PropertyWithValue extends Property
 
     public String toString()
     {
-        return getClass().getSimpleName() + "[propertyKeyId=" + propertyKeyId() + ", value=" + valueToString() + "]";
+        return getClass().getSimpleName() + "[propertyKeyId=" + propertyKeyId() + ", value=" + valueAsString() + "]";
     }
 
-    String valueToString()
+    @Override
+    public String valueAsString()
     {
-        return value().toString();
+        Object value = value();
+        if ( value.getClass().isArray() )
+        {
+            StringBuilder result = new StringBuilder( "[" );
+            String sep = "";
+            for ( int size = Array.getLength( value ), i = 0; i < size; i++ )
+            {
+                result.append( sep ).append( Array.get( value, i ) );
+                sep = ", ";
+            }
+            return result.append( ']' ).toString();
+        }
+        else
+        {
+            return value.toString();
+        }
     }
 
     @Override
@@ -123,6 +139,11 @@ abstract class PropertyWithValue extends Property
     public PropertyData asPropertyDataJustForIntegration()
     {
         return PropertyDatas.forStringOrArray( (int) propertyKeyId(), -1, value() );
+    }
+
+    SafeProperty()
+    {
+        // package private subclasses
     }
 
     protected boolean valueCompare( Object a, Object b )

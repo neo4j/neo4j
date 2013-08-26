@@ -24,9 +24,8 @@ import java.util.Set;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.LockHolder;
@@ -147,15 +146,13 @@ public class ReadOnlyStatementState implements StatementState
         
         @Override
         public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty,
-                                                   Property newProperty )
-                throws PropertyNotFoundException, EntityNotFoundException
+                                                   SafeProperty newProperty )
         {
             throw readOnlyTransaction();
         }
         
         @Override
         public void relationshipDoRemoveProperty( long relationshipId, Property removedProperty )
-                throws PropertyNotFoundException, EntityNotFoundException
         {
             throw readOnlyTransaction();
         }
@@ -179,15 +176,13 @@ public class ReadOnlyStatementState implements StatementState
         }
         
         @Override
-        public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, Property newProperty )
-                throws PropertyNotFoundException, EntityNotFoundException
+        public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, SafeProperty newProperty )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void nodeDoRemoveProperty( long nodeId, Property removedProperty ) throws PropertyNotFoundException,
-                EntityNotFoundException
+        public void nodeDoRemoveProperty( long nodeId, Property removedProperty )
         {
             throw readOnlyTransaction();
         }
@@ -229,20 +224,19 @@ public class ReadOnlyStatementState implements StatementState
         }
         
         @Override
-        public void graphDoReplaceProperty( Property replacedProperty, Property newProperty )
-                throws PropertyNotFoundException
+        public void graphDoReplaceProperty( Property replacedProperty, SafeProperty newProperty )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public void graphDoRemoveProperty( Property removedProperty ) throws PropertyNotFoundException
+        public void graphDoRemoveProperty( Property removedProperty )
         {
             throw readOnlyTransaction();
         }
         
         @Override
-        public DiffSets<Property> relationshipPropertyDiffSets( long relationshipId )
+        public DiffSets<SafeProperty> relationshipPropertyDiffSets( long relationshipId )
         {
             return DiffSets.emptyDiffSets();
         }
@@ -278,7 +272,7 @@ public class ReadOnlyStatementState implements StatementState
         }
         
         @Override
-        public DiffSets<Property> nodePropertyDiffSets( long nodeId )
+        public DiffSets<SafeProperty> nodePropertyDiffSets( long nodeId )
         {
             return DiffSets.emptyDiffSets();
         }
@@ -308,7 +302,7 @@ public class ReadOnlyStatementState implements StatementState
         }
         
         @Override
-        public DiffSets<Property> graphPropertyDiffSets()
+        public DiffSets<SafeProperty> graphPropertyDiffSets()
         {
             return DiffSets.emptyDiffSets();
         }

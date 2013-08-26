@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
@@ -289,20 +290,12 @@ public class NodeProxy implements Node
         final StatementOperationParts context = statementCtxProvider.getCtxForReading();
         try ( StatementState state = statementCtxProvider.statementForReading() )
         {
-            return asSet( map( new Function<Property, Object>()
+            return asSet( map( new Function<SafeProperty, Object>()
             {
                 @Override
-                public Object apply( Property prop )
+                public Object apply( SafeProperty prop )
                 {
-                    try
-                    {
-                        return prop.value();
-                    }
-                    catch ( PropertyNotFoundException e )
-                    {
-                        throw new ThisShouldNotHappenError( "Jake",
-                                "Property key retrieved through kernel API should exist." );
-                    }
+                    return prop.value();
                 }
             }, context.entityReadOperations().nodeGetAllProperties( state, getId() ) ) );
         }
@@ -371,7 +364,7 @@ public class NodeProxy implements Node
         try ( StatementState state = statementCtxProvider.statementForReading() )
         {
             long propertyKeyId = context.keyReadOperations().propertyKeyGetForName( state, key );
-            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
             }

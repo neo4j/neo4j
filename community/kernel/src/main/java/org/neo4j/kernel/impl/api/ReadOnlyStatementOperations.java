@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class ReadOnlyStatementOperations implements
@@ -91,21 +92,21 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, Property property ) throws PropertyKeyIdNotFoundException,
+    public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property ) throws PropertyKeyIdNotFoundException,
             EntityNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public Property relationshipSetProperty( StatementState state, long relationshipId, Property property )
+    public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         throw notInTransaction();
     }
 
     @Override
-    public Property graphSetProperty( StatementState state, Property property ) throws PropertyKeyIdNotFoundException
+    public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
     {
         throw notInTransaction();
     }

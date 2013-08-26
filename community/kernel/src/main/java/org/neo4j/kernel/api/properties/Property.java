@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import java.lang.reflect.Array;
-
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -39,10 +37,10 @@ public abstract class Property
     
     public static Property noGraphProperty( long propertyKeyId )
     {
-        return new NoGraphProperty( propertyKeyId );
+        return noProperty( propertyKeyId, EntityType.GRAPH, -1 );
     }
     
-    public static Property noProperty( long propertyKeyId, EntityType type, long entityId )
+    private static Property noProperty( long propertyKeyId, EntityType type, long entityId )
     {
         return new NoProperty( propertyKeyId, type, entityId );
     }
@@ -58,7 +56,7 @@ public abstract class Property
             noRelationshipProperty( relationshipId, propertyKeyId ) : property( propertyKeyId, value );
     }
 
-    public static Property property( long propertyKeyId, Object value )
+    public static SafeProperty property( long propertyKeyId, Object value )
     {
         return PropertyConversion.convertProperty( propertyKeyId, value );
     }
@@ -75,25 +73,7 @@ public abstract class Property
 
     public abstract String stringValue( String defaultValue );
 
-    public String valueAsString() throws PropertyNotFoundException
-    {
-        Object value = value();
-        if ( value.getClass().isArray() )
-        {
-            StringBuilder result = new StringBuilder( "[" );
-            String sep = "";
-            for ( int size = Array.getLength( value ), i = 0; i < size; size++ )
-            {
-                result.append( sep ).append( Array.get( value, i ) );
-                sep = ", ";
-            }
-            return result.append( ']' ).toString();
-        }
-        else
-        {
-            return value.toString();
-        }
-    }
+    public abstract String valueAsString() throws PropertyNotFoundException;
 
     public abstract Number numberValue() throws PropertyNotFoundException;
 
@@ -113,92 +93,92 @@ public abstract class Property
 
     // more factory methods
 
-    public static Property stringProperty( long propertyKeyId, String value )
+    public static SafeProperty stringProperty( long propertyKeyId, String value )
     {
         return new StringProperty( propertyKeyId, value );
     }
 
-    public static Property longProperty( long propertyKeyId, long value )
+    public static SafeProperty longProperty( long propertyKeyId, long value )
     {
         return PropertyConversion.chooseLongPropertyType( propertyKeyId, value );
     }
 
-    public static Property intProperty( long propertyKeyId, int value )
+    public static SafeProperty intProperty( long propertyKeyId, int value )
     {
         return new IntProperty( propertyKeyId, value );
     }
 
-    public static Property shortProperty( long propertyKeyId, short value )
+    public static SafeProperty shortProperty( long propertyKeyId, short value )
     {
         return new ShortProperty( propertyKeyId, value );
     }
 
-    public static Property byteProperty( long propertyKeyId, byte value )
+    public static SafeProperty byteProperty( long propertyKeyId, byte value )
     {
         return new ByteProperty( propertyKeyId, value );
     }
 
-    public static Property booleanProperty( long propertyKeyId, boolean value )
+    public static SafeProperty booleanProperty( long propertyKeyId, boolean value )
     {
         return new BooleanProperty( propertyKeyId, value );
     }
 
-    public static Property charProperty( long propertyKeyId, char value )
+    public static SafeProperty charProperty( long propertyKeyId, char value )
     {
         return new CharProperty( propertyKeyId, value );
     }
 
-    public static Property doubleProperty( long propertyKeyId, double value )
+    public static SafeProperty doubleProperty( long propertyKeyId, double value )
     {
         return new DoubleProperty( propertyKeyId, value );
     }
 
-    public static Property floatProperty( long propertyKeyId, float value )
+    public static SafeProperty floatProperty( long propertyKeyId, float value )
     {
         return new FloatProperty( propertyKeyId, value );
     }
 
-    public static Property stringArrayProperty( long propertyKeyId, String[] value )
+    public static SafeProperty stringArrayProperty( long propertyKeyId, String[] value )
     {
         return new StringArrayProperty( propertyKeyId, value );
     }
 
-    public static Property byteArrayProperty( long propertyKeyId, byte[] value )
+    public static SafeProperty byteArrayProperty( long propertyKeyId, byte[] value )
     {
         return new ByteArrayProperty( propertyKeyId, value );
     }
 
-    public static Property longArrayProperty( long propertyKeyId, long[] value )
+    public static SafeProperty longArrayProperty( long propertyKeyId, long[] value )
     {
         return new LongArrayProperty( propertyKeyId, value );
     }
 
-    public static Property intArrayProperty( long propertyKeyId, int[] value )
+    public static SafeProperty intArrayProperty( long propertyKeyId, int[] value )
     {
         return new IntArrayProperty( propertyKeyId, value );
     }
 
-    public static Property doubleArrayProperty( long propertyKeyId, double[] value )
+    public static SafeProperty doubleArrayProperty( long propertyKeyId, double[] value )
     {
         return new DoubleArrayProperty( propertyKeyId, value );
     }
 
-    public static Property floatArrayProperty( long propertyKeyId, float[] value )
+    public static SafeProperty floatArrayProperty( long propertyKeyId, float[] value )
     {
         return new FloatArrayProperty( propertyKeyId, value );
     }
 
-    public static Property booleanArrayProperty( long propertyKeyId, boolean[] value )
+    public static SafeProperty booleanArrayProperty( long propertyKeyId, boolean[] value )
     {
         return new BooleanArrayProperty( propertyKeyId,value );
     }
 
-    public static Property charArrayProperty( long propertyKeyId, char[] value )
+    public static SafeProperty charArrayProperty( long propertyKeyId, char[] value )
     {
         return new CharArrayProperty( propertyKeyId, value );
     }
 
-    public static Property shortArrayProperty( long propertyKeyId, short[] value )
+    public static SafeProperty shortArrayProperty( long propertyKeyId, short[] value )
     {
         return new ShortArrayProperty( propertyKeyId, value );
     }

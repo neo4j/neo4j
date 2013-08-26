@@ -27,6 +27,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.CacheLoader;
 import org.neo4j.kernel.impl.api.CacheUpdateListener;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -43,7 +44,7 @@ public abstract class Primitive implements SizeOfObject
 {
     // Used for marking that properties have been loaded but there just wasn't any.
     // Saves an extra trip down to the store layer.
-    protected static final Property[] NO_PROPERTIES = new Property[0];
+    protected static final SafeProperty[] NO_PROPERTIES = new SafeProperty[0];
 
     Primitive( boolean newPrimitive )
     {
@@ -52,27 +53,27 @@ public abstract class Primitive implements SizeOfObject
 
     public abstract long getId();
     
-    public Iterator<Property> getProperties( StatementState state, CacheLoader<Iterator<Property>> loader,
+    public Iterator<SafeProperty> getProperties( StatementState state, CacheLoader<Iterator<SafeProperty>> loader,
             CacheUpdateListener updateListener )
     {
         return ensurePropertiesLoaded( state, loader, updateListener );
     }
 
-    public Property getProperty( StatementState state, CacheLoader<Iterator<Property>> loader,
+    public Property getProperty( StatementState state, CacheLoader<Iterator<SafeProperty>> loader,
             CacheUpdateListener updateListener, int key )
     {
         ensurePropertiesLoaded( state, loader, updateListener );
         return getCachedProperty( key );
     }
     
-    public PrimitiveLongIterator getPropertyKeys( StatementState state, CacheLoader<Iterator<Property>> cacheLoader,
+    public PrimitiveLongIterator getPropertyKeys( StatementState state, CacheLoader<Iterator<SafeProperty>> cacheLoader,
             CacheUpdateListener updateListener )
     {
         ensurePropertiesLoaded( state, cacheLoader, updateListener );
         return getCachedPropertyKeys();
     }
     
-    private Iterator<Property> ensurePropertiesLoaded( StatementState state, CacheLoader<Iterator<Property>> loader,
+    private Iterator<SafeProperty> ensurePropertiesLoaded( StatementState state, CacheLoader<Iterator<SafeProperty>> loader,
             CacheUpdateListener updateListener )
     {
         if ( !hasLoadedProperties() ) synchronized ( this )
@@ -81,17 +82,11 @@ public abstract class Primitive implements SizeOfObject
             {
                 try
                 {
-                    Iterator<Property> loadedProperties = loader.load( state, getId() );
+                    Iterator<SafeProperty> loadedProperties = loader.load( state, getId() );
                     setProperties( loadedProperties );
                     updateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
                 }
-                catch ( InvalidRecordException e )
-                {
-                    throw new NotFoundException( this + " not found. This can be because someone " +
-                            "else deleted this entity while we were trying to read properties from it, or because of " +
-                            "concurrent modification of other properties on this entity. The problem should be temporary.", e );
-                }
-                catch ( EntityNotFoundException e )
+                catch ( InvalidRecordException | EntityNotFoundException e )
                 {
                     throw new NotFoundException( this + " not found. This can be because someone " +
                             "else deleted this entity while we were trying to read properties from it, or because of " +
@@ -102,7 +97,7 @@ public abstract class Primitive implements SizeOfObject
         return getCachedProperties();
     }
 
-    protected abstract Iterator<Property> getCachedProperties();
+    protected abstract Iterator<SafeProperty> getCachedProperties();
     
     protected abstract Property getCachedProperty( int key );
     
@@ -112,7 +107,7 @@ public abstract class Primitive implements SizeOfObject
 
     protected abstract void setEmptyProperties();
     
-    protected abstract void setProperties( Iterator<Property> properties );
+    protected abstract void setProperties( Iterator<SafeProperty> properties );
     
     protected abstract PropertyData getPropertyForIndex( int keyId );
     
@@ -168,12 +163,12 @@ public abstract class Primitive implements SizeOfObject
         }
     }
 
-    private Iterator<Property> toPropertyIterator( ArrayMap<Integer, PropertyData> loadedProperties )
+    private Iterator<SafeProperty> toPropertyIterator( ArrayMap<Integer, PropertyData> loadedProperties )
     {
-        return map( new Function<PropertyData, Property>()
+        return map( new Function<PropertyData, SafeProperty>()
         {
             @Override
-            public Property apply( PropertyData from )
+            public SafeProperty apply( PropertyData from )
             {
                 return Property.property( from.getIndex(), from.getValue() );
             }
