@@ -2847,4 +2847,14 @@ RETURN x0.name
 
     assert(result === List(Map("'Andres'"->"Andres")))
   }
+
+  @Test
+  def id_in_where_leads_to_empty_result() {
+    //WHEN
+    val result = parseAndExecute(
+      """MATCH n WHERE id(n)=1337 RETURN n""")
+
+    //THEN DOESN'T THROW EXCEPTION
+    assert(result.toList === List())
+  }
 }

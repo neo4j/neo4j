@@ -75,7 +75,7 @@ object NodeByIdStrategy extends NodeStrategy {
     val ids: Seq[Long] = idPredicates.map(_.solution)
     val predicates: Seq[Predicate] = idPredicates.map(_.predicate)
     if (ids.nonEmpty)
-      Seq(RatedStartItem(NodeById(node, ids: _*), Single, predicates))
+      Seq(RatedStartItem(NodeByIdOrEmpty(node, ids: _*), Single, predicates))
     else
       Seq.empty
   }

@@ -82,6 +82,10 @@ case class NodeById(varName: String, expression: Expression)
   extends StartItem(varName, Map("name" -> expression.toString()))
   with ReadOnlyStartItem
 
+case class NodeByIdOrEmpty(varName: String, expression: Expression)
+  extends StartItem(varName, Map("name" -> expression.toString()))
+  with ReadOnlyStartItem
+
 case class NodeByLabel(varName: String, label: String)
   extends StartItem(varName, Map("label" -> label.toString)) with ReadOnlyStartItem with Hint
 
@@ -116,8 +120,14 @@ case class MergeNodeStartItem(inner: MergeNodeAction) extends UpdatingStartItem(
   override def rewrite(f: (Expression) => Expression) = MergeNodeStartItem(inner.rewrite(f))
 }
 
+/** NodeById that throws exception if no node is found */
 object NodeById {
   def apply(varName: String, id: Long*) = new NodeById(varName, Literal(id))
+}
+
+/** NodeById that returns empty results if no node is found */
+object NodeByIdOrEmpty {
+  def apply(varName: String, id: Long*) = new NodeByIdOrEmpty(varName, Literal(id))
 }
 
 object RelationshipById {
