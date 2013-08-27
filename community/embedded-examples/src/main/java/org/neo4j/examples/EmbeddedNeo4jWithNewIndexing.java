@@ -81,8 +81,7 @@ public class EmbeddedNeo4jWithNewIndexing
             {
                 Label label = DynamicLabel.label( "User" );
 
-                // Create some users and index their names with the new
-                // IndexingService
+                // Create some users
                 for ( int id = 0; id < 100; id++ )
                 {
                     Node userNode = graphDb.createNode( label );

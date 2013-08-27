@@ -1,10 +1,10 @@
 [[tutorials-java-embedded-index]]
-User database with index
-========================
+User database with legacy index
+===============================
 
 NOTE: Please read <<tutorials-java-embedded-resource-iteration>> on how to properly close ResourceIterators returned from index lookups.
 
-You have a user database, and want to retrieve users by name.
+You have a user database, and want to retrieve users by name using the legacy indexing system.
 
 [TIP]
 The source code used in this example is found here:
