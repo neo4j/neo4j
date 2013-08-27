@@ -81,17 +81,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)
 
     while (continue) {
-      while (builders.exists(_.canWorkWith(planInProgress, context))) {
-        val matchingBuilders = builders.filter(_.canWorkWith(planInProgress, context))
-
-        val builder = matchingBuilders.sortBy(_.priority).head
-        val newPlan = builder(planInProgress, context)
-
-        if (planInProgress == newPlan)
-          throw new InternalException("Something went wrong trying to build your query. The offending builder was: "
-            + builder.getClass.getSimpleName)
-
-        planInProgress = newPlan
+      phases.foreach { phase =>
+        planInProgress = phase(planInProgress, context)
       }
 
       if (!planInProgress.query.isSolved) {
@@ -192,24 +183,59 @@ The Neo4j Team""")
     throw new SyntaxException(errorMessage)
   }
 
-  lazy val builders = Seq(
-    new StartPointBuilder,
-    new FilterBuilder,
-    new NamedPathBuilder,
-    new ExtractBuilder,
-    new MatchBuilder,
-    new SortBuilder,
-    new ColumnFilterBuilder,
-    new SliceBuilder,
-    new AggregationBuilder,
-    new ShortestPathBuilder,
-    new CreateNodesAndRelationshipsBuilder(graph),
-    new UpdateActionBuilder(graph),
-    new EmptyResultBuilder,
-    new TraversalMatcherBuilder,
-    new TopPipeBuilder,
-    new DistinctBuilder,
-    new IndexLookupBuilder,
-    new StartPointChoosingBuilder
+  val phases: Seq[Phase] = Seq(
+    prepare,  /* Prepares the query by rewriting it before other plan builders start working on it. */
+    matching, /* Pulls in data from the stores, adds named paths, and filters the result */
+    updates,  /* Plans update actions */
+    extract,  /* Handles RETURN and WITH expression */
+    finish    /* Prepares the return set so it looks like the user specified */
   )
+
+  lazy val builders = phases.flatMap(_.myBuilders).distinct
+
+  def prepare = new Phase {
+    def myBuilders: Seq[PlanBuilder] = Seq(
+      new IndexLookupBuilder,
+      new StartPointChoosingBuilder
+    )
+  }
+
+  def matching = new Phase {
+    def myBuilders: Seq[PlanBuilder] = Seq(
+      new StartPointBuilder,
+      new MatchBuilder,
+      new TraversalMatcherBuilder,
+      new ShortestPathBuilder,
+      new NamedPathBuilder,
+      new FilterBuilder
+    )
+  }
+
+  def updates = new Phase {
+    def myBuilders: Seq[PlanBuilder] = Seq(
+      new CreateNodesAndRelationshipsBuilder(graph),
+      new UpdateActionBuilder(graph),
+      new NamedPathBuilder,
+      new FilterBuilder
+    )
+  }
+
+  def extract = new Phase {
+    def myBuilders: Seq[PlanBuilder] = Seq(
+      new ExtractBuilder,
+      new SortBuilder,
+      new SliceBuilder,
+      new TopPipeBuilder,
+      new AggregationBuilder
+    )
+  }
+
+  def finish = new Phase {
+    def myBuilders: Seq[PlanBuilder] = Seq(
+      new ColumnFilterBuilder,
+      new EmptyResultBuilder,
+      new DistinctBuilder
+    )
+  }
+
 }
