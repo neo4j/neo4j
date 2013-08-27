@@ -39,6 +39,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -212,11 +213,13 @@ public class LuceneIndexRecoveryIT
     private void startDb( KernelExtensionFactory<?> indexProviderFactory )
     {
        if ( db != null )
-           db.shutdown();
+    {
+        db.shutdown();
+    }
 
        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
        factory.setFileSystem( fs.get() );
-       factory.setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( indexProviderFactory ) );
+       factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( indexProviderFactory ) );
        db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 
@@ -246,7 +249,9 @@ public class LuceneIndexRecoveryIT
     public void after()
     {
        if ( db != null )
-           db.shutdown();
+    {
+        db.shutdown();
+    }
        directoryFactory.close();
     }
 
@@ -342,7 +347,14 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() );
+                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() )
+                {
+                    @Override
+                    public int compareTo( SchemaIndexProvider o )
+                    {
+                        return 1;
+                    }
+                };
             }
         };
     }

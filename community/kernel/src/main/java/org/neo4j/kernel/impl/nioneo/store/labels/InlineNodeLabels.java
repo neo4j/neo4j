@@ -37,6 +37,7 @@ import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
 
 public class InlineNodeLabels implements NodeLabels
 {
+    private static final long[] NO_LABELS = new long[0];
     private static final int LABEL_BITS = 36;
     private final long labelField;
     private final NodeRecord node;
@@ -122,7 +123,7 @@ public class InlineNodeLabels implements NodeLabels
         byte numberOfLabels = labelCount( labelField );
         if ( numberOfLabels == 0 )
         {
-            return new long[0];
+            return NO_LABELS;
         }
 
         long existingLabelsField = parseLabelsBody( labelField );

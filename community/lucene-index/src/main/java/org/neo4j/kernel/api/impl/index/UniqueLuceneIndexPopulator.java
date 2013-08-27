@@ -107,7 +107,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         else
         {
             currentBatch.put( propertyValue, nodeId );
-            writer.addDocument( documentStructure.newDocument( nodeId, propertyValue ) );
+            writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, propertyValue ) );
             if ( currentBatch.size() >= batchSize )
             {
                 startNewBatch();

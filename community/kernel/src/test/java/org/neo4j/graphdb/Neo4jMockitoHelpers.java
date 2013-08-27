@@ -44,7 +44,6 @@ public class Neo4jMockitoHelpers
 
     public static Answer<PrimitiveLongIterator> answerAsPrimitiveLongIteratorFrom( final Iterable<Long> values )
     {
-
         return new Answer<PrimitiveLongIterator>()
         {
             @Override

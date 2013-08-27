@@ -48,7 +48,7 @@ public interface IndexReaderFactory
         {
             if( indexReaders == null )
             {
-                indexReaders = new HashMap<Long, IndexReader>();
+                indexReaders = new HashMap<>();
             }
 
             IndexReader reader = indexReaders.get( indexId );

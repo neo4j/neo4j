@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.operations;
 import java.io.Closeable;
 
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.LockHolder;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -41,6 +42,8 @@ public interface StatementState extends TxState.Holder, Closeable
     LockHolder locks();
 
     IndexReaderFactory indexReaderFactory();
+    
+    LabelScanStore.Reader labelScanReader();
 
     @Override
     void close();

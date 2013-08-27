@@ -186,7 +186,7 @@ public class GlobalGraphOperations
 
         long labelId = statement.labelGetForName( label );
 
-        if(labelId == KeyReadOperations.NO_SUCH_LABEL)
+        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
         {
             statement.close();
             return emptyIterator();

@@ -50,11 +50,13 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.PersistenceCache;
 import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -97,7 +99,6 @@ import org.neo4j.kernel.logging.Logging;
 import static org.neo4j.helpers.SillyUtils.nonNull;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -130,7 +131,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private final UpdateableSchemaState updateableSchemaState;
 
     private final Config config;
-    private final LifeSupport life = new LifeSupport();
+    private LifeSupport life;
 
     private NeoStore neoStore;
     private IndexingService indexingService;
@@ -155,6 +156,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private final TokenNameLookup tokenNameLookup;
     private final DependencyResolver dependencyResolver;
+    private LabelScanStore labelScanStore;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -261,13 +263,16 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     @Override
     public void init()
-    {
-        life.init();
+    {   // We do our own internal life management:
+        // start() does life.init() and life.start(),
+        // stop() does life.stop() and life.shutdown().
     }
 
     @Override
     public void start() throws IOException
     {
+        life = new LifeSupport();
+        
         readOnly = config.get( Configuration.read_only );
 
         storeDir = config.get( Configuration.store_dir );
@@ -301,8 +306,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         } );
         cacheAccess = new BridgingCacheAccess( nodeManager, schemaCache, updateableSchemaState, persistenceCache );
 
-        final SchemaIndexProvider indexProvider =
-            dependencyResolver.resolveDependency( SchemaIndexProvider.class, HIGHEST_PRIORITIZED_OR_NONE );
+        final SchemaIndexProvider indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
+                    SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
 
         // TODO: Build a real provider map
         providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
@@ -318,6 +323,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                 new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );
 
+        labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
+                LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
+        
+        life.init();
+        
         try
         {
             if ( !readOnly )
@@ -378,6 +388,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         return indexingService;
     }
 
+    public LabelScanStore getLabelScanStore()
+    {
+        return labelScanStore;
+    }
+    
     public DefaultSchemaIndexProviderMap getProviderMap()
     {
         return providerMap;
@@ -392,12 +407,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public void stop()
     {
         super.stop();
-        life.stop();
         if ( !readOnly )
         {
-            indexingService.flushAll();
-            neoStore.flushAll();
+            forceEverything();
         }
+        life.shutdown();
         xaContainer.close();
         if ( logApplied )
         {
@@ -408,10 +422,18 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         msgLog.info( "NeoStore closed" );
     }
 
+    private void forceEverything()
+    {
+        neoStore.flushAll();
+        indexingService.flushAll();
+        labelScanStore.force();
+    }
+
     @Override
     public void shutdown()
-    {
-        life.shutdown();
+    {   // We do our own internal life management:
+        // start() does life.init() and life.start(),
+        // stop() does life.stop() and life.shutdown().
     }
 
     public StoreId getStoreId()
@@ -452,7 +474,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
             return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, state, cacheAccess,
-                    indexingService, first );
+                    indexingService, labelScanStore, first );
         }
     }
 
@@ -462,7 +484,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         public XaTransaction create( int identifier, TransactionState state )
         {
             return new WriteTransaction( identifier, getLogicalLog(), state,
-                neoStore, cacheAccess, indexingService );
+                neoStore, cacheAccess, indexingService, labelScanStore );
         }
 
         @Override
@@ -472,7 +494,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                     + "all transactions have been resolved" );
             msgLog.debug( "Rebuilding id generators as needed. "
                     + "This can take a while for large stores..." );
-            neoStore.flushAll();
+            forceEverything();
             neoStore.makeStoreOk();
             neoStore.setVersion( xaContainer.getLogicalLog().getHighestLogVersion() );
             msgLog.debug( "Rebuild of id generators complete." );
@@ -499,8 +521,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         @Override
         public void flushAll()
         {
-            neoStore.flushAll();
-            indexingService.flushAll();
+            forceEverything();
         }
 
         @Override
@@ -649,7 +670,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
         return new ClosableIterable<File>()
         {
-
             @Override
             public Iterator<File> iterator()
             {
@@ -658,7 +678,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
             @Override
             public void close()
-            {
+            {   // Nothing to close
             }
         };
     }

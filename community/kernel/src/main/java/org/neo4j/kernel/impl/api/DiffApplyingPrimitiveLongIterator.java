@@ -26,7 +26,6 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
 {
     private enum Phase
     {
-
         FILTERED_SOURCE
         {
             @Override
@@ -50,7 +49,7 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
             @Override
             void computeNext( DiffApplyingPrimitiveLongIterator self )
             {
-                self.hasNext = false;
+                self.endReached();
             }
         };
 
@@ -84,11 +83,12 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
 
     private void computeNextFromSourceAndFilter()
     {
-        for ( hasNext = source.hasNext(); hasNext; hasNext = source.hasNext() )
+        for ( boolean hasNext = source.hasNext(); hasNext; hasNext = source.hasNext() )
         {
-            nextValue = source.next();
-            if ( ( removedElements == null || !removedElements.contains( nextValue ) ) &&
-                 ( addedElements == null || !addedElements.contains( nextValue ) ) )
+            long value = source.next();
+            next( value );
+            if ( ( removedElements == null || !removedElements.contains( value ) ) &&
+                 ( addedElements == null || !addedElements.contains( value ) ) )
             {
                 return;
             }
@@ -105,10 +105,13 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
 
     private void computeNextFromAddedElements()
     {
-        hasNext = addedElementsIterator.hasNext();
-        if ( hasNext )
+        if ( addedElementsIterator.hasNext() )
         {
-            nextValue = (Long) addedElementsIterator.next();
+            next( (Long) addedElementsIterator.next() );
+        }
+        else
+        {
+            endReached();
         }
     }
 }

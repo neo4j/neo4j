@@ -56,11 +56,13 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         this.searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
     }
 
+    @Override
     public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
     {
         apply( false, updates );
     }
 
+    @Override
     public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
         apply( true, updates );
@@ -104,7 +106,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
             if ( hits.totalHits > 0 )
             {
                 writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                        documentStructure.newDocument( nodeId, value ) );
+                        documentStructure.newDocumentRepresentingProperty( nodeId, value ) );
             }
             else
             {
@@ -116,6 +118,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
             searcherManager.release( searcher );
         }
     }
+    
     @Override
     public void drop() throws IOException
     {
@@ -150,13 +153,13 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     protected void add( long nodeId, Object value ) throws IOException
     {
-        writer.addDocument( documentStructure.newDocument( nodeId, value ) );
+        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, value ) );
     }
 
     protected void change( long nodeId, Object valueAfter ) throws IOException
     {
         writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                documentStructure.newDocument( nodeId, valueAfter ) );
+                documentStructure.newDocumentRepresentingProperty( nodeId, valueAfter ) );
     }
 
     protected void remove( long nodeId ) throws IOException
