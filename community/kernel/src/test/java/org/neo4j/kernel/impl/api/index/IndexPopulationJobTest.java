@@ -208,7 +208,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        assertThat( index.getState(), equalTo( InternalIndexState.FAILED ) );
+        assertThat(index.getState(), equalTo(InternalIndexState.FAILED));
     }
 
     @Test
@@ -296,7 +296,29 @@ public class IndexPopulationJobTest
         // Then
         logger.assertAtLeastOnce( error( "Failed to populate index: [:FIRST(name)]", failure ) );
     }
-    
+
+    @Test
+    public void shouldFlipToFailedUsingFailedIndexProxyFactory() throws Exception
+    {
+        // Given
+        NeoStore neoStore = db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
+        NeoStoreIndexStoreView store = new NeoStoreIndexStoreView( neoStore );
+        FailedIndexProxyFactory failureDelegateFactory = mock( FailedIndexProxyFactory.class );
+        IndexPopulationJob job =
+            newIndexPopulationJob( FIRST, name, failureDelegateFactory, populator,
+                    new FlippableIndexProxy(), store, new TestLogger() );
+
+
+        IllegalStateException failure = new IllegalStateException( "not successful" );
+        doThrow( failure ).when( populator ).close( true );
+
+        // When
+        job.run();
+
+        // Then
+        verify( failureDelegateFactory ).create( any( Throwable.class ) );
+    }
+
     @Test
     public void shouldCloseAndFailOnFailure() throws Exception
     {
@@ -495,7 +517,19 @@ public class IndexPopulationJobTest
                 StringLogger.DEV_NULL );
     }
 
-    private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
+    private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey,
+                                                      IndexPopulator populator,
+                                                      FlippableIndexProxy flipper, IndexStoreView storeView,
+                                                      StringLogger logger )
+            throws LabelNotFoundKernelException, PropertyKeyNotFoundException
+    {
+        return newIndexPopulationJob( label, propertyKey,
+                mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logger );
+    }
+
+    private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey,
+                                                      FailedIndexProxyFactory failureDelegateFactory,
+                                                      IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
                                                       StringLogger logger )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
@@ -516,8 +550,11 @@ public class IndexPopulationJobTest
 
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
         return new IndexPopulationJob(
-                descriptor, PROVIDER_DESCRIPTOR, populator, flipper, storeView,
-                format( ":%s(%s)", label.name(), propertyKey ), stateHolder, new SingleLoggingService( logger ) );
+                descriptor, PROVIDER_DESCRIPTOR,
+                format( ":%s(%s)", label.name(), propertyKey ),
+                failureDelegateFactory,
+                populator, flipper, storeView,
+                stateHolder, new SingleLoggingService( logger ) );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

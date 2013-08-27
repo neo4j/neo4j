@@ -346,12 +346,17 @@ public class IndexingService extends LifecycleAdapter
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
+        final String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);
         IndexPopulator populator =
             getPopulatorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( unique ) );
+
+        FailedIndexProxyFactory failureDelegateFactory =
+            new FailedPopulatingIndexProxyFactory( descriptor, providerDescriptor, populator, indexUserDescription );
+
         PopulatingIndexProxy populatingIndex =
-            new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor, populator, flipper, storeView,
-                                      indexUserDescription( descriptor, providerDescriptor ),
-                                      updateableSchemaState, logging );
+            new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
+                    failureDelegateFactory, populator, flipper, storeView,
+                indexUserDescription, updateableSchemaState, logging );
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
@@ -414,8 +419,10 @@ public class IndexingService extends LifecycleAdapter
     {
         IndexPopulator indexPopulator = getPopulatorFromProvider( providerDescriptor, ruleId,
                                                                   new IndexConfiguration( unique ) );
-        IndexProxy result = new FailedIndexProxy( descriptor, providerDescriptor, indexPopulator,
-                populationFailure );
+        String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);
+        IndexProxy result =
+            new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
+                                  indexPopulator, populationFailure );
         result = contractCheckedProxy( result, true );
         return serviceDecoratedProxy( ruleId, result );
     }

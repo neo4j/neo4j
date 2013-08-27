@@ -60,6 +60,7 @@ public class IndexPopulationJob implements Runnable
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<>();
 
     private final IndexDescriptor descriptor;
+    private final FailedIndexProxyFactory failureDelegate;
     private final IndexPopulator populator;
     private final FlippableIndexProxy flipper;
     private final UpdateableSchemaState updateableSchemaState;
@@ -70,10 +71,12 @@ public class IndexPopulationJob implements Runnable
     private volatile boolean cancelled;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
 
-    public IndexPopulationJob( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                               IndexPopulator populator, FlippableIndexProxy flipper,
-                               IndexStoreView storeView, String indexUserDescription,
-                               UpdateableSchemaState updateableSchemaState, Logging logging )
+    public IndexPopulationJob(IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+                              String indexUserDescription,
+                              FailedIndexProxyFactory failureDelegateFactory,
+                              IndexPopulator populator, FlippableIndexProxy flipper,
+                              IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
+                              Logging logging)
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
@@ -82,6 +85,7 @@ public class IndexPopulationJob implements Runnable
         this.storeView = storeView;
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
+        this.failureDelegate = failureDelegateFactory;
         this.log = logging.getMessagesLog( getClass() );
     }
     
@@ -117,21 +121,15 @@ public class IndexPopulationJob implements Runnable
                     }
                 };
 
-                flipper.flip( duringFlip, new FailedIndexProxyFactory()
-                {
-                    @Override
-                    public IndexProxy create( Throwable failure )
-                    {
-                        return new FailedIndexProxy( descriptor, providerDescriptor, populator, failure( failure ) );
-                    }
-                } );
+                flipper.flip( duringFlip, failureDelegate );
                 success = true;
                 log.info( format("Index population completed. Index is now online: [%s]", indexUserDescription) );
                 log.flush();
             }
             catch ( Throwable t )
             {
-                // If the cause of index population failure is a conflict in a (unique) index, the conflict is the failure
+                // If the cause of index population failure is a conflict in a (unique) index, the conflict is the
+                // failure
                 if ( t instanceof IndexPopulationFailedKernelException )
                 {
                     Throwable cause = t.getCause();
@@ -158,7 +156,8 @@ public class IndexPopulationJob implements Runnable
                 // The reason for having the flipper transition to the failed index context in the first
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
-                flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, populator, failure( t ) ) );
+                flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
+                                                      populator, failure( t ) ) );
             }
             finally
             {
@@ -203,7 +202,7 @@ public class IndexPopulationJob implements Runnable
                 }
                 catch ( Exception conflict )
                 {
-                    throw new IndexPopulationFailedKernelException( descriptor, conflict );
+                    throw new IndexPopulationFailedKernelException( descriptor, indexUserDescription, conflict );
                 }
                 return false;
             }

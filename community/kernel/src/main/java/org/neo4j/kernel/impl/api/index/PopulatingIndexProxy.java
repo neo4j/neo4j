@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
 
+
 public class PopulatingIndexProxy implements IndexProxy
 {
     private final JobScheduler scheduler;
@@ -41,19 +42,20 @@ public class PopulatingIndexProxy implements IndexProxy
     private final IndexPopulationJob job;
 
     public PopulatingIndexProxy( JobScheduler scheduler,
-                                 IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                                 IndexPopulator writer,
+                                 final IndexDescriptor descriptor,
+                                 final SchemaIndexProvider.Descriptor providerDescriptor,
+                                 final FailedIndexProxyFactory failureDelegateFactory,
+                                 final IndexPopulator writer,
                                  FlippableIndexProxy flipper,
-                                 IndexStoreView storeView, String indexUserDescription,
+                                 IndexStoreView storeView, final String indexUserDescription,
                                  UpdateableSchemaState updateableSchemaState, Logging logging )
     {
         this.scheduler  = scheduler;
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
-
         this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
-                                            writer, flipper, storeView, indexUserDescription,
-                                            updateableSchemaState, logging );
+                indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
+                updateableSchemaState, logging );
     }
 
     @Override
