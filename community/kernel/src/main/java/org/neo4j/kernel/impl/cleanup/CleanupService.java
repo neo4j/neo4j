@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
-import static java.lang.String.format;
-
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -31,6 +27,8 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.lang.String.format;
 
 public abstract class CleanupService extends LifecycleAdapter
 {
@@ -55,7 +53,7 @@ public abstract class CleanupService extends LifecycleAdapter
         this.logger = logging.getMessagesLog( getClass() );
     }
 
-    public abstract <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, Closeable closeable );
+    public abstract <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, AutoCloseable closeable );
 
     void cleanup( CleanupReference reference )
     {
@@ -63,7 +61,7 @@ public abstract class CleanupService extends LifecycleAdapter
         {
             reference.cleanupNow( false );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             logger.warn( "Failure autoclosing a resource during collection", e );
         }

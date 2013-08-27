@@ -31,9 +31,6 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 /**
  * Kernel transaction state
  *
- * This is instantiated lazily from {@link org.neo4j.kernel.impl.api.StateHandlingKernelTransaction} which
- * implements {@link TxState.Holder}
- *
  * The naming of methods in this class roughly follows the naming of {@link org.neo4j.kernel.api.StatementOperations}
  * with one exception: All transaction state mutators must include the particle "Do" in their name, e.g.
  * nodeDoAdd.  This helps deciding where to set "hasChanges" in the main implementation class {@link TxStateImpl}.

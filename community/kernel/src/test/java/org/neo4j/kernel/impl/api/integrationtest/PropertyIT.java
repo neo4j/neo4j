@@ -19,23 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import java.util.Collections;
-import java.util.Set;
-
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.properties.Property;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class PropertyIT extends KernelIntegrationTest
 {
@@ -43,256 +35,232 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldSetNodePropertyValue() throws Exception
     {
         // GIVEN
-        newTransaction();
-        Node node = db.createNode();
+        long propertyKeyId;
+        long nodeId;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
 
-        // WHEN
-        long propertyKeyId = statement.propertyKeyGetOrCreateForName( getState(), "clown" );
-        long nodeId = node.getId();
-        statement.nodeSetProperty( getState(), nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
+            // WHEN
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            nodeId = node.getId();
+            statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
 
-        // THEN
-        assertEquals( "bozo", statement.nodeGetProperty( getState(), nodeId, propertyKeyId ).value() );
+            // THEN
+            assertEquals( "bozo", statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
 
-        // WHEN
-        commit();
-        newTransaction();
+            // WHEN
+            commit();
+        }
+        {
+            DataStatement statement = dataStatementInNewTransaction();
 
-        // THEN
-        assertEquals( "bozo", statement.nodeGetProperty( getState(), nodeId, propertyKeyId ).value() );
+            // THEN
+            assertEquals( "bozo", statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
+        }
     }
 
     @Test
     public void shouldRemoveSetNodeProperty() throws Exception
     {
         // GIVEN
-        newTransaction();
-        Node node = db.createNode();
-        long propertyKeyId = statement.propertyKeyGetOrCreateForName( getState(), "clown" );
-        long nodeId = node.getId();
-        statement.nodeSetProperty( getState(), nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
+        long propertyKeyId;
+        long nodeId;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            nodeId = node.getId();
+            statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
 
-        // WHEN
-        statement.nodeRemoveProperty( getState(), nodeId, propertyKeyId );
+            // WHEN
+            statement.nodeRemoveProperty( nodeId, propertyKeyId );
+
+            // THEN
+            assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+
+            // WHEN
+            commit();
+        }
 
         // THEN
-        assertFalse( statement.nodeHasProperty( getState(), nodeId, propertyKeyId ) );
-
-        // WHEN
-        commit();
-
-        // THEN
-        newTransaction();
-        assertFalse( statement.nodeHasProperty( getState(), nodeId, propertyKeyId ) );
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+        }
     }
 
     @Test
     public void shouldRemoveSetNodePropertyAcrossTransactions() throws Exception
     {
         // GIVEN
-        newTransaction();
-        Node node = db.createNode();
-        long propertyKeyId = statement.propertyKeyGetOrCreateForName( getState(), "clown" );
-        long nodeId = node.getId();
-        statement.nodeSetProperty( getState(), nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
-        commit();
-        newTransaction();
+        long propertyKeyId;
+        long nodeId;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            nodeId = node.getId();
+            statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
+            commit();
+        }
+        {
+            DataStatement statement = dataStatementInNewTransaction();
 
-        // WHEN
-        Object previous = statement.nodeRemoveProperty( getState(), nodeId, propertyKeyId ).value();
+            // WHEN
+            Object previous = statement.nodeRemoveProperty( nodeId, propertyKeyId ).value();
+
+            // THEN
+            assertEquals( "bozo", previous );
+            assertFalse( "node should not have property", statement.nodeHasProperty( nodeId, propertyKeyId ) );
+
+            // WHEN
+            commit();
+        }
 
         // THEN
-        assertEquals( "bozo", previous );
-        assertFalse( "node should not have property", statement.nodeHasProperty( getState(), nodeId, propertyKeyId ) );
-
-        // WHEN
-        commit();
-
-        // THEN
-        newTransaction();
-        assertFalse( statement.nodeHasProperty( getState(), nodeId, propertyKeyId ) );
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+        }
     }
 
     @Test
     public void shouldSilentlyNotRemoveMissingNodeProperty() throws Exception
     {
         // GIVEN
-        newTransaction();
-        Node node = db.createNode();
-        long propertyId = statement.propertyKeyGetOrCreateForName( getState(), "clown" );
-        long nodeId = node.getId();
-        commit();
-        newTransaction();
+        long propertyId;
+        long nodeId;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
+            propertyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            nodeId = node.getId();
+            commit();
+        }
+        {
+            DataStatement statement = dataStatementInNewTransaction();
 
-        // WHEN
-        Property result = statement.nodeRemoveProperty( getState(), nodeId, propertyId );
+            // WHEN
+            Property result = statement.nodeRemoveProperty( nodeId, propertyId );
 
-        // THEN
-        assertTrue( "Return no property if removing missing", result.isNoProperty() );
+            // THEN
+            assertTrue( "Return no property if removing missing", result.isNoProperty() );
+        }
     }
 
     @Test
     public void nodeHasPropertyIfSet() throws Exception
     {
         // GIVEN
-        newTransaction();
-        Node node = db.createNode();
+        long propertyKeyId;
+        long nodeId;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
 
-        // WHEN
-        long propertyKeyId = statement.propertyKeyGetOrCreateForName( getState(), "clown" );
-        long nodeId = node.getId();
-        statement.nodeSetProperty( getState(), nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
+            // WHEN
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            nodeId = node.getId();
+            statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
 
-        // THEN
-        assertTrue( statement.nodeHasProperty( getState(), nodeId, propertyKeyId ) );
+            // THEN
+            assertTrue( statement.nodeHasProperty( nodeId, propertyKeyId ) );
 
-        // WHEN
-        commit();
-        newTransaction();
+            // WHEN
+            commit();
+        }
+        {
+            DataStatement statement = dataStatementInNewTransaction();
 
-        // THEN
-        assertTrue( statement.nodeHasProperty( getState(), nodeId, propertyKeyId ) );
+            // THEN
+            assertTrue( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+        }
     }
 
     @Test
     public void nodeHasNotPropertyIfUnset() throws Exception
     {
-        // GIVEN
-        newTransaction();
-        Node node = db.createNode();
+        long propertyId;
+        long nodeId;
+        {
+            // GIVEN
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
 
-        // WHEN
-        long propertyId = statement.propertyKeyGetOrCreateForName( getState(), "clown" );
-        long nodeId = node.getId();
+            // WHEN
+            propertyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            nodeId = node.getId();
 
-        // THEN
-        assertFalse( statement.nodeHasProperty( getState(), nodeId, propertyId ) );
+            // THEN
+            assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
 
-        // WHEN
-        commit();
-        newTransaction();
+            // WHEN
+            commit();
+        }
 
-        // THEN
-        assertFalse( statement.nodeHasProperty( getState(), nodeId, propertyId ) );
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+
+            // THEN
+            assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+        }
     }
 
     @Test
     public void shouldRollbackSetNodePropertyValue() throws Exception
     {
         // GIVEN
-        newTransaction();
-        Node node = db.createNode();
-        long propertyKeyId = statement.propertyKeyGetOrCreateForName( getState(), "clown" );
-        long nodeId = node.getId();
-        commit();
+        long propertyKeyId;
+        long nodeId;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            nodeId = node.getId();
+            commit();
+        }
 
         // WHEN
-        newTransaction();
-        statement.nodeSetProperty( getState(), nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
-        rollback();
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
+            rollback();
+        }
 
         // THEN
-        newTransaction();
-        assertFalse( statement.nodeHasProperty( getState(), nodeId, propertyKeyId ) );
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+        }
     }
 
     @Test
     public void shouldUpdateNodePropertyValue() throws Exception
     {
         // GIVEN
-        newTransaction();
-        Node node = db.createNode();
-        long propertyId = statement.propertyKeyGetOrCreateForName( getState(), "clown" );
-        long nodeId = node.getId();
-        statement.nodeSetProperty( getState(), nodeId, Property.stringProperty( propertyId, "bozo" ) );
-        commit();
+        long propertyId;
+        long nodeId;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
+            propertyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            nodeId = node.getId();
+            statement.nodeSetProperty( nodeId, Property.stringProperty( propertyId, "bozo" ) );
+            commit();
+        }
 
         // WHEN
-        newTransaction();
-        statement.nodeSetProperty( getState(), nodeId, Property.intProperty( propertyId, 42 ) );
-        commit();
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            statement.nodeSetProperty( nodeId, Property.intProperty( propertyId, 42 ) );
+            commit();
+        }
 
         // THEN
-        newTransaction();
-        assertEquals( 42, statement.nodeGetProperty( getState(), nodeId, propertyId ).value() );
-    }
-
-    @Test
-    public void shouldListNodePropertyKeys() throws Exception
-    {
-        // WHEN
-        newTransaction();
-        Node node = db.createNode();
-        node.setProperty( "prop", "value" );
-
-        // THEN
-        assertThat( asSet( statement.nodeGetPropertyKeys( getState(), node.getId() ) ),
-                equalTo( asSet( statement.propertyKeyGetForName( getState(), "prop" ) ) ) );
-
-        // WHEN
-        commit();
-
-        // THEN
-        newTransaction();
-        assertThat( asSet( statement.nodeGetPropertyKeys( getState(), node.getId() ) ),
-                equalTo( asSet( statement.propertyKeyGetForName( getState(), "prop" ) ) ) );
-        commit();
-
-        // WHEN
-        newTransaction();
-        node.removeProperty( "prop" );
-
-        // THEN
-        assertThat( asSet( statement.nodeGetPropertyKeys( getState(), node.getId() ) ),
-                equalTo( Collections.<Long>emptySet() ) );
-
-        // WHEN
-        commit();
-
-        // THEN
-        newTransaction();
-        assertThat( asSet( statement.nodeGetPropertyKeys( getState(), node.getId() ) ),
-                equalTo( Collections.<Long>emptySet() ) );
-        commit();
-    }
-    
-    @Test
-    public void shouldListRelationshipPropertyKeys() throws Exception
-    {
-        // WHEN
-        newTransaction();
-        Relationship rel = db.createNode().createRelationshipTo( db.createNode(), DynamicRelationshipType.withName( "Lol" ) );
-        rel.setProperty( "prop", "value" );
-
-        // THEN
-        Set<Long> actualKeys = asSet( statement.relationshipGetPropertyKeys( getState(),
-                rel.getId() ) );
-        assertThat( actualKeys, equalTo( asSet( statement.propertyKeyGetForName( getState(), "prop" ) ) ) );
-
-        // WHEN
-        commit();
-
-        // THEN
-        newTransaction();
-        actualKeys = asSet( statement.relationshipGetPropertyKeys( getState(), rel.getId() ) );
-        assertThat( actualKeys, equalTo( asSet( statement.propertyKeyGetForName( getState(), "prop" ) ) ) );
-        commit();
-
-        // WHEN
-        newTransaction();
-        rel.removeProperty( "prop" );
-
-        // THEN
-        actualKeys = asSet( statement.relationshipGetPropertyKeys( getState(), rel.getId() ) );
-        assertThat( actualKeys, equalTo( Collections.<Long>emptySet() ) );
-
-        // WHEN
-        commit();
-
-        // THEN
-        newTransaction();
-        actualKeys = asSet( statement.relationshipGetPropertyKeys( getState(), rel.getId() ) );
-        assertThat( actualKeys, equalTo( Collections.<Long>emptySet() ) );
-        commit();
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            assertEquals( 42, statement.nodeGetProperty( nodeId, propertyId ).value() );
+        }
     }
 }

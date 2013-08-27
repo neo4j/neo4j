@@ -44,7 +44,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -70,7 +69,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private final int maxTxLogRecordCount = 1000;
     private final AtomicInteger eventIdentifierCounter = new AtomicInteger( 0 );
 
-    private final Map<RecoveredBranchInfo, Boolean> branches = new HashMap<RecoveredBranchInfo, Boolean>();
+    private final Map<RecoveredBranchInfo, Boolean> branches = new HashMap<>();
     private volatile TxLog txLog = null;
     private boolean tmOk = false;
     private Throwable tmNotOkCause;
@@ -943,21 +942,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw new RuntimeException( e );
         }
         return tx != null ? ((TransactionImpl)tx).getState() : TransactionState.NO_STATE;
-    }
-
-    @Override
-    public StatementState newStatement()
-    {
-        Transaction tx;
-        try
-        {
-            tx = getTransaction();
-        }
-        catch ( SystemException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return tx != null ? ((TransactionImpl)tx).newStatement() : null;
     }
 
     @Override

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api;
 
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
@@ -25,8 +25,6 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -36,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class Transactor
 {
-    public interface Statement<RESULT, FAILURE extends KernelException>
+    public interface Work<RESULT, FAILURE extends KernelException>
     {
         RESULT perform( StatementOperationParts statementContext, StatementState statement ) throws FAILURE;
     }
@@ -48,7 +46,7 @@ public class Transactor
         this.txManager = txManager;
     }
 
-    public <RESULT, FAILURE extends KernelException> RESULT execute( Statement<RESULT, FAILURE> statement )
+    public <RESULT, FAILURE extends KernelException> RESULT execute( Work<RESULT, FAILURE> work )
             throws FAILURE, TransactionalException
     {
         Transaction previousTransaction = suspendTransaction();
@@ -57,20 +55,10 @@ public class Transactor
             beginTransaction();
             @SuppressWarnings("deprecation")
             KernelTransaction tx = txManager.getKernelTransaction();
-            StatementState state = tx.newStatementState();
             boolean success = false;
             try
             {
-                RESULT result;
-                StatementOperationParts context = tx.newStatementOperations();
-                try
-                {
-                    result = statement.perform( context, state );
-                }
-                finally
-                {
-                    state.close();
-                }
+                RESULT result = tx.execute( new MicroTransaction<>( work ) );
                 success = true;
                 return result;
             }
@@ -106,11 +94,7 @@ public class Transactor
         {
             txManager.begin();
         }
-        catch ( NotSupportedException e )
-        {
-            throw new BeginTransactionFailureException( e );
-        }
-        catch ( SystemException e )
+        catch ( NotSupportedException | SystemException e )
         {
             throw new BeginTransactionFailureException( e );
         }

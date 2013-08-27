@@ -29,10 +29,9 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.scalatest.Assertions
-import org.neo4j.kernel.api.operations.StatementState
-import org.neo4j.kernel.api.StatementOperationParts
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.tooling.GlobalGraphOperations
+import org.neo4j.kernel.api.{DataStatement, BaseStatement}
 
 class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
@@ -122,13 +121,9 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   }
 
 
-  def execStatement[T](f: (StatementOperationParts => T)): T = {
+  def execStatement[T](f: (DataStatement => T)): T = {
     val tx = graph.beginTx
-    val ctx = graph
-      .getDependencyResolver
-      .resolveDependency(classOf[ThreadToStatementContextBridge])
-      .getCtxForWriting
-    val result = f(ctx)
+    val result = f(dataStatement)
     tx.success()
     tx.finish()
     result
@@ -201,20 +196,13 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
     (a, b, c, d)
   }
 
-  def statementContext:StatementOperationParts =
-    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForWriting
+  def dataStatement:DataStatement =
+    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).dataStatement
 
-  def cakeState:StatementState =
-    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statementForWriting
-    
-  def readOnlyStatementContext:StatementOperationParts =
-    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForReading
+  def planContext:PlanContext = new TransactionBoundPlanContext(baseStatement, graph)
 
-  def planContext:PlanContext= new TransactionBoundPlanContext(
-      statementContext.keyReadOperations, statementContext.schemaReadOperations, cakeState, graph)
-
-  def readOnlyCakeState:StatementState =
-    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statementForReading
+  def baseStatement:BaseStatement =
+    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).baseStatement
 }
 
 trait Snitch extends GraphDatabaseAPI {

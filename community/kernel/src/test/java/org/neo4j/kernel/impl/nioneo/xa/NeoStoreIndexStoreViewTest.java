@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -34,16 +35,16 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -159,11 +160,10 @@ public class NeoStoreIndexStoreViewTest
             ThreadToStatementContextBridge bridge =
                     graphDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-            StatementOperationParts ctx = bridge.getCtxForWriting();
-            StatementState state = bridge.statementForWriting();
-            labelId = ctx.keyWriteOperations().labelGetOrCreateForName( state, "Person" );
-            propertyKeyId = ctx.keyWriteOperations().propertyKeyGetOrCreateForName( state, "name" );
-            state.close();
+            DataStatement statement = bridge.dataStatement();
+            labelId = statement.labelGetOrCreateForName( "Person" );
+            propertyKeyId = statement.propertyKeyGetOrCreateForName(  "name" );
+            statement.close();
             tx.success();
         }
         finally
@@ -174,7 +174,7 @@ public class NeoStoreIndexStoreViewTest
 
     class NodeUpdateCollectingVisitor implements Visitor<NodePropertyUpdate, Exception>
     {
-        private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
+        private final Set<NodePropertyUpdate> updates = new HashSet<>();
 
         @Override
         public boolean visit( NodePropertyUpdate element ) throws Exception

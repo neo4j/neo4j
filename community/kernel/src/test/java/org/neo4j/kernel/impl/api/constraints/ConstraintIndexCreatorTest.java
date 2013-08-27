@@ -22,12 +22,13 @@ package org.neo4j.kernel.impl.api.constraints;
 import java.util.Iterator;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.operations.StatementState;
-import org.neo4j.kernel.impl.api.Transactor;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
@@ -153,9 +155,9 @@ public class ConstraintIndexCreatorTest
 
         @Override
         public <RESULT, FAILURE extends KernelException> RESULT execute(
-                Statement<RESULT, FAILURE> statement ) throws FAILURE
+                Work<RESULT, FAILURE> work ) throws FAILURE
         {
-            return statement.perform( mockContexts.next(), state );
+            return work.perform( mockContexts.next(), state );
         }
     }
 }

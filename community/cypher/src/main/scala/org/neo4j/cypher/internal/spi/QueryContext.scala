@@ -75,8 +75,6 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
-  def schemaStateContains(key: String): Boolean
-
   def createUniqueConstraint(labelId:Long, propertyKeyId:Long)
 
   def dropUniqueConstraint(labelId:Long, propertyKeyId:Long)

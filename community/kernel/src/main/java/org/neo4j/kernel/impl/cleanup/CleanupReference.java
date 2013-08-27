@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.lang.ref.PhantomReference;
 
 class CleanupReference extends PhantomReference<Object>
@@ -28,10 +26,10 @@ class CleanupReference extends PhantomReference<Object>
     private final ReferenceQueueBasedCleanupService cleanupService;
     private final String referenceDescription;
 
-    private Closeable handler;
+    private AutoCloseable handler;
     CleanupReference prev, next;
 
-    CleanupReference( Object referent, ReferenceQueueBasedCleanupService cleanupService, Closeable handler )
+    CleanupReference( Object referent, ReferenceQueueBasedCleanupService cleanupService, AutoCloseable handler )
     {
         super( referent, cleanupService.collectedReferences.queue );
         this.referenceDescription = referent.toString();
@@ -44,7 +42,7 @@ class CleanupReference extends PhantomReference<Object>
         return referenceDescription;
     }
 
-    void cleanupNow( boolean explicit ) throws IOException
+    void cleanupNow( boolean explicit ) throws Exception
     {
         boolean shouldUnlink = false;
         try

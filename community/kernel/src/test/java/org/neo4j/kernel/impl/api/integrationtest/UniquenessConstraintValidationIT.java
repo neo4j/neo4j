@@ -23,13 +23,12 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
+import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.impl.api.constraints.UnableToValidateConstraintKernelException;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -45,7 +44,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        newTransaction();
+        dataStatementInNewTransaction();
 
         // when
         Node node = db.createNode( label( "Label1" ) );
@@ -68,7 +67,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        newTransaction();
+        dataStatementInNewTransaction();
 
         // when
         Node node = db.createNode();
@@ -92,7 +91,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         Node node = constrainedNode( "Label1", "key1", "value1" );
 
-        newTransaction();
+        dataStatementInNewTransaction();
 
         // when
         node.delete();
@@ -106,7 +105,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         Node node = constrainedNode( "Label1", "key1", "value1" );
 
-        newTransaction();
+        dataStatementInNewTransaction();
 
         // when
         node.removeLabel( label( "Label1" ) );
@@ -120,7 +119,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         Node node = constrainedNode( "Label1", "key1", "value1" );
 
-        newTransaction();
+        dataStatementInNewTransaction();
 
         // when
         node.removeProperty( "key1" );
@@ -134,7 +133,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         Node node = constrainedNode( "Label1", "key1", "value1" );
 
-        newTransaction();
+        dataStatementInNewTransaction();
 
         // when
         node.setProperty( "key1", "value2" );
@@ -148,7 +147,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        newTransaction();
+        dataStatementInNewTransaction();
 
         // when
         db.createNode( label( "Label1" ) ).setProperty( "key1", "value2" );
@@ -171,7 +170,8 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        newTransaction();
+        dataStatementInNewTransaction();
+
         // when
         db.createNode().setProperty( "key1", "value1" );
         db.createNode( label( "Label2" ) ).setProperty( "key1", "value1" );
@@ -181,53 +181,31 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         commit();
 
         // then
-        newTransaction();
+        dataStatementInNewTransaction();
         db.getReferenceNode().delete();
         assertEquals( "number of nodes", 5, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
         rollback();
     }
 
-    @Test
-    public void shouldPreventModifyingDataRelatedToTheConstraintInTheSameTransactionAsTheConstraintWasCreated()
-            throws Exception
-    {
-        // given
-        newTransaction();
-        db.schema().constraintFor( label( "Label1" ) ).unique().on( "key1" ).create();
-
-        // when
-        try
-        {
-            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( ConstraintViolationException e )
-        {
-            assertThat( e.getMessage(), containsString( "Unable to validate constraint." ) );
-            assertThat( e.getCause(), instanceOf( UnableToValidateConstraintKernelException.class ) );
-            assertThat( grandCause( e ), instanceOf( SchemaAndDataModificationInSameTransactionException.class ) );
-        }
-    }
-
-    private static Throwable grandCause( Throwable e )
-    {
-        return e.getCause().getCause();
-    }
-
     private Node constrainedNode( String labelName, String propertyKey, Object propertyValue ) throws
             SchemaKernelException
     {
-        newTransaction();
-        Node node = db.createNode( label( labelName ) );
-        node.setProperty( propertyKey, propertyValue );
-        long labelId = statement.labelGetForName( getState(), labelName );
-        long propertyKeyId = statement.propertyKeyGetForName( getState(), propertyKey );
-        commit();
-        newTransaction();
-        statement.uniquenessConstraintCreate( getState(), labelId, propertyKeyId );
-        commit();
+        Node node;
+        long labelId;
+        long propertyKeyId;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            node = db.createNode( label( labelName ) );
+            node.setProperty( propertyKey, propertyValue );
+            labelId = statement.labelGetForName( labelName );
+            propertyKeyId = statement.propertyKeyGetForName( propertyKey );
+            commit();
+        }
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            statement.uniquenessConstraintCreate( labelId, propertyKeyId );
+            commit();
+        }
         return node;
     }
 }

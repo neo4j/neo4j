@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.operations;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -34,7 +35,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.TxState;
 
-public class WritableStatementState implements StatementState
+public class WritableStatementState extends Statement
 {
     private LockHolder lockHolder = NO_LOCKS;
     private TxState.Holder txStateHolder = NO_STATE_HOLDER;

@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.{After, Before, Test}
 import org.neo4j.cypher.internal.commands._
 import org.scalatest.Assertions
-import org.neo4j.cypher.{GraphDatabaseTestBase}
+import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.parser.v1_9.CypherParserImpl
 import org.neo4j.cypher.internal.pipes.NullPipe
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
@@ -41,7 +40,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
   @Before def init() {
     builder = new TraversalMatcherBuilder
     tx = graph.beginTx()
-    ctx = new TransactionBoundPlanContext(statementContext.keyReadOperations, statementContext.schemaReadOperations, cakeState, graph)
+    ctx = new TransactionBoundPlanContext(dataStatement, graph)
   }
 
   @After def cleanup() {

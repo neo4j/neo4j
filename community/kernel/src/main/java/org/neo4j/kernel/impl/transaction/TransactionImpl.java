@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -40,7 +39,6 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -59,10 +57,8 @@ class TransactionImpl implements Transaction
     private volatile boolean active = true;
     private boolean globalStartRecordWritten = false;
 
-    private final LinkedList<ResourceElement> resourceList =
-            new LinkedList<ResourceElement>();
-    private List<Synchronization> syncHooks =
-            new ArrayList<Synchronization>();
+    private final LinkedList<ResourceElement> resourceList = new LinkedList<>();
+    private List<Synchronization> syncHooks = new ArrayList<>();
 
     private final int eventIdentifier;
 
@@ -338,8 +334,7 @@ class TransactionImpl implements Transaction
     }
 
     private boolean beforeCompletionRunning = false;
-    private List<Synchronization> syncHooksAdded =
-            new ArrayList<Synchronization>();
+    private List<Synchronization> syncHooksAdded = new ArrayList<>();
 
     @Override
     public synchronized void registerSynchronization( Synchronization s )
@@ -396,7 +391,7 @@ class TransactionImpl implements Transaction
             while ( !syncHooksAdded.isEmpty() )
             {
                 List<Synchronization> addedHooks = syncHooksAdded;
-                syncHooksAdded = new ArrayList<Synchronization>();
+                syncHooksAdded = new ArrayList<>();
                 for ( Synchronization s : addedHooks )
                 {
                     s.beforeCompletion();
@@ -503,7 +498,7 @@ class TransactionImpl implements Transaction
         {
             // prepare
             status = Status.STATUS_PREPARING;
-            LinkedList<Xid> preparedXids = new LinkedList<Xid>();
+            LinkedList<Xid> preparedXids = new LinkedList<>();
             for ( ResourceElement re : resourceList )
             {
                 if ( !preparedXids.contains( re.getXid() ) )
@@ -579,7 +574,7 @@ class TransactionImpl implements Transaction
     void doRollback() throws XAException
     {
         status = Status.STATUS_ROLLING_BACK;
-        LinkedList<Xid> rolledbackXids = new LinkedList<Xid>();
+        LinkedList<Xid> rolledbackXids = new LinkedList<>();
         for ( ResourceElement re : resourceList )
         {
             if ( !rolledbackXids.contains( re.getXid() ) )
@@ -589,11 +584,6 @@ class TransactionImpl implements Transaction
             }
         }
         status = Status.STATUS_ROLLEDBACK;
-    }
-
-    public StatementState newStatement()
-    {
-        return transactionContext.newStatementState();
     }
 
     /*

@@ -33,9 +33,9 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.BaseStatement;
+import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -145,8 +145,7 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<Label> iterator()
             {
-                StatementOperationParts ctx = statementCtxProvider.getCtxForReading();
-                StatementState state = statementCtxProvider.statementForReading();
+                BaseStatement statement = statementCtxProvider.baseStatement();
                 return cleanupService.resourceIterator( map( new Function<Token, Label>() {
 
                     @Override
@@ -154,7 +153,7 @@ public class GlobalGraphOperations
                     {
                         return label( labelToken.name() );
                     }
-                }, ctx.keyReadOperations().labelsGetAllTokens( state ) ), state );
+                }, statement.labelsGetAllTokens() ), statement );
             }
         };
     }
@@ -183,18 +182,17 @@ public class GlobalGraphOperations
 
     private ResourceIterator<Node> allNodesWithLabel( String label )
     {
-        StatementOperationParts context = statementCtxProvider.getCtxForReading();
-        StatementState state = statementCtxProvider.statementForReading();
+        DataStatement statement = statementCtxProvider.dataStatement();
 
-        long labelId = context.keyReadOperations().labelGetForName( state, label );
+        long labelId = statement.labelGetForName( label );
 
         if(labelId == KeyReadOperations.NO_SUCH_LABEL)
         {
-            state.close();
+            statement.close();
             return emptyIterator();
         }
 
-        final PrimitiveLongIterator nodeIds = context.entityReadOperations().nodesGetForLabel( state, labelId );
+        final PrimitiveLongIterator nodeIds = statement.nodesGetForLabel( labelId );
         return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
         {
             @Override
@@ -202,7 +200,7 @@ public class GlobalGraphOperations
             {
                 return nodeManager.getNodeById( nodeId );
             }
-        }, nodeIds ), state );
+        }, nodeIds ), statement );
     }
 
     private void assertInTransaction()

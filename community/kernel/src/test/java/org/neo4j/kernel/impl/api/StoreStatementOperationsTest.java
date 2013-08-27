@@ -36,17 +36,16 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -277,26 +276,26 @@ public class StoreStatementOperationsTest
     private final Label label1 = label( "first-label" ), label2 = label( "second-label" );
     private final String propertyKey = "name";
     private StatementState state;
-    private StatementOperations statement;
+    private StoreStatementOperations statement;
 
     @Before
     public void before()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
-        @SuppressWarnings("deprecation")// Ooh, jucky
-        NeoStoreXaDataSource neoStoreDataSource = resolver
-                .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
-
-        StoreKernelTransaction txContext = new StoreKernelTransaction(
-                resolver.resolveDependency( AbstractTransactionManager.class ),
-                resolver.resolveDependency( PersistenceManager.class ),
+        IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
+        NeoStore neoStore = resolver.resolveDependency( XaDataSourceManager.class )
+                                    .getNeoStoreDataSource().getNeoStore();
+        this.statement = new StoreStatementOperations(
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),
                 resolver.resolveDependency( LabelTokenHolder.class ),
-                neoStoreDataSource.getNeoStore(),
-                resolver.resolveDependency( IndexingService.class ) );
-        statement = txContext.newStatementOperations().asStatementOperations();
-        state = txContext.newStatementState();
+                new SchemaStorage( neoStore.getSchemaStore() ),
+                neoStore,
+                resolver.resolveDependency( PersistenceManager.class ),
+                indexingService );
+        WritableStatementState state = new WritableStatementState();
+        state.provide( new IndexReaderFactory.Caching( indexingService ) );
+        this.state = state;
     }
 
     @After

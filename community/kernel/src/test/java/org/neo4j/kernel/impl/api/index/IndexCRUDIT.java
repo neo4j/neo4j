@@ -29,27 +29,30 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.BaseStatement;
+import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
@@ -60,9 +63,6 @@ import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.
 
 public class IndexCRUDIT
 {
-
-    private Transaction transaction;
-
     @Test
     public void addingANodeWithPropertyShouldGetIndexed() throws Exception
     {
@@ -81,10 +81,9 @@ public class IndexCRUDIT
         Transaction tx = db.beginTx();
         try
         {
-            StatementOperations context = ctxProvider.getCtxForWriting().asStatementOperations();
-            StatementState state = ctxProvider.statementForWriting();
-            long propertyKey1 = context.propertyKeyGetForName( state, indexProperty );
-            long[] labels = new long[]{context.labelGetForName( state, myLabel.name() )};
+            DataStatement statement = ctxProvider.dataStatement();
+            long propertyKey1 = statement.propertyKeyGetForName( indexProperty );
+            long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updates, equalTo( asSet(
                     NodePropertyUpdate.add( node.getId(), propertyKey1, value1, labels ) ) ) );
         }
@@ -124,10 +123,9 @@ public class IndexCRUDIT
         tx = db.beginTx();
         try
         {
-            StatementOperations context = ctxProvider.getCtxForWriting().asStatementOperations();
-            StatementState state = ctxProvider.statementForWriting();
-            long propertyKey1 = context.propertyKeyGetForName( state, indexProperty );
-            long[] labels = new long[]{context.labelGetForName( state, myLabel.name() )};
+            DataStatement statement = ctxProvider.dataStatement();
+            long propertyKey1 = statement.propertyKeyGetForName( indexProperty );
+            long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updates, equalTo( asSet(
                     NodePropertyUpdate.add( node.getId(), propertyKey1, value, labels ) ) ) );
         }
@@ -186,7 +184,7 @@ public class IndexCRUDIT
     
     private class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
     {
-        private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
+        private final Set<NodePropertyUpdate> updates = new HashSet<>();
         private final String propertyKey;
         
         public GatheringIndexWriter( String propertyKey )
@@ -202,10 +200,10 @@ public class IndexCRUDIT
         @Override
         public void add( long nodeId, Object propertyValue )
         {
-            StatementOperations context = ctxProvider.getCtxForReading().asStatementOperations();
-            StatementState state = ctxProvider.statementForReading();
-            updates.add( NodePropertyUpdate.add( nodeId, context.propertyKeyGetForName( state, propertyKey ),
-                    propertyValue, new long[] {context.labelGetForName( state, myLabel.name() )} ) );
+            BaseStatement statement = ctxProvider.baseStatement();
+            updates.add( NodePropertyUpdate.add(
+                    nodeId, statement.propertyKeyGetForName( propertyKey ),
+                    propertyValue, new long[]{statement.labelGetForName( myLabel.name() )} ) );
         }
 
         @Override

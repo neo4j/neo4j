@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 
@@ -27,13 +28,11 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
  */
 public final class StatementTokenNameLookup implements TokenNameLookup
 {
-    private final KeyReadOperations keyReadOperations;
-    private final StatementState state;
+    private final BaseStatement statement;
 
-    public StatementTokenNameLookup( StatementState state, KeyReadOperations context )
+    public StatementTokenNameLookup( BaseStatement statement )
     {
-        this.state = state;
-        this.keyReadOperations = context;
+        this.statement = statement;
     }
 
     /**
@@ -44,7 +43,7 @@ public final class StatementTokenNameLookup implements TokenNameLookup
     {
         try
         {
-            return keyReadOperations.labelGetName( state, labelId );
+            return statement.labelGetName( labelId );
         }
         catch ( LabelNotFoundKernelException e )
         {
@@ -60,7 +59,7 @@ public final class StatementTokenNameLookup implements TokenNameLookup
     {
         try
         {
-            return keyReadOperations.propertyKeyGetName( state, propertyKeyId );
+            return statement.propertyKeyGetName( propertyKeyId );
         }
         catch ( PropertyKeyIdNotFoundException e )
         {

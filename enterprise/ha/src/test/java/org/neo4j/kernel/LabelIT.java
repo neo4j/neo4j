@@ -22,11 +22,11 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.transaction.SystemException;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -37,6 +37,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -74,7 +75,7 @@ public class LabelIT
         {
             ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            return bridge.getCtxForReading().keyReadOperations().labelGetForName( bridge.statementForReading(), label.name() );
+            return bridge.baseStatement().labelGetForName( label.name() );
         }
         finally
         {

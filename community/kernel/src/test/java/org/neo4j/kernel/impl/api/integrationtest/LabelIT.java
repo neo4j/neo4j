@@ -22,10 +22,13 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import java.util.Iterator;
 
 import org.junit.Test;
+
+import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.impl.core.Token;
 
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 public class LabelIT extends KernelIntegrationTest
@@ -34,24 +37,30 @@ public class LabelIT extends KernelIntegrationTest
     public void shouldListAllLabels() throws Exception
     {
         // given
-        newTransaction();
-        long label1Id = statement.labelGetOrCreateForName( getState(), "label1" );
-        long label2Id = statement.labelGetOrCreateForName( getState(), "label2" );
+        long label1Id;
+        long label2Id;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            label1Id = statement.labelGetOrCreateForName( "label1" );
+            label2Id = statement.labelGetOrCreateForName( "label2" );
 
-        // when
-        Iterator<Token> labelIdsBeforeCommit = statement.labelsGetAllTokens( getState() );
+            // when
+            Iterator<Token> labelIdsBeforeCommit = statement.labelsGetAllTokens();
 
-        // then
-        assertThat( asCollection( labelIdsBeforeCommit ),
-                    hasItems( new Token( "label1", (int) label1Id ), new Token( "label2", (int) label2Id )) );
+            // then
+            assertThat( asCollection( labelIdsBeforeCommit ),
+                        hasItems( new Token( "label1", (int) label1Id ), new Token( "label2", (int) label2Id )) );
 
-        // when
-        commit();
-        newTransaction();
-        Iterator<Token> labelIdsAfterCommit = statement.labelsGetAllTokens( getState() );
+            // when
+            commit();
+        }
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Iterator<Token> labelIdsAfterCommit = statement.labelsGetAllTokens();
 
-        // then
-        assertThat(asCollection( labelIdsAfterCommit ) ,
-                hasItems( new Token( "label1", (int) label1Id ), new Token( "label2", (int) label2Id ) ));
+            // then
+            assertThat(asCollection( labelIdsAfterCommit ) ,
+                    hasItems( new Token( "label1", (int) label1Id ), new Token( "label2", (int) label2Id ) ));
+        }
     }
 }

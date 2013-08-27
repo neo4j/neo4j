@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -30,7 +31,7 @@ public class CreateAndDeleteNodesIT
     public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     enum RelTypes implements RelationshipType {
-        ASD;
+        ASD
     }
 
     @Test
@@ -38,7 +39,7 @@ public class CreateAndDeleteNodesIT
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Node myNode = null;
+        Node myNode;
 
         // When
         Transaction tx = beansAPI.beginTx();
@@ -49,7 +50,8 @@ public class CreateAndDeleteNodesIT
 
             myNode.createRelationshipTo( beansAPI.getReferenceNode(), RelTypes.ASD );
             tx.success();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }

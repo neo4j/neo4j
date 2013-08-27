@@ -28,13 +28,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -75,7 +75,7 @@ public class KernelSchemaStateFlushingTest
         
         IndexDescriptor descriptor = createIndex();
 
-        awatIndexOnline( descriptor );
+        awaitIndexOnline( descriptor );
         
         // when
         String after = commitToSchemaState( "test", "after" );
@@ -89,7 +89,7 @@ public class KernelSchemaStateFlushingTest
     {
         IndexDescriptor descriptor = createIndex();
 
-        awatIndexOnline( descriptor );
+        awaitIndexOnline( descriptor );
 
         commitToSchemaState( "test", "before" );
 
@@ -137,11 +137,9 @@ public class KernelSchemaStateFlushingTest
     private UniquenessConstraint createConstraint() throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
-        KernelTransaction txc = txManager.getKernelTransaction();
-        StatementOperationParts ctx = txc.newStatementOperations();
-        StatementState state = ctxProvider.statementForWriting();
-        UniquenessConstraint descriptor = ctx.schemaWriteOperations().uniquenessConstraintCreate( state, 1, 1 );
-        state.close();
+        SchemaStatement statement = ctxProvider.schemaStatement();
+        UniquenessConstraint descriptor = statement.uniquenessConstraintCreate( 1, 1 );
+        statement.close();
         tx.success();
         tx.finish();
         return descriptor;
@@ -150,11 +148,9 @@ public class KernelSchemaStateFlushingTest
     private void dropConstraint( UniquenessConstraint descriptor ) throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
-        KernelTransaction txc = txManager.getKernelTransaction();
-        StatementOperationParts ctx = txc.newStatementOperations();
-        StatementState state = ctxProvider.statementForWriting();
-        ctx.schemaWriteOperations().constraintDrop( state, descriptor );
-        state.close();
+        SchemaStatement statement = ctxProvider.schemaStatement();
+        statement.constraintDrop( descriptor );
+        statement.close();
         tx.success();
         tx.finish();
     }
@@ -162,11 +158,9 @@ public class KernelSchemaStateFlushingTest
     private IndexDescriptor createIndex() throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
-        KernelTransaction txc = txManager.getKernelTransaction();
-        StatementOperationParts ctx = txc.newStatementOperations();
-        StatementState state = ctxProvider.statementForWriting();
-        IndexDescriptor descriptor = ctx.schemaWriteOperations().indexCreate( state, 1, 1 );
-        state.close();
+        SchemaStatement statement = ctxProvider.schemaStatement();
+        IndexDescriptor descriptor = statement.indexCreate( 1, 1 );
+        statement.close();
         tx.success();
         tx.finish();
         return descriptor;
@@ -175,23 +169,19 @@ public class KernelSchemaStateFlushingTest
     private void dropIndex( IndexDescriptor descriptor ) throws SchemaKernelException
     {
         Transaction tx = db.beginTx();
-        KernelTransaction txc = txManager.getKernelTransaction();
-        StatementOperationParts ctx = txc.newStatementOperations();
-        StatementState state = ctxProvider.statementForWriting();
-        ctx.schemaWriteOperations().indexDrop( state, descriptor );
-        state.close();
+        SchemaStatement statement = ctxProvider.schemaStatement();
+        statement.indexDrop( descriptor );
+        statement.close();
         tx.success();
         tx.finish();
     }
 
-    private void awatIndexOnline( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    private void awaitIndexOnline( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         Transaction tx = db.beginTx();
-        KernelTransaction txc = txManager.getKernelTransaction();
-        StatementOperationParts ctx = txc.newStatementOperations();
-        StatementState state = ctxProvider.statementForReading();
-        SchemaIndexTestHelper.awaitIndexOnline( ctx.schemaReadOperations(), state, descriptor );
-        state.close();
+        BaseStatement statement = ctxProvider.baseStatement();
+        SchemaIndexTestHelper.awaitIndexOnline( statement, descriptor );
+        statement.close();
         tx.success();
         tx.finish();
     }
@@ -215,11 +205,9 @@ public class KernelSchemaStateFlushingTest
     
     private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
     {
-        StatementOperationParts ctx = tx.newStatementOperations();
-        StatementState state = ctxProvider.statementForReading();
-        try 
+        try ( BaseStatement statement = tx.acquireBaseStatement() )
         {
-            return ctx.schemaStateOperations().schemaStateGetOrCreate( state, key, new Function<String, String>()
+            return statement.schemaStateGetOrCreate( key, new Function<String, String>()
             {
                 @Override
                 public String apply( String from )
@@ -227,10 +215,6 @@ public class KernelSchemaStateFlushingTest
                     return value;
                 }
             } );
-        }
-        finally 
-        {
-            state.close();
         }
     }
     
@@ -243,7 +227,7 @@ public class KernelSchemaStateFlushingTest
     }
     
     @After
-    public void afer()
+    public void after()
     {
         db.shutdown();
     }

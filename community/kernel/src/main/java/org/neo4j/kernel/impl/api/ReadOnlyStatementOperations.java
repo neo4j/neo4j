@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -27,6 +26,7 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 public class ReadOnlyStatementOperations implements
     KeyWriteOperations,
@@ -41,125 +42,126 @@ public class ReadOnlyStatementOperations implements
     SchemaWriteOperations,
     SchemaStateOperations
 {
+    private final KeyReadOperations keyReadOperations;
     private final SchemaStateOperations schemaStateDelegate;
 
-    public ReadOnlyStatementOperations(
-            SchemaStateOperations schemaStateDelegate )
+    public ReadOnlyStatementOperations( KeyReadOperations keyReadOperations, SchemaStateOperations schemaStateDelegate )
     {
+        this.keyReadOperations = keyReadOperations;
         this.schemaStateDelegate = schemaStateDelegate;
-    }
-
-    public NotInTransactionException notInTransaction()
-    {
-        return new NotInTransactionException(
-                "You have to be in a transaction context to perform write operations." );
     }
 
     @Override
     public long labelGetOrCreateForName( StatementState state, String labelName ) throws SchemaKernelException
     {
-        throw notInTransaction();
+        // Just get, returning NO_SUCH_LABEL if there is none.
+        // Lookup using that constant will yield nothing, no node has it,
+        // and since this is read-only, the user will not be able to set it.
+        return keyReadOperations.labelGetForName( state, labelName );
     }
 
     @Override
     public long propertyKeyGetOrCreateForName( StatementState state, String propertyKeyName ) throws SchemaKernelException
     {
-        throw notInTransaction();
+        // Just get, returning NO_SUCH_PROPERTY_KEY if there is none,
+        // Lookup using that constant will yield nothing, no node has it,
+        // and since this is read-only, the user will not be able to set it.
+        return keyReadOperations.propertyKeyGetForName( state, propertyKeyName );
     }
 
     @Override
     public void nodeDelete( StatementState state, long nodeId )
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public void relationshipDelete( StatementState state, long relationshipId )
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public boolean nodeAddLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property ) throws PropertyKeyIdNotFoundException,
             EntityNotFoundException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
             EntityNotFoundException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public Property graphRemoveProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId ) throws SchemaKernelException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
             throws SchemaKernelException
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override
     public void constraintDrop( StatementState state, UniquenessConstraint constraint )
     {
-        throw notInTransaction();
+        throw new ReadOnlyDbException();
     }
 
     @Override

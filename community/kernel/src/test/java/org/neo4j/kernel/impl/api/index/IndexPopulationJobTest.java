@@ -39,13 +39,12 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.StatementOperations;
+import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
@@ -60,9 +59,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doThrow;
@@ -71,6 +71,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -465,16 +466,15 @@ public class IndexPopulationJobTest
         stateHolder = new KernelSchemaStateStore();
 
         Transaction tx = db.beginTx();
-        StatementOperations ctxForWriting = ctxProvider.getCtxForWriting().asStatementOperations();
-        StatementState state = ctxProvider.statementForReading();
-        firstLabelId = ctxForWriting.labelGetOrCreateForName( state, FIRST.name() );
-        secondLabelId = ctxForWriting.labelGetOrCreateForName( state, SECOND.name() );
+        BaseStatement statement = ctxProvider.baseStatement();
+        firstLabelId = statement.labelGetOrCreateForName( FIRST.name() );
+        secondLabelId = statement.labelGetOrCreateForName( SECOND.name() );
 
-        namePropertyKeyId = ctxForWriting.propertyKeyGetOrCreateForName( state, name );
-        agePropertyKeyId = ctxForWriting.propertyKeyGetOrCreateForName( state, age );
+        namePropertyKeyId = statement.propertyKeyGetOrCreateForName( name );
+        agePropertyKeyId = statement.propertyKeyGetOrCreateForName( age );
 
-        ctxForWriting.labelGetOrCreateForName( state, SECOND.name() );
-        state.close();
+        statement.labelGetOrCreateForName( SECOND.name() );
+        statement.close();
         tx.success();
         tx.finish();
     }
@@ -504,10 +504,9 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         try
         {
-            StatementOperations ctx = ctxProvider.getCtxForWriting().asStatementOperations();
-            StatementState state = ctxProvider.statementForReading();
-            descriptor = new IndexDescriptor( ctx.labelGetForName( state, label.name() ),
-                    ctx.propertyKeyGetForName( state, propertyKey ) );
+            BaseStatement statement = ctxProvider.baseStatement();
+            descriptor = new IndexDescriptor( statement.labelGetForName( label.name() ),
+                    statement.propertyKeyGetForName( propertyKey ) );
             tx.success();
         }
         finally
@@ -546,8 +545,7 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         try
         {
-            StatementOperations context = ctxProvider.getCtxForWriting().asStatementOperations();
-            result = context.propertyKeyGetForName( ctxProvider.statementForWriting(), name );
+            result = ctxProvider.baseStatement().propertyKeyGetForName( name );
             tx.success();
         }
         finally

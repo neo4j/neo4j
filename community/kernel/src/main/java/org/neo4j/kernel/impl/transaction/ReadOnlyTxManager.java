@@ -30,20 +30,13 @@ import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.operations.StatementState;
-import org.neo4j.kernel.api.operations.ReadOnlyStatementState;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.ThreadLocalWithSize;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreListener;
 
 public class ReadOnlyTxManager extends AbstractTransactionManager
         implements Lifecycle
@@ -55,7 +48,6 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     private XaDataSourceManager xaDsManager = null;
     private final StringLogger logger;
     private KernelAPI kernel;
-    private IndexingService indexingService;
 
     public ReadOnlyTxManager( XaDataSourceManager xaDsManagerToUse, StringLogger logger )
     {
@@ -75,17 +67,8 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
 
     @Override
     public void start()
-            throws Throwable
     {
-        txThreadMap = new ThreadLocalWithSize<ReadOnlyTransactionImpl>();
-        xaDsManager.addDataSourceRegistrationListener( neoStoreListener( new DataSourceRegistrationListener.Adapter()
-        {
-            @Override
-            public void registeredDataSource( XaDataSource ds )
-            {
-                indexingService = ((NeoStoreXaDataSource)ds).getIndexService();
-            }
-        } ) );
+        txThreadMap = new ThreadLocalWithSize<>();
     }
 
     @Override
@@ -95,7 +78,6 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
 
     @Override
     public void shutdown()
-            throws Throwable
     {
     }
 
@@ -108,7 +90,9 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             throw new NotSupportedException(
                     "Nested transactions not supported" );
         }
-        txThreadMap.set( new ReadOnlyTransactionImpl( this, logger ) );
+        ReadOnlyTransactionImpl tx = new ReadOnlyTransactionImpl( this, logger );
+        txThreadMap.set( tx );
+        tx.setKernelTransaction( kernel.newTransaction() );
     }
 
     @Override
@@ -324,10 +308,6 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         }
     }
 
-    public synchronized void dumpTransactions()
-    {
-    }
-
     @Override
     public int getEventIdentifier()
     {
@@ -340,15 +320,18 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     }
 
     @Override
-    public StatementState newStatement()
-    {
-        return new ReadOnlyStatementState( new IndexReaderFactory.Caching( indexingService ) );
-    }
-
-    @Override
     public void setKernel( KernelAPI kernel )
     {
         this.kernel = kernel;
+    }
+
+    @Override
+    @Deprecated
+    @SuppressWarnings("deprecation")
+    public KernelTransaction getKernelTransaction()
+    {
+        Transaction tx = getTransaction();
+        return tx != null ? ((ReadOnlyTransactionImpl)tx).getKernelTransaction() : null;
     }
 
     @Override

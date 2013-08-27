@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.operations.StatementState;
 
 /**
  * Represents a transaction of changes to the underlying graph.
- * Actual changes are made in the {@link #newStatementOperations() statements}
- * created from this transaction context. Changes made within a transaction
- * are visible to all operations within it.
+ * Actual changes are made in the {@linkplain #acquireDataStatement() data statements} or
+ * {@linkplain #acquireSchemaStatement() schema statements}  created from this transaction context. Changes made within
+ * a transaction are visible to all operations within it.
  *
  * The reason for the separation between transactions and statements is isolation levels. While Neo4j is read-committed
  * isolation, a read can potentially involve multiple operations (think of a cypher statement). Within that read, or
@@ -34,48 +34,27 @@ import org.neo4j.kernel.api.operations.StatementState;
  *
  * Clearly separating between the concept of a transaction and the concept of a statement allows us to cater to this
  * type of isolation requirements.
- * 
+ *
  * TODO currently a {@link KernelTransaction} is used both for building the statement logic (once per db), as well as
  * being a transaction.
  */
 public interface KernelTransaction
 {
-    /**
-     * Creates a new {@link StatementOperationParts statement} using which operations can be performed.
-     * When done it must be
-     * {@link StatementOperationParts#close(org.neo4j.kernel.api.operations.StatementState)} closed}.
-     *
-     * @return a new {@link StatementOperations} to do operations with.
-     */
-    StatementOperationParts newStatementOperations();
+    BaseStatement acquireBaseStatement();
 
-    StatementState newStatementState();
-    
-    // NOTE: The below methods don't yet do actual transaction work, that is still carried by
-    //       the old TransactionImpl, WriteTransaction and friends.
+    DataStatement acquireDataStatement() throws InvalidTransactionTypeException;
 
-    /**
-     * Writes the changes this transaction wants to perform down to disk. If this method
-     * returns successfully, the database guarantees that we can recover this transaction
-     * after a crash.
-     * <p/>
-     * Normally, you should not use this, it is implicitly called by {@link #commit()}, but
-     * it is a necessary thing if you are implementing two-phase commits.
-     */
-    void prepare();
+    SchemaStatement acquireSchemaStatement() throws InvalidTransactionTypeException;
 
     /**
      * Commit this transaction, this will make the changes in this context visible to other
      * transactions.
-     * <p/>
-     * If you have not called {@link #prepare()} before calling this method, the transaction
-     * is implicitly prepared.
      */
     void commit() throws TransactionFailureException;
 
-    /**
-     * Roll back this transaction, undoing any changes that have been made.
-     * @throws TransactionFailureException 
-     */
+    /** Roll back this transaction, undoing any changes that have been made. */
     void rollback() throws TransactionFailureException;
+
+    <RESULT, FAILURE extends KernelException> RESULT execute( MicroTransaction<RESULT, FAILURE> transaction )
+            throws FAILURE;
 }

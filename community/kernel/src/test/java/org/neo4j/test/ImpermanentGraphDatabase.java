@@ -19,11 +19,6 @@
  */
 package org.neo4j.test;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +43,11 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
+
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
  */
@@ -58,7 +58,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * will get printed in an exception with the message "Unclosed database instance".
      */
     private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
-    private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<File, Exception>();
+    private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<>();
     
     static final String PATH = "target/test-data/impermanent-db";
 
@@ -165,18 +165,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
     {
         // Because EphemeralFileChannel doesn't support memorymapping
-        Map<String, String> result = new HashMap<String, String>( params );
+        Map<String, String> result = new HashMap<>( params );
         result.put( use_memory_mapped_buffers.name(), FALSE );
 
         // To signal to index provides that we should be in-memory
         result.put( ephemeral.name(), TRUE );
         return result;
-    }
-
-    @Override
-    protected boolean isEphemeral()
-    {
-        return true;
     }
 
     @Override

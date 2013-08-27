@@ -21,12 +21,11 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.Transactor;
+import org.neo4j.kernel.api.exceptions.TransactionalException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.StatementState;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -34,22 +33,15 @@ import org.neo4j.kernel.logging.Logging;
  * Used to assert that Indexes required by Uniqueness Constraints don't remain if the constraint never got created.
  * Solves the case where the database crashes after the index for the constraint has been created but before the
  * constraint itself has been committed.
- *
- * TODO: This forces the KernelAPI to expose methods that should not be accessed from outside the kernel,
- * make this an internal job to run during the Kernel startup cycle, rather than an external job that runs
- * "on top" of the kernel.
  */
 public class RemoveOrphanConstraintIndexesOnStartup
 {
-    private final AbstractTransactionManager txManager;
     private final StringLogger log;
-    private final ThreadToStatementContextBridge ctxProvider;
+    private final Transactor transactor;
 
-    public RemoveOrphanConstraintIndexesOnStartup( AbstractTransactionManager txManager,
-            ThreadToStatementContextBridge ctxProvider, Logging logging )
+    public RemoveOrphanConstraintIndexesOnStartup( Transactor transactor, Logging logging )
     {
-        this.txManager = txManager;
-        this.ctxProvider = ctxProvider;
+        this.transactor = transactor;
         this.log = logging.getMessagesLog( getClass() );
     }
 
@@ -58,18 +50,14 @@ public class RemoveOrphanConstraintIndexesOnStartup
     {
         try
         {
-            txManager.begin( ForceMode.unforced );
-            boolean success = false;
-            KernelTransaction tx = null;
-            try
+            transactor.execute( new Transactor.Work<Void, SchemaKernelException>()
             {
-                tx = txManager.getKernelTransaction();
-                StatementOperationParts context = ctxProvider.getCtxForWriting();
-                StatementState state = tx.newStatementState();
-                try
+                @Override
+                public Void perform( StatementOperationParts context, StatementState state )
+                        throws SchemaKernelException
                 {
                     for ( Iterator<IndexDescriptor> indexes = context.schemaReadOperations().uniqueIndexesGetAll( state );
-                            indexes.hasNext(); )
+                          indexes.hasNext(); )
                     {
                         IndexDescriptor index = indexes.next();
                         if ( context.schemaReadOperations().indexGetOwningUniquenessConstraintId( state, index ) == null )
@@ -77,33 +65,11 @@ public class RemoveOrphanConstraintIndexesOnStartup
                             context.schemaWriteOperations().uniqueIndexDrop( state, index );
                         }
                     }
+                    return null;
                 }
-                finally
-                {
-                    state.close();
-                }
-                success = true;
-            }
-            finally
-            {
-                if ( tx != null )
-                {
-                    if ( success )
-                    {
-                        tx.commit();
-                    }
-                    else
-                    {
-                        tx.rollback();
-                    }
-                }
-                else
-                {
-                    txManager.rollback();
-                }
-            }
+            } );
         }
-        catch ( Throwable e )
+        catch ( SchemaKernelException | TransactionalException e )
         {
             log.error( "Failed to execute orphan index checking transaction.", e );
         }

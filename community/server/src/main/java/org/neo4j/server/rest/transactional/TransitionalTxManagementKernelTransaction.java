@@ -22,10 +22,14 @@ package org.neo4j.server.rest.transactional;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
-import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.BaseStatement;
+import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.MicroTransaction;
+import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.TxManager;
 
 class TransitionalTxManagementKernelTransaction implements KernelTransaction
@@ -42,21 +46,21 @@ class TransitionalTxManagementKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public StatementOperationParts newStatementOperations()
+    public BaseStatement acquireBaseStatement()
     {
-        return ctx.newStatementOperations();
-    }
-    
-    @Override
-    public StatementState newStatementState()
-    {
-        return ctx.newStatementState();
+        return ctx.acquireBaseStatement();
     }
 
     @Override
-    public void prepare()
+    public DataStatement acquireDataStatement() throws InvalidTransactionTypeException
     {
-        throw new UnsupportedOperationException();
+        return ctx.acquireDataStatement();
+    }
+
+    @Override
+    public SchemaStatement acquireSchemaStatement() throws InvalidTransactionTypeException
+    {
+        return ctx.acquireSchemaStatement();
     }
 
     @Override
@@ -69,6 +73,13 @@ class TransitionalTxManagementKernelTransaction implements KernelTransaction
     public void rollback() throws TransactionFailureException
     {
         ctx.rollback();
+    }
+
+    @Override
+    public <RESULT, FAILURE extends KernelException> RESULT execute( MicroTransaction<RESULT, FAILURE> transaction )
+            throws FAILURE
+    {
+        return ctx.execute( transaction );
     }
 
     public void suspendSinceTransactionsAreStillThreadBound()

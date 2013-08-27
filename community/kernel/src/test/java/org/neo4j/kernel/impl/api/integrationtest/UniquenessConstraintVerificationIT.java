@@ -28,10 +28,11 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
@@ -49,24 +50,26 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
     public void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
     {
         // given
-        newTransaction();
-        // name is not unique for Foo in the existing data
-        Node node = db.createNode( label( "Foo" ) );
-        long node1 = node.getId();
-        node.setProperty( "name", "foo" );
-        node = db.createNode( label( "Foo" ) );
-        long node2 = node.getId();
-        node.setProperty( "name", "foo" );
-        long foo = statement.labelGetForName( getState(), "Foo" );
-        long name = statement.propertyKeyGetForName( getState(), "name" );
-        commit();
-
-        newTransaction();
+        long node1, node2, foo, name;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            // name is not unique for Foo in the existing data
+            Node node = db.createNode( label( "Foo" ) );
+            node1 = node.getId();
+            node.setProperty( "name", "foo" );
+            node = db.createNode( label( "Foo" ) );
+            node2 = node.getId();
+            node.setProperty( "name", "foo" );
+            foo = statement.labelGetForName( "Foo" );
+            name = statement.propertyKeyGetForName( "name" );
+            commit();
+        }
 
         // when
         try
         {
-            statement.uniquenessConstraintCreate( getState(), foo, name );
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            statement.uniquenessConstraintCreate( foo, name );
 
             fail( "expected exception" );
         }
@@ -78,32 +81,7 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
             assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
             assertEquals( asSet( new ConstraintVerificationFailedKernelException.Evidence(
                     new PreexistingIndexEntryConflictException( "foo", node1, node2 ) ) ),
-                    ((ConstraintVerificationFailedKernelException) cause).evidence() );
-        }
-    }
-
-    @Test
-    public void shouldAbortConstraintCreationIfTheTransactionHasDataModificationsPertainingToTheConstraint()
-            throws Exception
-    {
-        // given
-        newTransaction();
-        db.createNode( label( "Foo" ) ).setProperty( "name", "foo" );
-        long foo = statement.labelGetForName( getState(), "Foo" );
-        long name = statement.propertyKeyGetForName( getState(), "name" );
-
-        // when
-        try
-        {
-            statement.uniquenessConstraintCreate( getState(), foo, name );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( CreateConstraintFailureException e )
-        {
-            assertEquals( new UniquenessConstraint( foo, name ), e.constraint() );
-            assertThat( e.getCause(), instanceOf( SchemaAndDataModificationInSameTransactionException.class ) );
+                          ((ConstraintVerificationFailedKernelException) cause).evidence() );
         }
     }
 
@@ -112,16 +90,19 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
             throws Exception
     {
         // given
-        newTransaction();
-        Node node = db.createNode( label( "Foo" ) );
-        long node1 = node.getId();
-        node.setProperty( "name", "foo" );
-        long foo = statement.labelGetForName( getState(), "Foo" );
-        long name = statement.propertyKeyGetForName( getState(), "name" );
-        commit();
+        long node1, foo, name;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode( label( "Foo" ) );
+            node1 = node.getId();
+            node.setProperty( "name", "foo" );
+            foo = statement.labelGetForName( "Foo" );
+            name = statement.propertyKeyGetForName( "name" );
+            commit();
+        }
 
-        newTransaction();
-        statement.uniquenessConstraintCreate( getState(), foo, name );
+        SchemaStatement statement = schemaStatementInNewTransaction();
+        statement.uniquenessConstraintCreate(  foo, name );
         ExecutorService executor = Executors.newSingleThreadExecutor();
         long node2 = executor.submit( new Callable<Long>()
         {

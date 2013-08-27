@@ -276,17 +276,6 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
           throw translateKernelException(e)
       }
 
-  override def schemaStateContains(key: String): Boolean =
-    try
-    {
-      super.schemaStateContains(key)
-    }
-    catch
-      {
-        case e: KernelException =>
-          throw translateKernelException(e)
-      }
-
   override def createUniqueConstraint(labelId: Long, propertyKeyId: Long) =
     try
     {

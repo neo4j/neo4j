@@ -39,6 +39,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -46,8 +47,8 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 public class TestReadOnlyNeo4j
 {
     private static final String PATH = "read-only";
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    
+    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
     @Test
     public void testSimple()
     {
@@ -62,6 +63,18 @@ public class TestReadOnlyNeo4j
         try
         {
             readGraphDb.createNode();
+
+            fail( "expected exception" );
+        }
+        catch ( ReadOnlyDbException e )
+        {
+            // good
+        }
+        try
+        {
+            readGraphDb.getReferenceNode().setProperty( "key", "value" );
+
+            fail( "expected exception" );
         }
         catch ( ReadOnlyDbException e )
         {

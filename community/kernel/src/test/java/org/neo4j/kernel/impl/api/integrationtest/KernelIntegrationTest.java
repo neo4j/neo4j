@@ -21,54 +21,49 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.After;
 import org.junit.Before;
+
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.BaseStatement;
+import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 public abstract class KernelIntegrationTest
 {
     protected GraphDatabaseAPI db;
-    protected StatementOperations statement;
     protected KernelAPI kernel;
     protected ThreadToStatementContextBridge statementContextProvider;
 
     private Transaction beansTx;
+    private BaseStatement statement;
     private EphemeralFileSystemAbstraction fs;
-    private StatementState state;
 
-    protected StatementState newTransaction()
+    protected DataStatement dataStatementInNewTransaction()
     {
         beansTx = db.beginTx();
-        statement = statementContextProvider.getCtxForWriting().asStatementOperations();
-        return (state = statementContextProvider.statementForWriting());
-    }
-    
-    public StatementState getState()
-    {
-        return state;
+        DataStatement dataStatement = statementContextProvider.dataStatement();
+        statement = dataStatement;
+        return dataStatement;
     }
 
-    protected StatementOperations readOnlyContext()
+    protected SchemaStatement schemaStatementInNewTransaction()
     {
-        StatementOperations context = statementContextProvider.getCtxForReading().asStatementOperations();
-        state = statementContextProvider.statementForReading();
-        return context;
+        beansTx = db.beginTx();
+        SchemaStatement dataStatement = statementContextProvider.schemaStatement();
+        statement = dataStatement;
+        return dataStatement;
     }
 
     protected void commit()
     {
-        state.close();
+        statement.close();
         statement = null;
         beansTx.success();
         beansTx.finish();
@@ -76,7 +71,7 @@ public abstract class KernelIntegrationTest
 
     protected void rollback()
     {
-        state.close();
+        statement.close();
         statement = null;
         beansTx.failure();
         beansTx.finish();
@@ -119,13 +114,5 @@ public abstract class KernelIntegrationTest
     {
         return ((NeoStoreXaDataSource)db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getXaDataSource(
                 NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME )).getNeoStore();
-    }
-
-    protected void awaitAllIndexesOnline()
-    {
-        for ( IndexDefinition index : db.schema().getIndexes() )
-        {
-            db.schema().awaitIndexOnline( index, 1, SECONDS );
-        }
     }
 }

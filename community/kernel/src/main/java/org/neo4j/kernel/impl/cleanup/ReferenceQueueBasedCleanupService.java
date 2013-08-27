@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
-import java.io.Closeable;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
@@ -47,7 +46,7 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
     }
 
     @Override
-    public <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, Closeable closeable )
+    public <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, AutoCloseable closeable )
     {
         if ( cleanupNecessity.evaluate() )
         {
@@ -60,7 +59,7 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
         }
     }
 
-    private <T> ResourceIterator<T> linked( AutoCleanupResourceIterator<T> iterator, Closeable handler )
+    private <T> ResourceIterator<T> linked( AutoCleanupResourceIterator<T> iterator, AutoCloseable handler )
     {
         CleanupReference cleanup = new CleanupReference( iterator, this, handler );
         link( cleanup );

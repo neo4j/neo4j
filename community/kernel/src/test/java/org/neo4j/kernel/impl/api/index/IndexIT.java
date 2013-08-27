@@ -24,8 +24,9 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.impl.api.Transactor;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.transaction.TxManager;
@@ -46,34 +47,46 @@ public class IndexIT extends KernelIntegrationTest
     public void addIndexRuleInATransaction() throws Exception
     {
         // GIVEN
-        newTransaction();
+        IndexDescriptor expectedRule;
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
 
-        // WHEN
-        IndexDescriptor expectedRule = statement.indexCreate( getState(), labelId, propertyKey );
-        commit();
+            // WHEN
+            expectedRule = statement.indexCreate( labelId, propertyKey );
+            commit();
+        }
 
         // THEN
-        newTransaction();
-        assertEquals( asSet( expectedRule ),
-                      asSet( statement.indexesGetForLabel( getState(), labelId ) ) );
-        assertEquals( expectedRule, statement.indexesGetForLabelAndPropertyKey( getState(), labelId, propertyKey ) );
-        commit();
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            assertEquals( asSet( expectedRule ),
+                          asSet( statement.indexesGetForLabel( labelId ) ) );
+            assertEquals( expectedRule, statement.indexesGetForLabelAndPropertyKey( labelId, propertyKey ) );
+            commit();
+        }
     }
 
     @Test
     public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
     {
         // GIVEN
-        newTransaction();
-        IndexDescriptor existingRule = statement.indexCreate( getState(), labelId, propertyKey );
-        commit();
+        IndexDescriptor existingRule;
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            existingRule = statement.indexCreate( labelId, propertyKey );
+            commit();
+        }
 
         // WHEN
-        newTransaction();
-        long propertyKey2 = 10;
-        IndexDescriptor addedRule = statement.indexCreate( getState(), labelId, propertyKey2 );
-        Set<IndexDescriptor> indexRulesInTx = asSet( statement.indexesGetForLabel( getState(), labelId ) );
-        commit();
+        IndexDescriptor addedRule;
+        Set<IndexDescriptor> indexRulesInTx;
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            long propertyKey2 = 10;
+            addedRule = statement.indexCreate( labelId, propertyKey2 );
+            indexRulesInTx = asSet( statement.indexesGetForLabel( labelId ) );
+            commit();
+        }
 
         // THEN
         assertEquals( asSet( existingRule, addedRule ), indexRulesInTx );
@@ -83,57 +96,62 @@ public class IndexIT extends KernelIntegrationTest
     public void rollBackIndexRuleShouldNotBeCommitted() throws Exception
     {
         // GIVEN
-        newTransaction();
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
 
-        // WHEN
-        statement.indexCreate( getState(), labelId, propertyKey );
-        // don't mark as success
-        rollback();
+            // WHEN
+            statement.indexCreate( labelId, propertyKey );
+            // don't mark as success
+            rollback();
+        }
 
         // THEN
-        newTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ),
-                asSet( readOnlyContext().indexesGetForLabel( getState(), labelId ) ) );
-        commit();
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.indexesGetForLabel( labelId ) ) );
+            commit();
+        }
     }
 
     @Test
     public void shouldRemoveAConstraintIndexWithoutOwnerInRecovery() throws Exception
     {
         // given
-        newTransaction();
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( new Transactor(
-                db.getDependencyResolver().resolveDependency( TxManager.class ) ),
-                db.getDependencyResolver().resolveDependency( IndexingService.class ) );
-        creator.createUniquenessConstraintIndex( getState(), statement, labelId, propertyKey );
-        commit();
+        Transactor transactor = new Transactor( db.getDependencyResolver().resolveDependency( TxManager.class ) );
+        transactor.execute( ConstraintIndexCreator.createConstraintIndex( labelId, propertyKey ) );
 
         // when
         restartDb();
 
         // then
-        newTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ),
-                asSet( readOnlyContext().indexesGetForLabel( getState(), labelId ) ) );
-        commit();
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.indexesGetForLabel( labelId ) ) );
+            commit();
+        }
     }
 
     @Test
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
-        newTransaction();
-        IndexDescriptor index = statement.indexCreate( getState(), labelId, propertyKey );
-        commit();
-        newTransaction();
-        statement.indexDrop( getState(), index );
-        commit();
+        IndexDescriptor index;
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            index = statement.indexCreate( labelId, propertyKey );
+            commit();
+        }
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            statement.indexDrop( index );
+            commit();
+        }
 
         // when
         try
         {
-            newTransaction();
-            statement.indexDrop( getState(), index );
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            statement.indexDrop( index );
             commit();
         }
         // then
@@ -148,15 +166,17 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldFailToCreateIndexWhereAConstraintAlreadyExists() throws Exception
     {
         // given
-        newTransaction();
-        statement.uniquenessConstraintCreate( getState(), labelId, propertyKey );
-        commit();
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            statement.uniquenessConstraintCreate( labelId, propertyKey );
+            commit();
+        }
 
         // when
         try
         {
-            newTransaction();
-            statement.indexCreate( getState(), labelId, propertyKey );
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            statement.indexCreate( labelId, propertyKey );
             commit();
 
             fail( "expected exception" );
@@ -174,63 +194,75 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListConstraintIndexesInTheBeansAPI() throws Exception
     {
         // given
-        newTransaction();
-        statement.uniquenessConstraintCreate( getState(), statement.labelGetOrCreateForName( getState(), "Label1" ),
-                                     statement.propertyKeyGetOrCreateForName( getState(), "property1" ) );
-        commit();
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            statement.uniquenessConstraintCreate( statement.labelGetOrCreateForName( "Label1" ),
+                                         statement.propertyKeyGetOrCreateForName( "property1" ) );
+            commit();
+        }
 
         // when
-        newTransaction();
-        Set<IndexDefinition> indexes = asSet( db.schema().getIndexes() );
-
-        // then
-        assertEquals( 1, indexes.size() );
-        IndexDefinition index = indexes.iterator().next();
-        assertEquals( "Label1", index.getLabel().name() );
-        assertEquals( asSet( "property1" ), asSet( index.getPropertyKeys() ) );
-        assertTrue( "index should be a constraint index", index.isConstraintIndex() );
-
-        // when
-        try
         {
-            index.drop();
+            schemaStatementInNewTransaction();
+            Set<IndexDefinition> indexes = asSet( db.schema().getIndexes() );
 
-            fail( "expected exception" );
+            // then
+            assertEquals( 1, indexes.size() );
+            IndexDefinition index = indexes.iterator().next();
+            assertEquals( "Label1", index.getLabel().name() );
+            assertEquals( asSet( "property1" ), asSet( index.getPropertyKeys() ) );
+            assertTrue( "index should be a constraint index", index.isConstraintIndex() );
+
+            // when
+            try
+            {
+                index.drop();
+
+                fail( "expected exception" );
+            }
+            // then
+            catch ( IllegalStateException e )
+            {
+                assertEquals( "Constraint indexes cannot be dropped directly, " +
+                        "instead drop the owning uniqueness constraint.", e.getMessage() );
+            }
+            commit();
         }
-        // then
-        catch ( IllegalStateException e )
-        {
-            assertEquals( "Constraint indexes cannot be dropped directly, " +
-                    "instead drop the owning uniqueness constraint.", e.getMessage() );
-        }
-        commit();
     }
 
     @Test
     public void shouldNotListConstraintIndexesAmongIndexes() throws Exception
     {
         // given
-        newTransaction();
-        statement.uniquenessConstraintCreate( getState(), labelId, propertyKey );
-        commit();
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            statement.uniquenessConstraintCreate( labelId, propertyKey );
+            commit();
+        }
 
         // then/when
-        newTransaction();
-        assertFalse( statement.indexesGetAll( getState() ).hasNext() );
-        assertFalse( statement.indexesGetForLabel( getState(), labelId ).hasNext() );
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            assertFalse( statement.indexesGetAll().hasNext() );
+            assertFalse( statement.indexesGetForLabel( labelId ).hasNext() );
+        }
     }
 
     @Test
     public void shouldNotListIndexesAmongConstraintIndexes() throws Exception
     {
         // given
-        newTransaction();
-        statement.indexCreate( getState(), labelId, propertyKey );
-        commit();
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            statement.indexCreate( labelId, propertyKey );
+            commit();
+        }
 
         // then/when
-        newTransaction();
-        assertFalse( statement.uniqueIndexesGetAll( getState() ).hasNext() );
-        assertFalse( statement.uniqueIndexesGetForLabel( getState(), labelId ).hasNext() );
+        {
+            SchemaStatement statement = schemaStatementInNewTransaction();
+            assertFalse( statement.uniqueIndexesGetAll().hasNext() );
+            assertFalse( statement.uniqueIndexesGetForLabel( labelId ).hasNext() );
+        }
     }
 }

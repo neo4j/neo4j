@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.constraints;
 
 import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -30,7 +31,6 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
-import org.neo4j.kernel.impl.api.Transactor;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 
@@ -153,10 +153,10 @@ public class ConstraintIndexCreator
         }
     }
 
-    private static Transactor.Statement<IndexDescriptor, SchemaKernelException> createConstraintIndex(
+    public static Transactor.Work<IndexDescriptor, SchemaKernelException> createConstraintIndex(
             final long labelId, final long propertyKeyId )
     {
-        return new Transactor.Statement<IndexDescriptor, SchemaKernelException>()
+        return new Transactor.Work<IndexDescriptor, SchemaKernelException>()
         {
             @Override
             public IndexDescriptor perform( StatementOperationParts statement, StatementState kernelStatement ) throws
@@ -173,10 +173,10 @@ public class ConstraintIndexCreator
         };
     }
 
-    private static Transactor.Statement<Void, SchemaKernelException> dropConstraintIndex(
+    private static Transactor.Work<Void, SchemaKernelException> dropConstraintIndex(
             final IndexDescriptor descriptor )
     {
-        return new Transactor.Statement<Void, SchemaKernelException>()
+        return new Transactor.Work<Void, SchemaKernelException>()
         {
             @Override
             public Void perform( StatementOperationParts statement, StatementState kernelStatement ) throws SchemaKernelException

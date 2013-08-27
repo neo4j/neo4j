@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -38,13 +38,14 @@ import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public abstract class StatementOperationsTestHelper
 {
     public static StatementOperationParts mockedParts()
     {
-        StatementOperationParts stmtContextParts = new StatementOperationParts(
+        return new StatementOperationParts(
             mock( KeyReadOperations.class ),
             mock( KeyWriteOperations.class ),
             mock( EntityReadOperations.class ),
@@ -52,14 +53,6 @@ public abstract class StatementOperationsTestHelper
             mock( SchemaReadOperations.class ),
             mock( SchemaWriteOperations.class ),
             mock( SchemaStateOperations.class ));
-        return stmtContextParts;
-    }
-    
-    public static StatementOperationParts mockedParts( KernelTransaction txContext )
-    {
-        StatementOperationParts mock = mockedParts();
-        when( txContext.newStatementOperations() ).thenReturn( mock );
-        return mock;
     }
     
     public static StatementState mockedState()

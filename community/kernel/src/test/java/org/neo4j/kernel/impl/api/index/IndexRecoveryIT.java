@@ -32,13 +32,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -47,16 +48,21 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
 import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
@@ -256,22 +262,21 @@ public class IndexRecoveryIT
     private Set<NodePropertyUpdate> createSomeBananas( Label label )
             throws PropertyKeyNotFoundException, LabelNotFoundKernelException
     {
-        Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
+        Set<NodePropertyUpdate> updates = new HashSet<>();
         Transaction tx = db.beginTx();
         try
         {
             ThreadToStatementContextBridge ctxProvider = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            StatementOperationParts context = ctxProvider.getCtxForWriting();
-            StatementState state = ctxProvider.statementForReading();
+            DataStatement statement = ctxProvider.dataStatement();
             for ( int number : new int[] {4, 10} )
             {
                 Node node = db.createNode( label );
                 node.setProperty( key, number );
-                updates.add( NodePropertyUpdate.add( node.getId(), context.keyReadOperations().propertyKeyGetForName( state, key ), number,
-                        new long[] {context.keyReadOperations().labelGetForName( state, label.name() )} ) );
+                updates.add( NodePropertyUpdate.add( node.getId(), statement.propertyKeyGetForName( key ), number,
+                        new long[] {statement.labelGetForName( label.name() )} ) );
             }
-            state.close();
+            statement.close();
             tx.success();
             return updates;
         }
@@ -283,7 +288,7 @@ public class IndexRecoveryIT
 
     private static class GatheringIndexWriter extends IndexAccessor.Adapter
     {
-        private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
+        private final Set<NodePropertyUpdate> updates = new HashSet<>();
 
         @Override
         public void updateAndCommit( Iterable<NodePropertyUpdate> updates )

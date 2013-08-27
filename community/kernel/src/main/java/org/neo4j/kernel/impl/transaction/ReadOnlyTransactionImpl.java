@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
@@ -34,7 +33,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 class ReadOnlyTransactionImpl implements Transaction
@@ -47,17 +46,17 @@ class ReadOnlyTransactionImpl implements Transaction
     private final byte globalId[];
     private int status = Status.STATUS_ACTIVE;
     private boolean active = true;
-    private final boolean globalStartRecordWritten = false;
 
     private final LinkedList<ResourceElement> resourceList =
-        new LinkedList<ResourceElement>();
+        new LinkedList<>();
     private List<Synchronization> syncHooks =
-        new ArrayList<Synchronization>();
+        new ArrayList<>();
 
     private final int eventIdentifier;
 
     private final ReadOnlyTxManager txManager;
     private StringLogger logger;
+    private KernelTransaction kernelTransaction;
 
     ReadOnlyTransactionImpl( ReadOnlyTxManager txManager, StringLogger logger )
     {
@@ -67,20 +66,20 @@ class ReadOnlyTransactionImpl implements Transaction
         eventIdentifier = txManager.getNextEventIdentifier();
     }
 
-    Integer getEventIdentifier()
+    void setKernelTransaction( KernelTransaction kernelTransaction )
     {
-        return eventIdentifier;
+        this.kernelTransaction = kernelTransaction;
     }
 
-    byte[] getGlobalId()
+    KernelTransaction getKernelTransaction()
     {
-        return globalId;
+        return kernelTransaction;
     }
 
     @Override
     public synchronized String toString()
     {
-        StringBuffer txString = new StringBuffer( "Transaction[Status="
+        StringBuilder txString = new StringBuilder( "Transaction[Status="
             + txManager.getTxStatusAsString( status ) + ",ResourceList=" );
         Iterator<ResourceElement> itr = resourceList.iterator();
         while ( itr.hasNext() )
@@ -99,11 +98,6 @@ class ReadOnlyTransactionImpl implements Transaction
     {
         // make sure tx not suspended
         txManager.commit();
-    }
-
-    boolean isGlobalStartRecordWritten()
-    {
-        return globalStartRecordWritten;
     }
 
     public synchronized void rollback() throws IllegalStateException,
@@ -135,10 +129,8 @@ class ReadOnlyTransactionImpl implements Transaction
                     return true;
                 }
                 Xid sameRmXid = null;
-                Iterator<ResourceElement> itr = resourceList.iterator();
-                while ( itr.hasNext() )
+                for ( ResourceElement re : resourceList )
                 {
-                    ResourceElement re = itr.next();
                     if ( sameRmXid == null && re.getResource().isSameRM( xaRes ) )
                     {
                         sameRmXid = re.getXid();
@@ -206,10 +198,8 @@ class ReadOnlyTransactionImpl implements Transaction
             throw new IllegalArgumentException( "Illegal flag: " + flag );
         }
         ResourceElement re = null;
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        while ( itr.hasNext() )
+        for ( ResourceElement reMatch : resourceList )
         {
-            ResourceElement reMatch = itr.next();
             if ( reMatch.getResource() == xaRes )
             {
                 re = reMatch;
@@ -259,8 +249,7 @@ class ReadOnlyTransactionImpl implements Transaction
     }
 
     private boolean beforeCompletionRunning = false;
-    private List<Synchronization> syncHooksAdded =
-        new ArrayList<Synchronization>();
+    private List<Synchronization> syncHooksAdded = new ArrayList<>();
 
     public synchronized void registerSynchronization( Synchronization s )
         throws RollbackException, IllegalStateException
@@ -317,7 +306,7 @@ class ReadOnlyTransactionImpl implements Transaction
             while ( !syncHooksAdded.isEmpty() )
             {
                 List<Synchronization> addedHooks = syncHooksAdded;
-                syncHooksAdded = new ArrayList<Synchronization>();
+                syncHooksAdded = new ArrayList<>();
                 for ( Synchronization s : addedHooks )
                 {
                     s.beforeCompletion();
@@ -393,96 +382,15 @@ class ReadOnlyTransactionImpl implements Transaction
         return resourceList.size();
     }
 
-    private boolean isOnePhase()
-    {
-        if ( resourceList.size() == 0 )
-        {
-            logger.error( "Detected zero resources in resourceList" );
-            return true;
-        }
-        // check for more than one unique xid
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        Xid xid = itr.next().getXid();
-        while ( itr.hasNext() )
-        {
-            if ( !xid.equals( itr.next().getXid() ) )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    void doCommit() throws XAException
-    {
-        boolean onePhase = isOnePhase();
-        boolean readOnly = true;
-        if ( !onePhase )
-        {
-            // prepare
-            status = Status.STATUS_PREPARING;
-            LinkedList<Xid> preparedXids = new LinkedList<Xid>();
-            Iterator<ResourceElement> itr = resourceList.iterator();
-            while ( itr.hasNext() )
-            {
-                ResourceElement re = itr.next();
-                if ( !preparedXids.contains( re.getXid() ) )
-                {
-                    preparedXids.add( re.getXid() );
-                    int vote = re.getResource().prepare( re.getXid() );
-                    if ( vote == XAResource.XA_OK )
-                    {
-                        throw new ReadOnlyDbException();
-                    }
-                    else if ( vote == XAResource.XA_RDONLY )
-                    {
-                        re.setStatus( RS_READONLY );
-                    }
-                    else
-                    {
-                        // rollback tx
-                        status = Status.STATUS_MARKED_ROLLBACK;
-                        return;
-                    }
-                }
-                else
-                {
-                    // set it to readonly, only need to commit once
-                    re.setStatus( RS_READONLY );
-                }
-            }
-            status = Status.STATUS_PREPARED;
-        }
-        // commit
-        if ( !onePhase && readOnly )
-        {
-            status = Status.STATUS_COMMITTED;
-            return;
-        }
-        status = Status.STATUS_COMMITTING;
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        while ( itr.hasNext() )
-        {
-            ResourceElement re = itr.next();
-            if ( re.getStatus() != RS_READONLY )
-            {
-                throw new ReadOnlyDbException();
-            }
-        }
-        status = Status.STATUS_COMMITTED;
-    }
-
     void doRollback() throws XAException
     {
         status = Status.STATUS_ROLLING_BACK;
-        LinkedList<Xid> rolledbackXids = new LinkedList<Xid>();
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        while ( itr.hasNext() )
+        LinkedList<Xid> rolledBackXids = new LinkedList<>();
+        for ( ResourceElement re : resourceList )
         {
-            ResourceElement re = itr.next();
-            if ( !rolledbackXids.contains( re.getXid() ) )
+            if ( !rolledBackXids.contains( re.getXid() ) )
             {
-                rolledbackXids.add( re.getXid() );
+                rolledBackXids.add( re.getXid() );
                 re.getResource().rollback( re.getXid() );
             }
         }
@@ -525,7 +433,7 @@ class ReadOnlyTransactionImpl implements Transaction
         @Override
         public String toString()
         {
-            String statusString = null;
+            String statusString;
             switch ( status )
             {
                 case RS_ENLISTED:
