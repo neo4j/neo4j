@@ -31,11 +31,6 @@ import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.mutation.CreateRelationship
-import org.neo4j.cypher.internal.parser.{AbstractPattern, OnAction}
-import org.neo4j.cypher.internal.commands.expressions.Nullable
-import org.neo4j.cypher.internal.commands.expressions.Property
-import scala.collection.mutable
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 abstract class StartItem(val identifierName: String, val args: Map[String, String])
   extends TypeSafe with AstNode[StartItem] {
@@ -82,8 +77,8 @@ case class NodeById(varName: String, expression: Expression)
   extends StartItem(varName, Map("name" -> expression.toString()))
   with ReadOnlyStartItem
 
-case class NodeByIdOrEmpty(varName: String, expression: Expression)
-  extends StartItem(varName, Map("name" -> expression.toString()))
+case class NodeByIdOrEmpty(varName: String, id:Long)
+  extends StartItem(varName, Map("name" -> id.toString))
   with ReadOnlyStartItem
 
 case class NodeByLabel(varName: String, label: String)
@@ -123,11 +118,6 @@ case class MergeNodeStartItem(inner: MergeNodeAction) extends UpdatingStartItem(
 /** NodeById that throws exception if no node is found */
 object NodeById {
   def apply(varName: String, id: Long*) = new NodeById(varName, Literal(id))
-}
-
-/** NodeById that returns empty results if no node is found */
-object NodeByIdOrEmpty {
-  def apply(varName: String, id: Long*) = new NodeByIdOrEmpty(varName, Literal(id))
 }
 
 object RelationshipById {

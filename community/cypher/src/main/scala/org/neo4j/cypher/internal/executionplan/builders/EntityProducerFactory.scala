@@ -76,18 +76,17 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     case (planContext, startItem @ NodeById(varName, ids)) =>
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         GetGraphElements.getElements[Node](ids(m)(state), varName, (id) =>
-          Some(state.query.nodeOps.getById(id)))
+          state.query.nodeOps.getById(id))
       }
-    case (planContext, startItem @ NodeByIdOrEmpty(varName, ids)) =>
-      asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        GetGraphElements.getElements[Node](ids(m)(state), varName, (id) => {
+    case (planContext, startItem@NodeByIdOrEmpty(varName, id)) =>
+      asProducer[Node](startItem) {
+        (m: ExecutionContext, state: QueryState) =>
           try {
-            Some(state.query.nodeOps.getById(id))
-          } catch
-          {
-            case _:EntityNotFoundException => None
+            val node = state.query.nodeOps.getById(id)
+            Iterator(node)
+          } catch {
+            case _: EntityNotFoundException => Iterator.empty
           }
-        })
       }
   }
 
@@ -162,7 +161,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     case (planContext, startItem @ RelationshipById(varName, ids)) =>
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         GetGraphElements.getElements[Relationship](ids(m)(state), varName, (id) =>
-          Some(state.query.relationshipOps.getById(id)))
+          state.query.relationshipOps.getById(id))
       }
   }
 
