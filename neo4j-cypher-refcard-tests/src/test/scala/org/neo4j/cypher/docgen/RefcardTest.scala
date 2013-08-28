@@ -31,11 +31,14 @@ import org.neo4j.cypher._
 import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
+import org.junit.Before
+import org.junit.After
+import org.neo4j.cypher.internal.helpers.GraphIcing
 
 /*
 Use this base class for refcard tests
  */
-abstract class RefcardTest extends Assertions with DocumentationHelper {
+abstract class RefcardTest extends Assertions with DocumentationHelper with GraphIcing {
 
   var db: GraphDatabaseAPI = null
   val parser: CypherParser = new CypherParser
@@ -105,8 +108,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
 
   @Test
   def produceDocumentation() {
-    val db = init()
-    try {
+    db.inTx {
       val writer: PrintWriter = createWriter(title, dir)
       val queryText = includeQueries(text, dir)
       val queryLines = queryText.split("\n\n")
@@ -132,8 +134,6 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
       writer.println("++++")
       writer.println()
       writer.close()
-    } finally {
-      db.shutdown()
     }
   }
 
@@ -177,13 +177,19 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
     producedText
   }
 
-  private def init() = {
+  @After
+  def teardown() {
+    if (db != null) db.shutdown()
+  }
+
+  @Before
+  def init() {
     dir = createDir(section)
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
 
-    db.inTx(() => {
+    db.inTx {
       nodeIndex = db.index().forNodes("nodeIndexName")
       relIndex = db.index().forRelationships("relationshipIndexName")
       val g = new GraphImpl(graphDescription.toArray[String])
@@ -202,9 +208,8 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
         indexProperties(n, nodeIndex)
         n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
       })
-    })
+    }
     engine = new ExecutionEngine(db)
-    db
   }
 }
 
