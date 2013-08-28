@@ -24,7 +24,7 @@
     <doctools.version>12</doctools.version>
     <docs.server>neo@static.neo4j.org</docs.server>
     <docs.rootpath>/var/www/docs.neo4j.org</docs.rootpath>
-    <refcard.version>1.9</refcard.version>
+    <refcard.version>2.0</refcard.version>
   </properties>
 
   <dependencies>

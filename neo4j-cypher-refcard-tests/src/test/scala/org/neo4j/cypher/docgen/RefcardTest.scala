@@ -24,8 +24,8 @@ import org.junit.Test
 import scala.collection.JavaConverters._
 import java.io.{ File, PrintWriter }
 import org.neo4j.graphdb._
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
 import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
@@ -37,7 +37,7 @@ Use this base class for refcard tests
  */
 abstract class RefcardTest extends Assertions with DocumentationHelper {
 
-  var db: GraphDatabaseService = null
+  var db: GraphDatabaseAPI = null
   val parser: CypherParser = new CypherParser
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
@@ -90,7 +90,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
     queryPart
   }
 
-  def runQuery( query: String, possibleAssertion: Seq[String], parametersChoice: String): ExecutionResult = {
+  def runQuery(query: String, possibleAssertion: Seq[String], parametersChoice: String): ExecutionResult = {
     val result = executeQuery(query, parameters(parametersChoice))
     possibleAssertion.foreach(name => {
       try {
@@ -112,12 +112,12 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
       val queryLines = queryText.split("\n\n")
       writer.println("++++")
       writer.println("<div class='col card" + css +
-      		"\'><div class='blk'>")
+        "\'><div class='blk'>")
       writer.println("++++")
       writer.println()
       writer.println("[options=\"header\"]")
       writer.println("|====")
-      writer.println("|" + title)      
+      writer.println("|" + title)
       for (i <- 0 until queryLines.length by 2) {
         writer.println("a|[\"source\",\"cypher\"]")
         writer.println("----")
@@ -179,7 +179,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
 
   private def init() = {
     dir = createDir(section)
-    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
+    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
 
