@@ -74,7 +74,7 @@ String representation of the relationship type.
 START n=node(%A%)
 RETURN
 
-COALESCE(n.property?, {defaultValue})###
+COALESCE(n.property, {defaultValue})###
 
 The first non-`null` expression.
 

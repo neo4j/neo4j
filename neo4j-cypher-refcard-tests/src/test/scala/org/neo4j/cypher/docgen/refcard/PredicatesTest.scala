@@ -114,21 +114,21 @@ Check if something is `null`.
 START n=node(*)
 WHERE
 
-n.property? = {value}
+NOT(HAS(n.property)) OR n.property = {value}
 
 RETURN n###
 
-Defaults to `true` if the property does not exist.
+Either property does not exist or predicate is true.
 
 ###assertion=returns-none parameters=aname
 START n=node(*)
 WHERE
 
-n.property! = {value}
+n.property = {value}
 
 RETURN n###
 
-Defaults to `false` if the property does not exist.
+Non-existing property returns null, fails comparison.
 
 ###assertion=returns-one parameters=regex
 START n=node(*)

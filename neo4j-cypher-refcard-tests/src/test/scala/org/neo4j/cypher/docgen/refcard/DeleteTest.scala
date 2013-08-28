@@ -22,7 +22,7 @@ import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
 class DeleteTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
+  val graphDescription = List("ROOT LINK A:Person", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "DELETE"
   val css = "write c2-2 c4-4 c5-4 c6-3"
 
@@ -31,7 +31,10 @@ class DeleteTest extends RefcardTest with StatisticsChecker {
       case "delete" =>
         assertStats(result, nodesCreated = 1, nodesDeleted = 1, relationshipsDeleted = 1)
         assert(result.toList.size === 0)
-      case "delete-prop" =>
+      case "remove-label" =>
+        assertStats(result, labelsRemoved = 1)
+        assert(result.toList.size === 0)
+      case "remove-prop" =>
         assertStats(result, nodesCreated = 1, propertiesSet = 2)
         assert(result.toList.size === 0)
     }
@@ -62,12 +65,20 @@ DELETE n, r
 
 Delete a node and a relationship.
 
-###assertion=delete-prop
-CREATE (n {property: "value"})
+###assertion=remove-label
+MATCH (n:Person)
 
-DELETE n.property
+REMOVE n:Person
 ###
 
-Delete a property.
+Remove a label.
+
+###assertion=remove-prop
+CREATE (n {property: "value"})
+
+REMOVE n.property
+###
+
+Remove a property.
 """
 }

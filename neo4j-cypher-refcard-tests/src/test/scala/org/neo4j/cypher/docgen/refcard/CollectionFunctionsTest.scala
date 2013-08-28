@@ -22,7 +22,7 @@ import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
 class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
+  val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
   val title = "Collection Functions"
   val css = "general c3-3 c4-3 c5-5 c6-6"
 
@@ -31,6 +31,9 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
       case "returns-one" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
+      case "returns-three" =>
+        assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 3)
       case "returns-none" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
@@ -56,6 +59,15 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("prop" -> "Chris"))
 
   def text = """
+###assertion=returns-three
+MATCH (n:Person)
+RETURN
+
+LABELS(n)
+###
+
+The labels of the node.
+
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
@@ -79,10 +91,10 @@ The relationships in the path.
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
-WITH nodes(path) as collection
+WITH nodes(path) as coll
 RETURN
 
-EXTRACT(x IN collection: x.prop)
+EXTRACT(x IN coll : x.prop)
 ###
 
 A collection of the value of the expression for each element in the collection.
@@ -93,7 +105,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as coll
 RETURN
 
-FILTER(x IN coll: x.prop <> {value})
+FILTER(x IN coll : x.prop <> {value})
 ###
 
 A collection of the elements where the predicate is `true`.
@@ -101,10 +113,10 @@ A collection of the elements where the predicate is `true`.
 ###assertion=returns-one parameters=value
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
-WITH nodes(path) as collection
+WITH nodes(path) as coll
 RETURN
 
-TAIL(collection)
+TAIL(coll)
 ###
 
 All but the first element of the collection.
@@ -112,7 +124,7 @@ All but the first element of the collection.
 ###assertion=returns-one parameters=range
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
-WITH nodes(path) as collection
+WITH nodes(path) as coll
 RETURN
 
 RANGE({begin}, {end}, {step})

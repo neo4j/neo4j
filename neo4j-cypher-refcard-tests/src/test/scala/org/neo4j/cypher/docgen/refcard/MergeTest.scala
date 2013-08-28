@@ -18,51 +18,47 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
+
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class MatchTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT KNOWS A:Person", "A KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
-  val title = "MATCH"
-  val css = "read c2-2 c3-2 c4-2 c5-2"
+class MergeTest extends RefcardTest with StatisticsChecker {
+  val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
+  val title = "MERGE"
+  val css = "write c4-4 c5-4 c6-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
-      case "related" =>
-        assertStats(result, nodesCreated = 0)
+      case "merge" =>
+        assertStats(result, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
         assert(result.toList.size === 1)
     }
   }
 
   override def parameters(name: String): Map[String, Any] =
     name match {
+      case "parameters=aname" =>
+        Map("value" -> "Bob")
       case "" =>
         Map()
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("name" -> "Alice"),
-    "B" -> Map("name" -> "Bob"),
-    "C" -> Map("name" -> "Chuck"))
+    "A" -> Map("value" -> 10),
+    "B" -> Map("value" -> 20),
+    "C" -> Map("value" -> 30))
 
   def text = """
-###assertion=related
+###assertion=merge parameters=aname
 //
 
-MATCH (n:Person)-[:KNOWS]->(m:Person)
-WHERE n.name="Alice"
+MERGE (n:Person {property: {value}})
+ON CREATE n SET n.created = timestamp()
+ON MATCH  n SET n.access  = n.access+1
 
-RETURN n,m###
+RETURN n###
 
-Node patterns can contain labels, no +START+ required then.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-
-MATCH (n)-->(m)
-
-RETURN n,m###
-
-Any pattern can be used in `MATCH` except the ones containing property maps.
-             """
+Match pattern or create it if it does not exist.
+Uses +ON CREATE n,ON MATCH n+ for conditional updates.
+"""
 }

@@ -78,7 +78,7 @@ Create a node with the given properties.
 ###assertion=create-node-from-map parameters=map
 //
 
-CREATE n = {map}
+CREATE (n {map})
 
 RETURN n###
 
@@ -87,7 +87,7 @@ Create a node with the given properties.
 ###assertion=create-nodes-from-maps parameters=maps
 //
 
-CREATE n = {collectionOfMaps}
+CREATE (n {collectionOfMaps})
 
 RETURN n###
 

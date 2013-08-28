@@ -124,7 +124,7 @@ Minimum numerical value.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-COLLECT(n.property?)
+COLLECT(n.property)
 ###
 
 Collection from the values, ignores `null`.

@@ -23,9 +23,10 @@ Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameter
 .Read Query Structure 
 ["refcard", cardcss="read c2-2 c3-2 c4-2 c5-2"]
 ----
-START
+[START]
 [MATCH]
 [WHERE]
+[WITH [ORDER BY] [SKIP] [LIMIT]]
 RETURN [ORDER BY] [SKIP] [LIMIT]
 ----
 
@@ -42,7 +43,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciid
 .Write-Only Query Structure 
 ["refcard", cardcss="write c2-2 c4-4 c5-4 c6-3"]
 ----
-CREATE [UNIQUE]*
+(CREATE [UNIQUE] | MERGE)*
 [SET|DELETE|FOREACH]*
 [RETURN [ORDER BY] [SKIP] [LIMIT]]
 ----
@@ -53,7 +54,8 @@ CREATE [UNIQUE]*
 START
 [MATCH]
 [WHERE]
-[CREATE [UNIQUE]]*
+[WITH [ORDER BY] [SKIP] [LIMIT]]
+[CREATE [UNIQUE]|MERGE]*
 [SET|DELETE|FOREACH]*
 [RETURN [ORDER BY] [SKIP] [LIMIT]]
 ----
@@ -61,6 +63,8 @@ START
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create-unique.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/merge.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciidoc[]
 
