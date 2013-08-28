@@ -32,7 +32,7 @@ class CypherParserImpl extends CypherParser
   with Statement
   with Expressions {
 
-  def SingleStatement : Rule1[ast.Statement] = rule {
+  val SingleStatement : Rule1[ast.Statement] = rule {
     WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
   }
 
