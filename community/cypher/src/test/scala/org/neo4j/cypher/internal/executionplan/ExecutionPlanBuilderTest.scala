@@ -114,8 +114,12 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
   }
 }
 
-class FakeExecPlanBuilder(gds: GraphDatabaseService, myBuilders: Seq[PlanBuilder]) extends ExecutionPlanBuilder(gds) {
-  override lazy val builders = myBuilders
+class FakeExecPlanBuilder(gds: GraphDatabaseService, builders: Seq[PlanBuilder]) extends ExecutionPlanBuilder(gds) {
+  override val phases: Seq[Phase] = Seq(
+    new Phase {
+      def myBuilders: Seq[PlanBuilder] = builders
+    }
+  )
 }
 
 // This is a builder that accepts everything, but changes nothing
