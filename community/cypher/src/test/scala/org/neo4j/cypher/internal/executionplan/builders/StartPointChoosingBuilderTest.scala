@@ -367,7 +367,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // When
     val plan = assertAccepts(query)
 
-    assert(plan.query.start.toList === List(Unsolved(NodeById(identifier, nodeId))))
+    assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(identifier, nodeId))))
   }
 
   @Test

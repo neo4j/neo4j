@@ -26,9 +26,9 @@ import collection.JavaConverters._
 object GetGraphElements {
   def getElements[T: Manifest](data: Any, name: String, getElement: Long => T): Iterator[T] = {
     def castElement(x: Any): T = x match {
-      case i: Int    => getElement(i)
-      case i: Long   => getElement(i)
-      case i: String => getElement(i.toLong)
+      case i: Int     => getElement(i)
+      case i: Long    => getElement(i)
+      case i: String  => getElement(i.toLong)
       case element: T => element
     }
 

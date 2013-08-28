@@ -29,6 +29,7 @@ import org.neo4j.cypher.{IndexHintException, InternalException}
 import org.neo4j.cypher.internal.data.SimpleVal._
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.EntityNotFoundException
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {
 
@@ -74,7 +75,18 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   val nodeById: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ NodeById(varName, ids)) =>
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        GetGraphElements.getElements[Node](ids(m)(state), varName, state.query.nodeOps.getById)
+        GetGraphElements.getElements[Node](ids(m)(state), varName, (id) =>
+          state.query.nodeOps.getById(id))
+      }
+    case (planContext, startItem@NodeByIdOrEmpty(varName, id)) =>
+      asProducer[Node](startItem) {
+        (m: ExecutionContext, state: QueryState) =>
+          try {
+            val node = state.query.nodeOps.getById(id)
+            Iterator(node)
+          } catch {
+            case _: EntityNotFoundException => Iterator.empty
+          }
       }
   }
 
@@ -148,7 +160,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   val relationshipById: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
     case (planContext, startItem @ RelationshipById(varName, ids)) =>
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
-        GetGraphElements.getElements[Relationship](ids(m)(state), varName, state.query.relationshipOps.getById)
+        GetGraphElements.getElements[Relationship](ids(m)(state), varName, (id) =>
+          state.query.relationshipOps.getById(id))
       }
   }
 

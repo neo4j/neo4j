@@ -38,7 +38,7 @@ class RelationshipByIdBuilder(graph: GraphDatabaseService) extends LegacyPlanBui
 
     val pipe = new RelationshipStartPipe(p, key,
       EntityProducer[Relationship]("Rels(RelationshipById)") { (ctx: ExecutionContext, state: QueryState) =>
-        getElements[Relationship](expression(ctx)(state), key, state.query.relationshipOps.getById)
+        getElements[Relationship](expression(ctx)(state), key, (id) => state.query.relationshipOps.getById(id))
     } )
 
     val remainingQ: Seq[QueryToken[StartItem]] = q.start.filterNot(_ == startItemToken) :+ startItemToken.solve
