@@ -2407,6 +2407,29 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def not_without_parenthesis() {
+    test(vFrom2_0 diff List(vLegacy), "start a = node(1) where not true or false return a",
+      Query.
+        start(NodeById("a", 1)).
+        where(Or(Not(True()), Not(True()))).
+        returns(ReturnItem(Identifier("a"), "a"))
+    )
+  }
+
+  @Test def not_with_pattern() {
+    test(vFrom2_0, "MATCH (admin) WHERE NOT (admin)-[:MEMBER_OF]->() RETURN admin",
+      Query.
+        matches(SingleNode("admin")).
+        where(Not(PatternPredicate(Seq(RelatedTo("admin", "  UNNAMED47", "  UNNAMED31", Seq("MEMBER_OF"), Direction.OUTGOING, optional = false))))).
+        returns(ReturnItem(Identifier("admin"), "admin")))
+
+    test(vFrom2_0, "MATCH (admin) WHERE NOT ((admin)-[:MEMBER_OF]->()) RETURN admin",
+      Query.
+        matches(SingleNode("admin")).
+        where(Not(PatternPredicate(Seq(RelatedTo("admin", "  UNNAMED48", "  UNNAMED32", Seq("MEMBER_OF"), Direction.OUTGOING, optional = false))))).
+        returns(ReturnItem(Identifier("admin"), "admin")))
+  }
+
   @Test def full_path_in_create() {
     def query(DIFFERENCE: String) = {
       val secondQ = Query.
