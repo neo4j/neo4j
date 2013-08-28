@@ -58,6 +58,8 @@ trait LegacyPlanBuilder extends PlanBuilder {
 // The priorities are all here, to make it easy to change and compare
 // Lower priority wins
 object PlanBuilder extends Enumeration {
+  val Lowest = -1000
+
   val CachedExpressions = -100
   val IndexLookup = -100
   val TraversalMatcher = -11

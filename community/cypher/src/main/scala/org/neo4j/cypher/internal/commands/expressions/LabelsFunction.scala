@@ -33,7 +33,7 @@ case class LabelsFunction(nodeExpr: Expression) extends Expression {
     case n: Node =>
       val queryCtx: QueryContext = state.query
       queryCtx.getLabelsForNode(n.getId).map { queryCtx.getLabelName }.toList
-    case UnboundValue =>
+    case UnboundValue | null =>
       null
     case _ =>
       throw new CypherTypeException("labels() expected a Node but was called with something else")

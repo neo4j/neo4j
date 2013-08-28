@@ -29,4 +29,6 @@ class UnionPipe(in: Seq[Pipe], columns:List[String]) extends Pipe {
   def executionPlanDescription: PlanDescription = PlanDescription(this, "Union", "in" -> in.map(_.executionPlanDescription))
 
   def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> AnyType()).toMap)
+
+  override val sources: Seq[Pipe] = in
 }

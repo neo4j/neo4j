@@ -22,20 +22,23 @@ package org.neo4j.cypher.internal.executionplan
 import scala.collection.Seq
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{HasLabel, NodeById, Query, ReturnItem}
+import org.neo4j.cypher.internal.commands.{NodeById, Query}
 import org.neo4j.graphdb.{DynamicLabel, GraphDatabaseService}
 import org.scalatest.Assertions
 import org.neo4j.cypher.{PlanDescription, GraphDatabaseTestBase, InternalException}
 import java.util.concurrent._
 import org.neo4j.cypher.internal.spi.PlanContext
-import org.neo4j.cypher.internal.pipes.{FilterPipe, ExecuteUpdateCommandsPipe, Pipe, QueryState}
+import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.commands.values.TokenType.{Label, PropertyKey}
+import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.mutation.DeletePropertyAction
+import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed with MockitoSugar {
   @Test def should_not_accept_returning_the_input_execution_plan() {
@@ -108,7 +111,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
     val labelId = queryContext.getLabelId("Person")
 
     // when
-    val predicate = execPlanBuilder.buildPipes(planContext, q)._1.asInstanceOf[FilterPipe].predicate
+    val predicate = execPlanBuilder.buildPipes(planContext, q)._1.sources.head.asInstanceOf[FilterPipe].predicate
 
     assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
   }

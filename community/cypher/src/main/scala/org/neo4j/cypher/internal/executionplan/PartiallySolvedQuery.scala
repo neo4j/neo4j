@@ -53,6 +53,7 @@ object PartiallySolvedQuery {
       namedPaths = q.namedPaths.map(Unsolved(_)),
       aggregateToDo = q.aggregation.isDefined,
       extracted = false,
+      bound = false,
       tail = q.tail.map(q => PartiallySolvedQuery(q))
     )
   }
@@ -69,6 +70,7 @@ object PartiallySolvedQuery {
     namedPaths = Seq(),
     aggregateToDo = false,
     extracted = false,
+    bound = false,
     tail = None
   )
 }
@@ -92,6 +94,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 namedPaths: Seq[QueryToken[NamedPath]],
                                 aggregateToDo: Boolean,
                                 extracted: Boolean,
+                                bound: Boolean,
                                 tail: Option[PartiallySolvedQuery]) extends AstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
 
   val matchPattern : MatchPattern = MatchPattern(patterns.map(_.token))
@@ -104,7 +107,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
     aggregation.forall(_.solved) &&
     sort.forall(_.solved) &&
     slice.forall(_.solved) &&
-    namedPaths.forall(_.solved)
+    namedPaths.forall(_.solved) &&
+    bound
 
   def readyToAggregate = !(start.exists(_.unsolved) ||
     patterns.exists(_.unsolved) ||
@@ -187,7 +191,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
   def containsUpdates = start.exists(_.token.mutating) || updates.nonEmpty
 }
 
-case class  ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean=false)
+case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean=false)
 
 trait PatternGraphBuilder {
   def buildPatternGraph(patterns: Seq[Pattern]): PatternGraph = {

@@ -80,7 +80,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     var continue = true
     var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)
 
-    while (continue) {
+   while (continue) {
       phases.foreach { phase =>
         planInProgress = phase(planInProgress, context)
       }
@@ -186,6 +186,7 @@ The Neo4j Team""")
   val phases: Seq[Phase] = Seq(
     prepare,  /* Prepares the query by rewriting it before other plan builders start working on it. */
     matching, /* Pulls in data from the stores, adds named paths, and filters the result */
+    binding,  /* Ensure that optionals are turned into nulls */
     updates,  /* Plans update actions */
     extract,  /* Handles RETURN and WITH expression */
     finish    /* Prepares the return set so it looks like the user specified */
@@ -211,12 +212,17 @@ The Neo4j Team""")
     )
   }
 
+  def binding = new Phase {
+    def myBuilders: Seq[PlanBuilder] = Seq(
+      new OptionalsBinderBuilder
+    )
+  }
+
   def updates = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new CreateNodesAndRelationshipsBuilder(graph),
       new UpdateActionBuilder(graph),
-      new NamedPathBuilder,
-      new FilterBuilder
+      new NamedPathBuilder
     )
   }
 

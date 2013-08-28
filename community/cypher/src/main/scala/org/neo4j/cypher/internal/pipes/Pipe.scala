@@ -47,6 +47,8 @@ trait Pipe {
    * Please make sure to add a test for this implementation @ PipeLazynessTest
    */
   def isLazy:Boolean = true
+
+  def sources: Seq[Pipe] = Seq.empty
 }
 
 object NullPipe extends Pipe {
@@ -74,4 +76,6 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     throw new ThisShouldNotHappenError("Andres", "This method should never be called on PipeWithSource")
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
+
+  override val sources: Seq[Pipe] = Seq(source)
 }
