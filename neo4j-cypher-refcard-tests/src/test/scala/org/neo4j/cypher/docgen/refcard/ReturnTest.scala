@@ -29,19 +29,19 @@ class ReturnTest extends RefcardTest with StatisticsChecker {
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "all-nodes" =>
-        assertStats(result, deletedNodes = 0, relationshipsCreated = 0, propertiesSet = 0, deletedRelationships = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 4)
       case "alias" =>
-        assertStats(result, deletedNodes = 0, relationshipsCreated = 0, propertiesSet = 0, deletedRelationships = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
         assert(result.dumpToString.contains("columnName"))
       case "unique" =>
-        assertStats(result, deletedNodes = 0, relationshipsCreated = 0, propertiesSet = 0, deletedRelationships = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 1)
       case "skip" =>
-        assertStats(result, deletedNodes = 0)
+        assertStats(result, nodesDeleted = 0)
         assert(result.toList.size === 3)
       case "skiplimit" =>
-        assertStats(result, deletedNodes = 0)
+        assertStats(result, nodesDeleted = 0)
         assert(result.toList.size === 2)
     }
   }

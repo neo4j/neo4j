@@ -28,7 +28,7 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
-import org.neo4j.test.{ GeoffService, ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
+import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 

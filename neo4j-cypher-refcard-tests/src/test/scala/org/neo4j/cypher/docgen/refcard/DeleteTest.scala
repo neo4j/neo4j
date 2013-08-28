@@ -29,7 +29,7 @@ class DeleteTest extends RefcardTest with StatisticsChecker {
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "delete" =>
-        assertStats(result, nodesCreated = 1, deletedNodes = 1, deletedRelationships = 1)
+        assertStats(result, nodesCreated = 1, nodesDeleted = 1, relationshipsDeleted = 1)
         assert(result.toList.size === 0)
       case "delete-prop" =>
         assertStats(result, nodesCreated = 1, propertiesSet = 2)
