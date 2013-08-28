@@ -29,25 +29,25 @@ trait Expressions extends Parser
 
   def Expression = Expression12
 
-  private def Expression12 : Rule1[ast.Expression] = rule {
+  private def Expression12 : Rule1[ast.Expression] = rule("an expression") {
     Expression11 ~ zeroOrMore(WS ~ (
       keyword("OR") ~> identifier ~~ Expression11 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression11 : Rule1[ast.Expression] = rule {
+  private def Expression11 : Rule1[ast.Expression] = rule("an expression") {
     Expression10 ~ zeroOrMore(WS ~ (
         keyword("XOR") ~> identifier ~~ Expression10 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression10 : Rule1[ast.Expression] = rule {
+  private def Expression10 : Rule1[ast.Expression] = rule("an expression") {
     Expression9 ~ zeroOrMore(WS ~ (
         keyword("AND") ~> identifier ~~ Expression9 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression9 : Rule1[ast.Expression] = rule {
+  private def Expression9 : Rule1[ast.Expression] = rule("an expression") {
     Expression8 ~ zeroOrMore(WS ~ (
         operator("=") ~> identifier ~~ Expression8 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operator("<>") ~> identifier ~~ Expression8 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
@@ -55,7 +55,7 @@ trait Expressions extends Parser
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression8 : Rule1[ast.Expression] = rule {
+  private def Expression8 : Rule1[ast.Expression] = rule("an expression") {
     Expression7 ~ zeroOrMore(WS ~ (
         operator("<") ~> identifier ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operator(">") ~> identifier ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
@@ -66,14 +66,14 @@ trait Expressions extends Parser
 
   private def Expression7 = Expression6
 
-  private def Expression6 : Rule1[ast.Expression] = rule {
+  private def Expression6 : Rule1[ast.Expression] = rule("an expression") {
     Expression5 ~ zeroOrMore(WS ~ (
         operator("+") ~> identifier ~~ Expression5 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operator("-") ~> identifier ~~ Expression5 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression5 : Rule1[ast.Expression] = rule {
+  private def Expression5 : Rule1[ast.Expression] = rule("an expression") {
     Expression4 ~ zeroOrMore(WS ~ (
         operator("*") ~> identifier ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operator("/") ~> identifier ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
@@ -84,7 +84,7 @@ trait Expressions extends Parser
 
   private def Expression4 = Expression3
 
-  private def Expression3 : Rule1[ast.Expression] = rule {
+  private def Expression3 : Rule1[ast.Expression] = rule("an expression") {
     Expression2 ~ zeroOrMore(WS ~ (
         PropertyLookup
       | NodeLabels ~>> token ~~> ast.HasLabels
@@ -95,20 +95,19 @@ trait Expressions extends Parser
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression2 : Rule1[ast.Expression] = rule (
-      Parameter
-    | "(" ~~ Expression ~~ ")"
-    | ListComprehension
-    | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
+  private def Expression2 : Rule1[ast.Expression] = rule("an expression") (
+      NumberLiteral
     | StringLiteral
-    | NumberLiteral
-    | MapLiteral
-    | group(keyword("NOT") ~> identifier ~~ ("(" ~~ Expression ~~ ")" | Expression)) ~>> token ~~> (ast.FunctionInvocation(_, _, _))
-    | keyword("NULL") ~>> token ~~> ast.Null
+    | Parameter
     | keyword("TRUE") ~>> token ~~> ast.True
     | keyword("FALSE") ~>> token ~~> ast.False
+    | group(keyword("NOT") ~> identifier ~~ Expression2) ~>> token ~~> (ast.FunctionInvocation(_, _, _))
+    | keyword("NULL") ~>> token ~~> ast.Null
     | CaseExpression
     | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~>> token ~~> ast.CountStar
+    | MapLiteral
+    | ListComprehension
+    | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
     | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.FilterExpression
     | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ ")") ~>> token ~~> ast.ExtractExpression
     | group(keyword("REDUCE") ~~ "(" ~~ Identifier ~~ "=" ~~ Expression ~~ "," ~~ IdInColl ~~ "|" ~~ Expression ~~ ")") ~>> token ~~> ast.ReduceExpression
@@ -117,8 +116,9 @@ trait Expressions extends Parser
     | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.NoneIterablePredicate
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.SingleIterablePredicate
     | ShortestPathPattern ~~> ast.ShortestPathExpression
-    | FunctionInvocation
     | RelationshipsPattern ~~> ast.PatternExpression
+    | "(" ~~ Expression ~~ ")"
+    | FunctionInvocation
     | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.HasLabels
     | Identifier
   )
