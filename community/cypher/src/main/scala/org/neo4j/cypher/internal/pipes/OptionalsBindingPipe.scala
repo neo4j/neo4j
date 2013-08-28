@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.commands.values.UnboundValue
+import org.neo4j.cypher.internal.commands.values.{NotApplicable, NotBound}
 
 class OptionalsBindingPipe(source: Pipe) extends PipeWithSource(source) {
 
@@ -39,7 +39,8 @@ class OptionalsBindingPipe(source: Pipe) extends PipeWithSource(source) {
   }
 
   private def bindValue(v: Any): Any = v match {
-    case UnboundValue => null
-    case _            => v
+    case NotBound      => null
+    case NotApplicable => null
+    case _             => v
   }
 }

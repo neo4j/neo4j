@@ -25,18 +25,23 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.commands.values.{NotBound, NotApplicable, Ternary}
 
 abstract class InCollection(collection: Expression, id: String, predicate: Predicate)
-  extends Predicate
+  extends TernaryPredicate
   with CollectionSupport
   with Closure {
 
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
+  def seqMethod[U](f: Seq[U])(p: (U) => Ternary): Ternary
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
-    val seq = makeTraversable(collection(m)).toSeq
-
-    seqMethod(seq)(item =>predicate.isMatch(m.newWith(id -> item)))
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary = {
+    val value = collection(m)
+    value match {
+      case NotBound => NotApplicable
+      case coll     =>
+        val seq = makeTraversable(coll).toSeq
+        seqMethod(seq)(item => predicate.ternaryIsMatch(m.newWith(id -> item)))
+    }
   }
 
   def name: String
@@ -57,7 +62,7 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
 
 case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate)
   extends InCollection(collection, symbolName, inner) {
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
+  override def seqMethod[U](f: Seq[U])(p: (U) => Ternary): Ternary = Ternary.forall(f)(p)
 
   def name = "all"
 
@@ -66,7 +71,7 @@ case class AllInCollection(collection: Expression, symbolName: String, inner: Pr
 
 case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate)
   extends InCollection(collection, symbolName, inner) {
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
+  override def seqMethod[U](f: Seq[U])(p: (U) => Ternary): Ternary = Ternary.exists(f)(p)
 
   def name = "any"
 
@@ -75,7 +80,7 @@ case class AnyInCollection(collection: Expression, symbolName: String, inner: Pr
 
 case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate)
   extends InCollection(collection, symbolName, inner) {
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
+  override def seqMethod[U](f: Seq[U])(p: (U) => Ternary): Ternary = Ternary.none(f)(p)
 
   def name = "none"
 
@@ -84,7 +89,7 @@ case class NoneInCollection(collection: Expression, symbolName: String, inner: P
 
 case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate)
   extends InCollection(collection, symbolName, inner) {
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
+  override def seqMethod[U](f: Seq[U])(p: (U) => Ternary): Ternary = Ternary.single(f)(p)
 
   def name = "single"
 

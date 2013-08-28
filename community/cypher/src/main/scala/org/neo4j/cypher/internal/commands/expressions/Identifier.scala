@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 object Identifier {
   def isNamed(x: String) = !notNamed(x)

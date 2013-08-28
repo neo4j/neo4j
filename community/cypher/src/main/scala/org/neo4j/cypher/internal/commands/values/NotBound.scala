@@ -25,8 +25,19 @@ package org.neo4j.cypher.internal.commands.values
  * It currently only may occur due to patterns containing optional relationships which may introduce
  * unbound identifiers.  It mainly serves to differentiate this situation from plain null values.
  */
-case object UnboundValue {
-  def is(v: Any): Boolean = v == this
+case object NotBound {
 
-  override def toString = "UNBOUND_VALUE"
+  def apply(v: Any) = v match {
+    case NotBound => true
+    case _        => false
+  }
+
+  def unapply(v: Any) = v match {
+    case NotBound => Some(NotBound)
+    case _        => None
+  }
+
+  def orNull(v: Any): Boolean = null == v || NotBound(v)
+
+  override def toString() = "<not_bound>"
 }
