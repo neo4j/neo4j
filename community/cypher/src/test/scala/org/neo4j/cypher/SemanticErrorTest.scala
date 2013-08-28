@@ -128,6 +128,17 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
+  @Test def shouldFailWhenReduceUsedWithWrongSeparator() {
+    test("""
+        |START s=node(1), e=node(2)
+        |MATCH topRoute = (s)<-[:CONNECTED_TO*1..3]-(e)
+        |RETURN reduce(weight=0, r in relationships(topRoute) : weight+r.cost) AS score
+        |ORDER BY score ASC LIMIT 1
+      """.stripMargin,
+      v2_0 -> "Unknown function 'reduce' (line 4, column 8)"
+    )
+  }
+
   private def test(query: String, variants: (CypherVersion, String)*) {
     for ((versions, message) <- variants) {
       test(versions, query, message)
