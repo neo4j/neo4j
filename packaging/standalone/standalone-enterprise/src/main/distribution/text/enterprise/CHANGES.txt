@@ -1,7 +1,9 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
-1.9.3
------
+1.9.3 (2013-08-30)
+------------------
+Logging in console is now consistent across modules and more informative
+
 HA:
 o Fix for wrong snapshot processing on cluster join, leading to failure to switch to Slave
 o Fix in SlaveIdGenerator which could lead to records being marked as not in use
@@ -12,6 +14,7 @@ o Remove hard dependency on Logback
 o Introduction of logical_log_rotation_threshold to control log rotation.
 o Autoconfigurator can handle cases where physical memory is less than the configured JVM heap
 o Fixes index out of bounds errors when iterating over relationships
+o Fixes race in persistent window pool which might lead to inconsistent data
 
 Cypher:
 o Fixes problems with extra columns showing up in some conditions
@@ -25,6 +28,10 @@ o Stop keeping norms in Lucene indexes, saving space and memory
 
 Com:
 o Fix for a race between Slave shutting down a channel and Master reaping it, which led to exceptions on the Master side
+
+Cluster:
+o Fixes issue which might lead to eternal elections
+o UUID for Available messages is now ignored, allowing for upgrades from 1.9.2
 
 1.9.2 (2013-07-16)
 ------------------
