@@ -42,6 +42,8 @@ import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
@@ -246,7 +248,9 @@ public class ClusterClient extends LifecycleAdapter
     private final ProtocolServer server;
 
     public ClusterClient( final Configuration config, final Logging logging,
-                          ElectionCredentialsProvider electionCredentialsProvider )
+                          ElectionCredentialsProvider electionCredentialsProvider,
+                          ObjectInputStreamFactory objectInputStreamFactory,
+                          ObjectOutputStreamFactory objectOutputStreamFactory )
     {
         MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy(
                 new FixedTimeoutStrategy( config.defaultTimeout() ) )
@@ -302,7 +306,7 @@ public class ClusterClient extends LifecycleAdapter
 
         server = protocolServerFactory.newProtocolServer( new InstanceId( config.getServerId() ), timeoutStrategy,
                 receiver, sender,
-                acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor );
+                acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory, objectOutputStreamFactory );
 
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
