@@ -198,11 +198,14 @@ public enum ElectionState
                                                     "Election already in progress for role " + roleName );
                                         }
                                     }
-                                } else
+                                }
+                                else
                                 {
+                                    List<InstanceId> aliveInstances = Iterables.toList( context.getAlive() );
+                                    Collections.sort( aliveInstances );
                                     outgoing.offer( message.setHeader( Message.TO,
-                                            context.getClusterContext().getConfiguration().getUriForId( Iterables.first(
-                                                    context.getHeartbeatContext().getAlive() ) ).toString() ) );
+                                            context.getClusterContext().getConfiguration().getUriForId(
+                                                    Iterables.first( aliveInstances ) ).toString() ) );
                                 }
                             }
                             break;
