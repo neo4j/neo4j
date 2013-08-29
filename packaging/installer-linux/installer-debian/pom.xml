@@ -5,11 +5,11 @@
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
     <version>1.9.3-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
+    <relativePath>../../..</relativePath>
   </parent>
 
   <groupId>org.neo4j</groupId>
-  <artifactId>installer-linux</artifactId>
+  <artifactId>neo4j-installer-debian</artifactId>
   <version>1.9.3-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -31,7 +31,7 @@
 
     <buildnumber>0</buildnumber>
     
-    <neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
+    <neo4j.debian.maintainer>Admins &lt;admins@neotechnology.com&gt;</neo4j.debian.maintainer>
     <licensing.phase>none</licensing.phase>
   </properties>
 

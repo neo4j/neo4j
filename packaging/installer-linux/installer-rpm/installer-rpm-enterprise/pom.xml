@@ -28,7 +28,7 @@
     <properties>
         <short-name>installer-rpm</short-name>
         <neo4j.version>${project.version}</neo4j.version>
-        <license-text.header>GPL-3-header.txt</license-text.header>
+        <license-text.header>${neo4j.license}</license-text.header>
         <standalone.path>${project.baseDir}/../../../../standalone</standalone.path>
         <edition>enterprise</edition>
         <rpm.name>neo4j-enterprise</rpm.name>

@@ -9,7 +9,8 @@
         <relativePath>../../..</relativePath>
     </parent>
     <properties>
-        <license-text.header>GPL-3-header.txt</license-text.header>
+        <neo4j.license>AGPL-3-header.txt</neo4j.license>
+
         <licensing.phase>none</licensing.phase>
     </properties>
 
