@@ -47,16 +47,16 @@ class ExtractExpressionTest extends Assertions {
   }
 
   @Test
-  def shouldRaiseSyntaxErrorIfPredicateSpecified() {
+  def shouldRaiseSemanticErrorIfPredicateSpecified() {
     val extract = ExtractExpression(Identifier("x", DummyToken(5, 6)), dummyExpression, Some(True(DummyToken(5,6))), Some(extractExpression), DummyToken(0, 10))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(SemanticError("EXTRACT should not contain a WHERE predicate", DummyToken(0, 10))), result.errors)
   }
 
   @Test
-  def shouldRaiseSyntaxErrorIfMissingExtractExpression() {
+  def shouldRaiseSemanticErrorIfMissingExtractExpression() {
     val extract = ExtractExpression(Identifier("x", DummyToken(5, 6)), dummyExpression, None, None, DummyToken(0, 10))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("EXTRACT requires an extract expression", DummyToken(0, 10))), result.errors)
+    assertEquals(Seq(SemanticError("EXTRACT requires '| expression' (an extract expression)", DummyToken(0, 10))), result.errors)
   }
 }
