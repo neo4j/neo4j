@@ -22,7 +22,7 @@ import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
 class PredicatesTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
+  val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Predicates"
   val css = "general c3-3 c4-2 c5-2 c6-4"
 
@@ -98,6 +98,16 @@ HAS(n.property)
 RETURN n###
 
 Use functions.
+
+###assertion=returns-one
+MATCH (n:Person)
+WHERE
+
+n:Person
+
+RETURN n###
+
+Check for node labels.
 
 ###assertion=returns-none
 START n=node(%A%), m=node(%B%)

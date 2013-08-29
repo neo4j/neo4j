@@ -70,6 +70,24 @@ TYPE(a_relationship)###
 
 String representation of the relationship type.
 
+###assertion=returns-one
+START n=node(%A%), m=node(%B%)
+MATCH (n)-[a_relationship]->(m)
+RETURN
+
+STARTNODE(a_relationship)###
+
+Start node of the relationship.
+
+###assertion=returns-one
+START n=node(%A%), m=node(%B%)
+MATCH (n)-[a_relationship]->(m)
+RETURN
+
+ENDNODE(a_relationship)###
+
+End node of the relationship.
+
 ###assertion=returns-one parameters=default
 START n=node(%A%)
 RETURN

@@ -4,10 +4,10 @@
 
 Key principles and capabilities of Cypher are as follows:
 
-
 * Cypher matches patterns of nodes and relationship in the graph, to extract information or modify the data.
 * Cypher has the concept of identifiers which denote named, bound elements and parameters.
-* Cypher can create, update, and remove nodes, relationships, and properties.
+* Cypher can create, update, and remove nodes, relationships, labels, and properties.
+* Cypher manages indexes and constraints.
 
 ++++
 <div class="paragraph"><p>You can try cypher snippets live in the Neo4j Console at 
@@ -70,6 +70,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciido
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asciidoc[]
 
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.asciidoc[]
 
 ++++
 <div class="col cardgeneral c3-2 c6-4"><div class="blk">
@@ -92,6 +93,8 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asci
 ++++
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/labels.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]
 

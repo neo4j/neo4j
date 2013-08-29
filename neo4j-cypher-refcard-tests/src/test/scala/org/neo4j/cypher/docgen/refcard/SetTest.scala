@@ -22,7 +22,7 @@ import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
 class SetTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
+  val graphDescription = List("ROOT LINK A")
   val title = "SET"
   val css = "write c2-2 c4-4 c5-4 c6-3"
 
@@ -30,10 +30,13 @@ class SetTest extends RefcardTest with StatisticsChecker {
     name match {
       case "set" =>
         assertStats(result, propertiesSet = 1)
-        assert(result.dumpToString.contains("a value"))
+        assert(result.dumpToString().contains("a value"))
+      case "set-label" =>
+        assertStats(result, nodesCreated = 1,labelsAdded = 1)
+        assert(result.dumpToString().contains("Person"))
       case "map" =>
         assertStats(result, nodesCreated = 1, propertiesSet = 1)
-        assert(result.dumpToString.contains("a value"))
+        assert(result.dumpToString().contains("a value"))
     }
   }
 
@@ -45,9 +48,7 @@ class SetTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("value" -> 10),
-    "B" -> Map("value" -> 20),
-    "C" -> Map("value" -> 30))
+    "A" -> Map("value" -> 10))
 
   def text = """
 ###assertion=set parameters=set
@@ -68,5 +69,14 @@ RETURN n.property###
 
 Set all properties.
 This will remove any existing properties.
+
+###assertion=set-label
+CREATE (n)
+
+SET n:Person
+
+RETURN labels(n)###
+
+Adds a label `Person` to a node.
 """
 }

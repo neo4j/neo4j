@@ -22,7 +22,7 @@ import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
 class PatternsTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
+  val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Patterns"
   val css = "general c2-2 c3-2 c6-2"
 
@@ -60,6 +60,24 @@ MATCH
 RETURN n,m###
 
 A relationship from `n` to `m` exists.
+
+###assertion=related
+MATCH
+
+(n:Person)
+
+RETURN n###
+
+Matches nodes with that label `Person`.
+
+###assertion=related
+MATCH
+
+(n:Person)-->(m)
+
+RETURN n,m###
+
+Node `n` labeled `Person` has a relationship to `m`.
 
 ###assertion=related
 START n=node(%A%), m=node(%B%)
@@ -140,5 +158,5 @@ CREATE UNIQUE
 RETURN m###
 
 Match or set properties in `CREATE` or `CREATE UNIQUE` clauses.
-"""
+             """
 }

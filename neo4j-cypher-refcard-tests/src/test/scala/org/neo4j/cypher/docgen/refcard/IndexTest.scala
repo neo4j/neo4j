@@ -18,62 +18,60 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
+
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class WithTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT FRIEND A", "A FRIEND B", "B FRIEND C", "C FRIEND ROOT")
-  val title = "WITH"
-  val css = "read c2-2 c3-3 c4-3 c5-3 c6-2"
+class IndexTest extends RefcardTest with StatisticsChecker {
+  val graphDescription = List("A:Person KNOWS B:Person")
+  val title = "Index"
+  val css = "write c4-4 c5-4 c6-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
-      case "friends" =>
-        assertStats(result, nodesCreated = 0)
+      case "create-index" =>
+//        assertStats(result, indexAdded = 1)
         assert(result.toList.size === 0)
-      case "with-limit" =>
+      case "drop-index" =>
+//        assertStats(result, indexDeleted = 1)
+        assert(result.toList.size === 0)
+      case "match" =>
         assertStats(result, nodesCreated = 0)
-        assert(result.toList.size === 3)
+        assert(result.toList.size === 1)
     }
   }
 
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "parameters=name" =>
-        Map("name" -> "Andreas")
-      case _ => Map()
+      case "aname" =>
+        Map("value" -> "Alice")
+      case _ =>
+        Map()
     }
 
-  override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("name" -> "Andreas"),
-    "B" -> Map("value" -> 20),
-    "C" -> Map("value" -> 30))
-
   def text = """
-###assertion=friends parameters=name
+###assertion=create-index
 //
 
-START user=node:nodeIndexName(name = {name})
-MATCH (user)-[:FRIEND]-(friend)
-WITH user, count(friend) as friends
-WHERE friends > 10
-RETURN user
-
+CREATE INDEX ON :Person(name)
 ###
 
-The `WITH` syntax is similar to `RETURN`.
-It separates query parts explicitly, allowing you to declare which identifiers to carry over to the next part.
+Create an index on the label `Person` and property `name`.
+###assertion=drop-index
+//
 
-###assertion=with-limit
-MATCH (user)-[:FRIEND]-(friend)
-
-WITH user, count(friend) as friends
-ORDER BY friends DESC
-SKIP 1 LIMIT 3
-
-RETURN user
+DROP INDEX ON :Person(name)
 ###
 
-You can also use `ORDER BY` and `SKIP` and `LIMIT` with `WITH`.
-             """
+Drop the index on the label `Person` and property `name`.
+###assertion=match parameters=aname
+//
+
+MATCH (n:Person)
+  WHERE n.name = {value}
+###
+
+Index is used automatically for equality comparison of properties on indexed label.
+Only one index is used per query.
+"""
 }

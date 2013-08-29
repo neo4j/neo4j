@@ -91,63 +91,28 @@ The `substring_length` argument is optional.
 START n=node(%ROOT%)
 RETURN
 
-LEFT({original}, {substring_length})
+LEFT({original}, {substring_length}),
+  RIGHT({original}, {substring_length})
 ###
 
-The first part of a string.
+The first part of a string. The last part of the string.
 
 ###assertion=returns-one parameters=sub
 START n=node(%ROOT%)
 RETURN
 
-RIGHT({original}, {substring_length})
+TRIM({original}), LTRIM({original}), RTRIM({original})
 ###
 
-The last part of a string.
+Trim all whitespace, or on left or right side.
 
 ###assertion=returns-one parameters=sub
 START n=node(%ROOT%)
 RETURN
 
-LTRIM({original})
+UPPER({original}), LOWER({original})
 ###
 
-No whitespace on the left side.
-
-###assertion=returns-one parameters=sub
-START n=node(%ROOT%)
-RETURN
-
-RTRIM({original})
-###
-
-No whitespace on the right side.
-
-###assertion=returns-one parameters=sub
-START n=node(%ROOT%)
-RETURN
-
-TRIM({original})
-###
-
-No whitespace on the left or right side.
-
-###assertion=returns-one parameters=sub
-START n=node(%ROOT%)
-RETURN
-
-LOWER({original})
-###
-
-Lowercase.
-
-###assertion=returns-one parameters=sub
-START n=node(%ROOT%)
-RETURN
-
-UPPER({original})
-###
-
-Uppercase.
-"""
+UPPERCASE and lowercase.
+             """
 }

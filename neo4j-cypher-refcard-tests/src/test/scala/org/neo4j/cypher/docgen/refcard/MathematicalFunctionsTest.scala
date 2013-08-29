@@ -22,7 +22,7 @@ import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
 class MathematicalFunctionsTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
+  val graphDescription = List("ROOT KNOWS A")
   val title = "Mathematical Functions"
   val css = "general c2-2 c3-2 c4-4 c5-3 c6-5"
 
@@ -42,16 +42,10 @@ class MathematicalFunctionsTest extends RefcardTest with StatisticsChecker {
       case "parameters=value" =>
         Map("value" -> "Bob")
       case "parameters=expression" =>
-        Map("numerical_expression" -> 16)
+        Map("numerical_expression" -> .5)
       case "" =>
         Map()
     }
-
-  override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("property" -> "Andrés"),
-    "B" -> Map("property" -> "Tobias"),
-    "C" -> Map("property" -> "Chris"),
-    "ROOT" -> Map("property" -> 1))
 
   def text = """
 ###assertion=returns-one parameters=expression
@@ -67,10 +61,28 @@ The absolute value.
 START n=node(%ROOT%)
 RETURN
 
+RAND()
+###
+
+A random value. Returns a new value for each call. Also useful for selecting subset or random ordering.
+
+###assertion=returns-one parameters=expression
+START n=node(%ROOT%)
+RETURN
+
 ROUND({numerical_expression})
 ###
 
 Round to the nearest integer.
+
+###assertion=returns-one parameters=expression
+START n=node(%ROOT%)
+RETURN
+
+FLOOR({numerical_expression})
+###
+
+The integral part of the decimal number..
 
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
@@ -89,5 +101,34 @@ SIGN({numerical_expression})
 ###
 
 `0` if zero, `-1` if negative, `1` if positive.
-"""
+
+###assertion=returns-one parameters=expression
+START n=node(%ROOT%)
+RETURN
+
+SIN({numerical_expression})
+###
+
+Trigonometric functions, also `COS`, `TAN`, `COT`, `ASIN`, `ACOS`, `ATAN`.
+
+###assertion=returns-one parameters=expression
+START n=node(%ROOT%)
+RETURN
+
+DEGREES({numerical_expression}),
+  RADIANS({numerical_expression}), PI()
+###
+
+Converts radians into degrees, use `RADIANS` for the reverse. `PI` for π.
+
+###assertion=returns-one parameters=expression
+START n=node(%ROOT%)
+RETURN
+
+LOG10({numerical_expression}), LOG({numerical_expression}),
+  EXP({numerical_expression}), E()
+###
+
+Logarithm base 10, natural logarithm, `e` to the power of the paramameter. Value of `e`.
+             """
 }
