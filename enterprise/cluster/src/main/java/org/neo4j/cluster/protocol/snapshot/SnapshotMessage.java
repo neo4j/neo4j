@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.snapshot;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -117,7 +118,14 @@ public enum SnapshotMessage
         {
             in.defaultReadObject();
             buf = new byte[in.readInt()];
-            in.readFully( buf );
+            try
+            {
+                in.readFully( buf );
+            }
+            catch ( EOFException endOfFile )
+            {
+                // do nothing - the stream's ended but the message content got through ok.
+            }
         }
     }
 }
