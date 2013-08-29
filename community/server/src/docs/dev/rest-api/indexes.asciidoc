@@ -5,7 +5,7 @@ NOTE: This documents schema based indexes, a feature that was introduced in Neo4
 
 For more details about schema based indexes and the optional schema in Neo4j, see <<graphdb-neo4j-schema>>.
 
-include::create-schema-index.asciidoc[]
+include::create-index.asciidoc[]
 
 include::list-indexes-for-a-label.asciidoc[]
 
