@@ -524,7 +524,7 @@ a.resize-toggle {
     position: relative;
 }
 
-#console {
+#console.cypherdoc-console {
     height: 100%;
     width: 100%;
 }
