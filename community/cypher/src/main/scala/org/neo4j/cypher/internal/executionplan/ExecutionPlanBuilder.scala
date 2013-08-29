@@ -23,7 +23,7 @@ import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.profiler.Profiler
-import internal.spi.{PlanContext, QueryContext}
+import internal.spi.{PlanContext, QueryContext, QueryType}
 import internal.ClosingIterator
 import internal.commands._
 import internal.symbols.SymbolTable
@@ -50,6 +50,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, true)
+      def queryType: QueryType = inputQuery.queryType
     }
   }
 

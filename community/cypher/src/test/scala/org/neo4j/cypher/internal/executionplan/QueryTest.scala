@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.executionplan
 
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.{AllIdentifiers, CreateNodeStartItem, Query}
+import org.neo4j.cypher.internal.commands.{CreateIndex, DropIndex, CreateUniqueConstraint, DropUniqueConstraint, AllIdentifiers, CreateNodeStartItem, Query, Union, QueryString}
+import org.neo4j.cypher.internal.spi.{SchemaQuery, DataQuery}
 import org.neo4j.cypher.internal.mutation.CreateNode
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.CypherParser
@@ -70,5 +71,15 @@ class QueryTest extends Assertions {
       lastQ = lastQ.tail.get
 
     assert(lastQ.returns.columns === List("a1", "a4"), "Lost the tail while compacting")
+  }
+
+  @Test
+  def should_detect_correct_query_type() {
+    assert( DataQuery === Query.empty.queryType )
+    assert( DataQuery === Union( queries = Seq.empty, queryString = QueryString(""), distinct = true ).queryType )
+    assert( SchemaQuery === CreateIndex("label", Seq.empty, QueryString("") ).queryType )
+    assert( SchemaQuery === DropIndex("label", Seq.empty, QueryString("") ).queryType )
+    assert( SchemaQuery === CreateUniqueConstraint("id", "label", "idForProperty", "propertyKey", QueryString("") ).queryType )
+    assert( SchemaQuery === DropUniqueConstraint("id", "label", "idForProperty", "propertyKey", QueryString("") ).queryType )
   }
 }

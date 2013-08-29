@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.spi
 
-import internal.spi.QueryContext
-import internal.spi.QueryType
+sealed abstract class QueryType
 
-trait ExecutionPlan {
-  def execute(context: QueryContext, params: Map[String, Any]): ExecutionResult
-  def profile(context: QueryContext, params: Map[String,Any]): ExecutionResult
+case object DataQuery extends QueryType
 
-  def queryType: QueryType
-}
+case object SchemaQuery extends QueryType
+
