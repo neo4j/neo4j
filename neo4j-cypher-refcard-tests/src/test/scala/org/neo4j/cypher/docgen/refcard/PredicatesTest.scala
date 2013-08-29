@@ -77,6 +77,16 @@ RETURN n,m###
 
 Use comparison operators.
 
+###assertion=returns-three
+START n=node(*)
+WHERE
+
+HAS(n.property)
+
+RETURN n###
+
+Use functions.
+
 ###assertion=returns-one parameters=anothername
 START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
@@ -87,17 +97,6 @@ HAS(n.property) AND n.property = {value}
 RETURN n,m###
 
 Use boolean operators to combine predicates.
-
-
-###assertion=returns-three
-START n=node(*)
-WHERE
-
-HAS(n.property)
-
-RETURN n###
-
-Use functions.
 
 ###assertion=returns-one
 MATCH (n:Person)
@@ -138,7 +137,7 @@ n.property = {value}
 
 RETURN n###
 
-Non-existing property returns null, fails comparison.
+Non-existing property returns `null`, which can't be compared; evaluates comparison to false.
 
 ###assertion=returns-one parameters=regex
 START n=node(*)
