@@ -90,7 +90,7 @@ trait SimpleTypedExpression { self: Expression =>
 
 case class Identifier(name: String, token: InputToken) extends Expression {
   // check the identifier is defined and, if not, define it so that later errors are suppressed
-  def semanticCheck(ctx: SemanticContext) = s => ensureDefined(AnyType())(s) match {
+  def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
     case Left(error) => SemanticCheckResult.error(declare(AnyType())(s).right.get, error)
   }
@@ -104,8 +104,8 @@ case class Identifier(name: String, token: InputToken) extends Expression {
       (s: SemanticState) => s.declareIdentifier(this, typeGen(s))
   final def implicitDeclaration(possibleType: CypherType, possibleTypes: CypherType*) =
       (_: SemanticState).implicitIdentifier(this, possibleType, possibleTypes:_*)
-  final def ensureDefined(possibleType: CypherType, possibleTypes: CypherType*) =
-      (_: SemanticState).ensureIdentifierDefined(this, possibleType, possibleTypes:_*)
+  final def ensureDefined() =
+      (_: SemanticState).ensureIdentifierDefined(this)
 
   def toCommand = commands.expressions.Identifier(name)
 }

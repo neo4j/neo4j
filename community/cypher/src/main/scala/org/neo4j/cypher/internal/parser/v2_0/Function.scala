@@ -81,6 +81,7 @@ object Function {
     functions.Radians,
     functions.Rand,
     functions.Range,
+    functions.Reduce,
     functions.RegularExpression,
     functions.Relationships,
     functions.Rels,

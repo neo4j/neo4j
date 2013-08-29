@@ -118,15 +118,11 @@ case class SemanticState(
     }
   }
 
-  def ensureIdentifierDefined(identifier: ast.Identifier, possibleType: CypherType, possibleTypes: CypherType*) : Either[SemanticError, SemanticState] =
-      ensureIdentifierDefined(identifier, (possibleType +: possibleTypes).toSet)
-
-  def ensureIdentifierDefined(identifier: ast.Identifier, possibleTypes: TypeSet) : Either[SemanticError, SemanticState] = {
+  def ensureIdentifierDefined(identifier: ast.Identifier) : Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {
       case None => Left(SemanticError(s"${identifier.name} not defined", identifier.token))
-      case Some(_) => implicitIdentifier(identifier, possibleTypes)
+      case Some(_) => Right(this)
     }
-  }
 
   def importSymbols(symbols: Map[String, Symbol]) =
       SemanticState(symbolTable ++ symbols, typeTable, parent)(pass)

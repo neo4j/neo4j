@@ -38,6 +38,16 @@ trait FilteringExpression extends Expression {
       expression.constrainType(CollectionType(AnyType())) then
       checkInnerPredicate
 
+  protected def checkPredicateDefined =
+    when (innerPredicate.isEmpty) {
+      SemanticError(s"${name} requires a WHERE predicate", token)
+    }
+
+  protected def checkPredicateNotDefined =
+    when (innerPredicate.isDefined) {
+      SemanticError(s"${name} should not contain a WHERE predicate", token)
+    }
+
   private def checkInnerPredicate : SemanticCheck = {
     innerPredicate match {
       case Some(e) => withScopedState {
@@ -67,10 +77,8 @@ case class FilterExpression(identifier: Identifier, expression: Expression, inne
 
   override def semanticCheck(ctx: SemanticContext) =
     checkPredicateDefined then
-    super.semanticCheck(ctx) then
-    this.specifyType(expression.types)
-
-  def checkPredicateDefined = if (innerPredicate.isDefined) None else Some(SemanticError(s"${name} requires a WHERE predicate", token))
+      super.semanticCheck(ctx) then
+      this.specifyType(expression.types)
 
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = commandexpressions.FilterFunction(command, name, inner)
 }
@@ -85,20 +93,26 @@ case class ExtractExpression(
 {
   val name = "EXTRACT"
 
-  override def semanticCheck(ctx: SemanticContext) = checkPredicateNotDefined then super.semanticCheck(ctx) then checkInnerExpression
+  override def semanticCheck(ctx: SemanticContext) =
+    checkPredicateNotDefined then
+      checkExtractExpressionDefined then
+      super.semanticCheck(ctx) then
+      checkInnerExpression
 
-  def checkPredicateNotDefined = if (innerPredicate.isEmpty) None else Some(SemanticError(s"${name} should not contain a WHERE predicate", token))
+  private def checkExtractExpressionDefined =
+    when (extractExpression.isEmpty) {
+      SemanticError(s"${name} requires '| expression' (an extract expression)", token)
+    }
 
   private def checkInnerExpression : SemanticCheck =
-    extractExpression match {
-      case Some(e) => withScopedState {
-          val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
-          identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
-        } then {
-          val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
-          this.specifyType(outerTypes)
-        }
-      case None    => SemanticError(s"${name} requires an extract expression", token)
+    extractExpression.fold(SemanticCheckResult.success) {
+      e => withScopedState {
+        val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
+        identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+      } then {
+        val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
+        this.specifyType(outerTypes)
+      }
     }
 
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = commandexpressions.ExtractFunction(command, name, extractExpression.get.toCommand)
@@ -145,8 +159,9 @@ case class ListComprehension(
 
 sealed trait IterablePredicateExpression extends FilteringExpression {
   override def semanticCheck(ctx: SemanticContext) =
-    super.semanticCheck(ctx) then
-    this.specifyType(BooleanType())
+    checkPredicateDefined then
+      super.semanticCheck(ctx) then
+      this.specifyType(BooleanType())
 
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : commands.Predicate
 
