@@ -137,7 +137,7 @@ n.property = {value}
 
 RETURN n###
 
-Non-existing property returns `null`, which can't be compared; evaluates comparison to false.
+Non-existing property returns `null`, which is only equal to `null`.
 
 ###assertion=returns-one parameters=regex
 START n=node(*)
@@ -158,6 +158,16 @@ WHERE
 RETURN n###
 
 Make sure the pattern has at least one match.
+
+###assertion=returns-none
+START n=node(%A%), m=node(%B%)
+WHERE
+
+NOT((n)-[:KNOWS]->(m))
+
+RETURN n###
+
+Exclude matches to `(n)-[:KNOWS]->(m)` from the result.
 
 ###assertion=returns-one parameters=names
 START n=node(*)

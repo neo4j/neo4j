@@ -18,17 +18,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
+
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class MatchTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT KNOWS A:Person", "A KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
-  val title = "MATCH"
-  val css = "read c2-2 c3-2 c4-2 c5-2"
+class PathsTest extends RefcardTest with StatisticsChecker {
+  val graphDescription = List("A:Person KNOWS ROOT")
+  val title = "Paths"
+  val css = "general c2-2 c3-2 c5-2 c6-2"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
-      case "related" =>
+      case "one" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
     }
@@ -36,45 +37,37 @@ class MatchTest extends RefcardTest with StatisticsChecker {
 
   override def parameters(name: String): Map[String, Any] =
     name match {
+      case "parameters=aname" =>
+        Map("value" -> "Alice")
+      case "parameters=bname" =>
+        Map("value" -> "Bob")
       case "" =>
         Map()
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("name" -> "Alice"),
-    "B" -> Map("name" -> "Bob"),
-    "C" -> Map("name" -> "Chuck"))
+    "A" -> Map("name" -> "Alice"))
 
   def text = """
-###assertion=related
-//
+###assertion=one parameters=aname
+MATCH p =
 
-MATCH (n:Person)-[:KNOWS]->(m:Person)
-WHERE n.name="Alice"
+shortestPath((n1:Person)-[*..6]-(n2:Person))
 
-RETURN n,m###
-
-Node patterns can contain labels.
-No +START+ clause is required then.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-
-MATCH (n)-->(m)
-
-RETURN n,m###
-
-Any pattern can be used in `MATCH` except the ones containing property maps.
-
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-
-MATCH p = (n)-->(m)
-
+WHERE n1.name = "Alice"
 RETURN p###
 
-Assign a path to `p`.
+Find a single shortest path.
+
+###assertion=one parameters=aname
+MATCH p =
+
+allShortestPaths((n1:Person)-->(n2:Person))
+
+WHERE n1.name = "Alice"
+RETURN p###
+
+Find all shortest paths.
 
 """
 }

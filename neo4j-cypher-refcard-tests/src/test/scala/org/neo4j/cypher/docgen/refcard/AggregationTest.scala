@@ -147,5 +147,23 @@ PERCENTILE_CONT(n.property, {percentile})
 ###
 
 Continuous percentile.
+
+###assertion=returns-one parameters=percentile
+START n=node(%A%, %B%, %C%)
+RETURN
+
+STDEV(n.property)
+###
+
+Standard deviation for a sample of a population.
+
+###assertion=returns-one parameters=percentile
+START n=node(%A%, %B%, %C%)
+RETURN
+
+STDEVP(n.property)
+###
+
+Standard deviation for an entire population.
 """
 }

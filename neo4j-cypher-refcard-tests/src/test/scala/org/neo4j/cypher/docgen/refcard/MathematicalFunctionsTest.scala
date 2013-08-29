@@ -82,7 +82,16 @@ RETURN
 FLOOR({expr})
 ###
 
-The integral part of the decimal number.
+The greatest integer less than or equal to a decimal number.
+
+###assertion=returns-one parameters=expression
+START n=node(%ROOT%)
+RETURN
+
+CEIL({expr})
+###
+
+The smallest integer greater than or equal to a decimal number.
 
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
@@ -109,7 +118,7 @@ RETURN
 SIN({expr})
 ###
 
-Trigonometric functions, also `COS`, `TAN`, `COT`, `ASIN`, `ACOS`, `ATAN`.
+Trigonometric functions, also `COS`, `TAN`, `COT`, `ASIN`, `ACOS`, `ATAN`, `ATAN2`.
 
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
