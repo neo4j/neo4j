@@ -129,9 +129,16 @@
                 <configuration>
                   <target name="media">
                     <mkdir dir="${project.build.directory}/install4j" />
+                    <!--suppress MavenModelInspection -->
+                    <condition property="install4j.code.signing" value="&lt;codeSigning macEnabled=&quot;false&quot; macPkcs12File=&quot;&quot; windowsEnabled=&quot;true&quot; windowsKeySource=&quot;pkcs12&quot; windowsPvkFile=&quot;&quot; windowsSpcFile=&quot;&quot; windowsPkcs12File=&quot;${install4j.pkcs12}&quot; /&gt;">
+                      <isset property="install4j.pkcs12"/>
+                    </condition>
+                    <property name="install4j.code.signing" value=""/>
                     <copy file="${project.basedir}/neo4j-desktop.install4j" toFile="${project.build.directory}/install4j/neo4j-desktop.install4j">
                       <filterset begintoken="@" endtoken="@">
                         <filter token="NEO4J_VERSION" value="${project.version}"/>
+                        <!--suppress MavenModelInspection -->
+                        <filter token="CODE_SIGNING" value="${install4j.code.signing}"/>
                       </filterset>
                       <filterset begintoken="." endtoken="/">
                         <filter token="/src" value="${project.basedir}/src/"/>
@@ -154,10 +161,12 @@
                              classname="com.install4j.Install4JTask"
                              classpath="${install4j.home}\bin\ant.jar"/>
 
+                    <!--suppress MavenModelInspection -->
                     <install4j projectfile="${project.basedir}/target/install4j/neo4j-desktop.install4j"
                                mediatypes="windows"
                                verbose="true"
                                release="2.0-SNAPSHOT"
+                               winKeystorePassword="${install4j.win.key.store.password}"
                                destination="${project.basedir}/target/install4j" />
                   </target>
                 </configuration>
