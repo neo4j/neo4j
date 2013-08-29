@@ -23,7 +23,7 @@ import org.junit.Assert._
 import org.neo4j.graphdb._
 import org.junit.{Before, Test}
 
-class UnboundValueAcceptanceTest extends ExecutionEngineHelper {
+class NotBoundAcceptanceTest extends ExecutionEngineHelper {
 
   @Before
   def delete_all_data() {

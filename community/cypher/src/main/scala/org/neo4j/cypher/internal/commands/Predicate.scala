@@ -19,22 +19,31 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
+import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{CastSupport, IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.values._
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import scala.Some
+import org.neo4j.cypher.internal.symbols.AnyType
+import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.{UnboundValue, KeyToken}
 
 abstract class Predicate extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx)
-  def ++(other: Predicate): Predicate = And.apply(this, other)
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Boolean = isMatch(ctx)
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean
+
+  def ternaryApply(ctx: ExecutionContext)(implicit state: QueryState): Ternary = Ternary(isMatch(ctx))
+  def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary = Ternary(apply(m))
+
+  def ++(other: Predicate): Predicate = And.apply(this, other)
 
   // This is the un-dividable list of predicates. They can all be ANDed
   // together
+  // implement ternary logic in terms of binary logic
   def atoms: Seq[Predicate] = Seq(this)
   def rewrite(f: Expression => Expression): Predicate
   def containsIsNull: Boolean
@@ -51,21 +60,29 @@ abstract class Predicate extends Expression {
 
 }
 
+abstract class TernaryPredicate extends Predicate {
+  // implement binary logic in terms of ternary logic
+
+  override final def apply(ctx: ExecutionContext)(implicit state: QueryState): Boolean =
+    ternaryApply(ctx).isTrueOrNotApplicable
+
+  override final def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean =
+    ternaryIsMatch(m).isTrueOrNotApplicable
+
+  override def ternaryApply(ctx: ExecutionContext)(implicit state: QueryState): Ternary = ternaryIsMatch(ctx)
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary
+}
+
 object Predicate {
   def fromSeq(in: Seq[Predicate]) = in.reduceOption(_ ++ _).getOrElse(True())
 }
 
-case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState) = {
-    val nullValue = exp.find {
-      case (e, res) =>
-        val eVal = e(m)
-        eVal == null || UnboundValue.is(eVal)
-    }
-
-    nullValue match {
-      case Some((_, res)) => res
-      case _ => inner.isMatch(m)
+case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends TernaryPredicate {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary =  {
+    val nullable = exp.find { case (e, res) => NotBound.orNull(e(m)) }
+    nullable match {
+      case Some((_, res)) => Ternary(res)
+      case _              => inner.ternaryIsMatch(m)
     }
   }
 
@@ -93,8 +110,10 @@ object And {
   }
 }
 
-class And(val a: Predicate, val b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = a.isMatch(m) && b.isMatch(m)
+class And(val a: Predicate, val b: Predicate) extends TernaryPredicate {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary =
+    a.ternaryIsMatch(m) `and` b.ternaryIsMatch(m)
+
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString(): String = "(" + a + " AND " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
@@ -116,8 +135,10 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
-case class Or(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = a.isMatch(m) || b.isMatch(m)
+case class Or(a: Predicate, b: Predicate) extends TernaryPredicate {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary =
+    a.ternaryIsMatch(m) `or` b.ternaryIsMatch(m)
+
   override def toString(): String = "(" + a + " OR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = Or(a.rewrite(f), b.rewrite(f))
@@ -132,9 +153,11 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
-case class Not(a: Predicate) extends Predicate {
+case class Not(a: Predicate) extends TernaryPredicate {
   override def atoms: Seq[Predicate] = a.atoms.map(Not(_))
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = !a.isMatch(m)
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary =
+    a.ternaryIsMatch(m).negated
+
   override def toString(): String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
   def rewrite(f: (Expression) => Expression) = Not(a.rewrite(f))
@@ -146,8 +169,10 @@ case class Not(a: Predicate) extends Predicate {
   def symbolTableDependencies = a.symbolTableDependencies
 }
 
-case class Xor(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = (a.isMatch(m) && !b.isMatch(m)) || (!a.isMatch(m) && b.isMatch(m))
+case class Xor(a: Predicate, b: Predicate) extends TernaryPredicate {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary =
+    a.ternaryIsMatch(m) `xor` b.ternaryIsMatch(m)
+
   override def toString(): String = "(" + a + " XOR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = Xor(a.rewrite(f), b.rewrite(f))
@@ -162,17 +187,27 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
-case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
-    val fromNode = from(m).asInstanceOf[Node]
-    val toNode = to(m).asInstanceOf[Node]
+case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, relType: Seq[String])
+  extends TernaryPredicate {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary = {
+    val fromVal = from(m)
+    val toVal = to(m)
 
-    if ((fromNode == null) || (toNode == null)) {
-      return false
+    if ((fromVal == null) || (toVal == null)) {
+      return IsFalse
     }
 
-    state.query.getRelationshipsFor(fromNode, dir, relType).
-      exists(rel => rel.getOtherNode(fromNode) == toNode)
+    if (NotBound(fromVal) || NotBound(toVal)) {
+      return NotApplicable
+    }
+
+    val fromNode = fromVal.asInstanceOf[Node]
+    val toNode = toVal.asInstanceOf[Node]
+
+    val result =
+      state.query.getRelationshipsFor(fromNode, dir, relType).exists(rel => rel.getOtherNode(fromNode) == toNode)
+
+    Ternary(result)
   }
 
   def containsIsNull = false
@@ -185,17 +220,17 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
   def symbolTableDependencies = from.symbolTableDependencies ++ to.symbolTableDependencies
 }
 
-case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
-    val fromNode = from(m).asInstanceOf[Node]
+case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String]) extends TernaryPredicate {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary = from(m) match {
+    case null =>
+      IsFalse
 
-    if (fromNode == null) {
-      return false
-    }
+    case NotBound =>
+      NotApplicable
 
-    val matchingRelationships = state.query.getRelationshipsFor(fromNode, dir, relType)
-
-    matchingRelationships.hasNext
+    case fromNode: Node =>
+      val matchingRelationships = state.query.getRelationshipsFor(fromNode, dir, relType)
+      Ternary(matchingRelationships.hasNext)
   }
 
   def containsIsNull = false
@@ -209,11 +244,7 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
 }
 
 case class IsNull(expression: Expression) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = expression(m) match {
-    case null         => true
-    case UnboundValue => true
-    case _            => false
-  }
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = NotBound.orNull(expression(m))
 
   override def toString(): String = expression + " IS NULL"
   def containsIsNull = true
@@ -235,13 +266,15 @@ case class True() extends Predicate {
   def symbolTableDependencies = Set()
 }
 
-case class Has(identifier: Expression, propertyKey: KeyToken) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = identifier(m) match {
-    case pc: Node         => propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc, _))
-    case pc: Relationship => propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc, _))
-    case null             => false
-    case UnboundValue     => false
-    case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
+case class Has(identifier: Expression, propertyKey: KeyToken) extends TernaryPredicate {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary = identifier(m) match {
+    case pc: Node         =>
+      Ternary(propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc, _)))
+    case pc: Relationship =>
+      Ternary(propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc, _)))
+    case null     => IsFalse
+    case NotBound => NotApplicable
+    case _        => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }
 
   override def toString: String = "hasProp(" + propertyKey.name + ")"
@@ -309,8 +342,8 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     collection(m) match {
       case IsCollection(x) => this.makeTraversable(collection(m)).nonEmpty
-      case null          => false
-      case x             => throw new CypherTypeException("Expected a collection, got `%s`".format(x))
+      case null            => false
+      case x               => throw new CypherTypeException("Expected a collection, got `%s`".format(x))
     }
   }
 
@@ -325,15 +358,15 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   def symbolTableDependencies = collection.symbolTableDependencies
 }
 
-case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with CollectionSupport {
+case class HasLabel(entity: Expression, label: KeyToken)  extends TernaryPredicate with CollectionSupport {
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = entity(m) match {
+  override def ternaryIsMatch(m: ExecutionContext)(implicit state: QueryState): Ternary = entity(m) match {
 
-    case UnboundValue =>
-      true
+    case NotBound =>
+      NotApplicable
 
     case null =>
-      false
+      IsFalse
 
     case value =>
       val node           = CastSupport.erasureCastOrFail[Node](value)
@@ -345,9 +378,9 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with 
       } catch {
         // If we are running in a query were we can't write changes,
         // just return false for this predicate.
-        case _: NotInTransactionException => return false
+        case _: NotInTransactionException => return IsFalse
       }
-      queryCtx.isLabelSetOnNode(labelId, nodeId)
+      Ternary(queryCtx.isLabelSetOnNode(labelId, nodeId))
   }
 
   override def toString = s"hasLabel(${entity}: ${label.name})"

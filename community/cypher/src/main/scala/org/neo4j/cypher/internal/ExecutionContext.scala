@@ -23,6 +23,7 @@ import mutation.UpdateAction
 import pipes.MutableMaps
 import collection.{immutable, Iterator}
 import collection.mutable.{Queue, Map => MutableMap}
+import org.neo4j.cypher.internal.commands.values.NotBound
 
 object ExecutionContext {
   def empty = new ExecutionContext()
@@ -71,6 +72,9 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
 
   def newWith(newEntry: (String, Any)) =
     createWithNewMap(MutableMaps.create(this.m) += newEntry)
+
+  def newWithUnknownEntries(newEntries: Iterable[String]): ExecutionContext =
+    createWithNewMap(MutableMaps.create(this.m) ++= newEntries.map(_ -> NotBound))
 
   override def clone(): ExecutionContext = newFrom(m)
 

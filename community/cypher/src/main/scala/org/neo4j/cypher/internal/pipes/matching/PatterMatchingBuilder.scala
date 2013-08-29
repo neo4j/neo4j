@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.commands.Predicate
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
   def getMatches(sourceRow: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
@@ -69,10 +68,8 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
     cartesian(toList).map(_.reduceLeft(_ ++ _))
   }
 
-  private def createNullValuesForOptionalElements(matchedGraph: ExecutionContext): ExecutionContext = {
-    val m = (patternGraph.keySet -- matchedGraph.keySet).map(_ -> UnboundValue).toStream
-    matchedGraph.newWith(m)
-  }
+  private def createNullValuesForOptionalElements(matchedGraph: ExecutionContext): ExecutionContext =
+    matchedGraph.newWithUnknownEntries(patternGraph.keySet -- matchedGraph.keySet)
 
   // This method takes  a Seq of Seq and produces the cartesian product of all inner Seqs
   // I'm committing this code, but it's all Tobias' doing.

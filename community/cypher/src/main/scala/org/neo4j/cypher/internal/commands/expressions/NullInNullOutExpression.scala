@@ -25,7 +25,7 @@ abstract class NullInNullOutExpression(argument: Expression) extends Expression 
   def compute(value: Any, m: ExecutionContext)(implicit state:QueryState): Any
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = argument(ctx) match {
-    case null => null
-    case x    => compute(x, ctx)
+    case null      => null
+    case x         => compute(x, ctx)
   }
 }

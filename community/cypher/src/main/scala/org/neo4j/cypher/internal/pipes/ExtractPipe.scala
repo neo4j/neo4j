@@ -44,7 +44,7 @@ class ExtractPipe(val source: Pipe, val expressions: Map[String, Expression]) ex
     subgraph => {
       expressions.foreach {
         case (name, expression) =>
-        subgraph += name -> expression(subgraph)(state)
+          subgraph += name -> expression(subgraph)(state)
     }
     subgraph
   })
