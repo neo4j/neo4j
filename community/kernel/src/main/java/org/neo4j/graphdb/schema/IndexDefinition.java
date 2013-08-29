@@ -25,8 +25,8 @@ import org.neo4j.graphdb.index.IndexManager;
 /**
  * Definition for an index
  * 
- * NOTE: This is part of the new index API introduced in Neo4j 2.0.
- * The former index API lives in {@link IndexManager}.
+ * NOTE: This is part of the index API introduced in Neo4j 2.0.
+ * The legacy index API lives in {@link IndexManager}.
  */
 public interface IndexDefinition
 {

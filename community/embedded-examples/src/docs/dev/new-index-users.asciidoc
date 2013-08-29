@@ -29,7 +29,7 @@ classifier=sources
 tag=createIndex
 ----
 
-New indexes are populated asynchronously.
+Created indexes are populated asynchronously.
 It is possible to use the core API to wait for index population to complete:
 
 [snippet,java]

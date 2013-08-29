@@ -51,11 +51,12 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
 {
     /**
-     * Create schema index.
+     * Create index.
      *
-     * This will start a background job in the database that will create and populate the new index.
+     * This will start a background job in the database that will create and populate the index.
      * You can check the status of your index by listing all the indexes for the relevant label.
-     * The new index will show up, but have a state of +POPULATING+ until the index is ready.
+     * The created index will show up, but have a state of +POPULATING+ until the index is ready,
+     * where it is marked as +ONLINE+.
      */
     @Documented
     @Test
@@ -108,7 +109,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Drop schema index
+     * Drop index
      */
     @Documented
     @Test
@@ -131,7 +132,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     }
     
     /**
-     * Create a schema index for a label and property key which already exists.
+     * Create an index for a label and property key which already exists.
      */
     @Test
     public void create_existing_schema_index() throws PropertyValueException
@@ -160,7 +161,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Create a compound schema index should not yet be supported
+     * Creating a compound index should not yet be supported
      */
     @Test
     public void create_compound_schema_index() throws PropertyValueException

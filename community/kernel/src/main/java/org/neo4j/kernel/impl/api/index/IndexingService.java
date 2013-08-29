@@ -50,12 +50,13 @@ import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
- * Manages the "schema indexes" that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
+ * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
  * transactionality. Each index has an {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}, which it uses to filter
  * changes that come into the database. Changes that apply to the the rule are indexed. This way, "normal" changes to
  * the database can be replayed to perform recovery after a crash.
@@ -102,8 +103,9 @@ public class IndexingService extends LifecycleAdapter
         if ( providerMap == null || providerMap.getDefaultProvider() == null )
         {
             // For now
-            throw new IllegalStateException( "You cannot run the database without providing a schema index provider, " +
-                                             "please make sure that a valid provider is on your classpath." );
+            throw new IllegalStateException( "You cannot run the database without an index provider, " +
+                    "please make sure that a valid provider (subclass of " + SchemaIndexProvider.class.getName() +
+                    ") is on your classpath." );
         }
     }
 
@@ -247,7 +249,7 @@ public class IndexingService extends LifecycleAdapter
     }
 
     /*
-     * Creates a new index.
+     * Creates an index.
      *
      * This code is called from the transaction infrastructure during transaction commits, which means that
      * it is *vital* that it is stable, and handles errors very well. Failing here means that the entire db

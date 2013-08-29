@@ -35,7 +35,7 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
- * of the lifecycle of a schema index. It's designed to be decorated with multiple stacked instances.
+ * of the lifecycle of an index. It's designed to be decorated with multiple stacked instances.
  *
  * The contract of {@link IndexProxy} is
  *
@@ -78,7 +78,7 @@ public interface IndexProxy
     InternalIndexState getState();
     
     /**
-     * @return failure message. Expect a call to it if {@link #getState()} returns {@link InternalIndexState#FAILED}. 
+     * @return failure message. Expect a call to it if {@link #getState()} returns {@link InternalIndexState#FAILED}.
      */
     IndexPopulationFailure getPopulationFailure() throws IllegalStateException;
 

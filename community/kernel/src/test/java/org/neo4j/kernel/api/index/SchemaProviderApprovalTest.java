@@ -28,6 +28,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
@@ -36,7 +38,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.runners.Parameterized.Parameters;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -47,7 +49,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 /*
  * The purpose of this test class is to make sure all index providers produce the same results.
  *
- * Schema Indexes should always produce the same result as scanning all nodes and checking properties. By extending this
+ * Indexes should always produce the same result as scanning all nodes and checking properties. By extending this
  * class in the index provider module, all value types will be checked against the index provider.
  */
 @RunWith(value = Parameterized.class)

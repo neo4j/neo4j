@@ -221,7 +221,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Create a schema index for a label and property key which already exists.
+     * Create an index for a label and property key which already exists.
      */
     @Test
     public void create_existing_constraint() throws PropertyValueException
@@ -241,7 +241,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Create a compound schema index should not yet be supported.
+     * Creating a compound index should not yet be supported.
      */
     @Test
     public void create_compound_schema_index() throws PropertyValueException

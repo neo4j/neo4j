@@ -63,7 +63,7 @@ tag=checkIfExists
 
 Indexes can be deleted.
 When deleting, the entire contents of the index will be removed as well as its associated configuration.
-A new index can be created with the same name at a later point in time.
+An index can be created with the same name at a later point in time.
 
 [snippet,java]
 ----

@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 /**
  * Interface for managing the schema of your graph database. This currently includes
- * the new indexing support, added in Neo4j 2.0, please see the Neo4j manual for details.
+ * the indexing support added in Neo4j 2.0. Please see the Neo4j manual for details.
  */
 public interface Schema
 {
@@ -47,7 +47,7 @@ public interface Schema
      * Returns an {@link IndexCreator} where details about the index to create can be
      * specified. When all details have been entered {@link IndexCreator#create() create}
      * must be called for it to actually be created.
-     *   
+     * 
      * Creating an index enables indexing for nodes with the specified label. The index will
      * have the details supplied to the {@link IndexCreator returned index creator}.
      * All existing and all future nodes matching the index definition will be indexed,
@@ -72,9 +72,10 @@ public interface Schema
     Iterable<IndexDefinition> getIndexes();
 
     /**
-     * Poll the database for the state of a given index. This can be used to track
-     * when, during creation of a new index, an index is done populating itself and
-     * comes online to serve requests.
+     * Poll the database for the state of a given index. This can be used to track in which
+     * state the creation of the index is, for example if it's still
+     * {@link IndexState#POPULATING populating} in the background, or has come
+     * {@link IndexState#ONLINE online}.
      *
      * @param index the index that we want to poll state for
      * @return the current {@link IndexState} of the index
