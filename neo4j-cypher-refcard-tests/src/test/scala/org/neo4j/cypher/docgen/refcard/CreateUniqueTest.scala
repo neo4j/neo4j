@@ -59,5 +59,6 @@ RETURN m###
 
 Match pattern or create it if it does not exist.
 The pattern can not include any optional parts.
+
 """
 }

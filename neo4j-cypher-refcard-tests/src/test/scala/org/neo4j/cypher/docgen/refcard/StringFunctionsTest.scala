@@ -85,14 +85,14 @@ SUBSTRING({original}, {begin}, {sub_length})
 ###
 
 Get part of a string.
-The `substring_length` argument is optional.
+The `sub_length` argument is optional.
 
 ###assertion=returns-one parameters=sub
 START n=node(%ROOT%)
 RETURN
 
-LEFT({original}, {substring_length}),
-  RIGHT({original}, {substring_length})
+LEFT({original}, {sub_length}),
+  RIGHT({original}, {sub_length})
 ###
 
 The first part of a string. The last part of the string.

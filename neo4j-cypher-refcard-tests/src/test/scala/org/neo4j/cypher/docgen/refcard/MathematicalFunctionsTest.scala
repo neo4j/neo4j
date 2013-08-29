@@ -42,7 +42,7 @@ class MathematicalFunctionsTest extends RefcardTest with StatisticsChecker {
       case "parameters=value" =>
         Map("value" -> "Bob")
       case "parameters=expression" =>
-        Map("numerical_expression" -> .5)
+        Map("expr" -> .5)
       case "" =>
         Map()
     }
@@ -52,7 +52,7 @@ class MathematicalFunctionsTest extends RefcardTest with StatisticsChecker {
 START n=node(%ROOT%)
 RETURN
 
-ABS({numerical_expression})
+ABS({expr})
 ###
 
 The absolute value.
@@ -70,7 +70,7 @@ A random value. Returns a new value for each call. Also useful for selecting sub
 START n=node(%ROOT%)
 RETURN
 
-ROUND({numerical_expression})
+ROUND({expr})
 ###
 
 Round to the nearest integer.
@@ -79,16 +79,16 @@ Round to the nearest integer.
 START n=node(%ROOT%)
 RETURN
 
-FLOOR({numerical_expression})
+FLOOR({expr})
 ###
 
-The integral part of the decimal number..
+The integral part of the decimal number.
 
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
 RETURN
 
-SQRT({numerical_expression})
+SQRT({expr})
 ###
 
 The square root.
@@ -97,7 +97,7 @@ The square root.
 START n=node(%ROOT%)
 RETURN
 
-SIGN({numerical_expression})
+SIGN({expr})
 ###
 
 `0` if zero, `-1` if negative, `1` if positive.
@@ -106,7 +106,7 @@ SIGN({numerical_expression})
 START n=node(%ROOT%)
 RETURN
 
-SIN({numerical_expression})
+SIN({expr})
 ###
 
 Trigonometric functions, also `COS`, `TAN`, `COT`, `ASIN`, `ACOS`, `ATAN`.
@@ -115,8 +115,7 @@ Trigonometric functions, also `COS`, `TAN`, `COT`, `ASIN`, `ACOS`, `ATAN`.
 START n=node(%ROOT%)
 RETURN
 
-DEGREES({numerical_expression}),
-  RADIANS({numerical_expression}), PI()
+DEGREES({expr}), RADIANS({expr}), PI()
 ###
 
 Converts radians into degrees, use `RADIANS` for the reverse. `PI` for π.
@@ -125,8 +124,7 @@ Converts radians into degrees, use `RADIANS` for the reverse. `PI` for π.
 START n=node(%ROOT%)
 RETURN
 
-LOG10({numerical_expression}), LOG({numerical_expression}),
-  EXP({numerical_expression}), E()
+LOG10({expr}), LOG({expr}), EXP({expr}), E()
 ###
 
 Logarithm base 10, natural logarithm, `e` to the power of the paramameter. Value of `e`.

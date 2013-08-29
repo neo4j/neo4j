@@ -59,6 +59,7 @@ ON MATCH  n SET n.access  = n.access+1
 RETURN n###
 
 Match pattern or create it if it does not exist.
-Uses +ON CREATE n,ON MATCH n+ for conditional updates.
+Use +ON CREATE n+ and +ON MATCH n+ for conditional updates.
+
 """
 }

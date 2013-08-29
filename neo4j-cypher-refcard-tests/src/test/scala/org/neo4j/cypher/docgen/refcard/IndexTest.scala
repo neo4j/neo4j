@@ -30,10 +30,10 @@ class IndexTest extends RefcardTest with StatisticsChecker {
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "create-index" =>
-//        assertStats(result, indexAdded = 1)
+        //        assertStats(result, indexAdded = 1)
         assert(result.toList.size === 0)
       case "drop-index" =>
-//        assertStats(result, indexDeleted = 1)
+        //        assertStats(result, indexDeleted = 1)
         assert(result.toList.size === 0)
       case "match" =>
         assertStats(result, nodesCreated = 0)
@@ -57,6 +57,7 @@ CREATE INDEX ON :Person(name)
 ###
 
 Create an index on the label `Person` and property `name`.
+
 ###assertion=drop-index
 //
 
@@ -64,11 +65,11 @@ DROP INDEX ON :Person(name)
 ###
 
 Drop the index on the label `Person` and property `name`.
+
 ###assertion=match parameters=aname
 //
 
-MATCH (n:Person)
-  WHERE n.name = {value}
+MATCH (n:Person) WHERE n.name = {value}
 ###
 
 Index is used automatically for equality comparison of properties on indexed label.

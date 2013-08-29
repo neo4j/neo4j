@@ -48,7 +48,7 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
       case "parameters=value" =>
         Map("value" -> "Bob")
       case "parameters=range" =>
-        Map("begin" -> 2, "end" -> 18, "step" -> 3)
+        Map("first" -> 2, "last" -> 18, "step" -> 3)
       case "" =>
         Map()
     }
@@ -127,7 +127,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as coll
 RETURN
 
-RANGE({begin}, {end}, {step})
+RANGE({first}, {last}, {step})
 ###
 
 Create a range of numbers.
