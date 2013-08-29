@@ -38,12 +38,10 @@ public class LenientObjectOutputStream extends ObjectOutputStream
     @Override
     protected void writeClassDescriptor( ObjectStreamClass desc ) throws IOException
     {
-        System.out.println( "before mapping => " + desc );
         if ( versionMapper.hasMappingFor( desc.getName() ) )
         {
             updateWirePayloadSuid( desc );
         }
-        System.out.println( "after mapping => " + desc );
 
         super.writeClassDescriptor( desc );
     }
