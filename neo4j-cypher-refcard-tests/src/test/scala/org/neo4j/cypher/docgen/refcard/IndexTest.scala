@@ -25,7 +25,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class IndexTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("A:Person KNOWS B:Person")
   val title = "Index"
-  val css = "write c4-4 c5-4 c6-3"
+  val css = "write c4-4 c5-5 c6-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {

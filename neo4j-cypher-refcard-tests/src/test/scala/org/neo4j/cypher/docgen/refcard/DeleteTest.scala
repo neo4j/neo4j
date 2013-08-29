@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class DeleteTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A:Person", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "DELETE"
-  val css = "write c2-2 c4-4 c5-4 c6-3"
+  val css = "write c2-2 c4-4 c5-5 c6-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {

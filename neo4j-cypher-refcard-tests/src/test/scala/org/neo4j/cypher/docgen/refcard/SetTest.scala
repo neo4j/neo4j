@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class SetTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A")
   val title = "SET"
-  val css = "write c2-2 c4-4 c5-4 c6-3"
+  val css = "write c2-2 c4-4 c5-5 c6-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -32,7 +32,7 @@ class SetTest extends RefcardTest with StatisticsChecker {
         assertStats(result, propertiesSet = 1)
         assert(result.dumpToString().contains("a value"))
       case "set-label" =>
-        assertStats(result, nodesCreated = 1,labelsAdded = 1)
+        assertStats(result, nodesCreated = 1, labelsAdded = 1)
         assert(result.dumpToString().contains("Person"))
       case "map" =>
         assertStats(result, nodesCreated = 1, propertiesSet = 1)

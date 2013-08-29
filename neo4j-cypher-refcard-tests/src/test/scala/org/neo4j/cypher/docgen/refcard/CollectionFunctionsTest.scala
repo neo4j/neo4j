@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
   val title = "Collection Functions"
-  val css = "general c3-3 c4-3 c5-5 c6-6"
+  val css = "general c3-3 c4-3 c5-4 c6-6"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {

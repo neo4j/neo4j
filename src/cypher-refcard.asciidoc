@@ -41,7 +41,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asci
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
 
 .Write-Only Query Structure 
-["refcard", cardcss="write c2-2 c4-4 c5-4 c6-3"]
+["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
 ----
 (CREATE [UNIQUE] | MERGE)*
 [SET|DELETE|FOREACH]*
@@ -49,7 +49,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciid
 ----
 
 .Read-Write Query Structure 
-["refcard", cardcss="write c2-2 c4-4 c5-4 c6-3"]
+["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
 ----
 START
 [MATCH]
@@ -73,7 +73,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asci
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.asciidoc[]
 
 ++++
-<div class="col cardgeneral c3-2 c6-4"><div class="blk">
+<div class="col cardgeneral c3-2"><div class="blk">
 ++++
 
 [options="header", cols=",m"]
@@ -111,7 +111,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/string-func
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation.asciidoc[]
 
 ++++
-<div class="col cardperformance c2-2 c5-5 c6-3"><div class="blk">
+<div class="col cardperformance c5-5 c6-6"><div class="blk">
 ++++
 
 [options="header", cols="a"]
