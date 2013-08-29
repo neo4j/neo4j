@@ -37,6 +37,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -78,7 +79,7 @@ public class MultiPaxosServer
     public void start()
             throws IOException
     {
-        broadcastSerializer = new AtomicBroadcastSerializer();
+        broadcastSerializer = new AtomicBroadcastSerializer(new ObjectStreamFactory(), new ObjectStreamFactory());
         final LifeSupport life = new LifeSupport();
         try
         {
@@ -88,7 +89,7 @@ public class MultiPaxosServer
             NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
                     new MultiPaxosServerFactory( new ClusterConfiguration( "default" ),
                             new LogbackService( null, null ) ),
-                    timeoutStrategy, new LogbackService( null, null ) );
+                    timeoutStrategy, new LogbackService( null, null ), new ObjectStreamFactory(), new ObjectStreamFactory() );
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             server = serverFactory.newNetworkedServer(

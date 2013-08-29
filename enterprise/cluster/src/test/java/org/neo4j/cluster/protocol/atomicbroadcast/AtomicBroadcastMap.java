@@ -42,7 +42,7 @@ public class AtomicBroadcastMap<K, V>
     private AtomicBroadcast atomicBroadcast;
     private volatile MapCommand lastCommand;
     protected final AtomicBroadcastListener atomicBroadcastListener;
-    private final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer();
+    private final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer(new ObjectStreamFactory(), new ObjectStreamFactory());
 
     public AtomicBroadcastMap( AtomicBroadcast atomicBroadcast, Snapshot snapshot )
     {
