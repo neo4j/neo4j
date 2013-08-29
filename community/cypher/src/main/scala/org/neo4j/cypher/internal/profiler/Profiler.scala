@@ -106,11 +106,6 @@ class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends Delega
       inner.hasProperty(obj, propertyKeyId)
     }
 
-    override def propertyKeys(obj: T): Iterator[String] = {
-      increment()
-      inner.propertyKeys(obj).toIterator
-    }
-
     override def setProperty(obj: T, propertyKeyId: Long, value: Any) {
       increment()
       inner.setProperty(obj, propertyKeyId, value)
