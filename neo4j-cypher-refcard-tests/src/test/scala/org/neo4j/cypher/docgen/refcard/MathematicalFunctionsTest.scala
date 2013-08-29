@@ -118,7 +118,7 @@ RETURN
 SIN({expr})
 ###
 
-Trigonometric functions, also `COS`, `TAN`, `COT`, `ASIN`, `ACOS`, `ATAN`, `ATAN2`.
+Trigonometric functions, also `COS`, `TAN`, `COT`, `ASIN`, `ACOS`, `ATAN`, `ATAN2({y-expr}, {x-expr})`.
 
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
@@ -136,6 +136,6 @@ RETURN
 LOG10({expr}), LOG({expr}), EXP({expr}), E()
 ###
 
-Logarithm base 10, natural logarithm, `e` to the power of the paramameter. Value of `e`.
+Logarithm base 10, natural logarithm, `e` to the power of the parameter. Value of `e`.
              """
 }
