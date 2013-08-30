@@ -1,8 +1,8 @@
 [[tutorials-java-embedded-new-index]]
-User database with schema based indexing
-========================================
+User database with indexes
+==========================
 
-You have a user database, and want to retrieve users by name using schema based indexing.
+You have a user database, and want to retrieve users by name using indexes.
 
 [TIP]
 The source code used in this example is found here:
@@ -29,7 +29,7 @@ classifier=sources
 tag=createIndex
 ----
 
-Created indexes are populated asynchronously.
+Indexes are populated asynchronously when they are first created.
 It is possible to use the core API to wait for index population to complete:
 
 [snippet,java]

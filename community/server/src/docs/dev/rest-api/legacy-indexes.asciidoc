@@ -1,7 +1,7 @@
 [[rest-api-indexes]]
 == Legacy indexing ==
 
-NOTE: This documents the legacy indexing in Neo4j, which is no longer the preferred way to handle indexes. Consider looking at <<rest-api-schema-indexes>> schema based indexes.
+NOTE: This documents the legacy indexing in Neo4j, which is no longer the preferred way to handle indexes. Consider looking at <<rest-api-schema-indexes>>.
 
 An index can contain either nodes or relationships.
 

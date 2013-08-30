@@ -21,28 +21,20 @@ package org.neo4j.server.rest;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
@@ -61,7 +53,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void create_schema_index() throws PropertyValueException
+    public void create_index() throws PropertyValueException
     {
         data.get();
         
@@ -86,12 +78,12 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_schema_indexes() throws PropertyValueException
+    public void get_indexes() throws PropertyValueException
     {
         data.get();
         
         String labelName = "user", propertyKey = "name";
-        createSchemaIndex( labelName, propertyKey );
+        createIndex( labelName, propertyKey );
         Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
 
         String result = gen.get()
@@ -114,12 +106,12 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void drop_schema_index() throws Exception
+    public void drop_index() throws Exception
     {
         data.get();
 
         String labelName = "SomeLabel", propertyKey = "name";
-        IndexDefinition schemaIndex = createSchemaIndex( labelName, propertyKey );
+        IndexDefinition schemaIndex = createIndex( labelName, propertyKey );
         assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), containsOnly( schemaIndex ) );
 
         gen.get()
@@ -135,10 +127,10 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
      * Create an index for a label and property key which already exists.
      */
     @Test
-    public void create_existing_schema_index() throws PropertyValueException
+    public void create_existing_index() throws PropertyValueException
     {
         String labelName = "mylabel", propertyKey = "name";
-        createSchemaIndex( labelName, propertyKey );
+        createIndex( labelName, propertyKey );
         Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
 
         gen.get()
@@ -149,7 +141,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     }
     
     @Test
-    public void drop_non_existent_schema_index() throws Exception
+    public void drop_non_existent_index() throws Exception
     {
         // GIVEN
         String labelName = "ALabel", propertyKey = "name";
@@ -164,7 +156,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
      * Creating a compound index should not yet be supported
      */
     @Test
-    public void create_compound_schema_index() throws PropertyValueException
+    public void create_compound_index() throws PropertyValueException
     {
         Map<String, Object> definition = map( "property_keys", asList( "first", "other" ) );
 
@@ -175,7 +167,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
                 .post( getSchemaIndexLabelUri( "a_label" ) );
     }
     
-    private IndexDefinition createSchemaIndex( String labelName, String propertyKey )
+    private IndexDefinition createIndex( String labelName, String propertyKey )
     {
         Transaction tx = graphdb().beginTx();
         try
@@ -189,17 +181,5 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         {
             tx.finish();
         }
-    }
-
-    private Set<Set<String>> asProperties( Iterable<IndexDefinition> indexes )
-    {
-        return asSet( map( new Function<IndexDefinition, Set<String>>()
-        {
-            @Override
-            public Set<String> apply( IndexDefinition from )
-            {
-                return asSet( from.getPropertyKeys() );
-            }
-        }, indexes ) );
     }
 }
