@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -38,9 +37,8 @@ import org.neo4j.kernel.impl.api.constraints.UnableToValidateConstraintKernelExc
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.TargetDirectory.cleanTestDirForTest;
 
@@ -70,7 +68,7 @@ public class ConstraintIndexFailureIT
             catch ( ConstraintViolationException e )
             {
                 assertThat( e.getCause(), instanceOf( UnableToValidateConstraintKernelException.class ) );
-                //TODO: assertThat( e.getCause().getCause().getMessage(), containsString( "Injected Failure" ) );
+                assertThat( e.getCause().getCause().getMessage(), equalTo( "The index is in a failed state: 'Injected failure'.") );
             }
             finally
             {
