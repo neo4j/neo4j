@@ -97,7 +97,7 @@ MATCH (n:Person)
 
 RETURN n###
 
-Matches nodes with that label `Person`.
+Matches nodes labeled as `Person`.
 
 ###assertion=related parameters=aname
 //
@@ -107,12 +107,12 @@ WHERE n.name = {value}
 
 RETURN n###
 
-Matches nodes with that label `Person` and the given `name`.
+Matches nodes labeled `Person` with the given `name`.
 
 ###assertion=related
 MATCH (n:Person)
 
-WHERE n:Person
+WHERE (n:Person)
 
 RETURN n###
 

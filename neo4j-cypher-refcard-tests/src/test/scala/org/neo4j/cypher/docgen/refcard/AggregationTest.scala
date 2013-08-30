@@ -82,7 +82,7 @@ COUNT(DISTINCT identifier)
 ###
 
 All aggregation functions also take the `DISTINCT` modifier, 
-which removes duplicates from the values
+which removes duplicates from the values.
 
 ###assertion=returns-one
 START n=node(%A%, %B%, %C%)

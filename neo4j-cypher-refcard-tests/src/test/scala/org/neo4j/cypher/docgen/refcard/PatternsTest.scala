@@ -97,7 +97,7 @@ MATCH
 
 RETURN n,m###
 
-A relationship from `n` to `m` or from `m` to `n` exists.
+A relationship in any direction between `n` and `m`.
 
 ###assertion=related
 START n=node(%A%), m=node(%B%)
@@ -138,6 +138,7 @@ MATCH
 RETURN r###
 
 Optional relationship.
+See the performance tips.
 
 ###assertion=related
 START n=node(%A%), m=node(%B%)
@@ -158,6 +159,7 @@ MATCH
 RETURN n,m###
 
 Any depth.
+See the performance tips.
 
 ###assertion=create parameters=aname
 START n=node(%A%)
@@ -167,7 +169,7 @@ CREATE UNIQUE
 
 RETURN m###
 
-Match or set properties in `CREATE` or `CREATE UNIQUE` clauses.
+Match or set properties in `CREATE`, `CREATE UNIQUE` or `MERGE` clauses.
 
 ###assertion=related parameters=aname
 MATCH p =

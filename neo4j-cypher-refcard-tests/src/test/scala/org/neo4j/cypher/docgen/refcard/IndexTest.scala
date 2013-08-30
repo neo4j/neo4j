@@ -72,7 +72,8 @@ Drop the index on the label `Person` and property `name`.
 MATCH (n:Person) WHERE n.name = {value}
 ###
 
-Index is used automatically for equality comparison of properties on indexed label.
-Only one index is used per query.
+An index can be automatically used for the equality comparison.
+Note that for example `lower(n.name) = {value}` will not use an index.
+
 """
 }
