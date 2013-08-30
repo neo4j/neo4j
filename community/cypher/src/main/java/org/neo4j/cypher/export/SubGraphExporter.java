@@ -91,15 +91,16 @@ public class SubGraphExporter
     }
 
     private String labelString(Node node) {
-        ResourceIterator<Label> labels = node.getLabels().iterator();
-        if (!labels.hasNext()) return "";
-
-        StringBuilder result=new StringBuilder();
-        while (labels.hasNext()) {
-            Label next = labels.next();
-            result.append(":").append(quote(next.name()));
+        try (ResourceIterator<Label> labels = node.getLabels().iterator()) {
+            if (!labels.hasNext()) return "";
+    
+            StringBuilder result=new StringBuilder();
+            while (labels.hasNext()) {
+                Label next = labels.next();
+                result.append(":").append(quote(next.name()));
+            }
+            return result.toString();
         }
-        return result.toString();
     }
 
     private String identifier(Node node) {
