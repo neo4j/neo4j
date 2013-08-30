@@ -59,6 +59,12 @@
       <artifactId>scalatest_2.10</artifactId>
       <version>2.0.RC1-SNAP4</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -137,6 +143,12 @@
       <groupId>org.parboiled</groupId>
       <artifactId>parboiled-scala_2.10</artifactId>
       <version>1.1.6</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
   <build>
