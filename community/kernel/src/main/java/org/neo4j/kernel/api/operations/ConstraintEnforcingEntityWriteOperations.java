@@ -25,8 +25,8 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -114,19 +114,26 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
                                                                     existingNodes.next() );
             }
         }
-        catch ( IndexNotFoundKernelException | SchemaAndDataModificationInSameTransactionException e )
+        catch ( IndexNotFoundKernelException |
+                SchemaAndDataModificationInSameTransactionException |
+                IndexBrokenKernelException e )
         {
             throw new UnableToValidateConstraintKernelException( e );
         }
     }
 
     private void verifyIndexOnline( StatementState state, IndexDescriptor indexDescriptor )
-            throws IndexNotFoundKernelException, SchemaAndDataModificationInSameTransactionException
+            throws IndexNotFoundKernelException, SchemaAndDataModificationInSameTransactionException,
+            IndexBrokenKernelException
     {
-        if ( schemaReadOperations.indexGetState( state, indexDescriptor ) != InternalIndexState.ONLINE )
+        switch(schemaReadOperations.indexGetState( state, indexDescriptor ))
         {
-            // The only case where the index would not be online is if the constraint was created in this transaction.
-            throw new SchemaAndDataModificationInSameTransactionException();
+            case ONLINE:
+                return; // Fine
+            case POPULATING:
+                throw new SchemaAndDataModificationInSameTransactionException();
+            default:
+                throw new IndexBrokenKernelException( schemaReadOperations.indexGetFailure( state, indexDescriptor ) );
         }
     }
 
