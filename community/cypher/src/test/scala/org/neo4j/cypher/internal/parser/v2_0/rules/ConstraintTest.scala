@@ -31,23 +31,23 @@ class ConstraintTest extends ParserTest[ast.Command, legacyCommands.AbstractQuer
 
   @Test
   def create_uniqueness_constraint() {
-    parsing("CREATE CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
+    parsing("CREATE CONSTRAINT ON (foo:Foo) ASSERTING foo.name IS UNIQUE") or
       parsing("CREATE CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
-      parsing("create constraint on (foo:Foo) assert foo.name is unique") shouldGive
+      parsing("create constraint on (foo:Foo) asserting foo.name is unique") shouldGive
       legacyCommands.CreateUniqueConstraint("foo", "Foo", "foo", "name")
 
-    parsing("CREATE CONSTRAINT ON (foo:Foo) ASSERT bar.name IS UNIQUE") shouldGive
+    parsing("CREATE CONSTRAINT ON (foo:Foo) ASSERTING bar.name IS UNIQUE") shouldGive
       legacyCommands.CreateUniqueConstraint("foo", "Foo", "bar", "name")
   }
 
   @Test
   def drop_uniqueness_constraint() {
-    parsing("DROP CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
+    parsing("DROP CONSTRAINT ON (foo:Foo) ASSERTING foo.name IS UNIQUE") or
       parsing("DROP CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
-      parsing("drop constraint on (foo:Foo) assert foo.name is unique") shouldGive
+      parsing("drop constraint on (foo:Foo) asserting foo.name is unique") shouldGive
       legacyCommands.DropUniqueConstraint("foo", "Foo", "foo", "name")
 
-    parsing("DROP CONSTRAINT ON (foo:Foo) ASSERT bar.name IS UNIQUE") shouldGive
+    parsing("DROP CONSTRAINT ON (foo:Foo) ASSERTING bar.name IS UNIQUE") shouldGive
       legacyCommands.DropUniqueConstraint("foo", "Foo", "bar", "name")
   }
 

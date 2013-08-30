@@ -2974,7 +2974,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def constraint_creation() {
-    test(vFrom2_0, "CREATE CONSTRAINT ON (id:Label) ASSERT id.property IS UNIQUE",
+    test(vFrom2_0, "CREATE CONSTRAINT ON (id:Label) ASSERTING id.property IS UNIQUE",
       CreateUniqueConstraint("id", "Label", "id", "property")
     )
   }

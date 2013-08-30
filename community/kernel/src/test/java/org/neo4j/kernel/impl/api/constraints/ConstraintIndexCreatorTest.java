@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
@@ -109,7 +108,7 @@ public class ConstraintIndexCreatorTest
         // then
         catch ( ConstraintVerificationFailedKernelException e )
         {
-            assertEquals( "Existing data does not satisfy CONSTRAINT ON ( n:label[123] ) ASSERT n.property[456] IS UNIQUE.",
+            assertEquals( "Existing data does not satisfy CONSTRAINT ON ( n:label[123] ) ASSERTING n.property[456] IS UNIQUE.",
                           e.getMessage() );
         }
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
