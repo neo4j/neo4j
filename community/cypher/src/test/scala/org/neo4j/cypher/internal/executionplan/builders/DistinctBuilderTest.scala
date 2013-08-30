@@ -39,7 +39,7 @@ class DistinctBuilderTest extends BuilderTest {
       aggregation = Seq(Unsolved(CountStar())) ,
       aggregateToDo = true)
 
-    assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
+    assertRejects(q)
   }
 
   @Test
@@ -49,7 +49,7 @@ class DistinctBuilderTest extends BuilderTest {
       aggregation = Seq.empty ,
       aggregateToDo = false)
 
-    assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
+    assertRejects(q)
   }
 
   @Test
@@ -59,8 +59,7 @@ class DistinctBuilderTest extends BuilderTest {
       aggregation = Seq.empty,
       aggregateToDo = true)
 
-
-    assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
+    assertAccepts(q)
   }
 
   @Test
@@ -75,9 +74,7 @@ class DistinctBuilderTest extends BuilderTest {
     val pipe = new FakePipe(Iterator.empty, ("n", NodeType()))
     val planInProgress: ExecutionPlanInProgress = plan(pipe, query)
 
-    assertTrue("Should be able to build on this", builder.canWorkWith(planInProgress))
-
-    val resultPlan: ExecutionPlanInProgress = builder(planInProgress)
+    val resultPlan: ExecutionPlanInProgress = assertAccepts(planInProgress)
     assertTrue("Expected to have a single sort item", resultPlan.query.sort.size == 1)
     assertTrue("didn't rewrite the expression to a cached one", resultPlan.query.sort.head.token.expression.isInstanceOf[CachedExpression] )
   }

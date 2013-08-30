@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.{MatchPipe, Pipe}
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, LegacyPlanBuilder, ExecutionPlanInProgress}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import org.neo4j.cypher.internal.pipes.matching.{PatternRelationship, PatternNode, PatternGraph}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.commands.ShortestPath
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class MatchBuilder extends LegacyPlanBuilder with PatternGraphBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
+class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -54,7 +55,7 @@ class MatchBuilder extends LegacyPlanBuilder with PatternGraphBuilder {
     )
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     q.patterns.exists(yesOrNo(_, plan.pipe, q.start))
   }

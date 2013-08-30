@@ -57,9 +57,9 @@ class ColumnFilterBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertTrue("Builder should accept this", builder.canWorkWith(plan(p, q)))
 
-    val resultQ = builder(plan(p, q)).query
+
+    val resultQ = assertAccepts(p, q).query
 
     assert(resultQ.returns === q.returns.map(_.solve))
   }
@@ -72,7 +72,7 @@ class ColumnFilterBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test def should_not_accept_if_not_sorted() {
@@ -84,7 +84,7 @@ class ColumnFilterBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test def should_not_accept_if_not_sliced() {
@@ -96,7 +96,7 @@ class ColumnFilterBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test def should_not_introduce_column_filter_pipe_unless_needed() {
@@ -107,7 +107,7 @@ class ColumnFilterBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("foo"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
 }

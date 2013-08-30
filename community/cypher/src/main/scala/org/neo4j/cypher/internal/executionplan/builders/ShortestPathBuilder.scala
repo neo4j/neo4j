@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands.ShortestPath
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import collection.Seq
 import org.neo4j.cypher.internal.pipes.{ShortestPathPipe, Pipe}
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class ShortestPathBuilder extends LegacyPlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
+class ShortestPathBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -37,7 +38,7 @@ class ShortestPathBuilder extends LegacyPlanBuilder {
     plan.copy(pipe = pipe, query = q.copy(patterns = q.patterns.filterNot(_ == item) :+ item.solve))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.patterns.exists(yesOrNo(plan.pipe, _))
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = plan.query.patterns.exists(yesOrNo(plan.pipe, _))
 
   private def yesOrNo(p: Pipe, token: QueryToken[_]): Boolean = token match {
     case Unsolved(sp: ShortestPath) => sp.symbolDependenciesMet(p.symbols)

@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.SortPipe
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, CachedExpression, Expression}
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class SortBuilder extends LegacyPlanBuilder with SortingPreparations {
-  def apply(plan: ExecutionPlanInProgress) = {
+class SortBuilder extends PlanBuilder with SortingPreparations {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val newPlan = extractBeforeSort(plan)
 
     val q = newPlan.query
@@ -37,7 +38,7 @@ class SortBuilder extends LegacyPlanBuilder with SortingPreparations {
     plan.copy(pipe = resultPipe, query = resultQ)
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
     plan.query.extracted &&
     plan.query.sort.filter(x => x.unsolved && !x.token.expression.containsAggregate).nonEmpty
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, LegacyPlanBuilder, ExecutionPlanInProgress}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.mutation._
@@ -33,9 +33,11 @@ import org.neo4j.cypher.internal.commands.CreateNodeStartItem
 import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
 import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.mutation.ForeachAction
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends LegacyPlanBuilder with UpdateCommandExpander with GraphElementPropertyFunctions {
-  def apply(plan: ExecutionPlanInProgress) = {
+class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService)
+  extends PlanBuilder with UpdateCommandExpander with GraphElementPropertyFunctions {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val mutatingQueryTokens = q.start.filter(applicableTo(plan.pipe))
 
@@ -60,7 +62,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends Legac
     case _                                        => Seq()
   }.map("Unknown identifier `%s`".format(_))
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(applicableTo(plan.pipe))
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = plan.query.start.exists(applicableTo(plan.pipe))
 
   def priority = PlanBuilder.Mutation
 }

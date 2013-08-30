@@ -57,9 +57,7 @@ class SliceBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertTrue("Builder should accept this", builder.canWorkWith(plan(p,q)))
-
-    val resultPlan = builder(plan(p, q))
+    val resultPlan = assertAccepts(p, q)
 
     assert(resultPlan.query.slice === q.slice.map(_.solve))
   }
@@ -73,7 +71,7 @@ class SliceBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test def should_not_accept_if_no_slice_in_the_query() {
@@ -83,7 +81,7 @@ class SliceBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
 }

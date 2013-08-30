@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.ExtractPipe
-import org.neo4j.cypher.internal.executionplan.LegacyPlanBuilder
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, CachedExpression, Expression}
 import org.neo4j.cypher.internal.commands.AllIdentifiers
+import org.neo4j.cypher.internal.spi.PlanContext
 
 /**
  * This builder will materialize expression results down to the result map, so they can be seen by the user
  */
-class ExtractBuilder extends LegacyPlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
+class ExtractBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
 
     // This is just a query part switch. No need to extract anything
@@ -44,7 +44,7 @@ class ExtractBuilder extends LegacyPlanBuilder {
     }
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val unsolvedReturnItems = q.returns.filter(_.unsolved)
 
