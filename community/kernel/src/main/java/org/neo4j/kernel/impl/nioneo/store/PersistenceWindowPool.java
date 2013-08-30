@@ -641,18 +641,6 @@ public class PersistenceWindowPool implements WindowPool
                         brick.setWindow( window );
                         break;
                     }
-                    else
-                    {
-                        try
-                        {
-                            Thread.sleep( 20 );
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.interrupted();
-                            continue;
-                        }
-                    }
                 }
             }
             memUsed += brickSize;
