@@ -35,7 +35,7 @@ class UniqueConstraintVerificationAcceptanceTest
     //GIVEN
 
     //WHEN
-    parseAndExecute("create constraint on (node:Label) assert node.propertyKey is unique")
+    parseAndExecute("create constraint on (node:Label) asserting node.propertyKey is unique")
 
     //THEN
     graph.inTx {
@@ -56,7 +56,7 @@ class UniqueConstraintVerificationAcceptanceTest
     parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
 
     // WHEN
-    parseAndExecute("create constraint on (n:Person) assert n.name is unique")
+    parseAndExecute("create constraint on (n:Person) asserting n.name is unique")
 
     // THEN
     graph.inTx {
@@ -79,7 +79,7 @@ class UniqueConstraintVerificationAcceptanceTest
     parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
 
     // WHEN
-    parseAndExecute("create constraint on (n:Person) assert n.name is unique")
+    parseAndExecute("create constraint on (n:Person) asserting n.name is unique")
 
     // THEN
     graph.inTx {
@@ -97,10 +97,10 @@ class UniqueConstraintVerificationAcceptanceTest
   @Test
   def should_drop_constraint() {
     //GIVEN
-    parseAndExecute("create constraint on (node:Label) assert node.propertyKey is unique")
+    parseAndExecute("create constraint on (node:Label) asserting node.propertyKey is unique")
 
     //WHEN
-    parseAndExecute("drop constraint on (node:Label) assert node.propertyKey is unique")
+    parseAndExecute("drop constraint on (node:Label) asserting node.propertyKey is unique")
 
     //THEN
     graph.inTx {
@@ -123,7 +123,7 @@ class UniqueConstraintVerificationAcceptanceTest
     // WHEN
     try
     {
-      parseAndExecute("create constraint on (n:Person) assert n.id is unique")
+      parseAndExecute("create constraint on (n:Person) asserting n.id is unique")
 
       fail("expected exception")
     }

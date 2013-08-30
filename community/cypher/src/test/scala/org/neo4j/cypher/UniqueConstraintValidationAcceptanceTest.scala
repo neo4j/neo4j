@@ -31,7 +31,7 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_enforce_uniqueness_constraint_on_create_node_with_label_and_property() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
+    parseAndExecute("create constraint on (node:Label1) asserting node.key1 is unique")
     parseAndExecute("create ( node:Label1 { key1:'value1' } )")
 
     // WHEN
@@ -50,7 +50,7 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_enforce_uniqueness_constraint_on_set_property() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
+    parseAndExecute("create constraint on (node:Label1) asserting node.key1 is unique")
     parseAndExecute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2:Label1 { seq: 2 } )")
 
     // WHEN
@@ -69,7 +69,7 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_enforce_uniqueness_constraint_on_add_label() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
+    parseAndExecute("create constraint on (node:Label1) asserting node.key1 is unique")
     parseAndExecute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2 { seq: 2, key1:'value1' } )")
 
     // WHEN
@@ -88,7 +88,7 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_enforce_uniqueness_constraint_on_conflicting_data_in_same_statement() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
+    parseAndExecute("create constraint on (node:Label1) asserting node.key1 is unique")
 
     // WHEN
     try {
@@ -106,7 +106,7 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_allow_remove_and_add_conflicting_data_in_one_statement() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
+    parseAndExecute("create constraint on (node:Label1) asserting node.key1 is unique")
     parseAndExecute("create ( node:Label1 { seq:1, key1:'value1' } )")
 
     var seq = 2
@@ -129,7 +129,7 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_allow_creation_of_non_conflicting_data() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
+    parseAndExecute("create constraint on (node:Label1) asserting node.key1 is unique")
     parseAndExecute("create ( node:Label1 { key1:'value1' } )")
 
     // WHEN

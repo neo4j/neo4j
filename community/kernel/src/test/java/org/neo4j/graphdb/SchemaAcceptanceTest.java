@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -34,14 +33,12 @@ import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Neo4jMatchers.contains;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
@@ -387,7 +384,7 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label" +
+            assertEquals( format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERTING my_label" +
                     ".my_property_key IS " +
                     "UNIQUE:%n" +
                     "Already indexed :MY_LABEL(my_property_key)." ), e.getMessage() );
@@ -418,7 +415,7 @@ public class SchemaAcceptanceTest
         catch ( ConstraintViolationException e )
         {
             assertEquals(
-                format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
+                format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERTING my_label.my_property_key " +
                         "IS UNIQUE:%nMultiple nodes with label `MY_LABEL` have property `my_property_key` = " +
                         "'value1':%n" +
                         "  node(1)%n" +
@@ -440,7 +437,7 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "Already constrained CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS" +
+            assertEquals( "Already constrained CONSTRAINT ON ( my_label:MY_LABEL ) ASSERTING my_label.my_property_key IS" +
                     " UNIQUE.", e.getMessage() );
         }
     }
@@ -460,7 +457,7 @@ public class SchemaAcceptanceTest
         catch ( ConstraintViolationException e )
         {
             assertEquals( "Unable to add index :MY_LABEL(my_property_key) : Already constrained CONSTRAINT" +
-                    " ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS UNIQUE.", e.getMessage() );
+                    " ON ( my_label:MY_LABEL ) ASSERTING my_label.my_property_key IS UNIQUE.", e.getMessage() );
         }
     }
 

@@ -75,14 +75,14 @@ public class UniquenessConstraint
     @Override
     public String toString()
     {
-        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE", labelId, propertyKeyId );
+        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERTING n.property[%s] IS UNIQUE", labelId, propertyKeyId );
     }
 
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         String labelName = tokenNameLookup.labelGetName( labelId );
         String boundIdentifier = labelName.toLowerCase();
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE", boundIdentifier, labelName,
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERTING %s.%s IS UNIQUE", boundIdentifier, labelName,
                 boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
     }
 }

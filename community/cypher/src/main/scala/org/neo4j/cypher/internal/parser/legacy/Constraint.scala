@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.commands.{AbstractQuery, CreateUniqueConstraint
 
 trait Constraint extends Base with Labels {
   def createUniqueConstraint: Parser[CreateUniqueConstraint] =
-    CREATE ~> CONSTRAINT ~> ON ~> parens(identity ~ labelName) ~ opt(ASSERT) ~ identity ~ "." ~ escapableString <~ IS <~ UNIQUE ^^ {
+    CREATE ~> CONSTRAINT ~> ON ~> parens(identity ~ labelName) ~ opt(ASSERTING) ~ identity ~ "." ~ escapableString <~ IS <~ UNIQUE ^^ {
       case id ~ label ~ _ ~ idForProperty ~ "." ~ propertyKey => CreateUniqueConstraint(id, label.name, idForProperty, propertyKey)
     }
 
   def dropUniqueConstraint: Parser[DropUniqueConstraint] =
-    DROP ~> CONSTRAINT ~> ON ~> parens(identity ~ labelName) ~ opt(ASSERT) ~ identity ~ "." ~ escapableString <~ IS <~ UNIQUE ^^ {
+    DROP ~> CONSTRAINT ~> ON ~> parens(identity ~ labelName) ~ opt(ASSERTING) ~ identity ~ "." ~ escapableString <~ IS <~ UNIQUE ^^ {
       case id ~ label ~ _ ~ idForProperty ~ "." ~ propertyKey => DropUniqueConstraint(id, label.name, idForProperty, propertyKey)
     }
 
