@@ -94,8 +94,6 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.ascii
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/paths.asciidoc[]
-
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/labels.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]
