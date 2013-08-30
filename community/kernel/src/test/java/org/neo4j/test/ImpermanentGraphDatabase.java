@@ -43,9 +43,9 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
+import static org.neo4j.helpers.Settings.FALSE;
+import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
 
 /**

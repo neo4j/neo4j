@@ -96,7 +96,7 @@ public abstract class KernelIntegrationTest
     protected void startDb()
     {
         TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory().setFileSystem(fs).newImpermanentDatabaseBuilder();
-        db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,GraphDatabaseSettings.CacheTypeSetting.none).newGraphDatabase();
+        db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,"none").newGraphDatabase();
         statementContextProvider = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );

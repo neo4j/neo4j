@@ -22,6 +22,8 @@ package org.neo4j.server.rest.streaming;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import org.json.JSONException;
 import org.junit.Test;
 
@@ -38,9 +40,12 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.StreamingFormat;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.tooling.GlobalGraphOperations;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 
@@ -650,7 +655,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
     {
         try ( Transaction transaction = graphdb().beginTx() )
         {
-            return IteratorUtil.count( (Iterable)graphdb().getAllNodes() );
+            return IteratorUtil.count( (Iterable) GlobalGraphOperations.at(graphdb()).getAllNodes() );
         }
     }
 }

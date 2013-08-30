@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
+package org.neo4j.kernel.configuration;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -27,10 +27,7 @@ import java.lang.annotation.Target;
 /**
  * Used to add a short description title for settings in {@link org.neo4j.graphdb.factory.GraphDatabaseSettings}.
  * These can then be accessed through the {@link org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle}.
- *
- * This is deprecated, it will be moved out of the public API in 1.11.
  */
-@Deprecated
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.FIELD )
 public @interface Title
