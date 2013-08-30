@@ -19,21 +19,24 @@
 
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
+
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 public class RolesDocTest extends AbstractJavaDocTestbase
 {
@@ -47,26 +50,26 @@ public class RolesDocTest extends AbstractJavaDocTestbase
     }
 
     /**
-     * This is an example showing a hierarchy of 
-     * roles. 
+     * This is an example showing a hierarchy of
+     * roles.
      * What's interesting is that a tree is not sufficient for storing this kind of structure,
      * as elaborated below.
      * 
      * image::roles.png[scaledwidth="100%"]
      * 
-     * This is an implementation of an example found in the article 
-     * http://www.codeproject.com/Articles/22824/A-Model-to-Represent-Directed-Acyclic-Graphs-DAG-o[A Model to Represent Directed Acyclic Graphs (DAG) on SQL Databases] 
+     * This is an implementation of an example found in the article
+     * http://www.codeproject.com/Articles/22824/A-Model-to-Represent-Directed-Acyclic-Graphs-DAG-o[A Model to Represent Directed Acyclic Graphs (DAG) on SQL Databases]
      * by http://www.codeproject.com/script/Articles/MemberArticles.aspx?amid=274518[Kemal Erdogan].
      * The article discusses how to store http://en.wikipedia.org/wiki/Directed_acyclic_graph[
-     * directed acyclic graphs] (DAGs) 
-     * in SQL based DBs. DAGs are almost trees, but with a twist: it may be possible to reach 
-     * the same node through different paths. Trees are restricted from this possibility, which 
-     * makes them much easier to handle. In our case it is ``Ali'' and ``Engin'', 
+     * directed acyclic graphs] (DAGs)
+     * in SQL based DBs. DAGs are almost trees, but with a twist: it may be possible to reach
+     * the same node through different paths. Trees are restricted from this possibility, which
+     * makes them much easier to handle. In our case it is ``Ali'' and ``Engin'',
      * as they are both admins and users and thus reachable through these group nodes.
      * Reality often looks this way and can't be captured by tree structures.
      * 
-     * In the article an SQL Stored Procedure solution is provided. The main idea, 
-     * that also have some support from scientists, is to pre-calculate all possible (transitive) paths. 
+     * In the article an SQL Stored Procedure solution is provided. The main idea,
+     * that also have some support from scientists, is to pre-calculate all possible (transitive) paths.
      * Pros and cons of this approach:
      * 
      * * decent performance on read
@@ -74,10 +77,10 @@ public class RolesDocTest extends AbstractJavaDocTestbase
      * * wastes _lots_ of space
      * * relies on stored procedures
      * 
-     * In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (green edges) relationships 
-     * to model the group hierarchy and +MEMBER_OF+ (blue edges) to model membership in groups. 
-     * We also connect the top level groups to the reference node by +ROOT+ relationships. 
-     * This gives us a useful partitioning of the graph. Neo4j has no predefined relationship 
+     * In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (green edges) relationships
+     * to model the group hierarchy and +MEMBER_OF+ (blue edges) to model membership in groups.
+     * We also connect the top level groups to the reference node by +ROOT+ relationships.
+     * This gives us a useful partitioning of the graph. Neo4j has no predefined relationship
      * types, you are free to create any relationship types and give them the semantics you want.
      * 
      * Lets now have a look at how to retrieve information from the graph. The Java code is using
@@ -109,7 +112,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
      * 
      * @@get-user-memberships
      * 
-     * resuling in: 
+     * resuling in:
      * 
      * @@o-get-user-memberships
      *
@@ -121,7 +124,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
      * 
      * == Get all groups ==
      * 
-     * In Java: 
+     * In Java:
      * 
      * @@get-groups
      * 
@@ -185,90 +188,92 @@ public class RolesDocTest extends AbstractJavaDocTestbase
         Traverser traverser = traversalDescription.traverse( admins );
         // END SNIPPET: get-admins
 
-        graphdb().beginTx();
-        gen.get().addSnippet( "o-get-admins", createOutputSnippet( traverserToString( traverser ) ) );
-        String query = "start admins=node("
-                       + admins.getId()
-                       + ") match admins<-[:PART_OF*0..]-group<-[:MEMBER_OF]-user return user.name, group.name";
-        gen.get().addSnippet( "query-get-admins", createCypherSnippet( query ) );
-        String result = engine.execute( query )
-                .dumpToString();
-        assertTrue( result.contains("Engin") );
-        gen.get().addSnippet( "o-query-get-admins", createQueryResultSnippet( result ) );
-        
-        //Jale's memberships
-        // START SNIPPET: get-user-memberships
-        Node jale = getNodeByName( "Jale" );
-        traversalDescription = Traversal.description()
-                .depthFirst()
-                .evaluator( Evaluators.excludeStartPosition() )
-                .relationships( RoleRels.MEMBER_OF, Direction.OUTGOING )
-                .relationships( RoleRels.PART_OF, Direction.OUTGOING );
-        traverser = traversalDescription.traverse( jale );
-        // END SNIPPET: get-user-memberships
-
-        gen.get().addSnippet( "o-get-user-memberships", createOutputSnippet( traverserToString( traverser ) ) );
-        query = "start jale=node("
-                + jale.getId()
-                + ") match jale-[:MEMBER_OF]->()-[:PART_OF*0..]->group return group.name";
-        gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
-        result = engine.execute( query )
-                .dumpToString();
-        assertTrue( result.contains("Users") );
-        gen.get()
-                .addSnippet( "o-query-get-user-memberships",
-                        createQueryResultSnippet( result ) );
-        
-        // get all groups
-        // START SNIPPET: get-groups
-        Node referenceNode = getNodeByName( "Reference_Node") ;
-        traversalDescription = Traversal.description()
-                .breadthFirst()
-                .evaluator( Evaluators.excludeStartPosition() )
-                .relationships( RoleRels.ROOT, Direction.INCOMING )
-                .relationships( RoleRels.PART_OF, Direction.INCOMING );
-        traverser = traversalDescription.traverse( referenceNode );
-        // END SNIPPET: get-groups
-
-        gen.get().addSnippet( "o-get-groups", createOutputSnippet( traverserToString( traverser ) ) );
-        query = "start refNode=node("
-                + referenceNode.getId()
-                + ") match refNode<-[:ROOT]->()<-[:PART_OF*0..]-group return group.name";
-        gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
-        result = engine.execute( query )
-                .dumpToString();
-        assertTrue( result.contains("Users") );
-        gen.get()
-                .addSnippet( "o-query-get-groups",
-                        createQueryResultSnippet( result ) );
-        
-        //get all members
-        // START SNIPPET: get-members
-        traversalDescription = Traversal.description()
-                .breadthFirst()
-                .evaluator(
-                        Evaluators.includeWhereLastRelationshipTypeIs( RoleRels.MEMBER_OF ) );
-        traverser = traversalDescription.traverse( referenceNode );
-        // END SNIPPET: get-members
-
-        gen.get().addSnippet( "o-get-members", createOutputSnippet( traverserToString( traverser ) ) );
-        query = "start refNode=node("+ referenceNode.getId() +") " +
-        		"match refNode<-[:ROOT]->root, p=root<-[PART_OF*0..]-()<-[:MEMBER_OF]-user " +
-        		"return user.name, min(length(p)) " +
-        		"order by min(length(p)), user.name";
-        gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
-        result = engine.execute( query )
-                .dumpToString();
-        assertTrue( result.contains("Engin") );
-        gen.get()
-                .addSnippet( "o-query-get-members",
-                        createQueryResultSnippet( result ) );
-
-        /* more advanced example
-        query = "start refNode=node("+ referenceNode.getId() +") " +
-                "match p=refNode<-[:ROOT]->parent<-[:PART_OF*0..]-group, group<-[:MEMBER_OF]-user return group.name, user.name, LENGTH(p) " +
-                "order by LENGTH(p)";
-                */
+        try ( Transaction tx = graphdb().beginTx() )
+        {
+            gen.get().addSnippet( "o-get-admins", createOutputSnippet( traverserToString( traverser ) ) );
+            String query = "start admins=node("
+                           + admins.getId()
+                           + ") match admins<-[:PART_OF*0..]-group<-[:MEMBER_OF]-user return user.name, group.name";
+            gen.get().addSnippet( "query-get-admins", createCypherSnippet( query ) );
+            String result = engine.execute( query )
+                    .dumpToString();
+            assertTrue( result.contains("Engin") );
+            gen.get().addSnippet( "o-query-get-admins", createQueryResultSnippet( result ) );
+            
+            //Jale's memberships
+            // START SNIPPET: get-user-memberships
+            Node jale = getNodeByName( "Jale" );
+            traversalDescription = Traversal.description()
+                    .depthFirst()
+                    .evaluator( Evaluators.excludeStartPosition() )
+                    .relationships( RoleRels.MEMBER_OF, Direction.OUTGOING )
+                    .relationships( RoleRels.PART_OF, Direction.OUTGOING );
+            traverser = traversalDescription.traverse( jale );
+            // END SNIPPET: get-user-memberships
+    
+            gen.get().addSnippet( "o-get-user-memberships", createOutputSnippet( traverserToString( traverser ) ) );
+            query = "start jale=node("
+                    + jale.getId()
+                    + ") match jale-[:MEMBER_OF]->()-[:PART_OF*0..]->group return group.name";
+            gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
+            result = engine.execute( query )
+                    .dumpToString();
+            assertTrue( result.contains("Users") );
+            gen.get()
+                    .addSnippet( "o-query-get-user-memberships",
+                            createQueryResultSnippet( result ) );
+            
+            // get all groups
+            // START SNIPPET: get-groups
+            Node referenceNode = getNodeByName( "Reference_Node") ;
+            traversalDescription = Traversal.description()
+                    .breadthFirst()
+                    .evaluator( Evaluators.excludeStartPosition() )
+                    .relationships( RoleRels.ROOT, Direction.INCOMING )
+                    .relationships( RoleRels.PART_OF, Direction.INCOMING );
+            traverser = traversalDescription.traverse( referenceNode );
+            // END SNIPPET: get-groups
+    
+            gen.get().addSnippet( "o-get-groups", createOutputSnippet( traverserToString( traverser ) ) );
+            query = "start refNode=node("
+                    + referenceNode.getId()
+                    + ") match refNode<-[:ROOT]->()<-[:PART_OF*0..]-group return group.name";
+            gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
+            result = engine.execute( query )
+                    .dumpToString();
+            assertTrue( result.contains("Users") );
+            gen.get()
+                    .addSnippet( "o-query-get-groups",
+                            createQueryResultSnippet( result ) );
+            
+            //get all members
+            // START SNIPPET: get-members
+            traversalDescription = Traversal.description()
+                    .breadthFirst()
+                    .evaluator(
+                            Evaluators.includeWhereLastRelationshipTypeIs( RoleRels.MEMBER_OF ) );
+            traverser = traversalDescription.traverse( referenceNode );
+            // END SNIPPET: get-members
+    
+            gen.get().addSnippet( "o-get-members", createOutputSnippet( traverserToString( traverser ) ) );
+            query = "start refNode=node("+ referenceNode.getId() +") " +
+            		"match refNode<-[:ROOT]->root, p=root<-[PART_OF*0..]-()<-[:MEMBER_OF]-user " +
+            		"return user.name, min(length(p)) " +
+            		"order by min(length(p)), user.name";
+            gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
+            result = engine.execute( query )
+                    .dumpToString();
+            assertTrue( result.contains("Engin") );
+            gen.get()
+                    .addSnippet( "o-query-get-members",
+                            createQueryResultSnippet( result ) );
+    
+            /* more advanced example
+            query = "start refNode=node("+ referenceNode.getId() +") " +
+                    "match p=refNode<-[:ROOT]->parent<-[:PART_OF*0..]-group, group<-[:MEMBER_OF]-user return group.name, user.name, LENGTH(p) " +
+                    "order by LENGTH(p)";
+                    */
+        }
     }
 
     private String traverserToString( Traverser traverser )

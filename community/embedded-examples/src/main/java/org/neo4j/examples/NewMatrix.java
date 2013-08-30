@@ -19,6 +19,7 @@
 package org.neo4j.examples;
 
 import java.io.File;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -69,8 +70,7 @@ public class NewMatrix
 
     public void createNodespace()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // Create matrix node
             Node matrix = graphDb.createNode();
@@ -115,10 +115,6 @@ public class NewMatrix
 
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     /**
@@ -135,8 +131,7 @@ public class NewMatrix
 
     public String printNeoFriends()
     {
-        Transaction transaction = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             Node neoNode = getNeoNode();
             // START SNIPPET: friends-usage
@@ -154,10 +149,6 @@ public class NewMatrix
             // END SNIPPET: friends-usage
             return output;
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     // START SNIPPET: get-friends
@@ -174,8 +165,7 @@ public class NewMatrix
 
     public String printMatrixHackers()
     {
-        Transaction transaction = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: find--hackers-usage
             String output = "Hackers:\n";
@@ -191,10 +181,6 @@ public class NewMatrix
             output += "Number of hackers found: " + numberOfHackers + "\n";
             // END SNIPPET: find--hackers-usage
             return output;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

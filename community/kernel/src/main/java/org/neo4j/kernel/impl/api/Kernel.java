@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -121,7 +122,7 @@ import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreList
  *
  * <ol>
  * <li>
- * tx.finish() --> TransactionImpl.commit() --> *KernelTransaction.commit()* --> TxManager.commit()
+ * tx.close() --> TransactionImpl.commit() --> *KernelTransaction.commit()* --> TxManager.commit()
  * </li>
  * <li>
  * TxManager.commit() --> TransactionImpl.doCommit() --> dataSource.commit()

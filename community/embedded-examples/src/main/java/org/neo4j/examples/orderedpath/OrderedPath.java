@@ -57,32 +57,36 @@ public class OrderedPath
 
     public Node createTheGraph()
     {
-        Transaction tx = db.beginTx();
-        // START SNIPPET: createGraph
-        Node A = db.createNode();
-        Node B = db.createNode();
-        Node C = db.createNode();
-        Node D = db.createNode();
-
-        A.createRelationshipTo( C, REL2 );
-        C.createRelationshipTo( D, REL3 );
-        A.createRelationshipTo( B, REL1 );
-        B.createRelationshipTo( C, REL2 );
-        // END SNIPPET: createGraph
-        A.setProperty( "name", "A" );
-        B.setProperty( "name", "B" );
-        C.setProperty( "name", "C" );
-        D.setProperty( "name", "D" );
-        tx.success();
-        tx.finish();
-        return A;
+        try ( Transaction tx = db.beginTx() )
+        {
+            // START SNIPPET: createGraph
+            Node A = db.createNode();
+            Node B = db.createNode();
+            Node C = db.createNode();
+            Node D = db.createNode();
+    
+            A.createRelationshipTo( C, REL2 );
+            C.createRelationshipTo( D, REL3 );
+            A.createRelationshipTo( B, REL1 );
+            B.createRelationshipTo( C, REL2 );
+            // END SNIPPET: createGraph
+            A.setProperty( "name", "A" );
+            B.setProperty( "name", "B" );
+            C.setProperty( "name", "C" );
+            D.setProperty( "name", "D" );
+            tx.success();
+            return A;
+        }
     }
 
     public void shutdownGraph()
     {
         try
         {
-            if ( db != null ) db.shutdown();
+            if ( db != null )
+            {
+                db.shutdown();
+            }
         }
         finally
         {
@@ -122,8 +126,7 @@ public class OrderedPath
 
     String printPaths( TraversalDescription td, Node A )
     {
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             String output = "";
             // START SNIPPET: printPath
@@ -136,10 +139,6 @@ public class OrderedPath
             // END SNIPPET: printPath
             output += "\n";
             return output;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

@@ -37,6 +37,7 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
@@ -70,14 +71,9 @@ public class OrderedPathDocTest
     {
         Node A = orderedPath.createTheGraph();
         TraversalDescription traversalDescription = orderedPath.findPaths();
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             assertEquals( 1, count( traversalDescription.traverse( A ) ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
         String output = orderedPath.printPaths( traversalDescription, A );
         assertTrue( output.contains( "(A)--[REL1]-->(B)--[REL2]-->(C)--[REL3]-->(D)" ) );

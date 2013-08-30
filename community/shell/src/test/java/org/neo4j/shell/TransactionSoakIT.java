@@ -29,6 +29,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -37,6 +38,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class TransactionSoakIT
@@ -70,15 +72,18 @@ public class TransactionSoakIT
         stopTesters( testers );
         waitForThreadsToFinish( threads );
 
-        long relationshipCount = count( GlobalGraphOperations.at( db ).getAllRelationships() );
-        int expected = committerCount( testers );
-
-        assertEquals( expected, relationshipCount );
+        try ( Transaction tx = db.beginTx() )
+        {
+            long relationshipCount = count( GlobalGraphOperations.at( db ).getAllRelationships() );
+            int expected = committerCount( testers );
+    
+            assertEquals( expected, relationshipCount );
+        }
     }
 
     private List<Tester> createTesters() throws Exception
     {
-        List<Tester> testers = new ArrayList<Tester>( 20 );
+        List<Tester> testers = new ArrayList<>( 20 );
         for ( int i = 0; i < 20; i++ )
         {
             int x = r.nextInt( 3 );

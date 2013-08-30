@@ -28,6 +28,7 @@ import java.util.Properties;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -46,6 +47,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.Platforms.platformIsWindows;
 
 public class StartupTimeoutDocIT
@@ -72,7 +74,9 @@ public class StartupTimeoutDocIT
     public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException
     {
         if(platformIsWindows())
+        {
             return;
+        }
 
         Configurator configurator = buildProperties();
         configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 1 );
@@ -90,7 +94,7 @@ public class StartupTimeoutDocIT
     }
 
 	@Test
-	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException 
+	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
 	{
 		Configurator configurator = buildProperties();
 		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 100);
@@ -120,7 +124,7 @@ public class StartupTimeoutDocIT
 	}
     
 	@Test
-	public void shouldNotTimeOutIfTimeoutDisabled() throws IOException 
+	public void shouldNotTimeOutIfTimeoutDisabled() throws IOException
 	{
         Configurator configurator = buildProperties();
         configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 0 );
@@ -194,19 +198,22 @@ public class StartupTimeoutDocIT
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     @Test
-    public void shoulWOrk() throws Exception
+    public void shoulWork() throws Exception
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
 
         clearAll();
         
-        tx = db.beginTx();
-        db.createNode();
-        tx.success();tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
 
         clearAll();
     }

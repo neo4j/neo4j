@@ -114,7 +114,13 @@ public class TopLevelTransaction implements Transaction
     }
 
     @Override
-    public void finish()
+    public final void finish()
+    {
+        close();
+    }
+    
+    @Override
+    public void close()
     {
         try
         {

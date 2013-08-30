@@ -66,7 +66,7 @@ NOTE: This will not perform as good as using the +BatchInserter+ API directly.
 
 Also be aware of the following:
 
-* Starting a transaction or invoking +Transaction.finish()+ or +Transaction.success()+ will do nothing.
+* Starting a transaction or invoking +Transaction.finish()/close()+ or +Transaction.success()+ will do nothing.
 * Invoking the +Transaction.failure()+ method will generate a +NotInTransaction+ exception.
 * +Node.delete()+ and +Node.traverse()+ are not supported.
 * +Relationship.delete()+ is not supported.

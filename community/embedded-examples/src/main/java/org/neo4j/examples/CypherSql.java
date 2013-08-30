@@ -18,17 +18,29 @@
  */
 package org.neo4j.examples;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.*;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.index.Index;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.index.Index;
 
 public class CypherSql
 {
@@ -284,8 +296,7 @@ public class CypherSql
             String targetMatchAttribute, Object[][] relationships,
             String relationshipType )
     {
-        Transaction tx = graphdb.beginTx();
-        try
+        try ( Transaction tx = graphdb.beginTx() )
         {
             RelationshipType type = DynamicRelationshipType.withName( relationshipType );
             Index<Node> sourceIndex = graphdb.index()
@@ -304,10 +315,6 @@ public class CypherSql
             }
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private void createEntities( String tableName, String tableDefinition,
@@ -320,10 +327,9 @@ public class CypherSql
     }
 
     private void insertIntoGraphdb( String tableName, String[] fields,
-            Object[][] values ) throws SQLException
+            Object[][] values )
     {
-        Transaction tx = graphdb.beginTx();
-        try
+        try ( Transaction tx = graphdb.beginTx() )
         {
             Index<Node> index = graphdb.index()
                     .forNodes( tableName );
@@ -341,10 +347,6 @@ public class CypherSql
             }
 
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -381,13 +383,9 @@ public class CypherSql
         String sql = "CREATE TABLE " + identifierQuoteString + name
                      + identifierQuoteString + "(" + definition + ")";
 
-        Statement statement = sqldb.createStatement();
-        try
+        try ( Statement statement = sqldb.createStatement() )
         {
             statement.execute( sql );
-        } finally
-        {
-            statement.close();
         }
     }
 
@@ -553,32 +551,22 @@ public class CypherSql
 
     String executeCypher( String cypher )
     {
-        Transaction transaction = graphdb.beginTx();
-        try
+        try ( Transaction transaction = graphdb.beginTx() )
         {
             ExecutionResult executionResult = engine.execute( cypher );
             return executionResult.dumpToString();
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
     String executeSql( String sql ) throws SQLException
     {
         StringBuilder builder = new StringBuilder( 512 );
-        Statement statement = null;
-        try
+        try ( Statement statement = sqldb.createStatement() )
         {
-            statement = sqldb.createStatement();
             if ( statement.execute( sql ) )
             {
-                ResultSet result = null;
-                try
+                try ( ResultSet result = statement.getResultSet() )
                 {
-                    result  = statement.getResultSet();
-
                     ResultSetMetaData meta = result.getMetaData();
                     int rowCount = 0;
                     int columnCount = meta.getColumnCount();
@@ -607,23 +595,11 @@ public class CypherSql
                     builder.append( line )
                             .append( rowCount )
                             .append( " rows\n" );
-                } finally
-                {
-                    if(result != null)
-                    {
-                        result.close();
-                    }
                 }
             }
             else
             {
                 throw new RuntimeException( "Couldn't execute: " + sql );
-            }
-        } finally
-        {
-            if(statement != null)
-            {
-                statement.close();
             }
         }
         return builder.toString();

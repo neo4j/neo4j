@@ -19,6 +19,7 @@
 package org.neo4j.examples;
 
 import java.io.File;
+
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
@@ -47,8 +48,7 @@ public class CalculateShortestPath
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         indexService = graphDb.index().forNodes( "nodes" );
         registerShutdownHook();
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             /*
              *  (Neo) --> (Trinity)
@@ -64,10 +64,6 @@ public class CalculateShortestPath
             createChain( "Morpheus", "Cypher", "Agent Smith" );
             createChain( "Morpheus", "Agent Smith" );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         // So let's find the shortest path between Neo and Agent Smith
