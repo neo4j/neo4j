@@ -3,10 +3,10 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>org.neo4j.assembly</groupId>
+    <artifactId>neo4j-standalone</artifactId>
     <version>2.0-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
+    <relativePath>../standalone</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -18,6 +18,7 @@
   <description>Easy-to-use Neo4j database in an .exe</description>
 
   <properties>
+    <neo4j.version>${project.version}</neo4j.version>
     <config.destination>${project.build.outputDirectory}/org/neo4j/server/config/community</config.destination>
     <maven.site.skip>true</maven.site.skip>
     <maven.site.deploy.skip>true</maven.site.deploy.skip>
@@ -50,6 +51,36 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>licensing-maven-plugin</artifactId>
+        <configuration>
+          <prependText>notice-gpl-prefix.txt</prependText>
+        </configuration>
+        <executions>
+          <execution>
+            <id>list-all-licenses-win</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <licensingRequirementFiles>
+                <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-installer.xml</licensingRequirementFile>
+              </licensingRequirementFiles>
+              <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-NOTICE-win.txt</thirdPartyLicensingFilename>
+              <checkExistingNoticeFile>${project.build.directory}/../src/main/distribution/text/community/NOTICE.txt</checkExistingNoticeFile>
+              <listPrependText>list-prefix.txt</listPrependText>
+              <listReport>${project.artifactId}-${neo4j.version}-LICENSES-win.txt</listReport>
+              <checkExistingLicensesFile>${project.build.directory}/../src/main/distribution/text/community/LICENSES.txt</checkExistingLicensesFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
