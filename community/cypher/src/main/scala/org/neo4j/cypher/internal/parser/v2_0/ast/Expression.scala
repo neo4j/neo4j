@@ -215,3 +215,34 @@ case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken
     commandexpressions.LiteralMap(literalMap)
   }
 }
+
+case class CollectionSlice(collection: Expression, from: Option[Expression], to: Option[Expression], token: InputToken)
+  extends Expression {
+
+  override def semanticCheck(ctx: SemanticContext) =
+    collection.semanticCheck(ctx) then
+      collection.constrainType(CollectionType(AnyType())) then
+      when(from.isEmpty && to.isEmpty) {
+        SemanticError("The start or end (or both) is required for a collection slice", token)
+      } then
+      from.semanticCheck(ctx) then
+      from.constrainType(IntegerType(), LongType()) then
+      to.semanticCheck(ctx) then
+      to.constrainType(IntegerType(), LongType()) then
+      specifyType(collection.types)
+
+  def toCommand = commandexpressions.CollectionSliceExpression(collection.toCommand, from.map(_.toCommand), to.map(_.toCommand))
+}
+
+case class CollectionIndex(collection: Expression, idx: Expression, token: InputToken)
+  extends Expression {
+
+  override def semanticCheck(ctx: SemanticContext) =
+    collection.semanticCheck(ctx) then
+      collection.constrainType(CollectionType(AnyType())) then
+      idx.semanticCheck(ctx) then
+      idx.constrainType(IntegerType(), LongType()) then
+      specifyType(collection.types(_).map(_.iteratedType))
+
+  def toCommand = commandexpressions.CollectionIndex(collection.toCommand, idx.toCommand)
+}

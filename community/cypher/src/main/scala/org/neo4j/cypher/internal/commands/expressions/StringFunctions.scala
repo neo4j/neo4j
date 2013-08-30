@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{IsMap, IsCollection, CollectionSupport}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.{ExecutionContext}
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.internal.pipes.QueryState
+import scala.collection.Map
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
   def innerExpectedType = StringType()
@@ -58,6 +59,7 @@ trait StringHelper {
   protected def text(a: Any, qtx: QueryContext): String = a match {
     case x: Node            => x.toString + props(x, qtx)
     case x: Relationship    => ":" + x.getType.name() + "[" + x.getId + "]" + props(x, qtx)
+    case IsMap(m)           => makeString(m, qtx)
     case IsCollection(coll) => coll.map(elem => text(elem, qtx)).mkString("[", ",", "]")
     case x: String          => "\"" + x + "\""
     case v: KeyToken        => v.name
@@ -65,6 +67,10 @@ trait StringHelper {
     case null               => "<null>"
     case x                  => x.toString
   }
+
+  private def makeString(m: QueryContext => Map[String, Any], qtx: QueryContext) = m(qtx).map {
+    case (k, v) => k + " -> " + text(v, qtx)
+  }.mkString("{", ", ", "}")
 
   def makeSize(txt: String, wantedSize: Int): String = {
     val actualSize = txt.length()

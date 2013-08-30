@@ -33,16 +33,17 @@ class LinkedListTest extends ArticleTest with StatisticsChecker {
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   override def assert(name: String, result: ExecutionResult) {
+    val list: List[Map[String, Any]] = result.toList
     name match {
       case "create" =>
+        assert(list.size === 1)
         assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 0)
-        assert(result.toList.size === 0)
       case "add"    =>
+        assert(list.size === 0)
         assertStats(result, nodesCreated = 1, relationshipsCreated = 2, propertiesSet = 1, relationshipsDeleted = 1)
-        assert(result.toList.size === 0)
       case "delete" =>
+        assert(list.size === 0)
         assertStats(result, nodesDeleted = 1, relationshipsCreated = 1, relationshipsDeleted = 2)
-        assert(result.toList.size === 0)
     }
   }
 
