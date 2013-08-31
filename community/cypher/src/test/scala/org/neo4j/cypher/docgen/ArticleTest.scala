@@ -57,7 +57,6 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   
   def executeQuery(queryText: String)(implicit engine: ExecutionEngine): ExecutionResult = try {
     val result = engine.execute(replaceNodeIds(queryText))
-    result.toList //Let's materialize the result
     result.dumpToString()
     result
   } catch {
@@ -124,25 +123,36 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
 
   def runQuery(emptyGraph: Boolean, query: String, possibleAssertion: Seq[String]): String = {
-    val result = if (emptyGraph) {
-      val db = new ImpermanentGraphDatabase()
-      val engine = new ExecutionEngine(db)
-      val result = executeQuery(query)(engine)
-      db.shutdown()
-      result
+
+    def testAssertions(result:ExecutionResult) {
+      possibleAssertion.foreach(name => assert(name, result) )
     }
-    else
-      executeQuery(query)
 
-    possibleAssertion.foreach(name => {
+    if (emptyGraph) {
+      val db = new ImpermanentGraphDatabase()
       try {
-        assert(name, result)
-      } catch {
-        case e:Exception => throw new RuntimeException("Test: %s\n%s".format(name, e.getMessage), e)
-      }
-    })
+        val engine = new ExecutionEngine(db)
 
-    result.dumpToString()
+        val tx: Transaction = db.beginTx()
+        val result = executeQuery(query)(engine)
+        testAssertions(result)
+        tx.failure()
+        tx.finish()
+
+        executeQuery(query)(engine).dumpToString()
+      } finally {
+        db.shutdown()
+      }
+    }
+    else {
+      val tx: Transaction = db.beginTx()
+      val result = executeQuery(query)
+      testAssertions(result)
+      tx.failure()
+      tx.finish()
+
+      executeQuery(query).dumpToString()
+    }
   }
 
   private def consoleSnippet(query: String, empty: Boolean): String = {
