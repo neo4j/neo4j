@@ -19,10 +19,6 @@
  */
 package examples;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -31,6 +27,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -46,6 +43,10 @@ import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class AutoIndexerExampleTests implements GraphHolder
 {
@@ -82,10 +83,9 @@ public class AutoIndexerExampleTests implements GraphHolder
             setConfig( GraphDatabaseSettings.relationship_auto_indexing, "true" ).
             newGraphDatabase();
 
-        Transaction tx = graphDb.beginTx();
         Node node1 = null, node2 = null;
         Relationship rel = null;
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // Create the primitives
             node1 = graphDb.createNode();
@@ -103,43 +103,36 @@ public class AutoIndexerExampleTests implements GraphHolder
             // Make things persistent
             tx.success();
         }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
-        finally
-        {
-            tx.finish();
-        }
         // END SNIPPET: ConfigAutoIndexer
 
         // START SNIPPET: APIReadAutoIndex
-        Transaction transaction = graphDb.beginTx();
-        // Get the Node auto index
-        ReadableIndex<Node> autoNodeIndex = graphDb.index()
-                .getNodeAutoIndexer()
-                .getAutoIndex();
-        // node1 and node2 both had auto indexed properties, get them
-        assertEquals( node1,
-                autoNodeIndex.get( "nodeProp1", "nodeProp1Value" ).getSingle() );
-        assertEquals( node2,
-                autoNodeIndex.get( "nodeProp2", "nodeProp2Value" ).getSingle() );
-        // node2 also had a property that should be ignored.
-        assertFalse( autoNodeIndex.get( "nonIndexed",
-                "nodeProp2NonIndexedValue" ).hasNext() );
-
-        // Get the relationship auto index
-        ReadableIndex<Relationship> autoRelIndex = graphDb.index()
-                .getRelationshipAutoIndexer()
-                .getAutoIndex();
-        // One property was set for auto indexing
-        assertEquals( rel,
-                autoRelIndex.get( "relProp1", "relProp1Value" ).getSingle() );
-        // The rest should be ignored
-        assertFalse( autoRelIndex.get( "relPropNonIndexed",
-                "relPropValueNonIndexed" ).hasNext() );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            // Get the Node auto index
+            ReadableIndex<Node> autoNodeIndex = graphDb.index()
+                    .getNodeAutoIndexer()
+                    .getAutoIndex();
+            // node1 and node2 both had auto indexed properties, get them
+            assertEquals( node1,
+                    autoNodeIndex.get( "nodeProp1", "nodeProp1Value" ).getSingle() );
+            assertEquals( node2,
+                    autoNodeIndex.get( "nodeProp2", "nodeProp2Value" ).getSingle() );
+            // node2 also had a property that should be ignored.
+            assertFalse( autoNodeIndex.get( "nonIndexed",
+                    "nodeProp2NonIndexedValue" ).hasNext() );
+    
+            // Get the relationship auto index
+            ReadableIndex<Relationship> autoRelIndex = graphDb.index()
+                    .getRelationshipAutoIndexer()
+                    .getAutoIndex();
+            // One property was set for auto indexing
+            assertEquals( rel,
+                    autoRelIndex.get( "relProp1", "relProp1Value" ).getSingle() );
+            // The rest should be ignored
+            assertFalse( autoRelIndex.get( "relPropNonIndexed",
+                    "relPropValueNonIndexed" ).hasNext() );
+        }
         // END SNIPPET: APIReadAutoIndex
-        transaction.finish();
         graphDb.shutdown();
     }
 
@@ -170,10 +163,9 @@ public class AutoIndexerExampleTests implements GraphHolder
 
         // END SNIPPET: APIAutoIndexer
 
-        Transaction tx = graphDb.beginTx();
         Node node1 = null, node2 = null;
         Relationship rel = null;
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // Create the primitives
             node1 = graphDb.createNode();
@@ -191,34 +183,27 @@ public class AutoIndexerExampleTests implements GraphHolder
             // Make things persistent
             tx.success();
         }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
-        finally
-        {
-            tx.finish();
-        }
 
-        Transaction transaction = graphDb.beginTx();
-        // Get the Node auto index
-        ReadableIndex<Node> autoNodeIndex = nodeAutoIndexer.getAutoIndex();
-        // node1 and node2 both had auto indexed properties, get them
-        assertEquals( node1,
-                autoNodeIndex.get( "nodeProp1", "nodeProp1Value" ).getSingle() );
-        assertEquals( node2,
-                autoNodeIndex.get( "nodeProp2", "nodeProp2Value" ).getSingle() );
-        // node2 also had a property that should be ignored.
-        assertFalse( autoNodeIndex.get( "nonIndexed",
-                "nodeProp2NonIndexedValue" ).hasNext() );
-
-        // Get the relationship auto index
-        ReadableIndex<Relationship> autoRelIndex = relAutoIndexer.getAutoIndex();
-        // All properties ignored
-        assertEquals( rel,
-                autoRelIndex.get( "relProp1", "relProp1Value1" ).getSingle() );
-        assertFalse( autoRelIndex.get( "relPropNonIndexed", "relProp1Value2" ).hasNext() );
-        transaction.finish();
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            // Get the Node auto index
+            ReadableIndex<Node> autoNodeIndex = nodeAutoIndexer.getAutoIndex();
+            // node1 and node2 both had auto indexed properties, get them
+            assertEquals( node1,
+                    autoNodeIndex.get( "nodeProp1", "nodeProp1Value" ).getSingle() );
+            assertEquals( node2,
+                    autoNodeIndex.get( "nodeProp2", "nodeProp2Value" ).getSingle() );
+            // node2 also had a property that should be ignored.
+            assertFalse( autoNodeIndex.get( "nonIndexed",
+                    "nodeProp2NonIndexedValue" ).hasNext() );
+    
+            // Get the relationship auto index
+            ReadableIndex<Relationship> autoRelIndex = relAutoIndexer.getAutoIndex();
+            // All properties ignored
+            assertEquals( rel,
+                    autoRelIndex.get( "relProp1", "relProp1Value1" ).getSingle() );
+            assertFalse( autoRelIndex.get( "relPropNonIndexed", "relProp1Value2" ).hasNext() );
+        }
         graphDb.shutdown();
     }
 
@@ -236,9 +221,8 @@ public class AutoIndexerExampleTests implements GraphHolder
             setConfig( GraphDatabaseSettings.node_auto_indexing, "true" ).
             newGraphDatabase();
 
-        Transaction tx = graphDb.beginTx();
         Node node1 = null, node2 = null, node3 = null, node4 = null;
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // Create the primitives
             node1 = graphDb.createNode();
@@ -255,14 +239,6 @@ public class AutoIndexerExampleTests implements GraphHolder
             // Make things persistent
             tx.success();
         }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
-        finally
-        {
-            tx.finish();
-        }
 
         /*
          *  Here both nodes are indexed. To demonstrate removal, we stop
@@ -271,8 +247,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
         nodeAutoIndexer.stopAutoIndexingProperty( "nodeProp1" );
 
-        tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             /*
              * nodeProp1 is no longer auto indexed. It will be
@@ -290,35 +265,28 @@ public class AutoIndexerExampleTests implements GraphHolder
             // Make things persistent
             tx.success();
         }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
-        finally
-        {
-            tx.finish();
-        }
 
-        Transaction transaction = graphDb.beginTx();
-        // Verify
-        ReadableIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
-        // node1 is completely gone
-        assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value" ).hasNext() );
-        assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value2" ).hasNext() );
-        // node2 is updated
-        assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp2Value" ).hasNext() );
-        assertEquals( node2,
-                nodeAutoIndex.get( "nodeProp2", "nodeProp2Value2" ).getSingle() );
-        /*
-         * node3 is still there, despite its nodeProp1 property not being monitored
-         * any more because it was not touched, in contrast with node1.
-         */
-        assertEquals( node3,
-                nodeAutoIndex.get( "nodeProp1", "nodeProp3Value" ).getSingle() );
-        // Finally, node4 is removed because the property was removed.
-        assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp4Value" ).hasNext() );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            // Verify
+            ReadableIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
+            // node1 is completely gone
+            assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value" ).hasNext() );
+            assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value2" ).hasNext() );
+            // node2 is updated
+            assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp2Value" ).hasNext() );
+            assertEquals( node2,
+                    nodeAutoIndex.get( "nodeProp2", "nodeProp2Value2" ).getSingle() );
+            /*
+             * node3 is still there, despite its nodeProp1 property not being monitored
+             * any more because it was not touched, in contrast with node1.
+             */
+            assertEquals( node3,
+                    nodeAutoIndex.get( "nodeProp1", "nodeProp3Value" ).getSingle() );
+            // Finally, node4 is removed because the property was removed.
+            assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp4Value" ).hasNext() );
+        }
         // END SNIPPET: Mutations
-        transaction.finish();
         graphDb.shutdown();
     }
 
@@ -342,7 +310,10 @@ public class AutoIndexerExampleTests implements GraphHolder
     @AfterClass
     public static void stopDatabase()
     {
-        if ( graphdb != null ) graphdb.shutdown();
+        if ( graphdb != null )
+        {
+            graphdb.shutdown();
+        }
         graphdb = null;
     }
 
@@ -351,5 +322,4 @@ public class AutoIndexerExampleTests implements GraphHolder
     {
         return graphdb;
     }
-
 }

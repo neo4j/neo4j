@@ -25,8 +25,10 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.junit.ClassRule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,7 +44,9 @@ import org.neo4j.graphmatching.ValueMatcher;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Example code for the index page of the component site.
@@ -120,6 +124,7 @@ public class TestSiteIndexExamples
         {
             long now = new Date().getTime();
 
+            @Override
             public boolean matches( Object value )
             {
                 if ( value instanceof Long )
@@ -158,6 +163,7 @@ public class TestSiteIndexExamples
         final RelationshipType type = DynamicRelationshipType.withName( "RELATED" );
         Node[] nodes = createGraph( new GraphDefinition<Node[]>()
         {
+            @Override
             public Node[] create( GraphDatabaseService graphdb )
             {
                 Node[] nodes = new Node[5];
@@ -176,16 +182,10 @@ public class TestSiteIndexExamples
                 return nodes;
             }
         } );
-        Transaction tx = graphDb.getGraphDatabaseService().beginTx();
-        try
+        try ( Transaction tx = graphDb.getGraphDatabaseService().beginTx() )
         {
-            assertEquals( 3,
-                    count( findNodesWithRelationshipsTo( type, nodes ) ) );
+            assertEquals( 3, count( findNodesWithRelationshipsTo( type, nodes ) ) );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -195,6 +195,7 @@ public class TestSiteIndexExamples
     {
         Node root = createGraph( new GraphDefinition<Node>()
         {
+            @Override
             public Node create( GraphDatabaseService graphdb )
             {
                 Node me = graphdb.createNode();
@@ -235,22 +236,19 @@ public class TestSiteIndexExamples
             }
         } );
 
-        Set<String> expected = new HashSet<String>( Arrays.asList( "Andy",
-                "Bob" ) );
-
-        Iterable<Node> friends = findFriendsSinceSpecifiedTimeInSpecifiedPlace(
-                root, "Stockholm", 3 );
-
-        Transaction transaction = graphDb.getGraphDatabaseService().beginTx();
-        for ( Node friend : friends )
+        Set<String> expected = new HashSet<>( Arrays.asList( "Andy", "Bob" ) );
+        Iterable<Node> friends = findFriendsSinceSpecifiedTimeInSpecifiedPlace( root, "Stockholm", 3 );
+        
+        try ( Transaction transaction = graphDb.getGraphDatabaseService().beginTx() )
         {
-            String name = (String) friend.getProperty( "name", null );
-            assertNotNull( name );
-            assertTrue( "Unexpected friend: " + name, expected.remove( name ) );
+            for ( Node friend : friends )
+            {
+                String name = (String) friend.getProperty( "name", null );
+                assertNotNull( name );
+                assertTrue( "Unexpected friend: " + name, expected.remove( name ) );
+            }
+            assertTrue( "These friends were not found: " + expected, expected.isEmpty() );
         }
-        assertTrue( "These friends were not found: " + expected,
-                expected.isEmpty() );
-        transaction.finish();
     }
 
     private int count( Iterable<?> objects )
@@ -270,17 +268,11 @@ public class TestSiteIndexExamples
 
     private <T> T createGraph( GraphDefinition<T> definition )
     {
-        final T result;
-        Transaction tx = graphDb.getGraphDatabaseService().beginTx();
-        try
+        try ( Transaction tx = graphDb.getGraphDatabaseService().beginTx() )
         {
-            result = definition.create( graphDb.getGraphDatabaseService() );
+            T result = definition.create( graphDb.getGraphDatabaseService() );
             tx.success();
+            return result;
         }
-        finally
-        {
-            tx.finish();
-        }
-        return result;
     }
 }

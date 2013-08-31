@@ -39,7 +39,7 @@ public class PlaceboTransaction extends TopLevelTransaction
     }
 
     @Override
-    public void finish()
+    public void close()
     {
         if ( !transactionOutcome.successCalled() && !transactionOutcome.failureCalled() )
         {

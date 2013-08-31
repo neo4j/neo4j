@@ -230,6 +230,11 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         public void finish()
         {
         }
+        
+        @Override
+        public void close()
+        {
+        }
 
         @Override
         public void success()

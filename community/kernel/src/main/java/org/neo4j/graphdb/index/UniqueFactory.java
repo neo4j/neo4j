@@ -230,8 +230,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
         boolean wasCreated = false;
         if ( result == null )
         {
-            Transaction tx = graphDatabase().beginTx();
-            try
+            try ( Transaction tx = graphDatabase().beginTx() )
             {
                 Map<String, Object> properties = Collections.singletonMap( key, value );
                 T created = create( properties );
@@ -247,10 +246,6 @@ public abstract class UniqueFactory<T extends PropertyContainer>
                     delete( created );
                 }
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
         return new UniqueEntity<T>( result, wasCreated );

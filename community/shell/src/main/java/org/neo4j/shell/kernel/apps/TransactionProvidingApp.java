@@ -225,16 +225,11 @@ public abstract class TransactionProvidingApp extends AbstractApp
     public Continuation execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
-        Transaction tx = getServer().getDb().beginTx();
-        try
+        try ( Transaction tx = getServer().getDb().beginTx() )
         {
             Continuation result = this.exec( parser, session, out );
             tx.success();
             return result;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -724,7 +719,10 @@ public abstract class TransactionProvidingApp extends AbstractApp
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
                 caseInsensitiveFilters, looseFilters );
         Expander expander = Traversal.emptyExpander();
-        if ( matches == null ) return EMPTY_EXPANDER;
+        if ( matches == null )
+        {
+            return EMPTY_EXPANDER;
+        }
         for ( Map.Entry<String, Direction> entry : matches.entrySet() )
         {
             expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
@@ -767,7 +765,9 @@ public abstract class TransactionProvidingApp extends AbstractApp
     {
         String labelValue = parser.option( "l", null );
         if ( labelValue == null )
+        {
             return EMPTY_LABELS;
+        }
         
         labelValue = labelValue.trim();
         if ( labelValue.startsWith( "[" ) )

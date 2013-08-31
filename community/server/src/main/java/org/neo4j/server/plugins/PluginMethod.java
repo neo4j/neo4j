@@ -49,17 +49,12 @@ class PluginMethod extends PluginPoint
             throws BadPluginInvocationException, PluginInvocationFailureException, BadInputException
     {
         Object[] arguments = new Object[extractors.length];
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             for ( int i = 0; i < arguments.length; i++ )
             {
                 arguments[i] = extractors[i].extract( graphDb, source, params );
             }
-        }
-        finally
-        {
-            tx.finish();
         }
         try
         {
@@ -69,17 +64,17 @@ class PluginMethod extends PluginPoint
             {
                 return Representation.emptyRepresentation();
             }
-            else
-            {
-                return result.convert( returned );
-            }
+            return result.convert( returned );
         }
         catch ( InvocationTargetException exc )
         {
             Throwable targetExc = exc.getTargetException();
             for ( Class<?> excType : method.getExceptionTypes() )
             {
-                if ( excType.isInstance( targetExc ) ) throw new BadPluginInvocationException( targetExc );
+                if ( excType.isInstance( targetExc ) )
+                {
+                    throw new BadPluginInvocationException( targetExc );
+                }
             }
             throw new PluginInvocationFailureException( targetExc );
         }

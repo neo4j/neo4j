@@ -18,8 +18,6 @@
  */
 package org.neo4j.examples;
 
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -35,6 +33,8 @@ import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 public class Matrix
 {
@@ -73,8 +73,7 @@ public class Matrix
 
     public void createNodespace()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // Create base Matrix node
             Node matrix = graphDb.createNode();
@@ -119,10 +118,6 @@ public class Matrix
 
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     /**
@@ -139,8 +134,7 @@ public class Matrix
 
     public String printNeoFriends()
     {
-        Transaction transaction = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             Node neoNode = getNeoNode();
             // START SNIPPET: friends-usage
@@ -158,10 +152,6 @@ public class Matrix
             // END SNIPPET: friends-usage
             return output.toString();
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     // START SNIPPET: get-friends
@@ -176,8 +166,7 @@ public class Matrix
 
     public String printMatrixHackers()
     {
-        Transaction transaction = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: find--hackers-usage
             StringBuilder output = new StringBuilder("Hackers:\n");
@@ -193,10 +182,6 @@ public class Matrix
             output.append( String.format( "Number of hackers found: %d\n", numberOfHackers ) );
             // END SNIPPET: find--hackers-usage
             return output.toString();
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

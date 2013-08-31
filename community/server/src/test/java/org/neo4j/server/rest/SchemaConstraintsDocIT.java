@@ -224,7 +224,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
      * Create an index for a label and property key which already exists.
      */
     @Test
-    public void create_existing_constraint() throws PropertyValueException
+    public void create_existing_constraint()
     {
         String labelName = "mylabel", propertyKey = "name";
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
@@ -244,7 +244,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
      * Creating a compound index should not yet be supported.
      */
     @Test
-    public void create_compound_schema_index() throws PropertyValueException
+    public void create_compound_schema_index()
     {
         Map<String, Object> definition = map( "property_keys", asList( "first", "other" ) );
 
@@ -254,17 +254,12 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 
     private ConstraintDefinition createLabelUniquenessPropertyConstraint( String labelName, String propertyKey )
     {
-        Transaction tx = graphdb().beginTx();
-        try
+        try ( Transaction tx = graphdb().beginTx() )
         {
             ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( label( labelName ) ).unique
                     ().on( propertyKey ).create();
             tx.success();
             return constraintDefinition;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

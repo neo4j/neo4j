@@ -21,12 +21,14 @@
 package org.neo4j.examples;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 public class TraversalDocTest extends AbstractJavaDocTestbase
 {
@@ -50,8 +52,8 @@ public class TraversalDocTest extends AbstractJavaDocTestbase
      * 
      * @@knowslikesoutput
      * 
-     * Since http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+]s 
-     * are immutable it is also useful to create template descriptions which holds common 
+     * Since http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+]s
+     * are immutable it is also useful to create template descriptions which holds common
      * settings shared by different traversals. For example, let's start with this traverser:
      * 
      * @@basetraverser
@@ -77,13 +79,13 @@ public class TraversalDocTest extends AbstractJavaDocTestbase
      * 
      * @@output4
      * 
-     * For various useful evaluators, see the 
+     * For various useful evaluators, see the
      * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Evaluators.html[Evaluators] Java API
      * or simply implement the
      * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Evaluator.html[Evaluator] interface yourself.
      * 
-     * If you're not interested in the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+]s, 
-     * but the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[+Node+]s 
+     * If you're not interested in the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+]s,
+     * but the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[+Node+]s
      * you can transform the traverser into an iterable of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#nodes()[nodes]
      * like this:
      * 
@@ -119,44 +121,30 @@ public class TraversalDocTest extends AbstractJavaDocTestbase
                         createGraphVizWithNodeId( "Traversal Example Graph", graphdb(),
                         gen.get().getTitle() ) );
 
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             String output = example.knowsLikesTraverser( joe );
-            gen.get()
-                    .addSnippet( "knowslikesoutput", createOutputSnippet( output ) );
+            gen.get().addSnippet( "knowslikesoutput", createOutputSnippet( output ) );
 
             output = example.traverseBaseTraverser( joe );
-            gen.get()
-                    .addSnippet( "baseoutput", createOutputSnippet( output ) );
+            gen.get().addSnippet( "baseoutput", createOutputSnippet( output ) );
 
             output = example.depth3( joe );
-            gen.get()
-                    .addSnippet( "output3", createOutputSnippet( output ) );
+            gen.get().addSnippet( "output3", createOutputSnippet( output ) );
 
             output = example.depth4( joe );
-            gen.get()
-                    .addSnippet( "output4", createOutputSnippet( output ) );
+            gen.get().addSnippet( "output4", createOutputSnippet( output ) );
 
             output = example.nodes( joe );
-            gen.get()
-                    .addSnippet( "nodeoutput", createOutputSnippet( output ) );
+            gen.get().addSnippet( "nodeoutput", createOutputSnippet( output ) );
 
             output = example.relationships( joe );
-            gen.get()
-                    .addSnippet( "relationshipoutput", createOutputSnippet( output ) );
+            gen.get().addSnippet( "relationshipoutput", createOutputSnippet( output ) );
 
-            gen.get()
-                    .addSourceSnippets( example.getClass(), "knowslikestraverser",
-                            "sourceRels", "basetraverser", "depth3", "depth4",
-                            "nodes", "relationships" );
-            gen.get()
-                    .addGithubSourceLink( "github", example.getClass(),
-                            "community/embedded-examples" );
-        }
-        finally
-        {
-            transaction.finish();
+            gen.get().addSourceSnippets( example.getClass(), "knowslikestraverser",
+                    "sourceRels", "basetraverser", "depth3", "depth4",
+                    "nodes", "relationships" );
+            gen.get().addGithubSourceLink( "github", example.getClass(), "community/embedded-examples" );
         }
     }
 }

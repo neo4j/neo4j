@@ -102,8 +102,7 @@ public class Neo4jShell
 
     private static void createExampleGraph()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // Create users sub reference node.
             System.out.println( "Creating example graph ..." );
@@ -138,16 +137,11 @@ public class Neo4jShell
             }
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private static void deleteExampleNodeSpace()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // Delete the persons and remove them from the index
             System.out.println( "Deleting example graph ..." );
@@ -168,10 +162,6 @@ public class Neo4jShell
                     Direction.INCOMING ).delete();
             usersReferenceNode.delete();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

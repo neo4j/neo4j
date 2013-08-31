@@ -60,14 +60,9 @@ public class CreateRelationshipDocTest extends
         gen.get().expectedStatus(
                 Status.CREATED.getStatusCode() ).payload( jsonString ).post(
                 getNodeUri( i ) + "/relationships" );
-        Transaction transaction = graphdb().beginTx();
-        try
+        try ( Transaction tx = graphdb().beginTx() )
         {
             assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -90,14 +85,9 @@ public class CreateRelationshipDocTest extends
         String entity = gen.get().expectedStatus(
                 Status.CREATED.getStatusCode() ).payload( jsonString ).post(
                 getNodeUri( i ) + "/relationships" ).entity();
-        Transaction transaction = graphdb().beginTx();
-        try
+        try ( Transaction tx = graphdb().beginTx() )
         {
             assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
         assertProperRelationshipRepresentation( JsonHelper.jsonToMap( entity ) );
     }

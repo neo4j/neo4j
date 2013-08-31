@@ -26,6 +26,7 @@ import java.util.Map;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.LABEL;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
@@ -45,9 +47,11 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-import static org.neo4j.test.GraphDescription.LABEL;
 
 public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
@@ -347,10 +351,11 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         Node i = this.getNode(nodeName);
         GraphDatabaseService db = i.getGraphDatabase();
 
-        Transaction tx = db.beginTx();
-        i.setProperty(propertyName, propertyValue);
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            i.setProperty(propertyName, propertyValue);
+            tx.success();
+        }
     }
 
     /**

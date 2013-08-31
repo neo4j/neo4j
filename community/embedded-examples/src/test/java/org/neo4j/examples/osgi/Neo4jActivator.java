@@ -33,6 +33,7 @@ import org.neo4j.index.lucene.LuceneKernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
+
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -40,7 +41,6 @@ import org.osgi.framework.ServiceRegistration;
 // START SNIPPET: setup
 public class Neo4jActivator implements BundleActivator
 {
-
     private static GraphDatabaseService db;
     private ServiceRegistration serviceRegistration;
     private ServiceRegistration indexServiceRegistration;
@@ -70,8 +70,7 @@ public class Neo4jActivator implements BundleActivator
         indexServiceRegistration = context.registerService(
                 Index.class.getName(), db.index().forNodes( "nodes" ),
                 new Hashtable<String, String>() );
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node firstNode = db.createNode();
             Node secondNode = db.createNode();
@@ -84,16 +83,6 @@ public class Neo4jActivator implements BundleActivator
             db.index().forNodes( "nodes" ).add( firstNode, "message", "Hello" );
             tx.success();
         }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            throw new RuntimeException( e );
-        }
-        finally
-        {
-            tx.finish();
-        }
-
     }
 
     @Override
@@ -102,8 +91,6 @@ public class Neo4jActivator implements BundleActivator
         serviceRegistration.unregister();
         indexServiceRegistration.unregister();
         db.shutdown();
-
     }
-
 }
 // END SNIPPET: setup
