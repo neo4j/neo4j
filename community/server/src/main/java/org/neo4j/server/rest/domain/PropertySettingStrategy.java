@@ -57,16 +57,12 @@ public class PropertySettingStrategy
                 new HashMap<String, Object>() :
                 properties;
 
-        Transaction tx = db.beginTx();
-        try {
-
+        try ( Transaction tx = db.beginTx() )
+        {
             setProperties( entity, properties );
             ensureHasOnlyTheseProperties( entity, propsToSet.keySet() );
 
             tx.success();
-        } finally
-        {
-            tx.finish();
         }
     }
 
@@ -85,28 +81,22 @@ public class PropertySettingStrategy
     {
         if ( properties != null )
         {
-            Transaction tx = db.beginTx();
-            try {
+            try ( Transaction tx = db.beginTx() )
+            {
                 for ( Map.Entry<String, Object> property : properties.entrySet() )
                 {
-                    setProperty(
-                            entity,
-                            property.getKey(),
-                            property.getValue() );
+                    setProperty( entity, property.getKey(), property.getValue() );
                 }
                 tx.success();
-            } finally
-            {
-                tx.finish();
             }
         }
     }
 
     public void setProperty(PropertyContainer entity, String key, Object value) throws PropertyValueException
     {
-        if(value instanceof Collection)
+        if ( value instanceof Collection )
         {
-            if(((Collection<?>)value).size() == 0)
+            if ( ((Collection<?>) value).size() == 0 )
             {
                 // Special case: Trying to set an empty array property. We cannot determine the type
                 // of the collection now, so we fall back to checking if there already is a collection
@@ -116,16 +106,16 @@ public class PropertySettingStrategy
                 if(currentValue != null &&
                    currentValue.getClass().isArray())
                 {
-                    if(Array.getLength( currentValue ) == 0)
+                    if ( Array.getLength( currentValue ) == 0 )
                     {
                         // Ok, leave it this way
                         return;
-                    } else
-                    {
-                        value = emptyArrayOfType(currentValue.getClass().getComponentType());
                     }
+                    
+                    value = emptyArrayOfType(currentValue.getClass().getComponentType());
 
-                } else
+                }
+                else
                 {
                     throw new PropertyValueException(
                             "Unable to set property '" + key + "' to an empty array, " +
@@ -133,15 +123,15 @@ public class PropertySettingStrategy
                             "and no pre-existing collection to infer type from, it is not possible " +
                             "to determine what type of array to store." );
                 }
-            } else
+            }
+            else
             {
                 // Non-empty collection
                 value = convertToNativeArray( (Collection<?>) value );
             }
         }
 
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             entity.setProperty( key, value );
             tx.success();
@@ -149,10 +139,6 @@ public class PropertySettingStrategy
         catch ( IllegalArgumentException e )
         {
             throw new PropertyValueException( key, value );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

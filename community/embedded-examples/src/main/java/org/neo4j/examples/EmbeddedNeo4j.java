@@ -21,6 +21,7 @@ package org.neo4j.examples;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -67,8 +68,7 @@ public class EmbeddedNeo4j
         // END SNIPPET: startDb
 
         // START SNIPPET: transaction
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // Updating operations go here
             // END SNIPPET: transaction
@@ -95,10 +95,6 @@ public class EmbeddedNeo4j
             // START SNIPPET: transaction
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
         // END SNIPPET: transaction
     }
 
@@ -116,8 +112,7 @@ public class EmbeddedNeo4j
 
     void removeData()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: removingData
             // let's remove the data
@@ -127,10 +122,6 @@ public class EmbeddedNeo4j
             // END SNIPPET: removingData
 
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

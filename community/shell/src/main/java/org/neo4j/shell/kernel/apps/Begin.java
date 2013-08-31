@@ -55,8 +55,8 @@ public class Begin extends NonTransactionProvidingApp
 
         Transaction tx = currentTransaction( getServer() );
 
+        // This is a "begin" app so it will leave a transaction open. Don't close it in here
         getServer().getDb().beginTx();
-            
         Integer txCount = session.getCommitCount();
 
         int count;
@@ -66,12 +66,14 @@ public class Begin extends NonTransactionProvidingApp
             {
                 count = 0;
                 out.println( "Transaction started" );
-            } else
+            }
+            else
             {
                 count = 1;
                 out.println( "Warning: transaction found that was not started by the shell." );
             }
-        } else
+        }
+        else
         {
             count = txCount;
             out.println( String.format( "Nested transaction started (Tx count: %d)", count + 1 ) );
@@ -100,7 +102,8 @@ public class Begin extends NonTransactionProvidingApp
         try
         {
             return server.getDb().getTxManager().getTransaction();
-        } catch ( SystemException e )
+        }
+        catch ( SystemException e )
         {
             throw new ShellException( e.getMessage() );
         }

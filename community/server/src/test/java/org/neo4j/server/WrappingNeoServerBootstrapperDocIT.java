@@ -23,12 +23,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse.Status;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.jmx.Primitives;
@@ -46,7 +46,11 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse.Status;
+
 import static java.lang.String.format;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -165,8 +169,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldResponseAndBeAbleToModifyDb()
     {
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
-                myDb );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
         srv.start();
 
         long originalNodeNumber = myDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
@@ -188,7 +191,9 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         srv.stop();
 
         // Should be able to still talk to the db
-        myDb.beginTx();
-        assertTrue( myDb.getReferenceNode() != null );
+        try ( Transaction tx = myDb.beginTx() )
+        {
+            assertTrue( myDb.getReferenceNode() != null );
+        }
     }
 }

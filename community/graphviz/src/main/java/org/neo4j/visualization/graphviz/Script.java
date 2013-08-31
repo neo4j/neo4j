@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -138,14 +139,9 @@ public class Script extends ConfigurationParser
         GraphvizWriter writer = new GraphvizWriter( styles() );
         try
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try ( Transaction tx = graphdb.beginTx() )
             {
                 writer.emit( outfile, createGraphWalker( graphdb ) );
-            }
-            finally
-            {
-                tx.finish();
             }
         }
         catch ( IOException e )

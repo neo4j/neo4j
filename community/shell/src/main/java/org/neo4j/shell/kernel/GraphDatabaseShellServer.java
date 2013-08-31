@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.kernel;
 
-import static org.neo4j.shell.Variables.PROMPT_KEY;
-
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Map;
@@ -42,6 +40,8 @@ import org.neo4j.shell.Welcome;
 import org.neo4j.shell.impl.AbstractAppServer;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
+
+import static org.neo4j.shell.Variables.PROMPT_KEY;
 
 /**
  * A {@link ShellServer} which contains common methods to use with a
@@ -143,19 +143,13 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     @Override
     protected String getPrompt( Session session ) throws ShellException
     {
-        org.neo4j.graphdb.Transaction transaction = this.getDb().beginTx();
-
-        try
+        try ( org.neo4j.graphdb.Transaction transaction = this.getDb().beginTx() )
         {
             Object rawCustomPrompt = session.get( PROMPT_KEY );
             String customPrompt = rawCustomPrompt != null ? rawCustomPrompt.toString() : getDefaultPrompt();
             String output = bashInterpreter.interpret( customPrompt, this, session );
             transaction.success();
             return output;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -237,17 +231,11 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     @Override
     public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException, ShellException
     {
-        org.neo4j.graphdb.Transaction transaction = graphDb.beginTx();
-
-        try
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
             Welcome welcome = super.welcome( initialSession );
             transaction.success();
             return welcome;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 }

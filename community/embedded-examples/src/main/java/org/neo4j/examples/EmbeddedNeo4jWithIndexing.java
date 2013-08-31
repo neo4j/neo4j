@@ -39,8 +39,7 @@ public class EmbeddedNeo4jWithIndexing
         // END SNIPPET: startDb
 
         // START SNIPPET: addUsers
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             nodeIndex = graphDb.index().forNodes( "nodes" );
             // Create some users and index their names with the IndexService
@@ -68,10 +67,6 @@ public class EmbeddedNeo4jWithIndexing
                 user.delete();
             }
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
         shutdown();
     }

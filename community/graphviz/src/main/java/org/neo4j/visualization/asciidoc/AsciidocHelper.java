@@ -126,8 +126,7 @@ public class AsciidocHelper
                                          GraphDatabaseService graph, String identifier,
                                          GraphStyle graphStyle, String graphvizOptions )
     {
-        Transaction transaction = graph.beginTx();
-        try
+        try ( Transaction tx = graph.beginTx() )
         {
             GraphvizWriter writer = new GraphvizWriter( graphStyle );
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -154,23 +153,14 @@ public class AsciidocHelper
                 throw new RuntimeException( e );
             }
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     private static void removeReferenceNode( GraphDatabaseService graph )
     {
-        Transaction tx = graph.beginTx();
-        try
+        try ( Transaction tx = graph.beginTx() )
         {
             graph.getReferenceNode().delete();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

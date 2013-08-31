@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -31,8 +32,11 @@ import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -127,7 +131,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
      * Create an index for a label and property key which already exists.
      */
     @Test
-    public void create_existing_index() throws PropertyValueException
+    public void create_existing_index()
     {
         String labelName = "mylabel", propertyKey = "name";
         createIndex( labelName, propertyKey );
@@ -156,7 +160,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
      * Creating a compound index should not yet be supported
      */
     @Test
-    public void create_compound_index() throws PropertyValueException
+    public void create_compound_index()
     {
         Map<String, Object> definition = map( "property_keys", asList( "first", "other" ) );
 
@@ -169,17 +173,12 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     
     private IndexDefinition createIndex( String labelName, String propertyKey )
     {
-        Transaction tx = graphdb().beginTx();
-        try
+        try ( Transaction tx = graphdb().beginTx() )
         {
             IndexDefinition indexDefinition = graphdb().schema().indexFor( label( labelName ) ).on( propertyKey )
                     .create();
             tx.success();
             return indexDefinition;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

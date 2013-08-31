@@ -19,28 +19,28 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-
 import java.util.List;
 import java.util.Map;
 
 import org.json.JSONException;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 {
@@ -76,7 +76,8 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     @SuppressWarnings( "unchecked" )
     @Test
     @Graph("Joe knows John")
-    public void shouldPerformMultipleOperations() throws Exception {
+    public void shouldPerformMultipleOperations() throws Exception
+    {
         long idJoe = data.get().get( "Joe" ).getId();
         String jsonString = new PrettyJSON()
             .array()
@@ -163,7 +164,8 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldBeAbleToReferToCreatedResource() throws Exception {
+    public void shouldBeAbleToReferToCreatedResource() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -229,12 +231,11 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     private String batchUri()
     {
         return getDataUri()+"batch";
-        
     }
 
     @Test
-    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception {
-
+    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception
+    {
         int originalNodeCount = countNodes();
 
         final String jsonString = new PrettyJSON()
@@ -263,14 +264,14 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldForwardUnderlyingErrors() throws Exception {
-
+    public void shouldForwardUnderlyingErrors() throws Exception
+    {
         JaxRsResponse response = RestRequest.req().post(batchUri(), new PrettyJSON()
             .array()
                 .object()
                     .key("method") .value("POST")
                     .key("to")     .value("/node")
-                    .key("body")   
+                    .key("body")
                         .object()
                             .key("age")
                                 .array()
@@ -288,8 +289,9 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     }
     
     @Test
-    public void shouldRollbackAllWhenGivenIncorrectRequest() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
+    public void shouldRollbackAllWhenGivenIncorrectRequest() throws ClientHandlerException,
+            UniformInterfaceException, JSONException
+    {
 
         String jsonString = new PrettyJSON()
             .array()
@@ -319,12 +321,12 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 
         assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
-
     }
     
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldHandleUnicodeGetCorrectly() throws Exception {
+    public void shouldHandleUnicodeGetCorrectly() throws Exception
+    {
         String asianText = "\u4f8b\u5b50";
         String germanText = "öäüÖÄÜß";
         
@@ -358,8 +360,8 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    public void shouldHandleFailingCypherStatementCorrectly() throws Exception {
+    public void shouldHandleFailingCypherStatementCorrectly() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -394,7 +396,8 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph("Peter likes Jazz")
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
-            UniformInterfaceException, JSONException, PropertyValueException {
+            UniformInterfaceException, JSONException, PropertyValueException
+    {
     	String string = "Jazz";
         Node gnode = getNode( string );
         assertThat( gnode, inTx(graphdb(), hasProperty( "name" ).withValue(string)) );
@@ -438,8 +441,9 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRollbackAllWhenInsertingIllegalData() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
+    public void shouldRollbackAllWhenInsertingIllegalData() throws ClientHandlerException,
+            UniformInterfaceException, JSONException
+    {
 
         String jsonString = new PrettyJSON()
             .array()
@@ -476,8 +480,9 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRollbackAllOnSingle404() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
+    public void shouldRollbackAllOnSingle404() throws ClientHandlerException,
+            UniformInterfaceException, JSONException
+    {
 
         String jsonString = new PrettyJSON()
             .array()
@@ -502,11 +507,11 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 
         assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
-
     }
     
     @Test
-    public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception {
+    public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -549,7 +554,8 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     // It has to be possible to create relationships among created and not-created nodes
     // in batch operation.  Tests the fix for issue #690.
     @Test
-    public void shouldBeAbleToReferToNotCreatedUniqueEntities() throws Exception {
+    public void shouldBeAbleToReferToNotCreatedUniqueEntities() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -665,19 +671,14 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     
     private int countNodes()
     {
-        Transaction transaction = graphdb().beginTx();
-        try
+        try ( Transaction tx = graphdb().beginTx() )
         {
             int count = 0;
-            for(Node node : graphdb().getAllNodes())
+            for ( Node node : graphdb().getAllNodes() )
             {
                 count++;
             }
             return count;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 }

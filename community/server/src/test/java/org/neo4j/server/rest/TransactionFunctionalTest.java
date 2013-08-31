@@ -394,11 +394,6 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         assertErrorCodes( response.<Map<String, Object>>content(), expectedErrors );
     }
 
-    private void assertErrorMessages( Response response, String... expectedMessages )
-    {
-        assertErrorMessages( response.<Map<String, Object>>content(), expectedMessages );
-    }
-
     @SuppressWarnings("unchecked")
     private void assertErrorCodes( Map<String, Object> response, StatusCode... expectedErrors )
     {
@@ -417,29 +412,10 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void assertErrorMessages( Map<String, Object> response, String... expectedMessages )
-    {
-        Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
-        Iterator<String> expected = iterator( expectedMessages );
-
-        while ( expected.hasNext() )
-        {
-            assertTrue( errors.hasNext() );
-            assertThat( (String) errors.next().get( "message" ), equalTo( expected.next() ) );
-        }
-        if ( errors.hasNext() )
-        {
-            Map<String, Object> error = errors.next();
-            fail( "Expected no more errors, but got " + error.get( "message" ) + " - '" + error.get( "message" ) + "'." );
-        }
-    }
-
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     private long countNodes()
     {
-        Transaction transaction = graphdb().beginTx();
-        try
+        try ( Transaction transaction = graphdb().beginTx() )
         {
             long count = 0;
             Iterator<Node> allNodes = GlobalGraphOperations.at( graphdb() ).getAllNodes().iterator();
@@ -449,10 +425,6 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
                 count++;
             }
             return count;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

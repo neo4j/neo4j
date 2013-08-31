@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+
 import javax.ws.rs.core.MediaType;
 
 import org.junit.AfterClass;
@@ -481,9 +482,8 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
     private Node createLinkedList( final int listLength, final Database db )
     {
-        Transaction tx = db.getGraph().beginTx();
         Node startNode = null;
-        try
+        try ( Transaction tx = db.getGraph().beginTx() )
         {
             Node previous = null;
             for ( int i = 0; i < listLength; i++ )
@@ -504,10 +504,6 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
             }
             tx.success();
             return startNode;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

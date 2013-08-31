@@ -18,20 +18,21 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.UniqueFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class GetOrCreateDocIT extends AbstractJavaDocTestbase
 {
@@ -74,16 +75,11 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
         private Node createLockNode()
         {
             // START SNIPPET: prepareLockNode
-            Transaction tx = graphdb().beginTx();
-            try
+            try ( Transaction tx = graphdb().beginTx() )
             {
                 final Node lockNode = graphdb().createNode();
                 tx.success();
                 return lockNode;
-            }
-            finally
-            {
-                tx.finish();
             }
             // END SNIPPET: prepareLockNode
         }
@@ -92,8 +88,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
         {
             GraphDatabaseService graphDb = graphdb();
             // START SNIPPET: prepareUniqueFactory
-            Transaction transaction = graphDb.beginTx();
-            try
+            try ( Transaction tx = graphDb.beginTx() )
             {
                 UniqueFactory<Node> factory = new UniqueFactory.UniqueNodeFactory( graphDb, "users" )
                 {
@@ -105,10 +100,6 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
                 };
                 return factory;
             }
-            finally
-            {
-                transaction.finish();
-            }
             // END SNIPPET: prepareUniqueFactory
         }
 
@@ -117,7 +108,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
         {
             final Node lockNode = createLockNode();
             final UniqueFactory<Node> uniqueFactory = createUniqueFactory();
-            final List<GetOrCreateTask> threads = new ArrayList<GetOrCreateTask>();
+            final List<GetOrCreateTask> threads = new ArrayList<>();
             int numThreads = Runtime.getRuntime()
                     .availableProcessors() * 2;
             for ( int i = 0; i < numThreads; i++ )
@@ -131,13 +122,16 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             }
 
             RuntimeException failure = null;
-            List<List<Node>> results = new ArrayList<List<Node>>();
+            List<List<Node>> results = new ArrayList<>();
             for ( GetOrCreateTask thread : threads )
             {
                 try
                 {
                     thread.join();
-                    if ( failure == null ) failure = thread.failure;
+                    if ( failure == null )
+                    {
+                        failure = thread.failure;
+                    }
 
                     results.add( thread.result );
                 }
@@ -147,7 +141,10 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
                 }
             }
 
-            if ( failure != null ) throw failure;
+            if ( failure != null )
+            {
+                throw failure;
+            }
 
             assertEquals( numThreads, results.size() );
             List<Node> firstResult = results.remove( 0 );
@@ -165,8 +162,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
 
         private void assertUserExistsUniquely( String username )
         {
-            Transaction transaction = graphdb().beginTx();
-            try
+            try ( Transaction tx = graphdb().beginTx() )
             {
                 assertNotNull( "User '" + username + "' not created.", graphdb().index()
                         .forNodes( "users" )
@@ -176,9 +172,6 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             catch ( NoSuchElementException e )
             {
                 throw new RuntimeException( "User '" + username + "' not created uniquely.", e );
-            }
-            finally {
-                transaction.finish();
             }
         }
     }
@@ -214,7 +207,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
         {
             try
             {
-                List<Node> subresult = new ArrayList<Node>();
+                List<Node> subresult = new ArrayList<>();
                 for ( int j = 0; j < numUsers; j++ )
                 {
                     subresult.add( impl.getOrCreateUser( getUsername( j ), db, lockNode, uniqueFactory ) );
@@ -230,7 +223,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
     }
 
     @Test
-    public void testPessimisticLocking() throws InterruptedException
+    public void testPessimisticLocking()
     {
         new ThreadRunner( new PessimisticGetOrCreate() ).run();
     }
@@ -238,12 +231,14 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
     public Node getOrCreateUserPessimistically( String username, GraphDatabaseService graphDb, Node lockNode )
     {
         // START SNIPPET: pessimisticLocking
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             Index<Node> usersIndex = graphDb.index().forNodes( "users" );
             Node userNode = usersIndex.get( "name", username ).getSingle();
-            if ( userNode != null ) return userNode;
+            if ( userNode != null )
+            {
+                return userNode;
+            }
 
             tx.acquireWriteLock( lockNode );
             userNode = usersIndex.get( "name", username ).getSingle();
@@ -255,10 +250,6 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             }
             tx.success();
             return userNode;
-        }
-        finally
-        {
-            tx.finish();
         }
         // END SNIPPET: pessimisticLocking
     }
@@ -273,16 +264,11 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             UniqueFactory<Node> factory )
     {
         // START SNIPPET: getOrCreate
-        Transaction transaction = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             Node node = factory.getOrCreate( "name", username );
-            transaction.success();
+            tx.success();
             return node;
-        }
-        finally
-        {
-            transaction.finish();
         }
         // END SNIPPET: getOrCreate
     }

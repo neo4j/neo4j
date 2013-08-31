@@ -29,7 +29,7 @@ import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
+import org.neo4j.server.rest.repr.StreamingFormat;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
 
@@ -101,12 +101,13 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
     private long setReferenceNodeIdToI()
     {
         InternalAbstractGraphDatabase db = (InternalAbstractGraphDatabase) graphdb();
-        Transaction tx = db.beginTx();
-        long referenceNodeId = data.get().get( "I" ).getId();
-        db.getNodeManager().setReferenceNodeId( referenceNodeId );
-        tx.success();
-        tx.finish();
-        return referenceNodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            long referenceNodeId = data.get().get( "I" ).getId();
+            db.getNodeManager().setReferenceNodeId( referenceNodeId );
+            tx.success();
+            return referenceNodeId;
+        }
     }
 
     /**
@@ -129,7 +130,7 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         data.get();
         setReferenceNodeIdToI();
         ResponseEntity responseEntity = gen().docHeadingLevel( 2 )
-                .withHeader( StreamingJsonFormat.STREAM_HEADER, "true" )
+                .withHeader( StreamingFormat.STREAM_HEADER, "true" )
                 .expectedType( APPLICATION_JSON_TYPE )
                 .expectedStatus( 200 )
                 .get( getDataUri() );
@@ -138,7 +139,7 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         // ; stream=true at the end
         String foundMediaType = response.getType()
                 .toString();
-        String expectedMediaType = StreamingJsonFormat.MEDIA_TYPE.toString();
+        String expectedMediaType = StreamingFormat.MEDIA_TYPE.toString();
         assertEquals( expectedMediaType, foundMediaType );
 
         String body = responseEntity.entity();
