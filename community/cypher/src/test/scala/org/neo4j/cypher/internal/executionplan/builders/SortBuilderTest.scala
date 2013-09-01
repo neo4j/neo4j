@@ -44,15 +44,12 @@ class SortBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertTrue("Builder should accept this", builder.canWorkWith(plan(p, q)))
-
-    val resultQ = builder(plan(p, q)).query
+    val resultQ = assertAccepts(p, q).query
 
     resultQ.sort match {
       case List(Solved(SortItem(CachedExpression(_, AnyType()), true))) => //correct, don't check anything else
       case _                                                            => assert(resultQ.sort === expected)
     }
-
   }
 
   @Test def should_not_accept_if_not_yet_extracted() {
@@ -63,7 +60,7 @@ class SortBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test def should_not_accept_aggregations_not_in_return() {
@@ -74,6 +71,6 @@ class SortBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 }

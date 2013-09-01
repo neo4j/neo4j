@@ -19,20 +19,21 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.pipes.EmptyResultPipe
+import org.neo4j.cypher.internal.spi.PlanContext
 
 /**
  * This builder should make sure that the execution result is consumed, even if the user didn't ask for any results
  */
-class EmptyResultBuilder extends LegacyPlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
+class EmptyResultBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val resultPipe = new EmptyResultPipe(plan.pipe)
 
     plan.copy(pipe = resultPipe)
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
 
     val noSortingLeftToDo = q.sort.isEmpty

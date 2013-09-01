@@ -44,9 +44,7 @@ class AggregationBuilderTest extends BuilderTest {
 
     val plan = ExecutionPlanInProgress(q, p)
 
-    assertTrue("Builder should accept this", builder.canWorkWith(plan))
-
-    val resultPlan = builder(plan)
+    val resultPlan = assertAccepts(plan)
 
     val expectedQuery = q.copy(
       aggregation = q.aggregation.map(_.solve),
@@ -69,6 +67,6 @@ class AggregationBuilderTest extends BuilderTest {
     val p = createPipe(nodes = Seq())
     val plan = ExecutionPlanInProgress(q, p)
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan))
+    assertRejects(plan)
   }
 }

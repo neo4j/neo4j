@@ -37,7 +37,7 @@ class ShortestPathBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test
@@ -48,7 +48,7 @@ class ShortestPathBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("a"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test
@@ -59,9 +59,7 @@ class ShortestPathBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("a", "b"))
 
-    assertTrue("Builder should accept this", builder.canWorkWith(plan(p, q)))
-
-    val resultQ = builder(plan(p, q)).query
+    val resultQ = assertAccepts(p, q).query
 
     assert(resultQ.patterns == Seq(Solved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
   }

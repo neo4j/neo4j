@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType}
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, LegacyPlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.pipes.{MutableMaps, Pipe, NullPipe, FakePipe}
 import org.junit.Assert._
 import org.neo4j.cypher.internal.spi.PlanContext

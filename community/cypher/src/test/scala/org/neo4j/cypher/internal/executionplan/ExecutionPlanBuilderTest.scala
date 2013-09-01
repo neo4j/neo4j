@@ -127,10 +127,10 @@ class FakeExecPlanBuilder(gds: GraphDatabaseService, builders: Seq[PlanBuilder])
 
 // This is a builder that accepts everything, but changes nothing
 // It's a never ending loop waiting to happen
-class BadBuilder extends LegacyPlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = plan
+class BadBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = plan
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = true
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = true
 
   def priority = 0
 }

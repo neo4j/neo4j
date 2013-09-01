@@ -44,17 +44,6 @@ trait PlanBuilder {
   def priority: Int
 }
 
-trait LegacyPlanBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress
-
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = apply(plan)
-
-  def canWorkWith(plan: ExecutionPlanInProgress): Boolean
-
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = canWorkWith(plan)
-}
-
-
 // The priorities are all here, to make it easy to change and compare
 // Lower priority wins
 object PlanBuilder extends Enumeration {

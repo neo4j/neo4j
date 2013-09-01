@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.pipes.{FilterPipe, Pipe}
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class FilterBuilder extends LegacyPlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
+class FilterBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -63,7 +64,8 @@ class FilterBuilder extends LegacyPlanBuilder {
     case _                         => false
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.where.exists(pred => yesOrNo(pred, plan.pipe))
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
+    plan.query.where.exists(pred => yesOrNo(pred, plan.pipe))
 
   def priority: Int = PlanBuilder.Filter
 }

@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.commands.{RelationshipById, StartItem}
 import org.neo4j.graphdb.{Relationship, GraphDatabaseService}
 import org.neo4j.cypher.internal.pipes.{EntityProducer, QueryState, RelationshipStartPipe}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class RelationshipByIdBuilder(graph: GraphDatabaseService) extends LegacyPlanBuilder {
+class RelationshipByIdBuilder extends PlanBuilder {
   def priority = PlanBuilder.RelationshipById
 
-  def apply(plan: ExecutionPlanInProgress) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val p = plan.pipe
     val startItemToken = interestingStartItems(q).head
@@ -46,7 +47,7 @@ class RelationshipByIdBuilder(graph: GraphDatabaseService) extends LegacyPlanBui
     plan.copy(pipe = pipe, query = q.copy(start = remainingQ))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = interestingStartItems(plan.query).nonEmpty
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = interestingStartItems(plan.query).nonEmpty
 
   private def interestingStartItems(q: PartiallySolvedQuery): Seq[QueryToken[StartItem]] = q.start.filter({
     case Unsolved(RelationshipById(_, expression)) => true

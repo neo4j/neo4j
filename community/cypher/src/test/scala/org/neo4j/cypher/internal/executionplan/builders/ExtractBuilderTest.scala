@@ -63,9 +63,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertTrue("This query should be accepted", builder.canWorkWith(plan(p, q)))
-
-    val result = builder(plan(p, q)).query
+    val result = assertAccepts(p, q).query
 
     assertTrue("the builder did not mark the query as extracted", result.extracted)
   }
@@ -80,7 +78,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test
@@ -93,7 +91,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertTrue("This query should be accepted", builder.canWorkWith(plan(p, q)))
+    assertAccepts(p, q)
   }
 
   @Test
@@ -108,7 +106,7 @@ class ExtractBuilderTest extends BuilderTest {
     val planInProgress = ExecutionPlanInProgress(q, p, isUpdating = false)
 
     //WHEN
-    val resultPlan = builder(planInProgress)
+    val resultPlan = assertAccepts(planInProgress)
 
     //THEN
     assert(!resultPlan.pipe.isInstanceOf[ExtractPipe], "No need to extract here")
@@ -124,9 +122,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertTrue("This query should be accepted", builder.canWorkWith(plan(p, q)))
-
-    val result = builder(plan(p, q))
+    val result = assertAccepts(p,q)
 
     assertTrue("the builder did not mark the query as extracted", result.query.extracted)
 

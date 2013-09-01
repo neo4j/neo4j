@@ -38,7 +38,7 @@ class MatchBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertTrue(builder.canWorkWith(plan(p, q)))
+    assertAccepts(p, q)
   }
 
   @Test
@@ -49,7 +49,7 @@ class MatchBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertFalse("Should not accept this query", builder.canWorkWith(plan(p, q)))
+    assertRejects(p, q)
   }
 
   @Test
@@ -60,7 +60,7 @@ class MatchBuilderTest extends BuilderTest {
 
     val inP = createPipe(nodes = Seq("l"))
 
-    val q = builder(plan(inP, inQ)).query
+    val q = assertAccepts(inP, inQ).query
 
     assert(q.patterns === Seq(Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
   }
@@ -74,7 +74,7 @@ class MatchBuilderTest extends BuilderTest {
 
     val inP = createPipe(nodes = Seq("a"))
 
-    val q = builder(plan(inP, inQ)).query
+    val q = assertAccepts(inP, inQ).query
 
     assert(q.patterns.toSet === Set(Solved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false)),
       Unsolved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false))))
@@ -89,7 +89,7 @@ class MatchBuilderTest extends BuilderTest {
 
     val inP = createPipe(nodes = Seq("a", "b"))
 
-    val q = builder(plan(inP, inQ)).query
+    val q = assertAccepts(inP, inQ).query
 
     assert(q.patterns.toSet === Set(Solved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false)),
       Solved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false))))
@@ -103,7 +103,7 @@ class MatchBuilderTest extends BuilderTest {
 
     val inP = createPipe(nodes = Seq("l"))
 
-    assertFalse(builder.canWorkWith(plan(inP, inQ)))
+    assertRejects(inP, inQ)
   }
 
   @Test
@@ -114,6 +114,6 @@ class MatchBuilderTest extends BuilderTest {
 
     val inP = createPipe(nodes = Seq("l"))
 
-    assertFalse(builder.canWorkWith(plan(inP, inQ)))
+    assertRejects(inP, inQ)
   }
 }
