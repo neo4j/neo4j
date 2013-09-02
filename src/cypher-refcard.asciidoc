@@ -20,6 +20,7 @@ Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameter
 
 == Syntax ==
 
+////
 .Read Query Structure 
 ["refcard", cardcss="read c2-2 c3-2 c4-2 c5-2"]
 ----
@@ -29,6 +30,9 @@ Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameter
 [WITH [ORDER BY] [SKIP] [LIMIT]]
 RETURN [ORDER BY] [SKIP] [LIMIT]
 ----
+////
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/query-structure.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
 
