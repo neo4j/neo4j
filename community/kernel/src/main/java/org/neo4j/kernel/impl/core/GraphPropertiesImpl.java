@@ -120,7 +120,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             {
                 return false;
             }
-            return statement.graphHasProperty( propertyId );
+            return statement.graphGetProperty( propertyId ).isDefined();
         }
         catch ( PropertyKeyIdNotFoundException e )
         {

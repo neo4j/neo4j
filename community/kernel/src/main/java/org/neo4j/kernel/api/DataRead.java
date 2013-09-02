@@ -67,15 +67,6 @@ interface DataRead
     Property graphGetProperty( long propertyKeyId )
             throws PropertyKeyIdNotFoundException;
 
-    /** Returns true if node has the property given it's property key id for the node with the given node id */
-    boolean nodeHasProperty( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
-
-    boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
-
-    boolean graphHasProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException;
-
     Iterator<SafeProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
 
     Iterator<SafeProperty> relationshipGetAllProperties( long relationshipId )

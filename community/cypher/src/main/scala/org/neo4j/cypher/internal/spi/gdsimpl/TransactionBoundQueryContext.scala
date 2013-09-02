@@ -134,7 +134,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
     }
 
     def hasProperty(obj: Node, propertyKey: Long) =
-      statement.nodeHasProperty(obj.getId, propertyKey)
+      statement.nodeGetProperty(obj.getId, propertyKey).isDefined()
 
     def removeProperty(obj: Node, propertyKeyId: Long) {
       statement.nodeRemoveProperty(obj.getId, propertyKeyId)
@@ -174,7 +174,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
       statement.relationshipGetProperty(obj.getId, propertyKeyId).value(null)
 
     def hasProperty(obj: Relationship, propertyKey: Long) =
-      statement.relationshipHasProperty(obj.getId, propertyKey)
+      statement.relationshipGetProperty(obj.getId, propertyKey).isDefined()
 
     def removeProperty(obj: Relationship, propertyKeyId: Long) {
       statement.relationshipRemoveProperty(obj.getId, propertyKeyId)

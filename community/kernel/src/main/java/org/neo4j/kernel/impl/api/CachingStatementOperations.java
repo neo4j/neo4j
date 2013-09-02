@@ -229,12 +229,6 @@ public class CachingStatementOperations implements
     {
         return persistenceCache.nodeGetProperty( state, nodeId, propertyKeyId, nodePropertyLoader );
     }
-    
-    @Override
-    public boolean nodeHasProperty( StatementState state, long nodeId, long propertyKeyId ) throws EntityNotFoundException
-    {
-        return !nodeGetProperty( state, nodeId, propertyKeyId ).isNoProperty();
-    }
 
     @Override
     public Iterator<SafeProperty> nodeGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
@@ -257,13 +251,6 @@ public class CachingStatementOperations implements
     }
     
     @Override
-    public boolean relationshipHasProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        return !relationshipGetProperty( state, relationshipId, propertyKeyId ).isNoProperty();
-    }
-    
-    @Override
     public Iterator<SafeProperty> relationshipGetAllProperties( StatementState state, long nodeId ) throws EntityNotFoundException
     {
         return persistenceCache.relationshipGetProperties( state, nodeId, relationshipPropertyLoader );
@@ -279,12 +266,6 @@ public class CachingStatementOperations implements
     public Property graphGetProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
         return persistenceCache.graphGetProperty( state, graphPropertyLoader, propertyKeyId );
-    }
-    
-    @Override
-    public boolean graphHasProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
-    {
-        return !graphGetProperty( state, propertyKeyId ).isNoProperty();
     }
     
     @Override

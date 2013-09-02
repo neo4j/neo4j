@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import java.util.concurrent.Callable;
+
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-
-import java.util.concurrent.Callable;
 
 public abstract class Property
 {
@@ -205,7 +205,7 @@ public abstract class Property
     @Override
     public abstract int hashCode();
 
-    public abstract boolean isNoProperty();
+    public abstract boolean isDefined();
     
     @Deprecated
     public abstract PropertyData asPropertyDataJustForIntegration();

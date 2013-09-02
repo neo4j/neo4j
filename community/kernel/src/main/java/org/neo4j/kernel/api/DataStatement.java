@@ -92,29 +92,6 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
     }
 
     @Override
-    public boolean nodeHasProperty( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        assertOpen();
-        return dataRead().nodeHasProperty( state, nodeId, propertyKeyId );
-    }
-
-    @Override
-    public boolean relationshipHasProperty( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        assertOpen();
-        return dataRead().relationshipHasProperty( state, relationshipId, propertyKeyId );
-    }
-
-    @Override
-    public boolean graphHasProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
-    {
-        assertOpen();
-        return dataRead().graphHasProperty( state, propertyKeyId );
-    }
-
-    @Override
     public Iterator<SafeProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
         assertOpen();

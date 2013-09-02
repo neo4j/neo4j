@@ -724,26 +724,6 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public boolean nodeHasProperty( StatementState state, long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
-            EntityNotFoundException
-    {
-        throw shouldNotHaveReachedAllTheWayHere();
-    }
-
-    @Override
-    public boolean relationshipHasProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        throw shouldNotHaveReachedAllTheWayHere();
-    }
-
-    @Override
-    public boolean graphHasProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
-    {
-        throw shouldNotHaveReachedAllTheWayHere();
-    }
-
-    @Override
     public PrimitiveLongIterator nodeGetPropertyKeys( StatementState state, long nodeId ) throws EntityNotFoundException
     {
         throw shouldNotHaveReachedAllTheWayHere();

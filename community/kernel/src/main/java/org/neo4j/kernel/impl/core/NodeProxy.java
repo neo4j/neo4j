@@ -360,7 +360,7 @@ public class NodeProxy implements Node
             {
                 return false;
             }
-            return statement.nodeHasProperty( nodeId, propertyKeyId );
+            return statement.nodeGetProperty( nodeId, propertyKeyId ).isDefined();
         }
         catch ( EntityNotFoundException e )
         {

@@ -29,7 +29,6 @@ import java.util.concurrent.Future;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -40,6 +39,7 @@ import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
+
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 import static org.neo4j.helpers.ValueGetter.NO_VALUE;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -131,13 +131,7 @@ public class IndexPopulationJob implements Runnable
             }
             catch ( Throwable t )
             {
-                // These can happen spuriously during shutdown and shouldn't be printed to standard error
-                if ( !(t instanceof IndexProxyAlreadyClosedKernelException ) )
-                {
-                    t.printStackTrace(System.err);
-                }
-
-                // Ensure we only log population failure if its cause is not an index entry conflict
+                // If the cause of index population failure is a conflict in a (unique) index, the conflict is the failure
                 if ( t instanceof IndexPopulationFailedKernelException )
                 {
                     Throwable cause = t.getCause();
@@ -153,7 +147,6 @@ public class IndexPopulationJob implements Runnable
                     log.error( format("Failed to populate index: [%s]", indexUserDescription), t );
                     log.flush();
                 }
-
 
                 // Set failure cause to be stored persistently
                 failureCause = t;

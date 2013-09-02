@@ -463,7 +463,7 @@ public class StateHandlingStatementOperations implements
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         Property existingProperty = nodeGetProperty( state, nodeId, property.propertyKeyId() );
-        if ( existingProperty.isNoProperty() )
+        if ( !existingProperty.isDefined() )
         {
             auxStoreOps.nodeAddStoreProperty( nodeId, property );
         }
@@ -480,7 +480,7 @@ public class StateHandlingStatementOperations implements
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         Property existingProperty = relationshipGetProperty( state, relationshipId, property.propertyKeyId() );
-        if ( existingProperty.isNoProperty() )
+        if ( !existingProperty.isDefined() )
         {
             auxStoreOps.relationshipAddStoreProperty( relationshipId, property );
         }
@@ -496,7 +496,7 @@ public class StateHandlingStatementOperations implements
     public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
     {
         Property existingProperty = graphGetProperty( state, property.propertyKeyId() );
-        if ( existingProperty.isNoProperty() )
+        if ( !existingProperty.isDefined() )
         {
             auxStoreOps.graphAddStoreProperty( property );
         }
@@ -513,7 +513,7 @@ public class StateHandlingStatementOperations implements
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         Property existingProperty = nodeGetProperty( state, nodeId, propertyKeyId );
-        if ( !existingProperty.isNoProperty() )
+        if ( existingProperty.isDefined() )
         {
             auxStoreOps.nodeRemoveStoreProperty( nodeId, (SafeProperty)existingProperty );
         }
@@ -526,7 +526,7 @@ public class StateHandlingStatementOperations implements
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         Property existingProperty = relationshipGetProperty( state, relationshipId, propertyKeyId );
-        if ( !existingProperty.isNoProperty() )
+        if ( existingProperty.isDefined() )
         {
             auxStoreOps.relationshipRemoveStoreProperty( relationshipId, (SafeProperty)existingProperty );
         }
@@ -539,7 +539,7 @@ public class StateHandlingStatementOperations implements
             throws PropertyKeyIdNotFoundException
     {
         Property existingProperty = graphGetProperty( state, propertyKeyId );
-        if ( !existingProperty.isNoProperty() )
+        if ( existingProperty.isDefined() )
         {
             auxStoreOps.graphRemoveStoreProperty( (SafeProperty)existingProperty );
         }
@@ -577,13 +577,6 @@ public class StateHandlingStatementOperations implements
         }
         
         return entityReadDelegate.nodeGetProperty( state, nodeId, propertyKeyId );
-    }
-    
-    @Override
-    public boolean nodeHasProperty( StatementState state, long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        return !nodeGetProperty( state, nodeId, propertyKeyId ).isNoProperty();
     }
 
     @Override
@@ -639,13 +632,6 @@ public class StateHandlingStatementOperations implements
         }
         return entityReadDelegate.relationshipGetProperty( state, relationshipId, propertyKeyId );
     }
-    
-    @Override
-    public boolean relationshipHasProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
-    {
-        return !relationshipGetProperty( state, relationshipId, propertyKeyId ).isNoProperty();
-    }
 
     @Override
     public Iterator<SafeProperty> relationshipGetAllProperties( StatementState state, long relationshipId ) throws EntityNotFoundException
@@ -698,12 +684,6 @@ public class StateHandlingStatementOperations implements
     }
     
     @Override
-    public boolean graphHasProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
-    {
-        return !graphGetProperty( state, propertyKeyId ).isNoProperty();
-    }
-    
-    @Override
     public Iterator<SafeProperty> graphGetAllProperties( StatementState state )
     {
         if ( state.hasTxStateWithChanges() )
@@ -737,7 +717,7 @@ public class StateHandlingStatementOperations implements
                     return false;
                 }
                 Property property = nodeGetProperty( state, nodeId, propertyKeyId );
-                return !property.isNoProperty() && property.valueEquals( value );
+                return property.isDefined() && property.valueEquals( value );
             }
             catch ( EntityNotFoundException | PropertyKeyIdNotFoundException e )
             {

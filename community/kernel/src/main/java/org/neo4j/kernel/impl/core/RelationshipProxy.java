@@ -240,7 +240,7 @@ public class RelationshipProxy implements Relationship
         {
             long propertyId = statement.propertyKeyGetForName( key );
             return propertyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY &&
-                   statement.relationshipHasProperty( relId, propertyId );
+                   statement.relationshipGetProperty( relId, propertyId ).isDefined();
         }
         catch ( EntityNotFoundException e )
         {
