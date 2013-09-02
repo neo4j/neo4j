@@ -73,11 +73,6 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends De
       inner.hasProperty(obj, propertyKeyId)
     }
 
-    override def propertyKeys(obj: T) = {
-      locker.acquireLock(obj)
-      inner.propertyKeys(obj)
-    }
-
     override def getById(id: Long): T = {
       val result = inner.getById(id)
       locker.acquireLock(result)
