@@ -23,6 +23,6 @@ public class PropertyKeyIdNotFoundException extends KernelException
 {
     public PropertyKeyIdNotFoundException( long propertyKeyId, Exception cause )
     {
-        super( "Property key id '" + propertyKeyId + "' not found", cause );
+        super( cause, "Property key id '%s' not found", propertyKeyId );
     }
 }

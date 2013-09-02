@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 
 public interface KeyWriteOperations
@@ -34,4 +35,7 @@ public interface KeyWriteOperations
      * this call it gets created.
      */
     long propertyKeyGetOrCreateForName( StatementState state, String propertyKeyName ) throws SchemaKernelException;
+
+    long relationshipTypeGetOrCreateForName( StatementState state, String relationshipTypeName )
+            throws IllegalTokenNameException;
 }

@@ -25,7 +25,9 @@ import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -33,6 +35,7 @@ import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
@@ -102,6 +105,11 @@ public class BaseStatement implements TokenRead, TokenWrite, SchemaRead, SchemaS
     final SchemaStateOperations schemaState()
     {
         return transaction.operations.schemaStateOperations();
+    }
+
+    final LegacyKernelOperations legacyOps()
+    {
+        return transaction.legacyKernelOperations;
     }
 
     // <SchemaRead>
@@ -212,6 +220,20 @@ public class BaseStatement implements TokenRead, TokenWrite, SchemaRead, SchemaS
         assertOpen();
         return tokenRead().labelsGetAllTokens( state );
     }
+
+    @Override
+    public long relationshipTypeGetForName( String relationshipTypeName )
+    {
+        assertOpen();
+        return tokenRead().relationshipTypeGetForName( state, relationshipTypeName );
+    }
+
+    @Override
+    public String relationshipTypeGetName( long relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException
+    {
+        assertOpen();
+        return tokenRead().relationshipTypeGetName( state, relationshipTypeId );
+    }
     // </TokenRead>
 
     // <TokenWrite>
@@ -227,6 +249,13 @@ public class BaseStatement implements TokenRead, TokenWrite, SchemaRead, SchemaS
     {
         assertOpen();
         return tokenWrite().propertyKeyGetOrCreateForName( state, propertyKeyName );
+    }
+
+    @Override
+    public long relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
+    {
+        assertOpen();
+        return tokenWrite().relationshipTypeGetOrCreateForName( state, relationshipTypeName );
     }
     // </TokenWrite>
 

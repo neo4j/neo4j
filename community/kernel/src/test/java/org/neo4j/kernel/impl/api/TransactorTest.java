@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
@@ -309,7 +310,7 @@ public class TransactorTest
 
         protected StubKernelTransaction( StatementOperationParts operations, Statement statement )
         {
-            super( operations );
+            super( operations, mock( LegacyKernelOperations.class ) );
             this.statement = statement;
         }
 

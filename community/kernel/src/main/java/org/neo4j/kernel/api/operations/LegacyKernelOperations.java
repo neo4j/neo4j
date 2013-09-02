@@ -17,24 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 
-interface TokenWrite
+public interface LegacyKernelOperations
 {
-    /**
-     * Returns a label id for a label name. If the label doesn't exist prior to
-     * this call it gets created.
-     */
-    long labelGetOrCreateForName( String labelName ) throws SchemaKernelException;
+    long nodeCreate( StatementState state );
 
-    /**
-     * Returns a property key id for a property key. If the key doesn't exist prior to
-     * this call it gets created.
-     */
-    long propertyKeyGetOrCreateForName( String propertyKeyName ) throws SchemaKernelException;
-
-    long relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
+    long relationshipCreate( StatementState state, long relationshipTypeId, long startNodeId, long endNodeId )
+            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 }
