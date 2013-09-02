@@ -23,6 +23,8 @@ import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 
+import java.util.concurrent.Callable;
+
 public abstract class Property
 {
     public static Property noNodeProperty( long nodeId, long propertyKeyId )
@@ -96,6 +98,16 @@ public abstract class Property
     public static SafeProperty stringProperty( long propertyKeyId, String value )
     {
         return new StringProperty( propertyKeyId, value );
+    }
+
+    public static SafeProperty lazyStringProperty( long propertyKeyId, Callable<String> producer )
+    {
+        return new LazyStringProperty( propertyKeyId, producer );
+    }
+
+    public static SafeProperty lazyArrayProperty( long propertyKeyId, Callable<Object> producer )
+    {
+        return new LazyArrayProperty( propertyKeyId, producer );
     }
 
     public static SafeProperty longProperty( long propertyKeyId, long value )
