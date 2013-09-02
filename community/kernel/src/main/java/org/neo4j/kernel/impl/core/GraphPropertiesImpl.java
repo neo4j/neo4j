@@ -116,10 +116,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         try ( DataStatement statement = statementCtxProvider.dataStatement() )
         {
             long propertyId = statement.propertyKeyGetForName( key );
-            if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-            {
-                return false;
-            }
             return statement.graphGetProperty( propertyId ).isDefined();
         }
         catch ( PropertyKeyIdNotFoundException e )

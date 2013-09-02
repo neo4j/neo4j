@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
+
 public class DataStatement extends BaseStatement implements DataRead, DataWrite
 {
     DataStatement( KernelTransactionImplementation transaction, Statement statement )
@@ -43,6 +45,10 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
     public PrimitiveLongIterator nodesGetForLabel( long labelId )
     {
         assertOpen();
+        if ( labelId == NO_SUCH_LABEL )
+        {
+            return emptyPrimitiveLongIterator();
+        }
         return dataRead().nodesGetForLabel( state, labelId );
     }
 
@@ -58,7 +64,7 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
     public boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException
     {
         assertOpen();
-        return dataRead().nodeHasLabel( state, nodeId, labelId );
+        return labelId != NO_SUCH_LABEL && dataRead().nodeHasLabel( state, nodeId, labelId );
     }
 
     @Override
@@ -73,6 +79,10 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         assertOpen();
+        if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
+        {
+            return Property.noNodeProperty( nodeId, propertyKeyId );
+        }
         return dataRead().nodeGetProperty( state, nodeId, propertyKeyId );
     }
 
@@ -81,6 +91,10 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
             throws PropertyKeyIdNotFoundException, EntityNotFoundException
     {
         assertOpen();
+        if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
+        {
+            return Property.noRelationshipProperty( relationshipId, propertyKeyId );
+        }
         return dataRead().relationshipGetProperty( state, relationshipId, propertyKeyId );
     }
 
@@ -88,6 +102,10 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
     public Property graphGetProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
     {
         assertOpen();
+        if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
+        {
+            return Property.noGraphProperty( propertyKeyId );
+        }
         return dataRead().graphGetProperty( state, propertyKeyId );
     }
 

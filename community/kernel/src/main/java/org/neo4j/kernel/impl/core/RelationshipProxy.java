@@ -214,10 +214,6 @@ public class RelationshipProxy implements Relationship
         try ( DataStatement statement = statementCtxProvider.dataStatement() )
         {
             long propertyId = statement.propertyKeyGetForName( key );
-            if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-            {
-                return defaultValue;
-            }
             return statement.relationshipGetProperty( relId, propertyId ).value( defaultValue );
         }
         catch ( EntityNotFoundException e )

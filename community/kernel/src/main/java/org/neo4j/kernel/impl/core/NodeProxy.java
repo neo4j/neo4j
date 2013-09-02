@@ -266,10 +266,6 @@ public class NodeProxy implements Node
         try ( DataStatement statement = statementCtxProvider.dataStatement() )
         {
             long propertyKeyId = statement.propertyKeyGetForName( key );
-            if(propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-            {
-                return defaultValue;
-            }
             return statement.nodeGetProperty( nodeId, propertyKeyId ).value( defaultValue );
         }
         catch ( EntityNotFoundException e )
@@ -356,10 +352,6 @@ public class NodeProxy implements Node
         try ( DataStatement statement = statementCtxProvider.dataStatement() )
         {
             long propertyKeyId = statement.propertyKeyGetForName( key );
-            if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-            {
-                return false;
-            }
             return statement.nodeGetProperty( nodeId, propertyKeyId ).isDefined();
         }
         catch ( EntityNotFoundException e )
@@ -502,7 +494,7 @@ public class NodeProxy implements Node
         try ( DataStatement statement = statementCtxProvider.dataStatement() )
         {
             long labelId = statement.labelGetForName( label.name() );
-            if(labelId != KeyReadOperations.NO_SUCH_LABEL)
+            if ( labelId != KeyReadOperations.NO_SUCH_LABEL )
             {
                 statement.nodeRemoveLabel( getId(), labelId );
             }
@@ -519,7 +511,7 @@ public class NodeProxy implements Node
         try ( DataStatement statement = statementCtxProvider.dataStatement() )
         {
             long labelId = statement.labelGetForName( label.name() );
-            return labelId != KeyReadOperations.NO_SUCH_LABEL && statement.nodeHasLabel( getId(), labelId );
+            return statement.nodeHasLabel( getId(), labelId );
         }
         catch ( EntityNotFoundException e )
         {
