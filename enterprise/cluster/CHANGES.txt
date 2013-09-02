@@ -1,3 +1,8 @@
+1.9.3 (2013-08-30)
+------------------
+o Fixes issue which might lead to eternal elections
+o UUID for Available messages is now ignored, allowing for upgrades from 1.9.2
+
 1.9.1 (2013-07-16)
 ------------------
 o Fixes bug where a single instance cluster will perpetually try to perform elections

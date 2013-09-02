@@ -25,24 +25,20 @@ import java.util.Map;
 
 public class VersionMapper
 {
-    private static final Map<Long, Long> versionMapping = new HashMap<Long, Long>();
+    private static final Map<String, Long> classNameToSerialVersionUID = new HashMap<String, Long>();
 
-    static
+    public long mappingFor( String className )
     {
-        long v1_9_1MemberIsUnavailable = -2826926850135965485l;
-        long v1_9_3MemberIsUnavailable = 977671511575679253l;
-
-        versionMapping.put( v1_9_1MemberIsUnavailable, v1_9_3MemberIsUnavailable );
-        versionMapping.put( v1_9_3MemberIsUnavailable, v1_9_1MemberIsUnavailable );
+        return classNameToSerialVersionUID.get( className );
     }
 
-    public boolean hasMappingFor( long oldSUID )
+    public boolean hasMappingFor( String className )
     {
-        return versionMapping.containsKey( oldSUID );
+        return classNameToSerialVersionUID.containsKey( className );
     }
 
-    public long map( long oldSUID )
+    public void addMappingFor( String wireClassDescriptorName, long serialVersionUID )
     {
-        return versionMapping.get( oldSUID );
+        classNameToSerialVersionUID.put(wireClassDescriptorName, serialVersionUID);
     }
 }

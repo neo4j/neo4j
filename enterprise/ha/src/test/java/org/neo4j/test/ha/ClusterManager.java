@@ -36,12 +36,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
-import ch.qos.logback.classic.LoggerContext;
-import org.slf4j.impl.StaticLoggerBinder;
-import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
@@ -50,6 +47,7 @@ import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -73,6 +71,10 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 
+import org.slf4j.impl.StaticLoggerBinder;
+import org.w3c.dom.Document;
+import ch.qos.logback.classic.LoggerContext;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 
@@ -87,10 +89,10 @@ public class ClusterManager
     public static class Builder
     {
         private final File root;
-        private Provider provider = clusterOfSize( 3 );
-        private Map<String, String> commonConfig = emptyMap();
-        private Map<Integer, Map<String,String>> instanceConfig = new HashMap<>();
-        private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
+        private final Provider provider = clusterOfSize( 3 );
+        private final Map<String, String> commonConfig = emptyMap();
+        private final Map<Integer, Map<String,String>> instanceConfig = new HashMap<>();
+        private final HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         public File seedDir;
 
         public Builder( File root )
@@ -511,8 +513,12 @@ public class ClusterManager
                 Config config1 = new Config( config );
                 Logging clientLogging =life.add( new LogbackService(
                         config1, (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory() ) );
+
+                ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
+
                 life.add( new FutureLifecycleAdapter<>( new ClusterClient( ClusterClient.adapt( config1 ),
-                        clientLogging, new NotElectableElectionCredentialsProvider() ) ) );
+                        clientLogging, new NotElectableElectionCredentialsProvider() , objectStreamFactory,
+                        objectStreamFactory ) ) );
             }
         }
 
@@ -520,7 +526,7 @@ public class ClusterManager
          * Will await a condition for the default max time.
          *
          * @param predicate {@link Predicate} that should return true
-         *                  signalling that the condition has been met.
+         *                  signaling that the condition has been met.
          * @throws IllegalStateException if the condition wasn't met
          *                               during within the max time.
          */
@@ -533,7 +539,7 @@ public class ClusterManager
          * Will await a condition for the given max time.
          *
          * @param predicate {@link Predicate} that should return true
-         *                  signalling that the condition has been met.
+         *                  signaling that the condition has been met.
          * @throws IllegalStateException if the condition wasn't met
          *                               during within the max time.
          */
@@ -940,7 +946,7 @@ public class ClusterManager
     {
         private final HighlyAvailableGraphDatabase db;
         private final NetworkReceiver receiver;
-        private NetworkSender sender;
+        private final NetworkSender sender;
 
         StartNetworkAgainKit( HighlyAvailableGraphDatabase db, NetworkReceiver receiver, NetworkSender sender )
         {

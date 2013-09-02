@@ -26,6 +26,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
@@ -83,6 +85,15 @@ public class MultiPaxosContext
     {
         return paxosInstances;
     }
+
+    public ObjectInputStreamFactory getLenientObjectInputStreamFactory() {
+        return clusterContext.getObjectInputStreamFactory();
+    }
+
+    public ObjectOutputStreamFactory getLenientObjectOutputStreamFactory() {
+        return clusterContext.getObjectOutputStreamFactory();
+    }
+
 
     public int getMinimumQuorumSize( List<URI> acceptors )
     {

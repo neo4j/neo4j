@@ -42,6 +42,8 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -76,16 +78,22 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private final Predicate<ClusterMembersSnapshot> snapshotValidator;
     private final Heartbeat heartbeat;
     private HeartbeatListenerImpl heartbeatListener;
+    private ObjectInputStreamFactory lenientObjectInputStream;
+    private ObjectOutputStreamFactory lenientObjectOutputStream;
 
     public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, Heartbeat heartbeat,
                                      AtomicBroadcast atomicBroadcast, Logging logging,
                                      Predicate<ClusterMembersSnapshot> validator,
-                                     Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> snapshotFilter )
+                                     Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> snapshotFilter,
+                                     ObjectInputStreamFactory lenientObjectInputStream,
+                                     ObjectOutputStreamFactory lenientObjectOutputStream)
     {
         this.snapshot = snapshot;
         this.cluster = cluster;
         this.heartbeat = heartbeat;
         this.atomicBroadcast = atomicBroadcast;
+        this.lenientObjectInputStream = lenientObjectInputStream;
+        this.lenientObjectOutputStream = lenientObjectOutputStream;
         this.logger = logging.getMessagesLog( getClass() );
 
         clusterListener = new ClusterListenerImpl();
@@ -113,7 +121,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     public void init()
             throws Throwable
     {
-        serializer = new AtomicBroadcastSerializer();
+        serializer = new AtomicBroadcastSerializer( lenientObjectInputStream, lenientObjectOutputStream );
 
         cluster.addClusterListener( clusterListener );
 

@@ -1,0 +1,33 @@
+<project name="process-resources">
+    <include file="${project.parent.relativePath}/../../installer-debian/udc_source.xml"/>
+
+    <untar src="${project.build.directory}/neo4j-${edition}-${neo4j.version}-unix.tar.gz"
+           compression="gzip" dest="${project.build.directory}"/>
+    <fixcrlf srcdir="${project.build.directory}/neo4j-${edition}-${neo4j.version}/doc"
+             includes="**/*" tab="asis"/>
+
+    <replaceregexp
+            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-server.properties"
+            match="org.neo4j.server.database.location=.*"
+            replace="org.neo4j.server.database.location=/var/lib/neo4j"
+            />
+    <replaceregexp
+            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/logging.properties"
+            match="java.util.logging.FileHandler.pattern=.*"
+            replace="java.util.logging.FileHandler.pattern=/var/log/neo4j/neo4j.%u.%g.log"
+            />
+
+    <replaceregexp
+            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-server.properties"
+            match="org.neo4j.server.http.log.enabled=false"
+            replace="org.neo4j.server.http.log.enabled=true"
+            />
+
+    <replaceregexp
+            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-http-logging.xml"
+            match=".fileNamePattern.*"
+            replace="&lt;fileNamePattern&gt;/var/log/neo4j/http.%d{yyyy-MM-dd_HH}.log&lt;/fileNamePattern&gt;"
+            />
+    <udc_source name="neo4j-${edition}-${neo4j.version}" packaging="rpm" workingDir="${project.build.directory}" parentDir="lib"/>
+
+</project>

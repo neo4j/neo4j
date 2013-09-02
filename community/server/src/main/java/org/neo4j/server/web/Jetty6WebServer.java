@@ -33,12 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
 import org.mortbay.component.LifeCycle;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
@@ -57,10 +57,13 @@ import org.mortbay.thread.QueuedThreadPool;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.guard.GuardingRequestFilter;
+import org.neo4j.server.logging.JettyLoggerAdapter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
+
+import ch.qos.logback.access.jetty.RequestLogImpl;
 
 import static java.lang.String.format;
 
@@ -127,6 +130,7 @@ public class Jetty6WebServer implements WebServer
     {
         if ( jetty == null )
         {
+            System.setProperty("org.mortbay.log.class", JettyLoggerAdapter.class.getName());
             jetty = new Server();
             Connector connector = new SelectChannelConnector();
 

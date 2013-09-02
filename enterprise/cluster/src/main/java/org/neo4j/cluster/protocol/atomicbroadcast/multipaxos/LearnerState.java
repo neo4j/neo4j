@@ -95,7 +95,11 @@ public enum LearnerState
                                 String description;
                                 if ( instance.value_2 instanceof Payload )
                                 {
-                                    description = new AtomicBroadcastSerializer().receive( (Payload) instance.value_2 ).toString();
+                                    AtomicBroadcastSerializer atomicBroadcastSerializer = new
+                                            AtomicBroadcastSerializer( context.getLenientObjectInputStreamFactory(),
+                                            context.getLenientObjectOutputStreamFactory() );
+
+                                    description = atomicBroadcastSerializer.receive( (Payload) instance.value_2 ).toString();
                                 }
                                 else
                                 {
