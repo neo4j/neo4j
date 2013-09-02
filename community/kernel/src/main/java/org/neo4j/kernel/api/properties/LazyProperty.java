@@ -51,18 +51,22 @@ abstract class LazyProperty<T> extends FullSizeProperty
                 value = this.value;
                 if ( value instanceof Callable<?> )
                 {
-                    try
-                    {
-                        this.value = value = ((Callable<?>) value).call();
-                    }
-                    catch ( Exception e )
-                    {
-                        throw new RuntimeException( e );
-                    }
+                    this.value = value = produceValue();
                 }
             }
         }
         return cast( value );
+    }
+
+    protected Object produceValue()
+    {
+        try
+        {
+            return ( (Callable<?>) value ).call();
+        } catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @SuppressWarnings("unchecked")

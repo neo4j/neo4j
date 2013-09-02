@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.concurrent.Callable;
 
-class LazyStringProperty extends LazyProperty<String>
+public class LazyStringProperty extends LazyProperty<String>
 {
     LazyStringProperty( long propertyKeyId, Callable<String> producer )
     {

@@ -23,6 +23,9 @@ package org.neo4j.kernel.impl.nioneo.store;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
 
+import java.util.Arrays;
+import java.util.concurrent.Callable;
+
 /**
  * Defines valid property types.
  */
@@ -253,13 +256,20 @@ public enum PropertyType
     STRING( 9 )
     {
         @Override
-        public SafeProperty readProperty( long propertyKeyId, PropertyBlock block, PropertyStore store )
+        public SafeProperty readProperty( long propertyKeyId, final PropertyBlock block, final PropertyStore store )
         {
-            return Property.stringProperty( propertyKeyId, store.getStringFor( block ) );
+            return Property.lazyStringProperty(propertyKeyId, new Callable<String>()
+            {
+                @Override
+                public String call() throws Exception
+                {
+                    return getValue( block, store );
+                }
+            });
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public String getValue( PropertyBlock block, PropertyStore store )
         {
             if ( store == null )
                 return null;
@@ -277,16 +287,22 @@ public enum PropertyType
         @Override
         byte[] readDynamicRecordHeader( byte[] recordBytes )
         {
-            return new byte[0];
+            return EMPTY_BYTE_ARRAY;
         }
     },
     ARRAY( 10 )
     {
         @Override
-        public SafeProperty readProperty( long propertyKeyId, PropertyBlock block, PropertyStore store )
+        public SafeProperty readProperty( long propertyKeyId, final PropertyBlock block, final PropertyStore store )
         {
-            // TODO: Specialize per type
-            return Property.property( propertyKeyId, store.getArrayFor( block ) );
+            return Property.lazyArrayProperty(propertyKeyId, new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
+                {
+                    return getValue( block, store );
+                }
+            });
         }
 
         @Override
@@ -318,9 +334,7 @@ public enum PropertyType
 
         private byte[] headOf( byte[] bytes, int length )
         {
-            byte[] head = new byte[length];
-            System.arraycopy( bytes, 0, head, 0, length );
-            return head;
+            return Arrays.copyOf( bytes, length );
         }
     },
     SHORT_STRING( 11 )
@@ -487,4 +501,6 @@ public enum PropertyType
     {
         throw new UnsupportedOperationException();
     }
+
+    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 }
