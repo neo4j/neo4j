@@ -31,11 +31,8 @@ import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
 import org.neo4j.cypher.internal.commands.AstNode
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
-
-  def isMissingUnboundDependencies(context: ExecutionContext, state: QueryState): Boolean = true
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext]
 
@@ -44,21 +41,6 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def identifiers: Seq[(String, CypherType)]
 
   def rewrite(f: Expression => Expression): UpdateAction
-}
-
-object UpdateActionHelper {
-  def isUnbound(n: String)(context: ExecutionContext): Boolean = try {
-    UnboundValue.is(context(n))
-  } catch {
-    case (x: NoSuchElementException) => false
-  }
-
-  def isUnbound(n: Expression)(context: ExecutionContext, state: QueryState): Boolean = try {
-    UnboundValue.is(n(context)(state))
-  } catch {
-    case (x: NoSuchElementException)              => false
-    case (x: org.neo4j.graphdb.NotFoundException) => false
-  }
 }
 
 trait GraphElementPropertyFunctions extends CollectionSupport {

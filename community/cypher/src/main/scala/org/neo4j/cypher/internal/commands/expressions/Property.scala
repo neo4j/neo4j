@@ -24,7 +24,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.helpers.IsMap
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.{UnboundValue, KeyToken}
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.cypher.EntityNotFoundException
@@ -62,7 +62,6 @@ class Property(val mapExpr: Expression,
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = mapExpr(ctx) match {
     case null           => null
-    case UnboundValue   => null
     case IsMap(mapFunc) => try {
       mapFunc(state.query).apply(propertyKey.name)
     } catch {

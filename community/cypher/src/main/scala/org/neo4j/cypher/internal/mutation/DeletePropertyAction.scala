@@ -30,9 +30,6 @@ import org.neo4j.cypher.internal.commands.values.KeyToken
 case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
   extends UpdateAction {
 
-  override def isMissingUnboundDependencies(context: ExecutionContext, state: QueryState): Boolean =
-    ! UpdateActionHelper.isUnbound(element)(context, state)
-
   def exec(context: ExecutionContext, state: QueryState) = {
     propertyKey.getOptId(state.query) match {
       case Some(propertyKeyId) =>

@@ -29,10 +29,6 @@ import org.neo4j.cypher.internal.ExecutionContext
 
 case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
-  override def isMissingUnboundDependencies(context: ExecutionContext, state: QueryState): Boolean = {
-    ! incomingLinks.exists( _.names.exists( UpdateActionHelper.isUnbound(_)(context) ) )
-  }
-
   def exec(incomingExecContext: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     var linksToDo: Seq[UniqueLink] = links
     var executionContext = incomingExecContext

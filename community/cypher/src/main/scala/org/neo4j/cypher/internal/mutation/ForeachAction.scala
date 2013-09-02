@@ -35,13 +35,11 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
     for (element <- seq) {
       val inner = context.newWith(id, element)
 
-      if ( ! actions.exists( ! _.isMissingUnboundDependencies(inner, state) ) ) {
-        // We do a fold left here to allow updates to introduce
-        // symbols in each others context.
-        actions.foldLeft(Seq(inner))((contexts, action) => {
-          contexts.flatMap(c => action.exec(c, state))
-        })
-      }
+      // We do a fold left here to allow updates to introduce
+      // symbols in each others context.
+      actions.foldLeft(Seq(inner))((contexts, action) => {
+        contexts.flatMap(c => action.exec(c, state))
+      })
     }
 
     Iterator(context)

@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryStateHelper
 import org.scalatest.Assertions
 
-
 class HasLabelTests extends Assertions {
   @Test
   def should_handle_null_values() {

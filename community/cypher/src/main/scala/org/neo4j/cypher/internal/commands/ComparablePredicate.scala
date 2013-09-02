@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.{ExecutionContext, Comparer}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.IsCollection
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
@@ -65,8 +64,6 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
 
     val result = (a1, b1) match {
       case (IsCollection(l), IsCollection(r)) => l == r
-      case (UnboundValue, x)                  => x == null
-      case (x, UnboundValue)                  => x == null
       case _                                  => a1 == b1
     }
     result

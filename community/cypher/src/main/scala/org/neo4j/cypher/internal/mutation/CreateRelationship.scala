@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.symbols.{SymbolTable, RelationshipType}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.{UnboundValue, KeyToken}
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
 object RelationshipEndpoint {
   def apply(name:String) = new RelationshipEndpoint(Identifier(name), Map.empty, Seq.empty, true)
@@ -63,9 +63,6 @@ extends UpdateAction
 
     CreateRelationship(key, newFrom, newTo, typ, newProps)
   }
-
-  override def isMissingUnboundDependencies(context: ExecutionContext, state: QueryState): Boolean =
-    ! ( UpdateActionHelper.isUnbound(from.node)(context, state) || UpdateActionHelper.isUnbound(to.node)(context, state) )
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val fromVal = from.node(context)(state)

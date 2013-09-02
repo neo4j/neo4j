@@ -26,7 +26,6 @@ import org.neo4j.cypher.PathImpl
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.cypher.internal.parser._
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractPattern]) extends PipeWithSource(source) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
@@ -36,10 +35,7 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
 
   // TODO: This is duplicated with PathExtractor
   private def getPath(ctx: ExecutionContext): Path = {
-    def get(x: String): PropertyContainer = ctx(x) match {
-      case UnboundValue => null
-      case x            => x.asInstanceOf[PropertyContainer]
-    }
+    def get(x: String): PropertyContainer = ctx(x).asInstanceOf[PropertyContainer]
 
     val p: Seq[PropertyContainer] = entities.foldLeft(get(firstNode) :: Nil)((soFar, p) => p match {
       case e: ParsedEntity           => soFar

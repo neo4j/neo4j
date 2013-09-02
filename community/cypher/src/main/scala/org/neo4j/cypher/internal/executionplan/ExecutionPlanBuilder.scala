@@ -187,7 +187,6 @@ The Neo4j Team""")
   val phases: Seq[Phase] = Seq(
     prepare,  /* Prepares the query by rewriting it before other plan builders start working on it. */
     matching, /* Pulls in data from the stores, adds named paths, and filters the result */
-    binding,  /* Ensure that optionals are turned into nulls */
     updates,  /* Plans update actions */
     extract,  /* Handles RETURN and WITH expression */
     finish    /* Prepares the return set so it looks like the user specified */
@@ -210,12 +209,6 @@ The Neo4j Team""")
       new ShortestPathBuilder,
       new NamedPathBuilder,
       new FilterBuilder
-    )
-  }
-
-  def binding = new Phase {
-    def myBuilders: Seq[PlanBuilder] = Seq(
-      new OptionalsBinderBuilder
     )
   }
 

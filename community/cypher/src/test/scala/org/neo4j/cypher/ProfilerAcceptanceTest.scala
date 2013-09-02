@@ -40,7 +40,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     val result: ExecutionResult = engine.profile("START n=node(1) RETURN n")
 
     //WHEN THEN
-    assertRows(1)(result)("OptionalsBinding", "NodeById")
+    assertRows(1)(result)("NodeById")
   }
 
   @Test
@@ -50,7 +50,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     val result: ExecutionResult = engine.profile("START n=node(1) RETURN n.foo")
 
     //WHEN THEN
-    assertDbHits(1)(result)("ColumnFilter", "Extract", "OptionalsBinding", "NodeById")
+    assertDbHits(1)(result)("ColumnFilter", "Extract", "NodeById")
   }
 
   @Test
@@ -68,7 +68,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     val result: ExecutionResult = engine.profile("START n=node(*) RETURN n.foo")
 
     //WHEN THEN
-    assertDbHits(1)(result)("ColumnFilter", "Extract", "OptionalsBinding", "AllNodes")
+    assertDbHits(1)(result)("ColumnFilter", "Extract", "AllNodes")
   }
 
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {

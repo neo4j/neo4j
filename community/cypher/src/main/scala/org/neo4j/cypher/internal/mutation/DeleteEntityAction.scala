@@ -32,14 +32,12 @@ case class DeleteEntityAction(elementToDelete: Expression)
   extends UpdateAction {
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    if (! UpdateActionHelper.isUnbound(elementToDelete)(context, state)) {
-      elementToDelete(context)(state) match {
-        case n: Node => delete(n, state)
-        case r: Relationship => delete(r, state)
-        case null =>
-        case p:Path => p.iterator().asScala.foreach( pc => delete(pc, state))
-        case x => throw new CypherTypeException("Expression `" + elementToDelete.toString() + "` yielded `" + x.toString + "`. Don't know how to delete that.")
-      }
+    elementToDelete(context)(state) match {
+      case n: Node => delete(n, state)
+      case r: Relationship => delete(r, state)
+      case null =>
+      case p:Path => p.iterator().asScala.foreach( pc => delete(pc, state))
+      case x => throw new CypherTypeException("Expression `" + elementToDelete.toString() + "` yielded `" + x.toString + "`. Don't know how to delete that.")
     }
     Iterator(context)
   }

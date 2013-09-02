@@ -111,7 +111,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
     val labelId = queryContext.getLabelId("Person")
 
     // when
-    val predicate = execPlanBuilder.buildPipes(planContext, q)._1.sources.head.asInstanceOf[FilterPipe].predicate
+    val predicate = execPlanBuilder.buildPipes(planContext, q)._1.asInstanceOf[FilterPipe].predicate
 
     assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
   }

@@ -77,6 +77,4 @@ class UnableToPickStartPointException(message: String) extends CypherException(m
 
 class InvalidSemanticsException( message: String ) extends CypherException(message)
 
-class UnboundIdentifierException extends EntityNotFoundException("Unbound entity encountered")
-
 class OutOfBoundsException(message: String) extends CypherException(message)

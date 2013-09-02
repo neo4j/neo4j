@@ -23,7 +23,6 @@ import org.neo4j.graphdb.ConstraintViolationException
 import spi.QueryContext
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.cypher.NodeStillHasRelationshipsException
-import org.neo4j.cypher.internal.commands.values.UnboundValue
 
 /**
  * An iterator that decorates an inner iterator, and calls close() on the QueryContext once
@@ -53,7 +52,6 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
     case (x: Stream[_])   => x.map(materialize).toList
     case (x: Map[_, _])   => x.mapValues(materialize)
     case (x: Iterable[_]) => x.map(materialize)
-    case UnboundValue     => null
     case x                => x
   }
 
