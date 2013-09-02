@@ -142,11 +142,11 @@ trait Expressions extends Parser
   private def IdInColl: Rule2[ast.Identifier, ast.Expression] =
     Identifier ~~ keyword("IN") ~~ Expression
 
-  private def FunctionInvocation : Rule1[ast.FunctionInvocation] = rule {
-    group(Identifier ~~ "(" ~~
+  private def FunctionInvocation : Rule1[ast.FunctionInvocation] = rule("a function") {
+    ((group(Identifier ~~ "(" ~~
       (keyword("DISTINCT") ~ push(true) | EMPTY ~ push(false)) ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
-    ) ~~> (_.toIndexedSeq) ~>> token ~~> (ast.FunctionInvocation(_, _, _, _))
+    ) ~~> (_.toIndexedSeq)) memoMismatches) ~>> token ~~> (ast.FunctionInvocation(_, _, _, _))
   }
 
   def ListComprehension : Rule1[ast.ListComprehension] = rule("[") {
@@ -154,13 +154,13 @@ trait Expressions extends Parser
   }
 
   def CaseExpression : Rule1[ast.CaseExpression] = rule("CASE") {
-    group((
+    (group((
         keyword("CASE") ~~ push(None) ~ oneOrMore(WS ~ CaseAlternatives)
       | keyword("CASE") ~~ Expression ~~> (Some(_)) ~ oneOrMore(WS ~ CaseAlternatives)
       ) ~ optional(WS ~
         keyword("ELSE") ~~ Expression
       ) ~~ keyword("END")
-    ) ~>> token ~~> ast.CaseExpression
+    ) memoMismatches) ~>> token ~~> ast.CaseExpression
   }
 
   private def CaseAlternatives : Rule2[ast.Expression, ast.Expression] = rule("WHEN") {

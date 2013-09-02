@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.parser.v2_0.rules
 import org.neo4j.cypher.internal.parser.v2_0._
 import org.parboiled.Context
 import org.parboiled.scala._
-import org.parboiled.matchers.OneOrMoreMatcher
 
 trait Base extends Parser {
 
-  def IdentifierCharacter = rule("an identifier character") { ((Letter | ch('_') | Digit | ch('\'')) memoMismatches) suppressSubnodes }
+  def IdentifierCharacter = rule("an identifier character") { (Letter | ch('_') | Digit | ch('\'')) memoMismatches } suppressSubnodes
 
   def OperatorCharacter = rule("an operator char") { anyOf("|^&<>=!:+-*/%~") }
 
@@ -48,11 +47,11 @@ trait Base extends Parser {
 
   def WS = rule("whitespace") {
     zeroOrMore(
-        oneOrMore(WSCharacter)
-      | ch('/').label("comment") ~ (
+        (oneOrMore(WSCharacter) memoMismatches)
+      | (ch('/').label("comment") ~ (
           ch('*') ~ zeroOrMore(!("*/") ~ ANY) ~ "*/"
         | ch('/') ~ zeroOrMore(!anyOf("\n\r") ~ ANY) ~ ("\r\n" | ch('\r') | ch('\n') | EOI)
-      )
+      ) memoMismatches)
     )
   } suppressNode
   def WB = rule { !(WordCharacter) } suppressNode

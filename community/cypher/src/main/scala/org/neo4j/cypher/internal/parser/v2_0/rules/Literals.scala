@@ -44,7 +44,9 @@ trait Literals extends Parser
   }
 
   def MapLiteral : Rule1[ast.MapExpression] = rule {
-    group(ch('{') ~~ zeroOrMore(Identifier ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')) ~>> token ~~> ast.MapExpression
+    group(
+      ch('{') ~~ zeroOrMore(Identifier ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')
+    ) ~>> token ~~> ast.MapExpression
   }
 
   def Parameter : Rule1[ast.Parameter] = rule("a parameter") {
@@ -73,11 +75,11 @@ trait Literals extends Parser
   )
 
   def NodeLabels : Rule1[Seq[ast.Identifier]] = rule("node labels") {
-    oneOrMore(NodeLabel, separator = WS)
+    (oneOrMore(NodeLabel, separator = WS) memoMismatches) suppressSubnodes
   }
 
   def NodeLabel : Rule1[ast.Identifier] = rule {
-    operator(":") ~~ Identifier
+    ((operator(":") ~~ Identifier) memoMismatches) suppressSubnodes
   }
 
   def StringLiteral : Rule1[ast.StringLiteral] = rule("\"...string...\"") {
