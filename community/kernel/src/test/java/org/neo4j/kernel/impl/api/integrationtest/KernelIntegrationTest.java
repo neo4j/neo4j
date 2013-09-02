@@ -23,17 +23,27 @@ import org.junit.After;
 import org.junit.Before;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.NoCacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import java.util.Arrays;
+
+import static java.util.Arrays.asList;
 
 public abstract class KernelIntegrationTest
 {
@@ -93,7 +103,8 @@ public abstract class KernelIntegrationTest
 
     protected void startDb()
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory().setFileSystem(fs).newImpermanentDatabaseBuilder();
+        db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,GraphDatabaseSettings.CacheTypeSetting.none).newGraphDatabase();
         statementContextProvider = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );

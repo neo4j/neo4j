@@ -25,9 +25,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.properties.Property;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 public class PropertyIT extends KernelIntegrationTest
 {
@@ -263,4 +263,71 @@ public class PropertyIT extends KernelIntegrationTest
             assertEquals( 42, statement.nodeGetProperty( nodeId, propertyId ).value() );
         }
     }
+
+    @Test
+    public void nodeHasStringPropertyIfSetAndLazyPropertyIfRead() throws Exception
+    {
+        // GIVEN
+        long propertyKeyId;
+        long nodeId;
+        String value = "Bozo the Clown is a clown character very popular in the United States, peaking in the 1960s";
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
+
+            // WHEN
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            nodeId = node.getId();
+            statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, value) );
+
+            // THEN
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "StringProperty" ) );
+
+            // WHEN
+            commit();
+        }
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+
+            // THEN
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "LazyStringProperty" ) );
+            assertEquals( value, statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
+            assertEquals( value.hashCode(), statement.nodeGetProperty( nodeId, propertyKeyId ).hashCode() );
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value ) );
+        }
+    }
+
+    @Test
+    public void nodeHasArrayPropertyIfSetAndLazyPropertyIfRead() throws Exception
+    {
+        // GIVEN
+        long propertyKeyId;
+        long nodeId;
+        int[] value = new int[] {-1,0,1,2,3,4,5,6,7,8,9,10};
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Node node = db.createNode();
+
+            // WHEN
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( "numbers" );
+            nodeId = node.getId();
+            statement.nodeSetProperty( nodeId, Property.intArrayProperty(propertyKeyId, value) );
+
+            // THEN
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "IntArrayProperty" ) );
+
+            // WHEN
+            commit();
+        }
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+
+            // THEN
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "LazyArrayProperty" ) );
+            assertArrayEquals( value, (int[]) statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
+            assertEquals( Arrays.hashCode( value ), statement.nodeGetProperty( nodeId, propertyKeyId ).hashCode() );
+            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value ) );
+        }
+    }
+
 }
