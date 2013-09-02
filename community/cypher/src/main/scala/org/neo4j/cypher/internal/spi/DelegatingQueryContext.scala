@@ -102,8 +102,6 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   def hasProperty(obj: T, propertyKeyId: Long) = inner.hasProperty(obj, propertyKeyId)
 
-  def propertyKeys(obj: T) = inner.propertyKeys(obj)
-
   def propertyKeyIds(obj: T) = inner.propertyKeyIds(obj)
 
   def removeProperty(obj: T, propertyKeyId: Long) {
