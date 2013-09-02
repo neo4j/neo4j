@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.pipes.DistinctPipe
 import org.neo4j.cypher.internal.commands.expressions.{CachedExpression, Expression}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, AnyType}
+import org.neo4j.cypher.internal.spi.PlanContext
 
 
-class DistinctBuilder extends LegacyPlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
+class DistinctBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
 
     //Extract expressions from return items
     val expressions: Map[String, Expression] =
@@ -49,7 +50,7 @@ class DistinctBuilder extends LegacyPlanBuilder {
   }
 
 
-  def cacheExpressions(plan: ExecutionPlanInProgress, expressions: Map[String, Expression], symbols: SymbolTable) =
+  private def cacheExpressions(plan: ExecutionPlanInProgress, expressions: Map[String, Expression], symbols: SymbolTable) =
     plan.query.rewrite    {
       inputExpression =>
         val found: Option[(String, Expression)] = expressions.find {
@@ -65,9 +66,9 @@ class DistinctBuilder extends LegacyPlanBuilder {
         }
     }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
 
-      plan.query.aggregateToDo && //The parser marks DISTINCT queries as aggregates. Revisit?
+      plan.query.aggregateToDo &&                  //The parser marks DISTINCT queries as aggregates. Revisit?
       plan.query.aggregation.isEmpty &&            //It's an aggregate query without aggregate expressions
       plan.query.readyToAggregate &&
       plan.query.returns.exists {

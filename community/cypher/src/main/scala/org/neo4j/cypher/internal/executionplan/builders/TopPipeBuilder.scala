@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.TopPipe
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.commands.expressions.Add
 import org.neo4j.cypher.internal.commands.Slice
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class TopPipeBuilder extends LegacyPlanBuilder with SortingPreparations {
-  def apply(plan: ExecutionPlanInProgress) = {
+class TopPipeBuilder extends PlanBuilder with SortingPreparations {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val newPlan = extractBeforeSort(plan)
 
     val q = newPlan.query
@@ -54,7 +55,7 @@ class TopPipeBuilder extends LegacyPlanBuilder with SortingPreparations {
     plan.copy(pipe = resultPipe, query = resultQ)
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val extracted = q.extracted
     val unsolvedOrdering = q.sort.filter(_.unsolved).nonEmpty

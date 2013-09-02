@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.{Pipe, ColumnFilterPipe}
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, PartiallySolvedQuery, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, PartiallySolvedQuery, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.commands.{AllIdentifiers, ReturnItem, ReturnColumn}
+import org.neo4j.cypher.internal.spi.PlanContext
 
 /**
  * This class should get rid of any extra columns built up while building the execution plan, that weren't in the
  * queries return clause.
  */
-class ColumnFilterBuilder extends LegacyPlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
+class ColumnFilterBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -42,7 +43,7 @@ class ColumnFilterBuilder extends LegacyPlanBuilder {
     }
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
 
     val preConditionsMet = q.extracted &&

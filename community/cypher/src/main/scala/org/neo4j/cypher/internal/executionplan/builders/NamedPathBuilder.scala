@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.pipes.{NamedPathPipe, Pipe}
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class NamedPathBuilder extends LegacyPlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
+class NamedPathBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val p = plan.pipe
 
     val q = plan.query
@@ -37,7 +38,7 @@ class NamedPathBuilder extends LegacyPlanBuilder {
     plan.copy(query = newQ, pipe = pipe)
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.namedPaths.exists(yesOrNo(_, plan.pipe))
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = plan.query.namedPaths.exists(yesOrNo(_, plan.pipe))
 
   private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
     case Unsolved(np: NamedPath) =>

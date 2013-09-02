@@ -35,7 +35,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeById("s", 0))))
 
-    assertFalse("Should be able to build on this", builder.canWorkWith(plan(q)))
+    assertRejects(q)
   }
 
   @Test
@@ -43,7 +43,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map(), Seq.empty)))))
 
-    assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
+    assertAccepts(q)
   }
 
   @Test
@@ -59,7 +59,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
 
     val startPipe = createPipe(Seq("a", "b"))
 
-    assertTrue("Should be able to build on this", builder.canWorkWith(plan(startPipe, q)))
+    assertAccepts(startPipe, q)
   }
 
   @Test
@@ -69,7 +69,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
         RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, true),
         RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, true), "LOVES", Map())))))
 
-    assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
+    assertAccepts(q)
   }
 
   @Test
@@ -79,6 +79,6 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
         RelationshipEndpoint(HeadFunction(Identifier("p")), Map(), Seq.empty, true),
         RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, true), "LOVES", Map()))))
 
-    assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
+    assertRejects(q)
   }
 }

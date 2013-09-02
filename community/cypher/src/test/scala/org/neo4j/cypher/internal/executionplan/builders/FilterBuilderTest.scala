@@ -37,7 +37,7 @@ class FilterBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(where = Seq(Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar")))))
 
-    assertFalse("Should be able to build on this", builder.canWorkWith(plan(q)))
+    assertRejects(q)
   }
 
   @Test
@@ -47,7 +47,7 @@ class FilterBuilderTest extends BuilderTest {
 
     val pipe = createPipe(nodes = Seq("s"))
 
-    assertTrue("Should be able to build on this", builder.canWorkWith(plan(pipe, q)))
+    assertAccepts(pipe, q)
   }
 
   @Test
@@ -60,7 +60,7 @@ class FilterBuilderTest extends BuilderTest {
 
     val pipe = createPipe(nodes = Seq("s"))
 
-    val resultPlan = builder(plan(pipe, q))
+    val resultPlan = assertAccepts(pipe, q)
 
     assert(resultPlan.query.where.toSet === Set(
       Solved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar"))),
