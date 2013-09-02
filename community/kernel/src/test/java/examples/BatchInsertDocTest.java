@@ -59,7 +59,7 @@ public class BatchInsertDocTest
         // START SNIPPET: insert
         BatchInserter inserter = BatchInserters.inserter( "target/batchinserter-example", fileSystem );
         Label personLabel = DynamicLabel.label( "Person" );
-        inserter.createDeferredSchemaIndex( personLabel ).on( "name" );
+        inserter.createDeferredSchemaIndex( personLabel ).on( "name" ).create();
         Map<String, Object> properties = new HashMap<>();
         properties.put( "name", "Mattias" );
         long mattiasNode = inserter.createNode( properties, personLabel );
@@ -80,6 +80,10 @@ public class BatchInsertDocTest
             Node mNode = db.getNodeById( mattiasNode );
             Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING ).getEndNode();
             assertThat( (String) cNode.getProperty( "name" ), is( "Chris" ) );
+            assertThat( db.schema()
+                    .getIndexes( personLabel )
+                    .iterator()
+                    .hasNext(), is( true ) );
         }
         finally
         {
