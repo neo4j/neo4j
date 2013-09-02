@@ -42,7 +42,7 @@ public class JvmChecker
         String javaVmName = jvmMetadataRepository.getJavaVmName();
         String javaVersion = jvmMetadataRepository.getJavaVersion();
 
-        if ( !javaVmName.matches( "Java HotSpot\\(TM\\) (64-Bit Server|Client) VM" ) )
+        if ( !javaVmName.matches( "Java HotSpot\\(TM\\) (64-Bit Server|Server|Client) VM" ) )
         {
             stringLogger.warn( INCOMPATIBLE_JVM_WARNING );
         }
