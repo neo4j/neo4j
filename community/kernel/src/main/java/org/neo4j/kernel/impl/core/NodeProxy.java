@@ -46,6 +46,8 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
@@ -195,7 +197,7 @@ public class NodeProxy implements Node
     @Override
     public void setProperty( String key, Object value )
     {
-        boolean success = false;
+        boolean requireRollback = true; // TODO: this seems like the wrong level to do this on...
         try ( DataStatement statement = statementCtxProvider.dataStatement() )
         {
             long propertyKeyId = statement.propertyKeyGetOrCreateForName( key );
@@ -205,10 +207,10 @@ public class NodeProxy implements Node
             }
             catch ( ConstraintValidationKernelException e )
             {
-                success = true;
+                requireRollback = false;
                 throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement ) ), e );
             }
-            success = true;
+            requireRollback = false;
         }
         catch ( PropertyKeyIdNotFoundException e )
         {
@@ -225,7 +227,7 @@ public class NodeProxy implements Node
         }
         finally
         {
-            if ( !success )
+            if ( requireRollback )
             {
                 nodeLookup.getNodeManager().setRollbackOnly();
             }
@@ -408,12 +410,31 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public Relationship createRelationshipTo( Node otherNode,
-                                              RelationshipType type )
+    public Relationship createRelationshipTo( Node otherNode, RelationshipType type )
     {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId, LockType.WRITE ).createRelationshipTo( nodeLookup.getNodeManager(), this,
-                otherNode, type );
+        if ( otherNode == null )
+        {
+            throw new IllegalArgumentException( "Other node is null." );
+        }
+        // TODO: This is the checks we would like to do, but we have tests that expect to mix nodes...
+        //if ( !(otherNode instanceof NodeProxy) || (((NodeProxy) otherNode).nodeLookup != nodeLookup) )
+        //{
+        //    throw new IllegalArgumentException( "Nodes do not belong to same graph database." );
+        //}
+        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        {
+            long relationshipTypeId = statement.relationshipTypeGetOrCreateForName( type.name() );
+            return nodeLookup.getNodeManager().newRelationshipProxyById(
+                    statement.relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
+        }
+        catch ( IllegalTokenNameException | RelationshipTypeIdNotFoundKernelException e )
+        {
+            throw new IllegalArgumentException( e );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
     }
 
     @Override

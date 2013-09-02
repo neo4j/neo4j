@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.core.Token;
 
 interface TokenRead
@@ -47,4 +48,8 @@ interface TokenRead
 
     /** Returns the labels currently stored in the database * */
     Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
+
+    long relationshipTypeGetForName( String relationshipTypeName );
+
+    String relationshipTypeGetName( long relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException;
 }

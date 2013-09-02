@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 
 /**
  * This class should replace the {@link KernelTransaction} interface, and take its name, as soon as
@@ -31,10 +32,13 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
     private TransactionType transactionType = TransactionType.ANY;
     final StatementOperationParts operations;
     private boolean closing, closed;
+    final LegacyKernelOperations legacyKernelOperations;
 
-    protected KernelTransactionImplementation( StatementOperationParts operations )
+    protected KernelTransactionImplementation( StatementOperationParts operations,
+                                               LegacyKernelOperations legacyKernelOperations )
     {
         this.operations = operations;
+        this.legacyKernelOperations = legacyKernelOperations;
     }
 
     public BaseStatement acquireBaseStatement()

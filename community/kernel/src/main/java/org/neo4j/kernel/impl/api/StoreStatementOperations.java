@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -52,6 +53,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
@@ -117,6 +119,7 @@ public class StoreStatementOperations implements
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final PropertyStore propertyStore;
+    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final SchemaStorage schemaStorage;
     
     // TODO this is here since the move of properties from Primitive and friends to the Kernel API.
@@ -125,10 +128,12 @@ public class StoreStatementOperations implements
     private final PersistenceManager persistenceManager;
 
     public StoreStatementOperations( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-                                  SchemaStorage schemaStorage, NeoStore neoStore,
-                                  PersistenceManager persistenceManager,
-                                  IndexingService indexService )
+                                     RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+                                     SchemaStorage schemaStorage, NeoStore neoStore,
+                                     PersistenceManager persistenceManager,
+                                     IndexingService indexService )
     {
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.schemaStorage = schemaStorage;
         assert neoStore != null : "No neoStore provided";
 
@@ -280,6 +285,26 @@ public class StoreStatementOperations implements
     public Iterator<Token> labelsGetAllTokens( StatementState state )
     {
         return labelTokenHolder.getAllTokens().iterator();
+    }
+
+    @Override
+    public long relationshipTypeGetForName( StatementState state, String relationshipType )
+    {
+        return relationshipTypeTokenHolder.getIdByName( relationshipType );
+    }
+
+    @Override
+    public String relationshipTypeGetName( StatementState state, long relationshipTypeId )
+            throws RelationshipTypeIdNotFoundKernelException
+    {
+        try
+        {
+            return ((Token)relationshipTypeTokenHolder.getTokenById( (int)relationshipTypeId )).name();
+        }
+        catch ( TokenNotFoundException e )
+        {
+            throw new RelationshipTypeIdNotFoundKernelException( relationshipTypeId, e );
+        }
     }
 
     @Override
@@ -443,6 +468,12 @@ public class StoreStatementOperations implements
     public long propertyKeyGetOrCreateForName( StatementState state, String propertyKey )
     {
         return propertyKeyTokenHolder.getOrCreateId( propertyKey );
+    }
+
+    @Override
+    public long relationshipTypeGetOrCreateForName( StatementState state, String relationshipType )
+    {
+        return relationshipTypeTokenHolder.getOrCreateId( relationshipType );
     }
 
     @Override
