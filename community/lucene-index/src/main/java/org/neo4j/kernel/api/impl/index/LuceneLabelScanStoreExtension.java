@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.Monitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -36,6 +37,9 @@ import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLab
 
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
 {
+    private final int priority;
+    private final Monitor monitor;
+
     public interface Dependencies
     {
         Config getConfig();
@@ -49,7 +53,14 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
     
     public LuceneLabelScanStoreExtension()
     {
+        this( 10, null );
+    }
+    
+    LuceneLabelScanStoreExtension( int priority, Monitor monitor )
+    {
         super( "lucene");
+        this.priority = priority;
+        this.monitor = monitor;
     }
     
     @Override
@@ -65,8 +76,8 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
                 
                 dependencies.getFileSystem(), standard(),
                 fullStoreLabelUpdateStream( dependencies.getDataSourceManager() ),
-                loggerMonitor( dependencies.getLogging() ) );
+                monitor != null ? monitor : loggerMonitor( dependencies.getLogging() ) );
         
-        return new LabelScanStoreProvider( scanStore, 10 );
+        return new LabelScanStoreProvider( scanStore, priority );
     }
 }

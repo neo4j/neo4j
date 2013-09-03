@@ -19,9 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -63,11 +60,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -75,7 +74,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.ClosableIterable;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
@@ -97,6 +96,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
+
+import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
@@ -618,7 +620,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         IndexSearcher searcher = new IndexSearcher( reader );
         IndexType type = getType( identifier, false );
         if ( type.getSimilarity() != null )
+        {
             searcher.setSimilarity( type.getSimilarity() );
+        }
         return searcher;
     }
 
@@ -857,12 +861,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return this.xaContainer;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
+    public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     {   // Never include logical logs since they are of little importance
-        final Collection<File> files = new ArrayList<File>();
-        final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<SnapshotDeletionPolicy>();
+        final Collection<File> files = new ArrayList<>();
+        final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<>();
         makeSureAllIndexesAreInstantiated();
         for ( IndexReference writer : getAllIndexes() )
         {
@@ -890,14 +893,16 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         }
         files.add( providerStore.getFile() );
-        return new ClosableIterable<File>()
+        return new PrefetchingResourceIterator<File>()
         {
+            private final Iterator<File> filesIterator = files.iterator();
+            
             @Override
-            public Iterator<File> iterator()
+            protected File fetchNextOrNull()
             {
-                return files.iterator();
+                return filesIterator.hasNext() ? filesIterator.next() : null;
             }
-
+            
             @Override
             public void close()
             {

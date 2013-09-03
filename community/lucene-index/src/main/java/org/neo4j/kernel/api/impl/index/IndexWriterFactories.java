@@ -27,6 +27,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 
 import org.neo4j.index.impl.lucene.LuceneDataSource;
+import org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy;
 
 public class IndexWriterFactories
 {
@@ -39,6 +40,7 @@ public class IndexWriterFactories
             {
                 IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_36, LuceneDataSource.KEYWORD_ANALYZER );
                 writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
+                writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
                 return new IndexWriter( directory, writerConfig );
             }
         };
