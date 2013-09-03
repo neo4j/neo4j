@@ -25,8 +25,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -155,7 +155,7 @@ public class ShutdownXaDataSource extends NeoStoreXaDataSource
     }
 
     @Override
-    public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs )
+    public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs )
     {
         throw databaseIsShutdownError();
     }
