@@ -28,6 +28,10 @@ import javax.swing.JLabel;
 
 import org.neo4j.desktop.config.Environment;
 
+import static java.awt.Cursor.DEFAULT_CURSOR;
+import static java.awt.Cursor.HAND_CURSOR;
+import static java.awt.Cursor.getPredefinedCursor;
+
 /**
  * {@link MouseListener} that can open links in the systems default browser, presumably using {@link Desktop}. 
  */
@@ -46,5 +50,17 @@ public class OpenBrowserMouseListener extends MouseAdapter
     public void mouseClicked( MouseEvent event )
     {
         environment.openBrowser( link.getText() );
+    }
+
+    @Override
+    public void mouseEntered( MouseEvent e )
+    {
+        link.setCursor( getPredefinedCursor( HAND_CURSOR ) );
+    }
+
+    @Override
+    public void mouseExited( MouseEvent e )
+    {
+        link.setCursor( getPredefinedCursor( DEFAULT_CURSOR ) );
     }
 }
