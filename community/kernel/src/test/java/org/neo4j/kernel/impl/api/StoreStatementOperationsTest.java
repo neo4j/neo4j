@@ -267,7 +267,7 @@ public class StoreStatementOperationsTest
         IndexDescriptor index = createIndexAndAwaitOnline( label1, propertyKey );
         String name = "Mr. Taylor";
         Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label1 );
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             // WHEN
             Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, index, name ) );
@@ -300,9 +300,8 @@ public class StoreStatementOperationsTest
                 neoStore,
                 resolver.resolveDependency( PersistenceManager.class ),
                 indexingService );
-        WritableStatementState state = new WritableStatementState();
-        state.provide( new IndexReaderFactory.Caching( indexingService ), labelScanStore );
-        this.state = state;
+        this.state = new WritableStatementState( new IndexReaderFactory.Caching( indexingService ),
+                labelScanStore, null, null );
     }
 
     @After
@@ -327,14 +326,14 @@ public class StoreStatementOperationsTest
 
     private IndexDescriptor createIndexAndAwaitOnline( Label label, String propertyKey ) throws Exception
     {
-        IndexDefinition index = null;
+        IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
             index = db.schema().indexFor( label ).on( propertyKey ).create();
             tx.success();
         }
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             db.schema().awaitIndexOnline( index, 10, SECONDS );
             return statement.indexesGetForLabelAndPropertyKey( state, statement.labelGetForName( state, label.name() ),

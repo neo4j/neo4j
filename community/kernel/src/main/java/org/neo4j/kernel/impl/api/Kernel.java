@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -356,17 +355,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         @Override
         protected Statement newStatement()
         {
-            // === StoreKernelTransaction ===
-            WritableStatementState statement = new WritableStatementState();
-            statement.provide( new IndexReaderFactory.Caching( indexService ), labelScanStore );
-
-            // === StateHandlingKernelTransaction ===
-            statement.provide( this );
-
-            // === LockingKernelTransaction ===
-            statement.provide( lockHolder );
-
-            return statement;
+            return new WritableStatementState(  new IndexReaderFactory.Caching( indexService ), labelScanStore, this, lockHolder );
         }
 
         @Override
