@@ -69,7 +69,7 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
             {
                 throw new UnableToValidateConstraintKernelException( e );
             }
-            if ( !property.isNoProperty() )
+            if ( property.isDefined() )
             {
                 validateNoExistingNodeWithLabelAndProperty( state, labelId, (SafeProperty)property );
             }

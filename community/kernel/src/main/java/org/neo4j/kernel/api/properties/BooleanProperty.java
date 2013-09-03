@@ -83,12 +83,6 @@ final class BooleanProperty extends SafeProperty
     }
 
     @Override
-    public boolean isNoProperty()
-    {
-        return false;
-    }
-
-    @Override
     public int hashCode()
     {
         int result = (int) (propertyKeyId ^ (propertyKeyId >>> 32));
@@ -97,6 +91,7 @@ final class BooleanProperty extends SafeProperty
 
     @Override
     @Deprecated
+    @SuppressWarnings("deprecation")
     public PropertyData asPropertyDataJustForIntegration()
     {
         return PropertyDatas.forBoolean( (int) propertyKeyId, -1, value );

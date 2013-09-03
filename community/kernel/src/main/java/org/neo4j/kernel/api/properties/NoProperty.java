@@ -61,9 +61,9 @@ final class NoProperty extends Property
     }
 
     @Override
-    public boolean isNoProperty()
+    public boolean isDefined()
     {
-        return true;
+        return false;
     }
 
     @Override

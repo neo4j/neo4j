@@ -75,12 +75,6 @@ final class CharProperty extends SafeProperty
     }
 
     @Override
-    public boolean isNoProperty()
-    {
-        return false;
-    }
-
-    @Override
     public int hashCode()
     {
         int result = value;
@@ -90,6 +84,7 @@ final class CharProperty extends SafeProperty
 
     @Override
     @Deprecated
+    @SuppressWarnings("deprecation")
     public PropertyData asPropertyDataJustForIntegration()
     {
         return PropertyDatas.forChar( (int) propertyKeyId, -1, value );
