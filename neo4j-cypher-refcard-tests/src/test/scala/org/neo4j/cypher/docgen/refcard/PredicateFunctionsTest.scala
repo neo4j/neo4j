@@ -53,7 +53,7 @@ all(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
-Returns `true` if the predicate is `true` for all elements of the collection.
+Returns `true` if the predicate is `TRUE` for all elements of the collection.
 
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
@@ -64,7 +64,7 @@ any(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
-Returns `true` if the predicate is `true` for at least one element of the collection.
+Returns `true` if the predicate is `TRUE` for at least one element of the collection.
 
 ###assertion=returns-none
 START n=node(%A%), m=node(%B%)
@@ -75,7 +75,7 @@ none(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
-Returns `true` if the predicate is `false` for all elements of the collection.
+Returns `TRUE` if the predicate is `FALSE` for all elements of the collection.
 
 ###assertion=returns-none
 START n=node(%A%), m=node(%B%)
@@ -86,6 +86,6 @@ single(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
-Returns `true` if the predicate is `true` for exactly one element in the collection.
+Returns `TRUE` if the predicate is `TRUE` for exactly one element in the collection.
 """
 }
