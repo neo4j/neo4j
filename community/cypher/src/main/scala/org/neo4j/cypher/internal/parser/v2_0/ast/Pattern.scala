@@ -151,7 +151,7 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
 
     val (leftName, rel, rightName) = element match {
       case RelationshipChain(leftNode: NodePattern, relationshipPattern, rightNode, _) =>
-        (leftNode.legacyName, relationshipPattern, rightNode.legacyName)
+        (leftNode.toLegacyNode, relationshipPattern, rightNode.toLegacyNode)
       case _                                                           =>
         throw new ThisShouldNotHappenError("Chris", "This should be caught during semantic checking")
     }
@@ -196,12 +196,12 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
     rightNode.semanticCheck(ctx)
 
   def toLegacyPatterns(makeOutgoing: Boolean) : Seq[commands.Pattern] = {
-    val (patterns, leftName) = element match {
-      case leftNode: NodePattern        => (Vector(), leftNode.legacyName)
-      case leftChain: RelationshipChain => (leftChain.toLegacyPatterns(makeOutgoing), leftChain.rightNode.legacyName)
+    val (patterns, leftNode) = element match {
+      case node: NodePattern            => (Vector(), node)
+      case leftChain: RelationshipChain => (leftChain.toLegacyPatterns(makeOutgoing), leftChain.rightNode)
     }
 
-    patterns :+ relationship.toLegacyPattern(leftName, rightNode.legacyName, makeOutgoing)
+    patterns :+ relationship.toLegacyPattern(leftNode, rightNode, makeOutgoing)
   }
 
   lazy val toLegacyCreates : Seq[mutation.CreateRelationship] = {
@@ -271,7 +271,9 @@ sealed abstract class NodePattern extends PatternElement {
 
   def legacyName: String
 
-  def toLegacyPatterns(makeOutgoing: Boolean) = Seq(commands.SingleNode(legacyName))
+  def toLegacyPatterns(makeOutgoing: Boolean) = Seq(toLegacyNode)
+
+  def toLegacyNode = commands.SingleNode(legacyName)
 
   def toLegacyCreates = {
     val (_, _, labels, bare) = legacyDetails
@@ -339,13 +341,13 @@ sealed abstract class RelationshipPattern extends AstNode {
 
   def legacyName : String
 
-  def toLegacyPattern(leftName: String, rightName: String, makeOutgoing: Boolean): commands.Pattern = {
-    val (left, right, dir) = if (!makeOutgoing) (leftName, rightName, direction)
+  def toLegacyPattern(leftNode: NodePattern, rightNode: NodePattern, makeOutgoing: Boolean): commands.Pattern = {
+    val (left, right, dir) = if (!makeOutgoing) (leftNode, rightNode, direction)
     else direction match {
-      case Direction.OUTGOING                     => (leftName, rightName, direction)
-      case Direction.INCOMING                     => (rightName, leftName, Direction.OUTGOING)
-      case Direction.BOTH if leftName < rightName => (leftName, rightName, direction)
-      case Direction.BOTH                         => (rightName, leftName, direction)
+      case Direction.OUTGOING                                           => (leftNode, rightNode, direction)
+      case Direction.INCOMING                                           => (rightNode, leftNode, Direction.OUTGOING)
+      case Direction.BOTH if leftNode.legacyName < rightNode.legacyName => (leftNode, rightNode, direction)
+      case Direction.BOTH                                               => (rightNode, leftNode, direction)
     }
 
     length match {
@@ -359,9 +361,11 @@ sealed abstract class RelationshipPattern extends AstNode {
           case namedRel: NamedRelationshipPattern => Some(namedRel.identifier.name)
           case _                                  => None
         }
-        commands.VarLengthRelatedTo(pathName, left, right, min, max, types.map(_.name).distinct, dir, relIterator, optional)
+        commands.VarLengthRelatedTo(pathName, left.toLegacyNode, right.toLegacyNode, min, max,
+          types.map(_.name).distinct, dir, relIterator, optional)
       }
-      case None             => commands.RelatedTo(left, right, legacyName, types.map(_.name).distinct, dir, optional)
+      case None             => commands.RelatedTo(left.toLegacyNode, right.toLegacyNode, legacyName,
+        types.map(_.name).distinct, dir, optional)
     }
   }
 

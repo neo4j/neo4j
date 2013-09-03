@@ -17,9 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher.internal.executionplan
 
 import collection.mutable
+import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.commands.SingleNode
+import org.neo4j.cypher.internal.commands.ShortestPath
 
 object MatchPattern {
 
@@ -34,9 +37,9 @@ object MatchPattern {
 
       val theThings: Seq[TUPLE] = patterns.map {
         case SingleNode(n)                                => Seq(n) -> Seq()
-        case RelatedTo(from, to, r, _, _,_)               => tuple(from, to)
-        case ShortestPath(_, from, to, _,_,_,_,_,_)       => tuple(from, to)
-        case VarLengthRelatedTo(_, from, to, _,_,_,_,_,_) => tuple(from, to)
+        case RelatedTo(from, to, r, _, _,_)               => tuple(from.name, to.name)
+        case ShortestPath(_, from, to, _,_,_,_,_,_)       => tuple(from.name, to.name)
+        case VarLengthRelatedTo(_, from, to, _,_,_,_,_,_) => tuple(from.name, to.name)
       }
 
       val (nodes, rels) = theThings.reduce( (a,b) => {

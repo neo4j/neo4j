@@ -36,30 +36,30 @@ import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.SyntaxException
 
 trait MatchClause extends Base with ParserPattern {
-    def matching: Parser[(Seq[Pattern], Seq[NamedPath], Predicate)] = MATCH ~> usePattern(labelTranslator) ^^ {
-      case results: Seq[(Any, Predicate)] =>
-        val matches = results.map(_._1)
-        val predicates = results.map(_._2)
+  def matching: Parser[(Seq[Pattern], Seq[NamedPath], Predicate)] = MATCH ~> usePattern(labelTranslator) ^^ {
+    case results: Seq[(Any, Predicate)] =>
+      val matches = results.map(_._1)
+      val predicates = results.map(_._2)
 
-        val namedPaths = sift[NamedPath](matches)
+      val namedPaths = sift[NamedPath](matches)
 
-        val patterns = if (namedPaths.nonEmpty) {
-          val namedPathMatches = namedPaths.flatMap(_.pathPattern).map(matchTranslator).reduce(_ ++ _).getValuesOr(throw new SyntaxException("wut"))
-          val namedPathPatterns = sift[List[Pattern]](namedPathMatches).flatten ++ sift[Pattern](namedPathMatches)
-          sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches) ++ namedPathPatterns
+      val patterns = if (namedPaths.nonEmpty) {
+        val namedPathMatches = namedPaths.flatMap(_.pathPattern).map(matchTranslator).reduce(_ ++ _).getValuesOr(throw new SyntaxException("wut"))
+        val namedPathPatterns = sift[List[Pattern]](namedPathMatches).flatten ++ sift[Pattern](namedPathMatches)
+        sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches) ++ namedPathPatterns
 
-        } else sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches)
+      } else sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches)
 
-        (patterns.distinct, namedPaths, True().andWith(predicates: _*))
-    }
+      (patterns.distinct, namedPaths, True().andWith(predicates: _*))
+  }
 
 
-  type TransformType = (ParsedEntity, ParsedEntity, Map[String, Expression], (String, String) => Pattern) => Maybe[Pattern]
+  type TransformType = (ParsedEntity, ParsedEntity, Map[String, Expression], (ParsedEntity, ParsedEntity) => Pattern) => Maybe[Pattern]
 
   private def successIfIdentifiers[T](left: ParsedEntity,
                                       right: ParsedEntity,
                                       relProps: Map[String, Expression],
-                                      f: (String, String) => T): Maybe[T] = {
+                                      f: (ParsedEntity, ParsedEntity) => T): Maybe[T] = {
     def checkProps(props: Map[String, Expression]): Maybe[T] =
       if (props.nonEmpty)
         No(Seq("Properties on pattern elements are not allowed in MATCH."))
@@ -75,11 +75,11 @@ trait MatchClause extends Base with ParserPattern {
     val props: Maybe[T] = checkProps(left.props) ++ checkProps(right.props) ++ checkProps(relProps)
     val expressions = checkExpressions(left) ++ checkExpressions(right)
 
-    (props ++ expressions).seqMap(s => Seq(f(left.name, right.name)))
+    (props ++ expressions).seqMap(s => Seq(f(left, right)))
   }
 
   def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any] =
-      matchTranslator(successIfIdentifiers, abstractPattern)
+    matchTranslator(successIfIdentifiers, abstractPattern)
 
   def matchTranslator(transform: TransformType, abstractPattern: AbstractPattern): Maybe[Any] = {
     val f = matchFunction(transform)
@@ -104,31 +104,34 @@ trait MatchClause extends Base with ParserPattern {
   def matchRelation(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
     case ParsedRelation(name, props, left, right, relType, dir, optional) =>
       transform(left, right, props, (l, r) =>
-        RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional))
+        RelatedTo(left = l.asSingleNode, right = r.asSingleNode, relName = name, relTypes = relType,
+          direction = dir, optional = optional))
   }
 
   def matchVarLengthRelation(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
     case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, min, max, relIterator) =>
       transform(left, right, props, (l, r) =>
-        VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional))
+        VarLengthRelatedTo(pathName = name, start = l.asSingleNode, end = r.asSingleNode, minHops = min, maxHops = max,
+          relTypes = relType, direction = dir, relIterator = relIterator, optional = optional))
   }
 
   def matchShortestPath(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
     case ParsedShortestPath(name, props, left, right, relType, dir, optional, max, single, relIterator) =>
       transform(left, right, props, (l, r) =>
-        ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator))
+        ShortestPath(pathName = name, start = l.asSingleNode, end = r.asSingleNode, relTypes = relType, dir = dir, maxDepth = max,
+          optional = optional, single = single, relIterator = relIterator))
 
   }
 
   def matchEntity(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
-    case ParsedEntity(name, _, _, _, _) =>
-      Yes(Seq(SingleNode(name)))
+    case ParsedEntity(name, _, _, _, _) => Yes(Seq(SingleNode(name)))
   }
 
   def labelTranslator(abstractPattern: AbstractPattern): Maybe[(Any, Predicate)] =
-    matchTranslator(abstractPattern).map { (pat: Any) =>
-      val predicates = abstractPattern.parsedLabelPredicates
-      (pat,  True().andWith(predicates: _*) )
+    matchTranslator(abstractPattern).map {
+      (pat: Any) =>
+        val predicates = abstractPattern.parsedLabelPredicates
+        (pat, True().andWith(predicates: _*))
     }
 
   private def parsedPath(name: String, patterns: Seq[AbstractPattern], transform: TransformType): Maybe[NamedPath] = {

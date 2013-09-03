@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.commands.{And, HasLabel, Predicate, AstNode}
+import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
@@ -27,6 +27,7 @@ import scala.collection.Map
 import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.internal.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.symbols.{PathType, RelationshipType, NodeType, CypherType}
+import org.neo4j.cypher.internal.commands.HasLabel
 
 
 abstract sealed class AbstractPattern extends AstNode[AbstractPattern] {
@@ -82,6 +83,8 @@ case class ParsedEntity(name: String,
   def start: AbstractPattern = this
 
   def end: AbstractPattern = this
+
+  def asSingleNode = new SingleNode(name)
 }
 
 object ParsedRelation {
@@ -219,3 +222,4 @@ case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends P
 
   def end: AbstractPattern = pieces.last
 }
+

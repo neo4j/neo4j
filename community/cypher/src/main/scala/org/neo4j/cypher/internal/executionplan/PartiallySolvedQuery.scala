@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.executionplan
 
-import builders.{QueryToken, Unsolved}
+import org.neo4j.cypher.internal.executionplan.builders.{PatternGraphBuilder, QueryToken, Unsolved}
 import org.neo4j.cypher.internal.commands._
 import scala.collection.Seq
 import expressions.{Expression, AggregationExpression}
@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.commands.SortItem
 import org.neo4j.cypher.internal.commands.Slice
-import org.neo4j.cypher.internal.pipes.matching.{PatternRelationship, PatternNode, PatternGraph}
-import org.neo4j.cypher.SyntaxException
 
 
 object PartiallySolvedQuery {
@@ -188,31 +186,3 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 }
 
 case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean=false)
-
-trait PatternGraphBuilder {
-  def buildPatternGraph(patterns: Seq[Pattern]): PatternGraph = {
-    val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
-    val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
-
-    patterns.foreach(_ match {
-      case RelatedTo(left, right, rel, relType, dir, optional) => {
-        val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
-        val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
-
-        if (patternRelMap.contains(rel)) {
-          throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(rel))
-        }
-
-        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
-      }
-      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, relsCollection, optional) => {
-        val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
-        val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
-        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, relsCollection, optional)
-      }
-      case _ =>
-    })
-
-    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, patternNodeMap.keys.toSeq)
-  }
-}

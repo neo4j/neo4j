@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.junit.Assert._
 import org.neo4j.cypher.internal.commands._
 
 class ShortestPathBuilderTest extends BuilderTest {
@@ -33,7 +32,7 @@ class ShortestPathBuilderTest extends BuilderTest {
   def should_not_accept_if_no_shortest_paths_exist() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false))))
 
     val p = createPipe(nodes = Seq("l"))
 
@@ -44,7 +43,7 @@ class ShortestPathBuilderTest extends BuilderTest {
   def should_not_accept_if_both_start_and_end_have_not_been_solved_yet() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Unsolved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, false, true, None))))
 
     val p = createPipe(nodes = Seq("a"))
 
@@ -55,12 +54,12 @@ class ShortestPathBuilderTest extends BuilderTest {
   def should_accept_if_both_start_and_end_have_been_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, false, true, None))))
 
     val p = createPipe(nodes = Seq("a", "b"))
 
     val resultQ = assertAccepts(p, q).query
 
-    assert(resultQ.patterns == Seq(Solved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
+    assert(resultQ.patterns == Seq(Solved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, false, true, None))))
   }
 }

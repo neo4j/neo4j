@@ -417,7 +417,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
         Equals(Property(Identifier(otherIdentifier), propertyKey), expression2)),
 
       patterns = Seq(
-        ShortestPath("p", identifier, otherIdentifier, Nil, Direction.OUTGOING, None, optional = false, single = true, None))
+        ShortestPath("p", SingleNode(identifier), SingleNode(otherIdentifier), Nil, Direction.OUTGOING, None, optional = false, single = true, None))
     )
 
     when(context.getIndexRule(label, property)).thenReturn(None)
@@ -440,8 +440,8 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val query = q(
       start = Seq(NodeById("a", 0)),
       patterns = Seq(
-        RelatedTo("a", "b", "x", Seq.empty, Direction.OUTGOING, optional = false),
-        RelatedTo("c", "d", "x", Seq.empty, Direction.OUTGOING, optional = false)
+        RelatedTo(SingleNode("a"),SingleNode("b"), "x", Seq.empty, Direction.OUTGOING, optional = false),
+        RelatedTo(SingleNode("c"), SingleNode("d"), "x", Seq.empty, Direction.OUTGOING, optional = false)
       )
     )
 

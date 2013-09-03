@@ -56,13 +56,13 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
             |
            (f)
   */
-  val AtoB = RelatedTo("a", "b", "pr1", Seq("A"), Direction.OUTGOING, optional = false)
-  val BtoC = RelatedTo("b", "c", "pr2", Seq("B"), Direction.OUTGOING, optional = false)
-  val CtoD = RelatedTo("c", "d", "pr3", Seq("C"), Direction.OUTGOING, optional = false)
-  val BtoB2 = RelatedTo("b", "b2", "pr4", Seq("D"), Direction.OUTGOING, optional = false)
-  val BtoE = VarLengthRelatedTo("p", "b", "e", None, None, Seq("A"), Direction.OUTGOING, None, optional = false)
-  val EtoF = VarLengthRelatedTo("p2", "e", "f", None, None, Seq("C"), Direction.BOTH, None, optional = false)
-  val EtoG = RelatedTo("e", "g", "pr5", Seq("E"), Direction.OUTGOING, optional = false)
+  val AtoB = RelatedTo(SingleNode("a"), SingleNode("b"), "pr1", Seq("A"), Direction.OUTGOING, optional = false)
+  val BtoC = RelatedTo(SingleNode("b"), SingleNode("c"), "pr2", Seq("B"), Direction.OUTGOING, optional = false)
+  val CtoD = RelatedTo(SingleNode("c"), SingleNode("d"), "pr3", Seq("C"), Direction.OUTGOING, optional = false)
+  val BtoB2 = RelatedTo(SingleNode("b"), SingleNode("b2"), "pr4", Seq("D"), Direction.OUTGOING, optional = false)
+  val BtoE = VarLengthRelatedTo("p", SingleNode("b"), SingleNode("e"), None, None, Seq("A"), Direction.OUTGOING, None, optional = false)
+  val EtoF = VarLengthRelatedTo("p2", SingleNode("e"), SingleNode("f"), None, None, Seq("C"), Direction.BOTH, None, optional = false)
+  val EtoG = RelatedTo(SingleNode("e"), SingleNode("g"), "pr5", Seq("E"), Direction.OUTGOING, optional = false)
 
   @Test def find_longest_path_for_single_pattern() {
     val expectedTrail = Some(LongestTrail("a", Some("b"), SingleStepTrail(EndPoint("b"), Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())))
@@ -270,8 +270,8 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
     //  \                      ^
     //   --[pr5:A]->x-[pr6:B]-/
 
-    val AtoX = RelatedTo("a", "x", "pr5", Seq("A"), Direction.OUTGOING, optional = false)
-    val XtoC = RelatedTo("x", "c", "pr6", Seq("B"), Direction.OUTGOING, optional = false)
+    val AtoX = RelatedTo(SingleNode("a"), SingleNode("x"), "pr5", Seq("A"), Direction.OUTGOING, optional = false)
+    val XtoC = RelatedTo(SingleNode("x"), SingleNode("c"), "pr6", Seq("B"), Direction.OUTGOING, optional = false)
 
     val endPoint = EndPoint("c")
     val last = SingleStepTrail(endPoint, Direction.OUTGOING, "pr6", Seq("B"), "x", True(), True(), XtoC, Seq())
@@ -289,10 +289,10 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
     // GIVEN
     // a<-[15]- (13)<-[16]- b-[17]-> (14)-[18]-> c
 
-    val s1 = RelatedTo("  UNNAMED13", "a", "  UNNAMED15", Seq(), Direction.OUTGOING, optional = false)
-    val s2 = RelatedTo("b", "  UNNAMED13", "  UNNAMED16", Seq(), Direction.OUTGOING, optional = false)
-    val s3 = RelatedTo("b", "  UNNAMED14", "  UNNAMED17", Seq(), Direction.OUTGOING, optional = false)
-    val s4 = RelatedTo("  UNNAMED14", "c", "  UNNAMED18", Seq(), Direction.OUTGOING, optional = false)
+    val s1 = RelatedTo(SingleNode("  UNNAMED13"), SingleNode("a"), "  UNNAMED15", Seq(), Direction.OUTGOING, optional = false)
+    val s2 = RelatedTo(SingleNode("b"), SingleNode("  UNNAMED13"), "  UNNAMED16", Seq(), Direction.OUTGOING, optional = false)
+    val s3 = RelatedTo(SingleNode("b"), SingleNode("  UNNAMED14"), "  UNNAMED17", Seq(), Direction.OUTGOING, optional = false)
+    val s4 = RelatedTo(SingleNode("  UNNAMED14"), SingleNode("c"), "  UNNAMED18", Seq(), Direction.OUTGOING, optional = false)
 
 
     val fifth = EndPoint("c")
@@ -319,9 +319,9 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
     val expectedForB = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("b"))
     val expectedForC = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("c"))
 
-    val s1 = RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, optional = false)
-    val s2 = RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, optional = false)
-    val s3 = RelatedTo("c", "d", "r3", Seq(), Direction.INCOMING, optional = false)
+    val s1 = RelatedTo(SingleNode("a"), SingleNode("b"), "r1", Seq(), Direction.OUTGOING, optional = false)
+    val s2 = RelatedTo(SingleNode("b"), SingleNode("c"), "r2", Seq(), Direction.OUTGOING, optional = false)
+    val s3 = RelatedTo(SingleNode("c"), SingleNode("d"), "r3", Seq(), Direction.INCOMING, optional = false)
 
     val fourth = EndPoint("d")
     val third = SingleStepTrail(fourth, Direction.INCOMING, "r3", Seq(), "c", True(), True(), s3, Seq())

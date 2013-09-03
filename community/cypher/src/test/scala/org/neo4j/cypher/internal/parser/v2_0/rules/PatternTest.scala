@@ -34,6 +34,6 @@ class PatternTest extends ParserTest[ast.Pattern, Seq[LegacyPattern]] with Patte
   @Test def label_literal_list_parsing() {
     parsing("(a)-[r:FOO|BAR]->(b)") or
     parsing("a-[r:FOO|:BAR]->b") shouldGive
-      Seq(RelatedTo("a", "b", "r", Seq("FOO", "BAR"), Direction.OUTGOING, optional = false))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("FOO", "BAR"), Direction.OUTGOING, optional = false))
   }
 }

@@ -150,8 +150,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val r2 = relate(a, c, "rel")
 
     val patterns: Seq[Pattern] = Seq(
-      RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, false),
-      RelatedTo("a", "c", "r2", Seq(), Direction.OUTGOING, false)
+      RelatedTo(SingleNode("a"), SingleNode("b"), "r1", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("a"), SingleNode("c"), "r2", Seq(), Direction.OUTGOING, false)
     )
     createMatchingContextWithNodes(patterns, Seq("a"))
 
@@ -168,10 +168,10 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val r4 = relate(c, d, "x", "r4")
 
     val patterns: Seq[Pattern] = Seq(
-      RelatedTo("A", "B", "pr1", Seq(), Direction.OUTGOING, false),
-      RelatedTo("A", "C", "pr2", Seq(), Direction.OUTGOING, false),
-      RelatedTo("B", "D", "pr3", Seq(), Direction.OUTGOING, false),
-      RelatedTo("C", "D", "pr4", Seq(), Direction.OUTGOING, false)
+      RelatedTo(SingleNode("A"), SingleNode("B"), "pr1", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("A"), SingleNode("C"), "pr2", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("B"), SingleNode("D"), "pr3", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("C"), SingleNode("D"), "pr4", Seq(), Direction.OUTGOING, false)
     )
 
     createMatchingContextWithNodes(patterns, Seq("A"))
@@ -201,12 +201,12 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val e = createDiamondWithExtraLoop(a)
 
     val patterns: Seq[Pattern] = Seq(
-      RelatedTo("A", "B", "pr1", Seq(), Direction.OUTGOING, false),
-      RelatedTo("A", "C", "pr2", Seq(), Direction.OUTGOING, false),
-      RelatedTo("B", "D", "pr3", Seq(), Direction.OUTGOING, false),
-      RelatedTo("C", "D", "pr4", Seq(), Direction.OUTGOING, false),
-      RelatedTo("B", "E", "pr5", Seq("IN"), Direction.OUTGOING, false),
-      RelatedTo("C", "E", "pr6", Seq("IN"), Direction.OUTGOING, false)
+      RelatedTo(SingleNode("A"), SingleNode("B"), "pr1", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("A"), SingleNode("C"), "pr2", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("B"), SingleNode("D"), "pr3", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("C"), SingleNode("D"), "pr4", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("B"), SingleNode("E"), "pr5", Seq("IN"), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("C"), SingleNode("E"), "pr6", Seq("IN"), Direction.OUTGOING, false)
     )
 
     createMatchingContextWithNodes(patterns, Seq("A", "E"))
@@ -232,10 +232,10 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val r4 = relate(c, d, "x")
 
     val patterns: Seq[Pattern] = Seq(
-      RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, false),
-      RelatedTo("a", "c", "r2", Seq(), Direction.OUTGOING, false),
-      RelatedTo("b", "d", "r3", Seq(), Direction.OUTGOING, false),
-      RelatedTo("c", "d", "r4", Seq(), Direction.OUTGOING, false)
+      RelatedTo(SingleNode("a"), SingleNode("b"), "r1", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("a"), SingleNode("c"), "r2", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("b"), SingleNode("d"), "r3", Seq(), Direction.OUTGOING, false),
+      RelatedTo(SingleNode("c"), SingleNode("d"), "r4", Seq(), Direction.OUTGOING, false)
     )
     createMatchingContextWithNodes(patterns, Seq("a", "b"))
 
@@ -267,7 +267,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
   }
 
   @Test def optionalRelationship() {
-    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", Seq("t1"), Direction.OUTGOING, true))
+    val patterns: Seq[Pattern] = Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("t1"), Direction.OUTGOING, true))
     createMatchingContextWithNodes(patterns, Seq("a"))
 
     assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> null, "r" -> null))
@@ -275,8 +275,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
 
   @Test def doubleOptional() {
     val patterns: Seq[Pattern] = Seq(
-      RelatedTo("a", "x", "r1", Seq(), Direction.OUTGOING, optional = true),
-      RelatedTo("b", "x", "r2", Seq(), Direction.OUTGOING, optional = true)
+      RelatedTo(SingleNode("a"), SingleNode("x"), "r1", Seq(), Direction.OUTGOING, optional = true),
+      RelatedTo(SingleNode("b"), SingleNode("x"), "r2", Seq(), Direction.OUTGOING, optional = true)
     )
     createMatchingContextWithNodes(patterns, Seq("a", "b"))
 
@@ -287,14 +287,14 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val r1 = relate(a, b, "t1")
     relate(a, b, "t2")
 
-    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", Seq("t1"), Direction.OUTGOING, true))
+    val patterns: Seq[Pattern] = Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("t1"), Direction.OUTGOING, true))
     createMatchingContextWithNodes(patterns, Seq("a"))
 
     assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> b, "r" -> r1))
   }
 
   @Test def optionalRelatedWithTwoBoundNodes() {
-    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", Seq("t1"), Direction.OUTGOING, true))
+    val patterns: Seq[Pattern] = Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("t1"), Direction.OUTGOING, true))
     createMatchingContextWithNodes(patterns, Seq("a", "b"))
 
     assertMatches(getMatches("a" -> a, "b" -> b), 1, Map("a" -> a, "b" -> b, "r" -> null))
@@ -305,9 +305,9 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val r3 = relate(c, d, "t1", "r3")
 
     val patterns: Seq[Pattern] = Seq(
-      RelatedTo("pA", "pB", "pR1", Seq("t1"), Direction.OUTGOING, true),
-      RelatedTo("pA", "pC", "pR2", Seq("t1"), Direction.OUTGOING, true),
-      RelatedTo("pC", "pD", "pR3", Seq("t1"), Direction.OUTGOING, false)
+      RelatedTo(SingleNode("pA"), SingleNode("pB"), "pR1", Seq("t1"), Direction.OUTGOING, true),
+      RelatedTo(SingleNode("pA"), SingleNode("pC"), "pR2", Seq("t1"), Direction.OUTGOING, true),
+      RelatedTo(SingleNode("pC"), SingleNode("pD"), "pR3", Seq("t1"), Direction.OUTGOING, false)
     )
     createMatchingContextWithNodes(patterns, Seq("pA", "pD"))
 
@@ -318,7 +318,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     relate(a, b, "rel")
     relate(b, c, "rel")
 
-    val patterns: Seq[Pattern] = Seq(VarLengthRelatedTo("p", "a", "c", Some(1), Some(2), "rel", Direction.OUTGOING, true))
+    val patterns: Seq[Pattern] = Seq(VarLengthRelatedTo("p", SingleNode("a"), SingleNode("c"), Some(1), Some(2), Seq("rel"), Direction.OUTGOING, None, true))
     createMatchingContextWithNodes(patterns, Seq("a"))
 
     assertMatches(getMatches("a" -> a), 2, Map("a" -> a, "c" -> b), Map("a" -> a, "c" -> c))
@@ -329,7 +329,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     relate(b, c, "rel")
     relate(a, c, "rel")
 
-    val patterns: Seq[Pattern] = Seq(VarLengthRelatedTo("p", "pA", "pB", Some(1), Some(2), "rel", Direction.OUTGOING, true))
+    val patterns: Seq[Pattern] = Seq(VarLengthRelatedTo("p", SingleNode("pA"), SingleNode("pB"), Some(1), Some(2), Seq("rel"), Direction.OUTGOING, None, true))
     createMatchingContextWithNodes(patterns, Seq("pA", "pB"))
 
     assertMatches(getMatches("pA" -> a, "pB" -> d), 1)
@@ -341,7 +341,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     relate(a, b, "rel")
     relate(b, c, "rel")
 
-    val patterns: Seq[Pattern] = Seq(VarLengthRelatedTo("p", "a", "c", Some(1), Some(2), "rel", Direction.OUTGOING))
+    val patterns: Seq[Pattern] = Seq(VarLengthRelatedTo("p", SingleNode("a"), SingleNode("c"), Some(1), Some(2), Seq("rel"), Direction.OUTGOING, None, false))
     createMatchingContextWithNodes(patterns, Seq("a"))
 
     assertMatches(getMatches("a" -> a), 2, Map("a" -> a, "c" -> b), Map("a" -> a, "c" -> c))
@@ -483,8 +483,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     relate(d, e)
 
     val patterns = Seq(
-      RelatedTo("a", "x", "r1", Seq(), Direction.OUTGOING, optional = true),
-      RelatedTo("x", "b", "r2", Seq(), Direction.INCOMING, optional = true)
+      RelatedTo(SingleNode("a"), SingleNode("x"), "r1", Seq(), Direction.OUTGOING, optional = true),
+      RelatedTo(SingleNode("x"), SingleNode("b"), "r2", Seq(), Direction.INCOMING, optional = true)
     )
 
     createMatchingContextWithNodes(patterns, Seq("a", "b"))

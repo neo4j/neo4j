@@ -393,7 +393,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("n", n1.getId, n4.getId)).
-      matches(RelatedTo("n", "x", "rel", Seq(), Direction.OUTGOING, optional = false)).
+      matches(RelatedTo("n", "x", "rel", Seq(), Direction.OUTGOING)).
       where(Equals(Property(Identifier("n"), PropertyKey("animal")), Property(Identifier("x"), PropertyKey("animal")))).
       returns(ReturnItem(Identifier("n"), "n"), ReturnItem(Identifier("x"), "x"))
 
@@ -447,7 +447,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("a", refNode.getId)).
-      matches(RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING, false)).
+      matches(RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING)).
       aggregation(CountStar()).
       returns(ReturnItem(Identifier("a"), "a"), ReturnItem(CountStar(), "count(*)"))
 
@@ -595,7 +595,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
+      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING)).
       where(Equals(RelationshipTypeFunction(Identifier("r")), Literal("KNOWS"))).
       returns(ReturnItem(Identifier("x"), "x"))
 
@@ -660,7 +660,7 @@ foreach(x in [1,2,3] |
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
+      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING)).
       where(Or(Equals(RelationshipTypeFunction(Identifier("r")), Literal("KNOWS")), Equals(RelationshipTypeFunction(Identifier("r")), Literal("HATES")))).
       returns(ReturnItem(Identifier("x"), "x"))
 
@@ -863,12 +863,8 @@ foreach(x in [1,2,3] |
     createNodes("A", "B")
     val r1 = relate("A" -> "KNOWS" -> "B")
 
-    val query = Query.
-      start(NodeById("a", 1), NodeById("b", 2)).
-      matches(ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), false, true, None)).
-      returns(ReturnItem(Identifier("p"), "p"))
-
-    val result = execute(query).toList.head("p").asInstanceOf[Path]
+    val result = parseAndExecute("start a = node(1), b = node(2) match p = shortestPath(a-[*..15]-b) return p").
+      toList.head("p").asInstanceOf[Path]
 
     graph.inTx {
       val number_of_relationships_in_path = result.length()
@@ -883,13 +879,9 @@ foreach(x in [1,2,3] |
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val query = Query.
-      start(NodeById("a", 1), NodeById("b", 2)).
-      matches(ShortestPath("p", "a", "b", Seq(), Direction.BOTH, None, false, true, None)).
-      returns(ReturnItem(Identifier("p"), "p"))
-
     //Checking that we don't get an exception
-    execute(query).toList
+    val result = parseAndExecute("start a = node(1), b = node(2) match p = shortestPath(a-[*]-b) return p").
+      toList
   }
 
   @Test def shouldBeAbleToTakeParamsInDifferentTypes() {

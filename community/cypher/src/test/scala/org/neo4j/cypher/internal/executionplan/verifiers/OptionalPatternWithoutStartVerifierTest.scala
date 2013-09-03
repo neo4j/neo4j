@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.executionplan.verifiers
 
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.{NodeById, Query, RelatedTo}
+import org.neo4j.cypher.internal.commands.{SingleNode, NodeById, Query, RelatedTo}
 import org.neo4j.graphdb.Direction
 import org.scalatest.Assertions
 import org.neo4j.cypher.PatternException
@@ -31,7 +31,7 @@ class OptionalPatternWithoutStartVerifierTest extends Assertions {
   def should_throw_on_optional_pattern_without_start() {
     //GIVEN
     val q = Query.
-      matches(RelatedTo("a", "b", "r", Nil, Direction.OUTGOING, true)).
+      matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Nil, Direction.OUTGOING, true)).
       returns()
 
     //WHEN & THEN
@@ -44,8 +44,8 @@ class OptionalPatternWithoutStartVerifierTest extends Assertions {
     //GIVEN
     val q = Query.
       matches(
-      RelatedTo("a", "b", "r", Nil, Direction.OUTGOING, true),
-      RelatedTo("a2", "b2", "r2", Nil, Direction.OUTGOING, true)).
+      RelatedTo(SingleNode("a"), SingleNode("b"), "r", Nil, Direction.OUTGOING, true),
+      RelatedTo(SingleNode("a2"), SingleNode("b2"), "r2", Nil, Direction.OUTGOING, true)).
       returns()
 
     //WHEN & THEN
@@ -59,8 +59,8 @@ class OptionalPatternWithoutStartVerifierTest extends Assertions {
     val q = Query.
       start(NodeById("a", 0)).
       matches(
-      RelatedTo("a", "b", "r", Nil, Direction.OUTGOING, true),
-      RelatedTo("a2", "b2", "r2", Nil, Direction.OUTGOING, true)
+      RelatedTo(SingleNode("a"), SingleNode("b"), "r", Nil, Direction.OUTGOING, true),
+      RelatedTo(SingleNode("a2"), SingleNode("b2"), "r2", Nil, Direction.OUTGOING, true)
     ).
       returns()
 

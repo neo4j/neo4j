@@ -41,8 +41,8 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
 
     val pattern = ShortestPath(
       pathName = "p",
-      start = "a",
-      end = "c",
+      start = SingleNode("a"),
+      end = SingleNode("c"),
       relTypes = Seq(),
       dir = Direction.OUTGOING,
       maxDepth = None,
@@ -70,7 +70,7 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
     relate(a, b)
     relate(a, c)
 
-    val pattern = RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1"), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
     val pred = HasLabel(Identifier("  UNNAMED1"), KeyToken.Unresolved("Tror_Inte_Det", TokenType.Label))
     val expression = PatternPredicate(Seq(pattern), pred)
     val m = createExecutionContext(Map("a" -> a))

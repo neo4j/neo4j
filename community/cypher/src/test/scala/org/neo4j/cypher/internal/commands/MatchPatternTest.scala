@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.commands
 
 import org.scalatest.Assertions
 import org.junit.Test
+import org.neo4j.cypher.internal.executionplan.{MatchRelationship, MatchPattern}
 
 class MatchPatternTest extends Assertions {
 

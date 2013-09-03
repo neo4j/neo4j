@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.neo4j.graphdb.Direction
-import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{ShortestPath, NodeById, RelatedTo}
+import org.neo4j.cypher.internal.commands.{SingleNode, ShortestPath, NodeById, RelatedTo}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 
 
@@ -34,7 +33,7 @@ class MatchBuilderTest extends BuilderTest {
   def should_take_on_satisfied_match() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false))))
 
     val p = createPipe(nodes = Seq("l"))
 
@@ -45,7 +44,7 @@ class MatchBuilderTest extends BuilderTest {
   def should_not_accept_work_until_all_start_points_are_found() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0)), Unsolved(NodeById("r", 1))),
-      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false))))
 
     val p = createPipe(nodes = Seq("l"))
 
@@ -56,50 +55,50 @@ class MatchBuilderTest extends BuilderTest {
   def should_solve_fixed_parts_of_the_pattern() {
     val inQ = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false))))
 
     val inP = createPipe(nodes = Seq("l"))
 
     val q = assertAccepts(inP, inQ).query
 
-    assert(q.patterns === Seq(Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
+    assert(q.patterns === Seq(Solved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false))))
   }
 
   @Test
   def should_solve_part_of_the_pattern_eagerly() {
     val inQ = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Unsolved(NodeById("b", 1))),
-      patterns = Seq(Unsolved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false)),
-        Unsolved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false))))
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("a"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false)),
+        Unsolved(RelatedTo(SingleNode("b"), SingleNode("r2"), "rel2", Seq(), Direction.OUTGOING, false))))
 
     val inP = createPipe(nodes = Seq("a"))
 
     val q = assertAccepts(inP, inQ).query
 
-    assert(q.patterns.toSet === Set(Solved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false)),
-      Unsolved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false))))
+    assert(q.patterns.toSet === Set(Solved(RelatedTo(SingleNode("a"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false)),
+      Unsolved(RelatedTo(SingleNode("b"), SingleNode("r2"), "rel2", Seq(), Direction.OUTGOING, false))))
   }
 
   @Test
   def should_solve_multiple_patterns_at_once_if_possible() {
     val inQ = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 1))),
-      patterns = Seq(Unsolved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false)),
-        Unsolved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false))))
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("a"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false)),
+        Unsolved(RelatedTo(SingleNode("b"), SingleNode("r2"), "rel2", Seq(), Direction.OUTGOING, false))))
 
     val inP = createPipe(nodes = Seq("a", "b"))
 
     val q = assertAccepts(inP, inQ).query
 
-    assert(q.patterns.toSet === Set(Solved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false)),
-      Solved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false))))
+    assert(q.patterns.toSet === Set(Solved(RelatedTo(SingleNode("a"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false)),
+      Solved(RelatedTo(SingleNode("b"), SingleNode("r2"), "rel2", Seq(), Direction.OUTGOING, false))))
   }
 
   @Test
   def should_not_accept_patterns_with_only_shortest_path() {
     val inQ = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, false, true, None))))
 
     val inP = createPipe(nodes = Seq("l"))
 
@@ -110,7 +109,7 @@ class MatchBuilderTest extends BuilderTest {
   def should_accept_non_optional_parts_of_the_query_first() {
     val inQ = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, false, true, None))))
 
     val inP = createPipe(nodes = Seq("l"))
 

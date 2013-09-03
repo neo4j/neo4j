@@ -46,8 +46,8 @@ trait CreateUnique extends Base with ParserPattern {
 
   private def translate(abstractPattern: AbstractPattern): Maybe[PathAndRelateLink] = {
 
-    def acceptAll[T](l: ParsedEntity, r: ParsedEntity, props: Map[String, Expression], f: (String, String) => T): Maybe[T] =
-      Yes(Seq(f(l.name, r.name)))
+    def acceptAll[T](l: ParsedEntity, r: ParsedEntity, props: Map[String, Expression],
+                     f: (ParsedEntity, ParsedEntity) => T): Maybe[T] = Yes(Seq(f(l, r)))
 
     abstractPattern match {
       case ParsedNamedPath(name, patterns) =>
@@ -77,5 +77,6 @@ trait CreateUnique extends Base with ParserPattern {
       case _                                                                                   => No(Seq())
     }
   }
-  def matchTranslator(transform: (ParsedEntity, ParsedEntity, Map[String, Expression], (String, String) => Pattern) => Maybe[Pattern], abstractPattern: AbstractPattern): Maybe[Any]
+  def matchTranslator(transform: (ParsedEntity, ParsedEntity, Map[String, Expression],
+    (ParsedEntity, ParsedEntity) => Pattern) => Maybe[Pattern], abstractPattern: AbstractPattern): Maybe[Any]
 }

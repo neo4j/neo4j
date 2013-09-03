@@ -50,12 +50,12 @@ trait MatchClause extends Base with ParserPattern {
   }
 
   type TransformType =
-  (ParsedEntity, ParsedEntity, Map[String, Expression], (String, String) => Pattern) => Maybe[Pattern]
+  (ParsedEntity, ParsedEntity, Map[String, Expression], (ParsedEntity, ParsedEntity) => Pattern) => Maybe[Pattern]
 
   private def successIfIdentifiers[T](left: ParsedEntity,
                                       right: ParsedEntity,
                                       relProps: Map[String, Expression],
-                                      f: (String, String) => T): Maybe[T] = {
+                                      f: (ParsedEntity, ParsedEntity) => T): Maybe[T] = {
     def checkProps(props: Map[String, Expression]): Maybe[T] =
       if (props.nonEmpty)
         No(Seq("Properties on pattern elements are not allowed in MATCH."))
@@ -71,7 +71,7 @@ trait MatchClause extends Base with ParserPattern {
     val props: Maybe[T] = checkProps(left.props) ++ checkProps(right.props) ++ checkProps(relProps)
     val expressions = checkExpressions(left) ++ checkExpressions(right)
 
-    (props ++ expressions).seqMap(s => Seq(f(left.name, right.name)))
+    (props ++ expressions).seqMap(s => Seq(f(left, right)))
   }
 
   def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any] =
@@ -99,20 +99,22 @@ trait MatchClause extends Base with ParserPattern {
 
   def matchRelation(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
     case ParsedRelation(name, props, left, right, relType, dir, optional) =>
-      transform(left, right, props, (l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType,
+      transform(left, right, props, (l, r) => RelatedTo(left = l.asSingleNode, right = r.asSingleNode, relName = name, relTypes = relType,
         direction = dir, optional = optional))
   }
 
   def matchVarLengthRelation(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
     case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, min, max, relIterator) =>
-      transform(left, right, props, (l, r) => VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min,
-        maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional))
+      transform(left, right, props, (l, r) => VarLengthRelatedTo(pathName = name, start = l.asSingleNode,
+        end = r.asSingleNode, minHops = min, maxHops = max, relTypes = relType, direction = dir,
+        relIterator = relIterator, optional = optional))
   }
 
   def matchShortestPath(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
     case ParsedShortestPath(name, props, left, right, relType, dir, optional, max, single, relIterator) =>
-      transform(left, right, props, (l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType,
-        dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator))
+      transform(left, right, props, (l, r) => ShortestPath(pathName = name, start = l.asSingleNode,
+        end = r.asSingleNode, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single,
+        relIterator = relIterator))
 
   }
 

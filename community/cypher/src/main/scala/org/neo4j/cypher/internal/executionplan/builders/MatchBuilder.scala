@@ -89,8 +89,8 @@ trait PatternGraphBuilder {
 
     patterns.foreach(_ match {
       case RelatedTo(left, right, rel, relType, dir, optional) => {
-        val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
-        val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
+        val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left.name, new PatternNode(left))
+        val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right.name, new PatternNode(right))
 
         if (patternRelMap.contains(rel)) {
           throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(rel))
@@ -99,8 +99,8 @@ trait PatternGraphBuilder {
         patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
       }
       case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, relsCollection, optional) => {
-        val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
-        val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
+        val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start.name, new PatternNode(start))
+        val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end.name, new PatternNode(end))
         patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, relsCollection, optional)
       }
       case _ =>

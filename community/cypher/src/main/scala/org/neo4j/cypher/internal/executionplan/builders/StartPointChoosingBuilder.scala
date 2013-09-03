@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder, ExecutionPlanInProgress}
+import org.neo4j.cypher.internal.executionplan.{MatchPattern, PartiallySolvedQuery, PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.mutation.{UpdateAction, MergeNodeAction}
@@ -89,7 +89,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
     def findStartItemFor(pattern: MatchPattern): Iterable[StartItem] = {
       val shortestPathPoints: Set[IdentifierName] = plan.query.patterns.collect {
-        case Unsolved(ShortestPath(_, start, end, _, _, _, _, _, _)) => Seq(start, end)
+        case Unsolved(ShortestPath(_, start, end, _, _, _, _, _, _)) => Seq(start.name, end.name)
       }.flatten.toSet
 
       val startPoints: Set[RatedStartItem] =

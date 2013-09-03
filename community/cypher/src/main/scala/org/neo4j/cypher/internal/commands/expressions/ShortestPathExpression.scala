@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.kernel.Traversal
 import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, Expander}
-import org.neo4j.cypher.internal.commands.{Pattern, PathExtractor, ShortestPath}
+import org.neo4j.cypher.internal.commands.{SingleNode, Pattern, PathExtractor, ShortestPath}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 
@@ -48,7 +48,8 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
     shortestPathStrategy.findResult(start, end)
   }
 
-  def getEndPoint(m: Map[String, Any], start: String): Node = m.getOrElse(start, throw new SyntaxException("To find a shortest path, both ends of the path need to be provided. Couldn't find `" + start + "`")).asInstanceOf[Node]
+  def getEndPoint(m: Map[String, Any], start: SingleNode): Node = m.getOrElse(start.name,
+    throw new SyntaxException(s"To find a shortest path, both ends of the path need to be provided. Couldn't find `${start}`")).asInstanceOf[Node]
 
   private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =
     symbolTableDependencies.exists(key => m.get(key) match {

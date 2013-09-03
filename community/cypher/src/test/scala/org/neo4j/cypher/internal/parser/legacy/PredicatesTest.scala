@@ -34,17 +34,17 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
     implicit val parserToTest = patternPredicate
 
     parsing("a-->(:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("Foo", TokenType.Label)))
+      PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED5"), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("Foo", TokenType.Label)))
 
     parsing("a-->(n:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "n", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label)))
+      PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("n"), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label)))
 
     parsing("a-->(:Bar:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), And(HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("Bar", TokenType.Label)), HasLabel(Identifier("  UNNAMED5"),KeyToken.Unresolved("Foo", TokenType.Label))))
+      PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED5"), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), And(HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("Bar", TokenType.Label)), HasLabel(Identifier("  UNNAMED5"),KeyToken.Unresolved("Foo", TokenType.Label))))
 
     val patterns = Seq(
-      RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false),
-      RelatedTo("  UNNAMED5", "  UNNAMED16", "  UNNAMED12", Seq.empty, Direction.OUTGOING, false))
+      RelatedTo(SingleNode("a"), SingleNode("  UNNAMED5"), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false),
+      RelatedTo(SingleNode("  UNNAMED5"), SingleNode("  UNNAMED16"), "  UNNAMED12", Seq.empty, Direction.OUTGOING, false))
 
     val predicate = And(
       HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("First", TokenType.Label)),

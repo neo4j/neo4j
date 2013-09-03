@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Direction, Node}
-import org.neo4j.cypher.internal.commands.Predicate
+import org.neo4j.cypher.internal.commands.SingleNode
 import org.neo4j.cypher.internal.spi.QueryContext
 
 class PatternNode(key: String) extends PatternElement(key) {
+
+  def this(node: SingleNode) = this(node.name)
 
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
