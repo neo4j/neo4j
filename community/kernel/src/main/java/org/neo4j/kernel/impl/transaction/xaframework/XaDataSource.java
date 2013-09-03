@@ -23,9 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -271,7 +271,7 @@ public abstract class XaDataSource implements Lifecycle
         throw new UnsupportedOperationException( getClass().getName() );
     }
 
-    public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
+    public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }

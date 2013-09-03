@@ -103,6 +103,8 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
     public static interface FullStoreChangeStream extends Iterable<NodeLabelUpdate>
     {
         PrimitiveLongIterator labelIds();
+        
+        long highestNodeId();
     }
 
     public static FullStoreChangeStream fullStoreLabelUpdateStream( final XaDataSourceManager dataSourceManager )
@@ -165,6 +167,13 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
                         }
                     }
                 };
+            }
+
+            @Override
+            public long highestNodeId()
+            {
+                return dataSourceManager.getNeoStoreDataSource()
+                        .getNeoStore().getNodeStore().getHighestPossibleIdInUse();
             }
         };
     }

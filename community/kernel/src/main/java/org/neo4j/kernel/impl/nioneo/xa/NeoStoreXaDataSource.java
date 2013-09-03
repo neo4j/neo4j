@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,6 +37,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
@@ -43,7 +45,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.ClosableIterable;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.BridgingCacheAccess;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -639,9 +641,62 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     }
 
     @Override
-    public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs )
+    public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     {
-        final Collection<File> files = new ArrayList<File>();
+        Collection<File> files = new ArrayList<>();
+        gatherNeoStoreFiles( includeLogicalLogs, files );
+        Closeable labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
+
+        return new StoreSnapshot( files.iterator(), labelScanStoreSnapshot );
+    }
+    
+    private static class StoreSnapshot extends PrefetchingIterator<File> implements ResourceIterator<File>
+    {
+        private final Iterator<File> files;
+        private final Closeable closeable;
+
+        StoreSnapshot( Iterator<File> files, Closeable closeable )
+        {
+            this.files = files;
+            this.closeable = closeable;
+        }
+
+        @Override
+        protected File fetchNextOrNull()
+        {
+            return files.hasNext() ? files.next() : null;
+        }
+        
+        @Override
+        public void close()
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch ( IOException e )
+            {
+                // The underlying closeable is currently actually a ResourceIterator, so
+                // the close() method doesn't actually throw IOException.
+                throw new RuntimeException( e );
+            }
+        }
+    }
+
+    private Closeable gatherLabelScanStoreFiles( Collection<File> targetFiles ) throws IOException
+    {
+        ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
+        while ( snapshot.hasNext() )
+        {
+            targetFiles.add( snapshot.next() );
+        }
+        // Intentionally don't close the snapshot here, return it for closing by the consumer of
+        // the targetFiles list.
+        return snapshot;
+    }
+
+    private void gatherNeoStoreFiles( boolean includeLogicalLogs, final Collection<File> targetFiles )
+    {
         File neostoreFile = null;
         Pattern logFilePattern = getXaContainer().getLogicalLog().getHistoryFileNamePattern();
         for ( File dbFile : nonNull( storeDir.listFiles() ) )
@@ -658,29 +713,15 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 else if ( (name.startsWith( NeoStore.DEFAULT_NAME ) ||
                         name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
                 {   // Store files
-                    files.add( dbFile );
+                    targetFiles.add( dbFile );
                 }
                 else if ( includeLogicalLogs && logFilePattern.matcher( dbFile.getName() ).matches() )
                 {   // Logs
-                    files.add( dbFile );
+                    targetFiles.add( dbFile );
                 }
             }
         }
-        files.add( neostoreFile );
-
-        return new ClosableIterable<File>()
-        {
-            @Override
-            public Iterator<File> iterator()
-            {
-                return files.iterator();
-            }
-
-            @Override
-            public void close()
-            {   // Nothing to close
-            }
-        };
+        targetFiles.add( neostoreFile );
     }
 
     public void registerDiagnosticsWith( DiagnosticsManager manager )
