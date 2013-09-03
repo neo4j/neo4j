@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -71,15 +72,16 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StoreStatementOperationsTest
 {
-
     @Test
     public void shouldDeclineWriteOps() throws Exception
     {
         // When
-        try {
+        try
+        {
             statement.nodeAddLabel( state, 12, 12 );
-            fail("Should have thrown unsupported operation.");
-        } catch(UnsupportedOperationException e)
+            fail( "Should have thrown unsupported operation." );
+        }
+        catch ( UnsupportedOperationException e )
         {
             // ok
         }
@@ -89,13 +91,15 @@ public class StoreStatementOperationsTest
     public void should_be_able_to_list_labels_for_node() throws Exception
     {
         // GIVEN
-        Transaction tx = db.beginTx();
-        long nodeId = db.createNode( label1, label2).getId();
-        String labelName1 = label1.name(), labelName2 = label2.name();
-        long labelId1 = statement.labelGetForName( state, labelName1 );
-        long labelId2 = statement.labelGetOrCreateForName( state, labelName2 );
-        tx.success();
-        tx.finish();
+        long nodeId, labelId1, labelId2;
+        try ( Transaction tx = db.beginTx() )
+        {
+            nodeId = db.createNode( label1, label2).getId();
+            String labelName1 = label1.name(), labelName2 = label2.name();
+            labelId1 = statement.labelGetForName( state, labelName1 );
+            labelId2 = statement.labelGetOrCreateForName( state, labelName2 );
+            tx.success();
+        }
 
         // THEN
         PrimitiveLongIterator readLabels = statement.nodeGetLabels( state, nodeId );
@@ -263,14 +267,14 @@ public class StoreStatementOperationsTest
         IndexDescriptor index = createIndexAndAwaitOnline( label1, propertyKey );
         String name = "Mr. Taylor";
         Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label1 );
-        Transaction tx = db.beginTx();
-
-        // WHEN
-        Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, index, name ) );
-
-        // THEN
-        assertEquals( asSet( mrTaylor.getId() ), foundNodes );
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            // WHEN
+            Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, index, name ) );
+    
+            // THEN
+            assertEquals( asSet( mrTaylor.getId() ), foundNodes );
+        }
     }
     
     private GraphDatabaseAPI db;
@@ -285,6 +289,7 @@ public class StoreStatementOperationsTest
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
+        LabelScanStore labelScanStore = resolver.resolveDependency( LabelScanStore.class );
         NeoStore neoStore = resolver.resolveDependency( XaDataSourceManager.class )
                                     .getNeoStoreDataSource().getNeoStore();
         this.statement = new StoreStatementOperations(
@@ -296,7 +301,7 @@ public class StoreStatementOperationsTest
                 resolver.resolveDependency( PersistenceManager.class ),
                 indexingService );
         WritableStatementState state = new WritableStatementState();
-        state.provide( new IndexReaderFactory.Caching( indexingService ) );
+        state.provide( new IndexReaderFactory.Caching( indexingService ), labelScanStore );
         this.state = state;
     }
 
@@ -308,45 +313,32 @@ public class StoreStatementOperationsTest
 
     private static Node createLabeledNode( GraphDatabaseService db, Map<String, Object> properties, Label... labels )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( labels );
             for ( Map.Entry<String, Object> property : properties.entrySet() )
+            {
                 node.setProperty( property.getKey(), property.getValue() );
+            }
             tx.success();
             return node;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
     private IndexDescriptor createIndexAndAwaitOnline( Label label, String propertyKey ) throws Exception
     {
-        Transaction tx = db.beginTx();
         IndexDefinition index = null;
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             index = db.schema().indexFor( label ).on( propertyKey ).create();
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
 
-        tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexOnline( index, 10, SECONDS );
             return statement.indexesGetForLabelAndPropertyKey( state, statement.labelGetForName( state, label.name() ),
                     statement.propertyKeyGetForName( state, propertyKey ) );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

@@ -60,7 +60,6 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
@@ -162,7 +161,7 @@ public class StoreStatementOperations implements
     private UnsupportedOperationException shouldCallAuxiliaryInstead()
     {
         return new UnsupportedOperationException(
-                "This shouldn't be called directly, but instead to an appropriate method in the " + 
+                "This shouldn't be called directly, but instead to an appropriate method in the " +
                         AuxiliaryStoreOperations.class.getSimpleName() + " interface" );
     }
     
@@ -196,7 +195,7 @@ public class StoreStatementOperations implements
     {
         int id = labelTokenHolder.getIdByName( label );
 
-        if(id == LabelTokenHolder.NO_ID)
+        if(id == TokenHolder.NO_ID)
         {
             return NO_SUCH_LABEL;
         }
@@ -246,39 +245,7 @@ public class StoreStatementOperations implements
     @Override
     public PrimitiveLongIterator nodesGetForLabel( StatementState state, final long labelId )
     {
-        final NodeStore nodeStore = neoStore.getNodeStore();
-        final long highestId = nodeStore.getHighestPossibleIdInUse();
-
-        return new AbstractPrimitiveLongIterator()
-        {
-            private long id = 0;
-
-            {
-                computeNext();
-            }
-
-            @Override
-            protected void computeNext()
-            {
-                while ( id <= highestId )
-                {
-                    NodeRecord node = nodeStore.forceGetRecord( id++ );
-                    if ( node.inUse() )
-                    {
-                        for ( long label : parseLabelsField( node ).get( nodeStore ) )
-                        {
-                            if ( label == labelId )
-                            {
-                                nextValue = node.getId();
-                                hasNext = true;
-                                return;
-                            }
-                        }
-                    }
-                }
-                hasNext = false;
-            }
-        };
+        return state.labelScanReader().nodesWithLabel( labelId );
     }
 
     @Override
@@ -435,7 +402,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( StatementState state, 
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( StatementState state,
             long labelId, final long propertyKeyId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,

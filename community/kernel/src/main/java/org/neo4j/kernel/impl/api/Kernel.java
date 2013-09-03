@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.ConstraintEnforcingEntityWriteOperations;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.WritableStatementState;
+import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -155,6 +157,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private SchemaCache schemaCache;
     private SchemaIndexProviderMap providerMap = null;
     private LegacyKernelOperations legacyKernelOperations, readOnlyLegacyKernelOperations;
+    private LabelScanStore labelScanStore;
 
     public Kernel( boolean readOnly, AbstractTransactionManager transactionManager,
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
@@ -192,6 +195,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 NeoStoreXaDataSource neoDataSource = (NeoStoreXaDataSource) ds;
                 neoStore = neoDataSource.getNeoStore();
                 indexService = neoDataSource.getIndexService();
+                labelScanStore = neoDataSource.getLabelScanStore();
                 providerMap = neoDataSource.getProviderMap();
                 persistenceCache = neoDataSource.getPersistenceCache();
                 schemaCache = neoDataSource.getSchemaCache();
@@ -354,7 +358,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         {
             // === StoreKernelTransaction ===
             WritableStatementState statement = new WritableStatementState();
-            statement.provide( new IndexReaderFactory.Caching( indexService ) );
+            statement.provide( new IndexReaderFactory.Caching( indexService ), labelScanStore );
 
             // === StateHandlingKernelTransaction ===
             statement.provide( this );

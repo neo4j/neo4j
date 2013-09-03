@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.test.DoubleLatch;
 
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
@@ -107,5 +108,11 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
             throw new IllegalStateException();
         }
         return this.failure;
+    }
+    
+    @Override
+    public int compareTo( SchemaIndexProvider o )
+    {
+        return 1;
     }
 }

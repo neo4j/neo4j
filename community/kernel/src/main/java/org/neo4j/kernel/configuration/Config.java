@@ -512,9 +512,6 @@ public class Config implements DiagnosticsProvider
     public static final String GC_MONITOR_THRESHOLD = "gc_monitor_threshold";
 
     @Deprecated
-    static final String LOAD_EXTENSIONS = "load_kernel_extensions";
-
-    @Deprecated
     public boolean getBoolean( GraphDatabaseSetting.BooleanSetting setting )
     {
         return get( setting );

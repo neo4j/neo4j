@@ -39,6 +39,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DependencyResolver.Adapter;
 import org.neo4j.graphdb.Node;
@@ -55,6 +56,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -82,8 +85,12 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TestNeoStore
@@ -192,13 +199,24 @@ public class TestNeoStore
     {
         return new DependencyResolver.Adapter()
         {
+            private final LabelScanStoreProvider labelScanStoreProvider =
+                    new LabelScanStoreProvider( new InMemoryLabelScanStore(), 10 );
+            
             @Override
             public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
             {
                 if ( SchemaIndexProvider.class.isAssignableFrom( type ) )
-                    return (T) SchemaIndexProvider.NO_INDEX_PROVIDER;
+                {
+                    return type.cast( SchemaIndexProvider.NO_INDEX_PROVIDER );
+                }
                 else if ( NodeManager.class.isAssignableFrom( type ) )
-                    return (T) nodeManager;
+                {
+                    return type.cast( nodeManager );
+                }
+                else if ( LabelScanStoreProvider.class.isAssignableFrom( type ) )
+                {
+                    return type.cast( labelScanStoreProvider );
+                }
                 throw new IllegalArgumentException( type.toString() );
             }
         };
@@ -211,7 +229,7 @@ public class TestNeoStore
          @Override
          public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
          {
-            return (T) config;
+            return type.cast( config );
          }
       };
     }
@@ -273,7 +291,7 @@ public class TestNeoStore
         if ( !itr.hasNext() )
         {
             int id = (int) ds.nextId( PropertyKeyTokenRecord.class );
-            Token index = createDummyIndex( id, key );
+            createDummyIndex( id, key );
             xaCon.getWriteTransaction().createPropertyKeyToken( key, id );
             return id;
         }
@@ -397,7 +415,6 @@ public class TestNeoStore
         return new AtomicLong( xaCon.getWriteTransaction().getRelationshipChainPosition( node ) );
     }
 
-    @SuppressWarnings("unchecked")
     private Iterable<RelationshipRecord> getMore( NeoStoreXaConnection xaCon, long node, AtomicLong pos )
     {
         Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =

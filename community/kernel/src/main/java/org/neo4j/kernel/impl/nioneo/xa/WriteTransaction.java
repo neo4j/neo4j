@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
@@ -44,6 +46,8 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.scan.LabelScanStore;
+import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -74,6 +78,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.xa.Command.Mode;
 import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
@@ -205,15 +210,17 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private XaConnection xaConnection;
     private final CacheAccessBackDoor cacheAccess;
     private final IndexingService indexes;
+    private final LabelScanStore labelScanStore;
 
     WriteTransaction( int identifier, XaLogicalLog log, TransactionState state, NeoStore neoStore,
-                      CacheAccessBackDoor cacheAccess, IndexingService indexingService )
+                      CacheAccessBackDoor cacheAccess, IndexingService indexingService, LabelScanStore labelScanStore )
     {
         super( identifier, log, state );
         this.neoStore = neoStore;
         this.state = state;
         this.cacheAccess = cacheAccess;
         this.indexes = indexingService;
+        this.labelScanStore = labelScanStore;
     }
 
     @Override
@@ -699,8 +706,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             executeDeleted( propCommands, relCommands, nodeCommands.values() );
 
             // property change set for index updates
-            Iterable<NodePropertyUpdate> updates = convertIntoLogicalPropertyUpdates();
-            indexes.updateIndexes( updates );
+            List<NodePropertyUpdate> propertyUpdates = new ArrayList<>();
+            List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
+            gatherPropertyAndLabelUpdates( propertyUpdates, labelUpdates );
+            
+            indexes.updateIndexes( propertyUpdates );
+            updateLabelScanStore( labelUpdates );
 
             // schema rules. Execute these after generating the property updates so. If executed
             // before and we've got a transaction that sets properties/labels as well as creating an index
@@ -749,14 +760,23 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private Iterable<NodePropertyUpdate> convertIntoLogicalPropertyUpdates()
+    private void updateLabelScanStore( Iterable<NodeLabelUpdate> labelUpdates )
     {
-        Collection<NodePropertyUpdate> updates = new ArrayList<>();
+        try
+        {
+            labelScanStore.updateAndCommit( labelUpdates );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
 
-        gatherUpdatesFromPropertyCommands( updates );
-        gatherUpdatesFromNodeCommands( updates );
-
-        return updates;
+    private void gatherPropertyAndLabelUpdates( List<NodePropertyUpdate> propertyUpdates,
+            List<NodeLabelUpdate> labelUpdates )
+    {
+        gatherUpdatesFromPropertyCommands( propertyUpdates );
+        gatherUpdatesFromNodeCommands( propertyUpdates, labelUpdates );
     }
 
     private void gatherUpdatesFromPropertyCommands( Collection<NodePropertyUpdate> updates )
@@ -791,23 +811,25 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private void gatherUpdatesFromNodeCommands( Collection<NodePropertyUpdate> updates )
+    private void gatherUpdatesFromNodeCommands( Collection<NodePropertyUpdate> propertyUpdates,
+            List<NodeLabelUpdate> labelUpdates )
     {
         final NodeStore nodeStore = getNodeStore();
         for ( NodeCommand nodeCommand : nodeCommands.values() )
         {
+            long nodeId = nodeCommand.getKey();
+            long[] labelsBefore = parseLabelsField( nodeCommand.getBefore() ).get( nodeStore );
+            long[] labelsAfter = parseLabelsField( nodeCommand.getAfter() ).get( nodeStore );
+            labelUpdates.add( NodeLabelUpdate.labelChanges( nodeId, labelsBefore, labelsAfter ) );
+            
             if ( nodeCommand.getMode() != Mode.UPDATE )
             {
                 // For created and deleted nodes rely on the updates from the perspective of properties to cover it all
                 // otherwise we'll get duplicate update during recovery, or cannot load properties if deleted.
                 continue;
             }
-
-            long nodeId = nodeCommand.getKey();
-            long[] labelsBefore = parseLabelsField( nodeCommand.getBefore() ).get( nodeStore );
-            long[] labelsAfter = parseLabelsField( nodeCommand.getAfter() ).get( nodeStore );
+            
             // They are sorted in the store
-
             for ( long labelAfter : labelsAfter )
             {
                 if ( binarySearch( labelsBefore, labelAfter ) < 0 )
@@ -816,8 +838,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                     ArrayMap<Integer, PropertyData> properties = nodeFullyLoadProperties( nodeId );
                     for ( PropertyData property : properties.values() )
                     {
-                        updates.add( NodePropertyUpdate.add( nodeId, property.getIndex(), property.getValue(),
-                                                             new long[]{labelAfter} ) );
+                        propertyUpdates.add( NodePropertyUpdate.add( nodeId, property.getIndex(), property.getValue(),
+                                new long[]{labelAfter} ) );
                     }
                 }
             }
@@ -829,8 +851,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                     ArrayMap<Integer, PropertyData> properties = nodeFullyLoadProperties( nodeId );
                     for ( PropertyData property : properties.values() )
                     {
-                        updates.add( NodePropertyUpdate.remove( nodeId, property.getIndex(), property.getValue(),
-                                                                new long[]{labelBefore} ) );
+                        propertyUpdates.add( NodePropertyUpdate.remove( nodeId, property.getIndex(), property.getValue(),
+                                new long[]{labelBefore} ) );
                     }
                 }
             }
@@ -1003,6 +1025,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                                              "] since it has already been deleted." );
         }
         nodeRecord.setInUse( false );
+        nodeRecord.setLabelField( 0 );
         return getAndDeletePropertyChain( nodeRecord );
     }
 

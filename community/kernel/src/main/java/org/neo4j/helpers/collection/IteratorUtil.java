@@ -608,7 +608,9 @@ public abstract class IteratorUtil
     {
         HashSet<T> set = new HashSet<>();
         for ( T item : items )
+        {
             addUnique( set, item );
+        }
         return set;
     }
 
@@ -622,7 +624,9 @@ public abstract class IteratorUtil
     {
         HashSet<T> set = new HashSet<>();
         while( items.hasNext() )
+        {
             addUnique( set, items.next() );
+        }
         return set;
     }
 
@@ -679,7 +683,10 @@ public abstract class IteratorUtil
             {
                 try
                 {
-                    if ( mostRecentIterator != null ) mostRecentIterator.close();
+                    if ( mostRecentIterator != null )
+                    {
+                        mostRecentIterator.close();
+                    }
                     mostRecentIterator = asIterator( file, encoding );
                     return mostRecentIterator;
                 }
@@ -692,7 +699,10 @@ public abstract class IteratorUtil
             @Override
             public void close()
             {
-                if ( mostRecentIterator != null ) mostRecentIterator.close();
+                if ( mostRecentIterator != null )
+                {
+                    mostRecentIterator.close();
+                }
             }
         };
     }
@@ -793,14 +803,13 @@ public abstract class IteratorUtil
         return new AbstractPrimitiveLongIterator()
         {
             {
-                hasNext = true;
-                nextValue = item;
+                next( item );
             }
 
             @Override
             protected void computeNext()
             {
-                hasNext = false;
+                endReached();
             }
         };
     }
@@ -968,7 +977,9 @@ public abstract class IteratorUtil
             private void assertHasNext()
             {
                 if ( ! hasNext )
+                {
                     throw new IllegalArgumentException( "Iterator already closed" );
+                }
             }
         };
     }

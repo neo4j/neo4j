@@ -21,16 +21,19 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+
 import org.neo4j.index.impl.lucene.LuceneUtil;
 
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
+
 import static org.neo4j.kernel.api.index.ArrayEncoder.encode;
 
 class LuceneDocumentStructure
@@ -41,11 +44,17 @@ class LuceneDocumentStructure
     private static final String BOOL_PROPERTY_FIELD_IDENTIFIER = "bool";
     private static final String NUMBER_PROPERTY_FIELD_IDENTIFIER = "number";
 
-    Document newDocument( long nodeId, Object value )
+    Document newDocument( long nodeId )
     {
         Document document = new Document();
         document.add( field( NODE_ID_KEY, "" + nodeId, YES ) );
-
+        return document;
+    }
+    
+    Document newDocumentRepresentingProperty( long nodeId, Object value )
+    {
+        Document document = newDocument( nodeId );
+        
         if ( value instanceof Number )
         {
             NumericField numberField = new NumericField( NUMBER_PROPERTY_FIELD_IDENTIFIER, NO, true );
@@ -66,6 +75,18 @@ class LuceneDocumentStructure
         }
 
         return document;
+    }
+    
+    Fieldable newField( String key, long value )
+    {
+        NumericField numberField = new NumericField( key, NO, true );
+        numberField.setLongValue( value );
+        return numberField;
+    }
+    
+    Query newQuery( String key, long value )
+    {
+        return LuceneUtil.rangeQuery( key, value, value, true, true );
     }
 
     private Field field( String fieldIdentifier, String value )

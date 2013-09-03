@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.transaction.xa.XAException;
 
 import org.junit.Before;
@@ -36,6 +37,8 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.scan.LabelScanStore;
+import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -116,7 +119,9 @@ public class WriteTransactionTest
         IndexRule rule = IndexRule.indexRule( schemaStore.nextId(), labelId, propertyKey, PROVIDER_DESCRIPTOR );
         Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : records )
+        {
             schemaStore.updateRecord( record );
+        }
         long ruleId = first( records ).getId();
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
 
@@ -428,7 +433,9 @@ public class WriteTransactionTest
         tx.nodeAddProperty( nodeId, propertyKeyId,
                 "something long and nasty that requires dynamic records for sure I would think and hope. Ok then åäö%!=" );
         for ( int i = 0; i < 10; i++ )
+        {
             tx.addLabelToNode( 10000 + i, nodeId );
+        }
         tx.createSchemaRule( IndexRule.indexRule( ruleId, 100, propertyKeyId, PROVIDER_DESCRIPTOR ) );
         prepareAndCommitRecovered( tx );
 
@@ -468,9 +475,9 @@ public class WriteTransactionTest
         /* There was an issue where GIVEN:
          * 
          *   Legend: () = node, [] = property record
-         *   
+         * 
          *   ()-->[0:block{size:1}]
-         *   
+         * 
          * WHEN adding a new property record in front of if, not chaning any data in that record i.e:
          * 
          *   ()-->[1:block{size:4}]-->[0:block{size:1}]
@@ -510,7 +517,9 @@ public class WriteTransactionTest
                 if ( record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue() )
                 {
                     for ( PropertyBlock block : record.getPropertyBlocks() )
+                    {
                         assertTrue( block.isLight() );
+                    }
                 }
             }
         };
@@ -561,7 +570,9 @@ public class WriteTransactionTest
         StringBuilder result = new StringBuilder();
         char ch = 'a';
         for ( int i = 0; i < length; i++ )
+        {
             result.append( (char)((ch + (i%10))) );
+        }
         return result.toString();
     }
 
@@ -635,7 +646,7 @@ public class WriteTransactionTest
     {
         log = new VerifyingXaLogicalLog( fs.get(), verifier );
         WriteTransaction result = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, indexing );
+                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE );
         result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
         return result;
     }
@@ -681,7 +692,9 @@ public class WriteTransactionTest
             public boolean visit( XaCommand element )
             {
                 for ( DynamicRecord record : ((SchemaRuleCommand) element).getRecords() )
+                {
                     assertFalse( record + " should have been heavy", record.isLight() );
+                }
                 return true;
             }
         };
@@ -698,4 +711,48 @@ public class WriteTransactionTest
         tx.doPrepare();
         tx.doCommit();
     }
+
+    public static final LabelScanStore NO_LABEL_SCAN_STORE = new LabelScanStore()
+    {
+        @Override
+        public void updateAndCommit( Iterable<NodeLabelUpdate> updates )
+        {   // Do nothing
+        }
+        
+        @Override
+        public void stop()
+        {   // Do nothing
+        }
+        
+        @Override
+        public void start()
+        {   // Do nothing
+        }
+        
+        @Override
+        public void shutdown()
+        {   // Do nothing
+        }
+        
+        @Override
+        public void recover( Iterable<NodeLabelUpdate> updates )
+        {   // Do nothing
+        }
+        
+        @Override
+        public Reader newReader()
+        {
+            return LabelScanStore.EMPTY_READER;
+        }
+        
+        @Override
+        public void init()
+        {   // Do nothing
+        }
+        
+        @Override
+        public void force()
+        {   // Do nothing
+        }
+    };
 }

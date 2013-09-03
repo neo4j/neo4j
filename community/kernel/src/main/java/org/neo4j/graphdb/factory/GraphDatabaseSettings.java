@@ -79,9 +79,6 @@ public abstract class GraphDatabaseSettings
     public static final CacheTypeSetting cache_type = new CacheTypeSetting( setting( "cache_type",
             options( CacheTypeSetting.availableCaches() ), CacheTypeSetting.availableCaches()[0] ) );
 
-    @Description( "Enable loading kernel extensions" )
-    public static final BooleanSetting load_kernel_extensions = new BooleanSetting( setting("load_kernel_extensions", BOOLEAN, TRUE ));
-
     @Description("Print out the effective Neo4j configuration after startup.")
     public static final BooleanSetting dump_configuration = new BooleanSetting( setting("dump_configuration", BOOLEAN, FALSE ));
 
@@ -409,11 +406,17 @@ public abstract class GraphDatabaseSettings
         {
             List<String> available = new ArrayList<String>();
             for ( CacheProvider cacheProvider : Service.load( CacheProvider.class ) )
+            {
                 available.add( cacheProvider.getName() );
+            }
                                                // --- higher prio ---->
             for ( String prioritized : new String[] { "soft", "gcr" } )
+            {
                 if ( available.remove( prioritized ) )
+                {
                     available.add( 0, prioritized );
+                }
+            }
             return available.toArray( new String[available.size()] );
         }
     }

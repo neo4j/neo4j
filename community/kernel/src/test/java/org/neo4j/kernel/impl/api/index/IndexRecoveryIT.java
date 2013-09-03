@@ -193,16 +193,19 @@ public class IndexRecoveryIT
     public void setUp()
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
+        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) ).thenReturn( 1 ); // always pretend to have highest priority
     }
 
     private void startDb()
     {
         if ( db != null )
+        {
             db.shutdown();
+        }
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
+        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 
@@ -242,7 +245,9 @@ public class IndexRecoveryIT
     public void after()
     {
         if ( db != null )
+        {
             db.shutdown();
+        }
     }
 
     @SuppressWarnings("deprecation")

@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import org.junit.Test;
+
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test the implementation of the {@link org.neo4j.kernel.extension.KernelExtensionFactory} framework. Treats the
@@ -46,36 +46,12 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
     }
 
     /**
-     * This tests the facilities needed for testing kernel extensions, more than
-     * anything else.
-     */
-    @Test
-    public void canDisableLoadingKernelExtensions() throws Exception
-    {
-        GraphDatabaseAPI graphdb = graphdb( "graphdb", /*loadExtensions=*/false, 0 );
-        try
-        {
-            graphdb.getDependencyResolver().resolveDependency( KernelExtensions.class ).resolveDependency(
-                    DummyExtension.class );
-            fail( "Extensions were loaded despite configured not to" );
-        }
-        catch ( IllegalArgumentException ex )
-        {
-            // Could not find extension: ok!
-        }
-        finally
-        {
-            graphdb.shutdown();
-        }
-    }
-
-    /**
      * Check that lifecycle status of extension is STARTED
      */
     @Test
     public void shouldBeStarted() throws Exception
     {
-        GraphDatabaseAPI graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        GraphDatabaseAPI graphdb = graphdb( "graphdb", 0 );
         try
         {
             assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
@@ -93,7 +69,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
     @Test
     public void dependenciesCanBeRetrieved() throws Exception
     {
-        GraphDatabaseAPI graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        GraphDatabaseAPI graphdb = graphdb( "graphdb", 0 );
         try
         {
             assertEquals( graphdb.getDependencyResolver().resolveDependency( Config.class ),
@@ -112,7 +88,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
     @Test
     public void shouldBeShutdown() throws Exception
     {
-        GraphDatabaseAPI graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        GraphDatabaseAPI graphdb = graphdb( "graphdb", 0 );
         graphdb.shutdown();
 
         assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( KernelExtensions

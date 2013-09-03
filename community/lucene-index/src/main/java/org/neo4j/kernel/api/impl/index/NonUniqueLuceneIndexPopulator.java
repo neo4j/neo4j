@@ -45,7 +45,7 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     @Override
     public void add( long nodeId, Object propertyValue ) throws IOException
     {
-        writer.addDocument( documentStructure.newDocument( nodeId, propertyValue ) );
+        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, propertyValue ) );
     }
 
     @Override
@@ -72,11 +72,11 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             switch ( update.getUpdateMode() )
             {
             case ADDED:
-                writer.addDocument( documentStructure.newDocument( nodeId, update.getValueAfter() ) );
+                writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, update.getValueAfter() ) );
                 break;
             case CHANGED:
                 writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                                       documentStructure.newDocument( nodeId, update.getValueAfter() ) );
+                                       documentStructure.newDocumentRepresentingProperty( nodeId, update.getValueAfter() ) );
                 break;
             case REMOVED:
                 writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );

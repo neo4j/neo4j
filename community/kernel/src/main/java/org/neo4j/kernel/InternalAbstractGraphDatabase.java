@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -68,6 +69,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
@@ -175,7 +177,6 @@ public abstract class InternalAbstractGraphDatabase
                 GraphDatabaseSettings.use_memory_mapped_buffers;
         public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
         public static final GraphDatabaseSettings.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
-        public static final Setting<Boolean> load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
         public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
         public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
         public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
@@ -436,7 +437,7 @@ public abstract class InternalAbstractGraphDatabase
         stateFactory = createTransactionStateFactory();
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
-
+        
         if ( readOnly )
         {
             txManager = new ReadOnlyTxManager( xaDataSourceManager, logging.getMessagesLog( ReadOnlyTxManager.class ) );
@@ -517,10 +518,7 @@ public abstract class InternalAbstractGraphDatabase
 
         extensions = life.add( createKernelData() );
 
-        if ( config.get( Configuration.load_kernel_extensions ) )
-        {
-            life.add( kernelExtensions );
-        }
+        life.add( kernelExtensions );
 
         schema = new SchemaImpl( statementContextProvider );
 
@@ -863,7 +861,8 @@ public abstract class InternalAbstractGraphDatabase
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                 updateableSchemaState, nodeManager,
-                new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ), dependencyResolver );
+                new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
+                dependencyResolver );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
@@ -1380,6 +1379,11 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( cleanupService );
             }
+            else if ( LabelScanStore.class.isAssignableFrom( type )
+                && type.isInstance( neoDataSource.getLabelScanStore() ) )
+            {
+                return type.cast( neoDataSource.getLabelScanStore() );
+            }
             else if ( DependencyResolver.class.equals( type ) )
             {
                 return type.cast( DependencyResolverImpl.this );
@@ -1563,22 +1567,24 @@ public abstract class InternalAbstractGraphDatabase
             computeNext();
         }
 
+        @Override
         protected void computeNext()
         {
-            for ( hasNext = nodesWithLabel.hasNext(); hasNext; hasNext = nodesWithLabel.hasNext() )
+            for ( boolean hasNext = nodesWithLabel.hasNext(); hasNext; hasNext = nodesWithLabel.hasNext() )
             {
-                nextValue = nodesWithLabel.next();
+                long nextValue = nodesWithLabel.next();
                 try
                 {
                     if ( statement.nodeGetProperty( nextValue, propertyId ).valueEquals( value ) )
                     {
+                        next( nextValue );
                         return;
                     }
                 }
                 catch ( PropertyKeyIdNotFoundException e )
                 {
                     // if they key doesn't exist, no node could possibly have a property with that key
-                    hasNext = false;
+                    endReached();
                     return;
                 }
                 catch ( EntityNotFoundException e )
@@ -1586,6 +1592,7 @@ public abstract class InternalAbstractGraphDatabase
                     // continue to the next node
                 }
             }
+            endReached();
         }
     }
 }
