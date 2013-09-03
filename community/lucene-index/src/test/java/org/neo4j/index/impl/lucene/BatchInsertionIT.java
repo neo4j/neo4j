@@ -19,40 +19,94 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static java.lang.System.currentTimeMillis;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
-
-import java.io.File;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import static java.lang.System.currentTimeMillis;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
+
 public class BatchInsertionIT
 {
-    private static final String PATH = "target/var/batch";
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( BatchInsertionIT.class );
 
-    @Before
-    public void cleanDirectory() throws Exception
+    @Test
+    public void shouldIndexNodesWithMultipleLabels() throws Exception
     {
-        FileUtils.deleteRecursively( new File( PATH ) );
+        // Given
+        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
+
+        inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
+
+        inserter.createDeferredSchemaIndex( label( "User" ) ).on( "name" ).create();
+        inserter.createDeferredSchemaIndex( label( "Admin" ) ).on( "name" ).create();
+
+        // When
+        inserter.shutdown();
+
+        // Then
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
+        try(Transaction tx = db.beginTx())
+        {
+            assertThat( count( db.findNodesByLabelAndProperty( label( "User" ), "name", "Bob" ) ), equalTo(1) );
+            assertThat( count( db.findNodesByLabelAndProperty( label( "Admin" ), "name", "Bob" ) ), equalTo(1) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+
+    }
+
+    @Test
+    public void shouldNotIndexNodesWithWrongLabel() throws Exception
+    {
+        // Given
+        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
+
+        inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
+
+        inserter.createDeferredSchemaIndex( label( "Banana" ) ).on( "name" ).create();
+
+        // When
+        inserter.shutdown();
+
+        // Then
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
+        try(Transaction tx = db.beginTx())
+        {
+            assertThat( count( db.findNodesByLabelAndProperty( label( "Banana" ), "name", "Bob" ) ), equalTo(0) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+
     }
     
     @Ignore
     @Test
     public void testInsertionSpeed()
     {
-        BatchInserter inserter = BatchInserters.inserter( new File( PATH, "3" ).getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex index = provider.nodeIndex( "yeah", EXACT_CONFIG );
         index.setCacheCapacity( "key", 1000000 );
