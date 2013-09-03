@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -30,7 +31,6 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 
@@ -50,7 +50,7 @@ public class ConstraintIndexCreator
     /**
      * You MUST hold a schema write lock before you call this method.
      */
-    public long createUniquenessConstraintIndex( StatementState state, SchemaReadOperations schema,
+    public long createUniquenessConstraintIndex( Statement state, SchemaReadOperations schema,
             long labelId, long propertyKeyId )
             throws ConstraintVerificationFailedKernelException, TransactionalException,
                    CreateConstraintFailureException, DropIndexFailureException
@@ -160,7 +160,7 @@ public class ConstraintIndexCreator
         return new Transactor.Work<IndexDescriptor, CreateConstraintFailureException>()
         {
             @Override
-            public IndexDescriptor perform( StatementOperationParts statement, StatementState kernelStatement )
+            public IndexDescriptor perform( StatementOperationParts statement, Statement kernelStatement )
             {
                 // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
                 // write lock. It is assumed that the transaction that invoked this "inner" transaction
@@ -179,7 +179,7 @@ public class ConstraintIndexCreator
         return new Transactor.Work<Void, DropIndexFailureException>()
         {
             @Override
-            public Void perform( StatementOperationParts statement, StatementState kernelStatement )
+            public Void perform( StatementOperationParts statement, Statement kernelStatement )
             {
                 // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
                 // write lock. It is assumed that the transaction that invoked this "inner" transaction

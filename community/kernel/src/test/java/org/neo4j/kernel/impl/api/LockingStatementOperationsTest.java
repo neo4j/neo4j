@@ -24,9 +24,10 @@ import java.util.Iterator;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -236,7 +237,7 @@ public class LockingStatementOperationsTest
     }
 
     private final LockHolder lockHolder = mock( LockHolder.class );
-    private final StatementState state = mock( StatementState.class );
+    private final Statement state = mock( Statement.class );
     
     @Before
     public void before() throws Exception

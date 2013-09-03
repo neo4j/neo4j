@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -39,13 +39,13 @@ public class DefaultLegacyKernelOperations implements LegacyKernelOperations
     }
 
     @Override
-    public long nodeCreate( StatementState state )
+    public long nodeCreate( Statement state )
     {
         return nodeManager.createNode().getId();
     }
 
     @Override
-    public long relationshipCreate( StatementState state, long relationshipTypeId, long startNodeId, long endNodeId )
+    public long relationshipCreate( Statement state, long relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
     {
         NodeImpl startNode;

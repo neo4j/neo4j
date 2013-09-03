@@ -27,10 +27,10 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -65,7 +65,7 @@ public class StateHandlingStatementOperationsTest
     {
         StatementOperations inner = mock( StatementOperations.class );
 
-        StatementState state = mockedState();
+        Statement state = mockedState();
         StateHandlingStatementOperations ctx = new StateHandlingStatementOperations( inner, inner,
                 mock( AuxiliaryStoreOperations.class ),
                 mock( ConstraintIndexCreator.class ) );
@@ -96,7 +96,7 @@ public class StateHandlingStatementOperationsTest
         TxState txState = mock( TxState.class );
         when( txState.nodesWithLabelChanged( anyLong() ) ).thenReturn( DiffSets.<Long>emptyDiffSets() );
         when( txState.nodesWithChangedProperty( anyLong() ) ).thenReturn( Collections.<Long, Object>emptyMap() );
-        StatementState state = mockedState( txState );
+        Statement state = mockedState( txState );
         when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( asList( constraint ) ) );
         StateHandlingStatementOperations context = new StateHandlingStatementOperations( delegate, delegate,
@@ -118,7 +118,7 @@ public class StateHandlingStatementOperationsTest
         StatementOperations delegate = mock( StatementOperations.class );
         TxState txState = new TxStateImpl( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
-        StatementState state = mockedState( txState );
+        Statement state = mockedState( txState );
         when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
         StateHandlingStatementOperations context = new StateHandlingStatementOperations( delegate, delegate,
@@ -143,7 +143,7 @@ public class StateHandlingStatementOperationsTest
         StatementOperations delegate = mock( StatementOperations.class );
         TxState txState = new TxStateImpl( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
-        StatementState state = mockedState( txState );
+        Statement state = mockedState( txState );
         when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
         when( delegate.constraintsGetForLabelAndPropertyKey( state, 11, 99 ) )
@@ -173,7 +173,7 @@ public class StateHandlingStatementOperationsTest
 
         TxState txState = new TxStateImpl( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
-        StatementState state = mockedState( txState );
+        Statement state = mockedState( txState );
         StatementOperations delegate = mock( StatementOperations.class );
         when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );

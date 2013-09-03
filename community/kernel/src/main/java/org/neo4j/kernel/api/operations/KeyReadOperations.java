@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.operations;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -32,25 +33,25 @@ public interface KeyReadOperations
     long NO_SUCH_PROPERTY_KEY = -1;
 
     /** Returns a label id for a label name. If the label doesn't exist, {@link #NO_SUCH_LABEL} will be returned. */
-    long labelGetForName( StatementState state, String labelName );
+    long labelGetForName( Statement state, String labelName );
 
     /** Returns the label name for the given label id. */
-    String labelGetName( StatementState state, long labelId ) throws LabelNotFoundKernelException;
+    String labelGetName( Statement state, long labelId ) throws LabelNotFoundKernelException;
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist,
      * {@link #NO_SUCH_PROPERTY_KEY} will be returned.
      */
-    long propertyKeyGetForName( StatementState state, String propertyKeyName );
+    long propertyKeyGetForName( Statement state, String propertyKeyName );
 
     /** Returns the name of a property given its property key id */
-    String propertyKeyGetName( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
+    String propertyKeyGetName( Statement state, long propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 
     /** Returns the labels currently stored in the database **/
-    Iterator<Token> labelsGetAllTokens( StatementState state ); // TODO: Token is a store level concern, should not make it this far up the stack
+    Iterator<Token> labelsGetAllTokens( Statement state ); // TODO: Token is a store level concern, should not make it this far up the stack
 
-    long relationshipTypeGetForName( StatementState state, String relationshipTypeName );
+    long relationshipTypeGetForName( Statement state, String relationshipTypeName );
 
-    String relationshipTypeGetName( StatementState state, long relationshipTypeId )
+    String relationshipTypeGetName( Statement state, long relationshipTypeId )
             throws RelationshipTypeIdNotFoundKernelException;
 }

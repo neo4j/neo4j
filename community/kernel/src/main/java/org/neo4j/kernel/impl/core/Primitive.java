@@ -24,8 +24,8 @@ import java.util.Iterator;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.CacheLoader;
@@ -53,27 +53,27 @@ public abstract class Primitive implements SizeOfObject
 
     public abstract long getId();
     
-    public Iterator<SafeProperty> getProperties( StatementState state, CacheLoader<Iterator<SafeProperty>> loader,
+    public Iterator<SafeProperty> getProperties( Statement state, CacheLoader<Iterator<SafeProperty>> loader,
             CacheUpdateListener updateListener )
     {
         return ensurePropertiesLoaded( state, loader, updateListener );
     }
 
-    public Property getProperty( StatementState state, CacheLoader<Iterator<SafeProperty>> loader,
+    public Property getProperty( Statement state, CacheLoader<Iterator<SafeProperty>> loader,
             CacheUpdateListener updateListener, int key )
     {
         ensurePropertiesLoaded( state, loader, updateListener );
         return getCachedProperty( key );
     }
     
-    public PrimitiveLongIterator getPropertyKeys( StatementState state, CacheLoader<Iterator<SafeProperty>> cacheLoader,
+    public PrimitiveLongIterator getPropertyKeys( Statement state, CacheLoader<Iterator<SafeProperty>> cacheLoader,
             CacheUpdateListener updateListener )
     {
         ensurePropertiesLoaded( state, cacheLoader, updateListener );
         return getCachedPropertyKeys();
     }
     
-    private Iterator<SafeProperty> ensurePropertiesLoaded( StatementState state, CacheLoader<Iterator<SafeProperty>> loader,
+    private Iterator<SafeProperty> ensurePropertiesLoaded( Statement state, CacheLoader<Iterator<SafeProperty>> loader,
             CacheUpdateListener updateListener )
     {
         if ( !hasLoadedProperties() ) synchronized ( this )

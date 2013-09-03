@@ -24,10 +24,10 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 
 import static java.util.Arrays.asList;
 
@@ -49,8 +49,8 @@ public class CachingStatementOperationsTest
         long nodeId = 3;
         Set<Long> labels = new HashSet<>( asList( 1L, 2L, 3L ) );
         PersistenceCache cache = mock( PersistenceCache.class );
-        when( cache.nodeGetLabels( any( StatementState.class ), eq( nodeId ),
-                any( CacheLoader.class ) ) ).thenReturn( labels );
+        //noinspection unchecked
+        when( cache.nodeGetLabels( any( Statement.class ), eq( nodeId ), any( CacheLoader.class ) ) ).thenReturn( labels );
         EntityReadOperations entityReadOperations = mock( EntityReadOperations.class );
         SchemaReadOperations schemaReadOperations = mock( SchemaReadOperations.class );
         CachingStatementOperations context = new CachingStatementOperations(

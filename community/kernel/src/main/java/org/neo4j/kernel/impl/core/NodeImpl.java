@@ -34,8 +34,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CacheLoader;
 import org.neo4j.kernel.impl.cache.SizeOfs;
@@ -710,7 +710,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         return nm.newNodeProxyById( getId() );
     }
 
-    public Set<Long> getLabels( StatementState state, CacheLoader<Set<Long>> loader ) throws EntityNotFoundException
+    public Set<Long> getLabels( Statement state, CacheLoader<Set<Long>> loader ) throws EntityNotFoundException
     {
         if ( labels == null )
         {

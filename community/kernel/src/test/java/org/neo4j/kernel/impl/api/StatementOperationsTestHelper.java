@@ -24,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 import static org.mockito.Matchers.anyLong;
@@ -55,14 +55,14 @@ public abstract class StatementOperationsTestHelper
             mock( SchemaStateOperations.class ));
     }
     
-    public static StatementState mockedState()
+    public static Statement mockedState()
     {
         return mockedState( mock( TxState.class ) );
     }
     
-    public static StatementState mockedState( final TxState txState )
+    public static Statement mockedState( final TxState txState )
     {
-        StatementState state = mock( StatementState.class );
+        Statement state = mock( Statement.class );
         LockHolder lockHolder = mock( LockHolder.class );
         try
         {

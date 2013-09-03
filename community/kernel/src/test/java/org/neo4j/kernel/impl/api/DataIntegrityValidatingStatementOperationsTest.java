@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -309,5 +309,5 @@ public class DataIntegrityValidatingStatementOperationsTest
         };
     }
     
-    private final StatementState state = StatementOperationsTestHelper.mockedState();
+    private final Statement state = StatementOperationsTestHelper.mockedState();
 }

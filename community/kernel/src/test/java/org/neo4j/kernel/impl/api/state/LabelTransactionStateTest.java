@@ -31,10 +31,10 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -270,7 +270,7 @@ public class LabelTransactionStateTest
     private TxState txState;
     private StateHandlingStatementOperations txContext;
 
-    private StatementState state;
+    private Statement state;
 
     @Before
     public void before() throws Exception

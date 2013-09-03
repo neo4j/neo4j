@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 import static org.junit.Assert.assertEquals;
@@ -71,7 +70,7 @@ public class TransactorTest
         @SuppressWarnings("unchecked")
         Transactor.Work<Object, KernelException> work = mock( Transactor.Work.class );
         Object expectedResult = new Object();
-        when( work.perform( eq( operations ), any( StatementState.class ) ) ).thenReturn( expectedResult );
+        when( work.perform( eq( operations ), any( Statement.class ) ) ).thenReturn( expectedResult );
 
         Transactor transactor = new Transactor( txManager );
 
@@ -109,7 +108,7 @@ public class TransactorTest
         @SuppressWarnings("unchecked")
         Transactor.Work<Object, KernelException> work = mock( Transactor.Work.class );
         SpecificKernelException exception = new SpecificKernelException();
-        when( work.perform( any( StatementOperationParts.class ), any( StatementState.class ) ) ).thenThrow( exception );
+        when( work.perform( any( StatementOperationParts.class ), any( Statement.class ) ) ).thenThrow( exception );
 
         Transactor transactor = new Transactor( txManager );
 
@@ -153,7 +152,7 @@ public class TransactorTest
         @SuppressWarnings("unchecked")
         Transactor.Work<Object, KernelException> work = mock( Transactor.Work.class );
         Object expectedResult = new Object();
-        when( work.perform( eq( operations ), any( StatementState.class ) ) ).thenReturn( expectedResult );
+        when( work.perform( eq( operations ), any( Statement.class ) ) ).thenReturn( expectedResult );
 
         Transactor transactor = new Transactor( txManager );
 

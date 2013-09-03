@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -60,7 +60,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
     
     @Override
-    public long propertyKeyGetOrCreateForName( StatementState state, String propertyKey )
+    public long propertyKeyGetOrCreateForName( Statement state, String propertyKey )
             throws IllegalTokenNameException
     {
         // KISS - but refactor into a general purpose constraint checker later on
@@ -68,14 +68,14 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public long relationshipTypeGetOrCreateForName( StatementState state, String relationshipTypeName )
+    public long relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName )
             throws IllegalTokenNameException
     {
         return keyWriteDelegate.relationshipTypeGetOrCreateForName( state, checkValidTokenName( relationshipTypeName ) );
     }
 
     @Override
-    public long labelGetOrCreateForName( StatementState state, String label )
+    public long labelGetOrCreateForName( Statement state, String label )
             throws IllegalTokenNameException, TooManyLabelsException
     {
         // KISS - but refactor into a general purpose constraint checker later on
@@ -83,7 +83,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKey )
+    public IndexDescriptor indexCreate( Statement state, long labelId, long propertyKey )
             throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
         checkIndexExistence( state, labelId, propertyKey );
@@ -91,7 +91,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         try
         {
@@ -107,13 +107,13 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteDelegate.uniqueIndexDrop( state, descriptor );
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKey )
+    public UniquenessConstraint uniquenessConstraintCreate( Statement state, long labelId, long propertyKey )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
         Iterator<UniquenessConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
@@ -130,7 +130,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void constraintDrop( StatementState state, UniquenessConstraint constraint ) throws DropConstraintFailureException
+    public void constraintDrop( Statement state, UniquenessConstraint constraint ) throws DropConstraintFailureException
     {
         try
         {
@@ -144,7 +144,7 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.constraintDrop( state, constraint );
     }
 
-    private void checkIndexExistence( StatementState state, long labelId, long propertyKey )
+    private void checkIndexExistence( Statement state, long labelId, long propertyKey )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )

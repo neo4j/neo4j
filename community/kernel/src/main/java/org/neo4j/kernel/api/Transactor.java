@@ -29,14 +29,13 @@ import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class Transactor
 {
     public interface Work<RESULT, FAILURE extends KernelException>
     {
-        RESULT perform( StatementOperationParts statementContext, StatementState statement ) throws FAILURE;
+        RESULT perform( StatementOperationParts statementContext, Statement statement ) throws FAILURE;
     }
 
     private final AbstractTransactionManager txManager;

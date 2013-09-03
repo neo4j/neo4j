@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 class UniquenessConstraintStoppingStatementOperations implements SchemaWriteOperations
@@ -38,19 +38,19 @@ class UniquenessConstraintStoppingStatementOperations implements SchemaWriteOper
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
+    public UniquenessConstraint uniquenessConstraintCreate( Statement state, long labelId, long propertyKeyId )
     {
         throw unsupportedOperation();
     }
 
     @Override
-    public void constraintDrop( StatementState state, UniquenessConstraint constraint )
+    public void constraintDrop( Statement state, UniquenessConstraint constraint )
     {
         throw unsupportedOperation();
     }
 
     @Override
-    public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw unsupportedOperation();
     }
@@ -63,14 +63,14 @@ class UniquenessConstraintStoppingStatementOperations implements SchemaWriteOper
     // === TODO Below is unnecessary delegate methods
 
     @Override
-    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId )
+    public IndexDescriptor indexCreate( Statement state, long labelId, long propertyKeyId )
             throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
         return schemaWriteDelegate.indexCreate( state, labelId, propertyKeyId );
     }
 
     @Override
-    public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteDelegate.indexDrop( state, descriptor );
     }

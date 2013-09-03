@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.operations;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -51,7 +52,7 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
     }
 
     @Override
-    public boolean nodeAddLabel( StatementState state, long nodeId, long labelId )
+    public boolean nodeAddLabel( Statement state, long nodeId, long labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
         Iterator<UniquenessConstraint> constraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
@@ -69,7 +70,7 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
     }
 
     @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
+    public Property nodeSetProperty( Statement state, long nodeId, SafeProperty property )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
         PrimitiveLongIterator labelIds = entityReadOperations.nodeGetLabels( state, nodeId );
@@ -87,7 +88,7 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
-    private void validateNoExistingNodeWithLabelAndProperty( StatementState state, long labelId, SafeProperty property )
+    private void validateNoExistingNodeWithLabelAndProperty( Statement state, long labelId, SafeProperty property )
             throws ConstraintValidationKernelException
     {
         try
@@ -113,7 +114,7 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
         }
     }
 
-    private void verifyIndexOnline( StatementState state, IndexDescriptor indexDescriptor )
+    private void verifyIndexOnline( Statement state, IndexDescriptor indexDescriptor )
             throws IndexNotFoundKernelException, SchemaAndDataModificationInSameTransactionException,
             IndexBrokenKernelException
     {
@@ -131,52 +132,52 @@ public class ConstraintEnforcingEntityWriteOperations implements EntityWriteOper
     // Simply delegate the rest of the invocations
 
     @Override
-    public void nodeDelete( StatementState state, long nodeId )
+    public void nodeDelete( Statement state, long nodeId )
     {
         entityWriteOperations.nodeDelete( state, nodeId );
     }
 
     @Override
-    public void relationshipDelete( StatementState state, long relationshipId )
+    public void relationshipDelete( Statement state, long relationshipId )
     {
         entityWriteOperations.relationshipDelete( state, relationshipId );
     }
 
     @Override
-    public boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         return entityWriteOperations.nodeRemoveLabel( state, nodeId, labelId );
     }
 
     @Override
-    public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
+    public Property relationshipSetProperty( Statement state, long relationshipId, SafeProperty property )
             throws EntityNotFoundException
     {
         return entityWriteOperations.relationshipSetProperty( state, relationshipId, property );
     }
 
     @Override
-    public Property graphSetProperty( StatementState state, SafeProperty property )
+    public Property graphSetProperty( Statement state, SafeProperty property )
     {
         return entityWriteOperations.graphSetProperty( state, property );
     }
 
     @Override
-    public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId )
+    public Property nodeRemoveProperty( Statement state, long nodeId, long propertyKeyId )
             throws EntityNotFoundException
     {
         return entityWriteOperations.nodeRemoveProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
-    public Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
+    public Property relationshipRemoveProperty( Statement state, long relationshipId, long propertyKeyId )
             throws EntityNotFoundException
     {
         return entityWriteOperations.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override
-    public Property graphRemoveProperty( StatementState state, long propertyKeyId )
+    public Property graphRemoveProperty( Statement state, long propertyKeyId )
     {
         return entityWriteOperations.graphRemoveProperty( state, propertyKeyId );
     }

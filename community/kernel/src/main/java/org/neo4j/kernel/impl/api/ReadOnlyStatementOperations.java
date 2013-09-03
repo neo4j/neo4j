@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -29,7 +30,6 @@ import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -52,7 +52,7 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public long labelGetOrCreateForName( StatementState state, String labelName )
+    public long labelGetOrCreateForName( Statement state, String labelName )
     {
         // Just get, returning NO_SUCH_LABEL if there is none.
         // Lookup using that constant will yield nothing, no node has it,
@@ -61,7 +61,7 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public long propertyKeyGetOrCreateForName( StatementState state, String propertyKeyName )
+    public long propertyKeyGetOrCreateForName( Statement state, String propertyKeyName )
     {
         // Just get, returning NO_SUCH_PROPERTY_KEY if there is none,
         // Lookup using that constant will yield nothing, no node has it,
@@ -70,7 +70,7 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public long relationshipTypeGetOrCreateForName( StatementState state, String relationshipTypeName )
+    public long relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName )
     {
         // Just get, returning NO_SUCH_RELATIONSHIP_TYPE if there is none,
         // Lookup using that constant will yield nothing, no node has it,
@@ -79,119 +79,119 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( StatementState state, long nodeId )
+    public void nodeDelete( Statement state, long nodeId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public void relationshipDelete( StatementState state, long relationshipId )
+    public void relationshipDelete( Statement state, long relationshipId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public boolean nodeAddLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
+    public Property nodeSetProperty( Statement state, long nodeId, SafeProperty property )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
+    public Property relationshipSetProperty( Statement state, long relationshipId, SafeProperty property )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property graphSetProperty( StatementState state, SafeProperty property )
+    public Property graphSetProperty( Statement state, SafeProperty property )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId )
+    public Property nodeRemoveProperty( Statement state, long nodeId, long propertyKeyId )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
+    public Property relationshipRemoveProperty( Statement state, long relationshipId, long propertyKeyId )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property graphRemoveProperty( StatementState state, long propertyKeyId )
+    public Property graphRemoveProperty( Statement state, long propertyKeyId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId )
+    public IndexDescriptor indexCreate( Statement state, long labelId, long propertyKeyId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
+    public UniquenessConstraint uniquenessConstraintCreate( Statement state, long labelId, long propertyKeyId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public void constraintDrop( StatementState state, UniquenessConstraint constraint )
+    public void constraintDrop( Statement state, UniquenessConstraint constraint )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public <K, V> V schemaStateGetOrCreate( StatementState state, K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( Statement state, K key, Function<K, V> creator )
     {
         return schemaStateDelegate.schemaStateGetOrCreate( state, key, creator );
     }
 
     @Override
-    public <K> boolean schemaStateContains( StatementState state, K key )
+    public <K> boolean schemaStateContains( Statement state, K key )
     {
         return schemaStateDelegate.schemaStateContains( state, key );
     }
 
     @Override
-    public long nodeCreate( StatementState state )
+    public long nodeCreate( Statement state )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public long relationshipCreate( StatementState state, long relationshipTypeId, long startNodeId, long endNodeId )
+    public long relationshipCreate( Statement state, long relationshipTypeId, long startNodeId, long endNodeId )
     {
         throw new ReadOnlyDbException();
     }

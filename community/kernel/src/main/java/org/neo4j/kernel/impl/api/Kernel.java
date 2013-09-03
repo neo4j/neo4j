@@ -46,7 +46,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.ConstraintEnforcingEntityWriteOperations;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -355,7 +354,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         @Override
         protected Statement newStatement()
         {
-            return new WritableStatementState(  new IndexReaderFactory.Caching( indexService ), labelScanStore, this, lockHolder );
+            return new Statement( new IndexReaderFactory.Caching( indexService ), labelScanStore, this, lockHolder );
         }
 
         @Override

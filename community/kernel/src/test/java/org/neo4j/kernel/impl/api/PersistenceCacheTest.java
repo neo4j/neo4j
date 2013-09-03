@@ -23,8 +23,9 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.Thunk;
-import org.neo4j.kernel.api.operations.StatementState;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class PersistenceCacheTest
@@ -73,7 +75,7 @@ public class PersistenceCacheTest
     private PersistenceCache persistenceCache;
     private LockStripedCache<NodeImpl> nodeCache;
     private final long nodeId = 1;
-    private final StatementState state = mock( StatementState.class );
+    private final Statement state = mock( Statement.class );
     
     @SuppressWarnings( "unchecked" )
     @Before

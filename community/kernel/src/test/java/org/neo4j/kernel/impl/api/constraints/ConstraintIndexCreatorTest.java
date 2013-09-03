@@ -23,12 +23,12 @@ import java.util.Iterator;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -57,7 +57,7 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts indexCreationContext = mockedParts();
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
-        StatementState state = mockedState();
+        Statement state = mockedState();
 
         IndexingService indexingService = mock( IndexingService.class );
         StubTransactor transactor = new StubTransactor( state, indexCreationContext );
@@ -86,7 +86,7 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts constraintCreationContext = mockedParts();
         StatementOperationParts indexCreationContext = mockedParts();
         StatementOperationParts indexDestructionContext = mockedParts();
-        StatementState state = mockedState();
+        Statement state = mockedState();
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
 
@@ -125,7 +125,7 @@ public class ConstraintIndexCreatorTest
     {
         // given
         StatementOperationParts indexDestructionTransaction = mockedParts();
-        StatementState state = mockedState();
+        Statement state = mockedState();
         StubTransactor transactor = new StubTransactor( state, indexDestructionTransaction );
         IndexingService indexingService = mock( IndexingService.class );
 
@@ -144,9 +144,9 @@ public class ConstraintIndexCreatorTest
     private static class StubTransactor extends Transactor
     {
         private final Iterator<StatementOperationParts> mockContexts;
-        private final StatementState state;
+        private final Statement state;
 
-        StubTransactor( StatementState state, StatementOperationParts... mockContexts )
+        StubTransactor( Statement state, StatementOperationParts... mockContexts )
         {
             super( null );
             this.state = state;

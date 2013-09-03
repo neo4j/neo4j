@@ -19,20 +19,85 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.operations.StatementState;
+import java.io.Closeable;
 
-public abstract class Statement implements StatementState
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.scan.LabelScanReader;
+import org.neo4j.kernel.api.scan.LabelScanStore;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.api.LockHolder;
+import org.neo4j.kernel.impl.api.state.TxState;
+
+public class Statement implements TxState.Holder, Closeable
 {
+    protected final LockHolder lockHolder;
+    protected final TxState.Holder txStateHolder;
+    protected final IndexReaderFactory indexReaderFactory;
+    protected final LabelScanStore labelScanStore;
+    private LabelScanReader labelScanReader;
     private int referenceCount;
 
-    final boolean release()
+    public Statement(IndexReaderFactory indexReaderFactory, LabelScanStore labelScanStore,
+                     TxState.Holder txStateHolder, LockHolder lockHolder )
     {
-        return --referenceCount == 0;
+        this.lockHolder = lockHolder;
+        this.indexReaderFactory = indexReaderFactory;
+        this.txStateHolder = txStateHolder;
+        this.labelScanStore = labelScanStore;
+    }
+
+    @Override
+    public TxState txState()
+    {
+        return txStateHolder.txState();
+    }
+
+    @Override
+    public boolean hasTxState()
+    {
+        return txStateHolder.hasTxState();
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges()
+    {
+        return txStateHolder.hasTxStateWithChanges();
+    }
+
+    @Override
+    public void close()
+    {
+        indexReaderFactory.close();
+    }
+
+    public LockHolder locks()
+    {
+        return lockHolder;
+    }
+
+    public IndexReader getIndexReader( long indexId ) throws IndexNotFoundKernelException
+    {
+        return indexReaderFactory.newReader( indexId );
+    }
+
+    public LabelScanReader getLabelScanReader()
+    {
+        if ( labelScanReader == null )
+        {
+            labelScanReader = labelScanStore.newReader();
+        }
+        return labelScanReader;
     }
 
     final void acquire()
     {
         referenceCount++;
+    }
+
+    final boolean release()
+    {
+        return --referenceCount == 0;
     }
 
     final void forceClose()
