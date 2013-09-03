@@ -19,15 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import java.util.Arrays;
+
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.properties.Property;
 
-import java.util.Arrays;
-
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class PropertyIT extends KernelIntegrationTest
 {
@@ -77,7 +85,7 @@ public class PropertyIT extends KernelIntegrationTest
             statement.nodeRemoveProperty( nodeId, propertyKeyId );
 
             // THEN
-            assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
 
             // WHEN
             commit();
@@ -86,7 +94,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         {
             DataStatement statement = dataStatementInNewTransaction();
-            assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
         }
     }
 
@@ -112,7 +120,7 @@ public class PropertyIT extends KernelIntegrationTest
 
             // THEN
             assertEquals( "bozo", previous );
-            assertFalse( "node should not have property", statement.nodeHasProperty( nodeId, propertyKeyId ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
 
             // WHEN
             commit();
@@ -121,7 +129,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         {
             DataStatement statement = dataStatementInNewTransaction();
-            assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
         }
     }
 
@@ -145,7 +153,7 @@ public class PropertyIT extends KernelIntegrationTest
             Property result = statement.nodeRemoveProperty( nodeId, propertyId );
 
             // THEN
-            assertTrue( "Return no property if removing missing", result.isNoProperty() );
+            assertFalse( "Return no property if removing missing", result.isDefined() );
         }
     }
 
@@ -165,7 +173,7 @@ public class PropertyIT extends KernelIntegrationTest
             statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
 
             // THEN
-            assertTrue( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), isDefinedProperty() );
 
             // WHEN
             commit();
@@ -174,14 +182,14 @@ public class PropertyIT extends KernelIntegrationTest
             DataStatement statement = dataStatementInNewTransaction();
 
             // THEN
-            assertTrue( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), isDefinedProperty() );
         }
     }
 
     @Test
     public void nodeHasNotPropertyIfUnset() throws Exception
     {
-        long propertyId;
+        long propertyKeyId;
         long nodeId;
         {
             // GIVEN
@@ -189,11 +197,11 @@ public class PropertyIT extends KernelIntegrationTest
             Node node = db.createNode();
 
             // WHEN
-            propertyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
             nodeId = node.getId();
 
             // THEN
-            assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
 
             // WHEN
             commit();
@@ -203,7 +211,7 @@ public class PropertyIT extends KernelIntegrationTest
             DataStatement statement = dataStatementInNewTransaction();
 
             // THEN
-            assertFalse( statement.nodeHasProperty( nodeId, propertyId ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
         }
     }
 
@@ -231,7 +239,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         {
             DataStatement statement = dataStatementInNewTransaction();
-            assertFalse( statement.nodeHasProperty( nodeId, propertyKeyId ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
         }
     }
 
@@ -278,7 +286,7 @@ public class PropertyIT extends KernelIntegrationTest
             // WHEN
             propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
             nodeId = node.getId();
-            statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, value) );
+            statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, value ) );
 
             // THEN
             assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "StringProperty" ) );
@@ -311,7 +319,7 @@ public class PropertyIT extends KernelIntegrationTest
             // WHEN
             propertyKeyId = statement.propertyKeyGetOrCreateForName( "numbers" );
             nodeId = node.getId();
-            statement.nodeSetProperty( nodeId, Property.intArrayProperty(propertyKeyId, value) );
+            statement.nodeSetProperty( nodeId, Property.intArrayProperty( propertyKeyId, value ) );
 
             // THEN
             assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "IntArrayProperty" ) );
@@ -330,4 +338,21 @@ public class PropertyIT extends KernelIntegrationTest
         }
     }
 
+    private static Matcher<Property> isDefinedProperty()
+    {
+        return new TypeSafeMatcher<Property>()
+        {
+            @Override
+            protected boolean matchesSafely( Property item )
+            {
+                return item.isDefined();
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "a defined Property" );
+            }
+        };
+    }
 }

@@ -140,6 +140,10 @@ public class IndexRecoveryIT
         // Given
         startDb();
 
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) )
+                .thenReturn( mock( IndexPopulator.class ) );
+        when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) )
+                .thenReturn( mock( IndexAccessor.class ) );
         createIndex( myLabel );
         Set<NodePropertyUpdate> expectedUpdates = createSomeBananas( myLabel );
 
@@ -156,7 +160,9 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
         verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
-        verify( mockedIndexProvider, times( 1 ) ).getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
+        int onlineAccessorInvocationCount = 2;//once when we create the index, and once when we restart the db
+        verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
+                .getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
         assertEquals( expectedUpdates, writer.updates );
     }
 
@@ -164,13 +170,16 @@ public class IndexRecoveryIT
     public void shouldKeepFailedIndexesAsFailedAfterRestart() throws Exception
     {
         // Given
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) )
+                .thenReturn( mock( IndexPopulator.class ) );
+        when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) )
+                .thenReturn( mock( IndexAccessor.class ) );
         startDb();
         createIndex( myLabel );
 
         // And Given
         killDb();
         when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.FAILED );
-        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( mock(IndexPopulator.class) );
 
         // When
         startDb();
@@ -323,7 +332,7 @@ public class IndexRecoveryIT
                 {
                     // fall through and return early
                 }
-                throw new RuntimeException();
+                throw new RuntimeException( "this is expected" );
             }
         };
     }

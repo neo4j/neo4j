@@ -274,10 +274,10 @@ public final class TxStateImpl implements TxState
     @Override
     public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, SafeProperty newProperty )
     {
-        if ( ! newProperty.isNoProperty() )
+        if ( newProperty.isDefined() )
         {
             DiffSets<SafeProperty> diffSets = nodePropertyDiffSets( nodeId );
-            if ( ! replacedProperty.isNoProperty() )
+            if ( replacedProperty.isDefined() )
             {
                 diffSets.remove( (SafeProperty)replacedProperty );
             }
@@ -290,10 +290,10 @@ public final class TxStateImpl implements TxState
     @Override
     public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty, SafeProperty newProperty )
     {
-        if ( ! newProperty.isNoProperty() )
+        if ( newProperty.isDefined() )
         {
             DiffSets<SafeProperty> diffSets = relationshipPropertyDiffSets( relationshipId );
-            if ( ! replacedProperty.isNoProperty() )
+            if ( replacedProperty.isDefined() )
             {
                 diffSets.remove( (SafeProperty)replacedProperty );
             }
@@ -306,10 +306,10 @@ public final class TxStateImpl implements TxState
     @Override
     public void graphDoReplaceProperty( Property replacedProperty, SafeProperty newProperty )
     {
-        if ( ! newProperty.isNoProperty() )
+        if ( newProperty.isDefined() )
         {
             DiffSets<SafeProperty> diffSets = graphPropertyDiffSets();
-            if ( ! replacedProperty.isNoProperty() )
+            if ( replacedProperty.isDefined() )
             {
                 diffSets.remove( (SafeProperty)replacedProperty );
             }
@@ -322,7 +322,7 @@ public final class TxStateImpl implements TxState
     @Override
     public void nodeDoRemoveProperty( long nodeId, Property removedProperty )
     {
-        if ( ! removedProperty.isNoProperty() )
+        if ( removedProperty.isDefined() )
         {
             nodePropertyDiffSets( nodeId ).remove( (SafeProperty)removedProperty );
             legacyState.nodeRemoveProperty( nodeId, removedProperty );
@@ -333,7 +333,7 @@ public final class TxStateImpl implements TxState
     @Override
     public void relationshipDoRemoveProperty( long relationshipId, Property removedProperty )
     {
-        if ( ! removedProperty.isNoProperty() )
+        if ( removedProperty.isDefined() )
         {
             relationshipPropertyDiffSets( relationshipId ).remove( (SafeProperty)removedProperty );
             legacyState.relationshipRemoveProperty( relationshipId, removedProperty );
@@ -344,7 +344,7 @@ public final class TxStateImpl implements TxState
     @Override
     public void graphDoRemoveProperty( Property removedProperty )
     {
-        if ( ! removedProperty.isNoProperty() )
+        if ( removedProperty.isDefined() )
         {
             graphPropertyDiffSets().remove( (SafeProperty)removedProperty );
             legacyState.graphRemoveProperty( removedProperty );

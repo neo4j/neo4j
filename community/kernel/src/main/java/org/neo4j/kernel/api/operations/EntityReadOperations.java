@@ -69,16 +69,6 @@ public interface EntityReadOperations
     
     Property graphGetProperty( StatementState state, long propertyKeyId )
             throws PropertyKeyIdNotFoundException;
-
-    /** Returns true if node has the property given it's property key id for the node with the given node id */
-    boolean nodeHasProperty( StatementState state, long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
-
-    boolean relationshipHasProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
-
-    boolean graphHasProperty( StatementState state, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException;
     
     // TODO: decide if this should be replaced by nodeGetAllProperties()
     /** Return all property keys associated with a node. */

@@ -30,6 +30,12 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 public abstract class SafeProperty extends Property
 {
     @Override
+    public boolean isDefined()
+    {
+        return true;
+    }
+
+    @Override
     public abstract Object value();
 
     @Override
