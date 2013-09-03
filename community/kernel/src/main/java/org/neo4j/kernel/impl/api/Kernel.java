@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
@@ -563,7 +563,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                         // TODO logically, which statement should this operation be performed on?
                         constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
                     }
-                    catch ( SchemaKernelException e )
+                    catch ( DropIndexFailureException e )
                     {
                         throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
                                                          "possible to drop during rollback of that transaction.", e );

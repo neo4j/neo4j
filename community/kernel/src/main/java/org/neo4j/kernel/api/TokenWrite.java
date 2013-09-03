@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 
 interface TokenWrite
 {
@@ -28,13 +28,13 @@ interface TokenWrite
      * Returns a label id for a label name. If the label doesn't exist prior to
      * this call it gets created.
      */
-    long labelGetOrCreateForName( String labelName ) throws SchemaKernelException;
+    long labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
-    long propertyKeyGetOrCreateForName( String propertyKeyName ) throws SchemaKernelException;
+    long propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException;
 
     long relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
 }

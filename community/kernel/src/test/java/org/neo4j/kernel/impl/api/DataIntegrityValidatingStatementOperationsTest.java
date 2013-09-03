@@ -24,7 +24,7 @@ import java.util.Iterator;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
+
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -32,10 +32,10 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -47,6 +47,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 
 public class DataIntegrityValidatingStatementOperationsTest
@@ -69,9 +70,9 @@ public class DataIntegrityValidatingStatementOperationsTest
             ctx.indexCreate( state, label, propertyKey );
             fail( "Should have thrown exception." );
         }
-        catch ( AddIndexFailureException e )
+        catch ( AlreadyIndexedException e )
         {
-            assertThat(e.getCause(), instanceOf( AlreadyIndexedException.class) );
+            // ok
         }
 
         // THEN
@@ -97,9 +98,9 @@ public class DataIntegrityValidatingStatementOperationsTest
             ctx.indexCreate( state, label, propertyKey );
             fail( "Should have thrown exception." );
         }
-        catch ( AddIndexFailureException e )
+        catch ( AlreadyConstrainedException e )
         {
-            assertThat(e.getCause(), instanceOf( AlreadyConstrainedException.class) );
+            // ok
         }
 
         // THEN
@@ -295,6 +296,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         ctx.labelGetOrCreateForName( state, null );
     }
 
+    @SafeVarargs
     private static <T> Answer<Iterator<T>> withIterator( final T... content )
     {
         return new Answer<Iterator<T>>()

@@ -27,13 +27,11 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
@@ -184,7 +182,6 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKey )
-            throws SchemaKernelException
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.txState().indexRuleDoAdd( rule );
@@ -205,7 +202,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
-            throws SchemaKernelException
+            throws CreateConstraintFailureException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         try
@@ -228,7 +225,7 @@ public class StateHandlingStatementOperations implements
             return constraint;
         }
         catch ( TransactionalException | ConstraintVerificationFailedKernelException |
-                SchemaAndDataModificationInSameTransactionException e )
+                SchemaAndDataModificationInSameTransactionException | DropIndexFailureException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }
@@ -460,7 +457,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         Property existingProperty = nodeGetProperty( state, nodeId, property.propertyKeyId() );
         if ( !existingProperty.isDefined() )
@@ -477,7 +474,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         Property existingProperty = relationshipGetProperty( state, relationshipId, property.propertyKeyId() );
         if ( !existingProperty.isDefined() )
@@ -493,7 +490,7 @@ public class StateHandlingStatementOperations implements
     }
     
     @Override
-    public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
+    public Property graphSetProperty( StatementState state, SafeProperty property )
     {
         Property existingProperty = graphGetProperty( state, property.propertyKeyId() );
         if ( !existingProperty.isDefined() )
@@ -510,7 +507,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         Property existingProperty = nodeGetProperty( state, nodeId, propertyKeyId );
         if ( existingProperty.isDefined() )
@@ -523,7 +520,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         Property existingProperty = relationshipGetProperty( state, relationshipId, propertyKeyId );
         if ( existingProperty.isDefined() )
@@ -536,7 +533,6 @@ public class StateHandlingStatementOperations implements
     
     @Override
     public Property graphRemoveProperty( StatementState state, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException
     {
         Property existingProperty = graphGetProperty( state, propertyKeyId );
         if ( existingProperty.isDefined() )
@@ -560,7 +556,7 @@ public class StateHandlingStatementOperations implements
     
     @Override
     public Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId )
-            throws EntityNotFoundException, PropertyKeyIdNotFoundException
+            throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -615,7 +611,7 @@ public class StateHandlingStatementOperations implements
     
     @Override
     public Property relationshipGetProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws EntityNotFoundException, PropertyKeyIdNotFoundException
+            throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -719,7 +715,7 @@ public class StateHandlingStatementOperations implements
                 Property property = nodeGetProperty( state, nodeId, propertyKeyId );
                 return property.isDefined() && property.valueEquals( value );
             }
-            catch ( EntityNotFoundException | PropertyKeyIdNotFoundException e )
+            catch ( EntityNotFoundException e )
             {
                 return false;
             }

@@ -20,9 +20,12 @@
 package org.neo4j.kernel.api.operations;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public interface SchemaWriteOperations
@@ -31,7 +34,8 @@ public interface SchemaWriteOperations
      * Creates an index, indexing properties with the given {@code propertyKeyId} for nodes with the given
      * {@code labelId}.
      */
-    IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId ) throws SchemaKernelException;
+    IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId )
+            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException;
 
     /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException;
@@ -43,7 +47,7 @@ public interface SchemaWriteOperations
     void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException;
 
     UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
-            throws SchemaKernelException;
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException;
 
     void constraintDrop( StatementState state, UniquenessConstraint constraint ) throws DropConstraintFailureException;
 }

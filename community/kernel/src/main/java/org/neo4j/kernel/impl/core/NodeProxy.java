@@ -44,11 +44,11 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
 import org.neo4j.kernel.api.properties.Property;
@@ -58,6 +58,8 @@ import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
+
+import static java.lang.String.format;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -212,18 +214,13 @@ public class NodeProxy implements Node
             }
             requireRollback = false;
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
-        }
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( e );
         }
-        catch ( SchemaKernelException e )
+        catch ( IllegalTokenNameException e )
         {
-            // TODO: Maybe throw more context-specific error than just IllegalArgument
-            throw new IllegalArgumentException( e );
+            throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
         finally
         {
@@ -242,18 +239,13 @@ public class NodeProxy implements Node
             long propertyKeyId = statement.propertyKeyGetOrCreateForName( key );
             return statement.nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
-        }
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( e );
         }
-        catch ( SchemaKernelException e )
+        catch ( IllegalTokenNameException e )
         {
-            // TODO: Maybe throw more context-specific error than just IllegalArgument
-            throw new IllegalArgumentException( e );
+            throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
     }
 
@@ -271,10 +263,6 @@ public class NodeProxy implements Node
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( e );
-        }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            return defaultValue;
         }
     }
 
@@ -315,7 +303,7 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( "Node not found", e );
         }
-        catch ( PropertyKeyIdNotFoundException e )
+        catch ( PropertyKeyIdNotFoundKernelException e )
         {
             throw new ThisShouldNotHappenError( "Jake",
                     "Property key retrieved through kernel API should exist." );
@@ -333,11 +321,11 @@ public class NodeProxy implements Node
             long propertyKeyId = statement.propertyKeyGetForName( key );
             if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
-                throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
+                throw new NotFoundException( format( "No such property, '%s'.", key ) );
             }
             return statement.nodeGetProperty( nodeId, propertyKeyId ).value();
         }
-        catch ( EntityNotFoundException | PropertyKeyIdNotFoundException | PropertyNotFoundException e )
+        catch ( EntityNotFoundException | PropertyNotFoundException e )
         {
             throw new NotFoundException( e );
         }
@@ -357,10 +345,6 @@ public class NodeProxy implements Node
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( e );
-        }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            return false;
         }
     }
 
@@ -478,7 +462,11 @@ public class NodeProxy implements Node
                 throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement ) ), e );
             }
         }
-        catch ( SchemaKernelException e )
+        catch ( IllegalTokenNameException e )
+        {
+            throw new ConstraintViolationException( format( "Invalid label name '%s'.", label.name() ), e );
+        }
+        catch ( TooManyLabelsException e )
         {
             throw new ConstraintViolationException( "Unable to add label.", e );
         }

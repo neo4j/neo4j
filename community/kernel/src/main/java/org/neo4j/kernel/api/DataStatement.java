@@ -22,7 +22,6 @@ package org.neo4j.kernel.api;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.properties.Property;
@@ -75,8 +74,7 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
     }
 
     @Override
-    public Property nodeGetProperty( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    public Property nodeGetProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
     {
         assertOpen();
         if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
@@ -87,8 +85,7 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
     }
 
     @Override
-    public Property relationshipGetProperty( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    public Property relationshipGetProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException
     {
         assertOpen();
         if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
@@ -99,7 +96,7 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
     }
 
     @Override
-    public Property graphGetProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public Property graphGetProperty( long propertyKeyId )
     {
         assertOpen();
         if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
@@ -179,7 +176,7 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
 
     @Override
     public Property nodeSetProperty( long nodeId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException
+            throws EntityNotFoundException, ConstraintValidationKernelException
     {
         assertOpen();
         return dataWrite().nodeSetProperty( state, nodeId, property );
@@ -187,37 +184,35 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
 
     @Override
     public Property relationshipSetProperty( long relationshipId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         assertOpen();
         return dataWrite().relationshipSetProperty( state, relationshipId, property );
     }
 
     @Override
-    public Property graphSetProperty( SafeProperty property ) throws PropertyKeyIdNotFoundException
+    public Property graphSetProperty( SafeProperty property )
     {
         assertOpen();
         return dataWrite().graphSetProperty( state, property );
     }
 
     @Override
-    public Property nodeRemoveProperty( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    public Property nodeRemoveProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
     {
         assertOpen();
         return dataWrite().nodeRemoveProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
-    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException
     {
         assertOpen();
         return dataWrite().relationshipRemoveProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override
-    public Property graphRemoveProperty( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public Property graphRemoveProperty( long propertyKeyId )
     {
         assertOpen();
         return dataWrite().graphRemoveProperty( state, propertyKeyId );

@@ -184,9 +184,8 @@ public class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( "Unable to add index :label[5](property[8]) : " +
-                    "Already constrained CONSTRAINT ON ( n:label[5] ) " +
-                    "ASSERT n.property[8] IS UNIQUE.", e.getMessage() );
+            assertEquals( "Already constrained CONSTRAINT ON ( n:label[5] ) " +
+                          "ASSERT n.property[8] IS UNIQUE.", e.getMessage() );
         }
     }
 

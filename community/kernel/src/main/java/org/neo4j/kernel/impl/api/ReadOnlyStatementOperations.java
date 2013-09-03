@@ -22,9 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
@@ -54,7 +52,7 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public long labelGetOrCreateForName( StatementState state, String labelName ) throws SchemaKernelException
+    public long labelGetOrCreateForName( StatementState state, String labelName )
     {
         // Just get, returning NO_SUCH_LABEL if there is none.
         // Lookup using that constant will yield nothing, no node has it,
@@ -63,7 +61,7 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public long propertyKeyGetOrCreateForName( StatementState state, String propertyKeyName ) throws SchemaKernelException
+    public long propertyKeyGetOrCreateForName( StatementState state, String propertyKeyName )
     {
         // Just get, returning NO_SUCH_PROPERTY_KEY if there is none,
         // Lookup using that constant will yield nothing, no node has it,
@@ -105,47 +103,47 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property ) throws PropertyKeyIdNotFoundException,
-            EntityNotFoundException
+    public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
+            throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
     public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
+    public Property graphSetProperty( StatementState state, SafeProperty property )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
-            EntityNotFoundException
+    public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId )
+            throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
     public Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property graphRemoveProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public Property graphRemoveProperty( StatementState state, long propertyKeyId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId )
     {
         throw new ReadOnlyDbException();
     }
@@ -164,7 +162,6 @@ public class ReadOnlyStatementOperations implements
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
-            throws SchemaKernelException
     {
         throw new ReadOnlyDbException();
     }

@@ -20,9 +20,12 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class SchemaStatement extends BaseStatement implements SchemaWrite
@@ -34,7 +37,8 @@ public class SchemaStatement extends BaseStatement implements SchemaWrite
 
     // <SchemaWrite>
     @Override
-    public IndexDescriptor indexCreate( long labelId, long propertyKeyId ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( long labelId, long propertyKeyId )
+            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
         assertOpen();
         return schemaWrite().indexCreate( state, labelId, propertyKeyId );
@@ -49,7 +53,7 @@ public class SchemaStatement extends BaseStatement implements SchemaWrite
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
-            throws SchemaKernelException
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
     {
         assertOpen();
         return schemaWrite().uniquenessConstraintCreate( state, labelId, propertyKeyId );

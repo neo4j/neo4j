@@ -33,10 +33,9 @@ import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -166,7 +165,7 @@ public class StoreStatementOperations implements
     }
     
     @Override
-    public long labelGetOrCreateForName( StatementState state, String label ) throws SchemaKernelException
+    public long labelGetOrCreateForName( StatementState state, String label ) throws TooManyLabelsException
     {
         try
         {
@@ -178,7 +177,7 @@ public class StoreStatementOperations implements
             // implementation. Actual
             // implementation should not depend on internal kernel exception
             // messages like this.
-            if ( e.getCause() != null && e.getCause() instanceof UnderlyingStorageException
+            if ( e.getCause() instanceof UnderlyingStorageException
                  && e.getCause().getMessage().equals( "Id capacity exceeded" ) )
             {
                 throw new TooManyLabelsException( e );
@@ -406,7 +405,7 @@ public class StoreStatementOperations implements
             long labelId, final long propertyKeyId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
-                labelId, new Predicate<UniquenessConstraintRule>()
+                                          labelId, new Predicate<UniquenessConstraintRule>()
         {
             @Override
             public boolean accept( UniquenessConstraintRule rule )
@@ -421,7 +420,7 @@ public class StoreStatementOperations implements
     public Iterator<UniquenessConstraint> constraintsGetForLabel( StatementState state, long labelId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
-                labelId, Predicates.<UniquenessConstraintRule>TRUE() );
+                                          labelId, Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
     @Override
@@ -455,7 +454,8 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public String propertyKeyGetName( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public String propertyKeyGetName( StatementState state, long propertyKeyId )
+            throws PropertyKeyIdNotFoundKernelException
     {
         try
         {
@@ -463,7 +463,7 @@ public class StoreStatementOperations implements
         }
         catch ( TokenNotFoundException e )
         {
-            throw new PropertyKeyIdNotFoundException( propertyKeyId, e );
+            throw new PropertyKeyIdNotFoundKernelException( propertyKeyId, e );
         }
     }
     
@@ -559,7 +559,7 @@ public class StoreStatementOperations implements
         // has been changed to only accept the property key and it will find it among the property records
         // on demand. This change was made instead of cramming in record id into the Property objects,
         persistenceManager.relChangeProperty( relationshipId,
-                (int) property.propertyKeyId(), property.value() );
+                                              (int) property.propertyKeyId(), property.value() );
     }
     
     @Override
@@ -671,21 +671,21 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId ) throws PropertyKeyIdNotFoundException,
-            EntityNotFoundException
+    public Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId )
+            throws EntityNotFoundException
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
 
     @Override
     public Property relationshipGetProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
 
     @Override
-    public Property graphGetProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public Property graphGetProperty( StatementState state, long propertyKeyId )
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
