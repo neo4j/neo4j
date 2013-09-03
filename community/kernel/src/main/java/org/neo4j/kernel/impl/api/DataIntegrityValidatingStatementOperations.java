@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -33,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
@@ -61,7 +60,8 @@ public class DataIntegrityValidatingStatementOperations implements
     }
     
     @Override
-    public long propertyKeyGetOrCreateForName( StatementState state, String propertyKey ) throws SchemaKernelException
+    public long propertyKeyGetOrCreateForName( StatementState state, String propertyKey )
+            throws IllegalTokenNameException
     {
         // KISS - but refactor into a general purpose constraint checker later on
         return keyWriteDelegate.propertyKeyGetOrCreateForName( state, checkValidTokenName( propertyKey ) );
@@ -75,23 +75,18 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public long labelGetOrCreateForName( StatementState state, String label ) throws SchemaKernelException
+    public long labelGetOrCreateForName( StatementState state, String label )
+            throws IllegalTokenNameException, TooManyLabelsException
     {
         // KISS - but refactor into a general purpose constraint checker later on
         return keyWriteDelegate.labelGetOrCreateForName( state, checkValidTokenName( label ) );
     }
 
     @Override
-    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKey )
+            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
-        try
-        {
-            checkIndexExistence( state, labelId, propertyKey );
-        }
-        catch ( KernelException e )
-        {
-            throw new AddIndexFailureException(labelId, propertyKey, e);
-        }
+        checkIndexExistence( state, labelId, propertyKey );
         return schemaWriteDelegate.indexCreate( state, labelId, propertyKey );
     }
 
@@ -104,7 +99,7 @@ public class DataIntegrityValidatingStatementOperations implements
                     state, descriptor.getLabelId() ) );
             assertIndexExists( descriptor, schemaReadDelegate.indexesGetForLabel( state, descriptor.getLabelId() ) );
         }
-        catch ( SchemaKernelException e )
+        catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
         {
             throw new DropIndexFailureException( descriptor, e );
         }
@@ -119,7 +114,7 @@ public class DataIntegrityValidatingStatementOperations implements
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKey )
-            throws SchemaKernelException
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
         Iterator<UniquenessConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
                 state, labelId, propertyKey );
@@ -129,14 +124,7 @@ public class DataIntegrityValidatingStatementOperations implements
         }
 
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
-        try
-        {
-            checkIndexExistence( state, labelId, propertyKey );
-        }
-        catch ( KernelException e )
-        {
-            throw new CreateConstraintFailureException(new UniquenessConstraint( labelId, propertyKey ), e);
-        }
+        checkIndexExistence( state, labelId, propertyKey );
 
         return schemaWriteDelegate.uniquenessConstraintCreate( state, labelId, propertyKey );
     }
@@ -156,7 +144,8 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.constraintDrop( state, constraint );
     }
 
-    private void checkIndexExistence( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
+    private void checkIndexExistence( StatementState state, long labelId, long propertyKey )
+            throws AlreadyIndexedException, AlreadyConstrainedException
     {
         for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )
         {

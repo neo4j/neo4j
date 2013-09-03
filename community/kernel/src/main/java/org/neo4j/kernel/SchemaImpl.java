@@ -40,12 +40,17 @@ import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
@@ -129,7 +134,7 @@ public class SchemaImpl implements Schema
                     String propertyKey = statement.propertyKeyGetName( rule.getPropertyKeyId() );
                     return new IndexDefinitionImpl( actions, label, propertyKey, constraintIndex );
                 }
-                catch ( LabelNotFoundKernelException | PropertyKeyIdNotFoundException e )
+                catch ( LabelNotFoundKernelException | PropertyKeyIdNotFoundKernelException e )
                 {
                     throw new RuntimeException( e );
                 }
@@ -316,7 +321,7 @@ public class SchemaImpl implements Schema
                             return new PropertyUniqueConstraintDefinition( actions, label,
                                     statement.propertyKeyGetName( constraint.propertyKeyId() ) );
                         }
-                        catch ( PropertyKeyIdNotFoundException e )
+                        catch ( PropertyKeyIdNotFoundKernelException e )
                         {
                             throw new ThisShouldNotHappenError( "Mattias", "Couldn't find property name for " +
                                                                            constraint.propertyKeyId(), e );
@@ -366,10 +371,18 @@ public class SchemaImpl implements Schema
                         "Label '%s' and property '%s' have a unique constraint defined on them, so an index is " +
                         "already created that matches this.", label.name(), propertyKey ), e );
             }
-            catch ( SchemaKernelException e )
+            catch ( AddIndexFailureException e )
             {
                 throw new ConstraintViolationException(
                         e.getUserMessage( new StatementTokenNameLookup( statement ) ), e );
+            }
+            catch ( IllegalTokenNameException e )
+            {
+                throw new IllegalArgumentException( e );
+            }
+            catch ( TooManyLabelsException e )
+            {
+                throw new IllegalStateException( e );
             }
             finally
             {
@@ -391,7 +404,7 @@ public class SchemaImpl implements Schema
                     statement.indexDrop( statement.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
                 }
             }
-            catch ( SchemaKernelException e )
+            catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
             {
                 throw new ConstraintViolationException( String.format(
                         "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
@@ -400,14 +413,44 @@ public class SchemaImpl implements Schema
 
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
-                throws SchemaKernelException
         {
-            try ( SchemaStatement statement = ctxProvider.schemaStatement() )
+            SchemaStatement statement = ctxProvider.schemaStatement();
+            try
             {
                 long labelId = statement.labelGetOrCreateForName( label.name() );
                 long propertyKeyId = statement.propertyKeyGetOrCreateForName( propertyKey );
                 statement.uniquenessConstraintCreate( labelId, propertyKeyId );
                 return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
+            }
+            catch ( AlreadyConstrainedException e )
+            {
+                throw new ConstraintViolationException( format(
+                        "Label '%s' and property '%s' have a unique constraint defined on them.",
+                        label.name(), propertyKey ), e );
+            }
+            catch ( CreateConstraintFailureException e )
+            {
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new StatementTokenNameLookup( statement ) ), e );
+            }
+            catch ( AlreadyIndexedException e )
+            {
+                throw new ConstraintViolationException(
+                        format( "There already exists an index for label '%s' on property '%s'. " +
+                                "A constraint cannot be created until the index has been dropped.",
+                                label.name(), propertyKey ), e );
+            }
+            catch ( IllegalTokenNameException e )
+            {
+                throw new IllegalArgumentException( e );
+            }
+            catch ( TooManyLabelsException e )
+            {
+                throw new IllegalStateException( e );
+            }
+            finally
+            {
+                statement.close();
             }
         }
 
@@ -421,7 +464,7 @@ public class SchemaImpl implements Schema
                 UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
                 statement.constraintDrop( constraint );
             }
-            catch ( SchemaKernelException e )
+            catch ( IllegalTokenNameException | TooManyLabelsException | DropConstraintFailureException e )
             {
                 throw new ThisShouldNotHappenError( "Mattias", "Unable to drop property unique constraint" );
             }

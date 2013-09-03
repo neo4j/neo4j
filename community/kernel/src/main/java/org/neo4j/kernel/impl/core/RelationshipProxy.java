@@ -33,9 +33,9 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
@@ -157,7 +157,7 @@ public class RelationshipProxy implements Relationship
         {
             throw new NotFoundException( "Relationship not found", e );
         }
-        catch ( PropertyKeyIdNotFoundException e )
+        catch ( PropertyKeyIdNotFoundKernelException e )
         {
             throw new ThisShouldNotHappenError( "Jake",
                                                 "Property key retrieved through kernel API should exist." );
@@ -199,7 +199,7 @@ public class RelationshipProxy implements Relationship
             }
             return statement.relationshipGetProperty( relId, propertyId ).value();
         }
-        catch ( EntityNotFoundException | PropertyKeyIdNotFoundException | PropertyNotFoundException e )
+        catch ( EntityNotFoundException | PropertyNotFoundException e )
         {
             throw new NotFoundException( e );
         }
@@ -220,10 +220,6 @@ public class RelationshipProxy implements Relationship
         {
             throw new IllegalStateException( e );
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            return defaultValue;
-        }
     }
 
     @Override
@@ -242,10 +238,6 @@ public class RelationshipProxy implements Relationship
         {
             throw new IllegalStateException( e );
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            return false;
-        }
     }
 
     @Override
@@ -258,15 +250,11 @@ public class RelationshipProxy implements Relationship
             statement.relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
             success = true;
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
-        }
         catch ( EntityNotFoundException e )
         {
             throw new IllegalStateException( e );
         }
-        catch ( SchemaKernelException e )
+        catch ( IllegalTokenNameException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
@@ -288,15 +276,11 @@ public class RelationshipProxy implements Relationship
             long propertyId = statement.propertyKeyGetOrCreateForName( key );
             return statement.relationshipRemoveProperty( relId, propertyId ).value( null );
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
-        }
         catch ( EntityNotFoundException e )
         {
             throw new IllegalStateException( e );
         }
-        catch ( SchemaKernelException e )
+        catch ( IllegalTokenNameException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );

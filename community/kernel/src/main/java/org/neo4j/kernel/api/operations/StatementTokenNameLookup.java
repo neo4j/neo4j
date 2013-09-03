@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.operations;
 
 import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 
 /**
  * Instances allow looking up ids back to their names.
@@ -61,7 +61,7 @@ public final class StatementTokenNameLookup implements TokenNameLookup
         {
             return statement.propertyKeyGetName( propertyKeyId );
         }
-        catch ( PropertyKeyIdNotFoundException e )
+        catch ( PropertyKeyIdNotFoundKernelException e )
         {
             return "[" + propertyKeyId + "]";
         }

@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.operations;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
@@ -61,14 +60,12 @@ public interface EntityReadOperations
      */
     PrimitiveLongIterator nodeGetLabels( StatementState state, long nodeId ) throws EntityNotFoundException;
 
-    Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+    Property nodeGetProperty( StatementState state, long nodeId, long propertyKeyId ) throws EntityNotFoundException;
 
     Property relationshipGetProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+            throws EntityNotFoundException;
     
-    Property graphGetProperty( StatementState state, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException;
+    Property graphGetProperty( StatementState state, long propertyKeyId );
     
     // TODO: decide if this should be replaced by nodeGetAllProperties()
     /** Return all property keys associated with a node. */

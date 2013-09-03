@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
@@ -52,7 +52,8 @@ public class ConstraintIndexCreator
      */
     public long createUniquenessConstraintIndex( StatementState state, SchemaReadOperations schema,
             long labelId, long propertyKeyId )
-            throws SchemaKernelException, ConstraintVerificationFailedKernelException, TransactionalException
+            throws ConstraintVerificationFailedKernelException, TransactionalException,
+                   CreateConstraintFailureException, DropIndexFailureException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         IndexDescriptor descriptor = transactor.execute( createConstraintIndex( labelId, propertyKeyId ) );
@@ -120,7 +121,7 @@ public class ConstraintIndexCreator
      * You MUST hold a schema write lock before you call this method.
      */
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
-            throws SchemaKernelException, TransactionalException
+            throws TransactionalException, DropIndexFailureException
     {
         transactor.execute( dropConstraintIndex( descriptor ) );
     }
@@ -153,14 +154,13 @@ public class ConstraintIndexCreator
         }
     }
 
-    public static Transactor.Work<IndexDescriptor, SchemaKernelException> createConstraintIndex(
+    public static Transactor.Work<IndexDescriptor, CreateConstraintFailureException> createConstraintIndex(
             final long labelId, final long propertyKeyId )
     {
-        return new Transactor.Work<IndexDescriptor, SchemaKernelException>()
+        return new Transactor.Work<IndexDescriptor, CreateConstraintFailureException>()
         {
             @Override
-            public IndexDescriptor perform( StatementOperationParts statement, StatementState kernelStatement ) throws
-                    SchemaKernelException
+            public IndexDescriptor perform( StatementOperationParts statement, StatementState kernelStatement )
             {
                 // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
                 // write lock. It is assumed that the transaction that invoked this "inner" transaction
@@ -173,13 +173,13 @@ public class ConstraintIndexCreator
         };
     }
 
-    private static Transactor.Work<Void, SchemaKernelException> dropConstraintIndex(
+    private static Transactor.Work<Void, DropIndexFailureException> dropConstraintIndex(
             final IndexDescriptor descriptor )
     {
-        return new Transactor.Work<Void, SchemaKernelException>()
+        return new Transactor.Work<Void, DropIndexFailureException>()
         {
             @Override
-            public Void perform( StatementOperationParts statement, StatementState kernelStatement ) throws SchemaKernelException
+            public Void perform( StatementOperationParts statement, StatementState kernelStatement )
             {
                 // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
                 // write lock. It is assumed that the transaction that invoked this "inner" transaction

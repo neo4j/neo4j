@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
@@ -58,24 +57,19 @@ interface DataWrite
     boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException;
 
     Property nodeSetProperty( long nodeId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException;
+            throws EntityNotFoundException, ConstraintValidationKernelException;
 
-    Property relationshipSetProperty( long relationshipId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+    Property relationshipSetProperty( long relationshipId, SafeProperty property ) throws EntityNotFoundException;
 
-    Property graphSetProperty( SafeProperty property )
-            throws PropertyKeyIdNotFoundException;
+    Property graphSetProperty( SafeProperty property );
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Property nodeRemoveProperty( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+    Property nodeRemoveProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException;
 
-    Property relationshipRemoveProperty( long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+    Property relationshipRemoveProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException;
 
-    Property graphRemoveProperty( long propertyKeyId )
-            throws PropertyKeyIdNotFoundException;
+    Property graphRemoveProperty( long propertyKeyId );
 }

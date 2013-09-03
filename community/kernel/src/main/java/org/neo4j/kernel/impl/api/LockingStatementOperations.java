@@ -24,11 +24,13 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
@@ -80,7 +82,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKey ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKey )
+            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
         state.locks().acquireSchemaWriteLock();
         return schemaWriteDelegate.indexCreate( state, labelId, propertyKey );
@@ -187,7 +190,7 @@ public class LockingStatementOperations implements
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
-            throws SchemaKernelException
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
     {
         state.locks().acquireSchemaWriteLock();
         return schemaWriteDelegate.uniquenessConstraintCreate( state, labelId, propertyKeyId );
@@ -224,7 +227,7 @@ public class LockingStatementOperations implements
     
     @Override
     public Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException
+            throws EntityNotFoundException, ConstraintValidationKernelException
     {
         state.locks().acquireNodeWriteLock( nodeId );
         return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
@@ -232,7 +235,7 @@ public class LockingStatementOperations implements
     
     @Override
     public Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         state.locks().acquireNodeWriteLock( nodeId );
         return entityWriteDelegate.nodeRemoveProperty( state, nodeId, propertyKeyId );
@@ -240,7 +243,7 @@ public class LockingStatementOperations implements
     
     @Override
     public Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         state.locks().acquireRelationshipWriteLock( relationshipId );
         return entityWriteDelegate.relationshipSetProperty( state, relationshipId, property );
@@ -248,21 +251,21 @@ public class LockingStatementOperations implements
     
     @Override
     public Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         state.locks().acquireRelationshipWriteLock( relationshipId );
         return entityWriteDelegate.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
     }
     
     @Override
-    public Property graphSetProperty( StatementState state, SafeProperty property ) throws PropertyKeyIdNotFoundException
+    public Property graphSetProperty( StatementState state, SafeProperty property )
     {
         state.locks().acquireGraphWriteLock();
         return entityWriteDelegate.graphSetProperty( state, property );
     }
     
     @Override
-    public Property graphRemoveProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public Property graphRemoveProperty( StatementState state, long propertyKeyId )
     {
         state.locks().acquireGraphWriteLock();
         return entityWriteDelegate.graphRemoveProperty( state, propertyKeyId );
@@ -270,7 +273,8 @@ public class LockingStatementOperations implements
     
     // === TODO Below is unnecessary delegate methods
     @Override
-    public String indexGetFailure( StatementState state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public String indexGetFailure( StatementState state, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
     {
         return schemaReadDelegate.indexGetFailure( state, descriptor );
     }
