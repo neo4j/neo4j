@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
@@ -41,6 +42,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexState;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
@@ -130,7 +132,9 @@ public class IndexRestartIt
     private void startDb()
     {
         if ( db != null )
+        {
             db.shutdown();
+        }
 
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
@@ -138,7 +142,9 @@ public class IndexRestartIt
     private void stopDb()
     {
         if(db != null)
+        {
             db.shutdown();
+        }
     }
 
     @Before
@@ -146,7 +152,7 @@ public class IndexRestartIt
     {
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList(
+        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList(
                 singleInstanceSchemaIndexProviderFactory( "test", provider ) ) );
     }
 

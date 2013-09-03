@@ -131,7 +131,10 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         {
             List<SchemaIndexProvider> all = addToCollection( candidates, new ArrayList<SchemaIndexProvider>() );
             if ( all.isEmpty() )
-                return NO_INDEX_PROVIDER;
+            {
+                throw new IllegalArgumentException( "No schema index provider " +
+                        SchemaIndexProvider.class + " found" );
+            }
             Collections.sort( all );
             return all.get( all.size()-1 );
         }
@@ -227,11 +230,17 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         public Descriptor( String key, String version )
         {
             if (key == null)
+            {
                 throw new IllegalArgumentException( "null provider key prohibited" );
+            }
             if (key.length() == 0)
+            {
                 throw new IllegalArgumentException( "empty provider key prohibited" );
+            }
             if (version == null)
+            {
                 throw new IllegalArgumentException( "null provider version prohibited" );
+            }
 
             this.key = key;
             this.version = version;

@@ -17,38 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.kernel.impl.api.scan;
 
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 
-/**
- * JUnit @Rule for configuring, creating and managing an ImpermanentGraphDatabase instance.
- */
-public class ImpermanentDatabaseRule extends DatabaseRule
+@Service.Implementation( KernelExtensionFactory.class )
+public class InMemoryLabelScanStoreExtension extends KernelExtensionFactory<InMemoryLabelScanStoreExtension.Dependencies>
 {
-    private Logging logging;
-
-    public ImpermanentDatabaseRule()
-    {
-
-    }
-
-    public ImpermanentDatabaseRule( Logging logging )
-    {
-        this.logging = logging;
-    }
-
-    @Override
-    protected GraphDatabaseFactory newFactory()
-    {
-        return new TestGraphDatabaseFactory( logging );
+    public interface Dependencies
+    {   // No dependencies
     }
     
-    @Override
-    protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
+    public InMemoryLabelScanStoreExtension()
     {
-        return ((TestGraphDatabaseFactory) factory).newImpermanentDatabaseBuilder();
+        super( "in-memory" );
+    }
+
+    @Override
+    public LabelScanStoreProvider newKernelExtension( Dependencies dependencies ) throws Throwable
+    {
+        return new LabelScanStoreProvider( new InMemoryLabelScanStore(), 2 );
     }
 }

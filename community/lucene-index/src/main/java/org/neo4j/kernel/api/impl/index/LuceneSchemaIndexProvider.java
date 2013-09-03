@@ -87,7 +87,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     @Override
     public void shutdown() throws Throwable
-    {
+    {   // Nothing to shut down
     }
 
     @Override
@@ -101,15 +101,10 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
                 return InternalIndexState.FAILED;
             }
             
-            Directory directory = directoryFactory.open( folderLayout.getFolder( indexId ) );
-            try
+            try ( Directory directory = directoryFactory.open( folderLayout.getFolder( indexId ) ) )
             {
                 boolean status = writerStatus.isOnline( directory );
                 return status ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
-            }
-            finally
-            {
-                directory.close();
             }
         }
         catch ( IOException e )

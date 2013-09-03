@@ -25,13 +25,13 @@ import java.util.NoSuchElementException;
  * Subclasses provide a PrimitiveLongIterator by implementing computeNext() which is expected to either
  * set hasNext to false, or to set hasNext to true and to set value to the next value.
  *
- * Before using instances for iteration, computeNext() needs to be called exactly once.  Subclasses are recommended
+ * Before using instances for iteration, computeNext() needs to be called exactly once. Subclasses are recommended
  * to do this in their constructor.
  */
 public abstract class AbstractPrimitiveLongIterator implements PrimitiveLongIterator
 {
-    protected boolean hasNext = false;
-    protected long nextValue = 0l;
+    private boolean hasNext;
+    private long nextValue;
 
     @Override
     public boolean hasNext()
@@ -48,11 +48,24 @@ public abstract class AbstractPrimitiveLongIterator implements PrimitiveLongIter
             computeNext();
             return result;
         }
-        else
-        {
-            throw new NoSuchElementException(  );
-        }
+        
+        throw new NoSuchElementException();
     }
 
+    /**
+     * Computes the next item in this iterator. Implementations must call either {@link #next(long)}
+     * with the computed value, or {@link #endReached()} if there are no more items in this iterator.
+     */
     protected abstract void computeNext();
+    
+    protected void endReached()
+    {
+        hasNext = false;
+    }
+    
+    protected void next( long value )
+    {
+        nextValue = value;
+        hasNext = true;
+    }
 }

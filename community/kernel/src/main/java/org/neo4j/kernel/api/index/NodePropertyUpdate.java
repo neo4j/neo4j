@@ -89,7 +89,17 @@ public class NodePropertyUpdate
     {
         return updateMode;
     }
-
+    
+    public long[] getLabelsBefore()
+    {
+        return labelsBefore;
+    }
+    
+    public long[] getLabelsAfter()
+    {
+        return labelsAfter;
+    }
+    
     /**
      * Whether or not this property update is for the given {@code labelId}.
      * 
@@ -139,11 +149,17 @@ public class NodePropertyUpdate
     public boolean equals( Object obj )
     {
         if ( this == obj )
+        {
             return true;
+        }
         if ( obj == null )
+        {
             return false;
+        }
         if ( getClass() != obj.getClass() )
+        {
             return false;
+        }
         NodePropertyUpdate other = (NodePropertyUpdate) obj;
         return Arrays.equals( labelsBefore, other.labelsBefore ) &&
                 Arrays.equals( labelsAfter, other.labelsAfter ) &&
@@ -164,17 +180,38 @@ public class NodePropertyUpdate
         {
             return false;
         }
+        
+        if (a instanceof boolean[] && b instanceof boolean[])
+        {
+            return Arrays.equals( (boolean[]) a, (boolean[]) b );
+        }
+        if (a instanceof byte[] && b instanceof byte[])
+        {
+            return Arrays.equals( (byte[]) a, (byte[]) b );
+        }
+        if (a instanceof short[] && b instanceof short[])
+        {
+            return Arrays.equals( (short[]) a, (short[]) b );
+        }
         if (a instanceof int[] && b instanceof int[])
         {
             return Arrays.equals( (int[]) a, (int[]) b );
         }
-        if (a instanceof boolean[] && b instanceof boolean[])
+        if (a instanceof long[] && b instanceof long[])
         {
-            return Arrays.equals( (boolean[]) a, (boolean[]) b );
-        }        
-        if (a instanceof byte[] && b instanceof byte[])
+            return Arrays.equals( (long[]) a, (long[]) b );
+        }
+        if (a instanceof char[] && b instanceof char[])
         {
-            return Arrays.equals( (byte[]) a, (byte[]) b );
+            return Arrays.equals( (char[]) a, (char[]) b );
+        }
+        if (a instanceof float[] && b instanceof float[])
+        {
+            return Arrays.equals( (float[]) a, (float[]) b );
+        }
+        if (a instanceof double[] && b instanceof double[])
+        {
+            return Arrays.equals( (double[]) a, (double[]) b );
         }
         if (a instanceof Object[] && b instanceof Object[])
         {

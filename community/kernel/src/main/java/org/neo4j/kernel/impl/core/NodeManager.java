@@ -321,7 +321,6 @@ public class NodeManager implements Lifecycle, EntityFactory
         return new RelationshipProxy( id, relationshipLookups, statementCtxProvider );
     }
 
-    @SuppressWarnings("unchecked")
     public Iterator<Node> getAllNodes()
     {
         Iterator<Node> committedNodes = new PrefetchingIterator<Node>()

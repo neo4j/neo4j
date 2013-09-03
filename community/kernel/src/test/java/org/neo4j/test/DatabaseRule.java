@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.junit.rules.ExternalResource;
@@ -33,7 +34,9 @@ import org.neo4j.kernel.impl.core.NodeManager;
 
 public abstract class DatabaseRule extends ExternalResource
 {
+    GraphDatabaseBuilder databaseBuilder;
     GraphDatabaseAPI database;
+    private String storeDir;
 
     public <T> T transaction( Function<GraphDatabaseService, T> function )
     {
@@ -85,9 +88,10 @@ public abstract class DatabaseRule extends ExternalResource
         {
             GraphDatabaseFactory factory = newFactory();
             configure( factory );
-            GraphDatabaseBuilder builder = newBuilder( factory );
-            configure( builder );
-            database = (GraphDatabaseAPI) builder.newGraphDatabase();
+            databaseBuilder = newBuilder( factory );
+            configure( databaseBuilder );
+            database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
+            storeDir = database.getStoreDir();
         }
         catch ( RuntimeException e )
         {
@@ -126,6 +130,29 @@ public abstract class DatabaseRule extends ExternalResource
     public GraphDatabaseAPI getGraphDatabaseAPI()
     {
         return database;
+    }
+    
+    public static interface RestartAction
+    {
+        void run( File storeDirectory );
+    }
+    
+    public void restartDatabase()
+    {
+        restartDatabase( new RestartAction()
+        {
+            @Override
+            public void run( File storeDir )
+            {   // Do nothing
+            }
+        } );
+    }
+    
+    public void restartDatabase( RestartAction action )
+    {
+        database.shutdown();
+        action.run( new File( storeDir ) );
+        database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
     }
 
     public void shutdown()

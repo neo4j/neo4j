@@ -322,7 +322,7 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( StatementState state, 
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( StatementState state,
             long labelId, long propertyKeyId )
     {
         return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
