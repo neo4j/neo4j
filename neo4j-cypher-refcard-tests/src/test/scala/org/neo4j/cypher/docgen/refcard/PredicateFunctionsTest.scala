@@ -49,7 +49,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as collection, n, m
 WHERE
 
-ALL(x IN collection WHERE HAS(x.property))
+all(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
@@ -60,7 +60,7 @@ START n=node(%A%), m=node(%B%)
 MATCH collection=(n)-->(m)
 WHERE
 
-ANY(x IN collection WHERE HAS(x.property))
+any(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
@@ -71,7 +71,7 @@ START n=node(%A%), m=node(%B%)
 MATCH collection=(n)-->(m)
 WHERE
 
-NONE(x IN collection WHERE HAS(x.property))
+none(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
@@ -82,7 +82,7 @@ START n=node(%A%), m=node(%B%)
 MATCH collection=(n)-->(m)
 WHERE
 
-SINGLE(x IN collection WHERE HAS(x.property))
+single(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 

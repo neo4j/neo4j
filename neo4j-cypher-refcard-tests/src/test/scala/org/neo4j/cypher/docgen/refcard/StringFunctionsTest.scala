@@ -62,7 +62,7 @@ class StringFunctionsTest extends RefcardTest with StatisticsChecker {
 START n=node(%ROOT%)
 RETURN
 
-STR({expression})
+str({expression})
 ###
 
 String representation of the expression.
@@ -71,7 +71,7 @@ String representation of the expression.
 START n=node(%ROOT%)
 RETURN
 
-REPLACE({original}, {search}, {replacement})
+replace({original}, {search}, {replacement})
 ###
 
 Replace all occurrences of `search` with `replacement`.
@@ -81,7 +81,7 @@ All arguments are be expressions.
 START n=node(%ROOT%)
 RETURN
 
-SUBSTRING({original}, {begin}, {sub_length})
+substring({original}, {begin}, {sub_length})
 ###
 
 Get part of a string.
@@ -91,8 +91,8 @@ The `sub_length` argument is optional.
 START n=node(%ROOT%)
 RETURN
 
-LEFT({original}, {sub_length}),
-  RIGHT({original}, {sub_length})
+left({original}, {sub_length}),
+  right({original}, {sub_length})
 ###
 
 The first part of a string. The last part of the string.
@@ -101,8 +101,8 @@ The first part of a string. The last part of the string.
 START n=node(%ROOT%)
 RETURN
 
-TRIM({original}), LTRIM({original}),
-  RTRIM({original})
+trim({original}), ltrim({original}),
+  rtrim({original})
 ###
 
 Trim all whitespace, or on left or right side.
@@ -111,7 +111,7 @@ Trim all whitespace, or on left or right side.
 START n=node(%ROOT%)
 RETURN
 
-UPPER({original}), LOWER({original})
+upper({original}), lower({original})
 ###
 
 UPPERCASE and lowercase.

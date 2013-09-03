@@ -48,7 +48,7 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
       case "parameters=value" =>
         Map("value" -> "Bob")
       case "parameters=range" =>
-        Map("first" -> 2, "last" -> 18, "step" -> 3)
+        Map("first_num" -> 2, "last_num" -> 18, "step" -> 3)
       case "" =>
         Map()
     }
@@ -63,7 +63,7 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
 MATCH (n:Person)
 RETURN
 
-LABELS(n)
+labels(n)
 ###
 
 The labels of the node.
@@ -73,7 +73,7 @@ START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
 RETURN
 
-NODES(path)
+nodes(path)
 ###
 
 The nodes in the path.
@@ -83,7 +83,7 @@ START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
 RETURN
 
-RELATIONSHIPS(path)
+relationships(path)
 ###
 
 The relationships in the path.
@@ -94,7 +94,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as coll
 RETURN
 
-EXTRACT(x IN coll : x.prop)
+extract(x IN coll : x.prop)
 ###
 
 A collection of the value of the expression for each element in the collection.
@@ -105,10 +105,10 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as coll
 RETURN
 
-FILTER(x IN coll : x.prop <> {value})
+filter(x IN coll : x.prop <> {value})
 ###
 
-A collection of the elements where the predicate is `true`.
+A collection of the elements where the predicate is `TRUE`.
 
 ###assertion=returns-one parameters=value
 START n=node(%A%), m=node(%B%)
@@ -116,7 +116,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as coll
 RETURN
 
-TAIL(coll)
+tail(coll)
 ###
 
 All but the first element of the collection.
@@ -127,7 +127,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as coll
 RETURN
 
-RANGE({first}, {last}, {step})
+range({first_num}, {last_num}, {step})
 ###
 
 Create a range of numbers.
@@ -139,7 +139,7 @@ MATCH path=(n)-[*]->(m)
 WITH nodes(path) as coll
 RETURN
 
-REDUCE(str = "", n IN coll : str + n.prop)
+reduce(s = "", n IN coll : s + n.prop)
 ###
 
 Evaluate expression for each element in the collection, accumulate the results.
@@ -150,7 +150,7 @@ START begin = node(%A%), end = node(%B%)
 MATCH path = begin -[*]-> end
 WITH nodes(path) AS coll
 
-FOREACH (n IN coll : SET n.marked = true)
+FOREACH (n IN coll : SET n.marked = TRUE)
 ###
 
 Execute a mutating operation for each element in a collection.

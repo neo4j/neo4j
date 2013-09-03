@@ -58,7 +58,7 @@ START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
 RETURN NODES(path),
 
-COUNT(*)
+count(*)
 ###
 
 The number of matching rows.
@@ -68,17 +68,17 @@ START identifier=node(%A%), m=node(%B%)
 MATCH path=(identifier)-->(m)
 RETURN NODES(path),
 
-COUNT(identifier)
+count(identifier)
 ###
 
-The number of non-`null` values.
+The number of non-++NULL++ values.
 
 ###assertion=returns-one
 START identifier=node(%A%), m=node(%B%)
 MATCH path=(identifier)-->(m)
 RETURN NODES(path),
 
-COUNT(DISTINCT identifier)
+count(DISTINCT identifier)
 ###
 
 All aggregation functions also take the `DISTINCT` modifier, 
@@ -88,7 +88,7 @@ which removes duplicates from the values.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-SUM(n.property)
+sum(n.property)
 ###
 
 Sum numerical values.
@@ -97,7 +97,7 @@ Sum numerical values.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-AVG(n.property)
+avg(n.property)
 ###
 
 Calculates the average.
@@ -106,7 +106,7 @@ Calculates the average.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-MAX(n.property)
+max(n.property)
 ###
 
 Maximum numerical value.
@@ -115,7 +115,7 @@ Maximum numerical value.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-MIN(n.property)
+min(n.property)
 ###
 
 Minimum numerical value.
@@ -124,16 +124,16 @@ Minimum numerical value.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-COLLECT(n.property)
+collect(n.property)
 ###
 
-Collection from the values, ignores `null`.
+Collection from the values, ignores `NULL`.
 
 ###assertion=returns-one parameters=percentile
 START n=node(%A%, %B%, %C%)
 RETURN
 
-PERCENTILE_DISC(n.property, {percentile})
+percentile_disc(n.property, {percentile})
 ###
 
 Discrete percentile.
@@ -143,7 +143,7 @@ The `percentile` argument is from `0.0` to `1.0`.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-PERCENTILE_CONT(n.property, {percentile})
+percentile_cont(n.property, {percentile})
 ###
 
 Continuous percentile.
@@ -152,7 +152,7 @@ Continuous percentile.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-STDEV(n.property)
+stdev(n.property)
 ###
 
 Standard deviation for a sample of a population.
@@ -161,7 +161,7 @@ Standard deviation for a sample of a population.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-STDEVP(n.property)
+stdevp(n.property)
 ###
 
 Standard deviation for an entire population.

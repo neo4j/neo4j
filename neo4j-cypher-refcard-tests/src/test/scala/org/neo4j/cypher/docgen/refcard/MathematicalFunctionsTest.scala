@@ -52,7 +52,7 @@ class MathematicalFunctionsTest extends RefcardTest with StatisticsChecker {
 START n=node(%ROOT%)
 RETURN
 
-ABS({expr})
+abs({expr})
 ###
 
 The absolute value.
@@ -61,7 +61,7 @@ The absolute value.
 START n=node(%ROOT%)
 RETURN
 
-RAND()
+rand()
 ###
 
 A random value. Returns a new value for each call. Also useful for selecting subset or random ordering.
@@ -70,7 +70,7 @@ A random value. Returns a new value for each call. Also useful for selecting sub
 START n=node(%ROOT%)
 RETURN
 
-ROUND({expr})
+round({expr})
 ###
 
 Round to the nearest integer.
@@ -79,7 +79,7 @@ Round to the nearest integer.
 START n=node(%ROOT%)
 RETURN
 
-FLOOR({expr})
+floor({expr})
 ###
 
 The greatest integer less than or equal to a decimal number.
@@ -88,7 +88,7 @@ The greatest integer less than or equal to a decimal number.
 START n=node(%ROOT%)
 RETURN
 
-CEIL({expr})
+ceil({expr})
 ###
 
 The smallest integer greater than or equal to a decimal number.
@@ -97,7 +97,7 @@ The smallest integer greater than or equal to a decimal number.
 START n=node(%ROOT%)
 RETURN
 
-SQRT({expr})
+sqrt({expr})
 ###
 
 The square root.
@@ -106,7 +106,7 @@ The square root.
 START n=node(%ROOT%)
 RETURN
 
-SIGN({expr})
+sign({expr})
 ###
 
 `0` if zero, `-1` if negative, `1` if positive.
@@ -115,27 +115,28 @@ SIGN({expr})
 START n=node(%ROOT%)
 RETURN
 
-SIN({expr})
+sin({expr})
 ###
 
-Trigonometric functions, also `COS`, `TAN`, `COT`, `ASIN`, `ACOS`, `ATAN`, `ATAN2`.
+Trigonometric functions, also `cos`, `tan`, `cot`, `asin`, `acos`, `atan`, `atan2`.
 
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
 RETURN
 
-DEGREES({expr}), RADIANS({expr}), PI()
+degrees({expr}), radians({expr}), pi()
 ###
 
-Converts radians into degrees, use `RADIANS` for the reverse. `PI` for π.
+Converts radians into degrees, use `radians` for the reverse. `pi` for π.
 
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
 RETURN
 
-LOG10({expr}), LOG({expr}), EXP({expr}), E()
+log10({expr}), log({expr}), exp({expr}), e()
 ###
 
 Logarithm base 10, natural logarithm, `e` to the power of the paramameter. Value of `e`.
-             """
+
+"""
 }

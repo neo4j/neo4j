@@ -57,7 +57,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as collection, n, m
 RETURN
 
-LENGTH(collection)###
+length(collection)###
 
 Length of the collection.
 
@@ -66,7 +66,7 @@ START n=node(%A%), m=node(%B%)
 MATCH (n)-[a_relationship]->(m)
 RETURN
 
-TYPE(a_relationship)###
+type(a_relationship)###
 
 String representation of the relationship type.
 
@@ -75,7 +75,7 @@ START n=node(%A%), m=node(%B%)
 MATCH (n)-[a_relationship]->(m)
 RETURN
 
-STARTNODE(a_relationship)###
+startNode(a_relationship)###
 
 Start node of the relationship.
 
@@ -84,7 +84,7 @@ START n=node(%A%), m=node(%B%)
 MATCH (n)-[a_relationship]->(m)
 RETURN
 
-ENDNODE(a_relationship)###
+endNode(a_relationship)###
 
 End node of the relationship.
 
@@ -92,9 +92,9 @@ End node of the relationship.
 START n=node(%A%)
 RETURN
 
-COALESCE(n.property, {defaultValue})###
+coalesce(n.property, {defaultValue})###
 
-The first non-`null` expression.
+The first non-++NULL++ expression.
 
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
@@ -102,7 +102,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as collection, n, m
 RETURN
 
-HEAD(collection)###
+head(collection)###
 
 The first element of the collection.
 
@@ -113,7 +113,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as collection, n, m
 RETURN
 
-LAST(collection)###
+last(collection)###
 
 The last element of the collection.
 
@@ -121,7 +121,7 @@ The last element of the collection.
 START n=node(%A%)
 RETURN
 
-TIMESTAMP()###
+timestamp()###
 
 Milliseconds since midnight, January 1, 1970 UTC.
 
@@ -130,7 +130,7 @@ START n=node(%A%), m=node(%B%)
 MATCH (n)-[node_or_relationship]->(m)
 RETURN
 
-ID(node_or_relationship)###
+id(node_or_relationship)###
 
 The internal id of the relationship or node.
 """

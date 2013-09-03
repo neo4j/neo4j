@@ -55,7 +55,7 @@ class WithTest extends RefcardTest with StatisticsChecker {
 
 START user=node:nodeIndexName(name = {name})
 MATCH (user)-[:FRIEND]-(friend)
-WITH user, count(friend) as friends
+WITH user, count(friend) AS friends
 WHERE friends > 10
 RETURN user
 
@@ -67,7 +67,7 @@ It separates query parts explicitly, allowing you to declare which identifiers t
 ###assertion=with-limit
 MATCH (user)-[:FRIEND]-(friend)
 
-WITH user, count(friend) as friends
+WITH user, count(friend) AS friends
 ORDER BY friends DESC
 SKIP 1 LIMIT 3
 

@@ -20,7 +20,9 @@
 package org.neo4j.cypher.docgen.refcard
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
+import org.junit.Ignore
 
+@Ignore
 class ExamplesTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT:Person FRIEND A:Person", "A:Person FRIEND B:Person", "B:Person FRIEND C:Person", "C:Person FRIEND ROOT:Person")
   val title = "Query Structure"
