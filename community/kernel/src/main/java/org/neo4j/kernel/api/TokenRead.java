@@ -22,7 +22,7 @@ package org.neo4j.kernel.api;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.core.Token;
 
@@ -44,7 +44,7 @@ interface TokenRead
     long propertyKeyGetForName( String propertyKeyName );
 
     /** Returns the name of a property given its property key id */
-    String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundException;
+    String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 
     /** Returns the labels currently stored in the database * */
     Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack

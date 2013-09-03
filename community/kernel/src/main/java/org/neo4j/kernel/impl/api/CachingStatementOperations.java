@@ -45,7 +45,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -245,7 +244,7 @@ public class CachingStatementOperations implements
     
     @Override
     public Property relationshipGetProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         return persistenceCache.relationshipGetProperty( state, relationshipId, propertyKeyId, relationshipPropertyLoader );
     }
@@ -263,7 +262,7 @@ public class CachingStatementOperations implements
     }
     
     @Override
-    public Property graphGetProperty( StatementState state, long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public Property graphGetProperty( StatementState state, long propertyKeyId )
     {
         return persistenceCache.graphGetProperty( state, graphPropertyLoader, propertyKeyId );
     }

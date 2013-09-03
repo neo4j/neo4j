@@ -24,12 +24,12 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
@@ -208,7 +208,7 @@ public class BaseStatement implements TokenRead, TokenWrite, SchemaRead, SchemaS
     }
 
     @Override
-    public String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundException
+    public String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
     {
         assertOpen();
         return tokenRead().propertyKeyGetName( state, propertyKeyId );
@@ -238,14 +238,14 @@ public class BaseStatement implements TokenRead, TokenWrite, SchemaRead, SchemaS
 
     // <TokenWrite>
     @Override
-    public long labelGetOrCreateForName( String labelName ) throws SchemaKernelException
+    public long labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
         assertOpen();
         return tokenWrite().labelGetOrCreateForName( state, labelName );
     }
 
     @Override
-    public long propertyKeyGetOrCreateForName( String propertyKeyName ) throws SchemaKernelException
+    public long propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         assertOpen();
         return tokenWrite().propertyKeyGetOrCreateForName( state, propertyKeyName );

@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -37,7 +39,6 @@ class UniquenessConstraintStoppingStatementOperations implements SchemaWriteOper
 
     @Override
     public UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )
-            throws SchemaKernelException
     {
         throw unsupportedOperation();
     }
@@ -62,7 +63,8 @@ class UniquenessConstraintStoppingStatementOperations implements SchemaWriteOper
     // === TODO Below is unnecessary delegate methods
 
     @Override
-    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( StatementState state, long labelId, long propertyKeyId )
+            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
         return schemaWriteDelegate.indexCreate( state, labelId, propertyKeyId );
     }

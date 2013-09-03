@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-public class PropertyKeyIdNotFoundException extends KernelException
+public class PropertyKeyIdNotFoundKernelException extends KernelException
 {
-    public PropertyKeyIdNotFoundException( long propertyKeyId, Exception cause )
+    public PropertyKeyIdNotFoundKernelException( long propertyKeyId, Exception cause )
     {
         super( cause, "Property key id '%s' not found", propertyKeyId );
     }

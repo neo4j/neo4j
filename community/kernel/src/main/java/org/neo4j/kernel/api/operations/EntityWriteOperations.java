@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.operations;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
@@ -51,24 +50,22 @@ public interface EntityWriteOperations
     boolean nodeRemoveLabel( StatementState state, long nodeId, long labelId ) throws EntityNotFoundException;
 
     Property nodeSetProperty( StatementState state, long nodeId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException, ConstraintValidationKernelException;
+            throws EntityNotFoundException, ConstraintValidationKernelException;
 
     Property relationshipSetProperty( StatementState state, long relationshipId, SafeProperty property )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+            throws EntityNotFoundException;
     
-    Property graphSetProperty( StatementState state, SafeProperty property )
-            throws PropertyKeyIdNotFoundException;
+    Property graphSetProperty( StatementState state, SafeProperty property );
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
     Property nodeRemoveProperty( StatementState state, long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+            throws EntityNotFoundException;
 
     Property relationshipRemoveProperty( StatementState state, long relationshipId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, EntityNotFoundException;
+            throws EntityNotFoundException;
     
-    Property graphRemoveProperty( StatementState state, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException;
+    Property graphRemoveProperty( StatementState state, long propertyKeyId );
 }

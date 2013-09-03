@@ -34,9 +34,9 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataStatement;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
@@ -118,10 +118,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             long propertyId = statement.propertyKeyGetForName( key );
             return statement.graphGetProperty( propertyId ).isDefined();
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            return false;
-        }
     }
 
     @Override
@@ -139,7 +135,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             }
             return statement.graphGetProperty( propertyId ).value();
         }
-        catch ( PropertyKeyIdNotFoundException | PropertyNotFoundException e )
+        catch ( PropertyNotFoundException e )
         {
             throw new NotFoundException( e );
         }
@@ -160,10 +156,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             }
             return statement.graphGetProperty( propertyId ).value( defaultValue );
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            return defaultValue;
-        }
     }
 
     @Override
@@ -176,11 +168,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             statement.graphSetProperty( property( propertyKeyId, value ) );
             success = true;
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
-        }
-        catch ( SchemaKernelException e )
+        catch ( IllegalTokenNameException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
@@ -202,11 +190,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             long propertyId = statement.propertyKeyGetOrCreateForName( key );
             return statement.graphRemoveProperty( propertyId ).value( null );
         }
-        catch ( PropertyKeyIdNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Stefan/Jake", "A property key id disappeared under our feet" );
-        }
-        catch ( SchemaKernelException e )
+        catch ( IllegalTokenNameException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
@@ -226,7 +210,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             }
             return keys;
         }
-        catch ( PropertyKeyIdNotFoundException e )
+        catch ( PropertyKeyIdNotFoundKernelException e )
         {
             throw new ThisShouldNotHappenError( "Jake", "Property key retrieved through kernel API should exist." );
         }

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -64,7 +63,6 @@ import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -471,7 +469,7 @@ public abstract class InternalAbstractGraphDatabase
 
         idGeneratorFactory = createIdGeneratorFactory();
 
-        persistenceSource = life.add(new NioNeoDbPersistenceSource(xaDataSourceManager));
+        persistenceSource = life.add( new NioNeoDbPersistenceSource( xaDataSourceManager ) );
 
         syncHook = new DefaultTxEventSyncHookFactory();
 
@@ -1580,12 +1578,6 @@ public abstract class InternalAbstractGraphDatabase
                         next( nextValue );
                         return;
                     }
-                }
-                catch ( PropertyKeyIdNotFoundException e )
-                {
-                    // if they key doesn't exist, no node could possibly have a property with that key
-                    endReached();
-                    return;
                 }
                 catch ( EntityNotFoundException e )
                 {
