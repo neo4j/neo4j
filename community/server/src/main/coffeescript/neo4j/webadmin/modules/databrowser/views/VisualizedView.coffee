@@ -26,9 +26,10 @@ define(
    'ribcage/View'
    'ribcage/security/HtmlEscaper'
    './visualization'
+   './OnVisualizedNodeView'
    'ribcage/ui/Dropdown'
    'neo4j/webadmin/modules/databrowser/models/DataBrowserState'],
-  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template, Dropdown, DataBrowserState) ->
+  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template, OnVisualizedNodeView, Dropdown, DataBrowserState) ->
   
     State = DataBrowserState.State
 
@@ -179,6 +180,14 @@ define(
         @viz ?= new VisualGraph(@server, profile, width,height)
         return @viz
 
+      nodeShowDetailsClicked : (neoNode) =>
+        if neoNode instanceof neo4j.models.Node
+          @dataModel.setData neoNode, false
+        switch @dataModel.getState()
+          when State.SINGLE_NODE
+            @overLayedDetail ?= new OnVisualizedNodeView dataModel : @dataModel
+            @overLayedDetail.show()
+
       reflowGraphLayout : () =>
         @viz.reflow() if @viz?
         
@@ -187,11 +196,13 @@ define(
 
       remove : =>
         @dataModel.unbind("change:data", @render)
+        @getViz().unbind "visualNode:showDetailsClicked", @nodeShowDetailsClicked
         @getViz().stop()
         super()
 
       detach : =>
         @dataModel.unbind("change:data", @render)
+        @getViz().unbind "visualNode:showDetailsClicked", @nodeShowDetailsClicked
         @getViz().stop()
         super()
 
@@ -201,4 +212,6 @@ define(
           @getViz().start()
           @dataModel.bind("change:data", @render)
           
+        @getViz().bind "visualNode:showDetailsClicked", @nodeShowDetailsClicked
+
 )
