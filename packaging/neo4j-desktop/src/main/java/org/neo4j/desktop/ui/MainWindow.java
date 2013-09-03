@@ -93,7 +93,7 @@ public class MainWindow
         this.environment = environment;
         this.databaseActions = databaseActions;
 
-        this.frame = new JFrame( "Neo4j Desktop" );
+        this.frame = new JFrame( "Neo4j Community" );
         this.frame.setIconImages( Graphics.loadIcons() );
         this.sysTray = SysTray.install( new SysTrayActions(), frame );
 
@@ -150,6 +150,7 @@ public class MainWindow
             public void actionPerformed( ActionEvent e )
             {
                 JDialog settingsDialog = new SettingsDialog( frame, environment, model );
+                settingsDialog.setLocationRelativeTo( null );
                 settingsDialog.setVisible( true );
             }
         } );

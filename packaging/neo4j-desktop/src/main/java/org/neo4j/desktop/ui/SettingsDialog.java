@@ -75,7 +75,8 @@ class SettingsDialog extends JDialog
        getContentPane().add( withSpacingBorder( withBoxLayout( Y_AXIS, createPanel(
             createEditConfigPanel( createEditDatabaseConfigurationButton() ),
             createEditVmOptionsPanel( createEditVmOptionsButton() ),
-            createExtensionsPanel(),
+            // disabling extensions for now
+            // createExtensionsPanel(),
             createVerticalSpacing(),
             withFlowLayout( FlowLayout.RIGHT, createPanel(
                 createTextButton( "Close", new ActionListener()
