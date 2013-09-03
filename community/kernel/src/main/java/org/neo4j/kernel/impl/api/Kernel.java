@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.ConstraintEnforcingEntityWriteOperations;
+import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.WritableStatementState;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -134,6 +135,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final AbstractTransactionManager transactionManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
+    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final PersistenceManager persistenceManager;
     private final XaDataSourceManager dataSourceManager;
     private final LockManager lockManager;
@@ -152,10 +154,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private StatementOperationParts readOnlyStatementOperations;
     private SchemaCache schemaCache;
     private SchemaIndexProviderMap providerMap = null;
+    private LegacyKernelOperations legacyKernelOperations, readOnlyLegacyKernelOperations;
 
     public Kernel( boolean readOnly, AbstractTransactionManager transactionManager,
                    PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-                   PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager,
+                   RelationshipTypeTokenHolder relationshipTypeTokenHolder, PersistenceManager persistenceManager,
+                   XaDataSourceManager dataSourceManager,
                    LockManager lockManager, UpdateableSchemaState schemaState,
                    DependencyResolver dependencyResolver, boolean highlyAvailable )
     {
@@ -163,6 +167,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.transactionManager = transactionManager;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.persistenceManager = persistenceManager;
         this.dataSourceManager = dataSourceManager;
         this.lockManager = lockManager;
@@ -210,6 +215,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         StatementOperationParts parts = buildStatementOperations();
         this.statementOperations = parts;
+        this.legacyKernelOperations = new DefaultLegacyKernelOperations( nodeManager );
 
         ReadOnlyStatementOperations readOnlyParts =
                 new ReadOnlyStatementOperations( parts.keyReadOperations(), parts.schemaStateOperations() );
@@ -221,6 +227,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 parts.schemaReadOperations(),
                 readOnlyParts,
                 readOnlyParts );
+        this.readOnlyLegacyKernelOperations = readOnlyParts;
     }
 
     @Override
@@ -233,7 +240,14 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public KernelTransaction newTransaction()
     {
         checkIfShutdown();
-        return new TransactionImplementation( readOnly ? readOnlyStatementOperations : statementOperations );
+        if ( readOnly )
+        {
+            return new TransactionImplementation( readOnlyStatementOperations, readOnlyLegacyKernelOperations );
+        }
+        else
+        {
+            return new TransactionImplementation( statementOperations, legacyKernelOperations );
+        }
     }
 
     private void checkIfShutdown()
@@ -248,7 +262,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         // Start off with the store layer.
         StoreStatementOperations context = new StoreStatementOperations(
-                propertyKeyTokenHolder, labelTokenHolder, new SchemaStorage( neoStore.getSchemaStore() ), neoStore,
+                propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, new SchemaStorage( neoStore.getSchemaStore() ), neoStore,
                 persistenceManager, indexService );
         StatementOperationParts parts = new StatementOperationParts(
                 context, context, context, context, context, null, null )
@@ -318,11 +332,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         private final SchemaStorage schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
         private final ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator(
                 new Transactor( transactionManager ), indexService );
-        private final LockHolder lockHolder ;
+        private final LockHolder lockHolder;
 
-        TransactionImplementation( StatementOperationParts operations )
+        TransactionImplementation( StatementOperationParts operations, LegacyKernelOperations legacyKernelOperations )
         {
-            super( operations );
+            super( operations, legacyKernelOperations );
             try
             {
                 // TODO Not happy about the NodeManager dependency. It's needed a.t.m. for making

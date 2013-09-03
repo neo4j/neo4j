@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.core;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -56,8 +55,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
-                                            RelationshipType type )
+    public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode, long typeId )
     {
         throw new ReadOnlyDbException();
     }

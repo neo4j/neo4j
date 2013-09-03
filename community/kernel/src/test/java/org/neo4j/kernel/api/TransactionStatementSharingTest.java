@@ -21,6 +21,8 @@ package org.neo4j.kernel.api;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.operations.LegacyKernelOperations;
+
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
@@ -29,7 +31,8 @@ public class TransactionStatementSharingTest
 {
     private KernelTransactionImplementation newTransaction()
     {
-        return new KernelTransactionImplementation( mock( StatementOperationParts.class ) )
+        return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
+                                                    mock( LegacyKernelOperations.class ) )
         {
             @Override
             protected void doCommit()

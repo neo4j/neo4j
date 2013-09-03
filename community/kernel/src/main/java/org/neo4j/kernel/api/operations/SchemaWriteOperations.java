@@ -40,7 +40,6 @@ public interface SchemaWriteOperations
      * This should not be used, it is exposed to allow an external job to clean up constraint indexes.
      * That external job should become an internal job, at which point this operation should go away.
      */
-    @Deprecated
     void uniqueIndexDrop( StatementState state, IndexDescriptor descriptor ) throws DropIndexFailureException;
 
     UniquenessConstraint uniquenessConstraintCreate( StatementState state, long labelId, long propertyKeyId )

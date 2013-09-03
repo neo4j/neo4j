@@ -22,6 +22,8 @@ package org.neo4j.graphdb;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
+import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -70,7 +72,6 @@ public class NodeFacadeMethods
 
     private static final FacadeMethod<Node> SET_PROPERTY = new FacadeMethod<Node>( "void setProperty( String key, " +
             "Object value )" )
-
     {
         @Override
         public void call( Node node )
@@ -79,9 +80,8 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final FacadeMethod<Node> REMOVE_PROPERTY = new FacadeMethod<Node>( "Object removeProperty( String key " +
-            ")" )
-
+    private static final FacadeMethod<Node> REMOVE_PROPERTY = new FacadeMethod<Node>(
+            "Object removeProperty( String key )" )
     {
         @Override
         public void call( Node node )
@@ -90,16 +90,13 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final FacadeMethod<Node> GET_PROPERTY_KEYS = new FacadeMethod<Node>( "Iterable<String> getPropertyKeys" +
-            "()" )
+    private static final FacadeMethod<Node> GET_PROPERTY_KEYS = new FacadeMethod<Node>(
+            "Iterable<String> getPropertyKeys()" )
     {
         @Override
         public void call( Node node )
         {
-            for ( String key : node.getPropertyKeys() )
-            {
-
-            }
+            consume( node.getPropertyKeys() );
         }
     };
 
@@ -109,11 +106,7 @@ public class NodeFacadeMethods
         @Override
         public void call( Node node )
         {
-            for ( Object value : node.getPropertyValues() )
-            {
-
-            }
-
+            consume( node.getPropertyValues() );
         }
     };
 
@@ -126,16 +119,13 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final FacadeMethod<Node> GET_RELATIONSHIPS = new FacadeMethod<Node>( "Iterable<Relationship> " +
-            "getRelationships()" )
+    private static final FacadeMethod<Node> GET_RELATIONSHIPS = new FacadeMethod<Node>(
+            "Iterable<Relationship> getRelationships()" )
     {
         @Override
         public void call( Node node )
         {
-            for ( Relationship relationship : node.getRelationships() )
-            {
-
-            }
+            consume( node.getRelationships() );
         }
     };
 
@@ -155,10 +145,7 @@ public class NodeFacadeMethods
         @Override
         public void call( Node node )
         {
-            for ( Relationship relationship : node.getRelationships( FOO, BAR ) )
-            {
-
-            }
+            consume( node.getRelationships( FOO, BAR ) );
         }
     };
 
@@ -168,10 +155,7 @@ public class NodeFacadeMethods
         @Override
         public void call( Node node )
         {
-            for ( Relationship relationship : node.getRelationships( BOTH, FOO, BAR ) )
-            {
-
-            }
+            consume( node.getRelationships( BOTH, FOO, BAR ) );
         }
     };
 
@@ -202,16 +186,12 @@ public class NodeFacadeMethods
         @Override
         public void call( Node node )
         {
-            for ( Relationship relationship : node.getRelationships( BOTH ) )
-            {
-
-            }
+            consume( node.getRelationships( BOTH ) );
         }
     };
 
     private static final FacadeMethod<Node> HAS_RELATIONSHIP_BY_DIRECTION = new FacadeMethod<Node>( "boolean " +
             "hasRelationship( Direction dir )" )
-
     {
         @Override
         public void call( Node node )
@@ -226,10 +206,7 @@ public class NodeFacadeMethods
         @Override
         public void call( Node node )
         {
-            for ( Relationship relationship : node.getRelationships( FOO, BOTH ) )
-            {
-
-            }
+            consume( node.getRelationships( FOO, BOTH ) );
         }
     };
 
@@ -259,7 +236,7 @@ public class NodeFacadeMethods
         @Override
         public void call( Node node )
         {
-            node.createRelationshipTo( null, FOO );
+            node.createRelationshipTo( node, FOO );
         }
     };
 
@@ -267,13 +244,11 @@ public class NodeFacadeMethods
             "traverse( Traverser.Order " +
             "traversalOrder, StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator, " +
             "RelationshipType relationshipType, Direction direction )" )
-
     {
         @Override
         public void call( Node node )
         {
-            node.traverse( BREADTH_FIRST, DEPTH_ONE, ALL,
-                    FOO, BOTH );
+            node.traverse( BREADTH_FIRST, DEPTH_ONE, ALL, FOO, BOTH );
         }
     };
 
@@ -330,43 +305,47 @@ public class NodeFacadeMethods
     };
 
     private static final FacadeMethod<Node> GET_LABELS = new FacadeMethod<Node>( "ResourceIterable<Label> getLabels()" )
-
     {
         @Override
         public void call( Node node )
         {
-            for ( Label label : node.getLabels() )
-            {
-
-            }
+            consume( node.getLabels() );
         }        
     };
 
     static final Iterable<FacadeMethod<Node>> ALL_NODE_FACADE_METHODS = unmodifiableCollection( asList(
-        HAS_PROPERTY, 
-        GET_PROPERTY, 
+        HAS_PROPERTY,
+        GET_PROPERTY,
         GET_PROPERTY_WITH_DEFAULT,
-        SET_PROPERTY, 
-        REMOVE_PROPERTY, 
-        GET_PROPERTY_KEYS, 
-        GET_PROPERTY_VALUES, 
+        SET_PROPERTY,
+        REMOVE_PROPERTY,
+        GET_PROPERTY_KEYS,
+        GET_PROPERTY_VALUES,
         DELETE, GET_RELATIONSHIPS,
-        HAS_RELATIONSHIP, 
-        GET_RELATIONSHIPS_BY_TYPE, 
+        HAS_RELATIONSHIP,
+        GET_RELATIONSHIPS_BY_TYPE,
         GET_RELATIONSHIPS_BY_DIRECTION_AND_TYPES,
-        HAS_RELATIONSHIP_BY_TYPE, 
-        HAS_RELATIONSHIP_BY_DIRECTION_AND_TYPE, 
+        HAS_RELATIONSHIP_BY_TYPE,
+        HAS_RELATIONSHIP_BY_DIRECTION_AND_TYPE,
         GET_RELATIONSHIPS_BY_DIRECTION,
-        HAS_RELATIONSHIP_BY_DIRECTION, 
+        HAS_RELATIONSHIP_BY_DIRECTION,
         GET_RELATIONSHIPS_BY_TYPE_AND_DIRECTION,
-        HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION, 
+        HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION,
         GET_SINGLE_RELATIONSHIP, CREATE_RELATIONSHIP_TO,
-        TRAVERSE_USING_ONE_TYPE_AND_DIRECTION, 
+        TRAVERSE_USING_ONE_TYPE_AND_DIRECTION,
         TRAVERSE_USING_TWO_TYPES_AND_DIRECTIONS,
-        TRAVERSE_USING_ANY_NUMBER_OF_TYPES_AND_DIRECTIONS, 
-        ADD_LABEL, 
-        REMOVE_LABEL, 
-        HAS_LABEL, 
+        TRAVERSE_USING_ANY_NUMBER_OF_TYPES_AND_DIRECTIONS,
+        ADD_LABEL,
+        REMOVE_LABEL,
+        HAS_LABEL,
         GET_LABELS
     ) );
+
+    private static void consume( Iterable<?> iterable )
+    {
+        for ( Object o : iterable )
+        {
+            assertNotNull( o );
+        }
+    }
 }

@@ -68,6 +68,13 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
+    public long relationshipTypeGetOrCreateForName( StatementState state, String relationshipTypeName )
+            throws IllegalTokenNameException
+    {
+        return keyWriteDelegate.relationshipTypeGetOrCreateForName( state, checkValidTokenName( relationshipTypeName ) );
+    }
+
+    @Override
     public long labelGetOrCreateForName( StatementState state, String label ) throws SchemaKernelException
     {
         // KISS - but refactor into a general purpose constraint checker later on

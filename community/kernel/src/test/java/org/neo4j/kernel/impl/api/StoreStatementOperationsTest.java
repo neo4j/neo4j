@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -289,6 +290,7 @@ public class StoreStatementOperationsTest
         this.statement = new StoreStatementOperations(
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),
                 resolver.resolveDependency( LabelTokenHolder.class ),
+                resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                 new SchemaStorage( neoStore.getSchemaStore() ),
                 neoStore,
                 resolver.resolveDependency( PersistenceManager.class ),

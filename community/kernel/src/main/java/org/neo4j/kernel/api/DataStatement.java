@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
@@ -138,10 +139,25 @@ public class DataStatement extends BaseStatement implements DataRead, DataWrite
 
     // <DataWrite>
     @Override
+    public long nodeCreate()
+    {
+        assertOpen();
+        return legacyOps().nodeCreate(state);
+    }
+
+    @Override
     public void nodeDelete( long nodeId )
     {
         assertOpen();
         dataWrite().nodeDelete( state, nodeId );
+    }
+
+    @Override
+    public long relationshipCreate( long relationshipTypeId, long startNodeId, long endNodeId )
+            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
+    {
+        assertOpen();
+        return legacyOps().relationshipCreate( state, relationshipTypeId, startNodeId, endNodeId );
     }
 
     @Override

@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -151,11 +150,11 @@ public class NodeManager implements Lifecycle, EntityFactory
 
         this.cacheProvider = cacheProvider;
         this.statementCtxProvider = statementCtxProvider;
-        this.nodeCache = new LockStripedCache<NodeImpl>( nodeCache, LOCK_STRIPE_COUNT, nodeLoader );
-        this.relCache = new LockStripedCache<RelationshipImpl>( relCache, LOCK_STRIPE_COUNT, relLoader );
+        this.nodeCache = new LockStripedCache<>( nodeCache, LOCK_STRIPE_COUNT, nodeLoader );
+        this.relCache = new LockStripedCache<>( relCache, LOCK_STRIPE_COUNT, relLoader );
         this.xaDsm = xaDsm;
-        nodePropertyTrackers = new LinkedList<PropertyTracker<Node>>();
-        relationshipPropertyTrackers = new LinkedList<PropertyTracker<Relationship>>();
+        nodePropertyTrackers = new LinkedList<>();
+        relationshipPropertyTrackers = new LinkedList<>();
         this.graphProperties = instantiateGraphProperties();
     }
 
@@ -206,14 +205,8 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     public Node createNode()
     {
-        return createNode( null );
-    }
-
-    public Node createNode( Label[] labels )
-    {
         long id = idGenerator.nextId( Node.class );
-        NodeImpl node = new NodeImpl( id,
-                true );
+        NodeImpl node = new NodeImpl( id, true );
         NodeProxy proxy = new NodeProxy( id, nodeLookup, statementCtxProvider );
         TransactionState transactionState = getTransactionState();
         transactionState.acquireWriteLock( proxy );
@@ -222,14 +215,6 @@ public class NodeManager implements Lifecycle, EntityFactory
         {
             persistenceManager.nodeCreate( id );
             transactionState.createNode( id );
-            if ( labels != null )
-            {
-                for ( Label label : labels )
-                {
-                    proxy.addLabel( label );
-                }
-            }
-
             nodeCache.put( node );
             success = true;
             return proxy;
@@ -250,15 +235,15 @@ public class NodeManager implements Lifecycle, EntityFactory
     }
 
     public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
-                                            RelationshipType type )
+                                            long relationshipTypeId )
     {
-        if ( startNode == null || endNode == null || type == null )
+        if ( startNode == null || endNode == null || relationshipTypeId > Integer.MAX_VALUE )
         {
-            throw new IllegalArgumentException( "Null parameter, startNode="
-                    + startNode + ", endNode=" + endNode + ", type=" + type );
+            throw new IllegalArgumentException( "Bad parameter, startNode="
+                    + startNode + ", endNode=" + endNode + ", typeId=" + relationshipTypeId );
         }
 
-        int typeId = relTypeHolder.getOrCreateId( type.name() );
+        int typeId = (int)relationshipTypeId;
         long startNodeId = startNode.getId();
         long endNodeId = endNode.getId();
         NodeImpl secondNode = getLightNode( endNodeId );
@@ -390,10 +375,10 @@ public class NodeManager implements Lifecycle, EntityFactory
          * this transaction. The thing with the cache is that stuff can be evicted at any point in time
          * so we can't rely on created nodes to be there during the whole life time of this iterator.
          * That's why we filter them out from the "committed/cache" iterator and add them at the end instead.*/
-        final Set<Long> createdNodes = new HashSet<Long>( txState.getCreatedNodes() );
+        final Set<Long> createdNodes = new HashSet<>( txState.getCreatedNodes() );
         if ( !createdNodes.isEmpty() )
         {
-            committedNodes = new FilteringIterator<Node>( committedNodes, new Predicate<Node>()
+            committedNodes = new FilteringIterator<>( committedNodes, new Predicate<Node>()
             {
                 @Override
                 public boolean accept( Node node )
@@ -404,7 +389,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         }
 
         // Filter out nodes deleted in this transaction
-        Iterator<Node> filteredRemovedNodes = new FilteringIterator<Node>( committedNodes, new Predicate<Node>()
+        Iterator<Node> filteredRemovedNodes = new FilteringIterator<>( committedNodes, new Predicate<Node>()
         {
             @Override
             public boolean accept( Node node )
@@ -414,7 +399,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         } );
 
         // Append nodes created in this transaction
-        return new CombiningIterator<Node>( asList( filteredRemovedNodes,
+        return new CombiningIterator<>( asList( filteredRemovedNodes,
                 new IteratorWrapper<Node, Long>( createdNodes.iterator() )
                 {
                     @Override
@@ -523,10 +508,10 @@ public class NodeManager implements Lifecycle, EntityFactory
          * this transaction. The thing with the cache is that stuff can be evicted at any point in time
          * so we can't rely on created relationships to be there during the whole life time of this iterator.
          * That's why we filter them out from the "committed/cache" iterator and add them at the end instead.*/
-        final Set<Long> createdRelationships = new HashSet<Long>( txState.getCreatedRelationships() );
+        final Set<Long> createdRelationships = new HashSet<>( txState.getCreatedRelationships() );
         if ( !createdRelationships.isEmpty() )
         {
-            committedRelationships = new FilteringIterator<Relationship>( committedRelationships,
+            committedRelationships = new FilteringIterator<>( committedRelationships,
                     new Predicate<Relationship>()
                     {
                         @Override
@@ -539,7 +524,7 @@ public class NodeManager implements Lifecycle, EntityFactory
 
         // Filter out relationships deleted in this transaction
         Iterator<Relationship> filteredRemovedRelationships =
-                new FilteringIterator<Relationship>( committedRelationships, new Predicate<Relationship>()
+                new FilteringIterator<>( committedRelationships, new Predicate<Relationship>()
                 {
                     @Override
                     public boolean accept( Relationship relationship )
@@ -549,7 +534,7 @@ public class NodeManager implements Lifecycle, EntityFactory
                 } );
 
         // Append relationships created in this transaction
-        return new CombiningIterator<Relationship>( asList( filteredRemovedRelationships,
+        return new CombiningIterator<>( asList( filteredRemovedRelationships,
                 new IteratorWrapper<Relationship, Long>( createdRelationships.iterator() )
                 {
                     @Override
@@ -633,9 +618,9 @@ public class NodeManager implements Lifecycle, EntityFactory
         Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
                 persistenceManager.getMoreRelationships( nodeId, position );
         ArrayMap<Integer, RelIdArray> newRelationshipMap =
-                new ArrayMap<Integer, RelIdArray>();
+                new ArrayMap<>();
 
-        List<RelationshipImpl> relsList = new ArrayList<RelationshipImpl>( 150 );
+        List<RelationshipImpl> relsList = new ArrayList<>( 150 );
 
         Iterable<RelationshipRecord> loops = rels.first().get( DirectionWrapper.BOTH );
         boolean hasLoops = loops != null;

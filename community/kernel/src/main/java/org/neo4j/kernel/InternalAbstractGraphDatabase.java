@@ -30,6 +30,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -64,6 +65,7 @@ import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.configuration.Config;
@@ -79,6 +81,7 @@ import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -207,7 +210,6 @@ public abstract class InternalAbstractGraphDatabase
     protected XaDataSourceManager xaDataSourceManager;
     protected LockManager lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
-    protected TokenCreator relationshipTypeCreator;
     protected NioNeoDbPersistenceSource persistenceSource;
     protected TxEventSyncHookFactory syncHook;
     protected PersistenceManager persistenceManager;
@@ -468,8 +470,6 @@ public abstract class InternalAbstractGraphDatabase
 
         idGeneratorFactory = createIdGeneratorFactory();
 
-        relationshipTypeCreator = createRelationshipTypeCreator();
-
         persistenceSource = life.add(new NioNeoDbPersistenceSource(xaDataSourceManager));
 
         syncHook = new DefaultTxEventSyncHookFactory();
@@ -479,15 +479,14 @@ public abstract class InternalAbstractGraphDatabase
 
         propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( txManager, persistenceManager, persistenceSource, createPropertyKeyCreator() ) );
         labelTokenHolder = life.add( new LabelTokenHolder( txManager, persistenceManager, persistenceSource, createLabelIdCreator() ) );
-
         relationshipTypeTokenHolder = life.add( new RelationshipTypeTokenHolder( txManager,
-                persistenceManager, persistenceSource, relationshipTypeCreator ) );
+                persistenceManager, persistenceSource, createRelationshipTypeCreator() ) );
 
         caches.configure( cacheProvider, config );
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
-        kernelAPI = life.add( new Kernel( readOnly, txManager, propertyKeyTokenHolder, labelTokenHolder, persistenceManager,
+        kernelAPI = life.add( new Kernel( readOnly, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, persistenceManager,
                 xaDataSourceManager, lockManager, updateableSchemaState, dependencyResolver,
                 this.isHighlyAvailable() ) );
         // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
@@ -664,11 +663,11 @@ public abstract class InternalAbstractGraphDatabase
                 }
 
                 @Override
-                public Relationship createRelationship( final Node startNodeProxy, final NodeImpl startNode,
-                                                        final Node endNode, final RelationshipType type )
+                public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode,
+                                                        Node endNode, long relationshipTypeId )
                 {
                     guard.check();
-                    return super.createRelationship( startNodeProxy, startNode, endNode, type );
+                    return super.createRelationship( startNodeProxy, startNode, endNode, relationshipTypeId );
                 }
             };
         }
@@ -713,11 +712,11 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
-            public Relationship createRelationship( final Node startNodeProxy, final NodeImpl startNode,
-                                                    final Node endNode, final RelationshipType type )
+            public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode,
+                                                    Node endNode, long relationshipTypeId )
             {
                 guard.check();
-                return super.createRelationship( startNodeProxy, startNode, endNode, type );
+                return super.createRelationship( startNodeProxy, startNode, endNode, relationshipTypeId );
             }
         };
     }
@@ -971,13 +970,40 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode()
     {
-        return nodeManager.createNode();
+        try ( DataStatement statement = statementContextProvider.dataStatement() )
+        {
+            return nodeManager.newNodeProxyById( statement.nodeCreate() );
+        }
     }
 
     @Override
     public Node createNode( Label... labels )
     {
-        return nodeManager.createNode( labels );
+        try ( DataStatement statement = statementContextProvider.dataStatement() )
+        {
+            long nodeId = statement.nodeCreate();
+            for ( Label label : labels )
+            {
+                long labelId = statement.labelGetOrCreateForName( label.name() );
+                try
+                {
+                    statement.nodeAddLabel( nodeId, labelId );
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    throw new NotFoundException( "No node with id " + nodeId + " found.", e );
+                }
+            }
+            return nodeManager.newNodeProxyById( nodeId );
+        }
+        catch ( ConstraintValidationKernelException e )
+        {
+            throw new ConstraintViolationException( "Unable to add label.", e );
+        }
+        catch ( SchemaKernelException e )
+        {
+            throw new IllegalArgumentException( e );
+        }
     }
 
     @Override
@@ -1303,6 +1329,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( DiagnosticsManager.class.isAssignableFrom( type ) && type.isInstance( diagnosticsManager ) )
             {
                 return type.cast( diagnosticsManager );
+            }
+            else if ( RelationshipTypeTokenHolder.class.isAssignableFrom( type ) && type.isInstance( relationshipTypeTokenHolder ) )
+            {
+                return type.cast( relationshipTypeTokenHolder );
             }
             else if ( PropertyKeyTokenHolder.class.isAssignableFrom( type ) && type.isInstance( propertyKeyTokenHolder ) )
             {

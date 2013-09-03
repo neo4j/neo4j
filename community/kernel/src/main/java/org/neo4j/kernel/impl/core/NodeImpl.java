@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -595,12 +594,6 @@ public class NodeImpl extends ArrayBasedPrimitive
         array[array.length - 1] = addRels;
         sort( array );
         relationships = array;
-    }
-
-    public Relationship createRelationshipTo( NodeManager nodeManager, Node thisProxy,
-                                              Node otherNode, RelationshipType type )
-    {
-        return nodeManager.createRelationship( thisProxy, this, otherNode, type );
     }
 
     public boolean hasRelationship( NodeManager nodeManager )

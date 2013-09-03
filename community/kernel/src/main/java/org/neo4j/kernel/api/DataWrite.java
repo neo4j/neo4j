@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.operations.StatementState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
@@ -28,7 +29,12 @@ import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException
 
 interface DataWrite
 {
+    long nodeCreate();
+
     void nodeDelete( long nodeId );
+
+    long relationshipCreate( long relationshipTypeId, long startNodeId, long endNodeId )
+            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 
     void relationshipDelete( long relationshipId );
 

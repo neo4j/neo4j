@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.operations.StatementState;
@@ -40,7 +41,8 @@ public class ReadOnlyStatementOperations implements
     KeyWriteOperations,
     EntityWriteOperations,
     SchemaWriteOperations,
-    SchemaStateOperations
+    SchemaStateOperations,
+    LegacyKernelOperations
 {
     private final KeyReadOperations keyReadOperations;
     private final SchemaStateOperations schemaStateDelegate;
@@ -67,6 +69,15 @@ public class ReadOnlyStatementOperations implements
         // Lookup using that constant will yield nothing, no node has it,
         // and since this is read-only, the user will not be able to set it.
         return keyReadOperations.propertyKeyGetForName( state, propertyKeyName );
+    }
+
+    @Override
+    public long relationshipTypeGetOrCreateForName( StatementState state, String relationshipTypeName )
+    {
+        // Just get, returning NO_SUCH_RELATIONSHIP_TYPE if there is none,
+        // Lookup using that constant will yield nothing, no node has it,
+        // and since this is read-only, the user will not be able to set it.
+        return keyReadOperations.relationshipTypeGetForName( state, relationshipTypeName );
     }
 
     @Override
@@ -174,5 +185,17 @@ public class ReadOnlyStatementOperations implements
     public <K> boolean schemaStateContains( StatementState state, K key )
     {
         return schemaStateDelegate.schemaStateContains( state, key );
+    }
+
+    @Override
+    public long nodeCreate( StatementState state )
+    {
+        throw new ReadOnlyDbException();
+    }
+
+    @Override
+    public long relationshipCreate( StatementState state, long relationshipTypeId, long startNodeId, long endNodeId )
+    {
+        throw new ReadOnlyDbException();
     }
 }
