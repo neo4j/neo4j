@@ -36,13 +36,13 @@ Collections
 
 Cypher has good support for collections.
 
-A literal collection is created by using brackets and separating the elements in the collection with comas.
+A literal collection is created by using brackets and separating the elements in the collection with commas.
 
 ###
 RETURN [0,1,2,3,4,5,6,7,8,9] as collection###
 
-In our examples, we'll use the range function, that gives you a collection containing all numbers between given start
-and end numbers.
+In our examples, we'll use the range function.
+It gives you a collection containing all numbers between given start and end numbers.
 
 To access individual elements in the collection, we use the square brackets again.
 
@@ -72,14 +72,14 @@ It follows the form of the mathematical set-builder notation (set comprehension)
 and filter functions.
 
 ###
-RETURN [x in range(0,10) WHERE x % 2 = 0 | x^3 ]###
+RETURN [x IN range(0,10) WHERE x % 2 = 0 | x^3 ] AS result###
 
-Either the WHERE part, or the expression, can be omitted, if you only want to filter or map respectively.
+Either the +WHERE+ part, or the expression, can be omitted, if you only want to filter or map respectively.
 
 ###
-RETURN [x in range(0,10) WHERE x % 2 = 0 ]###
+RETURN [x IN range(0,10) WHERE x % 2 = 0 ] AS result###
 ###
-RETURN [x in range(0,10) | x^3 ]###
+RETURN [x IN range(0,10) | x^3 ] AS result###
 
 
 == Literal maps ==

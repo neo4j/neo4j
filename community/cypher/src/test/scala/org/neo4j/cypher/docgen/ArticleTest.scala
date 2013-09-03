@@ -33,6 +33,7 @@ import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.CypherParser
+import org.neo4j.cypher.internal.prettifier.Prettifier
 
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.
@@ -156,6 +157,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   }
 
   private def consoleSnippet(query: String, empty: Boolean): String = {
+    val prettifiedQuery = Prettifier(query)
     if (generateConsole) {
       val create = if (!empty) {
         db.inTx {
@@ -170,7 +172,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
 %s
 ----
-""".format(create, query)
+""".format(create, prettifiedQuery)
     } else ""
   }
 

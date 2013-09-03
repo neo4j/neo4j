@@ -92,7 +92,7 @@ END""",
         "result" -> "This is the result expression used if the predicate matches.",
         "default" -> "The expression to use if no match is found."
       ),
-      text = "The predicates are evaluated in order until a true value is found, and the result value is used." +
+      text = "The predicates are evaluated in order until a true value is found, and the result value is used. " +
         "If no match is found the expression in the +ELSE+ clause is used, or +null+, if no +ELSE+ case exists.",
       queryText =
         """match n return CASE

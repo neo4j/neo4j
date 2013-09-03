@@ -70,7 +70,7 @@ public class EmbeddedNeo4j
         // START SNIPPET: transaction
         try ( Transaction tx = graphDb.beginTx() )
         {
-            // Updating operations go here
+            // Database operations go here
             // END SNIPPET: transaction
             // START SNIPPET: addData
             firstNode = graphDb.createNode();
