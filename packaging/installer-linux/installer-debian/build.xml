@@ -1,30 +1,7 @@
 <project default="debian">
+    <include file="udc_source.xml" />
 
-    <macrodef name="udc_source">
-        <attribute name="name"/>
-        <sequential>
-            <local name="udc.jar"/>
-            <property name="udc.tmpdir" location="${project.build.directory}/udc_tmp"/>
-            <!-- this is a glob? -->
-            <property name="udc.properties" location="${udc.tmpdir}/org/neo4j/ext/udc/udc.properties"/>
 
-            <fileset id="udc.jars" dir="${project.build.outputDirectory}/@{name}" includes="server/lib/neo4j-udc*.jar"/>
-            <property name="udc.jar" value="${toString:udc.jars}"/>
-            <echo message="Working on: ${udc.jar}" />
-            <unzip src="target/classes/@{name}/${udc.jar}"
-                   dest="${udc.tmpdir}">
-                <patternset>
-                    <include name="**/udc.properties"/>
-                </patternset>
-            </unzip>
-            <replaceregexp file="${udc.properties}"
-                           match="maven"
-                           replace="debian"/>
-            <jar jarfile="target/classes/@{name}/${udc.jar}" update="true">
-                <fileset dir="${udc.tmpdir}"/>
-            </jar>
-        </sequential>
-    </macrodef>
 
     <macrodef name="package">
 
@@ -57,7 +34,8 @@
                 </fileset>
             </copy>
 
-            <udc_source name="@{name}"/>
+            <udc_source name="@{name}" packaging="debian" workingDir="${project.build.outputDirectory}"/>
+
             <chmod perm="700">
                 <fileset dir="${project.build.outputDirectory}/@{name}">
                     <include name="**/server/bin/neo4j"/>

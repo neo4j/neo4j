@@ -37,6 +37,7 @@ import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberAvailability;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
@@ -274,7 +275,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     }
                 } );
 
-        clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider );
+
+        ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
+
+
+        clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider, objectStreamFactory, objectStreamFactory );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
@@ -296,7 +301,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 }
                 return true;
             }
-        }, new HANewSnapshotFunction() );
+        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory );
 
         // Force a reelection after we enter the cluster
         // and when that election is finished refresh the snapshot
@@ -324,7 +329,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient.getServerId() );
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
-            clusterClient.getServerId(), clusterClient, clusterClient, logging );
+            clusterClient.getServerId(), clusterClient, clusterClient, logging, objectStreamFactory, objectStreamFactory );
 
         // Here we decide whether to start in compatibility mode or mode or not
         if ( !config.get( HaSettings.coordinators ).isEmpty() &&

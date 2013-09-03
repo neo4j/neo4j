@@ -1,0 +1,93 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-installer-rpm</artifactId>
+        <version>2.0-SNAPSHOT</version>
+        <relativePath>..</relativePath>
+    </parent>
+
+    <groupId>org.neo4j</groupId>
+    <artifactId>neo4j-community-rpm</artifactId>
+    <version>2.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+
+    <name>Neo4j Community RPM</name>
+    <description>Neo4j - the NoSQL, Big Data Graph Database</description>
+
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j/tree/master/packaging</url>
+    </scm>
+
+    <properties>
+        <short-name>installer-rpm</short-name>
+        <neo4j.version>${project.version}</neo4j.version>
+        <license-text.header>GPL-3-header.txt</license-text.header>
+        <standalone.path>${project.baseDir}/../../../../standalone</standalone.path>
+        <edition>community</edition>
+        <rpm.name>neo4j</rpm.name>
+
+        <buildnumber>0</buildnumber>
+
+        <neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
+        <licensing.phase>none</licensing.phase>
+    </properties>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>rpm-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unzip-archives</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <ant antfile="${project.parent.relativePath}/process-resources.build.xml" inheritRefs="true"/>
+                            </target>
+                        </configuration>
+
+                    </execution>
+                    <execution>
+                        <id>pull-artifacts</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <copy
+                                        toDir="${project.build.directory}"
+                                        file="${standalone.path}/target/neo4j-community-${neo4j.version}-unix.tar.gz"/>
+
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
