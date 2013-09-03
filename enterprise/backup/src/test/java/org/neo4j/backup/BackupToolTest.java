@@ -53,6 +53,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.BackupTool.MISMATCHED_STORE_ID;
 
@@ -141,12 +142,19 @@ public class BackupToolTest
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        new BackupTool( service, systemOut ).run( args );
-
-        // then
-        verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
-        verify( systemOut ).println( "Backup failed." );
-        verify( systemOut ).println( format( MISMATCHED_STORE_ID, expected, encountered ) );
+        try
+        {
+            new BackupTool( service, systemOut ).run( args );
+            fail( "should exit abnormally" );
+        }
+        catch ( BackupTool.ToolFailureException e )
+        {
+            // then
+            verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
+            verify( systemOut ).println( "Backup failed." );
+            verifyNoMoreInteractions( systemOut ); // no exception traced to stdout
+            assertEquals( format( MISMATCHED_STORE_ID, expected, encountered ), e.getMessage()  );
+        }
     }
 
     @Test
@@ -303,4 +311,5 @@ public class BackupToolTest
 
         verifyZeroInteractions( service );
     }
+
 }
