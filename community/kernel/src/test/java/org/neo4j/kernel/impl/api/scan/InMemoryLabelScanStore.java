@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.scan;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,11 +27,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 import static java.util.Arrays.binarySearch;
+
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 public class InMemoryLabelScanStore implements LabelScanStore
 {
@@ -130,6 +134,12 @@ public class InMemoryLabelScanStore implements LabelScanStore
             {   // Nothing to close
             }
         };
+    }
+    
+    @Override
+    public ResourceIterator<File> snapshotStoreFiles()
+    {
+        return emptyIterator();
     }
     
     @Override
