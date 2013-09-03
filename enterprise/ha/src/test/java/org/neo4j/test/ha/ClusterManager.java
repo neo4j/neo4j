@@ -36,12 +36,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
-import ch.qos.logback.classic.LoggerContext;
-import org.slf4j.impl.StaticLoggerBinder;
-import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
@@ -73,6 +70,10 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 
+import org.slf4j.impl.StaticLoggerBinder;
+import org.w3c.dom.Document;
+import ch.qos.logback.classic.LoggerContext;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 
@@ -87,20 +88,38 @@ public class ClusterManager
     public static class Builder
     {
         private final File root;
-        private Provider provider = clusterOfSize( 3 );
-        private Map<String, String> commonConfig = emptyMap();
-        private Map<Integer, Map<String,String>> instanceConfig = new HashMap<>();
+        private final Provider provider = clusterOfSize( 3 );
+        private final Map<String, String> commonConfig = emptyMap();
+        private final Map<Integer, Map<String,String>> instanceConfig = new HashMap<>();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
-        public File seedDir;
+        private StoreDirInitializer initializer;
 
         public Builder( File root )
         {
             this.root = root;
         }
 
-        public Builder withSeedDir( File seedDir )
+        public Builder withSeedDir( final File seedDir )
         {
-            this.seedDir = seedDir;
+            return withStoreDirInitializer( new StoreDirInitializer()
+            {
+                @Override
+                public void initializeStoreDir( int serverId, File storeDir ) throws IOException
+                {
+                    copyRecursively( seedDir, storeDir );
+                }
+            } );
+        }
+        
+        public Builder withStoreDirInitializer( StoreDirInitializer initializer )
+        {
+            this.initializer = initializer;
+            return this;
+        }
+        
+        public Builder withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory )
+        {
+            this.factory = dbFactory;
             return this;
         }
 
@@ -108,6 +127,11 @@ public class ClusterManager
         {
             return new ClusterManager( this );
         }
+    }
+    
+    public interface StoreDirInitializer
+    {
+        void initializeStoreDir( int serverId, File storeDir ) throws IOException;
     }
 
     /**
@@ -219,7 +243,7 @@ public class ClusterManager
     private final Map<String, ManagedCluster> clusterMap = new HashMap<>();
     private final Provider clustersProvider;
     private final HighlyAvailableGraphDatabaseFactory dbFactory;
-    private final File seedDir;
+    private final StoreDirInitializer storeDirInitializer;
 
     public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig,
                            Map<Integer, Map<String, String>> instanceConfig,
@@ -230,7 +254,7 @@ public class ClusterManager
         this.commonConfig = commonConfig;
         this.instanceConfig = instanceConfig;
         this.dbFactory = dbFactory;
-        this.seedDir = null;
+        this.storeDirInitializer = null;
     }
 
     private ClusterManager( Builder builder )
@@ -240,7 +264,7 @@ public class ClusterManager
         this.commonConfig = builder.commonConfig;
         this.instanceConfig = builder.instanceConfig;
         this.dbFactory = builder.factory;
-        this.seedDir = builder.seedDir;
+        this.storeDirInitializer = builder.initializer;
     }
 
     public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig,
@@ -467,9 +491,9 @@ public class ClusterManager
             {
                 int haPort = new URI( "cluster://" + member.getHost() ).getPort() + 3000;
                 File storeDir = new File( new File( root, name ), "server" + serverId );
-                if ( seedDir != null)
+                if ( storeDirInitializer != null)
                 {
-                    copyRecursively( seedDir, storeDir );
+                    storeDirInitializer.initializeStoreDir( serverId, storeDir );
                 }
                 GraphDatabaseBuilder graphDatabaseBuilder = dbFactory
                         .newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() ).
@@ -940,7 +964,7 @@ public class ClusterManager
     {
         private final HighlyAvailableGraphDatabase db;
         private final NetworkReceiver receiver;
-        private NetworkSender sender;
+        private final NetworkSender sender;
 
         StartNetworkAgainKit( HighlyAvailableGraphDatabase db, NetworkReceiver receiver, NetworkSender sender )
         {

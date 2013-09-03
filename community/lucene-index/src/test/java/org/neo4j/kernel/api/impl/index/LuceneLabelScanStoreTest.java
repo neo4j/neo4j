@@ -25,6 +25,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -35,6 +36,7 @@ import org.junit.Test;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 
@@ -43,6 +45,7 @@ import static java.util.Collections.emptyList;
 
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.scan.NodeLabelUpdate.labelChanges;
 
@@ -178,7 +181,7 @@ public class LuceneLabelScanStoreTest
     private TrackingMonitor monitor;
     private LuceneLabelScanStore store;
     
-    private Iterable<NodeLabelUpdate> noData()
+    private List<NodeLabelUpdate> noData()
     {
         return emptyList();
     }
@@ -193,16 +196,41 @@ public class LuceneLabelScanStoreTest
         start( noData() );
     }
     
-    private void start( Iterable<NodeLabelUpdate> existingData )
+    private void start( List<NodeLabelUpdate> existingData )
     {
         life = new LifeSupport();
         monitor = new TrackingMonitor();
         store = life.add( new LuceneLabelScanStore( new LuceneDocumentStructure(), directoryFactory, dir,
-                new DefaultFileSystemAbstraction(), standard(), existingData, monitor ) );
+                new DefaultFileSystemAbstraction(), standard(), asStream( existingData ), monitor ) );
         life.start();
+        assertTrue( monitor.initCalled );
     }
     
-    private void scrambleIndexFilesAndRestart( Iterable<NodeLabelUpdate> data ) throws IOException
+    private FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
+    {
+        return new FullStoreChangeStream()
+        {
+            @Override
+            public Iterator<NodeLabelUpdate> iterator()
+            {
+                return existingData.iterator();
+            }
+            
+            @Override
+            public long highestNodeId()
+            {
+                return existingData.size(); // Well... not really
+            }
+            
+            @Override
+            public PrimitiveLongIterator labelIds()
+            {
+                return emptyPrimitiveLongIterator();
+            }
+        };
+    }
+
+    private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data ) throws IOException
     {
         shutdown();
         for ( File indexFile : dir.listFiles() )
@@ -242,7 +270,7 @@ public class LuceneLabelScanStoreTest
 
     private static class TrackingMonitor implements LuceneLabelScanStore.Monitor
     {
-        boolean rebuildingCalled, rebuiltCalled, noIndexCalled, corruptIndexCalled;
+        boolean initCalled, rebuildingCalled, rebuiltCalled, noIndexCalled, corruptIndexCalled;
 
         @Override
         public void noIndex()
@@ -263,9 +291,15 @@ public class LuceneLabelScanStoreTest
         }
 
         @Override
-        public void rebuilt()
+        public void rebuilt( long roughNodeCount )
         {
             rebuiltCalled = true;
+        }
+
+        @Override
+        public void init()
+        {
+            initCalled = true;
         }
     }
 }

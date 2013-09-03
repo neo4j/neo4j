@@ -35,11 +35,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.com.RequestContext.Tx;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -128,34 +128,21 @@ public class ServerUtil
                                                                 boolean includeLogicalLogs, StoreWriter writer )
     {
         File baseDir = getBaseDir( graphDb );
-        XaDataSourceManager dsManager =
-                graphDb.getXaDataSourceManager();
+        XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
         RequestContext context = RequestContext.anonymous( rotateLogs( graphDb ) );
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
-            try
+            try ( ResourceIterator<File> files = ds.listStoreFiles( includeLogicalLogs ) )
             {
-                ClosableIterable<File> files = ds.listStoreFiles( includeLogicalLogs );
-                try
+                while ( files.hasNext() )
                 {
-                    for ( File storefile : files )
+                    File storeFile = files.next();
+                    try ( FileInputStream stream = new FileInputStream( storeFile ) )
                     {
-                        FileInputStream stream = new FileInputStream( storefile );
-                        try
-                        {
-                            writer.write( relativePath( baseDir, storefile ), stream.getChannel(), temporaryBuffer,
-                                    storefile.length() > 0 );
-                        }
-                        finally
-                        {
-                            stream.close();
-                        }
+                        writer.write( relativePath( baseDir, storeFile ), stream.getChannel(), temporaryBuffer,
+                                storeFile.length() > 0 );
                     }
-                }
-                finally
-                {
-                    files.close();
                 }
             }
             catch ( IOException e )
@@ -446,6 +433,7 @@ public class ServerUtil
         {   // Do nothing
         }
 
+        @Override
         public void done()
         {   // Do nothing
         }

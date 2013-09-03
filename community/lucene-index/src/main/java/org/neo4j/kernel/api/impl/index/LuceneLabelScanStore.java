@@ -21,21 +21,27 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -63,7 +69,7 @@ public class LuceneLabelScanStore implements LabelScanStore
     private final DirectoryFactory directoryFactory;
     private final LuceneIndexWriterFactory writerFactory;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
-    private final Iterable<NodeLabelUpdate> fullStoreStream;
+    private final FullStoreChangeStream fullStoreStream;
     private final Monitor monitor;
     private Directory directory;
     private SearcherManager searcherManager;
@@ -74,13 +80,15 @@ public class LuceneLabelScanStore implements LabelScanStore
     
     public interface Monitor
     {
+        void init();
+        
         void noIndex();
         
         void corruptIndex( IOException e );
         
         void rebuilding();
         
-        void rebuilt();
+        void rebuilt( long roughNodeCount );
     }
     
     public static Monitor loggerMonitor( Logging logging )
@@ -88,6 +96,11 @@ public class LuceneLabelScanStore implements LabelScanStore
         final StringLogger logger = logging.getMessagesLog( LuceneLabelScanStore.class );
         return new Monitor()
         {
+            @Override
+            public void init()
+            {
+            }
+            
             @Override
             public void noIndex()
             {
@@ -109,16 +122,16 @@ public class LuceneLabelScanStore implements LabelScanStore
             }
             
             @Override
-            public void rebuilt()
+            public void rebuilt( long highNodeId )
             {
-                logger.info( "Lucene scan store rebuilt" );
+                logger.info( "Lucene scan store rebuilt (roughly " + highNodeId + " nodes)" );
             }
         };
     }
     
     public LuceneLabelScanStore( LuceneDocumentStructure luceneDocumentStructure, DirectoryFactory directoryFactory,
             File directoryLocation, FileSystemAbstraction fs, LuceneIndexWriterFactory writerFactory,
-            Iterable<NodeLabelUpdate> fullStoreStream, Monitor monitor )
+            FullStoreChangeStream fullStoreStream, Monitor monitor )
     {
         this.documentStructure = luceneDocumentStructure;
         this.directoryFactory = directoryFactory;
@@ -212,8 +225,55 @@ public class LuceneLabelScanStore implements LabelScanStore
     }
     
     @Override
+    public ResourceIterator<File> snapshotStoreFiles() throws IOException
+    {
+        SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+        return new StoreSnapshot( deletionPolicy );
+    }
+    
+    private class StoreSnapshot extends PrefetchingIterator<File> implements ResourceIterator<File>
+    {
+        private final String ID = "backup";
+        private final SnapshotDeletionPolicy deletionPolicy;
+        private final IndexCommit commit;
+        private final Iterator<String> fileNames;
+
+        StoreSnapshot( SnapshotDeletionPolicy deletionPolicy ) throws IOException
+        {
+            this.deletionPolicy = deletionPolicy;
+            this.commit = deletionPolicy.snapshot( ID );
+            this.fileNames = commit.getFileNames().iterator();
+        }
+
+        @Override
+        protected File fetchNextOrNull()
+        {
+            if ( !fileNames.hasNext() )
+            {
+                return null;
+            }
+            return new File( directoryLocation, fileNames.next() );
+        }
+        
+        @Override
+        public void close()
+        {
+            try
+            {
+                deletionPolicy.release( ID );
+            }
+            catch ( IOException e )
+            {
+                // TODO What to do here?
+                throw new RuntimeException( "Unable to close lucene index snapshot", e );
+            }
+        }
+    }
+
+    @Override
     public void init() throws IOException
     {
+        monitor.init();
         directory = directoryFactory.open( directoryLocation );
         if ( !indexExists() )
         {   // This is the first time we start up this scan store, prepare to rebuild from scratch later.
@@ -246,7 +306,8 @@ public class LuceneLabelScanStore implements LabelScanStore
             // neostore has been properly started.
             monitor.rebuilding();
             updateAndCommit( fullStoreStream );
-            monitor.rebuilt();
+            monitor.rebuilt( fullStoreStream.highestNodeId() );
+            needsRebuild = false;
         }
     }
     
