@@ -22,7 +22,6 @@ package org.neo4j.unsafe.batchinsert;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,7 +40,6 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.BaseConstraintCreator;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -109,7 +107,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
@@ -301,7 +298,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void repopulateAllIndexes() throws IOException
     {
-        IndexRule[] rules = getIndexesNeedingPopulation();
+        final IndexRule[] rules = getIndexesNeedingPopulation();
         final IndexPopulator[] populators = new IndexPopulator[rules.length];
         IndexStoreView storeView = new NeoStoreIndexStoreView( neoStore );
 
@@ -325,40 +322,26 @@ public class BatchInserterImpl implements BatchInserter
             @Override
             public boolean visit( NodePropertyUpdate update ) throws IOException
             {
-                int i = indexOf( propertyKeyIds, update.getPropertyKeyId() );
-                if ( i == -1 )
+                // Do a lookup from which property has changed to a list of indexes worried about that property.
+                long propertyInQuestion = update.getPropertyKeyId();
+                for ( int i = 0; i < propertyKeyIds.length; i++ )
                 {
-                    throw new ThisShouldNotHappenError( "Mattias", "The store view scan gave back a node property " +
-                                                                   "update that I didn't care about. I care about these properties:" +
-                                                                   Arrays.toString( propertyKeyIds ) + ", but got:" +
-                                                                   update.getPropertyKeyId() );
-                }
-
-                if ( update.forLabel( labelIds[i] ) )
-                {
-                    try
+                    if ( propertyKeyIds[i] == propertyInQuestion )
                     {
-                        populators[i].add( update.getNodeId(), update.getValueAfter() );
-                    }
-                    catch ( IndexEntryConflictException conflict )
-                    {
-                        throw conflict.notAllowed( labelIds[i], propertyKeyIds[i] );
-                    }
-                    return true;
-                }
-                return false;
-            }
-
-            private int indexOf( long[] ids, long idToFind )
-            {
-                for ( int i = 0; i < ids.length; i++ )
-                {
-                    if ( ids[i] == idToFind )
-                    {
-                        return i;
+                        if ( update.forLabel( labelIds[i] ) )
+                        {
+                            try
+                            {
+                                populators[i].add( update.getNodeId(), update.getValueAfter() );
+                            }
+                            catch ( IndexEntryConflictException conflict )
+                            {
+                                throw conflict.notAllowed( rules[i].getLabel(), rules[i].getPropertyKey() );
+                            }
+                        }
                     }
                 }
-                return -1;
+                return true;
             }
         } );
         storeScan.run();
