@@ -37,7 +37,7 @@ public interface IndexReader extends Closeable
     @Override
     void close();
     
-    class Empty implements IndexReader
+    IndexReader EMPTY = new IndexReader()
     {
         @Override
         public PrimitiveLongIterator lookup( Object value )
@@ -49,5 +49,5 @@ public interface IndexReader extends Closeable
         public void close()
         {
         }
-    }
+    };
 }

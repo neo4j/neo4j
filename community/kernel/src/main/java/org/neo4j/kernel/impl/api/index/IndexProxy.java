@@ -155,7 +155,7 @@ public interface IndexProxy
         @Override
         public IndexReader newReader()
         {
-            return new IndexReader.Empty();
+            return IndexReader.EMPTY;
         }
 
         @Override

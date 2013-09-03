@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.transaction.xa.XAException;
 
 import org.junit.Before;
@@ -37,6 +36,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
@@ -740,9 +740,9 @@ public class WriteTransactionTest
         }
         
         @Override
-        public Reader newReader()
+        public LabelScanReader newReader()
         {
-            return LabelScanStore.EMPTY_READER;
+            return LabelScanReader.EMPTY;
         }
         
         @Override

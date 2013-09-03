@@ -64,12 +64,11 @@ public abstract class StatementOperationsTestHelper
     {
         StatementState state = mock( StatementState.class );
         LockHolder lockHolder = mock( LockHolder.class );
-        IndexReaderFactory indexReaderFactory = mock( IndexReaderFactory.class );
         try
         {
             IndexReader indexReader = mock( IndexReader.class );
             when( indexReader.lookup( Matchers.any() ) ).thenReturn( IteratorUtil.emptyPrimitiveLongIterator() );
-            when( indexReaderFactory.newReader( anyLong() ) ).thenReturn( indexReader );
+            when( state.getIndexReader( anyLong() ) ).thenReturn( indexReader );
         }
         catch ( IndexNotFoundKernelException e )
         {
@@ -85,7 +84,6 @@ public abstract class StatementOperationsTestHelper
             }
         } );
         when( state.locks() ).thenReturn( lockHolder );
-        when( state.indexReaderFactory() ).thenReturn( indexReaderFactory );
         return state;
     }
     

@@ -32,6 +32,7 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
 import org.neo4j.index.impl.lucene.Hits;
+import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -175,10 +176,10 @@ public class LuceneLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public Reader newReader()
+    public LabelScanReader newReader()
     {
         final IndexSearcher searcher = searcherManager.acquire();
-        return new Reader()
+        return new LabelScanReader()
         {
             @Override
             public PrimitiveLongIterator nodesWithLabel( long labelId )
@@ -222,11 +223,10 @@ public class LuceneLabelScanStore implements LabelScanStore
         
         try
         {
-            try ( IndexReader openedReader = IndexReader.open( directory ) )
-            {   // Try to open it, this will throw exception if index is corrupt.
-                // Opening it directly using the writer may hide corruption problems.
-            }
-            
+            // Try to open it, this will throw exception if index is corrupt.
+            // Opening it directly using the writer may hide corruption problems.
+            IndexReader.open( directory ).close();
+
             writer = writerFactory.create( directory );
         }
         catch ( IOException e )

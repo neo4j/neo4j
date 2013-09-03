@@ -21,11 +21,8 @@ package org.neo4j.kernel.api.scan;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 
 /**
  * Stores label-->nodes mappings. It receives updates in the form of condensed label->node transaction data
@@ -61,13 +58,12 @@ public interface LabelScanStore extends Lifecycle
     void force() throws UnderlyingStorageException;
     
     /**
-     * From the point a {@link Reader} is created till it's {@link Reader#close() closed} the contents it
+     * From the point a {@link LabelScanReader} is created till it's {@link LabelScanReader#close() closed} the contents it
      * returns cannot change, i.e. it honors repeatable reads.
      * 
-     * @param labelId the label id to get nodes for.
-     * @return a {@link Reader} capable of retrieving nodes for labels.
+     * @return a {@link LabelScanReader} capable of retrieving nodes for labels.
      */
-    Reader newReader();
+    LabelScanReader newReader();
     
     /**
      * Initializes the store. After this has been called recovery updates can be processed.
@@ -89,25 +85,5 @@ public interface LabelScanStore extends Lifecycle
      */
     @Override
     void shutdown() throws IOException;
-    
-    public interface Reader
-    {
-        PrimitiveLongIterator nodesWithLabel( long labelId );
-        
-        void close();
-    }
-    
-    public static final Reader EMPTY_READER = new Reader()
-    {
-        @Override
-        public PrimitiveLongIterator nodesWithLabel( long labelId )
-        {
-            return emptyPrimitiveLongIterator();
-        }
-        
-        @Override
-        public void close()
-        {   // Nothing to close
-        }
-    };
+
 }

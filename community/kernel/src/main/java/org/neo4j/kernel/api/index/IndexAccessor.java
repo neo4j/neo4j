@@ -102,7 +102,7 @@ public interface IndexAccessor
         @Override
         public IndexReader newReader()
         {
-            return new IndexReader.Empty();
+            return IndexReader.EMPTY;
         }
     }
 }

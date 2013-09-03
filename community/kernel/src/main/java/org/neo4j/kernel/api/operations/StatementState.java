@@ -21,29 +21,22 @@ package org.neo4j.kernel.api.operations;
 
 import java.io.Closeable;
 
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.impl.api.LockHolder;
 import org.neo4j.kernel.impl.api.state.TxState;
 
 /**
  * Contains all state necessary for satisfying operations performed on a statement.
- * 
- * There's a possibility that this object, since it's built by {@link KernelTransaction#newStatementState()},
- * can be generic and be decorated with whatever state objects the layers in the {@link KernelTransaction}
- * needs. But for now I'd say it's enough with a specific cake knowing the layout of the cake.
- * Also if going specific cake then the top most layer can be hard coded to return a new such instance directly.
- * 
- * @author Mattias Persson
  */
 public interface StatementState extends TxState.Holder, Closeable
 {
     LockHolder locks();
 
-    IndexReaderFactory indexReaderFactory();
-    
-    LabelScanStore.Reader labelScanReader();
+    IndexReader getIndexReader( long indexId ) throws IndexNotFoundKernelException;
+
+    LabelScanReader getLabelScanReader();
 
     @Override
     void close();

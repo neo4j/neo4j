@@ -28,8 +28,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.SafeProperty;
+import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.api.scan.LabelScanStore.Reader;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.LockHolder;
@@ -43,7 +43,7 @@ public class WritableStatementState extends Statement
     private TxState.Holder txStateHolder = NO_STATE_HOLDER;
     private IndexReaderFactory indexReaderFactory = NO_INDEX_READER_FACTORY;
     private LabelScanStore labelScanStore;
-    private LabelScanStore.Reader labelScanReader;
+    private LabelScanReader labelScanReader;
 
     public void provide( LockHolder lockHolder )
     {
@@ -86,13 +86,13 @@ public class WritableStatementState extends Statement
     }
 
     @Override
-    public IndexReaderFactory indexReaderFactory()
+    public IndexReader getIndexReader( long indexId ) throws IndexNotFoundKernelException
     {
-        return indexReaderFactory;
+        return indexReaderFactory.newReader( indexId );
     }
-    
+
     @Override
-    public Reader labelScanReader()
+    public LabelScanReader getLabelScanReader()
     {
         if ( labelScanReader == null )
         {
@@ -104,7 +104,7 @@ public class WritableStatementState extends Statement
     @Override
     public void close()
     {
-        indexReaderFactory().close();
+        indexReaderFactory.close();
     }
     
     private static final LockHolder NO_LOCKS = new LockHolder()

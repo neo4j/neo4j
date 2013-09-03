@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -98,9 +99,9 @@ public class InMemoryLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public Reader newReader()
+    public LabelScanReader newReader()
     {
-        return new Reader()
+        return new LabelScanReader()
         {
             @Override
             public PrimitiveLongIterator nodesWithLabel( long labelId )

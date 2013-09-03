@@ -244,7 +244,7 @@ public class StoreStatementOperations implements
     @Override
     public PrimitiveLongIterator nodesGetForLabel( StatementState state, final long labelId )
     {
-        return state.labelScanReader().nodesWithLabel( labelId );
+        return state.getLabelScanReader().nodesWithLabel( labelId );
     }
 
     @Override
@@ -521,7 +521,7 @@ public class StoreStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexLookup( StatementState state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        return state.indexReaderFactory().newReader( indexId( index ) ).lookup( value );
+        return state.getIndexReader( indexId( index ) ).lookup( value );
     }
 
     @Override
