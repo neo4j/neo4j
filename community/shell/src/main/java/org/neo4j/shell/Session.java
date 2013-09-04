@@ -161,14 +161,4 @@ public class Session
     {
         setInternal( Variables.TX_COUNT, commitCount );
     }
-
-    public String getTitleKeys() throws ShellException
-    {
-        return ( String ) get( Variables.TITLE_KEYS_KEY );
-    }
-
-    public String getMaxTitleLength() throws ShellException
-    {
-        return ( String ) get( Variables.TITLE_MAX_LENGTH );
-    }
 }

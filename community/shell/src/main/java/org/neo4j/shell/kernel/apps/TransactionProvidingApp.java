@@ -377,7 +377,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         else
         {
             return getDisplayName( server, session, thing.asRelationship(),
-                true, checkForMe );
+                    true, checkForMe );
         }
     }
 
@@ -393,7 +393,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         throws ShellException
     {
         return getDisplayName( server, session,
-            getThingById( server, typedId ), checkForMe );
+                getThingById( server, typedId ), checkForMe );
     }
 
     /**
@@ -411,52 +411,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             return getDisplayNameForCurrent( server, session );
         }
 
-        String title = findTitle( session, node );
-        StringBuilder result = new StringBuilder( "(" );
-        result.append( title != null ? title + "," : "" );
-        result.append( node.getId() );
-        result.append( ")" );
-        return result.toString();
-    }
-
-    protected static String findTitle( Session session, Node node ) throws ShellException
-    {
-        String keys = session.getTitleKeys();
-        if ( keys == null )
-        {
-            return null;
-        }
-
-        String[] titleKeys = keys.split( Pattern.quote( "," ) );
-        Pattern[] patterns = new Pattern[ titleKeys.length ];
-        for ( int i = 0; i < titleKeys.length; i++ )
-        {
-            patterns[ i ] = Pattern.compile( titleKeys[ i ] );
-        }
-        for ( Pattern pattern : patterns )
-        {
-            for ( String nodeKey : node.getPropertyKeys() )
-            {
-                if ( matches( pattern, nodeKey, false, false ) )
-                {
-                    return trimLength( session,
-                        format( node.getProperty( nodeKey ), false ) );
-                }
-            }
-        }
-        return null;
-    }
-
-    private static String trimLength( Session session, String string ) throws ShellException
-    {
-        String maxLengthString = session.getMaxTitleLength();
-        int maxLength = maxLengthString != null ?
-            Integer.parseInt( maxLengthString ) : Integer.MAX_VALUE;
-        if ( string.length() > maxLength )
-        {
-            string = string.substring( 0, maxLength ) + "...";
-        }
-        return string;
+        return String.format( "(%d)", node.getId() );
     }
 
     /**
@@ -535,6 +490,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return builder.append( "]" ).toString();
     }
 
+    @SafeVarargs
     protected static <T extends Enum<T>> T parseEnum(
         Class<T> enumClass, String name, T defaultValue, Pair<String, T>... additionalPairs )
     {

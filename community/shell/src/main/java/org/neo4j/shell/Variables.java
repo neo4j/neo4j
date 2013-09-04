@@ -40,13 +40,6 @@ public class Variables
      */
     public static final String STACKTRACES_KEY = "STACKTRACES";
     /**
-     * When displaying node ids this variable is also used for getting an
-     * appropriate property value from that node to display as the title.
-     * This variable can contain many property keys (w/ regex) separated by
-     * comma prioritized in order.
-     */
-    public static final String TITLE_KEYS_KEY = "TITLE_KEYS";
-    /**
      * The maximum length of titles to be displayed.
      */
     public static final String TITLE_MAX_LENGTH = "TITLE_MAX_LENGTH";

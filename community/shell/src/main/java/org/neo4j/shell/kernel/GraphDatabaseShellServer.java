@@ -23,7 +23,6 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -136,7 +135,6 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     @Override
     protected void initialPopulateSession( Session session ) throws ShellException
     {
-        session.set( Variables.TITLE_KEYS_KEY, ".*name.*,.*title.*" );
         session.set( Variables.TITLE_MAX_LENGTH, "40" );
     }
 
