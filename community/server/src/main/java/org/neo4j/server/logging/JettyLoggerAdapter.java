@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.logging;
 
+import java.util.IllegalFormatException;
+
 import org.mortbay.log.Logger;
 
 /**
@@ -43,13 +45,27 @@ public class JettyLoggerAdapter implements Logger
     @Override
     public void debug( String arg0, Throwable arg1 )
     {
-        delegate.debug( arg0, arg1 );
+        try
+        {
+            delegate.debug( wrapNull( arg0 ), arg1 );
+        }
+        catch ( IllegalFormatException e )
+        {
+            delegate.debug( safeFormat( arg0, arg1 ) );
+        }
     }
 
     @Override
     public void debug( String arg0, Object arg1, Object arg2 )
     {
-        delegate.debug( arg0, arg1, arg2 );
+        try
+        {
+            delegate.debug( wrapNull( arg0 ), arg1, arg2 );
+        }
+        catch ( IllegalFormatException e )
+        {
+            delegate.debug( safeFormat( arg0, arg1, arg2 ) );
+        }
     }
 
     @Override
@@ -63,7 +79,14 @@ public class JettyLoggerAdapter implements Logger
     @Override
     public void info( String arg0, Object arg1, Object arg2 )
     {
-        delegate.info( arg0, arg1, arg2 );
+        try
+        {
+            delegate.info( wrapNull( arg0 ), arg1, arg2 );
+        }
+        catch ( IllegalFormatException e )
+        {
+            delegate.info( safeFormat( arg0, arg1, arg2 ) );
+        }
 
     }
 
@@ -81,13 +104,53 @@ public class JettyLoggerAdapter implements Logger
     @Override
     public void warn( String arg0, Throwable arg1 )
     {
-        delegate.warn( arg1 );
+        // no need to catch IllegalFormatException as the delegate will use an empty message
+        delegate.warn( wrapNull( arg1 ) );
     }
 
     @Override
     public void warn( String arg0, Object arg1, Object arg2 )
     {
-        delegate.warn( arg0, arg1, arg2 );
+        try
+        {
+            delegate.warn( wrapNull( arg0 ), arg1, arg2 );
+        }
+        catch ( IllegalFormatException e )
+        {
+            delegate.warn( safeFormat( arg0, arg1, arg2 ) );
+        }
+    }
 
+    static String safeFormat( String arg0, Object... args )
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "Failed to format message: " );
+        builder.append( armored( arg0 ) );
+        if ( null != args )
+        {
+            for ( int i = 0; i < args.length; i++ )
+            {
+                appendArg( builder, i + 1, args[i] );
+            }
+        }
+        return builder.toString();
+    }
+
+    private static String armored( Object arg0 )
+    {
+        return wrapNull( arg0 ).replaceAll( "%", "?" );
+    }
+
+    private static void appendArg( StringBuilder builder, int argNum, Object arg )
+    {
+        builder.append( " arg" );
+        builder.append( argNum );
+        builder.append( ": " );
+        builder.append( armored( arg ) );
+    }
+
+    private static String wrapNull( Object arg0 )
+    {
+        return null == arg0 ? "null" : arg0.toString();
     }
 }
