@@ -232,6 +232,22 @@ public abstract class TransactionProvidingApp extends AbstractApp
             return result;
         }
     }
+    
+    @Override
+    public final List<String> completionCandidates( String partOfLine, Session session ) throws ShellException
+    {
+        try ( Transaction tx = getServer().getDb().beginTx() )
+        {
+            List<String> result = completionCandidatesInTx( partOfLine, session );
+            tx.success();
+            return result;
+        }
+    }
+
+    protected List<String> completionCandidatesInTx( String partOfLine, Session session ) throws ShellException
+    {
+        return super.completionCandidates( partOfLine, session );
+    }
 
     protected String directionAlternatives()
     {
