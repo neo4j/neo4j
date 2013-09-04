@@ -44,8 +44,8 @@ public class AppCommandParser
     private final String line;
     private String appName;
     private App app;
-    private final Map<String, String> options = new HashMap<String, String>();
-    private final List<String> arguments = new ArrayList<String>();
+    private final Map<String, String> options = new HashMap<>();
+    private final List<String> arguments = new ArrayList<>();
 
     /**
      * @param server the server used to find apps.
