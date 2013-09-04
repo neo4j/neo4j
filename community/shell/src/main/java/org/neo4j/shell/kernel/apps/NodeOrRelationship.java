@@ -45,8 +45,8 @@ public abstract class NodeOrRelationship
     {
         return entity instanceof Node ? wrap( (Node) entity ) : wrap( (Relationship) entity );
     }
-    
-    private Object nodeOrRelationship;
+
+    private final Object nodeOrRelationship;
 
     private NodeOrRelationship( Object nodeOrRelationship )
     {
@@ -72,7 +72,7 @@ public abstract class NodeOrRelationship
     {
         return (Relationship) nodeOrRelationship;
     }
-    
+
     public PropertyContainer asPropertyContainer()
     {
         return (PropertyContainer) nodeOrRelationship;
@@ -183,6 +183,12 @@ public abstract class NodeOrRelationship
         {
             return object().getRelationships( direction );
         }
+
+        @Override
+        public String toString()
+        {
+            return "Shell wrapped node [" + asNode() + "]";
+        }
     }
 
     static class WrapRelationship extends NodeOrRelationship
@@ -248,7 +254,13 @@ public abstract class NodeOrRelationship
         @Override
         public Iterable<Relationship> getRelationships( Direction direction )
         {
-            return new ArrayList<Relationship>();
+            return new ArrayList<>();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Shell wrapped relationship [" + asRelationship() + "]";
         }
     }
 }

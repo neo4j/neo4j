@@ -132,7 +132,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return currentThing != null && currentThing.equals(
                 thing.getTypedId().toString() );
     }
-    
+
     protected static void clearCurrent( Session session )
     {
         session.setCurrent( new TypedId( NodeOrRelationship.TYPE_NODE, 0 ).toString() );
@@ -220,7 +220,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     {
         return this.getServer().getDb().getNodeById( id );
     }
-    
+
     @Override
     public Continuation execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
@@ -231,6 +231,30 @@ public abstract class TransactionProvidingApp extends AbstractApp
             tx.success();
             return result;
         }
+    }
+
+    @Override
+    public final List<String> completionCandidates( String partOfLine, Session session ) throws ShellException
+    {
+        try ( Transaction tx = getServer().getDb().beginTx() )
+        {
+            List<String> result = completionCandidatesInTx( partOfLine, session );
+            tx.success();
+            return result;
+        }
+    }
+
+    protected List<String> completionCandidatesInTx( String partOfLine, Session session ) throws ShellException
+    {
+        /*
+         * Calls super of the non-tx version (completionCandidates). In an implementation the call hierarchy would be:
+         *
+         * TransactionProvidingApp.completionCandidates()
+         *    --> MyApp.completionCandidatesInTx() - calls super.completionCandidatesInTx()
+         *       --> TransactionProvidingApp.completionCandidatesInTx()
+         *          --> AbstractApp.completionCandidates()
+         */
+        return super.completionCandidates( partOfLine, session );
     }
 
     protected String directionAlternatives()
@@ -270,7 +294,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         {
             return;
         }
-        
+
         try
         {
             Map<String, Object> properties = parseJSONMap( propertyJson );
@@ -329,7 +353,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         NodeOrRelationship current = getCurrent( server, session );
         return current.isNode() ? "(me)" : "<me>";
     }
-    
+
     public static String getDisplayNameForNonExistent()
     {
         return "(?)";
@@ -458,7 +482,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         result.append( "]" );
         return result.toString();
     }
-    
+
     public static String withArrows( Relationship relationship, String displayName, Node leftNode )
     {
         if ( relationship.getStartNode().equals( leftNode ) )
@@ -510,7 +534,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
         return builder.append( "]" ).toString();
     }
-    
+
     protected static <T extends Enum<T>> T parseEnum(
         Class<T> enumClass, String name, T defaultValue, Pair<String, T>... additionalPairs )
     {
@@ -534,7 +558,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
                 return enumConstant;
             }
         }
-        
+
         for ( Pair<String, T> additional : additionalPairs )
         {
             if ( additional.first().equalsIgnoreCase( name ) )
@@ -549,11 +573,11 @@ public abstract class TransactionProvidingApp extends AbstractApp
                 return additional.other();
             }
         }
-        
+
         throw new IllegalArgumentException( "No '" + name + "' or '" +
             name + ".*' in " + enumClass );
     }
-    
+
     protected static boolean filterMatches( Map<String, Object> filterMap, boolean caseInsensitiveFilters,
             boolean looseFilters, String key, Object value )
     {
@@ -657,7 +681,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
         return list;
     }
-    
+
     public static void writeCurrentWorkingDir( List<TypedId> paths, Session session ) throws RemoteException
     {
         String path = makePath( paths );
@@ -677,7 +701,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
         return buffer.length() > 0 ? buffer.toString() : null;
     }
-    
+
     protected static Map<String, Direction> filterMapToTypes( GraphDatabaseService db,
             Direction defaultDirection, Map<String, Object> filterMap, boolean caseInsensitiveFilters,
             boolean looseFilters ) throws ShellException
@@ -702,7 +726,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
                     }
                 }
             }
-    
+
             // It matches
             if ( direction != null )
             {
@@ -711,7 +735,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
         return matches.isEmpty() ? Collections.<String, Direction>emptyMap() : matches;
     }
-    
+
     protected static PathExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
             Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
     {
@@ -730,7 +754,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
         return (PathExpander) expander;
     }
-    
+
     protected static PathExpander toSortedExpander( GraphDatabaseService db, Direction defaultDirection,
             Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
     {
@@ -745,7 +769,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
         return (PathExpander) expander;
     }
-    
+
     private static final PathExpander EMPTY_EXPANDER = new PathExpander()
     {
         @Override
@@ -753,7 +777,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         {
             return this;
         }
-        
+
         @Override
         public Iterable<Relationship> expand( Path path, BranchState state )
         {
@@ -768,7 +792,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         {
             return EMPTY_LABELS;
         }
-        
+
         labelValue = labelValue.trim();
         if ( labelValue.startsWith( "[" ) )
         {
