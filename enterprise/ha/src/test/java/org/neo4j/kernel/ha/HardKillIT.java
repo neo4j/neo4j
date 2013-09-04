@@ -37,6 +37,7 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -77,7 +78,7 @@ public class HardKillIT
                 {
                     try
                     {
-                        Object event = new AtomicBroadcastSerializer().receive( value );
+                        Object event = new AtomicBroadcastSerializer(new ObjectStreamFactory(), new ObjectStreamFactory()).receive( value );
                         if ( event instanceof MemberIsAvailable )
                         {
                             if ( HighAvailabilityModeSwitcher.MASTER.equals( ((MemberIsAvailable) event).getRole() ) )

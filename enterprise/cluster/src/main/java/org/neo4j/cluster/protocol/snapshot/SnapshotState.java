@@ -100,7 +100,7 @@ public enum SnapshotState
                         case snapshot:
                         {
                             SnapshotMessage.SnapshotState state = message.getPayload();
-                            state.setState( context.getSnapshotProvider() );
+                            state.setState( context.getSnapshotProvider(), context.getClusterContext().getObjectInputStreamFactory() );
                             context.getLearnerContext().setLastDeliveredInstanceId( state.getLastDeliveredInstanceId() );
                             return ready;
                         }
@@ -153,7 +153,9 @@ public enum SnapshotState
                         {
                             outgoing.offer( Message.respond( SnapshotMessage.snapshot, message,
                                     new SnapshotMessage.SnapshotState( context.getLearnerContext()
-                                            .getLastDeliveredInstanceId(), context.getSnapshotProvider() ) ) );
+                                            .getLastDeliveredInstanceId(), context.getSnapshotProvider(),
+                                            context.getClusterContext().getObjectInputStreamFactory(),
+                                            context.getClusterContext().getObjectOutputStreamFactory()) ) );
                             break;
                         }
 

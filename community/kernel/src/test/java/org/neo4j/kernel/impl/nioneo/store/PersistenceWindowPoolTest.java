@@ -134,30 +134,32 @@ public class PersistenceWindowPoolTest
         file.close();
     }
 
-    @Test()
+    @Test
     public void releaseShouldUnlockWindowEvenIfExceptionIsThrown() throws Exception
     {
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0, false, false, StringLogger.DEV_NULL );
+        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0,
+                false, false, StringLogger.DEV_NULL );
 
-        PersistenceRow row = mock(PersistenceRow.class);
-        when(row.writeOutAndCloseIfFree(false)).thenThrow(new UnderlyingStorageException("Unable to write record"));
+        PersistenceRow row = mock( PersistenceRow.class );
+        when( row.writeOutAndCloseIfFree( false ) ).thenThrow(
+                new UnderlyingStorageException ("Unable to write record" ) );
 
-        expectedUnderlyingException.expect(UnderlyingStorageException.class);
+        expectedUnderlyingException.expect( UnderlyingStorageException.class );
+
         try
         {
-            pool.release(row);
+            pool.release( row );
         }
         finally
         {
-            verify(row).unLock();
+            verify( row ).unLock();
         }
-        
+
         pool.close();
         file.close();
     }
-
 
     private void writeBufferContents( final int blockSize, final PersistenceWindow t1Row )
     {
