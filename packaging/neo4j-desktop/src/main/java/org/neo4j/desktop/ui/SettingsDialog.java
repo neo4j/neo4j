@@ -108,7 +108,6 @@ class SettingsDialog extends JDialog
     {
         File vmOptionsFile = model.getVmOptionsFile();
         String vmOptionsPath = vmOptionsFile == null ? "" : vmOptionsFile.getAbsolutePath();
-
         return withFlowLayout( withTitledBorder( "Java VM Options (effective on restart)",
                 createPanel( createUnmodifiableTextField( vmOptionsPath ), editVmOptionsButton ) ) );
     }

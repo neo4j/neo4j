@@ -19,14 +19,20 @@
  */
 package org.neo4j.desktop.ui;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 
 import org.neo4j.desktop.config.DatabaseConfiguration;
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.Value;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.Version;
 
 import static java.lang.String.format;
@@ -34,8 +40,8 @@ import static java.lang.String.format;
 public class DesktopModel
 {
     private final Environment environment;
-    private File databaseDirectory;
     private final Value<List<String>> extensionPackagesConfig;
+    private File databaseDirectory;
 
     public DesktopModel( Environment environment, File databaseDirectory, Value<List<String>> extensionPackagesConfig )
     {
@@ -60,7 +66,90 @@ public class DesktopModel
         this.databaseDirectory = databaseDirectory;
     }
 
+
     public File getVmOptionsFile()
+    {
+        File vmOptionsFile = getUserVmOptionsFile();
+
+        if ( ! vmOptionsFile.exists() )
+        {
+            createUserVmOptionsFile( vmOptionsFile );
+        }
+
+        if ( vmOptionsFile == null )
+        {
+            vmOptionsFile = getSystemVmOptionsFile();
+        }
+
+        return vmOptionsFile;
+    }
+
+    private void createUserVmOptionsFile( File vmOptionsFile )
+    {
+        try {
+            FileWriter writer = new FileWriter( vmOptionsFile );
+            PrintWriter printer = new PrintWriter( writer );
+            try
+            {
+                FileReader reader = new FileReader( getSystemVmOptionsFile() );
+                BufferedReader buffered = new BufferedReader( reader );
+                try
+                {
+                    String line;
+                    while ( ( line = buffered.readLine() ) != null )
+                    {
+                        String trimmed = line.trim();
+                        if ( trimmed.startsWith( "#" ) || ! trimmed.startsWith( "-include-options" ) )
+                        {
+                            printer.println( line );
+                        }
+                    }
+                }
+                finally
+                {
+                    buffered.close();
+                }
+            }
+            finally
+            {
+                printer.close();
+            }
+        }
+        catch ( IOException e )
+        {
+            // ignore
+        }
+    }
+
+    private File getUserVmOptionsFile()
+    {
+        File locationFile = new File( environment.getBaseDirectory(), "neo4j-desktop-user-vmoptions.loc" );
+        String location = readOneLine( locationFile );
+
+        if ( null == location )
+        {
+            return null;
+        }
+
+        String result = substituteVars( location );
+
+        return new File( result );
+    }
+
+    private String substituteVars( String location )
+    {
+        return new VariableSubstitutor().substitute( location, new Function<String, String>()
+        {
+            @Override
+            public String apply( String name )
+            {
+                String value = System.getenv( name );
+                return value == null ? "" : value;
+            }
+        } );
+    }
+
+    private File getSystemVmOptionsFile()
     {
         return new File( environment.getBaseDirectory(), "neo4j-desktop.vmoptions" );
     }
@@ -131,5 +220,41 @@ public class DesktopModel
 
         throw new UnsuitableGraphDatabaseDirectory(
                 "%s is neither empty nor does it contain a neo4j graph database", dir );
+    }
+
+    private static String readOneLine( File file )
+    {
+        try
+        {
+            if ( file.exists() && file.isFile() && file.canRead() )
+            {
+                FileReader reader = new FileReader( file );
+                try
+                {
+                    BufferedReader buffered = new BufferedReader( reader );
+                    try
+                    {
+                        return buffered.readLine();
+                    }
+                    finally
+                    {
+                        buffered.close();
+                    }
+
+                }
+                finally
+                {
+                    reader.close();
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            // couldn't read file content
+            return null;
+        }
+
+        // file was not readable or not a file
+        return null;
     }
 }
