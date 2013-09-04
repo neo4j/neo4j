@@ -123,6 +123,7 @@ public class Components
     {
         JTextField textField = new JTextField( text, DEFAULT_TEXT_COLUMNS );
         textField.setEditable( false );
+        textField.setForeground( Color.GRAY );
         return textField;
     }
 

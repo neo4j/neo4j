@@ -122,7 +122,7 @@ public abstract class SysTray
 
         private String title( DatabaseStatus status )
         {
-            return "Neo4j Desktop (" + status.name() + ")";
+            return "Neo4j Community (" + status.name() + ")";
         }
     }
     

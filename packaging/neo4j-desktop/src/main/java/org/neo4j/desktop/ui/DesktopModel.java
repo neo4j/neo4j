@@ -46,7 +46,7 @@ public class DesktopModel
 
     public String getNeo4jVersion()
     {
-        return format( "Community %s", Version.getKernel().getReleaseVersion() );
+        return format( "%s", Version.getKernel().getReleaseVersion() );
     }
 
     public File getDatabaseDirectory()
@@ -62,7 +62,7 @@ public class DesktopModel
 
     public File getVmOptionsFile()
     {
-        return new File( environment.getBaseDirectory(), "neo4j-desktop.vmoptions" );
+        return new File( environment.getBaseDirectory(), "neo4j-community.vmoptions" );
     }
 
     public List<String> getExtensionPackagesConfig()

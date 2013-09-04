@@ -76,18 +76,23 @@ public class Environment
         {
             try
             {
+                if ( !file.exists() )
+                {
+                    file.createNewFile();
+                }
+
                 getDesktop().edit( file );
+
                 return;
             }
             catch ( IOException e )
             {
-                e.printStackTrace();
+                // fall through to alert
             }
         }
-
-        if ( OperatingSystemFamily.WINDOWS.isDetected() )
+        else if ( OperatingSystemFamily.WINDOWS.isDetected() )
         {
-            getRuntime().exec( new String[] { "rundll32", "url.dll,FileProtocolHandler", file.getAbsolutePath() } );
+            getRuntime().exec( new String[]{"rundll32", "url.dll,FileProtocolHandler", file.getAbsolutePath()} );
             return;
         }
 
