@@ -49,6 +49,7 @@ trait PlanBuilder {
 object PlanBuilder extends Enumeration {
   val Lowest = -1000
 
+  val PredicateRewriting = -101
   val CachedExpressions = -100
   val IndexLookup = -100
   val TraversalMatcher = -11

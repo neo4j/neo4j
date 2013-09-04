@@ -107,33 +107,22 @@ case class Query(returns: Return,
 
   }
 
+  def includeIfNotEmpty(title:String, objects:Iterable[_]):String = if(objects.isEmpty) "" else
+    String.format("%s%s%n", title, objects.mkString(", "))
 
-  override def toString: String =
-    """
-start  : %s
-updates: %s
-match  : %s
-paths  : %s
-hints  : %s
-where  : %s
-aggreg : %s
-return : %s
-order  : %s
-slice  : %s
-next   : %s
-    """.format(
-  start.mkString(","),
-  updatedCommands.mkString(","),
-  matching,
-  namedPaths,
-  hints,
-  where,
-  aggregation,
-  returns.returnItems.mkString(","),
-  sort,
-  slice,
-  tail
-)
+  override def toString: String =  "\n" +
+    includeIfNotEmpty("start  : ", start) +
+      includeIfNotEmpty("updates: ", updatedCommands) +
+      includeIfNotEmpty("match  : ", matching) +
+      includeIfNotEmpty("paths  : ", namedPaths) +
+      includeIfNotEmpty("hints  : ", hints) +
+      (if (where == True()) "" else where.toString) +
+      includeIfNotEmpty("aggreg : ", aggregation) +
+      includeIfNotEmpty("return : ", returns.returnItems) +
+      includeIfNotEmpty("order  : ", sort) +
+      includeIfNotEmpty("slice  : ", slice) +
+      includeIfNotEmpty("next   : ", tail) + "\n"
+
 
   def setQueryText(t: String): Query = copy(queryString = QueryString(t))
 

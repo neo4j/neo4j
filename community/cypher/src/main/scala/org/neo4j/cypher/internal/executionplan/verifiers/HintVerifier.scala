@@ -28,36 +28,50 @@ import org.neo4j.cypher.internal.commands.expressions.Property
 
 object HintVerifier extends Verifier {
   override val verifyFunction: PartialFunction[AbstractQuery, Unit] = {
+
     case query: Query =>
       val predicateAtoms = query.where.atoms
 
       if ((!query.hints.isEmpty) && (!query.start.isEmpty))
         throw new SyntaxException("Cannot use index hints with start clause")
 
+      def containsLabel(identifier: String, label: String) = {
+        val existsInPredicates = predicateAtoms.exists {
+          case HasLabel(Identifier(predicateId), predicateLabel) =>
+            predicateId == identifier && predicateLabel.name == label
+
+          case x =>
+            false
+        }
+
+        def hasLabelInPattern(node: SingleNode): Boolean =
+          !node.optional && node.name == identifier && node.labels.exists(_.name == label)
+
+        val existsInPattern = query.matching.exists {
+          case node: SingleNode             => hasLabelInPattern(node)
+          case RelationshipPattern(_, a, b) => hasLabelInPattern(a) || hasLabelInPattern(b)
+        }
+
+        existsInPattern || existsInPredicates
+      }
+
+      def hasExpectedPredicate(id: String, prop: String) = predicateAtoms.exists {
+        case Equals(Property(Identifier(identifier), property), _) => id == identifier && property.name == prop
+        case Equals(_, Property(Identifier(identifier), property)) => id == identifier && property.name == prop
+        case _                                                     => false
+      }
+
       query.hints.foreach {
-        case NodeByLabel(hintId, hintLabel) =>
-          val valid = predicateAtoms.exists {
-            case HasLabel(Identifier(predicateId), predicateLabel) =>
-              predicateId == hintId && predicateLabel.name == hintLabel
+        case NodeByLabel(hintIdentifier, hintLabel) if !containsLabel(hintIdentifier, hintLabel) =>
+          throw new LabelScanHintException(hintIdentifier, hintLabel,
+            "Cannot use label scan hint in this context. The label must be specified on a non-optional node")
 
-            case x                                                 =>
-              false
-          }
-          if (!valid)
-            throw new LabelScanHintException(hintId, hintLabel,
-              "Can't use a label scan hint without using the label for that identifier in your +MATCH+ or +WHERE+")
+        case SchemaIndex(id, label, prop, _) if !hasExpectedPredicate(id, prop) || !containsLabel(id, label) =>
+          throw new IndexHintException(id, label, prop,
+            "Cannot use index hint in this context. The label and property comparison must be specified on a non-optional node")
 
-
-        case SchemaIndex(id, label, prop, _) =>
-
-          val valid = predicateAtoms.exists {
-            case Equals(Property(Identifier(identifier), property), _) => id == identifier && property.name == prop
-            case _                                                     => false
-          }
-
-          if (!valid)
-            throw new IndexHintException(id, label, prop,
-              "Can't use an index hint without an equality comparison on the correct node property label combo.")
+        case _ => {}
       }
   }
+
 }

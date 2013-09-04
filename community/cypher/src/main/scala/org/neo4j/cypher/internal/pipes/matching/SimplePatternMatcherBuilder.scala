@@ -23,7 +23,7 @@ import collection.{immutable, Map}
 import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
 import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode, PatternRelationship=>SimplePatternRelationship}
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.commands.{Predicate, True}
+import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
@@ -102,7 +102,8 @@ object SimplePatternMatcherBuilder {
     val a = !graph.containsOptionalElements
     val b = !graph.patternRels.values.exists(pr => pr.isInstanceOf[VariableLengthPatternRelationship] || pr.startNode == pr.endNode || pr.relTypes.size > 1)
     val c = !graph.patternRels.keys.exists(graph.boundElements.contains)
-    val d = !graph.patternNodes.values.exists(pn => pn.relationships.isEmpty)
-    a && b && c && d
+    val d = !graph.patternNodes.values.exists(pn => pn.relationships.isEmpty )
+    val e = !graph.patternNodes.values.exists(_.labels.nonEmpty)
+    a && b && c && d && e
   }
 }

@@ -26,7 +26,7 @@ import internal.profiler.Profiler
 import internal.spi.{PlanContext, QueryContext, QueryType}
 import internal.ClosingIterator
 import internal.commands._
-import internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
 import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
@@ -76,6 +76,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
 
   def buildQuery(inputQuery: Query, context: PlanContext): PipeAndIsUpdating = {
     val plainPSQ = PartiallySolvedQuery(inputQuery)
+
     val initialPSQ = plainPSQ.rewrite(ExpressionResolver(context))
 
     var continue = true
@@ -197,7 +198,8 @@ The Neo4j Team""")
   def prepare = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new IndexLookupBuilder,
-      new StartPointChoosingBuilder
+      new StartPointChoosingBuilder,
+      new PredicateRewriter
     )
   }
 

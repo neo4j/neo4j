@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.parser.legacy
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.{CypherParser, ReattachAliasedExpressions}
+import org.neo4j.cypher.internal.parser.MarkOptionalNodes
 
 class CypherParserImpl extends Base
 with Index
@@ -34,7 +35,12 @@ with CypherParser {
   @throws(classOf[SyntaxException])
   def parse(text: String): AbstractQuery = {
     parseAll(cypherQuery, text) match {
-      case Success(r, q) => ReattachAliasedExpressions(r.setQueryText(text))
+      case Success(r, q) =>
+        val resultQuery: AbstractQuery = ReattachAliasedExpressions(r.setQueryText(text))
+
+        // This should be removed once the parser understand explicit optional nodes
+        MarkOptionalNodes(resultQuery)
+
       case NoSuccess(message, input) => {
         if (message.startsWith("INNER"))
           throw new SyntaxException(message.substring(5), text, input.offset)

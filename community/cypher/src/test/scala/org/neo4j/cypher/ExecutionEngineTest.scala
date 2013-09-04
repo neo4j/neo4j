@@ -2461,7 +2461,7 @@ RETURN x0.name
     relate(a, b2)
 
     // WHEN
-    val result = parseAndExecute(s"START a=node(${nodeId(a)}) MATCH a-->b:foo RETURN b")
+    val result = parseAndExecute(s"START a=node(${nodeId(a)}) MATCH a-[?]->b:foo RETURN b")
 
     // THEN
     assert(result.toList === List(Map("b" -> b1)))

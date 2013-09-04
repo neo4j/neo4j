@@ -23,9 +23,8 @@ import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
 import expressions.{Property, Identifier}
-import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.commands.PatternPredicate
-import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class PredicatesTest extends Predicates with MatchClause with ParserTest with Expressions {
@@ -34,24 +33,20 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
     implicit val parserToTest = patternPredicate
 
     parsing("a-->(:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED5"), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("Foo", TokenType.Label)))
+      PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED5", Seq(UnresolvedLabel("Foo"))), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)))
 
     parsing("a-->(n:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("n"), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), KeyToken.Unresolved("Foo", TokenType.Label)))
+      PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("n", Seq(UnresolvedLabel("Foo"))), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)))
 
     parsing("a-->(:Bar:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED5"), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), And(HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("Bar", TokenType.Label)), HasLabel(Identifier("  UNNAMED5"),KeyToken.Unresolved("Foo", TokenType.Label))))
+      PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED5", Seq(UnresolvedLabel("Bar"), UnresolvedLabel("Foo"))), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)))
 
     val patterns = Seq(
-      RelatedTo(SingleNode("a"), SingleNode("  UNNAMED5"), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false),
-      RelatedTo(SingleNode("  UNNAMED5"), SingleNode("  UNNAMED16"), "  UNNAMED12", Seq.empty, Direction.OUTGOING, false))
-
-    val predicate = And(
-      HasLabel(Identifier("  UNNAMED5"), KeyToken.Unresolved("First", TokenType.Label)),
-      HasLabel(Identifier("  UNNAMED16"), KeyToken.Unresolved("Second", TokenType.Label)))
+      RelatedTo(SingleNode("a"), SingleNode("  UNNAMED5", Seq(UnresolvedLabel("First"))), "  UNNAMED1", Seq.empty, Direction.OUTGOING, false),
+      RelatedTo(SingleNode("  UNNAMED5", Seq(UnresolvedLabel("First"))), SingleNode("  UNNAMED16", Seq(UnresolvedLabel("Second"))), "  UNNAMED12", Seq.empty, Direction.OUTGOING, false))
 
     parsing("a-->(:First)-->(:Second)") shouldGive
-      PatternPredicate(patterns, predicate)
+      PatternPredicate(patterns)
   }
 
   @Test
