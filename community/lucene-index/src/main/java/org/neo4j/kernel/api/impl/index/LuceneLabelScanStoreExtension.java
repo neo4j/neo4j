@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.Monitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -35,6 +36,7 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 import static org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.loggerMonitor;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
+@Service.Implementation(KernelExtensionFactory.class)
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
 {
     private final int priority;
