@@ -62,13 +62,16 @@ o Added support for labels across all APIs: Cypher, Core Java and REST
 o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
 o Improvements to shell, including import/export of small graphs via cypher statements
 
-1.9.3
------
+1.9.3 (2013-08-30)
+------------------
+Logging in console is now consistent across modules and more informative
+
 Kernel:
 o Remove hard dependency on Logback
 o Introduction of logical_log_rotation_threshold to control log rotation.
 o Autoconfigurator can handle cases where physical memory is less than the configured JVM heap
 o Fixes index out of bounds errors when iterating over relationships
+o Fixes race in persistent window pool which might lead to inconsistent data
 
 Cypher:
 o Fixes problems with extra columns showing up in some conditions

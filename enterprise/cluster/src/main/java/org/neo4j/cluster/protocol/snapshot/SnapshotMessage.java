@@ -21,12 +21,15 @@ package org.neo4j.cluster.protocol.snapshot;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 
 /**
  * TODO
@@ -46,12 +49,30 @@ public enum SnapshotMessage
         private long lastDeliveredInstanceId = -1;
         transient SnapshotProvider provider;
 
+        private transient ObjectInputStreamFactory objectInputStreamFactory;
+        private transient ObjectOutputStreamFactory objectOutputStreamFactory;
+
         transient byte[] buf;
 
-        public SnapshotState( long lastDeliveredInstanceId, SnapshotProvider provider )
+        public SnapshotState( long lastDeliveredInstanceId, SnapshotProvider provider,
+                              ObjectInputStreamFactory objectInputStreamFactory,
+                              ObjectOutputStreamFactory objectOutputStreamFactory )
         {
             this.lastDeliveredInstanceId = lastDeliveredInstanceId;
             this.provider = provider;
+
+            if ( objectInputStreamFactory == null )
+            {
+                throw new RuntimeException( "objectInputStreamFactory was null" );
+            }
+
+            if ( objectOutputStreamFactory == null )
+            {
+                throw new RuntimeException( "objectOutputStreamFactory was null" );
+            }
+
+            this.objectInputStreamFactory = objectInputStreamFactory;
+            this.objectOutputStreamFactory = objectOutputStreamFactory;
         }
 
         public long getLastDeliveredInstanceId()
@@ -59,11 +80,12 @@ public enum SnapshotMessage
             return lastDeliveredInstanceId;
         }
 
-        public void setState( SnapshotProvider provider )
+        public void setState( SnapshotProvider provider, ObjectInputStreamFactory objectInputStreamFactory )
                 throws IOException
         {
             ByteArrayInputStream bin = new ByteArrayInputStream( buf );
-            ObjectInputStream oin = new ObjectInputStream( bin );
+
+            ObjectInputStream oin = objectInputStreamFactory.create( bin );
             try
             {
                 provider.setState( oin );
@@ -83,7 +105,7 @@ public enum SnapshotMessage
         {
             out.defaultWriteObject();
             ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            ObjectOutputStream oout = new ObjectOutputStream( bout );
+            ObjectOutputStream oout = objectOutputStreamFactory.create( bout );
             provider.getState( oout );
             oout.close();
             byte[] buf = bout.toByteArray();
@@ -96,7 +118,14 @@ public enum SnapshotMessage
         {
             in.defaultReadObject();
             buf = new byte[in.readInt()];
-            in.readFully( buf );
+            try
+            {
+                in.readFully( buf );
+            }
+            catch ( EOFException endOfFile )
+            {
+                // do nothing - the stream's ended but the message content got through ok.
+            }
         }
     }
 }

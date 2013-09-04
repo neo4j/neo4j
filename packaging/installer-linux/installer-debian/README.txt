@@ -10,7 +10,7 @@ Current installers:
 
 To build this, you need debuild installed:
 
-  sudo apt-get install devscripts build-essential
+  sudo apt-get install devscripts
 
 To build:
 

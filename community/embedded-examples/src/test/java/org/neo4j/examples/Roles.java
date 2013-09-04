@@ -19,21 +19,26 @@
 
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
-
 import org.junit.Test;
-import org.neo4j.graphdb.Direction;
+
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.TraversalPosition;
-import org.neo4j.graphdb.Traverser;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.traversal.Evaluators;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
+
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
+import static org.neo4j.kernel.Traversal.traversal;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 public class Roles extends AbstractJavaDocTestbase
 {
@@ -47,26 +52,26 @@ public class Roles extends AbstractJavaDocTestbase
     }
 
     /**
-     * This is an example showing a hierarchy of 
-     * roles. 
+     * This is an example showing a hierarchy of
+     * roles.
      * What's interesting is that a tree is not sufficient for storing this structure,
      * as elaborated below.
      * 
      * image::roles.png[scaledwidth="100%"]
      * 
-     * This is an implementation of an example found in the article 
-     * http://www.codeproject.com/Articles/22824/A-Model-to-Represent-Directed-Acyclic-Graphs-DAG-o[A Model to Represent Directed Acyclic Graphs (DAG) on SQL Databases] 
+     * This is an implementation of an example found in the article
+     * http://www.codeproject.com/Articles/22824/A-Model-to-Represent-Directed-Acyclic-Graphs-DAG-o[A Model to Represent Directed Acyclic Graphs (DAG) on SQL Databases]
      * by http://www.codeproject.com/script/Articles/MemberArticles.aspx?amid=274518[Kemal Erdogan].
      * The article discusses how to store http://en.wikipedia.org/wiki/Directed_acyclic_graph[
-     * directed acyclic graphs] (DAGs) 
-     * in SQL based DBs. DAGs are almost trees, but with a twist: it may be possible to reach 
-     * the same node through different paths. Trees are restricted from this possibility, which 
-     * makes them much easier to handle. In our case it is "Ali" and "Engin", 
+     * directed acyclic graphs] (DAGs)
+     * in SQL based DBs. DAGs are almost trees, but with a twist: it may be possible to reach
+     * the same node through different paths. Trees are restricted from this possibility, which
+     * makes them much easier to handle. In our case it is "Ali" and "Engin",
      * as they are both admins and users and thus reachable through these group nodes.
      * Reality often looks this way and can't be captured by tree structures.
      * 
-     * In the article an SQL Stored Procedure solution is provided. The main idea, 
-     * that also have some support from scientists, is to pre-calculate all possible (transitive) paths. 
+     * In the article an SQL Stored Procedure solution is provided. The main idea,
+     * that also have some support from scientists, is to pre-calculate all possible (transitive) paths.
      * Pros and cons of this approach:
      * 
      * * decent performance on read
@@ -74,10 +79,10 @@ public class Roles extends AbstractJavaDocTestbase
      * * wastes _lots_ of space
      * * relies on stored procedures
      * 
-     * In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (green edges) relationships 
-     * to model the group hierarchy and +MEMBER_OF+ (blue edges) to model membership in groups. 
-     * We also connect the top level groups to the reference node by +ROOT+ relationships. 
-     * This gives us a useful partitioning of the graph. Neo4j has no predefined relationship 
+     * In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (green edges) relationships
+     * to model the group hierarchy and +MEMBER_OF+ (blue edges) to model membership in groups.
+     * We also connect the top level groups to the reference node by +ROOT+ relationships.
+     * This gives us a useful partitioning of the graph. Neo4j has no predefined relationship
      * types, you are free to create any relationship types and give them any semantics you want.
      * 
      * Lets now have a look at how to retrieve information from the graph. The Java code is using
@@ -109,7 +114,7 @@ public class Roles extends AbstractJavaDocTestbase
      * 
      * @@get-user-memberships
      * 
-     * resuling in: 
+     * resuling in:
      * 
      * @@o-get-user-memberships
      *
@@ -121,7 +126,7 @@ public class Roles extends AbstractJavaDocTestbase
      * 
      * == Get all groups ==
      * 
-     * In Java: 
+     * In Java:
      * 
      * @@get-groups
      * 
@@ -177,15 +182,15 @@ public class Roles extends AbstractJavaDocTestbase
         System.out.println( "All admins:" );
         // START SNIPPET: get-admins
         Node admins = getNodeByName( "Admins" );
-        Traverser traverser = admins.traverse(
-                Traverser.Order.BREADTH_FIRST,
-                StopEvaluator.END_OF_GRAPH,
-                ReturnableEvaluator.ALL_BUT_START_NODE,
-                RoleRels.PART_OF, Direction.INCOMING,
-                RoleRels.MEMBER_OF, Direction.INCOMING );
+        TraversalDescription traversal = traversal()
+                .breadthFirst()
+                .evaluator( excludeStartPosition() )
+                .relationships( RoleRels.PART_OF, INCOMING )
+                .relationships( RoleRels.MEMBER_OF, INCOMING );
         // END SNIPPET: get-admins
         
-        gen.get().addSnippet( "o-get-admins", createOutputSnippet( traverserToString( traverser ) ) );
+        gen.get().addSnippet( "o-get-admins",
+                createOutputSnippet( traverserToString( traversal.traverse( admins ) ) ) );
         String query = "start admins=node("
                        + admins.getId()
                        + ") match admins<-[:PART_OF*0..]-group<-[:MEMBER_OF]-user return user.name, group.name";
@@ -198,14 +203,14 @@ public class Roles extends AbstractJavaDocTestbase
         //Jale's memberships
         // START SNIPPET: get-user-memberships
         Node jale = getNodeByName( "Jale" );
-        traverser = jale.traverse(
-                Traverser.Order.DEPTH_FIRST,
-                StopEvaluator.END_OF_GRAPH,
-                ReturnableEvaluator.ALL_BUT_START_NODE,
-                RoleRels.MEMBER_OF, Direction.OUTGOING,
-                RoleRels.PART_OF, Direction.OUTGOING );
+        traversal = traversal()
+                .depthFirst()
+                .evaluator( excludeStartPosition() )
+                .relationships( RoleRels.MEMBER_OF, OUTGOING )
+                .relationships( RoleRels.PART_OF, OUTGOING );
         // END SNIPPET: get-user-memberships
-        gen.get().addSnippet( "o-get-user-memberships", createOutputSnippet( traverserToString( traverser ) ) );
+        gen.get().addSnippet( "o-get-user-memberships",
+                createOutputSnippet( traverserToString( traversal.traverse( jale ) ) ) );
         query = "start jale=node("
                 + jale.getId()
                 + ") match jale-[:MEMBER_OF]->()-[:PART_OF*0..]->group return group.name";
@@ -220,14 +225,14 @@ public class Roles extends AbstractJavaDocTestbase
         // get all groups
         // START SNIPPET: get-groups
         Node referenceNode = getNodeByName( "Reference_Node") ;
-        traverser = referenceNode.traverse(
-                Traverser.Order.BREADTH_FIRST,
-                StopEvaluator.END_OF_GRAPH,
-                ReturnableEvaluator.ALL_BUT_START_NODE,
-                RoleRels.ROOT, Direction.INCOMING,
-                RoleRels.PART_OF, Direction.INCOMING );
+        traversal = traversal()
+                .breadthFirst()
+                .evaluator( excludeStartPosition() )
+                .relationships( RoleRels.ROOT, INCOMING )
+                .relationships( RoleRels.PART_OF, INCOMING );
         // END SNIPPET: get-groups
-        gen.get().addSnippet( "o-get-groups", createOutputSnippet( traverserToString( traverser ) ) );
+        gen.get().addSnippet( "o-get-groups",
+                createOutputSnippet( traverserToString( traversal.traverse( referenceNode ) ) ) );
         query = "start refNode=node("
                 + referenceNode.getId()
                 + ") match refNode<-[:ROOT]->()<-[:PART_OF*0..]-group return group.name";
@@ -241,28 +246,15 @@ public class Roles extends AbstractJavaDocTestbase
         
         //get all members
         // START SNIPPET: get-members
-        traverser = referenceNode.traverse(
-                Traverser.Order.BREADTH_FIRST,
-                StopEvaluator.END_OF_GRAPH,
-                new ReturnableEvaluator()
-                {
-                    @Override
-                    public boolean isReturnableNode(
-                            TraversalPosition currentPos )
-                    {
-                        if ( currentPos.isStartNode() )
-                        {
-                            return false;
-                        }
-                        Relationship rel = currentPos.lastRelationshipTraversed();
-                        return rel.isType( RoleRels.MEMBER_OF );
-                    }
-                },
-                RoleRels.ROOT, Direction.INCOMING,
-                RoleRels.PART_OF, Direction.INCOMING,
-                RoleRels.MEMBER_OF, Direction.INCOMING );
+        traversal = traversal()
+                .breadthFirst()
+                .evaluator( Evaluators.includeWhereLastRelationshipTypeIs( RoleRels.MEMBER_OF ) )
+                .relationships( RoleRels.ROOT, INCOMING )
+                .relationships( RoleRels.PART_OF, INCOMING )
+                .relationships( RoleRels.MEMBER_OF, INCOMING );
         // END SNIPPET: get-members
-        gen.get().addSnippet( "o-get-members", createOutputSnippet( traverserToString( traverser ) ) );
+        gen.get().addSnippet( "o-get-members",
+                createOutputSnippet( traverserToString( traversal.traverse( referenceNode ) ) ) );
         query = "start refNode=node("+ referenceNode.getId() +") " +
         		"match refNode<-[:ROOT]->root, p=root<-[PART_OF*0..]-()<-[:MEMBER_OF]-user " +
         		"return user.name, min(length(p)) " +
@@ -284,15 +276,17 @@ public class Roles extends AbstractJavaDocTestbase
 
     private String traverserToString( Traverser traverser )
     {
-        // START SNIPPET: read-traverser
-        String output = "";
-        for ( Node node : traverser )
+        try ( Transaction tx = db.beginTx() )
         {
-            output += "Found: " + node.getProperty( NAME ) + " at depth: "
-                      + ( traverser.currentPosition().depth() - 1 ) + "\n";
+            // START SNIPPET: read-traverser
+            String output = "";
+            for ( Path path : traverser )
+            {
+                output += "Found: " + path.endNode().getProperty( NAME ) + " at depth: " + path.length() + "\n";
+            }
+            // END SNIPPET: read-traverser
+            return output;
         }
-        // END SNIPPET: read-traverser
-        return output;
     }
 
     private Node getNodeByName( String string )
