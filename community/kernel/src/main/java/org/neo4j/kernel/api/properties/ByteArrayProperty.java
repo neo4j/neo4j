@@ -35,15 +35,15 @@ class ByteArrayProperty extends FullSizeProperty
     @Override
     public byte[] value()
     {
-        return value;
+        return value.clone();
     }
 
     @Override
     public boolean valueEquals( Object value )
     {
-        if ( value instanceof byte[])
+        if ( value instanceof byte[] )
         {
-            return Arrays.equals(this.value, (byte[])value);
+            return Arrays.equals( this.value, (byte[]) value );
         }
         return valueCompare( this.value, value );
     }

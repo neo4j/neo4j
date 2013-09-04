@@ -26,6 +26,8 @@ import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
 
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -81,42 +83,41 @@ public class DiffSets<T>
 
     public void accept( Visitor<T> visitor )
     {
-        if ( addedElements != null )
+        for ( T element : added( false ) )
         {
-            for ( T element : addedElements )
-            {
-                visitor.visitAdded( element );
-            }
+            visitor.visitAdded( element );
         }
-        if ( removedElements != null )
+        for ( T element : removed( false ) )
         {
-            for ( T element : removedElements )
-            {
-                visitor.visitRemoved( element );
-            }
+            visitor.visitRemoved( element );
         }
     }
 
     public boolean add( T elem )
     {
-        ensureAddedHasBeenCreated();
-        boolean result = addedElements.add( elem );
-        if ( removedElements != null )
-        {
-            removedElements.remove( elem );
-        }
+        boolean result = added( true ).add( elem );
+        removed( false ).remove( elem );
         return result;
+    }
+
+    public void replace( T toRemove, T toAdd )
+    {
+        Set<T> added = added( true ); // we're doing both add and remove on it, so pass in true
+        boolean removedFromAdded = added.remove( toRemove );
+        removed( false ).remove( toAdd );
+
+        added.add( toAdd );
+        if ( !removedFromAdded )
+        {
+            removed( true ).add( toRemove );
+        }
     }
 
     public boolean remove( T elem )
     {
-        ensureRemoveHasBeenCreated();
-        boolean removedFromAddedElements = false;
-        if ( addedElements != null )
-        {
-            removedFromAddedElements = addedElements.remove( elem );
-        }
-        return removedFromAddedElements || removedElements.add( elem );
+        boolean removedFromAddedElements = added( false ).remove( elem );
+        // Add to the removedElements only if it was removed from the addedElements.
+        return removedFromAddedElements || removed( true ).add( elem );
     }
 
     public void addAll( Iterator<T> elems )
@@ -137,12 +138,12 @@ public class DiffSets<T>
 
     public boolean isAdded( T elem )
     {
-        return addedElements != null && addedElements.contains( elem );
+        return added( false ).contains( elem );
     }
 
     public boolean isRemoved( T elem )
     {
-        return removedElements != null && removedElements.contains( elem );
+        return removed( false ).contains( elem );
     }
 
     public Set<T> getAdded()
@@ -157,10 +158,9 @@ public class DiffSets<T>
 
     public boolean isEmpty()
     {
-        return getAdded().isEmpty() && getRemoved().isEmpty();
+        return added( false ).isEmpty() && removed( false ).isEmpty();
     }
 
-    @SuppressWarnings("unchecked")
     public Iterator<T> apply( Iterator<T> source )
     {
         Iterator<T> result = source;
@@ -179,31 +179,40 @@ public class DiffSets<T>
 
     public PrimitiveLongIterator applyPrimitiveLongIterator( final PrimitiveLongIterator source )
     {
-        return new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
+        return new DiffApplyingPrimitiveLongIterator( source, added( false ), removed( false ) );
     }
 
     public DiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
-        Iterable<T> newAdded = filter( addedFilter, getAdded() );
-        Set<T> newRemoved = getRemoved();
+        Iterable<T> newAdded = filter( addedFilter, added( false ) );
+        Set<T> newRemoved = removed( false );
         return new DiffSets<>( asSet( newAdded ), asSet( newRemoved ) );
     }
 
-    private void ensureAddedHasBeenCreated()
+    private Set<T> added( boolean create )
     {
         if ( addedElements == null )
         {
+            if ( !create )
+            {
+                return Collections.emptySet();
+            }
             addedElements = newSet();
         }
+        return addedElements;
     }
 
-    private void ensureRemoveHasBeenCreated()
+    private Set<T> removed( boolean create )
     {
         if ( removedElements == null )
         {
+            if ( !create )
+            {
+                return Collections.emptySet();
+            }
             removedElements = newSet();
-            ensureFilterHasBeenCreated();
         }
+        return removedElements;
     }
 
     private void ensureFilterHasBeenCreated()
@@ -215,8 +224,7 @@ public class DiffSets<T>
                 @Override
                 public boolean accept( T item )
                 {
-                    return ( removedElements == null || !removedElements.contains( item ) ) &&
-                           ( addedElements == null || !addedElements.contains( item ) );
+                    return !removed( false ).contains( item ) && !added( false ).contains( item );
                 }
             };
         }
@@ -224,7 +232,7 @@ public class DiffSets<T>
 
     public int delta()
     {
-        return (addedElements == null ? 0 : addedElements.size()) - (removedElements == null ? 0 : removedElements.size());
+        return added( false ).size() - removed( false ).size();
     }
 
     private Set<T> newSet()
@@ -239,7 +247,12 @@ public class DiffSets<T>
 
     public boolean unRemove( T item )
     {
-        return removedElements != null && removedElements.remove( item );
+        return removed( false ).remove( item );
     }
 
+    @Override
+    public String toString()
+    {
+        return format( "{+%s, -%s}", added( false ), removed( false ) );
+    }
 }

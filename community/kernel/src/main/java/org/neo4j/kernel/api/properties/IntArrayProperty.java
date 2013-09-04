@@ -35,7 +35,7 @@ class IntArrayProperty extends FullSizeProperty
     @Override
     public int[] value()
     {
-        return value;
+        return value.clone();
     }
 
     @Override

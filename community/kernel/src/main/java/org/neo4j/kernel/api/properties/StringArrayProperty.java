@@ -35,15 +35,15 @@ class StringArrayProperty extends FullSizeProperty
     @Override
     public String[] value()
     {
-        return value;
+        return value.clone();
     }
 
     @Override
     public boolean valueEquals( Object value )
     {
-        if ( value instanceof String[])
+        if ( value instanceof String[] )
         {
-            return Arrays.equals(this.value, (String[])value);
+            return Arrays.equals( this.value, (String[]) value );
         }
         return valueCompare( this.value, value );
     }

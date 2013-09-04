@@ -35,15 +35,15 @@ class FloatArrayProperty extends FullSizeProperty
     @Override
     public float[] value()
     {
-        return value;
+        return value.clone();
     }
 
     @Override
     public boolean valueEquals( Object value )
     {
-        if ( value instanceof float[])
+        if ( value instanceof float[] )
         {
-            return Arrays.equals(this.value, (float[])value);
+            return Arrays.equals( this.value, (float[]) value );
         }
         return valueCompare( this.value, value );
     }

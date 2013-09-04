@@ -35,15 +35,15 @@ class LongArrayProperty extends FullSizeProperty
     @Override
     public long[] value()
     {
-        return value;
+        return value.clone();
     }
 
     @Override
     public boolean valueEquals( Object value )
     {
-        if ( value instanceof long[])
+        if ( value instanceof long[] )
         {
-            return Arrays.equals(this.value, (long[])value);
+            return Arrays.equals( this.value, (long[]) value );
         }
         return valueCompare( this.value, value );
     }
