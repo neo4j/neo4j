@@ -37,6 +37,7 @@ import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
@@ -89,7 +90,7 @@ public class MultiPaxosNetworkTest
                                 "cluster://localhost:5002",
                                 "cluster://localhost:5003" ),
                         logging ),
-                timeoutStrategy, logging );
+                timeoutStrategy, logging, new ObjectStreamFactory(), new ObjectStreamFactory() );
 
         ServerIdElectionCredentialsProvider serverIdElectionCredentialsProvider = new
                 ServerIdElectionCredentialsProvider();

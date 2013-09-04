@@ -38,21 +38,20 @@ public class LenientObjectOutputStream extends ObjectOutputStream
     @Override
     protected void writeClassDescriptor( ObjectStreamClass desc ) throws IOException
     {
-        Long wireSuid = desc.getSerialVersionUID();
-        if ( versionMapper.hasMappingFor( wireSuid ) )
+        if ( versionMapper.hasMappingFor( desc.getName() ) )
         {
-            updateWirePayloadSuid( desc, wireSuid );
+            updateWirePayloadSuid( desc );
         }
 
         super.writeClassDescriptor( desc );
     }
 
-    private void updateWirePayloadSuid( ObjectStreamClass wirePayload, Long wireSuid )
+    private void updateWirePayloadSuid( ObjectStreamClass wirePayload )
     {
         try
         {
             Field field = getAccessibleSuidField( wirePayload );
-            field.set( wirePayload, versionMapper.map( wireSuid ) );
+            field.set( wirePayload, versionMapper.mappingFor( wirePayload.getName() ) );
         }
         catch ( NoSuchFieldException e )
         {

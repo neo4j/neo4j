@@ -31,6 +31,7 @@ import org.neo4j.cluster.ScriptableNetworkFailureLatencyStrategy;
 import org.neo4j.cluster.TestProtocolServer;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
@@ -104,7 +105,9 @@ public class MultiPaxosTest
         }
 
         final AtomicBroadcast atomicBroadcast = nodes.get( 0 ).newClient( AtomicBroadcast.class );
-        final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer();
+        ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
+        final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer( objectStreamFactory,
+                objectStreamFactory );
         atomicBroadcast.broadcast( serializer.broadcast( new DaPayload() ) );
 
         networkLatency.nodeIsDown( "cluster://server2" );

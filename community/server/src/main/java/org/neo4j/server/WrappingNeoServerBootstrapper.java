@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
@@ -28,30 +27,8 @@ import org.neo4j.server.configuration.ServerConfigurator;
  * A bootstrapper for the Neo4j Server that takes an already instantiated
  * {@link org.neo4j.kernel.GraphDatabaseAPI}, and optional configuration, and launches a
  * server using that database.
- * <p>
- * Use this to start up a full Neo4j server from within an application that
- * already uses the {@link EmbeddedGraphDatabase} or the
- * {@link HighlyAvailableGraphDatabase}. This gives your application the full
- * benefits of the server's REST API, the Web administration interface and
- * statistics tracking.
- * <p>
- * Example:
- * 
- * <pre>
- * {
- *     &#064;code WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDatabase );
- *     srv.start(); // Launches the server at default URL, http://localhost:7474
- * 
- *     // Run your application as long as you please
- * 
- *     srv.stop();
- * }
- * </pre>
- * 
- * If you want to change configuration, pass in the optional Configurator arg to
- * the constructor. You can write your own implementation or use
- * {@link org.neo4j.server.configuration.ServerConfigurator}.
  */
+@Deprecated
 public class WrappingNeoServerBootstrapper extends Bootstrapper
 {
     private final GraphDatabaseAPI db;

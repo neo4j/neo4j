@@ -15,7 +15,8 @@ Pattern matching borrows expression approaches from http://en.wikipedia.org/wiki
 
 Being a declarative language, Cypher focuses on the clarity of expressing _what_ to retrieve from a graph, not _how_
 to do it, in contrast to imperative languages like Java, and scripting languages like
-http://gremlin.tinkerpop.com[Gremlin] and http://neo4j.rubyforge.org/[the JRuby Neo4j bindings]. This makes the concern query optimization an implementation detail which is not forced upon to the user.
+http://gremlin.tinkerpop.com[Gremlin] and http://neo4j.rubyforge.org/[the JRuby Neo4j bindings].
+This makes the concern query optimization an implementation detail which is not forced upon to the user.
 
 The query language is comprised of several distinct clauses.
 

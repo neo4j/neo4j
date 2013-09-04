@@ -23,7 +23,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
-import java.lang.reflect.Field;
 
 public class LenientObjectInputStream extends ObjectInputStream
 {
@@ -38,54 +37,25 @@ public class LenientObjectInputStream extends ObjectInputStream
     @Override
     protected ObjectStreamClass readClassDescriptor() throws IOException, ClassNotFoundException
     {
-        ObjectStreamClass wirePayload = super.readClassDescriptor();
-        Long wireSuid = getSuidFrom( wirePayload );
-
-        if(versionMapper.hasMappingFor( wireSuid )) {
-            updateWirePayloadSuid( wirePayload, versionMapper.map( wireSuid ) );
+        ObjectStreamClass wireClassDescriptor = super.readClassDescriptor();
+        if(!versionMapper.hasMappingFor( wireClassDescriptor.getName() )) {
+            versionMapper.addMappingFor( wireClassDescriptor.getName(), wireClassDescriptor.getSerialVersionUID() );
         }
 
-        return wirePayload;
-    }
-
-    private void updateWirePayloadSuid( ObjectStreamClass wirePayload, long newSuid )
-    {
+        Class localClass; // the class in the local JVM that this descriptor represents.
         try {
-            Field field = getAccessibleSuidField( wirePayload );
-            field.set( wirePayload, newSuid );
+            localClass = Class.forName( wireClassDescriptor.getName() );
+        } catch (ClassNotFoundException e) {
+            return wireClassDescriptor;
         }
-        catch ( NoSuchFieldException e )
-        {
-            throw new RuntimeException( e );
+        ObjectStreamClass localClassDescriptor = ObjectStreamClass.lookup(localClass);
+        if (localClassDescriptor != null) {
+            final long localSUID = localClassDescriptor.getSerialVersionUID();
+            final long wireSUID = wireClassDescriptor.getSerialVersionUID();
+            if (wireSUID != localSUID) {
+                wireClassDescriptor = localClassDescriptor;
+            }
         }
-        catch ( IllegalAccessException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    private Long getSuidFrom( ObjectStreamClass localClassDescriptor )
-    {
-        try
-        {
-            Field field = getAccessibleSuidField( localClassDescriptor );
-            return (Long) field.get( localClassDescriptor );
-        }
-        catch ( NoSuchFieldException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( IllegalAccessException e )
-        {
-            throw new RuntimeException( e );
-        }
-
-    }
-
-    private Field getAccessibleSuidField( ObjectStreamClass localClassDescriptor ) throws NoSuchFieldException
-    {
-        Field suidField = localClassDescriptor.getClass().getDeclaredField( "suid" );
-        suidField.setAccessible( true );
-        return suidField;
+        return wireClassDescriptor;
     }
 }
