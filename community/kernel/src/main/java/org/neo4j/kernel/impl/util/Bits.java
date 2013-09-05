@@ -208,7 +208,8 @@ public final class Bits implements Cloneable
         {
             long value = longs[longIndex];
             if ( builder.length() > 0 ) builder.append( "\n" );
-            builder.append( longIndex + ":" );
+            builder.append( longIndex );
+            builder.append( ':' );
             numberToString( builder, value, 8 );
             if ( longIndex == 0 ) builder.append( " <-- START" );
         }

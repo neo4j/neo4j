@@ -101,7 +101,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
         return getClass().getSimpleName() + "[" + labelScanStore + ", prio:" + priority + "]";
     }
 
-    public static interface FullStoreChangeStream extends Iterable<NodeLabelUpdate>
+    interface FullStoreChangeStream extends Iterable<NodeLabelUpdate>
     {
         PrimitiveLongIterator labelIds();
 

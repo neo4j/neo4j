@@ -75,7 +75,7 @@ public abstract class ArrayUtil
         @Override
         public boolean itemEquals( Object lhs, Object rhs )
         {
-            return lhs == rhs || (lhs != null && lhs.equals( rhs ));
+            return lhs == rhs || lhs != null && lhs.equals( rhs );
         }
     };
 
