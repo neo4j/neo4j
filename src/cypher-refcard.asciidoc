@@ -124,7 +124,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation
 * Try not to use optional relationships.
   Above all, don't use them like this: `MATCH a-[r?:LOVES]->() WHERE r IS NULL` where you just make sure that they don't exist.
   Instead do this like so: `MATCH a WHERE NOT (a)-[:LOVES]->()`.
-* Always set an upper limit for your variable length relationships.
+* Always set an upper limit for your variable length patterns.
   It's easy to have a query go wild and touch all nodes in a graph by mistake.
 * Return only the data you need.
   Avoid returning whole nodes and relationships -- instead, pick the data you need and return only that.
