@@ -20,8 +20,6 @@
 package org.neo4j.kernel;
 
 import javax.transaction.RollbackException;
-import javax.transaction.Status;
-import javax.transaction.SystemException;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
@@ -99,19 +97,6 @@ public class TopLevelTransaction implements Transaction
     {
         transactionOutcome.success();
     }
-    
-    protected boolean isMarkedAsSuccessful()
-    {
-        try
-        {
-            return transactionOutcome.canCommit() && transactionManager.getTransaction().getStatus() !=
-                    Status.STATUS_MARKED_ROLLBACK;
-        }
-        catch ( SystemException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
 
     @Override
     public final void finish()
@@ -129,7 +114,6 @@ public class TopLevelTransaction implements Transaction
             {
                 if ( transactionOutcome.canCommit()  )
                 {
-                    // TODO Why call transaction commit, since it just delegates back to TxManager.commit()?
                     transaction.commit();
                 }
                 else

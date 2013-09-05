@@ -68,7 +68,7 @@ class TransactionImpl implements Transaction
     private Thread owner;
 
     private final TransactionState state;
-    private KernelTransaction transactionContext;
+    private KernelTransaction kernelTransaction;
 
     TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory,
                      StringLogger logger )
@@ -117,7 +117,7 @@ class TransactionImpl implements Transaction
     {
         try
         {
-            transactionContext.commit();
+            kernelTransaction.commit();
         }
         catch ( TransactionFailureException e )
         {
@@ -136,7 +136,7 @@ class TransactionImpl implements Transaction
     {
         try
         {
-            transactionContext.rollback();
+            kernelTransaction.rollback();
         }
         catch ( TransactionFailureException e )
         {
@@ -597,9 +597,9 @@ class TransactionImpl implements Transaction
      * However, in the spirit of baby steps, we hook into the current tx infrastructure at a few
      * points to not have to do the full move in one step.
      */
-    public void setTransactionContext( KernelTransaction transactionContext )
+    public void setKernelTransaction( KernelTransaction kernelTransaction )
     {
-        this.transactionContext = transactionContext;
+        this.kernelTransaction = kernelTransaction;
     }
 
     private static class ResourceElement
@@ -729,6 +729,6 @@ class TransactionImpl implements Transaction
 
     public KernelTransaction getTransactionContext()
     {
-        return transactionContext;
+        return kernelTransaction;
     }
 }

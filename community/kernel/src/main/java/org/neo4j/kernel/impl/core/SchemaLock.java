@@ -32,4 +32,10 @@ public class SchemaLock
     {
         return obj instanceof SchemaLock;
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
+    }
 }

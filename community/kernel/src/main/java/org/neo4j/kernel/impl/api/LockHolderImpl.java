@@ -164,6 +164,11 @@ public class LockHolderImpl implements LockHolder
         {
             lockType.release( lockManager, lock, tx );
         }
+
+        @Override public String toString()
+        {
+            return String.format( "%s_LOCK(%s)", lockType.name(), lock );
+        }
     }
     
     private abstract class EntityLock implements PropertyContainer
@@ -174,7 +179,12 @@ public class LockHolderImpl implements LockHolder
         {
             this.id = id;
         }
-        
+
+        @Override public String toString()
+        {
+            return String.format( "%s[id=%d]", getClass().getSimpleName(), id );
+        }
+
         public long getId()
         {
             return id;

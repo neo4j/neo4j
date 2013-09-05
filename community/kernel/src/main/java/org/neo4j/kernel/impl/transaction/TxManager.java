@@ -281,7 +281,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         startedTxCount.incrementAndGet();
         // start record written on resource enlistment
 
-        tx.setTransactionContext(kernel.newTransaction() );
+        tx.setKernelTransaction( kernel.newTransaction() );
     }
 
     private void assertTmOk() throws SystemException
@@ -951,6 +951,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
     
     @Override
+    @SuppressWarnings("deprecation")
     public KernelTransaction getKernelTransaction()
     {
         Transaction tx;

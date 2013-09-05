@@ -64,15 +64,29 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
     public void commit() throws TransactionFailureException
     {
         beginClose();
-        doCommit();
-        close();
+        try
+        {
+            doCommit();
+            close();
+        }
+        finally
+        {
+            closing = false;
+        }
     }
 
     public void rollback() throws TransactionFailureException
     {
         beginClose();
-        doRollback();
-        close();
+        try
+        {
+            doRollback();
+            close();
+        }
+        finally
+        {
+            closing = false;
+        }
     }
 
     @Override
