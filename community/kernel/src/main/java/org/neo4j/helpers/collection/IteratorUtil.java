@@ -519,13 +519,29 @@ public abstract class IteratorUtil
      * The opened file is closed if an exception occurs during reading or when
      * the files has been read through all the way.
      * @param file the file to get the lines for.
+     * @param encoding to be used for reading the file
+     * @return an {@link Iterator} for iterating over the lines of a text file.
+     */
+    public static ClosableIterator<String> asIterator( File file, String encoding ) throws IOException
+    {
+        return new LinesOfFileIterator( file, encoding );
+    }
+
+    /**
+     * Creates an {@link Iterator} for iterating over the lines of a text file.
+     * The opened file is closed if an exception occurs during reading or when
+     * the files has been read through all the way.
+     *
+     * This reads the file using the platform's default encoding
+     *
+     * @param file the file to get the lines for.
      * @return an {@link Iterator} for iterating over the lines of a text file.
      */
     public static ClosableIterator<String> asIterator( File file ) throws IOException
     {
         return new LinesOfFileIterator( file );
     }
-    
+
     public static <T> void streamToFile( Iterable<T> iterable, File file, String encoding ) throws IOException
     {
         streamToFile( iterable.iterator(), file, encoding );
