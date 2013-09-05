@@ -96,8 +96,9 @@ public class ConstraintIndexCreatorTest
         when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor ) ).thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getProxyForRule( 2468l ) ).thenReturn( indexProxy );
-        doThrow( new IndexPopulationFailedKernelException( descriptor, new PreexistingIndexEntryConflictException( "a", 2, 1 ) ) )
-                .when( indexProxy ).awaitStoreScanCompleted();
+        PreexistingIndexEntryConflictException cause = new PreexistingIndexEntryConflictException("a", 2, 1);
+        doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
+                .when(indexProxy).awaitStoreScanCompleted();
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( transactor, indexingService );
 
