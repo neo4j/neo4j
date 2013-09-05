@@ -62,7 +62,7 @@
           <versionLine x="20" y="40" text="version ${compiler:sys.version}" font="Arial" fontSize="8" fontColor="0,0,0" fontWeight="500" />
         </text>
       </splashScreen>
-      <java mainClass="org.neo4j.desktop.Neo4jDesktop" vmParameters="-Xmx1g" arguments="" allowVMPassthroughParameters="true" preferredVM="server" bundleRuntime="true">
+      <java mainClass="org.neo4j.desktop.Neo4jDesktop" vmParameters="" arguments="" allowVMPassthroughParameters="true" preferredVM="server" bundleRuntime="true">
         <classPath>
           <archive location="bin/neo4j-desktop-@NEO4J_VERSION@.jar" failOnError="false" />
         </classPath>
