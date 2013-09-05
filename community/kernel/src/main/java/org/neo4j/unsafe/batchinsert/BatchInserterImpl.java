@@ -522,14 +522,6 @@ public class BatchInserterImpl implements BatchInserter
             if ( thatHas == null && current.getPropertyBlock( index ) != null )
             {
                 thatHas = current;
-                PropertyBlock removed = thatHas.removePropertyBlock( index );
-                getPropertyStore().ensureHeavy( removed );
-                for ( DynamicRecord dynRec : removed.getValueRecords() )
-                {
-                    dynRec.setInUse( false );
-                    thatHas.addDeletedRecord( dynRec );
-                }
-                getPropertyStore().updateRecord( thatHas );
             }
             /*
              * We check the size after we remove - potentially we can put in the same record.
@@ -544,6 +536,24 @@ public class BatchInserterImpl implements BatchInserter
             }
             nextProp = current.getNextProp();
         }
+
+        /*
+         * If there was a record that contained a property for this key already, and if
+         * we will not be able to re-use those records to store the new property,
+         * release the old records.
+         */
+        if( thatHas != null && thatFits != thatHas )
+        {
+            PropertyBlock removed = thatHas.removePropertyBlock( index );
+            getPropertyStore().ensureHeavy( removed );
+            for ( DynamicRecord dynRec : removed.getValueRecords() )
+            {
+                dynRec.setInUse( false );
+                thatHas.addDeletedRecord( dynRec );
+            }
+            getPropertyStore().updateRecord( thatHas );
+        }
+
         /*
          * thatHas is of no importance here. We know that the block is definitely not there.
          * However, we can be sure that if the property existed, thatHas is not null and does
