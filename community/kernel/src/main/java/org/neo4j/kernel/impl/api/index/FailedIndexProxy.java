@@ -32,12 +32,15 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
     protected final IndexPopulator populator;
+    private final String indexUserDescription;
 
-    public FailedIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                             IndexPopulator populator, IndexPopulationFailure populationFailure )
+    public FailedIndexProxy(IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+                            String indexUserDescription,
+                            IndexPopulator populator, IndexPopulationFailure populationFailure)
     {
         super( descriptor, providerDescriptor, populationFailure );
         this.populator = populator;
+        this.indexUserDescription = indexUserDescription;
     }
 
     @Override
@@ -56,7 +59,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor() );
+        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor(), indexUserDescription );
     }
 
     @Override
@@ -68,6 +71,6 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public void validate() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor() );
+        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor(), indexUserDescription );
     }
 }

@@ -26,7 +26,8 @@ public abstract class IndexPopulationFailure
 {
     public abstract String asString();
     
-    public abstract IndexPopulationFailedKernelException asIndexPopulationFailure( IndexDescriptor descriptor );
+    public abstract IndexPopulationFailedKernelException asIndexPopulationFailure(
+            IndexDescriptor descriptor, String indexUserDescriptor );
 
     public static IndexPopulationFailure failure( final Throwable failure )
     {
@@ -39,9 +40,10 @@ public abstract class IndexPopulationFailure
             }
 
             @Override
-            public IndexPopulationFailedKernelException asIndexPopulationFailure( IndexDescriptor descriptor )
+            public IndexPopulationFailedKernelException asIndexPopulationFailure(
+                    IndexDescriptor descriptor, String indexUserDescription )
             {
-                return new IndexPopulationFailedKernelException( descriptor, failure );
+                return new IndexPopulationFailedKernelException( descriptor, indexUserDescription, failure );
             }
         };
     }
@@ -57,9 +59,10 @@ public abstract class IndexPopulationFailure
             }
 
             @Override
-            public IndexPopulationFailedKernelException asIndexPopulationFailure( IndexDescriptor descriptor )
+            public IndexPopulationFailedKernelException asIndexPopulationFailure(
+                    IndexDescriptor descriptor, String indexUserDescription )
             {
-                return new IndexPopulationFailedKernelException( descriptor, failure );
+                return new IndexPopulationFailedKernelException( descriptor, indexUserDescription, failure );
             }
         };
     }
