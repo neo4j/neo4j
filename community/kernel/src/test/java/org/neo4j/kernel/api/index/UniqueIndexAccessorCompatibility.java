@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -37,6 +38,11 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyListOf;
 
+@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
+        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
+        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     private IndexAccessor accessor;

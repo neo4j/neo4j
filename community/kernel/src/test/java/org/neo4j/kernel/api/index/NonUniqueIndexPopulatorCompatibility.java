@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -28,6 +29,11 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 
+@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
+        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
+        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     public NonUniqueIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
@@ -53,45 +59,45 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         reader.close();
         accessor.close();
     }
-    
+
     @Test
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
         IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
         String failure = "The contrived failure";
-        
+
         // WHEN
         populator.markAsFailed( failure );
-        
+
         // THEN
         assertEquals( failure, indexProvider.getPopulationFailure( 17 ) );
     }
-    
+
     @Test
     public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
     {
         // GIVEN
         IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
         String failure = "The contrived failure";
-        
+
         // WHEN
         populator.markAsFailed( failure );
-        
+
         // THEN
         assertEquals( FAILED, indexProvider.getInitialState( 17 ) );
     }
-    
+
     @Test
     public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
     {
         // GIVEN
         IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
         populator.close( false );
-        
+
         // WHEN
         populator.drop();
-        
+
         // THEN - no exception should be thrown (it's been known to!)
     }
 }
