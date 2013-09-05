@@ -22,21 +22,29 @@ package org.neo4j.desktop.ui;
 import java.awt.Image;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import javax.imageio.ImageIO;
 
 import static java.lang.String.format;
 
-public class Graphics
+public final class Graphics
 {
     public static final String LOGO_PATTERN = "/neo4j-cherries-%d.png";
     public static final String LOGO_32 = "/neo4j-cherries-32.png";
 
     public static final String SYSTEM_TRAY_ICON = "/neo4j-systray-16.png";
+    public static final int MIN_SIZE = 16;
+    public static final int MAX_SIZE = 256;
 
-    static ArrayList<Image> loadIcons()
+    private Graphics()
     {
-        ArrayList<Image> icons = new ArrayList<Image>();
-        for ( int i = 16; i <= 256; i *= 2 )
+        throw new UnsupportedOperationException();
+    }
+
+    static List<Image> loadIcons()
+    {
+        List<Image> icons = new ArrayList<Image>();
+        for ( int i = MIN_SIZE; i <= MAX_SIZE; i *= 2 )
         {
             Image image = loadImage( format( LOGO_PATTERN, i ) );
             if ( null != image )
@@ -55,7 +63,7 @@ public class Graphics
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new IllegalStateException( e );
         }
     }
 }

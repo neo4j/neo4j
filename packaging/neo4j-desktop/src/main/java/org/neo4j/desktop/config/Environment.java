@@ -41,11 +41,6 @@ public class Environment
         appFile = new File( Environment.class.getProtectionDomain().getCodeSource().getLocation().toURI() );
     }
 
-    public File getExtensionsDirectory()
-    {
-        return new File( getBaseDirectory(), "extensions" );
-    }
-
     public File getBaseDirectory()
     {
         return appFile != null ? appFile.getParentFile() : new File( "." ).getAbsoluteFile().getParentFile();
@@ -61,11 +56,11 @@ public class Environment
             }
             catch ( IOException e )
             {
-                e.printStackTrace();
+                e.printStackTrace( System.out );
             }
             catch ( URISyntaxException e )
             {
-                e.printStackTrace();
+                e.printStackTrace( System.out );
             }
         }
         else

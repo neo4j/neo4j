@@ -54,7 +54,7 @@ public abstract class SysTray
         catch ( AWTException e )
         {
             // What to do here?
-            e.printStackTrace();
+            e.printStackTrace( System.out );
         }
         
         // Fall back to still being able to function, but without the systray support.

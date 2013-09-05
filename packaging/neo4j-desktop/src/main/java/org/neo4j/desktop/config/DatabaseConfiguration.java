@@ -30,6 +30,11 @@ import org.neo4j.desktop.ui.DesktopModel;
 
 public class DatabaseConfiguration
 {
+    private DatabaseConfiguration()
+    {
+        throw new UnsupportedOperationException();
+    }
+
     public static void copyDefaultDatabaseConfigurationProperties( File file ) throws IOException
     {
         InputStream inputStream = getDefaultDatabaseConfigurationContent();
@@ -60,9 +65,13 @@ public class DatabaseConfiguration
         finally
         {
             if ( reader != null )
+            {
                 reader.close();
+            }
             if ( writer != null )
+            {
                 writer.close();
+            }
         }
     }
 

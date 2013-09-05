@@ -217,9 +217,6 @@ public class MainWindow
                 {
                     switch ( jFileChooser.showOpenDialog( frame ) )
                     {
-                        default:
-                            return;
-
                         case APPROVE_OPTION:
                             File selectedFile = jFileChooser.getSelectedFile();
 
@@ -241,7 +238,11 @@ public class MainWindow
                                     default:
                                 }
                             }
-                    }
+
+                        default:
+                            return;
+                }
+
                 }
             }
         } );

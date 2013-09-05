@@ -63,7 +63,7 @@ public abstract class EditFileActionListener implements ActionListener
         }
         catch ( IOException e )
         {
-            e.printStackTrace();
+            e.printStackTrace( System.out );
             showMessageDialog( parentComponent,
                 format("Couldn't open %s, please open the file manually", file.getAbsolutePath() ),
                 "Error",

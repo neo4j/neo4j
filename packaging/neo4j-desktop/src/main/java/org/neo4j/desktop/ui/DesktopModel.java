@@ -26,12 +26,10 @@ import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.List;
 
 import org.neo4j.desktop.config.DatabaseConfiguration;
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.OperatingSystemFamily;
-import org.neo4j.desktop.config.Value;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.Version;
 
@@ -40,14 +38,12 @@ import static java.lang.String.format;
 public class DesktopModel
 {
     private final Environment environment;
-    private final Value<List<String>> extensionPackagesConfig;
     private File databaseDirectory;
 
-    public DesktopModel( Environment environment, File databaseDirectory, Value<List<String>> extensionPackagesConfig )
+    public DesktopModel( Environment environment, File databaseDirectory )
     {
         this.environment = environment;
         this.databaseDirectory = databaseDirectory;
-        this.extensionPackagesConfig = extensionPackagesConfig;
     }
 
     public String getNeo4jVersion()
@@ -69,14 +65,7 @@ public class DesktopModel
 
     public File getVmOptionsFile()
     {
-        File vmOptionsFile = getUserVmOptionsFile();
-
-        if ( vmOptionsFile == null )
-        {
-            vmOptionsFile = getSystemVmOptionsFile();
-        }
-
-        return vmOptionsFile;
+        return getUserVmOptionsFile();
     }
 
     private File getUserVmOptionsFile()
@@ -101,6 +90,7 @@ public class DesktopModel
 
         return vmOptionsFile;
     }
+
 
     private void createUserVmOptionsFile( File vmOptionsFile )
     {
@@ -157,6 +147,11 @@ public class DesktopModel
         }
     }
 
+    private File getSystemVmOptionsFile()
+    {
+        return new File( environment.getBaseDirectory(), "neo4j-community.vmoptions" );
+    }
+
     private String substituteVars( String location )
     {
         return new VariableSubstitutor().substitute( location, new Function<String, String>()
@@ -168,21 +163,6 @@ public class DesktopModel
                 return value == null ? "" : value;
             }
         } );
-    }
-
-    private File getSystemVmOptionsFile()
-    {
-        return new File( environment.getBaseDirectory(), "neo4j-community.vmoptions" );
-    }
-
-    public List<String> getExtensionPackagesConfig()
-    {
-        return extensionPackagesConfig.get();
-    }
-
-    public void setExtensionPackagesConfig( List<String> value )
-    {
-        extensionPackagesConfig.set( value );
     }
 
     public File getDatabaseConfigurationFile()

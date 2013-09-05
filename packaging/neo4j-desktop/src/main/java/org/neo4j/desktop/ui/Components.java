@@ -40,13 +40,14 @@ import static java.awt.font.TextAttribute.UNDERLINE_ON;
 import static java.lang.String.format;
 
 @SuppressWarnings("MagicConstant")
-public class Components
+public final class Components
 {
     public static final int BASE_SPACING_SIZE = 5;
     public static final int DEFAULT_TEXT_COLUMNS = 35;
 
     private Components()
     {
+        throw new UnsupportedOperationException();
     }
 
     static JPanel createPanel( Component... components )
@@ -107,11 +108,6 @@ public class Components
     {
         panel.setBorder( BorderFactory.createTitledBorder( title ) );
         return panel;
-    }
-
-    static Component createHorizontalSpacing()
-    {
-        return Box.createHorizontalStrut( BASE_SPACING_SIZE );
     }
 
     static Component createVerticalSpacing()

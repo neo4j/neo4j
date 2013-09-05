@@ -27,9 +27,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.neo4j.desktop.config.Environment;
-import org.neo4j.desktop.config.ExtensionPackagesConfig;
 import org.neo4j.desktop.config.OperatingSystemFamily;
-import org.neo4j.desktop.config.Value;
 import org.neo4j.desktop.runtime.DatabaseActions;
 import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
@@ -42,7 +40,7 @@ import static org.neo4j.desktop.ui.Components.alert;
 /**
  * The main class for starting the Neo4j desktop app window. The different components and wired up and started.
  */
-public class Neo4jDesktop
+public final class Neo4jDesktop
 {
     public static void main( String[] args )
     {
@@ -61,12 +59,11 @@ public class Neo4jDesktop
         catch ( URISyntaxException e )
         {
             alert( e.getMessage() );
-            e.printStackTrace();
+            e.printStackTrace( System.out );
             return;
         }
 
-        Value<List<String>> extensionPackagesConfig = new ExtensionPackagesConfig( environment );
-        DesktopModel model = new DesktopModel( environment, defaultDatabaseDirectory(), extensionPackagesConfig );
+        DesktopModel model = new DesktopModel( environment, defaultDatabaseDirectory() );
         DatabaseActions databaseActions = new DatabaseActions( model );
 
         MainWindow window = new MainWindow( databaseActions, environment, model );
@@ -131,7 +128,7 @@ public class Neo4jDesktop
         return ensureIsDirectory( "Neo4j data directory", neo4jData );
     }
 
-    private File selectFirstWritableDirectoryOrElse( ArrayList<File> locations, File defaultFile )
+    private File selectFirstWritableDirectoryOrElse( List<File> locations, File defaultFile )
     {
         File result = defaultFile.getAbsoluteFile();
         for ( File file : locations )
