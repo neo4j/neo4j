@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import java.lang.reflect.Array;
-
+import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.ArrayUtil.ArrayEquality;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 
@@ -44,6 +44,7 @@ public abstract class SafeProperty extends Property
         return value();
     }
 
+    @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[propertyKeyId=" + propertyKeyId() + ", value=" + valueAsString() + "]";
@@ -55,19 +56,9 @@ public abstract class SafeProperty extends Property
         Object value = value();
         if ( value.getClass().isArray() )
         {
-            StringBuilder result = new StringBuilder( "[" );
-            String sep = "";
-            for ( int size = Array.getLength( value ), i = 0; i < size; i++ )
-            {
-                result.append( sep ).append( Array.get( value, i ) );
-                sep = ", ";
-            }
-            return result.append( ']' ).toString();
+            return ArrayUtil.toString( value );
         }
-        else
-        {
-            return value.toString();
-        }
+        return value.toString();
     }
 
     @Override
@@ -152,52 +143,36 @@ public abstract class SafeProperty extends Property
         // package private subclasses
     }
 
-    protected boolean valueCompare( Object a, Object b )
+    protected boolean valueCompare( Object lhs, Object rhs )
+    {
+        return compareValues( lhs, rhs );
+    }
+
+    private static boolean compareValues( Object lhs, Object rhs )
     {
         // COMPARE NUMBERS
-        if ( a instanceof Number && b instanceof Number )
+        if ( lhs instanceof Number && rhs instanceof Number )
         {
-            return compareNumbers( (Number) a, (Number) b );
+            return compareNumbers( (Number) lhs, (Number) rhs );
         }
 
         // COMPARE STRINGS
-        if ( (a instanceof String || a instanceof Character) &&
-                (b instanceof String || b instanceof Character) )
+        if ( (lhs instanceof String || lhs instanceof Character) &&
+                (rhs instanceof String || rhs instanceof Character) )
         {
-            return a.toString().equals( b.toString() );
+            return lhs.toString().equals( rhs.toString() );
         }
 
         // COMPARE ARRAYS
-        if ( a.getClass().isArray() && b.getClass().isArray() )
+        if ( lhs.getClass().isArray() && rhs.getClass().isArray() )
         {
-            return compareArrays( a, b );
+            return ArrayUtil.equals( lhs, rhs, PROPERTY_EQUALITY );
         }
 
         return false;
     }
 
-    private boolean compareArrays( Object a, Object b )
-    {
-        int aLength = Array.getLength( a );
-        int bLength = Array.getLength( b );
-        if ( aLength != bLength )
-        {
-            return false;
-        }
-
-        for ( int i = 0; i < aLength; i++ )
-        {
-            Object aObj = Array.get( a, i );
-            Object bObj = Array.get( b, i );
-            if ( !valueCompare( aObj, bObj ) )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean compareNumbers( Number aNumber, Number bNumber )
+    private static boolean compareNumbers( Number aNumber, Number bNumber )
     {
         // If any of the two are non-integers
         if ( aNumber instanceof Float
@@ -212,4 +187,20 @@ public abstract class SafeProperty extends Property
 
         return aNumber.longValue() == bNumber.longValue();
     }
+
+    private static final ArrayEquality PROPERTY_EQUALITY = new ArrayEquality()
+    {
+        @Override
+        public boolean typeEquals( Class<?> firstType, Class<?> otherType )
+        {   // Not always true, but we won't let type differences affect the outcome at this stage,
+            // since many types are compatible in this property comparison.
+            return true;
+        }
+
+        @Override
+        public boolean itemEquals( Object lhs, Object rhs )
+        {
+            return compareValues( lhs, rhs );
+        }
+    };
 }

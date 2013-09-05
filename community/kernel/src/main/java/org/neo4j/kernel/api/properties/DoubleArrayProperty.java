@@ -35,15 +35,15 @@ class DoubleArrayProperty extends FullSizeProperty
     @Override
     public double[] value()
     {
-        return value;
+        return value.clone();
     }
 
     @Override
     public boolean valueEquals( Object value )
     {
-        if ( value instanceof double[])
+        if ( value instanceof double[] )
         {
-            return Arrays.equals(this.value, (double[])value);
+            return Arrays.equals( this.value, (double[]) value );
         }
         return valueCompare( this.value, value );
     }

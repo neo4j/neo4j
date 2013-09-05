@@ -83,7 +83,7 @@ public final class TxStateImpl implements TxState
             return new LabelState( id );
         }
     };
-    
+
     private static final StateCreator<NodeState> NODE_STATE_CREATOR = new StateCreator<NodeState>()
     {
         @Override
@@ -92,7 +92,7 @@ public final class TxStateImpl implements TxState
             return new NodeState( id );
         }
     };
-    
+
     private static final StateCreator<RelationshipState> RELATIONSHIP_STATE_CREATOR =
             new StateCreator<RelationshipState>()
     {
@@ -230,7 +230,7 @@ public final class TxStateImpl implements TxState
     {
         return getOrCreateGraphState().propertyDiffSets();
     }
-    
+
     @Override
     public boolean nodeIsAddedInThisTx( long nodeId )
     {
@@ -279,9 +279,12 @@ public final class TxStateImpl implements TxState
             DiffSets<SafeProperty> diffSets = nodePropertyDiffSets( nodeId );
             if ( replacedProperty.isDefined() )
             {
-                diffSets.remove( (SafeProperty)replacedProperty );
+                diffSets.replace( (SafeProperty)replacedProperty, newProperty );
             }
-            diffSets.add( newProperty );
+            else
+            {
+                diffSets.add( newProperty );
+            }
             legacyState.nodeSetProperty( nodeId, newProperty.asPropertyDataJustForIntegration() );
             hasChanges = true;
         }
@@ -295,14 +298,17 @@ public final class TxStateImpl implements TxState
             DiffSets<SafeProperty> diffSets = relationshipPropertyDiffSets( relationshipId );
             if ( replacedProperty.isDefined() )
             {
-                diffSets.remove( (SafeProperty)replacedProperty );
+                diffSets.replace( (SafeProperty)replacedProperty, newProperty );
             }
-            diffSets.add( newProperty );
+            else
+            {
+                diffSets.add( newProperty );
+            }
             legacyState.relationshipSetProperty( relationshipId, newProperty.asPropertyDataJustForIntegration() );
             hasChanges = true;
         }
     }
-    
+
     @Override
     public void graphDoReplaceProperty( Property replacedProperty, SafeProperty newProperty )
     {
@@ -311,9 +317,12 @@ public final class TxStateImpl implements TxState
             DiffSets<SafeProperty> diffSets = graphPropertyDiffSets();
             if ( replacedProperty.isDefined() )
             {
-                diffSets.remove( (SafeProperty)replacedProperty );
+                diffSets.replace( (SafeProperty)replacedProperty, newProperty );
             }
-            diffSets.add( newProperty );
+            else
+            {
+                diffSets.add( newProperty );
+            }
             legacyState.graphSetProperty( newProperty.asPropertyDataJustForIntegration() );
             hasChanges = true;
         }
@@ -351,7 +360,7 @@ public final class TxStateImpl implements TxState
             hasChanges = true;
         }
     }
-    
+
     @Override
     public void nodeDoAddLabel( long labelId, long nodeId )
     {
@@ -388,7 +397,7 @@ public final class TxStateImpl implements TxState
         }
         return UpdateTriState.UNTOUCHED;
     }
-    
+
     @Override
     public Set<Long> nodesWithLabelAdded( long labelId )
     {
@@ -563,7 +572,7 @@ public final class TxStateImpl implements TxState
     {
         return getState( relationshipStatesMap(), relationshipId, RELATIONSHIP_STATE_CREATOR );
     }
-    
+
     private GraphState getOrCreateGraphState()
     {
         if ( graphState == null )
@@ -617,7 +626,7 @@ public final class TxStateImpl implements TxState
             }
         } );
     }
-    
+
     @Override
     public DiffSets<UniquenessConstraint> constraintsChangesForLabel( long labelId )
     {

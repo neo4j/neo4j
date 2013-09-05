@@ -68,7 +68,7 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
     {
         this.source = source;
         this.addedElements = addedElements;
-        this.addedElementsIterator = addedElements == null ? null : addedElements.iterator();
+        this.addedElementsIterator = addedElements.iterator();
         this.removedElements = removedElements;
         phase = Phase.FILTERED_SOURCE;
 
@@ -87,8 +87,7 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
         {
             long value = source.next();
             next( value );
-            if ( ( removedElements == null || !removedElements.contains( value ) ) &&
-                 ( addedElements == null || !addedElements.contains( value ) ) )
+            if ( !removedElements.contains( value ) && !addedElements.contains( value ) )
             {
                 return;
             }
@@ -99,7 +98,7 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
 
     private void transitionToAddedElements()
     {
-        phase = addedElementsIterator == null ? Phase.NO_ADDED_ELEMENTS : Phase.ADDED_ELEMENTS;
+        phase = !addedElementsIterator.hasNext() ? Phase.NO_ADDED_ELEMENTS : Phase.ADDED_ELEMENTS;
         computeNext();
     }
 

@@ -19,14 +19,21 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
+import static java.lang.String.format;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestPropertyTypes extends AbstractNeo4jTestCase
 {
@@ -123,7 +130,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         clearCache();
         assertTrue( !node1.hasProperty( key ) );
-        
+
         node1.setProperty( "other", 123L );
         assertEquals( 123L, node1.getProperty( "other" ) );
         newTransaction();
@@ -158,14 +165,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         clearCache();
         assertTrue( !node1.hasProperty( key ) );
-        
+
         node1.setProperty( "other", 123L );
         assertEquals( 123L, node1.getProperty( "other" ) );
         newTransaction();
         clearCache();
         assertEquals( 123L, node1.getProperty( "other" ) );
     }
-    
+
     @Test
     public void testByteType()
     {
@@ -281,7 +288,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         clearCache();
         assertTrue( !node1.hasProperty( key ) );
     }
-    
+
     @Test
     public void testIntArray()
     {
@@ -619,5 +626,168 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( 2, node.getProperty( "1" ) );
         assertEquals( "", node.getProperty( "2" ) );
         assertEquals( "", node.getProperty( "3" ) );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonBooleanArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( new boolean[] {false, false, false}, true );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonByteArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( new byte[] {0, 0, 0}, (byte)1 );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonShortArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( new short[] {0, 0, 0}, (short)1 );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonIntArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( new int[] {0, 0, 0}, 1 );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonLongArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( new long[] {0, 0, 0}, 1L );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonFloatArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( new float[] {0F, 0F, 0F}, 1F );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonDoubleArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( new double[] {0D, 0D, 0D}, 1D );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonCharArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( new char[] {'0', '0', '0'}, '1' );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonStringArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( new String[] {"zero", "zero", "zero"}, "one" );
+    }
+
+    private Object veryLongArray( Class<?> type )
+    {
+        Object array = Array.newInstance( type, 1000 );
+        return array;
+    }
+
+    private String[] veryLongStringArray()
+    {
+        String[] array = new String[100];
+        Arrays.fill( array, "zero" );
+        return array;
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonVeryLongBooleanArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Boolean.TYPE ), true );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonVeryLongByteArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Byte.TYPE ), (byte)1 );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonVeryLongShortArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Short.TYPE ), (short)1 );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonVeryLongIntArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Integer.TYPE ), 1 );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonVeryLongLongArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Long.TYPE ), 1L );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonVeryLongFloatArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Float.TYPE ), 1F );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonVeryLongDoubleArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Double.TYPE ), 1D );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonVeryLongCharArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Character.TYPE ), '1' );
+    }
+
+    @Test
+    public void shouldNotBeAbleToPoisonVeryLongStringArrayProperty() throws Exception
+    {
+        shouldNotBeAbleToPoisonArrayProperty( veryLongStringArray(), "one" );
+    }
+
+    private void shouldNotBeAbleToPoisonArrayProperty( Object value, Object poison )
+    {
+        shouldNotBeAbleToPoisonArrayPropertyInsideTransaction( value, poison );
+        shouldNotBeAbleToPoisonArrayPropertyOutsideTransaction( value, poison );
+    }
+
+    private void shouldNotBeAbleToPoisonArrayPropertyInsideTransaction( Object value, Object poison )
+    {
+        // GIVEN
+        String key = "key";
+        // setting a property, then reading it back
+        node1.setProperty( key, value );
+        Object readValue = node1.getProperty( key );
+
+        // WHEN changing the value read back
+        Array.set( readValue, 0, poison );
+
+        // THEN reading the value one more time should still yield the set property
+        assertTrue(
+                format( "Expected %s, but was %s", ArrayUtil.toString( value ), ArrayUtil.toString( readValue ) ),
+                ArrayUtil.equals( value, node1.getProperty( key ) ) );
+    }
+
+    private void shouldNotBeAbleToPoisonArrayPropertyOutsideTransaction( Object value, Object poison )
+    {
+        // GIVEN
+        String key = "key";
+        // setting a property, then reading it back
+        node1.setProperty( key, value );
+        newTransaction();
+        clearCache();
+        Object readValue = node1.getProperty( key );
+
+        // WHEN changing the value read back
+        Array.set( readValue, 0, poison );
+
+        // THEN reading the value one more time should still yield the set property
+        assertTrue(
+                format( "Expected %s, but was %s", ArrayUtil.toString( value ), ArrayUtil.toString( readValue ) ),
+                ArrayUtil.equals( value, node1.getProperty( key ) ) );
     }
 }

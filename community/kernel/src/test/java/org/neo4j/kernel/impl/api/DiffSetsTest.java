@@ -23,12 +23,16 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.Predicate;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
@@ -203,7 +207,43 @@ public class DiffSetsTest
         Collection<Long> collectedResult = asCollection( result );
         assertEquals( 3, collectedResult.size() );
         assertThat( collectedResult, hasItems( 43l, 42l, 44l ) );
+    }
 
+    @Test
+    public void replaceMultipleTimesWithAnInitialValue() throws Exception
+    {
+        // GIVEN
+        // an initial value, meaning an added value in "this transaction"
+        DiffSets<Integer> diff = new DiffSets<>();
+        diff.add( 0 );
+
+        // WHEN
+        // replacing that value two times
+        diff.replace( 0, 1 );
+        diff.replace( 1, 2 );
+
+        // THEN
+        // there should not be any removed value, only the last one added
+        assertEquals( asSet( 2 ), diff.getAdded() );
+        assertEquals( asSet(), diff.getRemoved() );
+    }
+
+    @Test
+    public void replaceMultipleTimesWithNoInitialValue() throws Exception
+    {
+        // GIVEN
+        // no initial value, meaning a value existing before "this transaction"
+        DiffSets<Integer> diff = new DiffSets<>();
+
+        // WHEN
+        // replacing that value two times
+        diff.replace( 0, 1 );
+        diff.replace( 1, 2 );
+
+        // THEN
+        // the initial value should show up as removed and the last one as added
+        assertEquals( asSet( 2 ), diff.getAdded() );
+        assertEquals( asSet( 0 ), diff.getRemoved() );
     }
 
     private static final Predicate<Long> ODD_FILTER = new Predicate<Long>()

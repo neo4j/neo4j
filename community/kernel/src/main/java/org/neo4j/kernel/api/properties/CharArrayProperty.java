@@ -35,15 +35,15 @@ class CharArrayProperty extends FullSizeProperty
     @Override
     public char[] value()
     {
-        return value;
+        return value.clone();
     }
 
     @Override
     public boolean valueEquals( Object value )
     {
-        if ( value instanceof char[])
+        if ( value instanceof char[] )
         {
-            return Arrays.equals(this.value, (char[])value);
+            return Arrays.equals( this.value, (char[]) value );
         }
         return valueCompare( this.value, value );
     }

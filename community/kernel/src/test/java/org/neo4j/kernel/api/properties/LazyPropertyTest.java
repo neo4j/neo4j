@@ -23,7 +23,11 @@ import java.util.concurrent.Callable;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.ArrayUtil;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class LazyPropertyTest
 {
@@ -31,8 +35,7 @@ public class LazyPropertyTest
     public void shouldLoadLazyStringProperty() throws Exception
     {
         // given
-        LazyStringProperty property = new LazyStringProperty( 0, value("person") );
-
+        LazyStringProperty property = new LazyStringProperty( 0, value( "person" ) );
         // when / then
         assertEquals( "person", property.value() );
     }
@@ -41,11 +44,83 @@ public class LazyPropertyTest
     public void shouldLoadLazyStringPropertyOnlyOnce() throws Exception
     {
         // given
-        LazyStringProperty property = new LazyStringProperty( 0, value("person") );
-
+        LazyStringProperty property = new LazyStringProperty( 0, value( "person" ) );
         // when / then
         assertEquals( "person", property.value() );
         assertEquals( "person", property.value() );
+    }
+
+    @Test
+    public void shouldExhibitCorrectEqualityForBooleanArray() throws Exception
+    {
+        verifyCorrectValueEqualityForLazyArrayProperty( new boolean[] {} );
+    }
+
+    @Test
+    public void shouldExhibitCorrectEqualityForByteArray() throws Exception
+    {
+        verifyCorrectValueEqualityForLazyArrayProperty( new byte[] {} );
+    }
+
+    @Test
+    public void shouldExhibitCorrectEqualityForShortArray() throws Exception
+    {
+        verifyCorrectValueEqualityForLazyArrayProperty( new short[] {} );
+    }
+
+    @Test
+    public void shouldExhibitCorrectEqualityForCharArray() throws Exception
+    {
+        verifyCorrectValueEqualityForLazyArrayProperty( new char[] {} );
+    }
+
+    @Test
+    public void shouldExhibitCorrectEqualityForIntArray() throws Exception
+    {
+        verifyCorrectValueEqualityForLazyArrayProperty( new int[] {} );
+    }
+
+    @Test
+    public void shouldExhibitCorrectEqualityForLongArray() throws Exception
+    {
+        verifyCorrectValueEqualityForLazyArrayProperty( new long[] {} );
+    }
+
+    @Test
+    public void shouldExhibitCorrectEqualityForFloatArray() throws Exception
+    {
+        verifyCorrectValueEqualityForLazyArrayProperty( new float[] {} );
+    }
+
+    @Test
+    public void shouldExhibitCorrectEqualityForDoubleArray() throws Exception
+    {
+        verifyCorrectValueEqualityForLazyArrayProperty( new double[] {} );
+    }
+
+    @Test
+    public void shouldExhibitCorrectEqualityForStringArray() throws Exception
+    {
+        verifyCorrectValueEqualityForLazyArrayProperty( new String[] {} );
+    }
+
+    private static void verifyCorrectValueEqualityForLazyArrayProperty( Object array )
+    {
+        // given
+        LazyArrayProperty property = new LazyArrayProperty( 0, value( ArrayUtil.clone( array ) ) );
+        // when/then
+        assertTrue( "value should be reported equal with same type", property.valueEquals( array ) );
+        // when
+        for ( Object value : new Object[] { new boolean[] {}, new byte[] {}, new short[] {}, new char[] {},
+                new int[] {}, new long[] {}, new float[] {}, new double[] {}, new String[] {}, } )
+        {
+            if ( value.getClass() == array.getClass() )
+            {
+                continue;
+            }
+            // then
+            assertFalse( "value should be reported inequal with different type", property.valueEquals( value ) );
+        }
     }
 
     private static <T> Callable<T> value( final T value )
@@ -57,10 +132,7 @@ public class LazyPropertyTest
             @Override
             public T call() throws Exception
             {
-                if ( called )
-                {
-                    throw new AssertionError( "Already called for value: " + value );
-                }
+                assertFalse( "Already called for value: " + value, called );
                 called = true;
                 return value;
             }
