@@ -1,0 +1,3 @@
+# Enter one VM parameter per line, note that some parameters can only be set once.
+# If you set them here, they cannot be overriden by the user's vmoptions file
+-include-options ${installer:userVmOptionsFile}
