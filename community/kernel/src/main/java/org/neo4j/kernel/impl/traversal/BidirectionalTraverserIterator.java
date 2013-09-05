@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BidirectionalUniquenessFilter;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BranchSelector;
@@ -43,7 +44,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
     private final BranchCollisionDetector collisionDetector;
     private Iterator<Path> foundPaths;
     private SideSelector selector;
-    private Map<Direction, Side> sides = new EnumMap<>( Direction.class );
+    private final Map<Direction, Side> sides = new EnumMap<>( Direction.class );
     private final BidirectionalUniquenessFilter uniqueness;
     private final Predicate<Path> uniquenessPredicate = new Predicate<Path>()
     {
@@ -64,9 +65,10 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         }
     }
 
-    BidirectionalTraverserIterator( BidirectionalTraversalDescriptionImpl description,
+    BidirectionalTraverserIterator( Resource resource, BidirectionalTraversalDescriptionImpl description,
                                     Iterable<Node> startNodes, Iterable<Node> endNodes )
     {
+        super( resource );
         // TODO Don't assume TraversalDescriptionImpl
         TraversalDescriptionImpl start = (TraversalDescriptionImpl) description.start;
         TraversalDescriptionImpl end = (TraversalDescriptionImpl) description.end;
@@ -153,6 +155,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
             result = selector.next( this );
             if ( result == null )
             {
+                close();
                 return null;
             }
             Iterable<Path> pathCollisions = collisionDetector.evaluate( result, selector.currentSide() );

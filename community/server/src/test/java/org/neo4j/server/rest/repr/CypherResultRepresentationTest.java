@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.cypher.javacompat.ProfilerStatistics;
@@ -35,12 +36,14 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class CypherResultRepresentationTest
@@ -123,5 +126,4 @@ public class CypherResultRepresentationTest
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
         return jsonToMap( format.assemble( repr ) );
     }
-
 }

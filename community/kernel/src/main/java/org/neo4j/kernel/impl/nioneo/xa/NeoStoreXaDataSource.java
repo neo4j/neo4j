@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,6 +36,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -45,7 +45,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.BridgingCacheAccess;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -274,7 +274,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public void start() throws IOException
     {
         life = new LifeSupport();
-        
+
         readOnly = config.get( Configuration.read_only );
 
         storeDir = config.get( Configuration.store_dir );
@@ -321,15 +321,15 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                         new NeoStoreIndexStoreView( neoStore ),
                         tokenNameLookup, updateableSchemaState,
                         logging ) );
-        
+
         xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                 new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );
 
         labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                 LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
-        
+
         life.init();
-        
+
         try
         {
             if ( !readOnly )
@@ -394,7 +394,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     {
         return labelScanStore;
     }
-    
+
     public DefaultSchemaIndexProviderMap getProviderMap()
     {
         return providerMap;
@@ -513,7 +513,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             return neoStore.incrementVersion();
         }
-        
+
         @Override
         public void setVersion( long version )
         {
@@ -645,45 +645,25 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     {
         Collection<File> files = new ArrayList<>();
         gatherNeoStoreFiles( includeLogicalLogs, files );
-        Closeable labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
-
-        return new StoreSnapshot( files.iterator(), labelScanStoreSnapshot );
-    }
-    
-    private static class StoreSnapshot extends PrefetchingIterator<File> implements ResourceIterator<File>
-    {
-        private final Iterator<File> files;
-        private final Closeable closeable;
-
-        StoreSnapshot( Iterator<File> files, Closeable closeable )
+        final Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
+        final Iterator<File> filesIterator = files.iterator();
+        return new PrefetchingResourceIterator<File>()
         {
-            this.files = files;
-            this.closeable = closeable;
-        }
-
-        @Override
-        protected File fetchNextOrNull()
-        {
-            return files.hasNext() ? files.next() : null;
-        }
-        
-        @Override
-        public void close()
-        {
-            try
+            @Override
+            protected File fetchNextOrNull()
             {
-                closeable.close();
+                return filesIterator.hasNext() ? filesIterator.next() : null;
             }
-            catch ( IOException e )
+
+            @Override
+            public void close()
             {
-                // The underlying closeable is currently actually a ResourceIterator, so
-                // the close() method doesn't actually throw IOException.
-                throw new RuntimeException( e );
+                labelScanStoreSnapshot.close();
             }
-        }
+        };
     }
 
-    private Closeable gatherLabelScanStoreFiles( Collection<File> targetFiles ) throws IOException
+    private Resource gatherLabelScanStoreFiles( Collection<File> targetFiles ) throws IOException
     {
         ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
         while ( snapshot.hasNext() )
@@ -747,7 +727,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             }
         }, neoStore.getSchemaStore().loadAllSchemaRules() ) );
     }
-    
+
     public PersistenceCache getPersistenceCache()
     {
         return persistenceCache;

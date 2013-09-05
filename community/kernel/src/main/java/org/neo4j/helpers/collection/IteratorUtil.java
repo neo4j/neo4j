@@ -19,7 +19,6 @@
  */
 package org.neo4j.helpers.collection;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -54,7 +53,7 @@ public abstract class IteratorUtil
     /**
      * Returns the given iterator's first element or {@code null} if no
      * element found.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the first element in the {@code iterator}, or {@code null} if no
@@ -64,11 +63,11 @@ public abstract class IteratorUtil
     {
         return iterator.hasNext() ? iterator.next() : null;
     }
-    
+
     /**
      * Returns the given iterator's first element. If no element is found a
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the first element in the {@code iterator}.
@@ -78,11 +77,11 @@ public abstract class IteratorUtil
     {
         return assertNotNull( iterator, firstOrNull( iterator ) );
     }
-    
+
     /**
      * Returns the given iterator's last element or {@code null} if no
      * element found.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the last element in the {@code iterator}, or {@code null} if no
@@ -97,11 +96,11 @@ public abstract class IteratorUtil
         }
         return result;
     }
-    
+
     /**
      * Returns the given iterator's last element. If no element is found a
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the last element in the {@code iterator}.
@@ -111,12 +110,12 @@ public abstract class IteratorUtil
     {
         return assertNotNull( iterator, lastOrNull( iterator ) );
     }
-    
+
     /**
      * Returns the given iterator's single element or {@code null} if no
      * element found. If there is more than one element in the iterator a
      * {@link NoSuchElementException} will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in {@code iterator}, or {@code null} if no
@@ -127,12 +126,12 @@ public abstract class IteratorUtil
     {
         return single( iterator, null );
     }
-    
+
     /**
      * Returns the given iterator's single element. If there are no elements
      * or more than one element in the iterator a {@link NoSuchElementException}
      * will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in the {@code iterator}.
@@ -142,12 +141,12 @@ public abstract class IteratorUtil
     {
         return assertNotNull( iterator, singleOrNull( iterator ) );
     }
-    
+
     /**
      * Returns the iterator's n:th item from the end of the iteration.
      * If the iterator has got less than n-1 items in it
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @param n the n:th item from the end to get.
@@ -162,7 +161,7 @@ public abstract class IteratorUtil
     /**
      * Returns the iterator's n:th item from the end of the iteration.
      * If the iterator has got less than n-1 items in it {@code null} is returned.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @param n the n:th item from the end to get.
@@ -212,11 +211,11 @@ public abstract class IteratorUtil
         }
         return result;
     }
-    
+
     /**
      * Returns the given iterable's first element or {@code null} if no
      * element found.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the first element in the {@code iterable}, or {@code null} if no
@@ -226,11 +225,11 @@ public abstract class IteratorUtil
     {
         return firstOrNull( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's first element. If no element is found a
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the first element in the {@code iterable}.
@@ -240,11 +239,11 @@ public abstract class IteratorUtil
     {
         return first( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's last element or {@code null} if no
      * element found.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the last element in the {@code iterable}, or {@code null} if no
@@ -254,11 +253,11 @@ public abstract class IteratorUtil
     {
         return lastOrNull( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's last element. If no element is found a
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the last element in the {@code iterable}.
@@ -268,12 +267,12 @@ public abstract class IteratorUtil
     {
         return last( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's single element or {@code null} if no
      * element found. If there is more than one element in the iterable a
      * {@link NoSuchElementException} will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in {@code iterable}, or {@code null} if no
@@ -284,12 +283,12 @@ public abstract class IteratorUtil
     {
         return singleOrNull( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's single element. If there are no elements
      * or more than one element in the iterable a {@link NoSuchElementException}
      * will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in the {@code iterable}.
@@ -299,12 +298,12 @@ public abstract class IteratorUtil
     {
         return single( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's single element or {@code null} if no
      * element found. If there is more than one element in the iterable a
      * {@link NoSuchElementException} will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in {@code iterable}, or {@code null} if no
@@ -315,12 +314,12 @@ public abstract class IteratorUtil
     {
         return single( iterable.iterator(), itemIfNone );
     }
-    
+
     /**
      * Returns the given iterator's single element or {@code itemIfNone} if no
      * element found. If there is more than one element in the iterator a
      * {@link NoSuchElementException} will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in {@code iterator}, or {@code itemIfNone} if no
@@ -343,7 +342,7 @@ public abstract class IteratorUtil
      * Returns the iterator's n:th item from the end of the iteration.
      * If the iterator has got less than n-1 items in it
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterable the {@link Iterable} to get elements from.
      * @param n the n:th item from the end to get.
@@ -354,7 +353,7 @@ public abstract class IteratorUtil
     {
         return fromEnd( iterable.iterator(), n );
     }
-    
+
     /**
      * Adds all the items in {@code iterator} to {@code collection}.
      * @param <C> the type of {@link Collection} to add to items to.
@@ -418,7 +417,7 @@ public abstract class IteratorUtil
                     " when adding items uniquely to a collection:" + collection );
         }
     }
-    
+
     /**
      * Adds all the items in {@code iterator} to {@code collection}.
      * @param <C> the type of {@link Collection} to add to items to.
@@ -448,7 +447,7 @@ public abstract class IteratorUtil
     {
         return addToCollectionUnique( iterable.iterator(), collection );
     }
-    
+
     /**
      * Convenience method for looping over an {@link Iterator}. Converts the
      * {@link Iterator} to an {@link Iterable} by wrapping it in an
@@ -457,7 +456,7 @@ public abstract class IteratorUtil
      * instance for each call to {@code iterator()} on the returned
      * {@link Iterable} instance. This method exists to make it easy to use an
      * {@link Iterator} in a for-loop.
-     * 
+     *
      * @param <T> the type of items in the iterator.
      * @param iterator the iterator to expose as an {@link Iterable}.
      * @return the supplied iterator posing as an {@link Iterable}.
@@ -473,14 +472,14 @@ public abstract class IteratorUtil
             }
         };
     }
-    
+
     /**
      * Exposes {@code iterator} as an {@link Iterable}. It breaks the contract
      * of {@link Iterable} in that it returns the supplied iterator instance for
      * each call to {@code iterator()} on the returned {@link Iterable}
      * instance. This method mostly exists to make it easy to use an
      * {@link Iterator} in a for-loop.
-     * 
+     *
      * @param <T> the type of items in the iterator.
      * @param iterator the iterator to expose as an {@link Iterable}.
      * @return the supplied iterator posing as an {@link Iterable}.
@@ -490,7 +489,7 @@ public abstract class IteratorUtil
     {
         return loop( iterator );
     }
-    
+
     /**
      * Counts the number of items in the {@code iterator} by looping
      * through it.
@@ -511,7 +510,7 @@ public abstract class IteratorUtil
 
     /**
      * Counts the number of items in the {@code iterable} by looping through it.
-     * 
+     *
      * @param <T> the type of items in the iterator.
      * @param iterable the {@link Iterable} to count items in.
      * @return the number of found in {@code iterator}.
@@ -536,7 +535,7 @@ public abstract class IteratorUtil
     {
         return addToCollection( iterable, new ArrayList<T>() );
     }
-    
+
     /**
      * Creates a {@link Set} from an {@link Iterable}.
      *
@@ -565,7 +564,7 @@ public abstract class IteratorUtil
     {
         return addToCollectionUnique( iterable, new HashSet<T>() );
     }
-    
+
     /**
      * Creates a {@link Set} from an array of items.
      *
@@ -677,7 +676,7 @@ public abstract class IteratorUtil
         return new ClosableIterable<String>()
         {
             private ClosableIterator<String> mostRecentIterator;
-            
+
             @Override
             public Iterator<String> iterator()
             {
@@ -695,7 +694,7 @@ public abstract class IteratorUtil
                     throw new RuntimeException( e );
                 }
             }
-            
+
             @Override
             public void close()
             {
@@ -706,7 +705,7 @@ public abstract class IteratorUtil
             }
         };
     }
-    
+
     /**
      * Creates an {@link Iterator} for iterating over the lines of a text file.
      * The opened file is closed if an exception occurs during reading or when
@@ -776,7 +775,7 @@ public abstract class IteratorUtil
         return new PrefetchingIterator<T>()
         {
             private int index;
-            
+
             @Override
             protected T fetchNextOrNull()
             {
@@ -911,14 +910,6 @@ public abstract class IteratorUtil
             }
         }
     }
-
-    public static final Closeable EMPTY_CLOSEABLE = new Closeable()
-    {
-        @Override
-        public void close() throws IOException
-        {
-        }
-    };
 
     public static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {

@@ -19,14 +19,12 @@
  */
 package org.neo4j.server.rest.paging;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
 import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -37,6 +35,9 @@ import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.EphemeralDatabase;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class PagedTraverserTest
 {
@@ -60,8 +61,7 @@ public class PagedTraverserTest
 
     private void createLinkedList( int listLength, Database db )
     {
-        Transaction tx = db.getGraph().beginTx();
-        try
+        try ( Transaction tx = db.getGraph().beginTx() )
         {
             Node previous = null;
             for ( int i = 0; i < listLength; i++ )
@@ -81,10 +81,6 @@ public class PagedTraverserTest
             }
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     @Test
@@ -103,19 +99,15 @@ public class PagedTraverserTest
     @SuppressWarnings( "unused" )
     private int iterateThroughPagedTraverser( PagedTraverser traversalPager )
     {
-        Transaction transaction = database.getGraph().beginTx();
-        try
+        try ( Transaction transaction = database.getGraph().beginTx() )
         {
             int count = 0;
             for ( List<Path> paths : traversalPager )
             {
                 count++;
             }
+            transaction.success();
             return count;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
