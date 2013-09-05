@@ -47,6 +47,11 @@ public class TargetDirectory
             this.clean = clean;
         }
 
+        public String absolutePath()
+        {
+            return directory().getAbsolutePath();
+        }
+
         public File directory()
         {
             if ( subdir == null ) throw new IllegalStateException( "Not initialized" );

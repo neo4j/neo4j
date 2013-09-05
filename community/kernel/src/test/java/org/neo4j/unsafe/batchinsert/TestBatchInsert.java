@@ -60,6 +60,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -140,6 +141,34 @@ public class TestBatchInsert
     private GraphDatabaseService newBatchGraphDatabase()
     {
         return BatchInserters.batchDatabase( "neo-batch-db", fs.get() );
+    }
+
+    @Test
+    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1()
+    {
+        // Given
+        BatchInserter batchInserter = newBatchInserter();
+
+        String[] array1 = { "1" };
+        String[] array2 = { "a" };
+
+        long id1 = batchInserter.createNode(map("array", array1));
+        long id2 = batchInserter.createNode(map());
+
+        // When
+        batchInserter.getNodeProperties( id1 ).get( "array" );
+        batchInserter.setNodeProperty( id1, "array", array1 );
+        batchInserter.setNodeProperty( id2, "array", array2 );
+
+        batchInserter.getNodeProperties( id1 ).get( "array" );
+        batchInserter.setNodeProperty( id1, "array", array1 );
+        batchInserter.setNodeProperty( id2, "array", array2 );
+
+        // Then
+        assertThat( (String[])batchInserter.getNodeProperties( id1 ).get( "array" ), equalTo(array1) );
+
+        batchInserter.shutdown();
+
     }
 
     @Test
