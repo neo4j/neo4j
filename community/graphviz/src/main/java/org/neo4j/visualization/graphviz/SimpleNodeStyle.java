@@ -45,17 +45,21 @@ public class SimpleNodeStyle extends DefaultNodeStyle
         hasLabels = labels.hasNext();
         if ( hasLabels )
         {
-            stream.append( "{" );
-            while ( labels.hasNext() )
+            hasLabels = labels.hasNext();
+            if ( hasLabels )
             {
-                stream.append( labels.next()
-                        .name() );
-                if ( labels.hasNext() )
+                stream.append( "{" );
+                while ( labels.hasNext() )
                 {
-                    stream.append( ", " );
+                    stream.append( labels.next()
+                            .name() );
+                    if ( labels.hasNext() )
+                    {
+                        stream.append( ", " );
+                    }
                 }
+                stream.append( "|" );
             }
-            stream.append( "|" );
         }
     }
 

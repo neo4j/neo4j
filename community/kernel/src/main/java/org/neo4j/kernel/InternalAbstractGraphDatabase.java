@@ -1652,12 +1652,12 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public TraversalDescription traversalDescription()
     {
-        return new TraversalDescriptionImpl();
+        return new TraversalDescriptionImpl(statementContextProvider);
     }
 
     @Override
     public BidirectionalTraversalDescription bidirectionalTraversalDescription()
     {
-        return new BidirectionalTraversalDescriptionImpl();
+        return new BidirectionalTraversalDescriptionImpl(statementContextProvider);
     }
 }

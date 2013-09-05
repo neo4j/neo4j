@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -57,13 +57,13 @@ public class NeoStoreFileListing
     {
         Collection<File> files = new ArrayList<>();
         gatherNeoStoreFiles( includeLogicalLogs, files );
-        Closeable labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
-        Closeable schemaIndexSnapshots = gatherSchemaIndexFiles(files);
+        Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
+        Resource schemaIndexSnapshots = gatherSchemaIndexFiles(files);
 
         return new StoreSnapshot( files.iterator(), labelScanStoreSnapshot, schemaIndexSnapshots );
     }
 
-    private Closeable gatherSchemaIndexFiles(Collection<File> targetFiles) throws IOException
+    private Resource gatherSchemaIndexFiles(Collection<File> targetFiles) throws IOException
     {
         ResourceIterator<File> snapshot = indexingService.snapshotStoreFiles();
         IteratorUtil.addToCollection(snapshot, targetFiles);
@@ -72,7 +72,7 @@ public class NeoStoreFileListing
         return snapshot;
     }
 
-    private Closeable gatherLabelScanStoreFiles( Collection<File> targetFiles ) throws IOException
+    private Resource gatherLabelScanStoreFiles( Collection<File> targetFiles ) throws IOException
     {
         ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
         IteratorUtil.addToCollection(snapshot, targetFiles);
@@ -113,9 +113,9 @@ public class NeoStoreFileListing
     private static class StoreSnapshot extends PrefetchingIterator<File> implements ResourceIterator<File>
     {
         private final Iterator<File> files;
-        private final Closeable[] thingsToCloseWhenDone;
+        private final Resource[] thingsToCloseWhenDone;
 
-        StoreSnapshot( Iterator<File> files, Closeable ... thingsToCloseWhenDone )
+        StoreSnapshot( Iterator<File> files, Resource... thingsToCloseWhenDone )
         {
             this.files = files;
             this.thingsToCloseWhenDone = thingsToCloseWhenDone;
@@ -130,18 +130,9 @@ public class NeoStoreFileListing
         @Override
         public void close()
         {
-            try
+            for ( Resource resource : thingsToCloseWhenDone )
             {
-                for ( Closeable closeable : thingsToCloseWhenDone )
-                {
-                    closeable.close();
-                }
-            }
-            catch ( IOException e )
-            {
-                // The underlying closeable is currently actually a ResourceIterator, so
-                // the close() method doesn't actually throw IOException.
-                throw new RuntimeException( e );
+                resource.close();
             }
         }
     }

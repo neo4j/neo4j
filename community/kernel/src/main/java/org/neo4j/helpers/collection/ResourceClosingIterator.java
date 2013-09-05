@@ -22,13 +22,14 @@ package org.neo4j.helpers.collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 
 public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<V>
 {
-    public static <T> ResourceIterator<T> newResourceIterator( AutoCloseable closeable, Iterator<T> iterator )
+    public static <T> ResourceIterator<T> newResourceIterator( Resource resource, Iterator<T> iterator )
     {
-        return new ResourceClosingIterator<T, T>( closeable, iterator  ) {
+        return new ResourceClosingIterator<T, T>( resource, iterator  ) {
 
             @Override
             public T map( T elem )
@@ -38,27 +39,20 @@ public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<
         };
     }
 
-    private AutoCloseable closeable;
+    private Resource resource;
     private final Iterator<T> iterator;
 
-    ResourceClosingIterator( AutoCloseable closeable, Iterator<T> iterator )
+    ResourceClosingIterator( Resource resource, Iterator<T> iterator )
     {
-        this.closeable = closeable;
+        this.resource = resource;
         this.iterator = iterator;
     }
 
     @Override
     public void close()
     {
-        try
-        {
-            closeable.close();
-            closeable = IteratorUtil.EMPTY_CLOSEABLE;
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        resource.close();
+        resource = Resource.EMPTY;
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.transaction.RollbackException;
 
 import org.neo4j.helpers.Exceptions;

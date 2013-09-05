@@ -25,24 +25,27 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 
-class SortingTraverserIterator extends PrefetchingIterator<Path>
+class SortingTraverserIterator extends PrefetchingResourceIterator<Path>
         implements TraversalContext
 {
     /**
-     * 
+     *
      */
     private final TraverserImpl traverserImpl;
     private final TraverserIterator source;
     private Iterator<Path> sortedResultIterator;
+    private final Resource resource;
 
-    SortingTraverserIterator( TraverserImpl traverserImpl, TraverserIterator source )
+    SortingTraverserIterator( Resource resource, TraverserImpl traverserImpl, TraverserIterator source )
     {
+        this.resource = resource;
         this.traverserImpl = traverserImpl;
         this.source = source;
     }
@@ -101,12 +104,18 @@ class SortingTraverserIterator extends PrefetchingIterator<Path>
 
     private Iterator<Path> fetchAndSortResult()
     {
-        List<Path> result = new ArrayList<Path>();
+        List<Path> result = new ArrayList<>();
         while ( source.hasNext() )
         {
             result.add( source.next() );
         }
         Collections.sort( result, this.traverserImpl.description.sorting );
         return result.iterator();
+    }
+
+    @Override
+    public void close()
+    {
+        resource.close();
     }
 }

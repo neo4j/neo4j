@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.traversal;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
@@ -29,6 +30,7 @@ import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.helpers.Factory;
 
 import static org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD;
 import static org.neo4j.graphdb.traversal.SideSelectorPolicies.ALTERNATING;
@@ -38,65 +40,82 @@ import static org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl.nullCheck
 
 public class BidirectionalTraversalDescriptionImpl implements BidirectionalTraversalDescription
 {
+    private final static Factory<Resource> NO_STATEMENT = new Factory<Resource>()
+    {
+        @Override
+        public Resource newInstance()
+        {
+            return Resource.EMPTY;
+        }
+    };
+
     final TraversalDescription start;
     final TraversalDescription end;
     final PathEvaluator collisionEvaluator;
     final SideSelectorPolicy sideSelector;
     final org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy;
+    final Factory<? extends Resource> statementFactory;
     final int maxDepth;
 
     private BidirectionalTraversalDescriptionImpl( TraversalDescription start,
-            TraversalDescription end, org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy, PathEvaluator collisionEvaluator,
-            SideSelectorPolicy sideSelector, int maxDepth )
+                                                   TraversalDescription end,
+                                                   org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy,
+                                                   PathEvaluator collisionEvaluator, SideSelectorPolicy sideSelector,
+                                                   Factory<? extends Resource> statementFactory, int maxDepth )
     {
         this.start = start;
         this.end = end;
         this.collisionPolicy = collisionPolicy;
         this.collisionEvaluator = collisionEvaluator;
         this.sideSelector = sideSelector;
+        this.statementFactory = statementFactory;
         this.maxDepth = maxDepth;
     }
-    
-    public BidirectionalTraversalDescriptionImpl()
+
+    public BidirectionalTraversalDescriptionImpl(Factory<? extends Resource> statementFactory)
     {
         // TODO Proper defaults.
-        this( traversal(), traversal(), STANDARD, Evaluators.all(), ALTERNATING,
-                Integer.MAX_VALUE );
+        this( traversal(), traversal(), STANDARD, Evaluators.all(), ALTERNATING, statementFactory, Integer.MAX_VALUE );
+    }
+
+    public BidirectionalTraversalDescriptionImpl()
+    {
+        this( NO_STATEMENT );
     }
     
     @Override
     public BidirectionalTraversalDescription startSide( TraversalDescription startSideDescription )
     {
         return new BidirectionalTraversalDescriptionImpl( startSideDescription, this.end, this.collisionPolicy,
-                this.collisionEvaluator, this.sideSelector, this.maxDepth );
+                this.collisionEvaluator, this.sideSelector, statementFactory, this.maxDepth );
     }
 
     @Override
     public BidirectionalTraversalDescription endSide( TraversalDescription endSideDescription )
     {
         return new BidirectionalTraversalDescriptionImpl( this.start, endSideDescription,
-                this.collisionPolicy, this.collisionEvaluator, this.sideSelector, this.maxDepth );
+                this.collisionPolicy, this.collisionEvaluator, this.sideSelector, statementFactory, this.maxDepth );
     }
     
     @Override
     public BidirectionalTraversalDescription mirroredSides( TraversalDescription sideDescription )
     {
         return new BidirectionalTraversalDescriptionImpl( sideDescription, sideDescription.reverse(),
-                collisionPolicy, collisionEvaluator, sideSelector, maxDepth );
+                collisionPolicy, collisionEvaluator, sideSelector, statementFactory, maxDepth );
     }
 
     @Override
     public BidirectionalTraversalDescription collisionPolicy( org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy )
     {
         return new BidirectionalTraversalDescriptionImpl( this.start, this.end,
-                collisionPolicy, this.collisionEvaluator, this.sideSelector, this.maxDepth );
+                collisionPolicy, this.collisionEvaluator, this.sideSelector, statementFactory, this.maxDepth );
     }
 
     @Override
     public BidirectionalTraversalDescription collisionPolicy( BranchCollisionPolicy collisionPolicy )
     {
         return new BidirectionalTraversalDescriptionImpl( this.start, this.end,
-                collisionPolicy, this.collisionEvaluator, this.sideSelector, this.maxDepth );
+                collisionPolicy, this.collisionEvaluator, this.sideSelector, statementFactory, this.maxDepth );
     }
 
     @Override
@@ -104,7 +123,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     {
         nullCheck( collisionEvaluator, Evaluator.class, "RETURN_ALL" );
         return new BidirectionalTraversalDescriptionImpl( this.start, this.end, this.collisionPolicy,
-                addEvaluator( this.collisionEvaluator, collisionEvaluator ), this.sideSelector, maxDepth );
+                addEvaluator( this.collisionEvaluator, collisionEvaluator ), this.sideSelector, statementFactory, maxDepth );
     }
     
     @Override
@@ -117,7 +136,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     public BidirectionalTraversalDescription sideSelector( SideSelectorPolicy sideSelector, int maxDepth )
     {
         return new BidirectionalTraversalDescriptionImpl( this.start, this.end, this.collisionPolicy,
-                this.collisionEvaluator, sideSelector, maxDepth );
+                this.collisionEvaluator, sideSelector, statementFactory, maxDepth );
     }
 
     @Override

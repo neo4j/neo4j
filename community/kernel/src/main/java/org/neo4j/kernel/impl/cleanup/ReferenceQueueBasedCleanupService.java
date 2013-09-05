@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.cleanup;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
@@ -46,20 +47,20 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
     }
 
     @Override
-    public <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, AutoCloseable closeable )
+    public <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, Resource resource )
     {
         if ( cleanupNecessity.evaluate() )
         {
-            return linked( new AutoCleanupResourceIterator<>( iterator ), closeable );
+            return linked( new AutoCleanupResourceIterator<>( iterator ), resource );
         }
         else
         {
             // Just pick the best way of wrapping an Iterator in a ResourceIterator, bypassing cleanup
-            return ResourceClosingIterator.newResourceIterator( closeable, iterator );
+            return ResourceClosingIterator.newResourceIterator( resource, iterator );
         }
     }
 
-    private <T> ResourceIterator<T> linked( AutoCleanupResourceIterator<T> iterator, AutoCloseable handler )
+    private <T> ResourceIterator<T> linked( AutoCleanupResourceIterator<T> iterator, Resource handler )
     {
         CleanupReference cleanup = new CleanupReference( iterator, this, handler );
         link( cleanup );

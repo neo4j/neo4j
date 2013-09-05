@@ -19,77 +19,123 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.Iterator;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.collection.CombiningIterator;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 
 public abstract class AbstractTraverser implements Traverser
 {
     TraversalMetadata lastIterator;
 
     @Override
-    public Iterable<Node> nodes()
+    public ResourceIterable<Node> nodes()
     {
-        return new IterableWrapper<Node, Path>( this )
+        return new ResourcePathIterableWrapper<Node>( this )
         {
             @Override
-            protected Node underlyingObjectToObject( Path position )
+            protected Node convert( Path path )
             {
-                return position.endNode();
+                return path.endNode();
             }
         };
     }
 
     @Override
-    public Iterable<Relationship> relationships()
+    public ResourceIterable<Relationship> relationships()
     {
-        return new IterableWrapper<Relationship, Path>( this )
+        return new ResourcePathIterableWrapper<Relationship>( this )
         {
             @Override
-            public Iterator<Relationship> iterator()
+            public ResourceIterator<Relationship> iterator()
             {
-                Iterator<Relationship> iter = super.iterator();
-                if ( iter.hasNext() )
+                final ResourceIterator<Path> pathIterator = pathIterator();
+                return new PrefetchingResourceIterator<Relationship>()
                 {
-                    Relationship first = iter.next();
-                    // If the first position represents the start node, the
-                    // first relationship will be null, in that case skip it.
-                    if ( first == null ) return iter;
-                    // Otherwise re-include it.
-                    return new CombiningIterator<Relationship>( first, iter );
-                }
-                else
-                {
-                    return iter;
-                }
+                    @Override
+                    public void close()
+                    {
+                        pathIterator.close();
+                    }
+
+                    @Override
+                    protected Relationship fetchNextOrNull()
+                    {
+                        while ( pathIterator.hasNext() )
+                        {
+                            Path path = pathIterator.next();
+                            if ( path.length() > 0 )
+                            {
+                                return path.lastRelationship();
+                            }
+                        }
+                        return null;
+                    }
+                };
             }
 
             @Override
-            protected Relationship underlyingObjectToObject( Path position )
+            protected Relationship convert( Path path )
             {
-                return position.lastRelationship();
+                return path.lastRelationship();
             }
         };
     }
 
-    public Iterator<Path> iterator()
+    @Override
+    public ResourceIterator<Path> iterator()
     {
-        Iterator<Path> iterator = instantiateIterator();
+        ResourceIterator<Path> iterator = instantiateIterator();
         lastIterator = (TraversalMetadata) iterator;
         return iterator;
     }
 
-    protected abstract Iterator<Path> instantiateIterator();
+    protected abstract ResourceIterator<Path> instantiateIterator();
 
     @Override
     public TraversalMetadata metadata()
     {
         return lastIterator;
+    }
+
+    private static abstract class ResourcePathIterableWrapper<T> implements ResourceIterable<T>
+    {
+        private final ResourceIterable<Path> iterableToWrap;
+
+        protected ResourcePathIterableWrapper( ResourceIterable<Path> iterableToWrap )
+        {
+            this.iterableToWrap = iterableToWrap;
+        }
+
+        protected ResourceIterator<Path> pathIterator()
+        {
+            return iterableToWrap.iterator();
+        }
+
+        @Override
+        public ResourceIterator<T> iterator()
+        {
+            final ResourceIterator<Path> iterator = pathIterator();
+            return new PrefetchingResourceIterator<T>()
+            {
+                @Override
+                public void close()
+                {
+                    iterator.close();
+                }
+
+                @Override
+                protected T fetchNextOrNull()
+                {
+                    return iterator.hasNext() ? convert( iterator.next() ) : null;
+                }
+            };
+        }
+
+        protected abstract T convert( Path path );
     }
 }

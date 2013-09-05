@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
-public interface Statement extends AutoCloseable
+public interface Statement extends Resource
 {
     ReadOperations readOperations();
 
@@ -37,6 +38,4 @@ public interface Statement extends AutoCloseable
 
     SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException,
             ReadOnlyDatabaseKernelException;
-
-    void close();
 }

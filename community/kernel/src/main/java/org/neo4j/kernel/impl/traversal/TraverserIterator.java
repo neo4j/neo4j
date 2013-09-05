@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.traversal;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.BranchState;
@@ -36,15 +37,17 @@ class TraverserIterator extends AbstractTraverserIterator
     private final BranchSelector selector;
     private final PathEvaluator evaluator;
     private final UniquenessFilter uniqueness;
-    
-    TraverserIterator( UniquenessFilter uniqueness, PathExpander expander, BranchOrderingPolicy order,
-            PathEvaluator evaluator, Iterable<Node> startNodes, InitialBranchState initialState )
+
+    TraverserIterator( Resource resource, UniquenessFilter uniqueness, PathExpander expander,
+            BranchOrderingPolicy order, PathEvaluator evaluator, Iterable<Node> startNodes,
+            InitialBranchState initialState )
     {
+        super( resource );
         this.uniqueness = uniqueness;
         this.evaluator = evaluator;
         this.selector = order.create( new AsOneStartBranch( this, startNodes, initialState ), expander );
     }
-    
+
     protected BranchSelector selector()
     {
         return selector;
@@ -55,7 +58,7 @@ class TraverserIterator extends AbstractTraverserIterator
     {
         return evaluator.evaluate( branch, state );
     }
-    
+
     @Override
     protected Path fetchNextOrNull()
     {
@@ -65,6 +68,7 @@ class TraverserIterator extends AbstractTraverserIterator
             result = selector.next( this );
             if ( result == null )
             {
+                close();
                 return null;
             }
             if ( result.includes() )

@@ -28,24 +28,26 @@ import org.neo4j.graphdb.traversal.Traverser;
 
 public class PagedTraverser implements Iterator<List<Path>>, Iterable<List<Path>>, Leasable
 {
-
     private final int pageSize;
+    private final Traverser traverser;
     private Iterator<Path> iterator;
 
     public PagedTraverser( Traverser traverser, int pageSize )
     {
-        iterator = traverser.iterator();
+        this.traverser = traverser;
         this.pageSize = pageSize;
     }
 
+    @Override
     public List<Path> next()
     {
+        ensureIteratorStarted();
         if ( !iterator.hasNext() )
         {
             return null;
         }
 
-        ArrayList<Path> result = new ArrayList<Path>();
+        List<Path> result = new ArrayList<>();
 
         for ( int i = 0; i < pageSize; i++ )
         {
@@ -53,18 +55,24 @@ public class PagedTraverser implements Iterator<List<Path>>, Iterable<List<Path>
             {
                 break;
             }
-            else
-            {
-                result.add( iterator.next() );
-            }
+            result.add( iterator.next() );
         }
 
         return result;
     }
 
+    private void ensureIteratorStarted()
+    {
+        if ( iterator == null )
+        {
+            iterator = traverser.iterator();
+        }
+    }
+
     @Override
     public boolean hasNext()
     {
+        ensureIteratorStarted();
         return iterator.hasNext();
     }
 
@@ -79,5 +87,4 @@ public class PagedTraverser implements Iterator<List<Path>>, Iterable<List<Path>
     {
         return this;
     }
-
 }

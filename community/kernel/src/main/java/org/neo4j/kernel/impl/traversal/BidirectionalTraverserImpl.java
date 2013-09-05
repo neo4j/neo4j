@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.Iterator;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.ResourceIterator;
 
 class BidirectionalTraverserImpl extends AbstractTraverser
 {
@@ -39,8 +38,9 @@ class BidirectionalTraverserImpl extends AbstractTraverser
     }
 
     @Override
-    protected Iterator<Path> instantiateIterator()
+    protected ResourceIterator<Path> instantiateIterator()
     {
-        return new BidirectionalTraverserIterator( description, startNodes, endNodes );
+        return new BidirectionalTraverserIterator(
+                description.statementFactory.newInstance(), description, startNodes, endNodes );
     }
 }

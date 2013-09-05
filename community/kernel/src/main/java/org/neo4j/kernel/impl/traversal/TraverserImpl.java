@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.Iterator;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceIterator;
 
 class TraverserImpl extends AbstractTraverser
 {
@@ -35,11 +35,15 @@ class TraverserImpl extends AbstractTraverser
         this.startNodes = startNodes;
     }
 
-    protected Iterator<Path> instantiateIterator()
+    @Override
+    protected ResourceIterator<Path> instantiateIterator()
     {
-        TraverserIterator iterator = new TraverserIterator( description.uniqueness.create( description.uniquenessParameter ),
+        Resource statement = description.statementFactory.newInstance();
+        TraverserIterator iterator = new TraverserIterator(
+                statement,
+                description.uniqueness.create( description.uniquenessParameter ),
                 description.expander, description.branchOrdering, description.evaluator,
                 startNodes, description.initialState );
-        return description.sorting != null ? new SortingTraverserIterator( this, iterator ) : iterator;
+        return description.sorting != null ? new SortingTraverserIterator( statement, this, iterator ) : iterator;
     }
 }

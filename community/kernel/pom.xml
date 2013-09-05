@@ -344,8 +344,10 @@ public class ComponentVersion extends Version
           <failOnError>true</failOnError>
           <logResults>true</logResults>
           <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
-           need to fix that. -->
-          <comparisonVersion>1.9.M05</comparisonVersion>
+           need to fix that.
+           OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
+            -->
+          <comparisonVersion>1.9.4</comparisonVersion>
           <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
           <includes>
             <include>org/neo4j/graphdb/**</include>
@@ -384,6 +386,12 @@ public class ComponentVersion extends Version
 
             <!-- #getPropertyValues() deprecated in favour of #getPropertyKeys() + #getProperty() -->
             <exclude>org/neo4j/graphdb/PropertyContainer</exclude>
+
+            <!-- Traverser changed to be a ResourceIterable -->
+            <exclude>org/neo4j/graphdb/traversal/Traverser</exclude>
+            
+            <!-- ResourceIterator extends Resource (which extends AutoCloseable), instead of Closeable -->
+            <exclude>org/neo4j/graphdb/ResourceIterator</exclude>
           </excludes>
         </configuration>
       </plugin>
