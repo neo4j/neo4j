@@ -21,7 +21,6 @@ package org.neo4j.desktop.ui;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
@@ -133,6 +132,7 @@ public class DesktopModel
         catch ( IOException e )
         {
             // ignore
+            e.printStackTrace( System.out );
         }
     }
 
