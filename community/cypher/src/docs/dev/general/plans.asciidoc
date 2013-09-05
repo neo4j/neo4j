@@ -1,20 +1,18 @@
 [[query-plans]]
-Viewing Execution Plans
-=======================
-Cypher works very hard to execute queries as fast as possible. However, when optimizing for maximum query
-execution performance, it may be helpful to rephrase queries using knowledge about the domain and the application.
+= Query Performance =
+
+Cypher works very hard to execute queries as fast as possible.
+
+However, when optimizing for maximum query execution performance, it may be helpful to rephrase queries using knowledge about the domain and the application.
 
 The overall goal of manual query performance optimization is to ensure that only necessary data is retrieved from the
-graph or at least that data gets filtered out as early as possible in order to reduce the amount of work that has to
-be done at later stages of query execution.
+graph.
+At least data should get filtered out as early as possible in order to reduce the amount of work that has to be done at later stages of query execution.
+This also goes for what gets returned: avoid returning whole nodes and relationships -- instead, pick the data you need and return only that.
+You should also make sure to set an upper limit on variable length patterns, so they don't cover larger portions of the dataset than needed.
 
-In order to be able to do this manual optimization, it is necessary to understand how a given query is going
-to be executed.
+Each Cypher query gets optimized and transformed into an execution plan by the Cypher execution engine.
+To minimize the resources used for this, make sure to use parameters instead of literals when possible.
+This allows Cypher to re-use your queries instead of having to parse and build new execution plans.
 
-Each Cypher query gets transformed into an execution plan by the Cypher execution engine. The execution plan consists of
-a series of execution steps called pipes which may produce data, transform it, or even update the database or the schema.
-Data enters the execution at one pipe and is passed on from pipe to pipe until it either is filtered out, transformed,
-or returned to the user.
 
-To look at the execution plan description used to satisfy your query, you can look at the execution plan description on
-the execution result object returned by the Java Core API.
