@@ -157,18 +157,6 @@ An example of a filter could be +.\*url.\*:http.\*neo4j.*,name:Neo4j+.
 The filter option is also accompanied by the options +-i+ and +-l+ which stands for +ignore case+ (ignore casing of the characters) and +loose matching+ (it's considered a match even if the filter value just matches a part of the compared value, not necessarily the entire value).
 So for a case-insensitive, loose filter you can supply a filter with +-f -i -l+ or +-fil+ for short.
 
-[[shell-titles]]
-== Node titles ==
-
-To make it easier to navigate your graph the shell can display a title for each node, f.ex. in +ls -r+.
-It will display the relationships as well as the nodes on the other side of the relationships.
-The title is displayed together with each node and its best suited property value from a list of property keys.
-
-If you're standing on a node which has two +KNOWS+ relationships to other nodes it'd be difficult to know which friend is which.
-The title feature addresses this by reading a list of property keys and grabbing the first existing property value of those keys and displays it as a title for the node.
-So you may specify a list (with or without regular expressions), f.ex: +name,title.\*,caption+ and the title for each node will be the property value of the first existing key in that list.
-The list is defined by the client (you) using the +TITLE_KEYS+ <<shell-env-vars,environment variable>> and the default being +.\*name.\*,.\*title.*+
-
 [[shell-commands]]
 == How to use (individual commands) ==
 

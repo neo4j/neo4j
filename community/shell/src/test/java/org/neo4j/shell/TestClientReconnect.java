@@ -19,24 +19,18 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.Serializable;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.shell.impl.CollectingOutput;
+
+import static org.junit.Assert.assertTrue;
 
 public class TestClientReconnect extends AbstractShellTest
 {
-//    private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
-//    
-//    @Override
-//    protected GraphDatabaseAPI newDb()
-//    {
-//        return new EmbeddedGraphDatabase( storeDir.getAbsolutePath() );
-//    }
-    
     @Test
     public void remoteClientAbleToReconnectAndContinue() throws Exception
     {
@@ -51,16 +45,15 @@ public class TestClientReconnect extends AbstractShellTest
     }
     
     @Test
-    public void initialSessionValuesSurvivesReconnect() throws Exception
+    public void initialSessionValuesAreEffective() throws Exception
     {
         createRelationshipChain( 2 );
         makeServerRemotelyAvailable();
-        Map<String, Serializable> initialSession = MapUtil.<String, Serializable>genericMap(
-                "TITLE_KEYS", "test" );
+        Map<String, Serializable> initialSession = MapUtil.genericMap( "FOO", "bar" );
         ShellClient client = newRemoteClient( initialSession );
-        String name = "MyTest";
-        client.evaluate( "set test " + name );
-        assertTrue( client.getPrompt().contains( name ) );
+        CollectingOutput output = new CollectingOutput();
+        client.evaluate("env", output);
+        assertTrue( output.asString().contains( "FOO=bar" ) );
         client.shutdown();
     }
 }
