@@ -41,10 +41,11 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import static java.lang.Integer.MAX_VALUE;
 
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEntryInformation;
 
 /**
  * Used by a {@link KernelExtensions} to provide access a {@link LabelScanStore} and prioritize against other.
- * 
+ *
  * (Kernel extesion loading mechanism)-[:FINDS]->(KernelExtensionFactory)-[:THAT_PRODUCES]->(LabelScanStoreProvider)-
  *     -[:THAT_PROVIDES_ACCESS_TO_AND_PRIORITIZES]->(LabelScanStore)
  */
@@ -65,14 +66,14 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             List<LabelScanStoreProvider> all = addToCollection( candidates, new ArrayList<LabelScanStoreProvider>() );
             if ( all.isEmpty() )
             {
-                throw new IllegalArgumentException( "No label scan store provider " + LabelScanStoreProvider.class +
-                        " found" );
+                throw new IllegalArgumentException( "No label scan store provider " +
+                        LabelScanStoreProvider.class.getName() + " found. " + servicesClassPathEntryInformation() );
             }
             Collections.sort( all );
             return all.get( all.size()-1 );
         }
     };
-    
+
     private final LabelScanStore labelScanStore;
 
     private final int priority;
@@ -82,28 +83,28 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
         this.labelScanStore = labelScanStore;
         this.priority = priority;
     }
-    
+
     public LabelScanStore getLabelScanStore()
     {
         return labelScanStore;
     }
-    
+
     @Override
     public int compareTo( LabelScanStoreProvider o )
     {
         return priority - o.priority;
     }
-    
+
     @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[" + labelScanStore + ", prio:" + priority + "]";
     }
-    
+
     public static interface FullStoreChangeStream extends Iterable<NodeLabelUpdate>
     {
         PrimitiveLongIterator labelIds();
-        
+
         long highestNodeId();
     }
 
@@ -121,7 +122,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
                             dataSourceManager.getNeoStoreDataSource().getNeoStore().getNodeStore();
                     private final long highId = nodeStore.getHighestPossibleIdInUse();
                     private long current;
-                    
+
                     @Override
                     protected NodeLabelUpdate fetchNextOrNull()
                     {
@@ -153,7 +154,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
                     {
                         computeNext();
                     }
-                    
+
                     @Override
                     protected void computeNext()
                     {
