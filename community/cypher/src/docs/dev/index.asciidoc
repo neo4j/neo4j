@@ -38,9 +38,5 @@ include::schema.asciidoc[]
 
 :leveloffset: 1
 
-include::execution-plans.asciidoc[]
-
-:leveloffset: 1
-
 include::{importdir}/neo4j-examples-docs-jar/dev/examples/from-sql-to-cypher.asciidoc[]
 
