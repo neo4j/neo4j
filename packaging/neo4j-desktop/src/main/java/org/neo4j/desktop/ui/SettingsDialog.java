@@ -115,8 +115,8 @@ class SettingsDialog extends JDialog
 
     private JPanel createExtensionsPanel()
     {
-        DefaultListModel<String> packageListModel = createPackageListModel();
-        JList<String> packageList = new JList<>( packageListModel );
+        DefaultListModel packageListModel = createPackageListModel();
+        JList packageList = new JList( packageListModel );
         Component listPane = new JScrollPane( packageList );
         Component buttonsPane = createPackageListButtons( packageListModel, packageList );
         return withBorder(
@@ -127,9 +127,9 @@ class SettingsDialog extends JDialog
             createContentPanel( listPane, buttonsPane ) );
     }
 
-    private DefaultListModel<String> createPackageListModel()
+    private DefaultListModel createPackageListModel()
     {
-        final DefaultListModel<String> packageListModel = new DefaultListModel<>();
+        final DefaultListModel packageListModel = new DefaultListModel();
         for ( String packageName : model.getExtensionPackagesConfig() )
         {
             packageListModel.addElement( packageName );
@@ -154,7 +154,7 @@ class SettingsDialog extends JDialog
         return content;
     }
 
-    private JPanel createPackageListButtons( DefaultListModel<String> packageListModel, JList<String> packageList )
+    private JPanel createPackageListButtons( DefaultListModel packageListModel, JList packageList )
     {
         JButton addButton = createAddButton( packageListModel );
         JButton removeButton = createRemoveButton( packageListModel, packageList );
@@ -174,8 +174,8 @@ class SettingsDialog extends JDialog
         return packageListButtons;
     }
 
-    private JButton createRemoveButton( final DefaultListModel<String> packageListModel,
-                                        final JList<String> packageList )
+    private JButton createRemoveButton( final DefaultListModel packageListModel,
+                                        final JList packageList )
     {
         return createTextButton( "Remove", new ActionListener()
         {
@@ -192,7 +192,7 @@ class SettingsDialog extends JDialog
         } );
     }
 
-    private JButton createAddButton( final DefaultListModel<String> packageListModel )
+    private JButton createAddButton( final DefaultListModel packageListModel )
     {
         return createTextButton( "Add", new ActionListener()
         {
@@ -210,12 +210,12 @@ class SettingsDialog extends JDialog
     }
 
 
-    private List<String> itemsAsList( ListModel<String> model )
+    private List<String> itemsAsList( ListModel model )
     {
-        List<String> list = new ArrayList<>( model.getSize() );
+        List<String> list = new ArrayList<String>( model.getSize() );
         for ( int i = 0; i < model.getSize(); i++ )
         {
-            list.add( model.getElementAt( i ) );
+            list.add( (String) model.getElementAt( i ) );
         }
         return list;
     }

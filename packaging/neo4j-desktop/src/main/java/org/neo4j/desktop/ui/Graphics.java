@@ -35,7 +35,7 @@ public class Graphics
 
     static ArrayList<Image> loadIcons()
     {
-        ArrayList<Image> icons = new ArrayList<>();
+        ArrayList<Image> icons = new ArrayList<Image>();
         for ( int i = 16; i <= 256; i *= 2 )
         {
             Image image = loadImage( format( LOGO_PATTERN, i ) );

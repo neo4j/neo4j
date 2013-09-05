@@ -59,7 +59,11 @@ public class Environment
             {
                 getDesktop().browse( new URI( link ) );
             }
-            catch ( IOException | URISyntaxException e )
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+            catch ( URISyntaxException e )
             {
                 e.printStackTrace();
             }
@@ -88,6 +92,7 @@ public class Environment
             catch ( IOException e )
             {
                 // fall through to alert
+                e.printStackTrace( System.out );
             }
         }
         else if ( OperatingSystemFamily.WINDOWS.isDetected() )

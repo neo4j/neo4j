@@ -62,7 +62,7 @@ public class SystemOutDebugWindow
         panel.setLayout( new CardLayout() );
 
         sysStreamPrinter.flush();
-        panel.add( text = new JTextArea() );
+        panel.add( "status", text = new JTextArea() );
         frame.add( new JScrollPane( panel ) );
         
         frame.pack();

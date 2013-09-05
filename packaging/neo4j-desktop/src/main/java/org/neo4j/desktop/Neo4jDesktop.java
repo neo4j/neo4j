@@ -79,8 +79,22 @@ public class Neo4jDesktop
         {
             UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
         }
-        catch ( ClassNotFoundException | InstantiationException
-                | IllegalAccessException | UnsupportedLookAndFeelException e )
+        catch ( ClassNotFoundException e)
+        {
+            // don't care
+            e.printStackTrace( System.out );
+        }
+        catch ( UnsupportedLookAndFeelException e )
+        {
+            // don't care
+            e.printStackTrace( System.out );
+        }
+        catch ( InstantiationException e )
+        {
+            // don't care
+            e.printStackTrace( System.out );
+        }
+        catch ( IllegalAccessException e )
         {
             // don't care
             e.printStackTrace( System.out );
@@ -95,7 +109,7 @@ public class Neo4jDesktop
 
     private File defaultNeo4jDataDirectory()
     {
-        ArrayList<File> locations = new ArrayList<>(  );
+        ArrayList<File> locations = new ArrayList<File>(  );
 
         switch ( OperatingSystemFamily.detect() )
         {

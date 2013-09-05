@@ -83,19 +83,23 @@ public class DesktopModel
     {
         // The installer creates a .loc file that contains the path of the actual per-user vmoptions file
         String location = getUserVmOptionsFileLocation();
+        File vmOptionsFile;
+
         if ( null == location )
         {
-            return getDefaultUserVmOptionsFile();
+            vmOptionsFile = getDefaultUserVmOptionsFile();
         }
         else
         {
-            File vmOptionsFile = new File( substituteVars( location ) );
-            if ( ! vmOptionsFile.exists() )
-            {
-                createUserVmOptionsFile( vmOptionsFile );
-            }
-            return vmOptionsFile;
+            vmOptionsFile = new File( substituteVars( location ) );
         }
+
+        if ( null != vmOptionsFile &&  !vmOptionsFile.exists() )
+        {
+            createUserVmOptionsFile( vmOptionsFile );
+        }
+
+        return vmOptionsFile;
     }
 
     private void createUserVmOptionsFile( File vmOptionsFile )

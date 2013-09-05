@@ -268,7 +268,12 @@ public class MainWindow
                             databaseActions.start();
                             updateStatus( DatabaseStatus.STARTED );
                         }
-                        catch ( UnsuitableGraphDatabaseDirectory | IOException e )
+                        catch ( UnsuitableGraphDatabaseDirectory e )
+                        {
+                            alert( e.getMessage() );
+                            updateStatus( DatabaseStatus.STOPPED );
+                        }
+                        catch ( IOException e )
                         {
                             alert( e.getMessage() );
                             updateStatus( DatabaseStatus.STOPPED );
