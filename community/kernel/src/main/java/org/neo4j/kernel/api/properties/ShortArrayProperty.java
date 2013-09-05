@@ -35,15 +35,15 @@ class ShortArrayProperty extends FullSizeProperty
     @Override
     public short[] value()
     {
-        return value;
+        return value.clone();
     }
 
     @Override
     public boolean valueEquals( Object value )
     {
-        if ( value instanceof short[])
+        if ( value instanceof short[] )
         {
-            return Arrays.equals(this.value, (short[])value);
+            return Arrays.equals( this.value, (short[]) value );
         }
         return valueCompare( value, this.value );
     }

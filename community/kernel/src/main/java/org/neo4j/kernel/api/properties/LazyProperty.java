@@ -25,7 +25,7 @@ abstract class LazyProperty<T> extends FullSizeProperty
 {
     private volatile Object value;
 
-    LazyProperty( long propertyKeyId, Callable<T> producer )
+    LazyProperty( long propertyKeyId, Callable<? extends T> producer )
     {
         super( propertyKeyId );
         this.value = producer;
@@ -55,22 +55,30 @@ abstract class LazyProperty<T> extends FullSizeProperty
                 }
             }
         }
-        return cast( value );
+        return castAndPrepareForReturn( value );
     }
 
     protected Object produceValue()
     {
         try
         {
-            return ( (Callable<?>) value ).call();
-        } catch ( Exception e )
+            return ((Callable<?>) value).call();
+        }
+        catch ( Exception e )
         {
             throw new RuntimeException( e );
         }
     }
 
+    /**
+     * Casts the internal value to the correct type and makes it ready for returning out,
+     * potentially all the way out to the user.
+     *
+     * @param value the value to cast and prepare.
+     * @return the cast and prepared value.
+     */
     @SuppressWarnings("unchecked")
-    private T cast( Object value )
+    protected T castAndPrepareForReturn( Object value )
     {
         return (T) value;
     }

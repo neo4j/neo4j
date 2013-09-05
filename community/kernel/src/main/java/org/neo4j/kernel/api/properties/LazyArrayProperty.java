@@ -22,12 +22,23 @@ package org.neo4j.kernel.api.properties;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
-public class LazyArrayProperty extends LazyProperty<Object>
+class LazyArrayProperty extends LazyProperty<Object>
 {
-
+    /*
+     * Access to this field needs synchronization, since it must be safe for use from multiple threads.
+     * The synchronization of this field is carefully designed to be implicit.
+     *
+     *
+     * assuming: produceValue() is called under synchronization - this is where this field is written.
+     *           produceValue() is called *before* assigning the volatile LazyProperty.value field
+     *                             (still under synchronization)
+     * assuming: value member field is volatile, so accessing it implies the required read barrier.
+     *           type doesn't need to be volatile since any call path to it first reads value,
+     *           it's ALWAYS written before value, implying write barrier, and read after value, implying read barrier.
+     */
     private Type type;
 
-    LazyArrayProperty( long propertyKeyId, final Callable<Object> producer )
+    LazyArrayProperty( long propertyKeyId, final Callable<?> producer )
     {
         super( propertyKeyId, producer );
     }
@@ -35,143 +46,229 @@ public class LazyArrayProperty extends LazyProperty<Object>
     @Override
     protected Object produceValue()
     {
+        // this method is called under synchronization, before assigning LazyProperty.value ...
         Object value = super.produceValue();
-        this.type = Type.from( value );
+        this.type = Type.from( value ); // ... so assigning type is safe
         return value;
     }
 
     @Override
     public boolean valueEquals( Object value )
     {
-        Object myValue = value();
-        return type.equals( myValue, value );
+        Object myValue = value(); // value() accesses LazyProperty.value, implying a read barrier ...
+        return type.equals( myValue, value ); // ... so accessing type is safe
     }
 
     @Override
     int valueHash()
     {
-        Object myValue = value();
-        return type.hashCode( myValue );
+        Object myValue = value(); // value() accesses LazyProperty.value, implying a read barrier ...
+        return type.hashCode( myValue ); // ... so accessing type is safe
     }
 
-    enum Type
+    @Override
+    protected Object castAndPrepareForReturn( Object value )
+    {
+        // this method is invoked after accessing LazyProperty.value, implying a read barrier ...
+        return type.clone( value ); // ... so accessing type is safe
+    }
+
+    private enum Type
     {
         INT
-                {
-                    int hashCode( Object array )
-                    {
-                        return Arrays.hashCode( (int[]) array );
-                    }
+        {
+            @Override
+            int hashCode( Object array )
+            {
+                return Arrays.hashCode( (int[]) array );
+            }
 
-                    boolean equals( Object array1, Object array2 )
-                    {
-                        return Arrays.equals( (int[]) array1, (int[]) array2 );
-                    }
-                },
+            @Override
+            boolean equals( Object array1, Object array2 )
+            {
+                return array2 instanceof int[] && Arrays.equals( (int[]) array1, (int[]) array2 );
+            }
+
+            @Override
+            Object clone( Object array )
+            {
+                return ((int[])array).clone();
+            }
+        },
         LONG
-                {
-                    int hashCode( Object array )
-                    {
-                        return Arrays.hashCode( (long[]) array );
-                    }
+        {
+            @Override
+            int hashCode( Object array )
+            {
+                return Arrays.hashCode( (long[]) array );
+            }
 
-                    boolean equals( Object array1, Object array2 )
-                    {
-                        return Arrays.equals( (long[]) array1, (long[]) array2 );
-                    }
-                },
+            @Override
+            boolean equals( Object array1, Object array2 )
+            {
+                return array2 instanceof long[] && Arrays.equals( (long[]) array1, (long[]) array2 );
+            }
+
+            @Override
+            Object clone( Object array )
+            {
+                return ((long[])array).clone();
+            }
+        },
         BOOLEAN
-                {
-                    int hashCode( Object array )
-                    {
-                        return Arrays.hashCode( (boolean[]) array );
-                    }
+        {
+            @Override
+            int hashCode( Object array )
+            {
+                return Arrays.hashCode( (boolean[]) array );
+            }
 
-                    boolean equals( Object array1, Object array2 )
-                    {
-                        return Arrays.equals( (boolean[]) array1, (boolean[]) array2 );
-                    }
-                },
+            @Override
+            boolean equals( Object array1, Object array2 )
+            {
+                return array2 instanceof boolean[] && Arrays.equals( (boolean[]) array1, (boolean[]) array2 );
+            }
+
+            @Override
+            Object clone( Object array )
+            {
+                return ((boolean[])array).clone();
+            }
+        },
         BYTE
-                {
-                    int hashCode( Object array )
-                    {
-                        return Arrays.hashCode( (byte[]) array );
-                    }
+        {
+            @Override
+            int hashCode( Object array )
+            {
+                return Arrays.hashCode( (byte[]) array );
+            }
 
-                    boolean equals( Object array1, Object array2 )
-                    {
-                        return Arrays.equals( (byte[]) array1, (byte[]) array2 );
-                    }
-                },
+            @Override
+            boolean equals( Object array1, Object array2 )
+            {
+                return array2 instanceof byte[] && Arrays.equals( (byte[]) array1, (byte[]) array2 );
+            }
+
+            @Override
+            Object clone( Object array )
+            {
+                return ((byte[])array).clone();
+            }
+        },
         DOUBLE
-                {
-                    int hashCode( Object array )
-                    {
-                        return Arrays.hashCode( (double[]) array );
-                    }
+        {
+            @Override
+            int hashCode( Object array )
+            {
+                return Arrays.hashCode( (double[]) array );
+            }
 
-                    boolean equals( Object array1, Object array2 )
-                    {
-                        return Arrays.equals( (double[]) array1, (double[]) array2 );
-                    }
-                },
+            @Override
+            boolean equals( Object array1, Object array2 )
+            {
+                return array2 instanceof double[] && Arrays.equals( (double[]) array1, (double[]) array2 );
+            }
+
+            @Override
+            Object clone( Object array )
+            {
+                return ((double[])array).clone();
+            }
+        },
         STRING
-                {
-                    int hashCode( Object array )
-                    {
-                        return Arrays.hashCode( (String[])
-                                array );
-                    }
+        {
+            @Override
+            int hashCode( Object array )
+            {
+                return Arrays.hashCode( (String[]) array );
+            }
 
-                    boolean equals( Object array1, Object array2 )
-                    {
-                        return Arrays.equals( (String[]) array1, (String[]) array2 );
-                    }
-                },
+            @Override
+            boolean equals( Object array1, Object array2 )
+            {
+                return array2 instanceof String[] && Arrays.equals( (String[]) array1, (String[]) array2 );
+            }
+
+            @Override
+            Object clone( Object array )
+            {
+                return ((String[])array).clone();
+            }
+        },
         SHORT
-                {
-                    int hashCode( Object array )
-                    {
-                        return Arrays.hashCode( (short[]) array );
-                    }
+        {
+            @Override
+            int hashCode( Object array )
+            {
+                return Arrays.hashCode( (short[]) array );
+            }
 
-                    boolean equals( Object array1, Object array2 )
-                    {
-                        return Arrays.equals( (short[]) array1, (short[]) array2 );
-                    }
-                },
+            @Override
+            boolean equals( Object array1, Object array2 )
+            {
+                return array2 instanceof short[] && Arrays.equals( (short[]) array1, (short[]) array2 );
+            }
+
+            @Override
+            Object clone( Object array )
+            {
+                return ((short[])array).clone();
+            }
+        },
         CHAR
-                {
-                    int hashCode( Object array )
-                    {
-                        return Arrays.hashCode( (char[]) array );
-                    }
+        {
+            @Override
+            int hashCode( Object array )
+            {
+                return Arrays.hashCode( (char[]) array );
+            }
 
-                    boolean equals( Object array1, Object array2 )
-                    {
-                        return Arrays.equals( (char[]) array1, (char[]) array2 );
-                    }
-                },
+            @Override
+            boolean equals( Object array1, Object array2 )
+            {
+                return array2 instanceof char[] && Arrays.equals( (char[]) array1, (char[]) array2 );
+            }
+
+            @Override
+            Object clone( Object array )
+            {
+                return ((char[])array).clone();
+            }
+        },
         FLOAT
-                {
-                    int hashCode( Object array )
-                    {
-                        return Arrays.hashCode( (float[]) array );
-                    }
+        {
+            @Override
+            int hashCode( Object array )
+            {
+                return Arrays.hashCode( (float[]) array );
+            }
 
-                    boolean equals( Object array1, Object array2 )
-                    {
-                        return Arrays.equals( (float[]) array1, (float[]) array2 );
-                    }
-                };
+            @Override
+            boolean equals( Object array1, Object array2 )
+            {
+                return array2 instanceof float[] && Arrays.equals( (float[]) array1, (float[]) array2 );
+            }
+
+            @Override
+            Object clone( Object array )
+            {
+                return ((float[])array).clone();
+            }
+        };
 
         abstract int hashCode( Object array );
 
         abstract boolean equals( Object array1, Object array2 );
 
+        abstract Object clone( Object array );
+
         public static Type from( Object array )
         {
+            if ( !array.getClass().isArray() )
+            {
+                throw new IllegalArgumentException( array + " is not an array, it's a " + array.getClass() );
+            }
+
             if ( array instanceof int[] )
             {
                 return INT;
@@ -208,7 +305,7 @@ public class LazyArrayProperty extends LazyProperty<Object>
             {
                 return FLOAT;
             }
-            throw new IllegalStateException( "Not a recognized array type " + array.getClass() );
+            throw new IllegalArgumentException( "Unrecognized array type " + array.getClass().getComponentType() );
         }
     }
 }

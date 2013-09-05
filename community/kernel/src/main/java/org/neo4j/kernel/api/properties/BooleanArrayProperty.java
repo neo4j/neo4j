@@ -38,15 +38,15 @@ class BooleanArrayProperty extends FullSizeProperty
     @Override
     public boolean[] value()
     {
-        return value;
+        return value.clone();
     }
 
     @Override
     public boolean valueEquals( Object value )
     {
-        if ( value instanceof boolean[])
+        if ( value instanceof boolean[] )
         {
-            return Arrays.equals(this.value, (boolean[])value);
+            return Arrays.equals( this.value, (boolean[]) value );
         }
 
         if ( value instanceof Boolean[] )
@@ -79,7 +79,7 @@ class BooleanArrayProperty extends FullSizeProperty
     {
         return Arrays.equals( this.value, ((BooleanArrayProperty)that).value );
     }
-    
+
     @Override
     @Deprecated
     public PropertyData asPropertyDataJustForIntegration()
