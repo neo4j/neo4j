@@ -19,6 +19,8 @@
  */
 package org.neo4j.desktop.runtime;
 
+import java.util.ArrayList;
+
 import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
 import org.neo4j.server.Bootstrapper;
@@ -47,7 +49,7 @@ public class DatabaseActions
         server = new DesktopBootstrapper(
                 model.getDatabaseDirectory(),
                 model.getDatabaseConfigurationFile(),
-                model.getExtensionPackagesConfig() );
+                new ArrayList<String>() );
         server.start();
     }
     

@@ -37,6 +37,11 @@ import static javax.swing.WindowConstants.HIDE_ON_CLOSE;
  */
 public class SystemOutDebugWindow
 {
+    private static final int START_X = 100;
+    private static final int START_Y = 100;
+    private static final int START_WIDTH = 600;
+    private static final int START_HEIGHT = 800;
+
     private final ByteArrayOutputStream sysStreamCapture = new ByteArrayOutputStream();
     private PrintStream sysStreamPrinter;
     private JFrame frame;
@@ -62,11 +67,12 @@ public class SystemOutDebugWindow
         panel.setLayout( new CardLayout() );
 
         sysStreamPrinter.flush();
-        panel.add( "status", text = new JTextArea() );
+        text = new JTextArea();
+        panel.add( "status", text );
         frame.add( new JScrollPane( panel ) );
         
         frame.pack();
-        frame.setBounds( 100, 100, 600, 800 );
+        frame.setBounds( START_X, START_Y, START_WIDTH, START_HEIGHT );
         frame.setVisible( false );
         frame.setDefaultCloseOperation( HIDE_ON_CLOSE );
     }

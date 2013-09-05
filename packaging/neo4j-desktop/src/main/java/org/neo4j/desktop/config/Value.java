@@ -26,23 +26,6 @@ package org.neo4j.desktop.config;
 public interface Value<T>
 {
     T get();
-    
-    boolean isWritable();
-    
-    void set( T value ) throws IllegalStateException;
-    
-    public static abstract class ReadOnly<T> implements Value<T>
-    {
-        @Override
-        public boolean isWritable()
-        {
-            return false;
-        }
 
-        @Override
-        public void set( T value ) throws IllegalStateException
-        {
-            throw new IllegalStateException( "Read-only value" );
-        }
-    }
+    void set( T value );
 }
