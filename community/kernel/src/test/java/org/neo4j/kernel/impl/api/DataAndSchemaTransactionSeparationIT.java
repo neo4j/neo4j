@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,14 +41,15 @@ public class DataAndSchemaTransactionSeparationIT
 {
     public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
 
-    private static Function<GraphDatabaseService, Void> afterSchemaOperation(
+    private static Function<GraphDatabaseService, Void> expectFailureAfterSchemaOperation(
             final Function<GraphDatabaseService, ?> function )
     {
         return new Function<GraphDatabaseService, Void>()
         {
             @Override
             public Void apply( GraphDatabaseService graphDb )
-            {  // given
+            {
+                // given
                 graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
                 // when
@@ -63,8 +63,26 @@ public class DataAndSchemaTransactionSeparationIT
                 catch ( Exception e )
                 {
                     assertEquals( "Cannot perform data updates in a transaction that has performed schema updates.",
-                                  e.getMessage() );
+                            e.getMessage() );
                 }
+                return null;
+            }
+        };
+    }
+
+    private static Function<GraphDatabaseService, Void> succeedAfterSchemaOperation(
+            final Function<GraphDatabaseService, ?> function )
+    {
+        return new Function<GraphDatabaseService, Void>()
+        {
+            @Override
+            public Void apply( GraphDatabaseService graphDb )
+            {
+                // given
+                graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+
+                // when/then
+                function.apply( graphDb );
                 return null;
             }
         };
@@ -73,55 +91,55 @@ public class DataAndSchemaTransactionSeparationIT
     @Test
     public void shouldNotAllowNodeCreationInSchemaTransaction() throws Exception
     {
-        db.failingTransaction( afterSchemaOperation( createNode() ) );
+        db.executeAndRollback( expectFailureAfterSchemaOperation( createNode() ) );
     }
 
     @Test
     public void shouldNotAllowRelationshipCreationInSchemaTransaction() throws Exception
     {
         // given
-        final Pair<Node, Node> nodes = db.transaction( aPairOfNodes() );
+        final Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
         // then
-        db.failingTransaction( afterSchemaOperation( relate( nodes ) ) );
+        db.executeAndRollback( expectFailureAfterSchemaOperation( relate( nodes ) ) );
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldNotAllowPropertyOperationsInSchemaTransaction() throws Exception
+    public void shouldNotAllowPropertyWritesInSchemaTransaction() throws Exception
     {
         // given
-        Pair<Node, Node> nodes = db.transaction( aPairOfNodes() );
-        Relationship relationship = db.transaction( relate( nodes ) );
+        Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
+        Relationship relationship = db.executeAndCommit( relate( nodes ) );
         // when
         for ( Function<GraphDatabaseService, ?> operation : new Function[]{
-                propertyRead( Node.class, nodes.first(), "key1" ),
                 propertyWrite( Node.class, nodes.first(), "key1", "value1" ),
-                propertyRead( Relationship.class, relationship, "key1" ),
                 propertyWrite( Relationship.class, relationship, "key1", "value1" ),
         } )
         {
             // then
-            db.failingTransaction( afterSchemaOperation( operation ) );
+            db.executeAndRollback( expectFailureAfterSchemaOperation( operation ) );
         }
     }
 
     @Test
-    @Ignore("2013-08-30: This is still left to do")
-    public void shouldNotAllowGetRelationshipInSchemaTransaction() throws Exception
+    @SuppressWarnings("unchecked")
+    public void shouldAllowPropertyReadsInSchemaTransaction() throws Exception
     {
         // given
-        final Node node = db.transaction( createNode() );
+        Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
+        Relationship relationship = db.executeAndCommit( relate( nodes ) );
+        db.executeAndCommit( propertyWrite( Node.class, nodes.first(), "key1", "value1" ) );
+        db.executeAndCommit( propertyWrite( Relationship.class, relationship, "key1", "value1" ) );
 
         // when
-        db.failingTransaction( afterSchemaOperation( new Function<GraphDatabaseService, Void>()
+        for ( Function<GraphDatabaseService, ?> operation : new Function[]{
+                propertyRead( Node.class, nodes.first(), "key1" ),
+                propertyRead( Relationship.class, relationship, "key1" ),
+        } )
         {
-            @Override
-            public Void apply( GraphDatabaseService graphDatabaseService )
-            {
-                node.getRelationships();
-                return null;
-            }
-        } ) );
+            // then
+            db.executeAndRollback( succeedAfterSchemaOperation( operation ) );
+        }
     }
 
     private static Function<GraphDatabaseService, Node> createNode()

@@ -22,11 +22,11 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -48,9 +48,9 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
         this.txManager = txManager;
     }
 
-    public BaseStatement baseStatement()
+    public ReadStatement readStatement()
     {
-        return transaction().acquireBaseStatement();
+        return transaction().acquireReadStatement();
     }
 
     public DataStatement dataStatement()

@@ -22,11 +22,11 @@ package org.neo4j.server.rest.transactional;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
-import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.MicroTransaction;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -46,9 +46,9 @@ class TransitionalTxManagementKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public BaseStatement acquireBaseStatement()
+    public ReadStatement acquireReadStatement()
     {
-        return ctx.acquireBaseStatement();
+        return ctx.acquireReadStatement();
     }
 
     @Override

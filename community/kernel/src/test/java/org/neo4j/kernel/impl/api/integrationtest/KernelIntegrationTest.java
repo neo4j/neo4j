@@ -26,9 +26,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -44,7 +44,7 @@ public abstract class KernelIntegrationTest
     protected ThreadToStatementContextBridge statementContextProvider;
 
     private Transaction beansTx;
-    private BaseStatement statement;
+    private ReadStatement statement;
     private EphemeralFileSystemAbstraction fs;
 
     protected DataStatement dataStatementInNewTransaction()

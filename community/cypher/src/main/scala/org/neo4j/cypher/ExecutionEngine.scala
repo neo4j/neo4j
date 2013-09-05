@@ -32,7 +32,7 @@ import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.cypher.internal.prettifier.Prettifier
-import org.neo4j.kernel.api.BaseStatement
+import org.neo4j.kernel.api.ReadStatement
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
 
@@ -75,7 +75,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     val tx = graph.beginTx()
     try {
       verify(query)
-      val plan = executeBaseStatement(stmt => planBuilder.build(new TransactionBoundPlanContext(stmt, graph), query))
+      val plan = executeReadStatement(stmt => planBuilder.build(new TransactionBoundPlanContext(stmt, graph), query))
       plan.execute(plan.queryType match {
         case DataQuery => createDataQueryContext(tx)
         case SchemaQuery => createSchemaQueryContext(tx)
@@ -106,7 +106,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       // create transaction and query context
       var touched = false
       val tx = graph.beginTx()
-      val statement = baseStatement
+      val statement = readStatement
       val plan = try {
         // fetch plan cache
         val planCache = getOrCreateFromSchemaState(statement, new LRUCache[String, ExecutionPlan](getQueryCacheSize))
@@ -159,9 +159,9 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   private def dataStatement = txBridge.dataStatement()
   private def schemaStatement = txBridge.schemaStatement()
-  private def baseStatement = txBridge.baseStatement()
-  private def executeBaseStatement[T](callback: (BaseStatement) => T): T = {
-    val stmt = baseStatement
+  private def readStatement = txBridge.readStatement()
+  private def executeReadStatement[T](callback: (ReadStatement) => T): T = {
+    val stmt = readStatement
     try {
       callback( stmt )
     } finally {
@@ -173,7 +173,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     .getDependencyResolver
     .resolveDependency(classOf[ThreadToStatementContextBridge])
 
-  private def getOrCreateFromSchemaState[V](statement: BaseStatement, creator: => V) = {
+  private def getOrCreateFromSchemaState[V](statement: ReadStatement, creator: => V) = {
     val javaCreator = new org.neo4j.helpers.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
     }

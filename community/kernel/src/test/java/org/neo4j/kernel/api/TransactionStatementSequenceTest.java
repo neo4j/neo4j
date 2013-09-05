@@ -59,10 +59,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransactionImplementation tx = newTransaction();
-        tx.acquireBaseStatement().close();
+        tx.acquireReadStatement().close();
 
         // when / then
-        tx.acquireBaseStatement().close();
+        tx.acquireReadStatement().close();
     }
 
     @Test
@@ -70,7 +70,7 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransactionImplementation tx = newTransaction();
-        tx.acquireBaseStatement().close();
+        tx.acquireReadStatement().close();
 
         // when / then
         tx.acquireDataStatement().close();
@@ -81,7 +81,7 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransactionImplementation tx = newTransaction();
-        tx.acquireBaseStatement().close();
+        tx.acquireReadStatement().close();
 
         // when / then
         tx.acquireSchemaStatement().close();
@@ -161,7 +161,7 @@ public class TransactionStatementSequenceTest
         tx.acquireDataStatement().close();
 
         // when / then
-        tx.acquireBaseStatement().close();
+        tx.acquireReadStatement().close();
     }
 
     @Test
@@ -172,6 +172,6 @@ public class TransactionStatementSequenceTest
         tx.acquireSchemaStatement().close();
 
         // when / then
-        tx.acquireBaseStatement().close();
+        tx.acquireReadStatement().close();
     }
 }

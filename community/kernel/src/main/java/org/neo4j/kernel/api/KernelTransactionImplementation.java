@@ -41,10 +41,10 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         this.legacyKernelOperations = legacyKernelOperations;
     }
 
-    public BaseStatement acquireBaseStatement()
+    public ReadStatement acquireReadStatement()
     {
         assertOpen();
-        return new BaseStatement( this, acquireStatement() );
+        return new ReadStatement( this, acquireStatement() );
     }
 
     public DataStatement acquireDataStatement() throws InvalidTransactionTypeException

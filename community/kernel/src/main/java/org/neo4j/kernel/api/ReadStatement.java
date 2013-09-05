@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -39,16 +40,21 @@ import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.SafeProperty;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.Token;
 
-public class BaseStatement implements TokenRead, TokenWrite, SchemaRead, SchemaState, AutoCloseable
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
+
+public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRead, SchemaState, AutoCloseable
 {
     private final KernelTransactionImplementation transaction;
     private boolean closed;
     final Statement state;
 
-    BaseStatement( KernelTransactionImplementation transaction, Statement state )
+    ReadStatement( KernelTransactionImplementation transaction, Statement state )
     {
         this.transaction = transaction;
         this.state = state;
@@ -111,6 +117,96 @@ public class BaseStatement implements TokenRead, TokenWrite, SchemaRead, SchemaS
     {
         return transaction.legacyKernelOperations;
     }
+
+    // <DataRead>
+    @Override
+    public PrimitiveLongIterator nodesGetForLabel( long labelId )
+    {
+        assertOpen();
+        if ( labelId == NO_SUCH_LABEL )
+        {
+            return emptyPrimitiveLongIterator();
+        }
+        return dataRead().nodesGetForLabel( state, labelId );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexLookup( IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException
+    {
+        assertOpen();
+        return dataRead().nodesGetFromIndexLookup( state, index, value );
+    }
+
+    @Override
+    public boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    {
+        assertOpen();
+        return labelId != NO_SUCH_LABEL && dataRead().nodeHasLabel( state, nodeId, labelId );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
+    {
+        assertOpen();
+        return dataRead().nodeGetLabels( state, nodeId );
+    }
+
+    @Override
+    public Property nodeGetProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    {
+        assertOpen();
+        if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
+        {
+            return Property.noNodeProperty( nodeId, propertyKeyId );
+        }
+        return dataRead().nodeGetProperty( state, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public Property relationshipGetProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException
+    {
+        assertOpen();
+        if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
+        {
+            return Property.noRelationshipProperty( relationshipId, propertyKeyId );
+        }
+        return dataRead().relationshipGetProperty( state, relationshipId, propertyKeyId );
+    }
+
+    @Override
+    public Property graphGetProperty( long propertyKeyId )
+    {
+        assertOpen();
+        if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
+        {
+            return Property.noGraphProperty( propertyKeyId );
+        }
+        return dataRead().graphGetProperty( state, propertyKeyId );
+    }
+
+    @Override
+    public Iterator<SafeProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
+    {
+        assertOpen();
+        return dataRead().nodeGetAllProperties( state, nodeId );
+    }
+
+    @Override
+    public Iterator<SafeProperty> relationshipGetAllProperties( long relationshipId )
+            throws EntityNotFoundException
+    {
+        assertOpen();
+        return dataRead().relationshipGetAllProperties( state, relationshipId );
+    }
+
+    @Override
+    public Iterator<SafeProperty> graphGetAllProperties()
+    {
+        assertOpen();
+        return dataRead().graphGetAllProperties( state );
+    }
+    // </DataRead>
 
     // <SchemaRead>
     @Override

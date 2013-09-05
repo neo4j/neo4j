@@ -26,9 +26,9 @@ import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.BaseStatement
+import org.neo4j.kernel.api.ReadStatement
 
-class TransactionBoundPlanContext(statement:BaseStatement, gdb:GraphDatabaseService)
+class TransactionBoundPlanContext(statement:ReadStatement, gdb:GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
 
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = try {

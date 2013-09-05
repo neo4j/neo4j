@@ -28,8 +28,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -179,7 +179,7 @@ public class KernelSchemaStateFlushingTest
     private void awaitIndexOnline( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         Transaction tx = db.beginTx();
-        BaseStatement statement = ctxProvider.baseStatement();
+        ReadStatement statement = ctxProvider.readStatement();
         SchemaIndexTestHelper.awaitIndexOnline( statement, descriptor );
         statement.close();
         tx.success();
@@ -205,7 +205,7 @@ public class KernelSchemaStateFlushingTest
     
     private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
     {
-        try ( BaseStatement statement = tx.acquireBaseStatement() )
+        try ( ReadStatement statement = tx.acquireReadStatement() )
         {
             return statement.schemaStateGetOrCreate( key, new Function<String, String>()
             {

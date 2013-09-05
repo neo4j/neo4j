@@ -35,7 +35,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.BaseStatement;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.SchemaStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -92,7 +92,7 @@ public class SchemaImpl implements Schema
     {
         assertInTransaction();
 
-        try ( BaseStatement statement = ctxProvider.baseStatement() )
+        try ( ReadStatement statement = ctxProvider.readStatement() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
             long labelId = statement.labelGetForName( label.name() );
@@ -111,7 +111,7 @@ public class SchemaImpl implements Schema
     {
         assertInTransaction();
 
-        try ( BaseStatement statement = ctxProvider.baseStatement() )
+        try ( ReadStatement statement = ctxProvider.readStatement() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
             addDefinitions( definitions, statement, statement.indexesGetAll(), false );
@@ -120,7 +120,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private void addDefinitions( List<IndexDefinition> definitions, final BaseStatement statement,
+    private void addDefinitions( List<IndexDefinition> definitions, final ReadStatement statement,
                                  Iterator<IndexDescriptor> indexes, final boolean constraintIndex )
     {
         addToCollection( map( new Function<IndexDescriptor, IndexDefinition>()
@@ -201,7 +201,7 @@ public class SchemaImpl implements Schema
         assertInTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
-        try ( BaseStatement statement = ctxProvider.baseStatement() )
+        try ( ReadStatement statement = ctxProvider.readStatement() )
         {
             long labelId = statement.labelGetForName( index.getLabel().name() );
             long propertyKeyId = statement.propertyKeyGetForName( propertyKey );
@@ -243,7 +243,7 @@ public class SchemaImpl implements Schema
         assertInTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
-        try ( BaseStatement statement = ctxProvider.baseStatement() )
+        try ( ReadStatement statement = ctxProvider.readStatement() )
         {
             long labelId = statement.labelGetForName( index.getLabel().name() );
             long propertyKeyId = statement.propertyKeyGetForName( propertyKey );
@@ -281,7 +281,7 @@ public class SchemaImpl implements Schema
     {
         assertInTransaction();
 
-        try ( BaseStatement statement = ctxProvider.baseStatement() )
+        try ( ReadStatement statement = ctxProvider.readStatement() )
         {
             Iterator<UniquenessConstraint> constraints = statement.constraintsGetAll();
             return asConstraintDefinitions( statement, constraints );
@@ -293,7 +293,7 @@ public class SchemaImpl implements Schema
     {
         assertInTransaction();
 
-        try ( BaseStatement statement = ctxProvider.baseStatement() )
+        try ( ReadStatement statement = ctxProvider.readStatement() )
         {
             long labelId = statement.labelGetForName( label.name() );
             if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
@@ -306,7 +306,7 @@ public class SchemaImpl implements Schema
     }
 
     private Iterable<ConstraintDefinition> asConstraintDefinitions(
-            final BaseStatement statement, Iterator<UniquenessConstraint> constraints )
+            final ReadStatement statement, Iterator<UniquenessConstraint> constraints )
     {
         Iterator<ConstraintDefinition> definitions =
                 map( new Function<UniquenessConstraint, ConstraintDefinition>()
@@ -473,7 +473,7 @@ public class SchemaImpl implements Schema
         @Override
         public String getUserMessage( KernelException e )
         {
-            try ( BaseStatement statement = ctxProvider.baseStatement() )
+            try ( ReadStatement statement = ctxProvider.readStatement() )
             {
                 return e.getUserMessage( new StatementTokenNameLookup( statement ) );
             }

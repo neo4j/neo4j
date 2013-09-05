@@ -39,7 +39,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.BaseStatement;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -466,7 +466,7 @@ public class IndexPopulationJobTest
         stateHolder = new KernelSchemaStateStore();
 
         Transaction tx = db.beginTx();
-        BaseStatement statement = ctxProvider.baseStatement();
+        ReadStatement statement = ctxProvider.readStatement();
         firstLabelId = statement.labelGetOrCreateForName( FIRST.name() );
         secondLabelId = statement.labelGetOrCreateForName( SECOND.name() );
 
@@ -504,7 +504,7 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         try
         {
-            BaseStatement statement = ctxProvider.baseStatement();
+            ReadStatement statement = ctxProvider.readStatement();
             descriptor = new IndexDescriptor( statement.labelGetForName( label.name() ),
                     statement.propertyKeyGetForName( propertyKey ) );
             tx.success();
@@ -545,7 +545,7 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         try
         {
-            result = ctxProvider.baseStatement().propertyKeyGetForName( name );
+            result = ctxProvider.readStatement().propertyKeyGetForName( name );
             tx.success();
         }
         finally

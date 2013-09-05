@@ -42,6 +42,7 @@ import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -255,7 +256,7 @@ public class NodeProxy implements Node
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             long propertyKeyId = statement.propertyKeyGetForName( key );
             return statement.nodeGetProperty( nodeId, propertyKeyId ).value( defaultValue );
@@ -269,7 +270,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<Object> getPropertyValues()
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             return asSet( map( new Function<SafeProperty, Object>()
             {
@@ -289,7 +290,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             List<String> keys = new ArrayList<>();
             Iterator<SafeProperty> properties = statement.nodeGetAllProperties( getId() );
@@ -316,7 +317,7 @@ public class NodeProxy implements Node
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             long propertyKeyId = statement.propertyKeyGetForName( key );
             if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
@@ -337,7 +338,7 @@ public class NodeProxy implements Node
         if ( null == key )
             return false;
 
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             long propertyKeyId = statement.propertyKeyGetForName( key );
             return statement.nodeGetProperty( nodeId, propertyKeyId ).isDefined();
@@ -496,7 +497,7 @@ public class NodeProxy implements Node
     @Override
     public boolean hasLabel( Label label )
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             long labelId = statement.labelGetForName( label.name() );
             return statement.nodeHasLabel( getId(), labelId );
@@ -516,7 +517,7 @@ public class NodeProxy implements Node
             public ResourceIterator<Label> iterator()
             {
                 PrimitiveLongIterator labels;
-                final DataStatement statement = statementCtxProvider.dataStatement();
+                final ReadStatement statement = statementCtxProvider.readStatement();
                 try
                 {
                     labels = statement.nodeGetLabels( getId() );

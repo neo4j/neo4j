@@ -40,7 +40,7 @@ import org.mockito.Mockito._
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.impl.core.NodeManager
 import scala.Some
-import org.neo4j.kernel.api.{DataStatement, BaseStatement}
+import org.neo4j.kernel.api.{DataStatement, ReadStatement}
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -178,11 +178,11 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val bridge = mock[ThreadToStatementContextBridge]
 
     val fakeDataStatement = mock[DataStatement]
-    val fakeBaseStatement = mock[BaseStatement]
+    val fakeBaseStatement = mock[ReadStatement]
 
     when(nodeManager.getAllNodes).thenReturn(counter)
     when(bridge.dataStatement()).thenReturn(fakeDataStatement)
-    when(bridge.baseStatement()).thenReturn(fakeBaseStatement)
+    when(bridge.readStatement()).thenReturn(fakeBaseStatement)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)

@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
-public class SchemaStatement extends BaseStatement implements SchemaWrite
+public class SchemaStatement extends ReadStatement implements SchemaWrite
 {
     SchemaStatement( KernelTransactionImplementation transaction, Statement statement )
     {

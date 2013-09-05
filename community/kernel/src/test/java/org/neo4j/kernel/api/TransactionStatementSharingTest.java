@@ -59,10 +59,10 @@ public class TransactionStatementSharingTest
     {
         // given
         KernelTransactionImplementation tx = newTransaction();
-        BaseStatement stmt1 = tx.acquireBaseStatement();
+        ReadStatement stmt1 = tx.acquireReadStatement();
 
         // when
-        BaseStatement stmt2 = tx.acquireBaseStatement();
+        ReadStatement stmt2 = tx.acquireReadStatement();
 
         // then
         assertSame( stmt1.state, stmt2.state );
@@ -73,7 +73,7 @@ public class TransactionStatementSharingTest
     {
         // given
         KernelTransactionImplementation tx = newTransaction();
-        BaseStatement stmt1 = tx.acquireBaseStatement();
+        ReadStatement stmt1 = tx.acquireReadStatement();
 
         // when
         DataStatement stmt2 = tx.acquireDataStatement();
@@ -87,7 +87,7 @@ public class TransactionStatementSharingTest
     {
         // given
         KernelTransactionImplementation tx = newTransaction();
-        BaseStatement stmt1 = tx.acquireBaseStatement();
+        ReadStatement stmt1 = tx.acquireReadStatement();
 
         // when
         SchemaStatement stmt2 = tx.acquireSchemaStatement();
@@ -104,7 +104,7 @@ public class TransactionStatementSharingTest
         DataStatement stmt1 = tx.acquireDataStatement();
 
         // when
-        BaseStatement stmt2 = tx.acquireBaseStatement();
+        ReadStatement stmt2 = tx.acquireReadStatement();
 
         // then
         assertSame( stmt1.state, stmt2.state );
@@ -132,7 +132,7 @@ public class TransactionStatementSharingTest
         SchemaStatement stmt1 = tx.acquireSchemaStatement();
 
         // when
-        BaseStatement stmt2 = tx.acquireBaseStatement();
+        ReadStatement stmt2 = tx.acquireReadStatement();
 
         // then
         assertSame( stmt1.state, stmt2.state );
@@ -157,11 +157,11 @@ public class TransactionStatementSharingTest
     {
         // given
         KernelTransactionImplementation tx = newTransaction();
-        BaseStatement stmt1 = tx.acquireBaseStatement();
+        ReadStatement stmt1 = tx.acquireReadStatement();
         stmt1.close();
 
         // when
-        BaseStatement stmt2 = tx.acquireBaseStatement();
+        ReadStatement stmt2 = tx.acquireReadStatement();
 
         // then
         assertNotSame( stmt1.state, stmt2.state );
@@ -172,13 +172,13 @@ public class TransactionStatementSharingTest
     {
         // given
         KernelTransactionImplementation tx = newTransaction();
-        BaseStatement stmt1 = tx.acquireBaseStatement();
-        BaseStatement stmt2 = tx.acquireBaseStatement();
+        ReadStatement stmt1 = tx.acquireReadStatement();
+        ReadStatement stmt2 = tx.acquireReadStatement();
         stmt1.close();
 
         // when
         stmt1.close();
-        BaseStatement stmt3 = tx.acquireBaseStatement();
+        ReadStatement stmt3 = tx.acquireReadStatement();
 
         // then
         assertSame( "stmt1 == stmt2", stmt1.state, stmt2.state );

@@ -58,9 +58,9 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.BaseStatement;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -1500,7 +1500,7 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
-        DataStatement statement = statementContextProvider.dataStatement();
+        ReadStatement statement = statementContextProvider.readStatement();
 
         long propertyId = statement.propertyKeyGetForName( key );
         long labelId = statement.labelGetForName( myLabel.name() );
@@ -1530,13 +1530,13 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( long propertyId, Object value,
-            DataStatement statement, long labelId )
+            ReadStatement statement, long labelId )
     {
         return map2nodes( new PropertyValueFilteringNodeIdIterator(
                 statement.nodesGetForLabel( labelId ), statement, propertyId, value ), statement );
     }
 
-    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, BaseStatement statement )
+    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, ReadStatement statement )
     {
         return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
         {
@@ -1551,11 +1551,11 @@ public abstract class InternalAbstractGraphDatabase
     private static class PropertyValueFilteringNodeIdIterator extends AbstractPrimitiveLongIterator
     {
         private final PrimitiveLongIterator nodesWithLabel;
-        private final DataStatement statement;
+        private final ReadStatement statement;
         private final long propertyId;
         private final Object value;
 
-        PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, DataStatement statement,
+        PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadStatement statement,
                                               long propertyId, Object value )
         {
             this.nodesWithLabel = nodesWithLabel;

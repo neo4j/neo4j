@@ -38,12 +38,12 @@ public abstract class DatabaseRule extends ExternalResource
     GraphDatabaseAPI database;
     private String storeDir;
 
-    public <T> T transaction( Function<GraphDatabaseService, T> function )
+    public <T> T executeAndCommit( Function<GraphDatabaseService, T> function )
     {
         return transaction( function, true );
     }
 
-    public <T> T failingTransaction( Function<GraphDatabaseService, T> function )
+    public <T> T executeAndRollback( Function<GraphDatabaseService, T> function )
     {
         return transaction( function, false );
     }
@@ -136,18 +136,7 @@ public abstract class DatabaseRule extends ExternalResource
     {
         void run( File storeDirectory );
     }
-    
-    public void restartDatabase()
-    {
-        restartDatabase( new RestartAction()
-        {
-            @Override
-            public void run( File storeDir )
-            {   // Do nothing
-            }
-        } );
-    }
-    
+
     public void restartDatabase( RestartAction action )
     {
         database.shutdown();

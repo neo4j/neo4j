@@ -49,10 +49,10 @@ public class UniquenessConstraintValidationConcurrencyIT
     public void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception
     {
         // given
-        database.transaction( createUniquenessConstraint( "Label1", "key1" ) );
+        database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.transaction( new Function<GraphDatabaseService, Future<Boolean>>()
+        Future<Boolean> created = database.executeAndCommit( new Function<GraphDatabaseService, Future<Boolean>>()
         {
             @Override
             public Future<Boolean> apply( GraphDatabaseService db )
@@ -70,10 +70,10 @@ public class UniquenessConstraintValidationConcurrencyIT
     public void shouldPreventConcurrentCreationOfConflictingData() throws Exception
     {
         // given
-        database.transaction( createUniquenessConstraint( "Label1", "key1" ) );
+        database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.transaction( new Function<GraphDatabaseService, Future<Boolean>>()
+        Future<Boolean> created = database.executeAndCommit( new Function<GraphDatabaseService, Future<Boolean>>()
         {
             @Override
             public Future<Boolean> apply( GraphDatabaseService db )
@@ -98,10 +98,10 @@ public class UniquenessConstraintValidationConcurrencyIT
     public void shouldAllowOtherTransactionToCompleteIfFirstTransactionRollsBack() throws Exception
     {
         // given
-        database.transaction( createUniquenessConstraint( "Label1", "key1" ) );
+        database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.failingTransaction( new Function<GraphDatabaseService, Future<Boolean>>()
+        Future<Boolean> created = database.executeAndRollback( new Function<GraphDatabaseService, Future<Boolean>>()
         {
             @Override
             public Future<Boolean> apply( GraphDatabaseService db )

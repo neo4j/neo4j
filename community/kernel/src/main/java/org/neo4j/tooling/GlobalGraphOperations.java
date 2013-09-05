@@ -33,8 +33,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.BaseStatement;
-import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
@@ -145,7 +144,7 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<Label> iterator()
             {
-                BaseStatement statement = statementCtxProvider.baseStatement();
+                ReadStatement statement = statementCtxProvider.readStatement();
                 return cleanupService.resourceIterator( map( new Function<Token, Label>() {
 
                     @Override
@@ -182,7 +181,7 @@ public class GlobalGraphOperations
 
     private ResourceIterator<Node> allNodesWithLabel( String label )
     {
-        DataStatement statement = statementCtxProvider.dataStatement();
+        ReadStatement statement = statementCtxProvider.readStatement();
 
         long labelId = statement.labelGetForName( label );
 

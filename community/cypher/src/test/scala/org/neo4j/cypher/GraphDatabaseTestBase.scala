@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.spi.PlanContext
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.kernel.api.{DataStatement, BaseStatement}
+import org.neo4j.kernel.api.{DataStatement, ReadStatement}
 
 class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
@@ -201,8 +201,8 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
   def planContext:PlanContext = new TransactionBoundPlanContext(baseStatement, graph)
 
-  def baseStatement:BaseStatement =
-    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).baseStatement
+  def baseStatement:ReadStatement =
+    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).readStatement
 }
 
 trait Snitch extends GraphDatabaseAPI {

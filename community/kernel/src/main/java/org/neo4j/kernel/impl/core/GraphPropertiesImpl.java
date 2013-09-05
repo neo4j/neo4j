@@ -34,6 +34,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.ReadStatement;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -113,7 +114,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         if ( null == key )
             return false;
 
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             long propertyId = statement.propertyKeyGetForName( key );
             return statement.graphGetProperty( propertyId ).isDefined();
@@ -126,7 +127,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             long propertyId = statement.propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
@@ -147,7 +148,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             long propertyId = statement.propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
@@ -200,7 +201,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             List<String> keys = new ArrayList<>();
             Iterator<SafeProperty> properties = statement.graphGetAllProperties();
@@ -219,7 +220,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public Iterable<Object> getPropertyValues()
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             return asSet( map( new Function<SafeProperty, Object>()
             {

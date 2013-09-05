@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  */
 public interface KernelTransaction
 {
-    BaseStatement acquireBaseStatement();
+    ReadStatement acquireReadStatement();
 
     DataStatement acquireDataStatement() throws InvalidTransactionTypeException;
 

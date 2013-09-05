@@ -24,7 +24,7 @@ import org.neo4j.graphdb.DynamicLabel._
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
-import org.neo4j.kernel.api.{SchemaStatement, DataStatement, BaseStatement}
+import org.neo4j.kernel.api.{SchemaStatement, DataStatement, ReadStatement}
 
 trait GraphIcing {
 
@@ -59,7 +59,7 @@ trait GraphIcing {
       }
     }
 
-    def baseStatement: BaseStatement = txBridge.baseStatement()
+    def baseStatement: ReadStatement = txBridge.readStatement()
 
     def inDataTx[T](f: DataStatement => T): T = inTx(f(dataStatement))
     def inSchemaTx[T](f: SchemaStatement => T): T = inTx(f(schemaStatement))
