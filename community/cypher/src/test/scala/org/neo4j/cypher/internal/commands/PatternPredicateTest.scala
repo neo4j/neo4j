@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{Identifier, ShortestPathExpression}
+import expressions.ShortestPathExpression
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Path, Direction}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.pipes.QueryStateHelper
 
 class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
@@ -41,8 +41,8 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
 
     val pattern = ShortestPath(
       pathName = "p",
-      start = SingleNode("a"),
-      end = SingleNode("c"),
+      left = SingleNode("a"),
+      right = SingleNode("c"),
       relTypes = Seq(),
       dir = Direction.OUTGOING,
       maxDepth = None,
@@ -64,15 +64,12 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
   @Test def should_handle_expressions_with_labels() {
     // GIVEN
     val a = createNode()
-    val b = createLabeledNode("Tror_Inte_Det")
-    val c = createLabeledNode("Tror_Inte_Det2")
+    val b = createLabeledNode("Foo")
 
     relate(a, b)
-    relate(a, c)
 
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1"), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
-    val pred = HasLabel(Identifier("  UNNAMED1"), KeyToken.Unresolved("Tror_Inte_Det", TokenType.Label))
-    val expression = PatternPredicate(Seq(pattern), pred)
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
+    val expression = PatternPredicate(Seq(pattern))
     val m = createExecutionContext(Map("a" -> a))
 
     // WHEN
@@ -82,9 +79,25 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
     assert(result === true)
   }
 
+  @Test def should_return_false_if_labels_are_missing() {
+    // GIVEN
+    val a = createNode()
+    val b = createLabeledNode("Bar")
+
+    relate(a, b)
+
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
+    val expression = PatternPredicate(Seq(pattern))
+    val m = createExecutionContext(Map("a" -> a))
+
+    // WHEN
+    val result = expression(m)(state)
+
+    // THEN
+    assert(result === false)
+  }
+
   private def state = QueryStateHelper.queryStateFrom(graph)
 
-  private def createExecutionContext(m: Map[String, Any]): ExecutionContext = {
-    ExecutionContext().newFrom(m)
-  }
+  private def createExecutionContext(m: Map[String, Any]): ExecutionContext = ExecutionContext().newFrom(m)
 }

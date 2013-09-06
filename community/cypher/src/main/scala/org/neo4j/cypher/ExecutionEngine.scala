@@ -182,9 +182,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   def verify(query: AbstractQuery) {
     for ( verifier <- verifiers )
-    {
       verifier.verify(query)
-    }
   }
 
   def prettify(query:String): String = Prettifier(query)

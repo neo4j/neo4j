@@ -108,7 +108,7 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
       expression ~> "!" ~> failure("Cypher does not support != for inequality comparisons. Use <> instead."))
 
   def patternPredicate: Parser[Predicate] = {
-    def translate(abstractPattern: AbstractPattern): Maybe[(Pattern, Predicate)] = matchTranslator(abstractPattern) match {
+    def translate(abstractPattern: AbstractPattern): Maybe[Pattern] = matchTranslator(abstractPattern) match {
       case Yes(p) if p.size == 1 && p.head.isInstanceOf[SingleNode] => No(Seq(""))
       case Yes(Seq(np)) if np.isInstanceOf[ShortestPath] => No(Seq("Shortest path is not a predicate"))
       case Yes(Seq(np)) if np.isInstanceOf[NamedPath]    => No(Seq("Can't assign to an identifier in a pattern predicate"))
@@ -119,20 +119,13 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
         if (patterns.exists(_.optional))
           No(Seq("Optional patterns cannot be used as predicates"))
         else {
-          val predicates = abstractPattern.parsedLabelPredicates
-          val pred = True().andWith(predicates: _*)
 
-          Yes(patterns.map( (_, pred) ))
+          Yes(patterns)
         }
     }
 
     usePath(translate) ^^ {
-      case combo:Seq[(Pattern,Predicate)] =>
-
-        val patterns: Seq[Pattern] = combo.map(_._1)
-        val predicates: Seq[Predicate] = combo.flatMap(_._2.atoms).distinct
-
-        PatternPredicate(patterns, True().andWith(predicates: _*))
+      case patterns:Seq[Pattern] => PatternPredicate(patterns)
     }
   }
 

@@ -43,8 +43,8 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
   }
 
   private def getMatches(m: Map[String, Any]): Any = {
-    val start = getEndPoint(m, ast.start)
-    val end = getEndPoint(m, ast.end)
+    val start = getEndPoint(m, ast.left)
+    val end = getEndPoint(m, ast.right)
     shortestPathStrategy.findResult(start, end)
   }
 

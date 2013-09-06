@@ -27,21 +27,12 @@ import scala.collection.Map
 import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.internal.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.symbols.{PathType, RelationshipType, NodeType, CypherType}
-import org.neo4j.cypher.internal.commands.HasLabel
 
 
 abstract sealed class AbstractPattern extends AstNode[AbstractPattern] {
   def makeOutgoing: AbstractPattern
 
   def parsedEntities: Seq[ParsedEntity]
-
-  def parsedLabelPredicates: Seq[Predicate] =
-    parsedEntities.flatMap {
-      (entity: ParsedEntity) =>
-        val ident: Identifier = Identifier(entity.name)
-        val labelPreds: Seq[HasLabel] = entity.labels.map(HasLabel(ident, _))
-        if (labelPreds.isEmpty) None else Some(labelPreds.reduce(And.apply))
-    }
 
   def possibleStartPoints:Seq[(String,CypherType)]
 
@@ -84,7 +75,7 @@ case class ParsedEntity(name: String,
 
   def end: AbstractPattern = this
 
-  def asSingleNode = new SingleNode(name)
+  def asSingleNode = new SingleNode(name, labels)
 }
 
 object ParsedRelation {

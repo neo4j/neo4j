@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.commands.{expressions => legacy, values => comm
 import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.mutation
 import org.neo4j.cypher.internal.parser._
-import org.neo4j.cypher.internal.commands.values.TokenType.Label
 import org.neo4j.cypher.internal.commands.values.KeyToken.Unresolved
 import org.neo4j.cypher.internal.parser.ParsedNamedPath
+import org.neo4j.cypher.internal.commands.values.UnresolvedLabel
 
 object Pattern {
   sealed trait SemanticContext
@@ -55,7 +55,6 @@ sealed abstract class Pattern extends AstNode {
   def toLegacyPatterns: Seq[commands.Pattern]
   def toLegacyNamedPath: Option[commands.NamedPath]
   def toLegacyCreates: Seq[mutation.UpdateAction]
-  def toLegacyPredicates: Seq[commands.Predicate]
   def toAbstractPatterns: Seq[AbstractPattern]
 }
 
@@ -67,7 +66,6 @@ case class AnonymousPattern(path: PathPattern) extends Pattern {
   lazy val toLegacyPatterns = path.toLegacyPatterns(None)
   val toLegacyNamedPath = None
   lazy val toLegacyCreates = path.toLegacyCreates(None)
-  lazy val toLegacyPredicates = path.toLegacyPredicates(None)
   lazy val toAbstractPatterns = path.toAbstractPatterns(None)
 }
 
@@ -77,7 +75,6 @@ case class NamedPattern(identifier: Identifier, path: PathPattern, token: InputT
   lazy val toLegacyPatterns = path.toLegacyPatterns(Some(identifier.name))
   lazy val toLegacyNamedPath = path.toLegacyNamedPath(identifier.name)
   lazy val toLegacyCreates = path.toLegacyCreates(Some(identifier.name))
-  lazy val toLegacyPredicates = path.toLegacyPredicates(Some(identifier.name))
   lazy val toAbstractPatterns = path.toAbstractPatterns(Some(identifier.name))
 }
 
@@ -87,7 +84,6 @@ case class RelationshipsPattern(element: PatternElement, token: InputToken) exte
   lazy val toLegacyPatterns = element.toLegacyPatterns(true)
   val toLegacyNamedPath = None
   lazy val toLegacyCreates = element.toLegacyCreates
-  lazy val toLegacyPredicates = element.toLegacyPredicates
   lazy val toAbstractPatterns = element.toAbstractPatterns
 }
 
@@ -98,7 +94,6 @@ sealed abstract class PathPattern extends AstNode {
   def toLegacyPatterns(pathName: Option[String]) : Seq[commands.Pattern]
   def toLegacyNamedPath(pathName: String) : Option[commands.NamedPath]
   def toLegacyCreates(pathName: Option[String]) : Seq[mutation.UpdateAction]
-  def toLegacyPredicates(pathName: Option[String]) : Seq[commands.Predicate]
   def toAbstractPatterns(pathName: Option[String]) : Seq[AbstractPattern]
 }
 
@@ -110,7 +105,6 @@ case class EveryPath(element: PatternElement) extends PathPattern {
   def toLegacyPatterns(pathName: Option[String]) = element.toLegacyPatterns(pathName.isEmpty)
   def toLegacyNamedPath(pathName: String) = Some(commands.NamedPath(pathName, element.toAbstractPatterns:_*))
   def toLegacyCreates(pathName: Option[String]) = element.toLegacyCreates
-  def toLegacyPredicates(pathName: Option[String]) = element.toLegacyPredicates
   def toAbstractPatterns(pathName: Option[String]) = {
     val patterns = element.toAbstractPatterns
     pathName match {
@@ -165,7 +159,6 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
 
   def toLegacyNamedPath(pathName: String) = None
   def toLegacyCreates(pathName: Option[String]) = ???
-  def toLegacyPredicates(pathName: Option[String]) = Seq()
   def toAbstractPatterns(pathName: Option[String]): Seq[AbstractPattern] = ???
 }
 
@@ -185,7 +178,6 @@ sealed abstract class PatternElement extends AstNode {
 
   def toLegacyPatterns(makeOutgoing: Boolean) : Seq[commands.Pattern]
   def toLegacyCreates : Seq[mutation.UpdateAction]
-  def toLegacyPredicates : Seq[commands.Predicate]
   def toAbstractPatterns : Seq[AbstractPattern]
 }
 
@@ -214,8 +206,6 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 
     creates :+ relationship.toLegacyCreates(leftEndpoint, rightNode.toLegacyEndpoint)
   }
-
-  def toLegacyPredicates = element.toLegacyPredicates ++ rightNode.toLegacyPredicates
 
   def toAbstractPatterns: Seq[AbstractPattern] = {
 
@@ -273,7 +263,7 @@ sealed abstract class NodePattern extends PatternElement {
 
   def toLegacyPatterns(makeOutgoing: Boolean) = Seq(toLegacyNode)
 
-  def toLegacyNode = commands.SingleNode(legacyName)
+  def toLegacyNode = commands.SingleNode(legacyName, labels.map(x => UnresolvedLabel(x.name)))
 
   def toLegacyCreates = {
     val (_, _, labels, bare) = legacyDetails
@@ -284,11 +274,6 @@ sealed abstract class NodePattern extends PatternElement {
     val (nodeExpression, props, labels, bare) = legacyDetails
     mutation.RelationshipEndpoint(nodeExpression, props, labels, bare)
   }
-
-  def toLegacyPredicates = labels.map(t => {
-    val id = legacy.Identifier(legacyName)
-    commands.HasLabel(id, commandvalues.KeyToken.Unresolved(t.name, Label))
-  })
 
   def toAbstractPatterns: Seq[AbstractPattern] = {
     val (nodeExpression, props, labels, bare) = legacyDetails
