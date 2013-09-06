@@ -18,33 +18,32 @@
  */
 ;(function()
 {
-	// CommonJS
-	typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
+  // CommonJS
+  typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
 
-	function Brush()
-	{
-        var funcs   =   'ceil avg max min sum count all any none single length type id nodes relationships collect extract shortestPath allShortestPaths filter tail head last coalesce abs round sqrt sign collect type length has range timestamp reduce str substring left right ltrim rtrim trim lower upper replace percentile_disc percentile_cont stdev stdevp startnode endnode labels acos asin atan cos cot degrees e exp floor log log10 pi radians rand sin tan';
+  function Brush()
+  {
+        var funcs   =   'abs acos all allShortestPaths any asin atan atan2 avg ceil coalesce collect cos cot count degrees e end endnode exp extract filter floor has head id labels last left length log log10 lower ltrim max min node nodes none percentile_cont percentile_disc pi radians rand range reduce rel relationship relationships replace right round rtrim shortestPath sign sin single sqrt startnode stdev stdevp str substring sum tail tan timestamp trim type upper';
 
-        var keywords =  'node relationship rel start match where return skip limit order by descending desc ascending asc distinct true false in is null cypher create with set delete foreach unique as reduce merge case on when then else end constraint assert drop union using index remove';
+        var keywords =  'as asc ascending assert by case constraint create cypher delete desc descending distinct drop else false foreach in index is limit match merge null on order remove return set skip start then true union unique using when where with';
 
         var operators = 'or and not xor';
 
-		this.regexList = [
-			{ regex: SyntaxHighlighter.regexLib.singleLineCComments,	css: 'comments' },		// one line comments
-			{ regex: SyntaxHighlighter.regexLib.multiLineDoubleQuotedString,	css: 'string' },			// double quoted strings
-			{ regex: SyntaxHighlighter.regexLib.multiLineSingleQuotedString,	css: 'string' },			// single quoted strings
-			{ regex: new RegExp(this.getKeywords(funcs), 'gmi'),				css: 'color2' },			// functions
-			{ regex: new RegExp(this.getKeywords(operators), 'gmi'),			css: 'color1' },			// operators and such
-			{ regex: new RegExp(this.getKeywords(keywords), 'gmi'),			css: 'keyword' }			// keyword
-			];
-	};
+    this.regexList = [
+      { regex: SyntaxHighlighter.regexLib.singleLineCComments,  css: 'comments' },    // one line comments
+      { regex: SyntaxHighlighter.regexLib.multiLineDoubleQuotedString,  css: 'string' },      // double quoted strings
+      { regex: SyntaxHighlighter.regexLib.multiLineSingleQuotedString,  css: 'string' },      // single quoted strings
+      { regex: new RegExp(this.getKeywords(funcs), 'gmi'),        css: 'color2' },      // functions
+      { regex: new RegExp(this.getKeywords(operators), 'gmi'),      css: 'color1' },      // operators and such
+      { regex: new RegExp(this.getKeywords(keywords), 'gmi'),     css: 'keyword' }      // keyword
+      ];
+  };
 
-	Brush.prototype	= new SyntaxHighlighter.Highlighter();
-	Brush.aliases	= ['cypher'];
+  Brush.prototype = new SyntaxHighlighter.Highlighter();
+  Brush.aliases = ['cypher'];
 
-	SyntaxHighlighter.brushes.Cypher = Brush;
+  SyntaxHighlighter.brushes.Cypher = Brush;
 
-	// CommonJS
-	typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
+  // CommonJS
+  typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();
-
