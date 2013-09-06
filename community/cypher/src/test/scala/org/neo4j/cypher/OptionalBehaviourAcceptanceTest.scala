@@ -17,13 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher
 
-case class Union(queries: Seq[Query], queryString: QueryString = QueryString.empty, distinct: Boolean) extends AbstractQuery {
-  def setQueryText(t: String): AbstractQuery = copy(queryString = QueryString(t))
+import org.junit.Test
 
-  override def toString = {
-    val union = "UNION" + (if (distinct) "" else "ALL") + "\n"
-    queries.mkString(union)
+class OptionalBehaviourAcceptanceTest extends ExecutionEngineHelper {
+  @Test def optional_nodes_with_labels_in_match_clause_should_return_null_when_where_is_no_match() {
+    createNode()
+    val result = parseAndExecute("start n=node(1) match n-[r?]-m:Person return r")
+    assert(result.toList === List(Map("r" -> null)))
+  }
+
+  @Test def optional_nodes_with_labels_in_match_clause_should_not_return_if_where_is_no_match() {
+    createNode()
+    val result = parseAndExecute("start n=node(1) match n-[r?]-m where m:Person return r")
+    assert(result.toList === List.empty)
   }
 }

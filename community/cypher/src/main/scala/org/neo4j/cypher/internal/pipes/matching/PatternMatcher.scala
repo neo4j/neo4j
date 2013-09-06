@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.commands.{True, Predicate}
+import org.neo4j.cypher.internal.commands.Predicate
 import collection.Map
-import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 
@@ -72,9 +71,17 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
                               history: History,
                               yielder: ExecutionContext => U): Boolean = {
 
-    val current = remaining.head
+    val current: MatchingPair = remaining.head
 
-    traverseNextSpecificNode(remaining, history, yielder, current, alreadyInExtraWork = false)
+    val currentNodeId = current.entity.asInstanceOf[Node].getId
+    val expectedLabels: Seq[Option[Long]] = current.patternNode.labels.map(_.getOptId(state.query))
+
+    val nodeHasLabels = expectedLabels.forall {
+      case None          => false
+      case Some(labelId) => state.query.isLabelSetOnNode(labelId, currentNodeId)
+    }
+
+    nodeHasLabels && traverseNextSpecificNode(remaining, history, yielder, current, alreadyInExtraWork = false)
   }
 
   private def traverseNextNodeFromRelationship[U](rel: GraphRelationship,

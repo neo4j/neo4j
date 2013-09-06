@@ -33,8 +33,12 @@ import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.NodeByLabel
 import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.expressions.Property
+import org.neo4j.cypher.internal.commands.values.UnresolvedLabel
+import org.neo4j.graphdb.Direction
 
 class HintVerifierTest extends Assertions {
+  val labeledA = SingleNode("a", Seq(UnresolvedLabel("Person")))
+  val relatedTo = RelatedTo(labeledA, SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, optional = false)
 
   @Test
   def throws_when_the_predicate_is_not_usable_for_index_seek() {
@@ -58,4 +62,104 @@ class HintVerifierTest extends Assertions {
     //THEN
     intercept[LabelScanHintException](HintVerifier.verify(q))
   }
+
+  @Test
+  def accepts_query_with_label_in_single_node() {
+    //GIVEN  MATCH a:Person
+    val q = Query.
+      matches(SingleNode("a", Seq(UnresolvedLabel("Person")))).
+      using(NodeByLabel("a", "Person")).
+      returns()
+
+    //THEN does not throw
+    HintVerifier.verify(q)
+  }
+
+  @Test
+  def throws_if_identifier_name_is_wrong() {
+    //GIVEN  MATCH a:Person
+    val q = Query.
+      matches(labeledA).
+      using(NodeByLabel("n", "Person")).
+      returns()
+
+    //THEN
+    intercept[LabelScanHintException](HintVerifier.verify(q))
+  }
+
+  @Test
+  def throws_if_labeled_node_is_optional() {
+    //GIVEN  MATCH a?:Person-->b
+    val q = Query.
+      matches(relatedTo.copy(left = labeledA.copy(optional = true))).
+      using(NodeByLabel("a", "Person")).
+      returns()
+
+    //THEN
+    intercept[LabelScanHintException](HintVerifier.verify(q))
+  }
+
+  @Test
+  def accepts_query_with_label_in_relationship_pattern() {
+    //GIVEN  MATCH a:Person-->b
+    val q = Query.
+      matches(relatedTo).
+      using(NodeByLabel("a", "Person")).
+      returns()
+
+    //THEN does not throw
+    HintVerifier.verify(q)
+  }
+
+  @Test
+  def accepts_query_with_label_on_the_right_side() {
+    //GIVEN  MATCH b-->a:Person
+    val q = Query.
+      matches(RelatedTo(SingleNode("b"), labeledA, "r", Seq.empty, Direction.OUTGOING, optional = false)).
+      using(NodeByLabel("a", "Person")).
+      returns()
+
+    //THEN does not throw
+    HintVerifier.verify(q)
+  }
+
+  @Test
+  def throws_if_labeled_node_is_optional_and_index_hint_is_used() {
+    //GIVEN  MATCH a?:Person-->b USING INDEX ON a:Person(foo)
+    val q = Query.
+      matches(relatedTo.copy(left = labeledA.copy(optional = true))).
+      where(Equals(Property(Identifier("a"), PropertyKey("foo")), Literal("bar"))).
+      using(SchemaIndex("a", "Person", "foo", None)).
+      returns()
+
+    //THEN
+    intercept[IndexHintException](HintVerifier.verify(q))
+  }
+
+  @Test
+  def accepts_if_equality_is_turned_around() {
+    //GIVEN  MATCH a:Person-->b USING INDEX ON a:Person(foo)
+    val q = Query.
+      matches(relatedTo.copy(left = labeledA)).
+      where(Equals(Literal("bar"), Property(Identifier("a"), PropertyKey("foo")))).
+      using(SchemaIndex("a", "Person", "foo", None)).
+      returns()
+
+    //THEN
+    HintVerifier.verify(q)
+  }
+
+  @Test
+  def throws_if_label_not_used() {
+    //GIVEN  MATCH a-->b USING INDEX ON a:Person(foo)
+    val q = Query.
+      matches(relatedTo.copy(left = SingleNode("a"))).
+      where(Equals(Property(Identifier("a"), PropertyKey("foo")), Literal("bar"))).
+      using(SchemaIndex("a", "Person", "foo", None)).
+      returns()
+
+    //THEN
+    intercept[IndexHintException](HintVerifier.verify(q))
+  }
+
 }

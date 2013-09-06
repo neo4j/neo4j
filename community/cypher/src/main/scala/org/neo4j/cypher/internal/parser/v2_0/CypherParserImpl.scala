@@ -26,6 +26,7 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.parser.v2_0.rules._
 import org.neo4j.cypher.internal.commands.AbstractQuery
 import org.neo4j.cypher.internal.{CypherParser, ReattachAliasedExpressions}
+import org.neo4j.cypher.internal.parser.MarkOptionalNodes
 
 class CypherParserImpl extends CypherParser
   with Parser
@@ -44,7 +45,10 @@ class CypherParserImpl extends CypherParser
         statement.semanticCheck.map { error =>
           throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", text, error.token.startPosition.offset)
         }
-        ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(text))
+        val resultQuery: AbstractQuery = ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(text))
+
+        // This should be removed once the parser understand explicit optional nodes
+        MarkOptionalNodes(resultQuery)
       }
       case _ => {
         parsingResult.parseErrors.map { error =>

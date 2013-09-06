@@ -22,71 +22,80 @@ package org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.mutation.CreateUniqueAction
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.mutation.CreateRelationship
+
+trait NodeStartItemIdentifiers extends StartItem {
+  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> NodeType())
+}
+
+trait RelationshipStartItemIdentifiers extends StartItem {
+  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> RelationshipType())
+}
 
 abstract class StartItem(val identifierName: String, val args: Map[String, String])
   extends TypeSafe with AstNode[StartItem] {
   def mutating: Boolean
   def name: String = getClass.getSimpleName
+  def identifiers: Seq[(String, CypherType)]
 }
 
-trait ReadOnlyStartItem extends StartItem {
+trait ReadOnlyStartItem {
   def mutating = false
 
+  // AstNode implementations
   def children: Seq[AstNode[_]] = Nil
-
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
-  def symbolTableDependencies = Set.empty
-  def rewrite(f: (Expression) => Expression) = this
+  def symbolTableDependencies:Set[String] = Set.empty
+  def rewrite(f: (Expression) => Expression):this.type = this
 }
 
 case class RelationshipById(varName: String, expression: Expression)
-  extends StartItem(varName, Map.empty) with ReadOnlyStartItem
+  extends StartItem(varName, Map.empty) with ReadOnlyStartItem with RelationshipStartItemIdentifiers
 
 case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
   extends StartItem(varName, Map("idxName" -> idxName, "key" -> key.toString(), "expr" -> expression.toString()))
-  with ReadOnlyStartItem
+  with ReadOnlyStartItem with RelationshipStartItemIdentifiers
 
 case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression)
   extends StartItem(varName, Map("idxName" -> idxName, "query" -> query.toString()))
-  with ReadOnlyStartItem
+  with ReadOnlyStartItem with RelationshipStartItemIdentifiers
 
 case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
   extends StartItem(varName, Map("idxName" -> idxName, "key" -> key.toString(), "expr" -> expression.toString()))
-  with ReadOnlyStartItem
+  with ReadOnlyStartItem with NodeStartItemIdentifiers
 
 case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
   extends StartItem(varName, Map("idxName" -> idxName, "query" -> query.toString()))
-  with ReadOnlyStartItem
+  with ReadOnlyStartItem with NodeStartItemIdentifiers
 
 trait Hint
 
 case class SchemaIndex(identifier: String, label: String, property: String, query: Option[Expression])
   extends StartItem(identifier, Map("label" -> label, "property" -> property) ++ query.map("query" -> _.toString()))
-  with ReadOnlyStartItem with Hint
+  with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers
 
 case class NodeById(varName: String, expression: Expression)
   extends StartItem(varName, Map("name" -> expression.toString()))
-  with ReadOnlyStartItem
+  with ReadOnlyStartItem with NodeStartItemIdentifiers
 
 case class NodeByIdOrEmpty(varName: String, id:Long)
   extends StartItem(varName, Map("name" -> id.toString))
-  with ReadOnlyStartItem
+  with ReadOnlyStartItem with NodeStartItemIdentifiers
 
 case class NodeByLabel(varName: String, label: String)
-  extends StartItem(varName, Map("label" -> label.toString)) with ReadOnlyStartItem with Hint
+  extends StartItem(varName, Map("label" -> label.toString))
+  with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers
 
-case class AllNodes(columnName: String) extends StartItem(columnName, Map.empty) with ReadOnlyStartItem
+case class AllNodes(columnName: String) extends StartItem(columnName, Map.empty)
+  with ReadOnlyStartItem with NodeStartItemIdentifiers
 
-case class AllRelationships(columnName: String) extends StartItem(columnName, Map.empty) with ReadOnlyStartItem
+case class AllRelationships(columnName: String) extends StartItem(columnName, Map.empty)
+  with ReadOnlyStartItem with RelationshipStartItemIdentifiers
 
 //We need to wrap the inner classes to be able to have two different rewrite methods
 abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) extends StartItem(name, Map.empty) {
@@ -97,6 +106,8 @@ abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) e
     updateAction.throwIfSymbolsMissing(symbols)
   }
   override def symbolTableDependencies = updateAction.symbolTableDependencies
+
+  def identifiers: Seq[(String, CypherType)] = updateAction.identifiers
 }
 
 case class CreateNodeStartItem(inner: CreateNode) extends UpdatingStartItem(inner, inner.key) {
@@ -122,19 +133,4 @@ object NodeById {
 
 object RelationshipById {
   def apply(varName: String, id: Long*) = new RelationshipById(varName, Literal(id))
-}
-
-case object PlaceHolder extends UpdateAction {
-  def children: Seq[AstNode[_]] = Seq.empty
-
-  def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] =
-    throw new ThisShouldNotHappenError("Andres", "This object should not make it to a runtime execution plan")
-
-  def identifiers: Seq[(String, CypherType)] = Seq.empty
-
-  def rewrite(f: (Expression) => Expression): UpdateAction = PlaceHolder
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {}
-
-  def symbolTableDependencies: Set[String] = Set.empty
 }

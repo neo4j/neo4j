@@ -39,12 +39,15 @@ object PartiallySolvedQuery {
   def apply(q: Query): PartiallySolvedQuery = {
     val patterns = q.matching.map(Unsolved(_))
 
+    val predicates = if (q.where == True()) Seq()
+    else q.where.atoms.map(Unsolved(_))
+
     new PartiallySolvedQuery(
       returns = q.returns.returnItems.map(Unsolved(_)),
       start = (q.start ++ q.hints).map(Unsolved(_)),
       updates = q.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
-      where = q.where.atoms.map(Unsolved(_)),
+      where = predicates,
       aggregation = q.aggregation.toSeq.flatten.map(Unsolved(_)),
       sort = q.sort.map(Unsolved(_)),
       slice = q.slice.map(Unsolved(_)),

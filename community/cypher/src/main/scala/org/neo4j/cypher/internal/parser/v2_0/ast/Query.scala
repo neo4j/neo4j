@@ -90,9 +90,9 @@ case class SingleQuery(
         case None    => Seq()
       }
 
-      val (patterns, namedMatchPaths, patternPredicates) = matches match {
-        case Some(Match(ps, _)) => (ps.flatMap(_.toLegacyPatterns), ps.flatMap(_.toLegacyNamedPath), ps.flatMap(_.toLegacyPredicates))
-        case None               => (Seq(), Seq(), Seq())
+      val (patterns, namedMatchPaths) = matches match {
+        case Some(Match(ps, _)) => (ps.flatMap(_.toLegacyPatterns), ps.flatMap(_.toLegacyNamedPath))
+        case None               => (Seq(), Seq())
       }
 
       val indexHints = hints.map(_.toLegacySchemaIndex)
@@ -105,11 +105,7 @@ case class SingleQuery(
         case None => None
       }
 
-      val predicate = wherePredicate ++ patternPredicates match {
-        case Seq()  => commands.True()
-        case Seq(p) => p
-        case s      => s.reduceLeft(commands.And(_, _))
-      }
+      val predicate = wherePredicate.getOrElse(commands.True())
 
       builder.startItems(startItems:_*).matches(patterns:_*).namedPaths(namedMatchPaths:_*).using(indexHints:_*).where(predicate)
       updateGroups

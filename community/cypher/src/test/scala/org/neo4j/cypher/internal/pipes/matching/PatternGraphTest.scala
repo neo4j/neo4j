@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.scalatest.Assertions
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.True
 import org.junit.Test
 import org.neo4j.cypher.PatternException
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
 class PatternGraphTest extends Assertions {
 
@@ -203,8 +203,8 @@ class PatternGraphTest extends Assertions {
     intercept[PatternException](new PatternGraph(nodes, rels, Seq("a", "b", "c")))
   }
 
-  private def createNode(name: String): PatternNode = {
-    val node = new PatternNode(name)
+  private def createNode(name: String, labels: Seq[KeyToken] = Seq.empty): PatternNode = {
+    val node = new PatternNode(name, labels)
     nodes = nodes + (name -> node)
     node
   }

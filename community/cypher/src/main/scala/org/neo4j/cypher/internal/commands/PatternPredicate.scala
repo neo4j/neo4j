@@ -28,13 +28,13 @@ import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 
-case class PatternPredicate(pathPattern: Seq[Pattern], predicate:Predicate = True()) extends Predicate
+case class PatternPredicate(pathPattern: Seq[Pattern]) extends Predicate
   with PathExtractor
   with PatternGraphBuilder {
   val identifiers: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
 
   val symbols2 = SymbolTable(identifiers.toMap)
-  val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern))
+  val matchingContext = new MatchingContext(symbols2, Seq.empty, buildPatternGraph(symbols2, pathPattern))
   val interestingPoints: Seq[String] = pathPattern.
     flatMap(_.possibleStartPoints.map(_._1)).
     filter(isNamed).
@@ -57,8 +57,8 @@ case class PatternPredicate(pathPattern: Seq[Pattern], predicate:Predicate = Tru
 
   def children = pathPattern
 
-  def rewrite(f: (Expression) => Expression): Predicate =
-    PatternPredicate(pathPattern.map(_.rewrite(f)), predicate.rewrite(f))
+  def rewrite(f: Expression => Expression): Predicate =
+    PatternPredicate(pathPattern.map(_.rewrite(f)))
 
   def symbolTableDependencies = {
     val patternDependencies = pathPattern.flatMap(_.symbolTableDependencies).toSet
@@ -66,13 +66,11 @@ case class PatternPredicate(pathPattern: Seq[Pattern], predicate:Predicate = Tru
     patternDependencies ++ startPointDependencies
   }
 
-  override def toString() = s"PatternPredicate(${pathPattern.mkString(",")}, ${predicate}})"
+  override def toString = s"PatternPredicate(${pathPattern.mkString(",")}})"
 
   def containsIsNull = false
 
   def assertInnerTypes(symbols: SymbolTable) {
     pathPattern.foreach( _.throwIfSymbolsMissing(symbols) )
-    val symbolsForExecution: SymbolTable = symbols.add(pathPattern.flatMap(_.possibleStartPoints).toMap)
-    predicate.assertInnerTypes(symbolsForExecution)
   }
 }

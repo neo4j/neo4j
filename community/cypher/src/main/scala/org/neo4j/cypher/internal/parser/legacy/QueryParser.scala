@@ -110,9 +110,9 @@ trait QueryParser
 
   private def explicitStart(mandatory: Boolean) = optMan(mandatory, readStart) ~ opt(matching) ~ hints ~ opt(where) ^^  {
     case start ~ matching ~ hints ~ where =>
-      val (pattern, matchPaths, matchPredicate) = extractMatches(matching)
+      val (pattern, matchPaths) = extractMatches(matching)
       val startAst = start.getOrElse(StartAst())
-      val predicate = where.getOrElse(True()).andWith(matchPredicate)
+      val predicate = where.getOrElse(True())
 
       QueryStart(startAst.copy(namedPaths = startAst.namedPaths ++ matchPaths), pattern, hints, Seq.empty, predicate)
   }
@@ -121,8 +121,8 @@ trait QueryParser
 
   private def matchStart(mandatory: Boolean) = optMan(mandatory, matching) ~ hints ~ opt(where) ^^ {
     case matching ~ hints ~ where =>
-      val (pattern, matchPaths, matchPredicate) = extractMatches(matching)
-      val predicate = where.getOrElse(True()).andWith(matchPredicate)
+      val (pattern, matchPaths) = extractMatches(matching)
+      val predicate = where.getOrElse(True())
 
       QueryStart(StartAst(namedPaths = matchPaths), pattern, hints, Seq.empty, predicate)
   }
@@ -166,11 +166,11 @@ trait QueryParser
   }
 
 
-  private def extractMatches(matching: Option[(Seq[Pattern], Seq[NamedPath], Predicate)]):(Seq[Pattern],
-    Seq[NamedPath], Predicate) = matching match {
-    case Some((a, b, c)) => (a, b, c)
-    case None            => (Seq(), Seq(), True())
-  }
+  private def extractMatches(matching: Option[(Seq[Pattern], Seq[NamedPath])]): (Seq[Pattern], Seq[NamedPath]) =
+    matching match {
+      case Some((a, b)) => (a, b)
+      case None         => (Seq(), Seq())
+    }
 
   private def updateCommands: Parser[(Seq[UpdateAction], StartAst)] = opt(createStart) ~ updates ^^ {
     case starts ~ updates =>

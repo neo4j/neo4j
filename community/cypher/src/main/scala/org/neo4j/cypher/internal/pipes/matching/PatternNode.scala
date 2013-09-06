@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.cypher.internal.commands.SingleNode
 import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
-class PatternNode(key: String) extends PatternElement(key) {
+class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty) extends PatternElement(key) {
 
-  def this(node: SingleNode) = this(node.name)
+  def this(node: SingleNode) = this(node.name, node.labels)
 
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 

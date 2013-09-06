@@ -27,20 +27,15 @@ import org.neo4j.cypher.internal.parser._
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.parser.ParsedEntity
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.commands.SingleNode
 import org.neo4j.cypher.internal.parser.ParsedNamedPath
 import org.neo4j.cypher.internal.parser.ParsedRelation
 import org.neo4j.cypher.internal.commands.ShortestPath
-import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.commands.values.KeyToken
 import org.neo4j.cypher.SyntaxException
 
 trait MatchClause extends Base with ParserPattern {
-  def matching: Parser[(Seq[Pattern], Seq[NamedPath], Predicate)] = MATCH ~> usePattern(labelTranslator) ^^ {
-    case results: Seq[(Any, Predicate)] =>
-      val matches = results.map(_._1)
-      val predicates = results.map(_._2)
-
+  def matching: Parser[(Seq[Pattern], Seq[NamedPath])] = MATCH ~> usePattern(matchTranslator) ^^ {
+    case matches: Seq[Any] =>
       val namedPaths = sift[NamedPath](matches)
 
       val patterns = if (namedPaths.nonEmpty) {
@@ -50,7 +45,7 @@ trait MatchClause extends Base with ParserPattern {
 
       } else sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches)
 
-      (patterns.distinct, namedPaths, True().andWith(predicates: _*))
+      (patterns.distinct, namedPaths)
   }
 
 
@@ -111,28 +106,21 @@ trait MatchClause extends Base with ParserPattern {
   def matchVarLengthRelation(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
     case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, min, max, relIterator) =>
       transform(left, right, props, (l, r) =>
-        VarLengthRelatedTo(pathName = name, start = l.asSingleNode, end = r.asSingleNode, minHops = min, maxHops = max,
+        VarLengthRelatedTo(pathName = name, left = l.asSingleNode, right = r.asSingleNode, minHops = min, maxHops = max,
           relTypes = relType, direction = dir, relIterator = relIterator, optional = optional))
   }
 
   def matchShortestPath(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
     case ParsedShortestPath(name, props, left, right, relType, dir, optional, max, single, relIterator) =>
       transform(left, right, props, (l, r) =>
-        ShortestPath(pathName = name, start = l.asSingleNode, end = r.asSingleNode, relTypes = relType, dir = dir, maxDepth = max,
+        ShortestPath(pathName = name, left = l.asSingleNode, right = r.asSingleNode, relTypes = relType, dir = dir, maxDepth = max,
           optional = optional, single = single, relIterator = relIterator))
 
   }
 
   def matchEntity(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
-    case ParsedEntity(name, _, _, _, _) => Yes(Seq(SingleNode(name)))
+    case e:ParsedEntity => Yes(Seq(e.asSingleNode))
   }
-
-  def labelTranslator(abstractPattern: AbstractPattern): Maybe[(Any, Predicate)] =
-    matchTranslator(abstractPattern).map {
-      (pat: Any) =>
-        val predicates = abstractPattern.parsedLabelPredicates
-        (pat, True().andWith(predicates: _*))
-    }
 
   private def parsedPath(name: String, patterns: Seq[AbstractPattern], transform: TransformType): Maybe[NamedPath] = {
     val namedPathPatterns = patterns.map(matchTranslator(transform, _))
