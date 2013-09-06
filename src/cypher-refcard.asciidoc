@@ -42,6 +42,8 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asci
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
 
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/case.asciidoc[]
+
 .Write-Only Query Structure 
 ["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
 ----
@@ -75,7 +77,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asci
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.asciidoc[]
 
 ++++
-<div class="col cardgeneral c3-2"><div class="blk">
+<div class="col cardgeneral c3-2 c6-2"><div class="blk">
 ++++
 
 [options="header", cols=",m"]
