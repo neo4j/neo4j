@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -33,8 +34,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.DataStatement;
-import org.neo4j.kernel.api.ReadStatement;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -63,13 +64,13 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
 {
     private final NodeManager nodeManager;
     private Map<Integer, SafeProperty> properties;
-    private final ThreadToStatementContextBridge statementCtxProvider;
+    private final ThreadToStatementContextBridge statementContextProvider;
 
-    GraphPropertiesImpl( NodeManager nodeManager, ThreadToStatementContextBridge statementCtxProvider )
+    GraphPropertiesImpl( NodeManager nodeManager, ThreadToStatementContextBridge statementContextProvider )
     {
         super( false );
         this.nodeManager = nodeManager;
-        this.statementCtxProvider = statementCtxProvider;
+        this.statementContextProvider = statementContextProvider;
     }
 
     @Override
@@ -114,10 +115,10 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         if ( null == key )
             return false;
 
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.propertyKeyGetForName( key );
-            return statement.graphGetProperty( propertyId ).isDefined();
+            long propertyId = statement.readOperations().propertyKeyGetForName( key );
+            return statement.readOperations().graphGetProperty( propertyId ).isDefined();
         }
     }
 
@@ -127,14 +128,14 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.propertyKeyGetForName( key );
+            long propertyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
             }
-            return statement.graphGetProperty( propertyId ).value();
+            return statement.readOperations().graphGetProperty( propertyId ).value();
         }
         catch ( PropertyNotFoundException e )
         {
@@ -148,14 +149,14 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.propertyKeyGetForName( key );
+            long propertyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
             }
-            return statement.graphGetProperty( propertyId ).value( defaultValue );
+            return statement.readOperations().graphGetProperty( propertyId ).value( defaultValue );
         }
     }
 
@@ -163,16 +164,20 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     public void setProperty( String key, Object value )
     {
         boolean success = false;
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.propertyKeyGetOrCreateForName( key );
-            statement.graphSetProperty( property( propertyKeyId, value ) );
+            long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            statement.dataWriteOperations().graphSetProperty( property( propertyKeyId, value ) );
             success = true;
         }
         catch ( IllegalTokenNameException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
+        }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
         finally
         {
@@ -186,28 +191,32 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public Object removeProperty( String key )
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.propertyKeyGetOrCreateForName( key );
-            return statement.graphRemoveProperty( propertyId ).value( null );
+            long propertyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            return statement.dataWriteOperations().graphRemoveProperty( propertyId ).value( null );
         }
         catch ( IllegalTokenNameException e )
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
         }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
     }
 
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
             List<String> keys = new ArrayList<>();
-            Iterator<SafeProperty> properties = statement.graphGetAllProperties();
+            Iterator<SafeProperty> properties = statement.readOperations().graphGetAllProperties();
             while ( properties.hasNext() )
             {
-                keys.add( statement.propertyKeyGetName( properties.next().propertyKeyId() ) );
+                keys.add( statement.readOperations().propertyKeyGetName( properties.next().propertyKeyId() ) );
             }
             return keys;
         }
@@ -220,7 +229,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public Iterable<Object> getPropertyValues()
     {
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
             return asSet( map( new Function<SafeProperty, Object>()
             {
@@ -229,7 +238,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
                 {
                     return prop.value();
                 }
-            }, statement.graphGetAllProperties() ) );
+            }, statement.readOperations().graphGetAllProperties() ) );
         }
     }
 

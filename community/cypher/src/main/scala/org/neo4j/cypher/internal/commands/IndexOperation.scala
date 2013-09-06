@@ -20,13 +20,8 @@
 package org.neo4j.cypher.internal.commands
 
 import org.neo4j.cypher.InvalidSemanticsException
-import org.neo4j.cypher.internal.spi.{QueryType, SchemaQuery}
 
-abstract class AbstractSchemaQuery extends AbstractQuery {
-  final override def queryType: QueryType = SchemaQuery
-}
-
-sealed abstract class IndexOperation extends AbstractSchemaQuery {
+sealed abstract class IndexOperation extends AbstractQuery {
   val label: String
 }
 
@@ -40,7 +35,7 @@ final case class DropIndex(label: String, propertyKeys: Seq[String], queryString
 }
 
 sealed abstract class UniqueConstraintOperation(_id: String, _label: String, _idForProperty: String, _propertyKey: String,
-    _queryString: QueryString = QueryString.empty) extends AbstractSchemaQuery {
+    _queryString: QueryString = QueryString.empty) extends AbstractQuery {
   override def verifySemantics() {
     if ( _id != _idForProperty )
       throw new InvalidSemanticsException( "Unknown identifier `" + _idForProperty + "`, was expecting `" + _id + "`" )

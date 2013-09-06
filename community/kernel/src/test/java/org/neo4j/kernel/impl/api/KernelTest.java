@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.junit.Assert.fail;
@@ -38,7 +38,7 @@ public class KernelTest
         KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         db.beginTx();
         KernelTransaction tx = kernelAPI.newTransaction();
-        SchemaStatement statement = tx.acquireSchemaStatement();
+        SchemaWriteOperations statement = tx.acquireStatement().schemaWriteOperations();
         try
         {
             statement.uniquenessConstraintCreate( 1, 1 );

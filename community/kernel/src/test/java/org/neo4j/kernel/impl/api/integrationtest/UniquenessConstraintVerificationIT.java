@@ -28,8 +28,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.api.DataStatement;
-import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -52,7 +52,7 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
         // given
         long node1, node2, foo, name;
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             // name is not unique for Foo in the existing data
             Node node = db.createNode( label( "Foo" ) );
             node1 = node.getId();
@@ -68,7 +68,7 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
         // when
         try
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.uniquenessConstraintCreate( foo, name );
 
             fail( "expected exception" );
@@ -92,7 +92,7 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
         // given
         long node1, foo, name;
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode( label( "Foo" ) );
             node1 = node.getId();
             node.setProperty( "name", "foo" );
@@ -101,7 +101,7 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
             commit();
         }
 
-        SchemaStatement statement = schemaStatementInNewTransaction();
+        SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
         statement.uniquenessConstraintCreate(  foo, name );
         ExecutorService executor = Executors.newSingleThreadExecutor();
         long node2 = executor.submit( new Callable<Long>()

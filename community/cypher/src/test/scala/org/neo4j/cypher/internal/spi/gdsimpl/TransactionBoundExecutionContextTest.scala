@@ -27,25 +27,25 @@ import org.mockito.Mockito
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.cypher.internal.helpers.DynamicIterable
-import org.neo4j.kernel.api.DataStatement
+import org.neo4j.kernel.api._
 
-class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with MockitoSugar {
+class TransactionBoundExecutionContextTest extends JUnitSuite with Assertions with MockitoSugar {
 
   var graph: ImpermanentGraphDatabase = null
   var outerTx: Transaction = null
-  var statement: DataStatement = null
+  var statement: Statement = null
 
   @Before
   def init() {
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
-    statement = mock[DataStatement]
+    statement = new Statement(mock[KernelTransactionImplementation], null, null, null, null)
   }
 
   @Test def should_mark_transaction_successful_if_successful() {
     // GIVEN
     Mockito.when(outerTx.failure()).thenThrow( new AssertionError( "Shouldn't be called" ) )
-    val context = new TransactionBoundQueryContext(graph, outerTx, statement)
+    val context = new TransactionBoundExecutionContext(graph, outerTx, statement)
 
     // WHEN
     context.close(success = true)
@@ -59,7 +59,7 @@ class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with M
   @Test def should_mark_transaction_failed_if_not_successful() {
     // GIVEN
     Mockito.when(outerTx.success()).thenThrow( new AssertionError( "Shouldn't be called" ) )
-    val context = new TransactionBoundQueryContext(graph, outerTx, statement)
+    val context = new TransactionBoundExecutionContext(graph, outerTx, statement)
 
     // WHEN
     context.close(success = false)
@@ -76,7 +76,7 @@ class TransactionBoundQueryContextTest extends JUnitSuite with Assertions with M
     val node = createMiniGraph(relTypeName)
 
     val tx = graph.beginTx()
-    val context = new TransactionBoundQueryContext(graph, tx, statement)
+    val context = new TransactionBoundExecutionContext(graph, tx, statement)
 
     // WHEN
     val iterable = DynamicIterable( context.getRelationshipsFor(node, Direction.BOTH, Seq.empty) )

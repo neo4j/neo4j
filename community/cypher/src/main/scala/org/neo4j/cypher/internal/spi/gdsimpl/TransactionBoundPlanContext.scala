@@ -26,17 +26,17 @@ import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.ReadStatement
+import org.neo4j.kernel.api.Statement
 
-class TransactionBoundPlanContext(statement:ReadStatement, gdb:GraphDatabaseService)
+class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
 
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = try {
-    val labelId = statement.labelGetForName(labelName)
-    val propertyKeyId = statement.propertyKeyGetForName(propertyKey)
+    val labelId = statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    val rule = statement.indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
-    statement.indexGetState(rule) match {
+    val rule = statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
+    statement.readOperations().indexGetState(rule) match {
       case InternalIndexState.ONLINE => Some(rule)
       case _                         => None
     }
@@ -45,10 +45,10 @@ class TransactionBoundPlanContext(statement:ReadStatement, gdb:GraphDatabaseServ
   }
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
-    val labelId = statement.labelGetForName(labelName)
-    val propertyKeyId = statement.propertyKeyGetForName(propertyKey)
+    val labelId = statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    val matchingConstraints = statement.constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
+    val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
     if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
   } catch {
     case _: KernelException => None

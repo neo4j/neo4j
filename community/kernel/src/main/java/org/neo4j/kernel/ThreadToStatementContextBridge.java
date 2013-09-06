@@ -19,15 +19,11 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.api.DataStatement;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadStatement;
-import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -48,33 +44,9 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
         this.txManager = txManager;
     }
 
-    public ReadStatement readStatement()
+    public Statement statement()
     {
-        return transaction().acquireReadStatement();
-    }
-
-    public DataStatement dataStatement()
-    {
-        try
-        {
-            return transaction().acquireDataStatement();
-        }
-        catch ( InvalidTransactionTypeException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
-    }
-
-    public SchemaStatement schemaStatement()
-    {
-        try
-        {
-            return transaction().acquireSchemaStatement();
-        }
-        catch ( InvalidTransactionTypeException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
+        return transaction().acquireStatement();
     }
 
     private KernelTransaction transaction()

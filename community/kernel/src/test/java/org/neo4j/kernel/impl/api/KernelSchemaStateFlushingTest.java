@@ -28,9 +28,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadStatement;
-import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -134,43 +134,44 @@ public class KernelSchemaStateFlushingTest
         assertEquals( "after", after );
     }
 
-    private UniquenessConstraint createConstraint() throws SchemaKernelException
+    private UniquenessConstraint createConstraint() throws SchemaKernelException, InvalidTransactionTypeException
     {
         Transaction tx = db.beginTx();
-        SchemaStatement statement = ctxProvider.schemaStatement();
-        UniquenessConstraint descriptor = statement.uniquenessConstraintCreate( 1, 1 );
+        Statement statement = ctxProvider.statement();
+        UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
         statement.close();
         tx.success();
         tx.finish();
         return descriptor;
     }
 
-    private void dropConstraint( UniquenessConstraint descriptor ) throws SchemaKernelException
+    private void dropConstraint( UniquenessConstraint descriptor ) throws SchemaKernelException, InvalidTransactionTypeException
+
     {
         Transaction tx = db.beginTx();
-        SchemaStatement statement = ctxProvider.schemaStatement();
-        statement.constraintDrop( descriptor );
+        Statement statement = ctxProvider.statement();
+        statement.schemaWriteOperations().constraintDrop( descriptor );
         statement.close();
         tx.success();
         tx.finish();
     }
 
-    private IndexDescriptor createIndex() throws SchemaKernelException
+    private IndexDescriptor createIndex() throws SchemaKernelException, InvalidTransactionTypeException
     {
         Transaction tx = db.beginTx();
-        SchemaStatement statement = ctxProvider.schemaStatement();
-        IndexDescriptor descriptor = statement.indexCreate( 1, 1 );
+        Statement statement = ctxProvider.statement();
+        IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( 1, 1 );
         statement.close();
         tx.success();
         tx.finish();
         return descriptor;
     }
 
-    private void dropIndex( IndexDescriptor descriptor ) throws SchemaKernelException
+    private void dropIndex( IndexDescriptor descriptor ) throws SchemaKernelException, InvalidTransactionTypeException
     {
         Transaction tx = db.beginTx();
-        SchemaStatement statement = ctxProvider.schemaStatement();
-        statement.indexDrop( descriptor );
+        Statement statement = ctxProvider.statement();
+        statement.schemaWriteOperations().indexDrop( descriptor );
         statement.close();
         tx.success();
         tx.finish();
@@ -179,8 +180,8 @@ public class KernelSchemaStateFlushingTest
     private void awaitIndexOnline( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         Transaction tx = db.beginTx();
-        ReadStatement statement = ctxProvider.readStatement();
-        SchemaIndexTestHelper.awaitIndexOnline( statement, descriptor );
+        Statement statement = ctxProvider.statement();
+        SchemaIndexTestHelper.awaitIndexOnline( statement.readOperations(), descriptor );
         statement.close();
         tx.success();
         tx.finish();
@@ -205,9 +206,9 @@ public class KernelSchemaStateFlushingTest
     
     private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
     {
-        try ( ReadStatement statement = tx.acquireReadStatement() )
+        try ( Statement statement = tx.acquireStatement() )
         {
-            return statement.schemaStateGetOrCreate( key, new Function<String, String>()
+            return statement.readOperations().schemaStateGetOrCreate( key, new Function<String, String>()
             {
                 @Override
                 public String apply( String from )

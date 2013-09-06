@@ -27,7 +27,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.properties.Property;
 
 import static org.hamcrest.Matchers.not;
@@ -46,7 +46,7 @@ public class PropertyIT extends KernelIntegrationTest
         long propertyKeyId;
         long nodeId;
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
 
             // WHEN
@@ -61,7 +61,7 @@ public class PropertyIT extends KernelIntegrationTest
             commit();
         }
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
             assertEquals( "bozo", statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
@@ -75,7 +75,7 @@ public class PropertyIT extends KernelIntegrationTest
         long propertyKeyId;
         long nodeId;
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
             propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
             nodeId = node.getId();
@@ -93,7 +93,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
         }
     }
@@ -105,7 +105,7 @@ public class PropertyIT extends KernelIntegrationTest
         long propertyKeyId;
         long nodeId;
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
             propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
             nodeId = node.getId();
@@ -113,7 +113,7 @@ public class PropertyIT extends KernelIntegrationTest
             commit();
         }
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // WHEN
             Object previous = statement.nodeRemoveProperty( nodeId, propertyKeyId ).value();
@@ -128,7 +128,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
         }
     }
@@ -140,14 +140,14 @@ public class PropertyIT extends KernelIntegrationTest
         long propertyId;
         long nodeId;
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
             propertyId = statement.propertyKeyGetOrCreateForName( "clown" );
             nodeId = node.getId();
             commit();
         }
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // WHEN
             Property result = statement.nodeRemoveProperty( nodeId, propertyId );
@@ -164,7 +164,7 @@ public class PropertyIT extends KernelIntegrationTest
         long propertyKeyId;
         long nodeId;
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
 
             // WHEN
@@ -179,7 +179,7 @@ public class PropertyIT extends KernelIntegrationTest
             commit();
         }
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
             assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), isDefinedProperty() );
@@ -193,7 +193,7 @@ public class PropertyIT extends KernelIntegrationTest
         long nodeId;
         {
             // GIVEN
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
 
             // WHEN
@@ -208,7 +208,7 @@ public class PropertyIT extends KernelIntegrationTest
         }
 
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
             assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
@@ -222,7 +222,7 @@ public class PropertyIT extends KernelIntegrationTest
         long propertyKeyId;
         long nodeId;
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
             propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
             nodeId = node.getId();
@@ -231,14 +231,14 @@ public class PropertyIT extends KernelIntegrationTest
 
         // WHEN
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             statement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, "bozo" ) );
             rollback();
         }
 
         // THEN
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
         }
     }
@@ -250,7 +250,7 @@ public class PropertyIT extends KernelIntegrationTest
         long propertyId;
         long nodeId;
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
             propertyId = statement.propertyKeyGetOrCreateForName( "clown" );
             nodeId = node.getId();
@@ -260,14 +260,14 @@ public class PropertyIT extends KernelIntegrationTest
 
         // WHEN
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             statement.nodeSetProperty( nodeId, Property.intProperty( propertyId, 42 ) );
             commit();
         }
 
         // THEN
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             assertEquals( 42, statement.nodeGetProperty( nodeId, propertyId ).value() );
         }
     }
@@ -280,7 +280,7 @@ public class PropertyIT extends KernelIntegrationTest
         long nodeId;
         String value = "Bozo the Clown is a clown character very popular in the United States, peaking in the 1960s";
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
 
             // WHEN
@@ -295,7 +295,7 @@ public class PropertyIT extends KernelIntegrationTest
             commit();
         }
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
             assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "LazyStringProperty" ) );
@@ -313,7 +313,7 @@ public class PropertyIT extends KernelIntegrationTest
         long nodeId;
         int[] value = new int[] {-1,0,1,2,3,4,5,6,7,8,9,10};
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode();
 
             // WHEN
@@ -328,7 +328,7 @@ public class PropertyIT extends KernelIntegrationTest
             commit();
         }
         {
-            DataStatement statement = dataStatementInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
             assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "LazyArrayProperty" ) );

@@ -354,7 +354,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         @Override
         protected Statement newStatement()
         {
-            return new Statement( new IndexReaderFactory.Caching( indexService ), labelScanStore, this, lockHolder );
+            return new Statement( this, new IndexReaderFactory.Caching( indexService ), labelScanStore, this, lockHolder );
         }
 
         @Override

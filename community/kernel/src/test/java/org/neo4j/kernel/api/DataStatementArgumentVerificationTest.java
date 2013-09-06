@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
 
 public class DataStatementArgumentVerificationTest
 {
@@ -33,7 +34,7 @@ public class DataStatementArgumentVerificationTest
             throws Exception
     {
         // given
-        DataStatement statement = new DataStatement( null, null );
+        DataWriteOperations statement = stubStatement();
 
         // when
         Property property = statement.nodeGetProperty( 17, TokenRead.NO_SUCH_PROPERTY_KEY );
@@ -47,7 +48,7 @@ public class DataStatementArgumentVerificationTest
             throws Exception
     {
         // given
-        DataStatement statement = new DataStatement( null, null );
+        DataWriteOperations statement = stubStatement();
 
         // when
         Property property = statement.relationshipGetProperty( 17, TokenRead.NO_SUCH_PROPERTY_KEY );
@@ -61,7 +62,7 @@ public class DataStatementArgumentVerificationTest
             throws Exception
     {
         // given
-        DataStatement statement = new DataStatement( null, null );
+        DataWriteOperations statement = stubStatement();
 
         // when
         Property property = statement.graphGetProperty( TokenRead.NO_SUCH_PROPERTY_KEY );
@@ -74,7 +75,7 @@ public class DataStatementArgumentVerificationTest
     public void shouldReturnEmptyIdIteratorFromNodesGetForLabelForNoSuchLabelConstant() throws Exception
     {
         // given
-        DataStatement statement = new DataStatement( null, null );
+        DataWriteOperations statement = stubStatement();
 
         // when
         PrimitiveLongIterator nodes = statement.nodesGetForLabel( TokenRead.NO_SUCH_LABEL );
@@ -87,12 +88,17 @@ public class DataStatementArgumentVerificationTest
     public void shouldAlwaysReturnFalseFromNodeHasLabelForNoSuchLabelConstant() throws Exception
     {
         // given
-        DataStatement statement = new DataStatement( null, null );
+        DataWriteOperations statement = stubStatement();
 
         // when
         boolean hasLabel = statement.nodeHasLabel( 17, TokenRead.NO_SUCH_LABEL );
 
         // then
         assertFalse( "should not contain any ids", hasLabel );
+    }
+
+    private OperationsFacade stubStatement()
+    {
+        return new OperationsFacade( mock( KernelTransactionImplementation.class ), mock( Statement.class ) );
     }
 }

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -31,8 +32,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.DataStatement;
-import org.neo4j.kernel.api.ReadStatement;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
@@ -56,14 +57,14 @@ public class RelationshipProxy implements Relationship
     
     private final long relId;
     private final RelationshipLookups relationshipLookups;
-    private final ThreadToStatementContextBridge statementCtxProvider;
+    private final ThreadToStatementContextBridge statementContextProvider;
 
     RelationshipProxy( long relId, RelationshipLookups relationshipLookups,
-                       ThreadToStatementContextBridge statementCtxProvider )
+                       ThreadToStatementContextBridge statementContextProvider )
     {
         this.relId = relId;
         this.relationshipLookups = relationshipLookups;
-        this.statementCtxProvider = statementCtxProvider;
+        this.statementContextProvider = statementContextProvider;
     }
 
     @Override
@@ -81,9 +82,13 @@ public class RelationshipProxy implements Relationship
     @Override
     public void delete()
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            statement.relationshipDelete( getId() );
+            statement.dataWriteOperations().relationshipDelete( getId() );
+        }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
@@ -144,13 +149,13 @@ public class RelationshipProxy implements Relationship
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
             List<String> keys = new ArrayList<>();
-            Iterator<SafeProperty> properties = statement.relationshipGetAllProperties( getId() );
+            Iterator<SafeProperty> properties = statement.readOperations().relationshipGetAllProperties( getId() );
             while ( properties.hasNext() )
             {
-                keys.add( statement.propertyKeyGetName( properties.next().propertyKeyId() ) );
+                keys.add( statement.readOperations().propertyKeyGetName( properties.next().propertyKeyId() ) );
             }
             return keys;
         }
@@ -168,7 +173,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public Iterable<Object> getPropertyValues()
     {
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
             return asSet( map( new Function<SafeProperty, Object>()
             {
@@ -177,7 +182,7 @@ public class RelationshipProxy implements Relationship
                 {
                     return prop.value();
                 }
-            }, statement.relationshipGetAllProperties( getId() ) ) );
+            }, statement.readOperations().relationshipGetAllProperties( getId() ) ) );
         }
         catch ( EntityNotFoundException e )
         {
@@ -191,14 +196,14 @@ public class RelationshipProxy implements Relationship
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.propertyKeyGetForName( key );
+            long propertyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
             }
-            return statement.relationshipGetProperty( relId, propertyId ).value();
+            return statement.readOperations().relationshipGetProperty( relId, propertyId ).value();
         }
         catch ( EntityNotFoundException | PropertyNotFoundException e )
         {
@@ -212,10 +217,10 @@ public class RelationshipProxy implements Relationship
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.propertyKeyGetForName( key );
-            return statement.relationshipGetProperty( relId, propertyId ).value( defaultValue );
+            long propertyId = statement.readOperations().propertyKeyGetForName( key );
+            return statement.readOperations().relationshipGetProperty( relId, propertyId ).value( defaultValue );
         }
         catch ( EntityNotFoundException e )
         {
@@ -229,11 +234,11 @@ public class RelationshipProxy implements Relationship
         if ( null == key )
             return false;
 
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.propertyKeyGetForName( key );
+            long propertyId = statement.readOperations().propertyKeyGetForName( key );
             return propertyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY &&
-                   statement.relationshipGetProperty( relId, propertyId ).isDefined();
+                   statement.readOperations().relationshipGetProperty( relId, propertyId ).isDefined();
         }
         catch ( EntityNotFoundException e )
         {
@@ -245,10 +250,10 @@ public class RelationshipProxy implements Relationship
     public void setProperty( String key, Object value )
     {
         boolean success = false;
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.propertyKeyGetOrCreateForName( key );
-            statement.relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
+            long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            statement.dataWriteOperations().relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
             success = true;
         }
         catch ( EntityNotFoundException e )
@@ -259,6 +264,10 @@ public class RelationshipProxy implements Relationship
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
+        }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
         finally
         {
@@ -272,10 +281,10 @@ public class RelationshipProxy implements Relationship
     @Override
     public Object removeProperty( String key )
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.propertyKeyGetOrCreateForName( key );
-            return statement.relationshipRemoveProperty( relId, propertyId ).value( null );
+            long propertyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            return statement.dataWriteOperations().relationshipRemoveProperty( relId, propertyId ).value( null );
         }
         catch ( EntityNotFoundException e )
         {
@@ -285,6 +294,10 @@ public class RelationshipProxy implements Relationship
         {
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
+        }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
@@ -342,6 +355,6 @@ public class RelationshipProxy implements Relationship
 
     private void assertInTransaction()
     {
-        statementCtxProvider.assertInTransaction();
+        statementContextProvider.assertInTransaction();
     }
 }

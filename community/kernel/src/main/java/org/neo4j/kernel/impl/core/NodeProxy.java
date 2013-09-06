@@ -41,8 +41,8 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.DataStatement;
-import org.neo4j.kernel.api.ReadStatement;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -82,14 +82,14 @@ public class NodeProxy implements Node
     }
 
     private final NodeLookup nodeLookup;
-    private final ThreadToStatementContextBridge statementCtxProvider;
+    private final ThreadToStatementContextBridge statementContextProvider;
     private final long nodeId;
 
-    NodeProxy( long nodeId, NodeLookup nodeLookup, ThreadToStatementContextBridge statementCtxProvider )
+    NodeProxy( long nodeId, NodeLookup nodeLookup, ThreadToStatementContextBridge statementContextProvider )
     {
         this.nodeId = nodeId;
         this.nodeLookup = nodeLookup;
-        this.statementCtxProvider = statementCtxProvider;
+        this.statementContextProvider = statementContextProvider;
     }
 
     @Override
@@ -107,9 +107,13 @@ public class NodeProxy implements Node
     @Override
     public void delete()
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            statement.nodeDelete( getId() );
+            statement.dataWriteOperations().nodeDelete( getId() );
+        }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
@@ -194,24 +198,24 @@ public class NodeProxy implements Node
 
     private void assertInTransaction()
     {
-        statementCtxProvider.assertInTransaction();
+        statementContextProvider.assertInTransaction();
     }
 
     @Override
     public void setProperty( String key, Object value )
     {
         boolean requireRollback = true; // TODO: this seems like the wrong level to do this on...
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.propertyKeyGetOrCreateForName( key );
+            long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
             try
             {
-                statement.nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
+                statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
             }
             catch ( ConstraintValidationKernelException e )
             {
                 requireRollback = false;
-                throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
             }
             requireRollback = false;
         }
@@ -222,6 +226,10 @@ public class NodeProxy implements Node
         catch ( IllegalTokenNameException e )
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
+        }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
         finally
         {
@@ -235,10 +243,10 @@ public class NodeProxy implements Node
     @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.propertyKeyGetOrCreateForName( key );
-            return statement.nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
+            long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
         }
         catch ( EntityNotFoundException e )
         {
@@ -248,6 +256,10 @@ public class NodeProxy implements Node
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
     }
 
     @Override
@@ -256,10 +268,10 @@ public class NodeProxy implements Node
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.propertyKeyGetForName( key );
-            return statement.nodeGetProperty( nodeId, propertyKeyId ).value( defaultValue );
+            long propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
+            return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).value( defaultValue );
         }
         catch ( EntityNotFoundException e )
         {
@@ -270,7 +282,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<Object> getPropertyValues()
     {
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
             return asSet( map( new Function<SafeProperty, Object>()
             {
@@ -279,7 +291,7 @@ public class NodeProxy implements Node
                 {
                     return prop.value();
                 }
-            }, statement.nodeGetAllProperties( getId() ) ) );
+            }, statement.readOperations().nodeGetAllProperties( getId() ) ) );
         }
         catch ( EntityNotFoundException e )
         {
@@ -290,13 +302,13 @@ public class NodeProxy implements Node
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
             List<String> keys = new ArrayList<>();
-            Iterator<SafeProperty> properties = statement.nodeGetAllProperties( getId() );
+            Iterator<SafeProperty> properties = statement.readOperations().nodeGetAllProperties( getId() );
             while ( properties.hasNext() )
             {
-                keys.add( statement.propertyKeyGetName( properties.next().propertyKeyId() ) );
+                keys.add( statement.readOperations().propertyKeyGetName( properties.next().propertyKeyId() ) );
             }
             return keys;
         }
@@ -317,14 +329,14 @@ public class NodeProxy implements Node
         if ( null == key )
             throw new IllegalArgumentException( "(null) property key is not allowed" );
 
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.propertyKeyGetForName( key );
+            long propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new NotFoundException( format( "No such property, '%s'.", key ) );
             }
-            return statement.nodeGetProperty( nodeId, propertyKeyId ).value();
+            return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).value();
         }
         catch ( EntityNotFoundException | PropertyNotFoundException e )
         {
@@ -338,10 +350,10 @@ public class NodeProxy implements Node
         if ( null == key )
             return false;
 
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.propertyKeyGetForName( key );
-            return statement.nodeGetProperty( nodeId, propertyKeyId ).isDefined();
+            long propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
+            return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).isDefined();
         }
         catch ( EntityNotFoundException e )
         {
@@ -398,11 +410,11 @@ public class NodeProxy implements Node
         //{
         //    throw new IllegalArgumentException( "Nodes do not belong to same graph database." );
         //}
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long relationshipTypeId = statement.relationshipTypeGetOrCreateForName( type.name() );
+            long relationshipTypeId = statement.readOperations().relationshipTypeGetOrCreateForName( type.name() );
             return nodeLookup.getNodeManager().newRelationshipProxyById(
-                    statement.relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
+                    statement.dataWriteOperations().relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
         }
         catch ( IllegalTokenNameException | RelationshipTypeIdNotFoundKernelException e )
         {
@@ -411,6 +423,10 @@ public class NodeProxy implements Node
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( e );
+        }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
@@ -452,15 +468,15 @@ public class NodeProxy implements Node
     @Override
     public void addLabel( Label label )
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
             try
             {
-                statement.nodeAddLabel( getId(), statement.labelGetOrCreateForName( label.name() ) );
+                statement.dataWriteOperations().nodeAddLabel( getId(), statement.readOperations().labelGetOrCreateForName( label.name() ) );
             }
             catch ( ConstraintValidationKernelException e )
             {
-                throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement ) ), e );
+                throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
             }
         }
         catch ( IllegalTokenNameException e )
@@ -475,32 +491,40 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( "No node with id " + getId() + " found.", e );
         }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
     }
 
     @Override
     public void removeLabel( Label label )
     {
-        try ( DataStatement statement = statementCtxProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long labelId = statement.labelGetForName( label.name() );
+            long labelId = statement.readOperations().labelGetForName( label.name() );
             if ( labelId != KeyReadOperations.NO_SUCH_LABEL )
             {
-                statement.nodeRemoveLabel( getId(), labelId );
+                statement.dataWriteOperations().nodeRemoveLabel( getId(), labelId );
             }
         }
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( "No node with id " + getId() + " found.", e );
         }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
     }
 
     @Override
     public boolean hasLabel( Label label )
     {
-        try ( ReadStatement statement = statementCtxProvider.readStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long labelId = statement.labelGetForName( label.name() );
-            return statement.nodeHasLabel( getId(), labelId );
+            long labelId = statement.readOperations().labelGetForName( label.name() );
+            return statement.readOperations().nodeHasLabel( getId(), labelId );
         }
         catch ( EntityNotFoundException e )
         {
@@ -517,10 +541,10 @@ public class NodeProxy implements Node
             public ResourceIterator<Label> iterator()
             {
                 PrimitiveLongIterator labels;
-                final ReadStatement statement = statementCtxProvider.readStatement();
+                final Statement statement = statementContextProvider.statement();
                 try
                 {
-                    labels = statement.nodeGetLabels( getId() );
+                    labels = statement.readOperations().nodeGetLabels( getId() );
                 }
                 catch ( EntityNotFoundException e )
                 {
@@ -535,7 +559,7 @@ public class NodeProxy implements Node
                     {
                         try
                         {
-                            return label( statement.labelGetName( labelId ) );
+                            return label( statement.readOperations().labelGetName( labelId ) );
                         }
                         catch ( LabelNotFoundKernelException e )
                         {

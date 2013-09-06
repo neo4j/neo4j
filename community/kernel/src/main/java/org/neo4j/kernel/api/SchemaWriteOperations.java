@@ -17,11 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi
+package org.neo4j.kernel.api;
 
-sealed abstract class QueryType
-
-case object DataQuery extends QueryType
-
-case object SchemaQuery extends QueryType
-
+public interface SchemaWriteOperations extends ReadOperations, SchemaWrite
+{
+}

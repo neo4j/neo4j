@@ -20,11 +20,8 @@
 package org.neo4j.cypher
 
 import internal.spi.QueryContext
-import internal.spi.QueryType
 
 trait ExecutionPlan {
   def execute(context: QueryContext, params: Map[String, Any]): ExecutionResult
   def profile(context: QueryContext, params: Map[String,Any]): ExecutionResult
-
-  def queryType: QueryType
 }

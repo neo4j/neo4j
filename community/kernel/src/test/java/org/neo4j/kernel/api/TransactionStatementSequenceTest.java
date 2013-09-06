@@ -21,83 +21,55 @@ package org.neo4j.kernel.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 public class TransactionStatementSequenceTest
 {
-    private KernelTransactionImplementation newTransaction()
-    {
-        return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
-                                                    mock( LegacyKernelOperations.class ) )
-        {
-            @Override
-            protected void doCommit()
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected void doRollback()
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected Statement newStatement()
-            {
-                return mock( Statement.class );
-            }
-        };
-    }
-
     @Test
     public void shouldAllowReadStatementAfterReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.acquireReadStatement().close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        tx.acquireStatement().readOperations();
 
         // when / then
-        tx.acquireReadStatement().close();
+        tx.acquireStatement().readOperations();
     }
 
     @Test
     public void shouldAllowDataStatementAfterReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.acquireReadStatement().close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        tx.acquireStatement().readOperations();
 
         // when / then
-        tx.acquireDataStatement().close();
+        tx.acquireStatement().dataWriteOperations();
     }
 
     @Test
     public void shouldAllowSchemaStatementAfterReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.acquireReadStatement().close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        tx.acquireStatement().readOperations();
 
         // when / then
-        tx.acquireSchemaStatement().close();
+        tx.acquireStatement().schemaWriteOperations();
     }
 
     @Test
     public void shouldRejectSchemaStatementAfterDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.acquireDataStatement().close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        tx.acquireStatement().dataWriteOperations();
 
         // when
         try
         {
-            tx.acquireSchemaStatement().close();
+            tx.acquireStatement().schemaWriteOperations();
 
             fail( "expected exception" );
         }
@@ -113,13 +85,13 @@ public class TransactionStatementSequenceTest
     public void shouldRejectDataStatementAfterSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.acquireSchemaStatement().close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        tx.acquireStatement().schemaWriteOperations();
 
         // when
         try
         {
-            tx.acquireDataStatement().close();
+            tx.acquireStatement().dataWriteOperations();
 
             fail( "expected exception" );
         }
@@ -135,43 +107,44 @@ public class TransactionStatementSequenceTest
     public void shouldAllowDataStatementAfterDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.acquireDataStatement().close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        tx.acquireStatement().dataWriteOperations();
 
         // when / then
-        tx.acquireDataStatement().close();
+        tx.acquireStatement().dataWriteOperations();
     }
 
     @Test
     public void shouldAllowSchemaStatementAfterSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.acquireSchemaStatement().close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        tx.acquireStatement().schemaWriteOperations();
 
         // when / then
-        tx.acquireSchemaStatement().close();
+        tx.acquireStatement().schemaWriteOperations();
     }
 
     @Test
     public void shouldAllowReadStatementAfterDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.acquireDataStatement().close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        tx.acquireStatement().dataWriteOperations();
 
         // when / then
-        tx.acquireReadStatement().close();
+        tx.acquireStatement().readOperations();
     }
 
     @Test
     public void shouldAllowReadStatementAfterSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.acquireSchemaStatement().close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        tx.acquireStatement().schemaWriteOperations();
 
         // when / then
-        tx.acquireReadStatement().close();
+        tx.acquireStatement().readOperations();
     }
+
 }

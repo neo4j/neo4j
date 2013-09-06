@@ -58,9 +58,10 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.ReadStatement;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -967,24 +968,28 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode()
     {
-        try ( DataStatement statement = statementContextProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            return nodeManager.newNodeProxyById( statement.nodeCreate() );
+            return nodeManager.newNodeProxyById( statement.dataWriteOperations().nodeCreate() );
+        }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
     @Override
     public Node createNode( Label... labels )
     {
-        try ( DataStatement statement = statementContextProvider.dataStatement() )
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            long nodeId = statement.nodeCreate();
+            long nodeId = statement.dataWriteOperations().nodeCreate();
             for ( Label label : labels )
             {
-                long labelId = statement.labelGetOrCreateForName( label.name() );
+                long labelId = statement.dataWriteOperations().labelGetOrCreateForName( label.name() );
                 try
                 {
-                    statement.nodeAddLabel( nodeId, labelId );
+                    statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
                 }
                 catch ( EntityNotFoundException e )
                 {
@@ -1000,6 +1005,10 @@ public abstract class InternalAbstractGraphDatabase
         catch ( SchemaKernelException e )
         {
             throw new IllegalArgumentException( e );
+        }
+        catch ( InvalidTransactionTypeException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
@@ -1500,10 +1509,10 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
-        ReadStatement statement = statementContextProvider.readStatement();
+        Statement statement = statementContextProvider.statement();
 
-        long propertyId = statement.propertyKeyGetForName( key );
-        long labelId = statement.labelGetForName( myLabel.name() );
+        long propertyId = statement.readOperations().propertyKeyGetForName( key );
+        long labelId = statement.readOperations().labelGetForName( myLabel.name() );
 
         if ( propertyId == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
         {
@@ -1513,11 +1522,11 @@ public abstract class InternalAbstractGraphDatabase
 
         try
         {
-            IndexDescriptor indexRule = statement.indexesGetForLabelAndPropertyKey( labelId, propertyId );
-            if ( statement.indexGetState( indexRule ) == InternalIndexState.ONLINE )
+            IndexDescriptor indexRule = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyId );
+            if ( statement.readOperations().indexGetState( indexRule ) == InternalIndexState.ONLINE )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( statement.nodesGetFromIndexLookup( indexRule, value ),
+                return map2nodes( statement.readOperations().nodesGetFromIndexLookup( indexRule, value ),
                         statement );
             }
         }
@@ -1530,13 +1539,13 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( long propertyId, Object value,
-            ReadStatement statement, long labelId )
+            Statement statement, long labelId )
     {
         return map2nodes( new PropertyValueFilteringNodeIdIterator(
-                statement.nodesGetForLabel( labelId ), statement, propertyId, value ), statement );
+                statement.readOperations().nodesGetForLabel( labelId ), statement.readOperations(), propertyId, value ), statement );
     }
 
-    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, ReadStatement statement )
+    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )
     {
         return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
         {
@@ -1551,11 +1560,11 @@ public abstract class InternalAbstractGraphDatabase
     private static class PropertyValueFilteringNodeIdIterator extends AbstractPrimitiveLongIterator
     {
         private final PrimitiveLongIterator nodesWithLabel;
-        private final ReadStatement statement;
+        private final ReadOperations statement;
         private final long propertyId;
         private final Object value;
 
-        PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadStatement statement,
+        PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadOperations statement,
                                               long propertyId, Object value )
         {
             this.nodesWithLabel = nodesWithLabel;

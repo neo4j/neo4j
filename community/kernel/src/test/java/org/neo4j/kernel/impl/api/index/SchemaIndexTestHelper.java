@@ -28,7 +28,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.Ignore;
 
 import org.neo4j.helpers.FutureAdapter;
-import org.neo4j.kernel.api.ReadStatement;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -110,13 +110,13 @@ public class SchemaIndexTestHelper
         }
     }
     
-    public static void awaitIndexOnline( ReadStatement statement, IndexDescriptor indexRule )
+    public static void awaitIndexOnline( ReadOperations readOperations, IndexDescriptor indexRule )
             throws IndexNotFoundKernelException
     {
         long start = System.currentTimeMillis();
         while(true)
         {
-            if ( statement.indexGetState( indexRule ) == InternalIndexState.ONLINE )
+            if ( readOperations.indexGetState( indexRule ) == InternalIndexState.ONLINE )
            {
                break;
            }
