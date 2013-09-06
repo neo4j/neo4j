@@ -67,7 +67,7 @@ object RelatedTo {
 }
 
 object SingleOptionalNode {
-  def apply(name:String, labels:Seq[KeyToken]=Seq.empty)=SingleNode(name, labels, optional = true)
+  def apply(name:String, labels:Seq[KeyToken]=Seq.empty) = SingleNode(name, labels, optional = true)
 }
 
 case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, optional: Boolean = false) extends Pattern {
@@ -79,7 +79,7 @@ case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, optional:
 
   def relTypes = Seq.empty
 
-  def rewrite(f: (Expression) => Expression) = this
+  def rewrite(f: (Expression) => Expression) = SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), optional)
 
   def children = Seq.empty
 
@@ -89,7 +89,7 @@ case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, optional:
 
   override def toString: String = {
     val namePart = if (notNamed(name)) s"${name.drop(9)}" else name
-    val labelPart = if (labels.isEmpty) "" else labels.map(_.name).mkString(":", ":", "")
+    val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
     val optPart = if(optional) "?" else ""
     "(" + namePart + labelPart + optPart + ")"
   }
@@ -113,7 +113,7 @@ case class RelatedTo(left: SingleNode,
   val possibleStartPoints: Seq[(String, MapType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->RelationshipType()
 
   def rewrite(f: (Expression) => Expression) =
-    new RelatedTo(left, right, relName, relTypes, direction, optional)
+    new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, optional)
 
   def rels = Seq(relName)
 
@@ -174,7 +174,10 @@ case class VarLengthRelatedTo(pathName: String,
     if (info == "") "" else "[" + info + "]"
   }
 
-  def rewrite(f: (Expression) => Expression) = new VarLengthRelatedTo(pathName,left,right, minHops,maxHops,relTypes,direction,relIterator,optional)
+  def rewrite(f: (Expression) => Expression) =
+    new VarLengthRelatedTo(pathName, left.rewrite(f), right.rewrite(f),
+      minHops, maxHops, relTypes, direction, relIterator, optional)
+
   lazy val possibleStartPoints: Seq[(String, AnyType)] =
     left.possibleStartPoints ++
       right.possibleStartPoints :+
@@ -200,6 +203,7 @@ case class ShortestPath(pathName: String,
                         single: Boolean,
                         relIterator: Option[String])
   extends PathPattern {
+
   override def toString: String = pathName + "=" + algo + "(" + left + leftArrow(dir) + relInfo + rightArrow(dir) + right + ")"
 
   private def algo = if (single) "singleShortestPath" else "allShortestPath"
@@ -219,7 +223,8 @@ case class ShortestPath(pathName: String,
 
   lazy val possibleStartPoints: Seq[(String, NodeType)] = left.possibleStartPoints ++ right.possibleStartPoints
 
-  def rewrite(f: Expression => Expression) = new ShortestPath(pathName,left,right,relTypes,dir,maxDepth,optional,single,relIterator)
+  def rewrite(f: Expression => Expression) =
+    new ShortestPath(pathName, left.rewrite(f), right.rewrite(f), relTypes, dir, maxDepth, optional, single, relIterator)
 
   def rels = Seq()
 

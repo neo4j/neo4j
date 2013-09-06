@@ -23,6 +23,8 @@ import org.neo4j.graphdb.ConstraintViolationException
 import spi.QueryContext
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.cypher.NodeStillHasRelationshipsException
+import org.neo4j.cypher.internal.helpers.Materialized
+import scala.collection
 
 /**
  * An iterator that decorates an inner iterator, and calls close() on the QueryContext once
@@ -41,7 +43,8 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   }
 
   def next(): Map[String, Any] = failIfThrows {
-    val result: Map[String, Any] = inner.next().mapValues(materialize).toMap
+    val input: collection.Map[String, Any] = inner.next()
+    val result: Map[String, Any] = Materialized.mapValues(input, materialize)
     if (!inner.hasNext) {
       close()
     }
