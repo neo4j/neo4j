@@ -162,6 +162,21 @@
               </target>
             </configuration>
           </execution>
+          <execution>
+            <id>fix-license-line-endings</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target name="fix-license-line-endings">
+                <mkdir dir="${project.build.directory}/licenses" />
+                <fixcrlf file="${project.basedir}/../../community/LICENSE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
+                <fixcrlf file="${project.basedir}/LICENSES.txt" destDir="${project.build.directory}/licenses" eol="dos" />
+                <fixcrlf file="${project.basedir}/NOTICE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
+              </target>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 
