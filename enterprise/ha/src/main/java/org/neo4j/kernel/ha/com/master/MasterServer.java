@@ -19,16 +19,26 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.jboss.netty.channel.Channel;
-import org.neo4j.com.*;
+import org.neo4j.com.Protocol;
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.RequestType;
+import org.neo4j.com.Server;
+import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.kernel.ha.HaRequestType20;
 import org.neo4j.kernel.ha.MasterClient20;
 import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.tooling.RealClock;
 
-import java.io.IOException;
-import java.util.*;
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -42,7 +52,7 @@ public class MasterServer extends Server<Master, Void>
                          TxChecksumVerifier txVerifier ) throws IOException
     {
         super( requestTarget, config, logging, FRAME_LENGTH, MasterClient20.PROTOCOL_VERSION, txVerifier,
-                new RealClock() );
+                SYSTEM_CLOCK );
     }
 
     @Override

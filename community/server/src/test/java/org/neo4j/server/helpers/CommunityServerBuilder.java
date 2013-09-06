@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.CommunityNeoServer;
@@ -44,13 +46,10 @@ import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.tooling.Clock;
-import org.neo4j.tooling.FakeClock;
-import org.neo4j.tooling.RealClock;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
@@ -447,7 +446,7 @@ public class CommunityServerBuilder
         @Override
         protected DatabaseActions createDatabaseActions()
         {
-            Clock clockToUse = (clock != null) ? clock : new RealClock();
+            Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
 
             return new DatabaseActions(
                     new LeaseManager( clockToUse ),

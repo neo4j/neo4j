@@ -23,6 +23,7 @@ import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -55,7 +56,6 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.tooling.RealClock;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -116,7 +116,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels,
-                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( ResourcePool.DEFAULT_CHECK_INTERVAL, new RealClock() ),
+                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( ResourcePool.DEFAULT_CHECK_INTERVAL, SYSTEM_CLOCK ),
                 new LoggingResourcePoolMonitor())
         {
             @Override

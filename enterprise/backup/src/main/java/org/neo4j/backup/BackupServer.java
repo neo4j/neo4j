@@ -31,7 +31,8 @@ import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.tooling.RealClock;
+
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 class BackupServer extends Server<TheBackupInterface, Object>
 {
@@ -68,7 +69,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
                 return server;
             }
         }, logging, FRAME_LENGTH, PROTOCOL_VERSION,
-                TxChecksumVerifier.ALWAYS_MATCH, new RealClock() );
+                TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK );
     }
 
     @Override

@@ -17,13 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.helpers;
 
-public class RealClock implements Clock
+import java.util.concurrent.TimeUnit;
+
+public class FakeClock implements Clock
 {
+    private long time = 0;
+
     @Override
     public long currentTimeMillis()
     {
-        return System.currentTimeMillis();
+        return time;
+    }
+
+    public void forward( long amount, TimeUnit timeUnit)
+    {
+        time = time + timeUnit.toMillis( amount );
     }
 }

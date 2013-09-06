@@ -19,12 +19,13 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
 
+import org.junit.Test;
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
-import org.neo4j.tooling.FakeClock;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotEquals;
@@ -32,10 +33,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
-
-import java.util.concurrent.TimeUnit;
 
 public class TransactionHandleRegistryTest
 {

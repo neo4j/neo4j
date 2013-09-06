@@ -22,6 +22,7 @@ package org.neo4j.server.enterprise.helpers;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
@@ -34,9 +35,8 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.tooling.Clock;
-import org.neo4j.tooling.RealClock;
 
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
@@ -99,7 +99,7 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
         @Override
         protected DatabaseActions createDatabaseActions()
         {
-            Clock clockToUse = (clock != null) ? clock : new RealClock();
+            Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
 
             return new DatabaseActions(
                     new LeaseManager( clockToUse ),
