@@ -31,20 +31,25 @@ import org.neo4j.kernel.impl.api.state.TxState;
 
 public class Statement implements TxState.Holder, Closeable
 {
+    private final KernelTransactionImplementation transaction;
     protected final LockHolder lockHolder;
     protected final TxState.Holder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
     private LabelScanReader labelScanReader;
     private int referenceCount;
+    private final OperationsFacade facade;
+    private boolean closed;
 
-    public Statement(IndexReaderFactory indexReaderFactory, LabelScanStore labelScanStore,
+    public Statement(KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory, LabelScanStore labelScanStore,
                      TxState.Holder txStateHolder, LockHolder lockHolder )
     {
+        this.transaction = transaction;
         this.lockHolder = lockHolder;
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
+        this.facade = new OperationsFacade(transaction, this);
     }
 
     @Override
@@ -68,7 +73,37 @@ public class Statement implements TxState.Holder, Closeable
     @Override
     public void close()
     {
-        indexReaderFactory.close();
+        if ( !closed && release() )
+        {
+            closed = true;
+            indexReaderFactory.close();
+            transaction.releaseStatement( this );
+        }
+    }
+
+    void assertOpen()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( "The statement has been closed." );
+        }
+    }
+
+    public ReadOperations readOperations()
+    {
+        return facade;
+    }
+
+    public DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeException
+    {
+        transaction.upgradeToDataTransaction();
+        return facade;
+    }
+
+    public SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeException
+    {
+        transaction.upgradeToSchemaTransaction();
+        return facade;
     }
 
     public LockHolder locks()
@@ -95,7 +130,7 @@ public class Statement implements TxState.Holder, Closeable
         referenceCount++;
     }
 
-    final boolean release()
+    private boolean release()
     {
         return --referenceCount == 0;
     }

@@ -23,7 +23,7 @@ import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.profiler.Profiler
-import internal.spi.{PlanContext, QueryContext, QueryType}
+import internal.spi.{PlanContext, QueryContext}
 import internal.ClosingIterator
 import internal.commands._
 import org.neo4j.cypher.internal.symbols.SymbolTable
@@ -50,7 +50,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, true)
-      def queryType: QueryType = inputQuery.queryType
     }
   }
 
@@ -163,7 +162,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {
-    val errors = builders.flatMap(builder => builder.missingDependencies(plan).map(builder -> _)).toList.
+    val errors = builders.flatMap(builder => builder.missingDependencies(plan).map(builder ->)).toList.
       sortBy {
       case (builder, _) => builder.priority
     }

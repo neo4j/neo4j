@@ -24,8 +24,10 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.DataStatement;
-import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -49,12 +51,11 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
     private long labelId, propertyKeyId;
 
     @Before
-    public void createKeys() throws SchemaKernelException
+    public void createKeys() throws Exception
     {
-        SchemaStatement statement = schemaStatementInNewTransaction();
+        SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
         this.labelId = statement.labelGetOrCreateForName( "Person" );
         this.propertyKeyId = statement.propertyKeyGetOrCreateForName( "foo" );
-        statement.close();
         commit();
     }
 
@@ -85,9 +86,8 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
         long nodeId = createNodeWithValue( value );
 
         // when looking for it
-        DataStatement statement = dataStatementInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
         long foundId = statement.nodeGetUniqueFromIndexLookup( index, value );
-        statement.close();
         commit();
 
         // then
@@ -103,9 +103,8 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
         createNodeWithValue( "other_" + value );
 
         // when looking for it
-        DataStatement statement = dataStatementInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
         long foundId = statement.nodeGetUniqueFromIndexLookup( index, value );
-        statement.close();
         commit();
 
         // then
@@ -138,7 +137,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
         final IndexDescriptor index = createUniquenessConstraint();
         final String value = "value";
 
-        DataStatement dataStatement = dataStatementInNewTransaction();
+        DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
         long nodeId = dataStatement.nodeCreate();
         dataStatement.nodeAddLabel( nodeId, labelId );
 
@@ -152,18 +151,14 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
             {
                 latch.awaitStart();
                 Transaction tx = db.beginTx();
-                DataStatement statement = statementContextProvider.dataStatement();
+                Statement statement = statementContextProvider.statement();
                 try
                 {
-                    statement.nodeGetUniqueFromIndexLookup( index, value );
+                    statement.readOperations().nodeGetUniqueFromIndexLookup( index, value );
                     statement.close();
                     tx.success();
                 }
-                catch ( IndexNotFoundKernelException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                catch ( IndexBrokenKernelException e )
+                catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
                 {
                     throw new RuntimeException( e );
                 }
@@ -199,7 +194,6 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
 
         }
 
-        dataStatement.close();
         commit();
         latch.awaitFinish();
     }
@@ -209,23 +203,22 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
         return StatementConstants.NO_SUCH_NODE == foundId;
     }
 
-    private long createNodeWithValue( String value ) throws EntityNotFoundException, ConstraintValidationKernelException
+    private long createNodeWithValue( String value )
+            throws EntityNotFoundException, ConstraintValidationKernelException, InvalidTransactionTypeException
     {
-        DataStatement dataStatement = dataStatementInNewTransaction();
+        DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
         long nodeId = dataStatement.nodeCreate();
         dataStatement.nodeAddLabel( nodeId, labelId );
         dataStatement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, value ) );
-        dataStatement.close();
         commit();
         return nodeId;
     }
 
     private IndexDescriptor createUniquenessConstraint() throws Exception
     {
-        SchemaStatement schemaStatement = schemaStatementInNewTransaction();
+        SchemaWriteOperations schemaStatement = schemaWriteOperationsInNewTransaction();
         schemaStatement.uniquenessConstraintCreate( labelId, propertyKeyId );
         IndexDescriptor result = schemaStatement.uniqueIndexGetForLabelAndPropertyKey( labelId, propertyKeyId );
-        schemaStatement.close();
         commit();
         return result;
     }

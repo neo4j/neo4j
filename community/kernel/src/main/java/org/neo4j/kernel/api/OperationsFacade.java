@@ -28,6 +28,12 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -40,45 +46,27 @@ import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
-import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.Token;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 
-public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRead, SchemaState, AutoCloseable
+public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
     private final KernelTransactionImplementation transaction;
-    private boolean closed;
-    final Statement state;
+    final Statement statement;
 
-    ReadStatement( KernelTransactionImplementation transaction, Statement state )
+    OperationsFacade( KernelTransactionImplementation transaction, Statement statement )
     {
         this.transaction = transaction;
-        this.state = state;
+        this.statement = statement;
     }
 
-    void assertOpen()
-    {
-        if ( closed )
-        {
-            throw new IllegalStateException( "The statement has been closed." );
-        }
-    }
-
-    @Override
-    public void close()
-    {
-        if ( !closed )
-        {
-            closed = true;
-            transaction.releaseStatement( state );
-        }
-    }
-
+    // <DataRead>
     final KeyReadOperations tokenRead()
     {
         return transaction.operations.keyReadOperations();
@@ -104,7 +92,7 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
         return transaction.operations.schemaReadOperations();
     }
 
-    final SchemaWriteOperations schemaWrite()
+    final org.neo4j.kernel.api.operations.SchemaWriteOperations schemaWrite()
     {
         return transaction.operations.schemaWriteOperations();
     }
@@ -123,97 +111,97 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     @Override
     public PrimitiveLongIterator nodesGetForLabel( long labelId )
     {
-        assertOpen();
+        statement.assertOpen();
         if ( labelId == StatementConstants.NO_SUCH_LABEL )
         {
             return emptyPrimitiveLongIterator();
         }
-        return dataRead().nodesGetForLabel( state, labelId );
+        return dataRead().nodesGetForLabel( statement, labelId );
     }
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexLookup( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        assertOpen();
-        return dataRead().nodesGetFromIndexLookup( state, index, value );
+        statement.assertOpen();
+        return dataRead().nodesGetFromIndexLookup( statement, index, value );
     }
 
     @Override
     public long nodeGetUniqueFromIndexLookup( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        assertOpen();
-        return dataRead().nodeGetUniqueFromIndexLookup( state, index, value );
+        statement.assertOpen();
+        return dataRead().nodeGetUniqueFromIndexLookup( statement, index, value );
     }
 
     @Override
     public boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException
     {
-        assertOpen();
-        return labelId != StatementConstants.NO_SUCH_LABEL && dataRead().nodeHasLabel( state, nodeId, labelId );
+        statement.assertOpen();
+        return labelId != StatementConstants.NO_SUCH_LABEL && dataRead().nodeHasLabel( statement, nodeId, labelId );
     }
 
     @Override
     public PrimitiveLongIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
     {
-        assertOpen();
-        return dataRead().nodeGetLabels( state, nodeId );
+        statement.assertOpen();
+        return dataRead().nodeGetLabels( statement, nodeId );
     }
 
     @Override
     public Property nodeGetProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
     {
-        assertOpen();
+        statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
             return Property.noNodeProperty( nodeId, propertyKeyId );
         }
-        return dataRead().nodeGetProperty( state, nodeId, propertyKeyId );
+        return dataRead().nodeGetProperty( statement, nodeId, propertyKeyId );
     }
 
     @Override
     public Property relationshipGetProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException
     {
-        assertOpen();
+        statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
             return Property.noRelationshipProperty( relationshipId, propertyKeyId );
         }
-        return dataRead().relationshipGetProperty( state, relationshipId, propertyKeyId );
+        return dataRead().relationshipGetProperty( statement, relationshipId, propertyKeyId );
     }
 
     @Override
     public Property graphGetProperty( long propertyKeyId )
     {
-        assertOpen();
+        statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
             return Property.noGraphProperty( propertyKeyId );
         }
-        return dataRead().graphGetProperty( state, propertyKeyId );
+        return dataRead().graphGetProperty( statement, propertyKeyId );
     }
 
     @Override
     public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
-        assertOpen();
-        return dataRead().nodeGetAllProperties( state, nodeId );
+        statement.assertOpen();
+        return dataRead().nodeGetAllProperties( statement, nodeId );
     }
 
     @Override
     public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
             throws EntityNotFoundException
     {
-        assertOpen();
-        return dataRead().relationshipGetAllProperties( state, relationshipId );
+        statement.assertOpen();
+        return dataRead().relationshipGetAllProperties( statement, relationshipId );
     }
 
     @Override
     public Iterator<DefinedProperty> graphGetAllProperties()
     {
-        assertOpen();
-        return dataRead().graphGetAllProperties( state );
+        statement.assertOpen();
+        return dataRead().graphGetAllProperties( statement );
     }
     // </DataRead>
 
@@ -222,22 +210,22 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, final long propertyKeyId )
             throws SchemaRuleNotFoundException
     {
-        assertOpen();
-        return schemaRead().indexesGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
+        statement.assertOpen();
+        return schemaRead().indexesGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( long labelId )
     {
-        assertOpen();
-        return schemaRead().indexesGetForLabel( state, labelId );
+        statement.assertOpen();
+        return schemaRead().indexesGetForLabel( statement, labelId );
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetAll()
     {
-        assertOpen();
-        return schemaRead().indexesGetAll( state );
+        statement.assertOpen();
+        return schemaRead().indexesGetAll( statement );
     }
 
     @Override
@@ -274,50 +262,50 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId )
     {
-        assertOpen();
-        return schemaRead().uniqueIndexesGetForLabel( state, labelId );
+        statement.assertOpen();
+        return schemaRead().uniqueIndexesGetForLabel( statement, labelId );
     }
 
     @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
-        assertOpen();
-        return schemaRead().uniqueIndexesGetAll( state );
+        statement.assertOpen();
+        return schemaRead().uniqueIndexesGetAll( statement );
     }
 
     @Override
     public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        assertOpen();
-        return schemaRead().indexGetState( state, descriptor );
+        statement.assertOpen();
+        return schemaRead().indexGetState( statement, descriptor );
     }
 
     @Override
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        assertOpen();
-        return schemaRead().indexGetFailure( state, descriptor );
+        statement.assertOpen();
+        return schemaRead().indexGetFailure( statement, descriptor );
     }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
     {
-        assertOpen();
-        return schemaRead().constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
+        statement.assertOpen();
+        return schemaRead().constraintsGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
     }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId )
     {
-        assertOpen();
-        return schemaRead().constraintsGetForLabel( state, labelId );
+        statement.assertOpen();
+        return schemaRead().constraintsGetForLabel( statement, labelId );
     }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetAll()
     {
-        assertOpen();
-        return schemaRead().constraintsGetAll( state );
+        statement.assertOpen();
+        return schemaRead().constraintsGetAll( statement );
     }
     // </SchemaRead>
 
@@ -325,50 +313,50 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     @Override
     public long labelGetForName( String labelName )
     {
-        assertOpen();
-        return tokenRead().labelGetForName( state, labelName );
+        statement.assertOpen();
+        return tokenRead().labelGetForName( statement, labelName );
     }
 
     @Override
     public String labelGetName( long labelId ) throws LabelNotFoundKernelException
     {
-        assertOpen();
-        return tokenRead().labelGetName( state, labelId );
+        statement.assertOpen();
+        return tokenRead().labelGetName( statement, labelId );
     }
 
     @Override
     public long propertyKeyGetForName( String propertyKeyName )
     {
-        assertOpen();
-        return tokenRead().propertyKeyGetForName( state, propertyKeyName );
+        statement.assertOpen();
+        return tokenRead().propertyKeyGetForName( statement, propertyKeyName );
     }
 
     @Override
     public String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
     {
-        assertOpen();
-        return tokenRead().propertyKeyGetName( state, propertyKeyId );
+        statement.assertOpen();
+        return tokenRead().propertyKeyGetName( statement, propertyKeyId );
     }
 
     @Override
     public Iterator<Token> labelsGetAllTokens()
     {
-        assertOpen();
-        return tokenRead().labelsGetAllTokens( state );
+        statement.assertOpen();
+        return tokenRead().labelsGetAllTokens( statement );
     }
 
     @Override
     public long relationshipTypeGetForName( String relationshipTypeName )
     {
-        assertOpen();
-        return tokenRead().relationshipTypeGetForName( state, relationshipTypeName );
+        statement.assertOpen();
+        return tokenRead().relationshipTypeGetForName( statement, relationshipTypeName );
     }
 
     @Override
     public String relationshipTypeGetName( long relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException
     {
-        assertOpen();
-        return tokenRead().relationshipTypeGetName( state, relationshipTypeId );
+        statement.assertOpen();
+        return tokenRead().relationshipTypeGetName( statement, relationshipTypeId );
     }
     // </TokenRead>
 
@@ -376,22 +364,22 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     @Override
     public long labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
-        assertOpen();
-        return tokenWrite().labelGetOrCreateForName( state, labelName );
+        statement.assertOpen();
+        return tokenWrite().labelGetOrCreateForName( statement, labelName );
     }
 
     @Override
     public long propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
-        assertOpen();
-        return tokenWrite().propertyKeyGetOrCreateForName( state, propertyKeyName );
+        statement.assertOpen();
+        return tokenWrite().propertyKeyGetOrCreateForName( statement, propertyKeyName );
     }
 
     @Override
     public long relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
-        assertOpen();
-        return tokenWrite().relationshipTypeGetOrCreateForName( state, relationshipTypeName );
+        statement.assertOpen();
+        return tokenWrite().relationshipTypeGetOrCreateForName( statement, relationshipTypeName );
     }
     // </TokenWrite>
 
@@ -399,7 +387,129 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     @Override
     public <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator )
     {
-        return schemaState().schemaStateGetOrCreate( state, key, creator );
+        return schemaState().schemaStateGetOrCreate( statement, key, creator );
     }
     // </SchemaState>
+
+    // <DataWrite>
+    @Override
+    public long nodeCreate()
+    {
+        statement.assertOpen();
+        return legacyOps().nodeCreate( statement );
+    }
+
+    @Override
+    public void nodeDelete( long nodeId )
+    {
+        statement.assertOpen();
+        dataWrite().nodeDelete( statement, nodeId );
+    }
+
+    @Override
+    public long relationshipCreate( long relationshipTypeId, long startNodeId, long endNodeId )
+            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
+    {
+        statement.assertOpen();
+        return legacyOps().relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
+    }
+
+    @Override
+    public void relationshipDelete( long relationshipId )
+    {
+        statement.assertOpen();
+        dataWrite().relationshipDelete( statement, relationshipId );
+    }
+
+    @Override
+    public boolean nodeAddLabel( long nodeId, long labelId )
+            throws EntityNotFoundException, ConstraintValidationKernelException
+    {
+        statement.assertOpen();
+        return dataWrite().nodeAddLabel( statement, nodeId, labelId );
+    }
+
+    @Override
+    public boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataWrite().nodeRemoveLabel( statement, nodeId, labelId );
+    }
+
+    @Override
+    public Property nodeSetProperty( long nodeId, DefinedProperty property )
+            throws EntityNotFoundException, ConstraintValidationKernelException
+    {
+        statement.assertOpen();
+        return dataWrite().nodeSetProperty( statement, nodeId, property );
+    }
+
+    @Override
+    public Property relationshipSetProperty( long relationshipId, DefinedProperty property )
+            throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataWrite().relationshipSetProperty( statement, relationshipId, property );
+    }
+
+    @Override
+    public Property graphSetProperty( DefinedProperty property )
+    {
+        statement.assertOpen();
+        return dataWrite().graphSetProperty( statement, property );
+    }
+
+    @Override
+    public Property nodeRemoveProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataWrite().nodeRemoveProperty( statement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataWrite().relationshipRemoveProperty( statement, relationshipId, propertyKeyId );
+    }
+
+    @Override
+    public Property graphRemoveProperty( long propertyKeyId )
+    {
+        statement.assertOpen();
+        return dataWrite().graphRemoveProperty( statement, propertyKeyId );
+    }
+    // </DataWrite>
+
+    // <SchemaWrite>
+    @Override
+    public IndexDescriptor indexCreate( long labelId, long propertyKeyId )
+            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
+    {
+        statement.assertOpen();
+        return schemaWrite().indexCreate( statement, labelId, propertyKeyId );
+    }
+
+    @Override
+    public void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
+    {
+        statement.assertOpen();
+        schemaWrite().indexDrop( statement, descriptor );
+    }
+
+    @Override
+    public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
+    {
+        statement.assertOpen();
+        return schemaWrite().uniquenessConstraintCreate( statement, labelId, propertyKeyId );
+    }
+
+    @Override
+    public void constraintDrop( UniquenessConstraint constraint ) throws DropConstraintFailureException
+    {
+        statement.assertOpen();
+        schemaWrite().constraintDrop( statement, constraint );
+    }
+    // </SchemaWrite>
 }

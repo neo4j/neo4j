@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 import org.neo4j.cypher.internal.spi.TokenContext
 import org.neo4j.kernel.api.exceptions.{PropertyKeyNotFoundException, LabelNotFoundKernelException}
 import org.neo4j.kernel.api.operations.KeyReadOperations
-import org.neo4j.kernel.api.ReadStatement
+import org.neo4j.kernel.api.Statement
 
-abstract class TransactionBoundTokenContext(statement: ReadStatement) extends TokenContext
+abstract class TransactionBoundTokenContext(statement: Statement) extends TokenContext
 {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Long] =
     TokenContext.tryGet[PropertyKeyNotFoundException](getPropertyKeyId(propertyKeyName))
 
   def getPropertyKeyId(propertyKeyName: String) =
   {
-    val propertyId: Long = statement.propertyKeyGetForName(propertyKeyName)
+    val propertyId: Long = statement.readOperations().propertyKeyGetForName(propertyKeyName)
     if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
     {
       throw new PropertyKeyNotFoundException("No such property.", null)
@@ -39,11 +39,11 @@ abstract class TransactionBoundTokenContext(statement: ReadStatement) extends To
     propertyId
   }
 
-  def getPropertyKeyName(propertyKeyId: Long): String = statement.propertyKeyGetName(propertyKeyId)
+  def getPropertyKeyName(propertyKeyId: Long): String = statement.readOperations().propertyKeyGetName(propertyKeyId)
 
   def getLabelId(labelName: String): Long =
   {
-    val labelId: Long = statement.labelGetForName(labelName)
+    val labelId: Long = statement.readOperations().labelGetForName(labelName)
     if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
     {
       throw new LabelNotFoundKernelException("No such label", null)
@@ -54,5 +54,5 @@ abstract class TransactionBoundTokenContext(statement: ReadStatement) extends To
   def getOptLabelId(labelName: String): Option[Long] =
     TokenContext.tryGet[LabelNotFoundKernelException](getLabelId(labelName))
 
-  def getLabelName(labelId: Long): String = statement.labelGetName(labelId)
+  def getLabelName(labelId: Long): String = statement.readOperations().labelGetName(labelId)
 }

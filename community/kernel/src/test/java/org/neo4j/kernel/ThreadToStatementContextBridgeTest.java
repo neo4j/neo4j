@@ -41,7 +41,7 @@ public class ThreadToStatementContextBridgeTest
         // When
         try
         {
-            bridge.dataStatement();
+            bridge.statement();
             fail( "Should throw" );
         }
         catch ( NotInTransactionException e )

@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, UniqueLink, UpdateAction}
 import expressions.{Expression, AggregationExpression}
 import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.spi.QueryType
-import org.neo4j.cypher.internal.spi.DataQuery
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
@@ -50,7 +48,6 @@ trait AbstractQuery {
   def setQueryText(t:String):AbstractQuery
   def getQueryText: String = queryString.text
   def verifySemantics() {}
-  def queryType: QueryType = DataQuery
 }
 
 case class Query(returns: Return,

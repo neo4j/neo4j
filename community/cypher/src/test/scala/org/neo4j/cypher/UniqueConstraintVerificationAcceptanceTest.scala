@@ -25,7 +25,7 @@ import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
-import org.neo4j.kernel.api.DataStatement
+import org.neo4j.kernel.api.OperationsFacade
 
 class UniqueConstraintVerificationAcceptanceTest
   extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
@@ -39,7 +39,7 @@ class UniqueConstraintVerificationAcceptanceTest
 
     //THEN
     graph.inTx {
-      context: DataStatement =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("propertyKey")
         val label = context.labelGetForName("Label")
 
@@ -59,7 +59,7 @@ class UniqueConstraintVerificationAcceptanceTest
 
     // THEN
     graph.inTx {
-      context: DataStatement =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("name")
         val label = context.labelGetForName("Person")
 
@@ -81,7 +81,7 @@ class UniqueConstraintVerificationAcceptanceTest
 
     // THEN
     graph.inTx {
-      context: DataStatement =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("name")
         val label = context.labelGetForName("Person")
 
@@ -101,7 +101,7 @@ class UniqueConstraintVerificationAcceptanceTest
 
     //THEN
     graph.inTx {
-      context: DataStatement =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("propertyKey")
         val label = context.labelGetForName("Label")
 
@@ -131,7 +131,7 @@ class UniqueConstraintVerificationAcceptanceTest
     }
 
     graph.inTx {
-      context: DataStatement =>
+      context: OperationsFacade =>
         val prop = context.propertyKeyGetForName("id")
         val label = context.labelGetForName("Person")
 

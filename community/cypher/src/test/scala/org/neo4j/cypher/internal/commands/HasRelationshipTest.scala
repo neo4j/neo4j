@@ -25,10 +25,8 @@ import org.scalatest.Assertions
 import org.junit.{Before, Test}
 import org.neo4j.graphdb.{Node, Direction}
 import org.junit.Assert._
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.pipes.{QueryStateHelper, NullDecorator, QueryState}
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 import org.neo4j.cypher.internal.ExecutionContext
-
 
 class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null
@@ -46,7 +44,8 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
     state = QueryStateHelper.queryStateFrom(graph)
   }
 
-  def createPredicate(dir: Direction, relType: Seq[String]): HasRelationshipTo = HasRelationshipTo(Identifier("a"), Identifier("b"), dir, relType)
+  def createPredicate(dir: Direction, relType: Seq[String]): HasRelationshipTo = HasRelationshipTo(Identifier("a"),
+    Identifier("b"), dir, relType)
 
   @Test def givenTwoRelatedNodesThenReturnsTrue() {
     relate(a, b)

@@ -170,6 +170,7 @@ public class TransactorTest
         order.verify( work ).perform( operations, statement );
         order.verify( statement ).close();
         order.verify( kernelTransaction ).commit();
+        order.verify( statement ).close();
         verifyNoMoreInteractions( txManager, operations, statement, work );
     }
 

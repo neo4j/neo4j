@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundExecutionContext
 import org.neo4j.cypher.internal.commands.values.TokenType.{Label, PropertyKey}
 import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.mutation.DeletePropertyAction
@@ -60,7 +60,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
     val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
     val execPlanBuilder = new FakeExecPlanBuilder(graph, Seq(new ExplodingPipeBuilder))
-    val queryContext = new TransactionBoundQueryContext(graph, tx, dataStatement)
+    val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
 
     // when
     intercept[ExplodingException] {
@@ -86,7 +86,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
       .returns(ReturnItem(Identifier("x"), "x"))
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph)
-    val queryContext = new TransactionBoundQueryContext(graph, tx, dataStatement)
+    val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
     val pkId = queryContext.getPropertyKeyId("foo")
 
     // when
@@ -100,14 +100,13 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
     val tx = graph.beginTx()
     val node = graph.createNode(DynamicLabel.label("Person"))
 
-    val identifier = Identifier("x")
     val q = Query
       .start(NodeById("x", node.getId))
       .where(HasLabel(Identifier("x"), Label("Person")))
       .returns(ReturnItem(Identifier("x"), "x"))
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph)
-    val queryContext = new TransactionBoundQueryContext(graph, tx, dataStatement)
+    val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
     val labelId = queryContext.getLabelId("Person")
 
     // when

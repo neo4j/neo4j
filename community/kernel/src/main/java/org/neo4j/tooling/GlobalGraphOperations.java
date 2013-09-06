@@ -33,7 +33,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.ReadStatement;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
@@ -144,15 +144,16 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<Label> iterator()
             {
-                ReadStatement statement = statementCtxProvider.readStatement();
-                return cleanupService.resourceIterator( map( new Function<Token, Label>() {
+                Statement statement = statementCtxProvider.statement();
+                return cleanupService.resourceIterator( map( new Function<Token, Label>()
+                {
 
                     @Override
                     public Label apply( Token labelToken )
                     {
                         return label( labelToken.name() );
                     }
-                }, statement.labelsGetAllTokens() ), statement );
+                }, statement.readOperations().labelsGetAllTokens() ), statement );
             }
         };
     }
@@ -181,9 +182,9 @@ public class GlobalGraphOperations
 
     private ResourceIterator<Node> allNodesWithLabel( String label )
     {
-        ReadStatement statement = statementCtxProvider.readStatement();
+        Statement statement = statementCtxProvider.statement();
 
-        long labelId = statement.labelGetForName( label );
+        long labelId = statement.readOperations().labelGetForName( label );
 
         if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
         {
@@ -191,7 +192,7 @@ public class GlobalGraphOperations
             return emptyIterator();
         }
 
-        final PrimitiveLongIterator nodeIds = statement.nodesGetForLabel( labelId );
+        final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
         return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
         {
             @Override

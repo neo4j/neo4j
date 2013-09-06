@@ -296,7 +296,7 @@ public class StoreStatementOperationsTest
                 neoStore,
                 resolver.resolveDependency( PersistenceManager.class ),
                 indexingService );
-        this.state = new Statement( new IndexReaderFactory.Caching( indexingService ), labelScanStore, null, null );
+        this.state = new Statement( null, new IndexReaderFactory.Caching( indexingService ), labelScanStore, null, null );
     }
 
     @After

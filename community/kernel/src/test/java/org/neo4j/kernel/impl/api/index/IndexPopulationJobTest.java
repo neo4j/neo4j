@@ -39,7 +39,8 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.ReadStatement;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -488,14 +489,14 @@ public class IndexPopulationJobTest
         stateHolder = new KernelSchemaStateStore();
 
         Transaction tx = db.beginTx();
-        ReadStatement statement = ctxProvider.readStatement();
-        firstLabelId = statement.labelGetOrCreateForName( FIRST.name() );
-        secondLabelId = statement.labelGetOrCreateForName( SECOND.name() );
+        Statement statement = ctxProvider.statement();
+        firstLabelId = statement.readOperations().labelGetOrCreateForName( FIRST.name() );
+        secondLabelId = statement.readOperations().labelGetOrCreateForName( SECOND.name() );
 
-        namePropertyKeyId = statement.propertyKeyGetOrCreateForName( name );
-        agePropertyKeyId = statement.propertyKeyGetOrCreateForName( age );
+        namePropertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( name );
+        agePropertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( age );
 
-        statement.labelGetOrCreateForName( SECOND.name() );
+        statement.readOperations().labelGetOrCreateForName( SECOND.name() );
         statement.close();
         tx.success();
         tx.finish();
@@ -538,7 +539,7 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         try
         {
-            ReadStatement statement = ctxProvider.readStatement();
+            ReadOperations statement = ctxProvider.statement().readOperations();
             descriptor = new IndexDescriptor( statement.labelGetForName( label.name() ),
                     statement.propertyKeyGetForName( propertyKey ) );
             tx.success();
@@ -582,7 +583,7 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         try
         {
-            result = ctxProvider.readStatement().propertyKeyGetForName( name );
+            result = ctxProvider.statement().readOperations().propertyKeyGetForName( name );
             tx.success();
         }
         finally

@@ -39,7 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -282,13 +282,14 @@ public class IndexRecoveryIT
         {
             ThreadToStatementContextBridge ctxProvider = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            DataStatement statement = ctxProvider.dataStatement();
+            Statement statement = ctxProvider.statement();
             for ( int number : new int[] {4, 10} )
             {
                 Node node = db.createNode( label );
                 node.setProperty( key, number );
-                updates.add( NodePropertyUpdate.add( node.getId(), statement.propertyKeyGetForName( key ), number,
-                        new long[] {statement.labelGetForName( label.name() )} ) );
+                updates.add( NodePropertyUpdate.add( node.getId(), statement.readOperations().propertyKeyGetForName(
+                        key ), number,
+                        new long[]{statement.readOperations().labelGetForName( label.name() )} ) );
             }
             statement.close();
             tx.success();

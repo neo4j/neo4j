@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.ReadStatement;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 
@@ -28,9 +28,9 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
  */
 public final class StatementTokenNameLookup implements TokenNameLookup
 {
-    private final ReadStatement statement;
+    private final ReadOperations statement;
 
-    public StatementTokenNameLookup( ReadStatement statement )
+    public StatementTokenNameLookup( org.neo4j.kernel.api.ReadOperations statement )
     {
         this.statement = statement;
     }
