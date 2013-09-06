@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.data.SimpleVal._
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.cypher.internal.helpers.Materialized
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {
 
@@ -40,7 +41,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
       def name = startItem.name
 
-      def description = startItem.args.mapValues(fromStr).toSeq
+      def description = Materialized.mapValues(startItem.args, fromStr).toSeq
     }
 
   def nodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =

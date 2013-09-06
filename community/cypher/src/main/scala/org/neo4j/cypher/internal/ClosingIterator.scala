@@ -53,7 +53,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
 
   private def materialize(v: Any): Any = v match {
     case (x: Stream[_])   => x.map(materialize).toList
-    case (x: Map[_, _])   => x.mapValues(materialize)
+    case (x: Map[_, _])   => Materialized.mapValues(x, materialize)
     case (x: Iterable[_]) => x.map(materialize)
     case x                => x
   }

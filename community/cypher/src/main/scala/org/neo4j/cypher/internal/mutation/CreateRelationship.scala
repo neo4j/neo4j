@@ -35,7 +35,7 @@ object RelationshipEndpoint {
 case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Seq[KeyToken], bare: Boolean)
   extends GraphElementPropertyFunctions {
   def rewrite(f: (Expression) => Expression): RelationshipEndpoint =
-    RelationshipEndpoint(node.rewrite(f), props.mapValues(_.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)), bare)
+    RelationshipEndpoint(node.rewrite(f), Materialized.mapValues(props, (expression: Expression) => expression.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)), bare)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     props.throwIfSymbolsMissing(symbols)
@@ -85,6 +85,6 @@ extends UpdateAction
   }
 
   override def symbolTableDependencies: Set[String] =
-    (props.flatMap(_._2.symbolTableDependencies)).toSet ++
+    props.flatMap(_._2.symbolTableDependencies).toSet ++
     from.symbolTableDependencies ++ to.symbolTableDependencies
 }

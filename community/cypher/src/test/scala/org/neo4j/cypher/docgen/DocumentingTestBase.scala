@@ -34,12 +34,11 @@ import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, Grap
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
-import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.helpers.{Materialized, GraphIcing}
 import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
 import org.neo4j.helpers.Settings
 import org.neo4j.cypher.internal.prettifier.Prettifier
 import org.neo4j.cypher.internal.CypherParser
-import scala.util.parsing.json.JSONObject
 import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
 
 trait DocumentationHelper extends GraphIcing {
@@ -267,8 +266,8 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     m map { case (k: String, v: T) => (node(k), v) }
 
   def mapMapValue(v: Any): Any = v match {
-    case v: Map[_, _] => v.mapValues(mapMapValue(_)).asJava
-    case seq: Seq[_] => seq.map(mapMapValue(_)).asJava
+    case v: Map[_, _] => Materialized.mapValues(v, mapMapValue).asJava
+    case seq: Seq[_] => seq.map(mapMapValue).asJava
     case v: Any => v
   }
 

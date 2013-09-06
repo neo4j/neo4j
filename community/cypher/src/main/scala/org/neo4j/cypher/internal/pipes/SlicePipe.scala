@@ -24,6 +24,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.helpers.Materialized
 
 class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) extends PipeWithSource(source) {
 
@@ -62,7 +63,9 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
       case (Some(s), Some(l)) => Seq("skip" -> s, "limit" -> l)
       case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
-    source.executionPlanDescription.andThen(this, "Slice", args.toMap.mapValues(SimpleVal.fromStr).toSeq: _*)
+    source
+      .executionPlanDescription
+      .andThen(this, "Slice", Materialized.mapValues(args.toMap, SimpleVal.fromStr).toSeq: _*)
   }
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
