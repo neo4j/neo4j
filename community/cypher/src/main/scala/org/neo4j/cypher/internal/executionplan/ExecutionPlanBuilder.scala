@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
 import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
-import org.neo4j.cypher.internal.commands.expressions.ExpressionResolver
+import org.neo4j.cypher.internal.executionplan.builders.prepare.KeyTokenResolver
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
@@ -75,9 +75,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   def buildQuery(inputQuery: Query, context: PlanContext): PipeAndIsUpdating = {
-    val plainPSQ = PartiallySolvedQuery(inputQuery)
-
-    val initialPSQ = plainPSQ.rewrite(ExpressionResolver(context))
+    val initialPSQ = PartiallySolvedQuery(inputQuery)
 
     var continue = true
     var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)
@@ -199,7 +197,8 @@ The Neo4j Team""")
     def myBuilders: Seq[PlanBuilder] = Seq(
       new IndexLookupBuilder,
       new StartPointChoosingBuilder,
-      new PredicateRewriter
+      new PredicateRewriter,
+      new KeyTokenResolver
     )
   }
 

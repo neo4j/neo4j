@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable}
 import org.neo4j.cypher.internal.ExecutionContext
 import collection.mutable
 import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.helpers.Materialized
 
 class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends PipeWithSource(source) {
 
@@ -32,7 +33,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
 
     // Run the return item expressions, and replace the execution context's with their values
     val returnExpressions = input.map(ctx => {
-      val newMap = expressions.mapValues(expression => expression(ctx)(state))
+      val newMap = Materialized.mapValues(expressions, (expression: Expression) => expression(ctx)(state))
       ctx.newFrom(newMap)
     })
 
@@ -58,7 +59,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
   override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Distinct")
 
   def symbols: SymbolTable = {
-    val identifiers = expressions.mapValues(e => e.evaluateType(AnyType(), source.symbols))
+    val identifiers = Materialized.mapValues(expressions, (e: Expression) => e.evaluateType(AnyType(), source.symbols))
     SymbolTable(identifiers)
   }
 

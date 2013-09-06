@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.symbols.{SymbolTable, RelationshipType}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.commands.values.KeyToken
+import org.neo4j.cypher.internal.helpers.Materialized
 
 object RelationshipEndpoint {
   def apply(name:String) = new RelationshipEndpoint(Identifier(name), Map.empty, Seq.empty, true)
@@ -34,7 +35,7 @@ object RelationshipEndpoint {
 case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Seq[KeyToken], bare: Boolean)
   extends GraphElementPropertyFunctions {
   def rewrite(f: (Expression) => Expression): RelationshipEndpoint =
-    RelationshipEndpoint(node.rewrite(f), props.mapValues(_.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)), bare)
+    RelationshipEndpoint(node.rewrite(f), Materialized.mapValues(props, (expression: Expression) => expression.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)), bare)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     props.throwIfSymbolsMissing(symbols)
@@ -59,8 +60,7 @@ extends UpdateAction
   override def rewrite(f: (Expression) => Expression) = {
     val newFrom = from.rewrite(f)
     val newTo = to.rewrite(f)
-    val newProps = props.mapValues(_.rewrite(f))
-
+    val newProps = Materialized.mapValues(props, (expr: Expression) => expr.rewrite(f))
     CreateRelationship(key, newFrom, newTo, typ, newProps)
   }
 
@@ -85,6 +85,6 @@ extends UpdateAction
   }
 
   override def symbolTableDependencies: Set[String] =
-    (props.flatMap(_._2.symbolTableDependencies)).toSet ++
+    props.flatMap(_._2.symbolTableDependencies).toSet ++
     from.symbolTableDependencies ++ to.symbolTableDependencies
 }
