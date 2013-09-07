@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Functions;
+import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 
 /**

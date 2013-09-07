@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestLogPruning
 {
@@ -106,7 +106,7 @@ public class TestLogPruning
     
     private GraphDatabaseAPI newDb( String logPruning )
     {
-        GraphDatabaseAPI db = new ImpermanentGraphDatabase( stringMap( Config.KEEP_LOGICAL_LOGS, logPruning ) )
+        GraphDatabaseAPI db = new ImpermanentGraphDatabase( stringMap( keep_logical_logs.name(), logPruning ) )
         {
             @Override
             protected FileSystemAbstraction createFileSystemAbstraction()

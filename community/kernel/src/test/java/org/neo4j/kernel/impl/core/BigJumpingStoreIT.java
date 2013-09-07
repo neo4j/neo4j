@@ -38,14 +38,13 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
@@ -102,7 +101,7 @@ public class BigJumpingStoreIT
     private Map<String, String> configForNoMemoryMapping()
     {
         return stringMap(
-                Config.USE_MEMORY_MAPPED_BUFFERS, "false",
+                use_memory_mapped_buffers.name(), "false",
                 "neostore.nodestore.db.mapped_memory", "0M",
                 "neostore.relationshipstore.db.mapped_memory", "0M",
                 "neostore.propertystore.db.mapped_memory", "0M",
@@ -124,7 +123,7 @@ public class BigJumpingStoreIT
     public void crudOnHighIds() throws Exception
     {
         // Create stuff
-        List<Node> nodes = new ArrayList<Node>();
+        List<Node> nodes = new ArrayList<>();
         Transaction tx = db.beginTx();
         int numberOfNodes = SIZE_PER_JUMP * 3;
         String stringValue = "a longer string than short";

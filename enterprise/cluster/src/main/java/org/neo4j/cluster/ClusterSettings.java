@@ -19,24 +19,24 @@
  */
 package org.neo4j.cluster;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
+import java.util.List;
+
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.Description;
+import org.neo4j.helpers.HostnamePort;
+
+import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.MANDATORY;
 import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.illegalValueMessage;
 import static org.neo4j.helpers.Settings.list;
 import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.setting;
-
-import java.util.List;
-
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
-import org.neo4j.helpers.HostnamePort;
 
 /**
  * Settings for cluster members

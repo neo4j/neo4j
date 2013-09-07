@@ -23,7 +23,6 @@ import java.io.File;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
@@ -41,9 +40,8 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
 
         return new PersistenceWindowPool( storageFileName, recordSize, fileChannel,
                 calculateMappedMemory( configuration, storageFileName ),
-                GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap( configuration.get( CommonAbstractStore
-                        .Configuration.use_memory_mapped_buffers )),
-                        isReadOnly( configuration ) && !isBackupSlave( configuration ), log );
+                configuration.get( CommonAbstractStore.Configuration.use_memory_mapped_buffers ),
+                isReadOnly( configuration ) && !isBackupSlave( configuration ), log );
     }
 
     private boolean isBackupSlave( Config configuration )

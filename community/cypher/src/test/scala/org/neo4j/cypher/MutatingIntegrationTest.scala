@@ -27,6 +27,7 @@ import org.scalatest.Assertions
 import org.neo4j.graphdb._
 import java.util.HashMap
 import org.neo4j.graphdb.Neo4jMatchers._
+import org.neo4j.tooling.GlobalGraphOperations
 
 class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
@@ -34,23 +35,23 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
 
   @Test
   def create_a_single_node() {
-    val before = graph.inTx(graph.getAllNodes.asScala.size)
+    val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
 
     val result = parseAndExecute("create a")
 
     assertStats(result, nodesCreated = 1)
-    assertInTx(graph.getAllNodes.asScala.size === before + 1)
+    assertInTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size === before + 1)
   }
 
 
   @Test
   def create_a_single_node_with_props_and_return_it() {
-    val before = graph.inTx(graph.getAllNodes.asScala.size)
+    val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
 
     val result = parseAndExecute("create (a {name : 'Andres'}) return a")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
-    assertInTx(graph.getAllNodes.asScala.size === before + 1)
+    assertInTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size === before + 1)
 
     val list = result.toList
     assert(list.size === 1)
@@ -345,7 +346,7 @@ return distinct center""")
     relate(a,b)
 
     parseAndExecute("""start n=node(*) match n-[r?]-() delete n,r""")
-    assertInTx(graph.getAllNodes.asScala.size === 0)
+    assertInTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size === 0)
   }
 
   @Test
@@ -355,7 +356,7 @@ return distinct center""")
     relate(a,b)
 
     parseAndExecute("""start n=node(1) match p=n-->() delete p""")
-    assertInTx(graph.getAllNodes.asScala.size === 1)
+    assertInTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size === 1)
   }
 
   @Test

@@ -22,6 +22,8 @@ package org.neo4j.server.rest;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import org.json.JSONException;
 import org.junit.Test;
 
@@ -31,6 +33,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
@@ -38,7 +41,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
@@ -674,7 +676,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = graphdb().beginTx() )
         {
             int count = 0;
-            for ( Node node : graphdb().getAllNodes() )
+            for(Node node : GlobalGraphOperations.at(graphdb()).getAllNodes())
             {
                 count++;
             }

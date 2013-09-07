@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -37,12 +28,19 @@ import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
 
 public class StoreUpgradeIntegrationTest
 {
@@ -54,7 +52,7 @@ public class StoreUpgradeIntegrationTest
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
 
         HashMap<String, String> params = new HashMap<String, String>();
-        params.put( Config.ALLOW_STORE_UPGRADE, "true" );
+        params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
 
         GraphDatabaseService database = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( workingDirectory.getPath() ).setConfig( params ).newGraphDatabase();
@@ -74,7 +72,7 @@ public class StoreUpgradeIntegrationTest
         // Now everything has lost the version info
 
         Map<String, String> params = new HashMap<String, String>();
-        params.put( Config.ALLOW_STORE_UPGRADE, "true" );
+        params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
 
         try
         {
@@ -99,7 +97,7 @@ public class StoreUpgradeIntegrationTest
                 "StringPropertyStore " + LEGACY_VERSION );
 
         Map<String, String> params = new HashMap<String, String>();
-        params.put( Config.ALLOW_STORE_UPGRADE, "true" );
+        params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
 
         try
         {
