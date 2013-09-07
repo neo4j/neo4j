@@ -59,6 +59,8 @@ object KeyToken {
     def getOptId(state: TokenContext): Option[Long] = typ.getOptIdForName(name, state)
 
     def resolve(tokenContext: TokenContext) = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
+
+    override def toString:String = name
   }
 
   case class Resolved(name: String, id: Long, typ: TokenType) extends KeyToken(typ) {
@@ -67,6 +69,8 @@ object KeyToken {
     def getOptId(state: TokenContext): Option[Long] = Some(id)
 
     override def resolve(tokenContext: TokenContext): Resolved = this
+
+    override def toString:String = s"$name($id)"
   }
 }
 

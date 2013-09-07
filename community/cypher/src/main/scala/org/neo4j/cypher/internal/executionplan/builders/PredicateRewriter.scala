@@ -63,7 +63,7 @@ class PredicateRewriter extends PlanBuilder {
     token => Unsolved(HasLabel(Identifier(name), token).asInstanceOf[Predicate])
   }
 
-  def priority = PlanBuilder.PredicateRewriting
+  def priority = PlanBuilder.QueryRewriting
 
   implicit class SeqWithReplace[A](inSeq: Seq[A]) {
     def replace(remove: A, replaceWith: A) = inSeq.filterNot(_ == remove) :+ replaceWith

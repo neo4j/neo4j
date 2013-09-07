@@ -65,3 +65,5 @@ trait MapSupport {
       get(key).getOrElse(throw new EntityNotFoundException("The property '%s' does not exist on %s".format(key, n)))
   }
 }
+
+

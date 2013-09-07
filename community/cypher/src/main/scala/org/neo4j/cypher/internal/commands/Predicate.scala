@@ -343,7 +343,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with 
       queryCtx.isLabelSetOnNode(labelId, nodeId)
   }
 
-  override def toString = s"hasLabel(${entity}: ${label.name})"
+  override def toString = s"hasLabel(${entity}:${label})"
 
   def rewrite(f: (Expression) => Expression) = HasLabel(entity.rewrite(f), label.typedRewrite[KeyToken](f))
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.data
 
 import scala.collection.JavaConverters._
-import org.neo4j.cypher.internal.helpers.StringRenderingSupport
+import org.neo4j.cypher.internal.helpers.{Materialized, StringRenderingSupport}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 
 // Values we are willing to expose as arguments in Java-side PlanDescriptions
@@ -66,7 +66,8 @@ final case class MapVal(v: Map[String, SimpleVal]) extends SimpleVal {
   override type Value = Map[String, SimpleVal]
   override type JValue = java.util.Map[String, Any]
 
-  override def asJava: JValue = v.mapValues(_.asJava.asInstanceOf[Any]).asJava
+  override def asJava: JValue =
+    Materialized.mapValues(v, (v: SimpleVal) => v.asJava.asInstanceOf[Any]).asJava
 
   override def render(builder: StringBuilder) {
     render(builder, "{", "}", "{}", escKey = true)
@@ -127,7 +128,7 @@ object SimpleVal {
 
   implicit def fromStr[T](v: T): StrVal = StrVal(v.toString)
 
-  implicit def fromMap[V](v: Map[String, V], conv: V => SimpleVal): MapVal = MapVal(v.mapValues(conv))
+  implicit def fromMap[V](v: Map[String, V], conv: V => SimpleVal): MapVal = MapVal(Materialized.mapValues(v, conv))
 
   implicit def fromMap[V](v: Map[String, V]): MapVal = fromMap(v, fromStr)
 

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
 import org.neo4j.cypher.internal.symbols.TypeSafe
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
-import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{Materialized, IsCollection, IsMap, CollectionSupport}
 import org.neo4j.cypher.internal.spi.Operations
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.commands.values.KeyToken
@@ -69,7 +69,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
             properties
           case IsMap(f)             =>
             val m = f(state.query)
-            m.mapValues(Literal(_))
+            Materialized.mapValues(m, Literal)
         }
     }
     DataExpectation(expectedProps, labels)
