@@ -399,6 +399,10 @@ public class ComponentVersion extends Version
 
             <!-- Prepping for last cleanup of public config stuff. -->
             <exclude>org/neo4j/graphdb/factory/GraphDatabaseSettings*</exclude>
+            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*</exclude>
+            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*</exclude>
+            <exclude>org/neo4j/graphdb/factory/Title*</exclude>
+            <exclude>org/neo4j/graphdb/factory/Default*</exclude>
 
             <!-- Batch inserter indexing interfaces moved to org.neo4j.unsafe.batchinsert -->
             <exclude>org/neo4j/graphdb/index/BatchInserterIndex</exclude>

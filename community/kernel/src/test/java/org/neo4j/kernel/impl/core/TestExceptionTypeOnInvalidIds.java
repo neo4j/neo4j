@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.UUID;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -34,7 +35,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.junit.Assert.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
+import static org.neo4j.helpers.Settings.TRUE;
 
 public class TestExceptionTypeOnInvalidIds
 {

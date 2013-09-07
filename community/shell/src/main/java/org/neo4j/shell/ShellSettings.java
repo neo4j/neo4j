@@ -19,18 +19,18 @@
  */
 package org.neo4j.shell;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.Description;
+
+import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.illegalValueMessage;
 import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.setting;
-
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 
 /**
  * Settings for the shell extension

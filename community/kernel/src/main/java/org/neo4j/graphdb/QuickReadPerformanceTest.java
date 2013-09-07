@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class QuickReadPerformanceTest
 {
@@ -110,7 +111,7 @@ public class QuickReadPerformanceTest
             {
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    for ( Node node : graphDb.getAllNodes() )
+                    for ( Node node : GlobalGraphOperations.at( graphDb ).getAllNodes() )
                     {
                         try
                         {

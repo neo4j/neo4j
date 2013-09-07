@@ -167,7 +167,7 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
     nodes.find(_.getProperty("name") == name).get
   }
 
-  def relType(name: String): RelationshipType = graph.getRelationshipTypes.asScala.find(_.name() == name).get
+  def relType(name: String): RelationshipType = GlobalGraphOperations.at(graph).getAllRelationshipTypes.asScala.find(_.name() == name).get
 
   def createNodes(names: String*): List[Node] = {
     nodes = names.map(x => createNode(Map("name" -> x))).toList

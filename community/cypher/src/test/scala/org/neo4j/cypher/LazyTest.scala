@@ -41,6 +41,7 @@ import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.impl.core.NodeManager
 import scala.Some
 import org.neo4j.kernel.api.{DataStatement, ReadStatement}
+import org.neo4j.tooling.GlobalGraphOperations
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -192,7 +193,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
     //When:
     graph.inTx {
-      counter.source = graph.getAllNodes.iterator()
+      counter.source = GlobalGraphOperations.at(graph).getAllNodes.iterator()
       engine.execute(engine.parser.parse("start n=node(*) return n limit 5"), Map.empty[String,Any]).toList
     }
 

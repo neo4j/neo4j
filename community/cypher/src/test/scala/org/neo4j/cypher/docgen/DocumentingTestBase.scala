@@ -40,6 +40,7 @@ import org.neo4j.helpers.Settings
 import org.neo4j.cypher.internal.prettifier.Prettifier
 import org.neo4j.cypher.internal.CypherParser
 import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
+import org.neo4j.tooling.GlobalGraphOperations
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -250,7 +251,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
         case (name, node) => name -> node.getId
       }.toMap
 
-      db.getAllNodes.asScala.foreach((n) => {
+      GlobalGraphOperations.at(db).getAllNodes.asScala.foreach((n) => {
         indexProperties(n, nodeIndex)
         n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
       })

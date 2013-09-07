@@ -19,9 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
-
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +30,9 @@ import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
+import static org.neo4j.helpers.Settings.TRUE;
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
