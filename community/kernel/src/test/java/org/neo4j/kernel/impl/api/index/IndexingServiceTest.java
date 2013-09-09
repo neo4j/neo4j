@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -52,12 +53,25 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 import static org.neo4j.test.AwaitAnswer.afterAwaiting;
@@ -295,7 +309,32 @@ public class IndexingServiceTest
         logger.assertAtLeastOnce(
                 info( "IndexingService.start: index on :LabelTwo(propertyTwo) is FAILED" ) );
     }
-    
+
+    @Test
+    public void shouldFailToStartIfMissingIndexProvider() throws Exception
+    {
+        // GIVEN an indexing service that has a schema index provider X
+        IndexingService indexing = newIndexingServiceWithMockedDependencies(
+                mock( IndexPopulator.class ), mock( IndexAccessor.class ),
+                new DataUpdates( new NodePropertyUpdate[0] ) );
+        String otherProviderKey = "something-completely-different";
+        SchemaIndexProvider.Descriptor otherDescriptor = new SchemaIndexProvider.Descriptor(
+                otherProviderKey, "no-version" );
+        IndexRule rule = IndexRule.indexRule( 1, 2, 3, otherDescriptor );
+
+        // WHEN trying to start up and initialize it with an index from provider Y
+        try
+        {
+            indexing.initIndexes( iterator( rule ) );
+            fail( "initIndexes with mismatching index provider should fail" );
+        }
+        catch ( IllegalArgumentException e )
+        {   // THEN starting up should fail
+            assertThat( e.getMessage(), containsString( "existing index" ) );
+            assertThat( e.getMessage(), containsString( otherProviderKey ) );
+        }
+    }
+
     private static Logging mockLogging( StringLogger logger )
     {
         Logging logging = mock( Logging.class );
@@ -332,7 +371,7 @@ public class IndexingServiceTest
         return new DataUpdates( updates );
     }
 
-    private static class DataUpdates implements Answer<StoreScan>, Iterable<NodePropertyUpdate>
+    private static class DataUpdates implements Answer<StoreScan<RuntimeException>>, Iterable<NodePropertyUpdate>
     {
         private final NodePropertyUpdate[] updates;
 
@@ -348,10 +387,10 @@ public class IndexingServiceTest
         }
 
         @Override
-        public StoreScan answer( InvocationOnMock invocation ) throws Throwable
+        public StoreScan<RuntimeException> answer( InvocationOnMock invocation ) throws Throwable
         {
             final Visitor<NodePropertyUpdate, RuntimeException> visitor = visitor( invocation.getArguments()[1] );
-            return new StoreScan()
+            return new StoreScan<RuntimeException>()
             {
                 @Override
                 public void run()
@@ -370,7 +409,7 @@ public class IndexingServiceTest
             };
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         private static Visitor<NodePropertyUpdate, RuntimeException> visitor( Object v )
         {
             return (Visitor) v;

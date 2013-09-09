@@ -22,8 +22,6 @@ package org.neo4j.server.rest.streaming;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
 import org.json.JSONException;
 import org.junit.Test;
 
@@ -42,10 +40,8 @@ import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 
@@ -140,14 +136,14 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> body = (Map<String, Object>) getResult.get("body");
         assertEquals(1, ((Map<String, Object>) body.get("data")).get("age"));
 
-        
+
     }
-    
+
     /**
      * The batch operation API allows you to refer to the URI returned from a
      * created resource in subsequent job descriptions, within the same batch
      * call.
-     * 
+     *
      * Use the +{[JOB ID]}+ special syntax to inject URIs from created resources
      * into JSON strings in subsequent job descriptions.
      */
@@ -211,7 +207,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
 
         assertEquals(4, results.size());
-        
+
 //        String rels = gen.get()
 //                .expectedStatus( 200 ).get( getRelationshipIndexUri( "my_rels", "since", "2010")).entity();
 //        assertEquals(1, JsonHelper.jsonToList(  rels ).size());
@@ -328,15 +324,15 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
         assertEquals(originalNodeCount, countNodes());
 
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
     public void shouldHandleUnicodeGetCorrectly() throws Exception {
         String asianText = "\u4f8b\u5b50";
         String germanText = "öäüÖÄÜß";
-        
+
         String complicatedString = asianText + germanText;
-        
+
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -348,7 +344,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
                 .endObject()
             .endArray()
             .toString();
-        
+
         String entity = gen.get()
                 .expectedType( APPLICATION_JSON_TYPE )
                 .withHeader( StreamingFormat.STREAM_HEADER,"true" )
@@ -360,11 +356,11 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
         // Pull out the property value from the depths of the response
         Map<String, Object> response = (Map<String, Object>) JsonHelper.jsonToList(entity).get(0).get("body");
         String returnedValue = (String)((Map<String,Object>)response.get("data")).get(complicatedString);
-        
+
         // Ensure nothing was borked.
         assertThat(returnedValue, is(complicatedString));
     }
-    
+
     @Test
     @Graph("Peter likes Jazz")
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
@@ -374,7 +370,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
         assertThat( gnode, inTx(graphdb(), Neo4jMatchers.hasProperty( "name" ).withValue(string)) );
 
         String name = "string\\ and \"test\"";
-        
+
         String jsonString = new PrettyJSON()
         .array()
             .object()
@@ -394,7 +390,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
             .payload( jsonString )
             .post( batchUri() )
             .entity();
-        
+
         jsonString = new PrettyJSON()
         .array()
             .object()
@@ -408,7 +404,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
             .payload( jsonString )
             .post( batchUri() )
             .entity();
-        
+
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
         assertEquals(results.get(0).get("body"), name);
     }
@@ -486,7 +482,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
         assertEquals(originalNodeCount, countNodes());
 
     }
-    
+
     @Test
     public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception {
         String jsonString = new PrettyJSON()
@@ -521,16 +517,16 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
                     .key("id")      .value(2)
                 .endObject()
             .endArray().toString();
-        
+
         JaxRsResponse response = RestRequest.req()
                 .accept( APPLICATION_JSON_TYPE )
                 .header(StreamingFormat.STREAM_HEADER, "true")
                 .post(batchUri(), jsonString);
 
         assertEquals(200, response.getStatus());
-        
+
     }
-    
+
     // It has to be possible to create relationships among created and not-created nodes
     // in batch operation.  Tests the fix for issue #690.
     @Test
@@ -619,7 +615,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
                     .key("id")      .value(5)
                 .endObject()
             .endArray().toString();
-        
+
         JaxRsResponse response = RestRequest.req()
                 .accept( APPLICATION_JSON_TYPE )
                 .header(StreamingFormat.STREAM_HEADER, "true")
@@ -649,7 +645,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
         body1 = (Map<String, Object>) secondRelationship.get("body");
         body2 = (Map<String, Object>) andresResult1.get("body");
         assertEquals(body1.get("start"), body2.get("self"));
-        
+
     }
     private int countNodes()
     {

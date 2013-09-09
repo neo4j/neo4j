@@ -22,8 +22,6 @@ package org.neo4j.server.rest;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
 import org.json.JSONException;
 import org.junit.Test;
 
@@ -41,6 +39,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
@@ -48,30 +47,30 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 {
     /**
      * Execute multiple operations in batch.
-     * 
+     *
      * This lets you execute multiple API calls through a single HTTP call,
      * significantly improving performance for large insert and update
      * operations.
-     * 
+     *
      * The batch service expects an array of job descriptions as input, each job
      * description describing an action to be performed via the normal server
      * API.
-     * 
+     *
      * This service is transactional. If any of the operations performed fails
      * (returns a non-2xx HTTP status code), the transaction will be rolled back
      * and all changes will be undone.
-     * 
+     *
      * Each job description should contain a +to+ attribute, with a value
      * relative to the data API root (so http://localhost:7474/db/data/node becomes
      * just /node), and a +method+ attribute containing HTTP verb to use.
-     * 
+     *
      * Optionally you may provide a +body+ attribute, and an +id+ attribute to
      * help you keep track of responses, although responses are guaranteed to be
      * returned in the same order the job descriptions are received.
-     * 
+     *
      * The following figure outlines the different parts of the job
      * descriptions:
-     * 
+     *
      * image::batch-request-api.png[]
      */
     @Documented
@@ -151,16 +150,16 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> body = (Map<String, Object>) getResult.get("body");
         assertEquals(1, ((Map<String, Object>) body.get("data")).get("age"));
 
-        
+
     }
-    
+
     /**
      * Refer to items created earlier in the same batch job.
-     * 
+     *
      * The batch operation API allows you to refer to the URI returned from a
      * created resource in subsequent job descriptions, within the same batch
      * call.
-     * 
+     *
      * Use the +{[JOB ID]}+ special syntax to inject URIs from created resources
      * into JSON strings in subsequent job descriptions.
      */
@@ -224,7 +223,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
 
         assertEquals(4, results.size());
-        
+
 //        String rels = gen.get()
 //                .expectedStatus( 200 ).get( getRelationshipIndexUri( "my_rels", "since", "2010")).entity();
 //        assertEquals(1, JsonHelper.jsonToList(  rels ).size());
@@ -289,7 +288,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 
         assertTrue(((String)res.get("message")).startsWith("Invalid JSON array in POST body"));
     }
-    
+
     @Test
     public void shouldRollbackAllWhenGivenIncorrectRequest() throws ClientHandlerException,
             UniformInterfaceException, JSONException
@@ -324,16 +323,16 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
     public void shouldHandleUnicodeGetCorrectly() throws Exception
     {
         String asianText = "\u4f8b\u5b50";
         String germanText = "öäüÖÄÜß";
-        
+
         String complicatedString = asianText + germanText;
-        
+
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -345,17 +344,17 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
                 .endObject()
             .endArray()
             .toString();
-        
+
         String entity = gen.get()
                 .expectedStatus( 200 )
                 .payload( jsonString )
                 .post( batchUri() )
                 .entity();
-        
+
         // Pull out the property value from the depths of the response
         Map<String, Object> response = (Map<String, Object>) JsonHelper.jsonToList(entity).get(0).get("body");
         String returnedValue = (String)((Map<String,Object>)response.get("data")).get(complicatedString);
-        
+
         // Ensure nothing was borked.
         assertThat("Expected twisted unicode case to work, but response was: " + entity,
                 returnedValue, is(complicatedString));
@@ -405,7 +404,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         assertThat( gnode, inTx(graphdb(), hasProperty( "name" ).withValue(string)) );
 
         String name = "string\\ and \"test\"";
-        
+
         String jsonString = new PrettyJSON()
         .array()
             .object()
@@ -423,7 +422,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
             .payload( jsonString )
             .post( batchUri() )
             .entity();
-        
+
         jsonString = new PrettyJSON()
         .array()
             .object()
@@ -437,7 +436,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
             .payload( jsonString )
             .post( batchUri() )
             .entity();
-        
+
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
         assertEquals(results.get(0).get("body"), name);
     }
@@ -510,7 +509,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
     }
-    
+
     @Test
     public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception
     {
@@ -546,11 +545,11 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
                     .key("id")      .value(2)
                 .endObject()
             .endArray().toString();
-        
+
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
         assertEquals(200, response.getStatus());
-        
+
     }
 
     // It has to be possible to create relationships among created and not-created nodes
@@ -642,7 +641,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
                     .key("id")      .value(5)
                 .endObject()
             .endArray().toString();
-        
+
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
         assertEquals(200, response.getStatus());
@@ -670,7 +669,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         body2 = (Map<String, Object>) andresResult1.get("body");
         assertEquals(body1.get("start"), body2.get("self"));
     }
-    
+
     private int countNodes()
     {
         try ( Transaction tx = graphdb().beginTx() )
