@@ -147,9 +147,9 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To return a single property, or the value of a function from a collection of nodes or relationships,
  you can use `EXTRACT`. It will go through a collection, run an expression on every element, and return the results
  in an collection with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
-      queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return extract(n in nodes(p) | n.age)""",
+      queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return extract(n in nodes(p) | n.age) AS extracted""",
       returns = """The age property of all nodes in the path are returned.""",
-      assertions = (p) => assertEquals(List(Map("extract(n in nodes(p) | n.age)" -> List(38, 25, 54))), p.toList))
+      assertions = (p) => assertEquals(List(Map("extracted" -> List(38, 25, 54))), p.toList))
   }
 
   @Test def reduce() {
@@ -166,9 +166,9 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To run an expression against individual elements of a collection, and store the result of the expression in
  an accumulator, you can use `REDUCE`. It will go through a collection, run an expression on every element, storing the partial result
  in the accumulator. It works like the `fold` or `reduce` method in functional languages such as Lisp and Scala.""",
-      queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return reduce(totalAge = 0, n in nodes(p) | totalAge + n.age)""",
+      queryText = """match p=a-->b-->c where a.name='Alice' and b.name='Bob' and c.name='Daniel' return reduce(totalAge = 0, n in nodes(p) | totalAge + n.age) AS reduction""",
       returns = """The age property of all nodes in the path are summed and returned as a single value.""",
-      assertions = (p) => assertEquals(List(Map("reduce(totalAge = 0, n in nodes(p) | totalAge + n.age)" -> 117)), p.toList))
+      assertions = (p) => assertEquals(List(Map("reduction" -> 117)), p.toList))
   }
 
   @Test def head() {
