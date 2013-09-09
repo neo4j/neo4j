@@ -46,8 +46,8 @@ public class StubKernelTransaction extends KernelTransactionImplementation
     }
 
     @Override
-    protected Statement newStatement()
+    protected KernelStatement newStatement()
     {
-        return new Statement(this, mock( IndexReaderFactory.class ), null, null, null);
+        return new KernelStatement(this, mock( IndexReaderFactory.class ), null, null, null);
     }
 }

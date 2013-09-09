@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 
 public class SchemaStateConcern implements SchemaStateOperations
@@ -33,13 +33,13 @@ public class SchemaStateConcern implements SchemaStateOperations
     }
 
     @Override
-    public <K, V> V schemaStateGetOrCreate( Statement state, K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator )
     {
         return schemaState.getOrCreate( key, creator );
     }
 
     @Override
-    public <K> boolean schemaStateContains( Statement state, K key )
+    public <K> boolean schemaStateContains( KernelStatement state, K key )
     {
         return schemaState.get( key ) != null;
     }

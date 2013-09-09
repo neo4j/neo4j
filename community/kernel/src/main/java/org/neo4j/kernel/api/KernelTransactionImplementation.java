@@ -73,7 +73,7 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
     public <RESULT, FAILURE extends KernelException> RESULT execute( MicroTransaction<RESULT, FAILURE> transaction )
             throws FAILURE
     {
-        try ( Statement statement = acquireStatement() )
+        try ( KernelStatement statement = acquireStatement() )
         {
             return transaction.work.perform( operations, statement );
         }
@@ -83,13 +83,13 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
 
     protected abstract void doRollback() throws TransactionFailureException;
 
-    protected abstract Statement newStatement();
+    protected abstract KernelStatement newStatement();
 
-    /** Implements reusing the same underlying {@link Statement} for overlapping statements. */
-    private Statement currentStatement;
+    /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
+    private KernelStatement currentStatement;
 
     @Override
-    public Statement acquireStatement()
+    public KernelStatement acquireStatement()
     {
         assertOpen();
         if ( currentStatement == null )

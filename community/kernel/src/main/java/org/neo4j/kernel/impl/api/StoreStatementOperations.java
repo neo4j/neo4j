@@ -30,6 +30,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -202,7 +203,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public boolean nodeHasLabel( Statement state, long nodeId, long labelId )
+    public boolean nodeHasLabel( KernelStatement state, long nodeId, long labelId )
     {
         try
         {
@@ -215,7 +216,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetLabels( Statement state, long nodeId )
+    public PrimitiveLongIterator nodeGetLabels( KernelStatement state, long nodeId )
     {
         try
         {
@@ -242,7 +243,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( Statement state, final long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, final long labelId )
     {
         return state.getLabelScanReader().nodesWithLabel( labelId );
     }
@@ -274,7 +275,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( Statement state, final long labelId, final long propertyKey )
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, final long labelId, final long propertyKey )
             throws SchemaRuleNotFoundException
     {
         return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
@@ -286,25 +287,25 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( Statement state, final long labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, final long labelId )
     {
         return getIndexDescriptorsFor( indexRules( labelId ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll( Statement state )
+    public Iterator<IndexDescriptor> indexesGetAll( KernelStatement state )
     {
         return getIndexDescriptorsFor( INDEX_RULES );
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( Statement state, final long labelId )
+    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, final long labelId )
     {
         return getIndexDescriptorsFor( constraintIndexRules( labelId ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetAll( Statement state )
+    public Iterator<IndexDescriptor> uniqueIndexesGetAll( KernelStatement state )
     {
         return getIndexDescriptorsFor( CONSTRAINT_INDEX_RULES );
     }
@@ -364,20 +365,20 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( Statement state, IndexDescriptor index )
+    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getOwningConstraint();
     }
 
     @Override
-    public long indexGetCommittedId( Statement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getId();
     }
 
     @Override
-    public InternalIndexState indexGetState( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getProxyForRule( indexId( descriptor ) ).getState();
     }
@@ -401,7 +402,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( Statement state,
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
             long labelId, final long propertyKeyId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
@@ -417,14 +418,14 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabel( Statement state, long labelId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, long labelId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
                                           labelId, Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetAll( Statement state )
+    public Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
                 Predicates.<UniquenessConstraintRule>TRUE() );
@@ -468,7 +469,7 @@ public class StoreStatementOperations implements
     }
     
     @Override
-    public Iterator<SafeProperty> nodeGetAllProperties( Statement state, long nodeId ) throws EntityNotFoundException
+    public Iterator<SafeProperty> nodeGetAllProperties( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         try
         {
@@ -481,7 +482,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<SafeProperty> relationshipGetAllProperties( Statement state, long relationshipId ) throws EntityNotFoundException
+    public Iterator<SafeProperty> relationshipGetAllProperties( KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
         try
         {
@@ -494,7 +495,7 @@ public class StoreStatementOperations implements
     }
     
     @Override
-    public Iterator<SafeProperty> graphGetAllProperties( Statement state )
+    public Iterator<SafeProperty> graphGetAllProperties( KernelStatement state )
     {
         return loadAllPropertiesOf( neoStore.asRecord() );
     }
@@ -518,7 +519,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexLookup( Statement state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         return state.getIndexReader( indexId( index ) ).lookup( value );
@@ -599,49 +600,49 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( Statement state, long nodeId, SafeProperty property )
+    public Property nodeSetProperty( KernelStatement state, long nodeId, SafeProperty property )
     {
         throw shouldCallAuxiliaryInstead();
     }
 
     @Override
-    public Property relationshipSetProperty( Statement state, long relationshipId, SafeProperty property )
+    public Property relationshipSetProperty( KernelStatement state, long relationshipId, SafeProperty property )
     {
         throw shouldCallAuxiliaryInstead();
     }
     
     @Override
-    public Property graphSetProperty( Statement state, SafeProperty property )
+    public Property graphSetProperty( KernelStatement state, SafeProperty property )
     {
         throw shouldCallAuxiliaryInstead();
     }
     
     @Override
-    public Property nodeRemoveProperty( Statement state, long nodeId, long propertyKeyId )
+    public Property nodeRemoveProperty( KernelStatement state, long nodeId, long propertyKeyId )
     {
         throw shouldCallAuxiliaryInstead();
     }
 
     @Override
-    public Property relationshipRemoveProperty( Statement state, long relationshipId, long propertyKeyId )
+    public Property relationshipRemoveProperty( KernelStatement state, long relationshipId, long propertyKeyId )
     {
         throw shouldCallAuxiliaryInstead();
     }
     
     @Override
-    public Property graphRemoveProperty( Statement state, long propertyKeyId )
+    public Property graphRemoveProperty( KernelStatement state, long propertyKeyId )
     {
         throw shouldCallAuxiliaryInstead();
     }
     
     @Override
-    public void nodeDelete( Statement state, long nodeId )
+    public void nodeDelete( KernelStatement state, long nodeId )
     {
         throw shouldCallAuxiliaryInstead();
     }
     
     @Override
-    public void relationshipDelete( Statement state, long relationshipId )
+    public void relationshipDelete( KernelStatement state, long relationshipId )
     {
         throw shouldCallAuxiliaryInstead();
     }
@@ -659,51 +660,51 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public boolean nodeAddLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         throw shouldNotManipulateStoreDirectly();
     }
 
     @Override
-    public boolean nodeRemoveLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         throw shouldNotManipulateStoreDirectly();
     }
 
     @Override
-    public Property nodeGetProperty( Statement state, long nodeId, long propertyKeyId )
+    public Property nodeGetProperty( KernelStatement state, long nodeId, long propertyKeyId )
             throws EntityNotFoundException
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
 
     @Override
-    public Property relationshipGetProperty( Statement state, long relationshipId, long propertyKeyId )
+    public Property relationshipGetProperty( KernelStatement state, long relationshipId, long propertyKeyId )
             throws EntityNotFoundException
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
 
     @Override
-    public Property graphGetProperty( Statement state, long propertyKeyId )
+    public Property graphGetProperty( KernelStatement state, long propertyKeyId )
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetPropertyKeys( Statement state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
 
     @Override
-    public PrimitiveLongIterator relationshipGetPropertyKeys( Statement state, long relationshipId ) throws EntityNotFoundException
+    public PrimitiveLongIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
 
     @Override
-    public PrimitiveLongIterator graphGetPropertyKeys( Statement state )
+    public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state )
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
