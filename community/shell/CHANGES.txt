@@ -1,3 +1,7 @@
+2.0.0-M05
+---------
+o Adds support for RETURN only Cypher queries
+
 2.0.0-M02
 ---------
 o Support for listing indexes and their state

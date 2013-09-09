@@ -3,6 +3,11 @@
 o Promote the experimental parser to the default
 o Added literal maps
 o Makes RETURN only queries valid
+o Labels on optional nodes no longer stop the whole MATCH
+  clause from returning results. 
+o Updated NOT precedence
+o Added collection slice and collection index
+o Added list comprehension documentation
 
 2.0.0-M04
 ---------
