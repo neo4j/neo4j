@@ -63,7 +63,7 @@ public abstract class BaseSpringTransactionImpl
         HeuristicRollbackException, SecurityException, IllegalStateException,
         SystemException
     {
-        getTxManager().commit();
+        getTransaction().commit();
     }
 
     public int getStatus() throws SystemException
@@ -85,12 +85,12 @@ public abstract class BaseSpringTransactionImpl
     public void rollback() throws IllegalStateException, SecurityException,
         SystemException
     {
-        getTxManager().rollback();
+        getTransaction().rollback();
     }
 
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
-        getTxManager().setRollbackOnly();
+        getTransaction().setRollbackOnly();
     }
 
     public void setTransactionTimeout( int sec ) throws SystemException
