@@ -25,8 +25,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
 import org.neo4j.kernel.impl.cache.SizeOfs;
@@ -46,7 +46,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
  */
 abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeObject
 {
-    private volatile SafeProperty[] properties;
+    private volatile DefinedProperty[] properties;
     private volatile int registeredSize;
 
     ArrayBasedPrimitive( boolean newPrimitive )
@@ -85,16 +85,16 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
         properties = NO_PROPERTIES;
     }
 
-    private SafeProperty[] toPropertyArray( Collection<SafeProperty> loadedProperties )
+    private DefinedProperty[] toPropertyArray( Collection<DefinedProperty> loadedProperties )
     {
         if ( loadedProperties == null || loadedProperties.size() == 0 )
         {
             return NO_PROPERTIES;
         }
 
-        SafeProperty[] result = new SafeProperty[loadedProperties.size()];
+        DefinedProperty[] result = new DefinedProperty[loadedProperties.size()];
         int i = 0;
-        for ( SafeProperty property : loadedProperties )
+        for ( DefinedProperty property : loadedProperties )
         {
             result[i++] = property;
         }
@@ -140,7 +140,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     }
     
     @Override
-    protected Iterator<SafeProperty> getCachedProperties()
+    protected Iterator<DefinedProperty> getCachedProperties()
     {
         return iterator( properties );
     }
@@ -183,7 +183,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     protected abstract Property noProperty( long key );
 
     @Override
-    protected void setProperties( Iterator<SafeProperty> properties )
+    protected void setProperties( Iterator<DefinedProperty> properties )
     {
         this.properties = toPropertyArray( asCollection( properties ) );
     }
@@ -204,7 +204,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
         synchronized ( this )
         {
             // Dereference the volatile once to avoid multiple barriers
-            SafeProperty[] newArray = properties;
+            DefinedProperty[] newArray = properties;
             if ( newArray == null ) return;
 
             /*
@@ -227,8 +227,8 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
             // currently it can do two copies in the clone() case if it also compacts
             if ( extraLength > 0 )
             {
-                SafeProperty[] oldArray = newArray;
-                newArray = new SafeProperty[oldArray.length + extraLength];
+                DefinedProperty[] oldArray = newArray;
+                newArray = new DefinedProperty[oldArray.length + extraLength];
                 System.arraycopy( oldArray, 0, newArray, 0, oldArray.length );
             }
             else
@@ -277,7 +277,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
             // these size changes are updated from lock releaser
             if ( newArraySize < newArray.length )
             {
-                SafeProperty[] compactedNewArray = new SafeProperty[newArraySize];
+                DefinedProperty[] compactedNewArray = new DefinedProperty[newArraySize];
                 System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
                 sort( compactedNewArray );
                 properties = compactedNewArray;

@@ -39,6 +39,10 @@ interface SchemaRead
     /** Returns all indexes. */
     Iterator<IndexDescriptor> indexesGetAll();
 
+    /** Returns the constraint index for the given labelId and propertyKey. */
+    IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
+        throws SchemaRuleNotFoundException;
+
     /** Get all constraint indexes for a label. */
     Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId );
 

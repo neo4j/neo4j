@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -147,7 +147,7 @@ public class RelationshipProxy implements Relationship
         try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             List<String> keys = new ArrayList<>();
-            Iterator<SafeProperty> properties = statement.relationshipGetAllProperties( getId() );
+            Iterator<DefinedProperty> properties = statement.relationshipGetAllProperties( getId() );
             while ( properties.hasNext() )
             {
                 keys.add( statement.propertyKeyGetName( properties.next().propertyKeyId() ) );
@@ -170,10 +170,10 @@ public class RelationshipProxy implements Relationship
     {
         try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
-            return asSet( map( new Function<SafeProperty, Object>()
+            return asSet( map( new Function<DefinedProperty, Object>()
             {
                 @Override
-                public Object apply( SafeProperty prop )
+                public Object apply( DefinedProperty prop )
                 {
                     return prop.value();
                 }

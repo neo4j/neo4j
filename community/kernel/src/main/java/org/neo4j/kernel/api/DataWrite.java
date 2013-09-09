@@ -21,8 +21,8 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 
 interface DataWrite
@@ -55,12 +55,12 @@ interface DataWrite
      */
     boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException;
 
-    Property nodeSetProperty( long nodeId, SafeProperty property )
+    Property nodeSetProperty( long nodeId, DefinedProperty property )
             throws EntityNotFoundException, ConstraintValidationKernelException;
 
-    Property relationshipSetProperty( long relationshipId, SafeProperty property ) throws EntityNotFoundException;
+    Property relationshipSetProperty( long relationshipId, DefinedProperty property ) throws EntityNotFoundException;
 
-    Property graphSetProperty( SafeProperty property );
+    Property graphSetProperty( DefinedProperty property );
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which

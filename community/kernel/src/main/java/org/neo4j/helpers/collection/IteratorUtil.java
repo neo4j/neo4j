@@ -340,6 +340,35 @@ public abstract class IteratorUtil
     }
 
     /**
+     * Returns the given iterator's single element or {@code itemIfNone} if no
+     * element found. If there is more than one element in the iterator a
+     * {@link NoSuchElementException} will be thrown.
+     *
+     * @param iterator the {@link Iterator} to get elements from.
+     * @return the single element in {@code iterator}, or {@code itemIfNone} if no
+     * element found.
+     * @throws NoSuchElementException if more than one element was found.
+     */
+    public static long single( PrimitiveLongIterator iterator, long itemIfNone )
+    {
+        if ( iterator.hasNext() )
+        {
+            long result = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                throw new NoSuchElementException( "More than one element in " +
+                        iterator + ". First element is '" + result +
+                        "' and the second element is '" + iterator.next() + "'" );
+            }
+            return result;
+        }
+        else
+        {
+            return itemIfNone;
+        }
+    }
+
+    /**
      * Returns the iterator's n:th item from the end of the iteration.
      * If the iterator has got less than n-1 items in it
      * {@link NoSuchElementException} is thrown.

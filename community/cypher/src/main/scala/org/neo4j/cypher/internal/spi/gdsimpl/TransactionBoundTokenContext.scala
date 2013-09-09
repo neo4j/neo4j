@@ -24,14 +24,15 @@ import org.neo4j.kernel.api.exceptions.{PropertyKeyNotFoundException, LabelNotFo
 import org.neo4j.kernel.api.operations.KeyReadOperations
 import org.neo4j.kernel.api.ReadStatement
 
-abstract class TransactionBoundTokenContext(statement:ReadStatement) extends TokenContext
+abstract class TransactionBoundTokenContext(statement: ReadStatement) extends TokenContext
 {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Long] =
     TokenContext.tryGet[PropertyKeyNotFoundException](getPropertyKeyId(propertyKeyName))
 
-  def getPropertyKeyId(propertyKeyName: String) = {
+  def getPropertyKeyId(propertyKeyName: String) =
+  {
     val propertyId: Long = statement.propertyKeyGetForName(propertyKeyName)
-    if(propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY)
+    if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
     {
       throw new PropertyKeyNotFoundException("No such property.", null)
     }
@@ -40,9 +41,10 @@ abstract class TransactionBoundTokenContext(statement:ReadStatement) extends Tok
 
   def getPropertyKeyName(propertyKeyId: Long): String = statement.propertyKeyGetName(propertyKeyId)
 
-  def getLabelId(labelName: String): Long = {
+  def getLabelId(labelName: String): Long =
+  {
     val labelId: Long = statement.labelGetForName(labelName)
-    if(labelId == KeyReadOperations.NO_SUCH_LABEL)
+    if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
     {
       throw new LabelNotFoundKernelException("No such label", null)
     }

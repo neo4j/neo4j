@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -40,8 +41,8 @@ import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.Token;
@@ -123,7 +124,7 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     public PrimitiveLongIterator nodesGetForLabel( long labelId )
     {
         assertOpen();
-        if ( labelId == NO_SUCH_LABEL )
+        if ( labelId == StatementConstants.NO_SUCH_LABEL )
         {
             return emptyPrimitiveLongIterator();
         }
@@ -139,10 +140,18 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     }
 
     @Override
+    public long nodeGetUniqueFromIndexLookup( IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        assertOpen();
+        return dataRead().nodeGetUniqueFromIndexLookup( state, index, value );
+    }
+
+    @Override
     public boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException
     {
         assertOpen();
-        return labelId != NO_SUCH_LABEL && dataRead().nodeHasLabel( state, nodeId, labelId );
+        return labelId != StatementConstants.NO_SUCH_LABEL && dataRead().nodeHasLabel( state, nodeId, labelId );
     }
 
     @Override
@@ -156,7 +165,7 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     public Property nodeGetProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
     {
         assertOpen();
-        if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
             return Property.noNodeProperty( nodeId, propertyKeyId );
         }
@@ -167,7 +176,7 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     public Property relationshipGetProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException
     {
         assertOpen();
-        if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
             return Property.noRelationshipProperty( relationshipId, propertyKeyId );
         }
@@ -178,7 +187,7 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     public Property graphGetProperty( long propertyKeyId )
     {
         assertOpen();
-        if ( propertyKeyId == NO_SUCH_PROPERTY_KEY )
+        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
             return Property.noGraphProperty( propertyKeyId );
         }
@@ -186,14 +195,14 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     }
 
     @Override
-    public Iterator<SafeProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
+    public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
         assertOpen();
         return dataRead().nodeGetAllProperties( state, nodeId );
     }
 
     @Override
-    public Iterator<SafeProperty> relationshipGetAllProperties( long relationshipId )
+    public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
             throws EntityNotFoundException
     {
         assertOpen();
@@ -201,7 +210,7 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     }
 
     @Override
-    public Iterator<SafeProperty> graphGetAllProperties()
+    public Iterator<DefinedProperty> graphGetAllProperties()
     {
         assertOpen();
         return dataRead().graphGetAllProperties( state );
@@ -210,11 +219,11 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
 
     // <SchemaRead>
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey )
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, final long propertyKeyId )
             throws SchemaRuleNotFoundException
     {
         assertOpen();
-        return schemaRead().indexesGetForLabelAndPropertyKey( state, labelId, propertyKey );
+        return schemaRead().indexesGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
     }
 
     @Override
@@ -229,6 +238,37 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     {
         assertOpen();
         return schemaRead().indexesGetAll( state );
+    }
+
+    @Override
+    public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
+            throws SchemaRuleNotFoundException
+
+    {
+        IndexDescriptor result = null;
+        Iterator<IndexDescriptor> indexes = uniqueIndexesGetForLabel( labelId );
+        while ( indexes.hasNext() )
+        {
+            IndexDescriptor index = indexes.next();
+            if ( index.getPropertyKeyId() == propertyKeyId )
+            {
+                if ( null == result )
+                {
+                    result = index;
+                }
+                else
+                {
+                    throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "duplicate uniqueness index" );
+                }
+            }
+        }
+
+        if ( null == result )
+        {
+            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "uniqueness index not found" );
+        }
+
+        return result;
     }
 
     @Override

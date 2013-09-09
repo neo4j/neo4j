@@ -54,7 +54,8 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   def set_two_labels_on_node() {
     //GIVEN
     val n = createNode()
-    val given = LabelAction(Literal(n), LabelSetOp, Seq(KeyToken.Resolved("green", 12, TokenType.Label), KeyToken.Resolved("blue", 42, TokenType.Label)))
+    val given = LabelAction(Literal(n), LabelSetOp, Seq(KeyToken.Resolved("green", 12, TokenType.Label),
+      KeyToken.Resolved("blue", 42, TokenType.Label)))
 
     //WHEN
     val result = given.exec(ctx, state)
@@ -136,4 +137,6 @@ class SnitchingQueryContext extends QueryContext {
   def getPropertyKeyName(id: Long): String = ???
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
+
+  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Node = ???
 }

@@ -52,8 +52,8 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
@@ -272,10 +272,10 @@ public class NodeProxy implements Node
     {
         try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
-            return asSet( map( new Function<SafeProperty, Object>()
+            return asSet( map( new Function<DefinedProperty, Object>()
             {
                 @Override
-                public Object apply( SafeProperty prop )
+                public Object apply( DefinedProperty prop )
                 {
                     return prop.value();
                 }
@@ -293,7 +293,7 @@ public class NodeProxy implements Node
         try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             List<String> keys = new ArrayList<>();
-            Iterator<SafeProperty> properties = statement.nodeGetAllProperties( getId() );
+            Iterator<DefinedProperty> properties = statement.nodeGetAllProperties( getId() );
             while ( properties.hasNext() )
             {
                 keys.add( statement.propertyKeyGetName( properties.next().propertyKeyId() ) );

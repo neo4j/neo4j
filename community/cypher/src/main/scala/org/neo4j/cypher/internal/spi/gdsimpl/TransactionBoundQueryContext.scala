@@ -66,9 +66,9 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
     else {
       val tx = graph.beginTx()
       try {
-        val bridge   = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-        val stmCtx   = bridge.dataStatement()
-        val result   = try {
+        val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+        val stmCtx = bridge.dataStatement()
+        val result = try {
           work(new TransactionBoundQueryContext(graph, tx, stmCtx))
         }
         finally {
@@ -90,7 +90,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
     start.createRelationshipTo(end, withName(relType))
 
   def getLabelsForNode(node: Long) =
-    JavaConversionSupport.asScala( statement.nodeGetLabels(node) )
+    JavaConversionSupport.asScala(statement.nodeGetLabels(node))
 
   override def isLabelSetOnNode(label: Long, node: Long) =
     statement.nodeHasLabel(node, label)
@@ -109,6 +109,9 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
     mapToScala( statement.nodesGetFromIndexLookup(index, value) )(nodeOps.getById(_))
 
+  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Node =
+    nodeOps.getById(statement.nodeGetUniqueFromIndexLookup(index, value))
+
   val nodeOps = new NodeOperations
 
   val relationshipOps = new RelationshipOperations
@@ -119,7 +122,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
   }
 
   def getNodesByLabel(id: Long): Iterator[Node] =
-    mapToScala( statement.nodesGetForLabel(id) )(nodeOps.getById(_))
+    mapToScala(statement.nodesGetForLabel(id))(nodeOps.getById(_))
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
@@ -142,16 +145,16 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
 
     def setProperty(obj: Node, propertyKeyId: Long, value: Any) {
       statement
-         .nodeSetProperty(obj.getId, properties.Property.property(propertyKeyId, value) )
+        .nodeSetProperty(obj.getId, properties.Property.property(propertyKeyId, value))
     }
 
 
     def getById(id: Long) = try {
-      graph.getNodeById(id)
-    } catch {
-      case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
-      case e: RuntimeException  => throw e
-    }
+        graph.getNodeById(id)
+      } catch {
+        case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
+        case e: RuntimeException  => throw e
+      }
 
     def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
 
@@ -182,7 +185,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
 
     def setProperty(obj: Relationship, propertyKeyId: Long, value: Any) {
       statement
-         .relationshipSetProperty(obj.getId, properties.Property.property(propertyKeyId, value) )
+        .relationshipSetProperty(obj.getId, properties.Property.property(propertyKeyId, value))
     }
 
     def getById(id: Long) = graph.getRelationshipById(id)
@@ -213,14 +216,12 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction,
   })
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
-    def primitiveLongIteratorToScalaIterator( primitiveIterator: PrimitiveLongIterator ): Iterator[Long] = {
-      new Iterator[Long]
-      {
+    def primitiveLongIteratorToScalaIterator(primitiveIterator: PrimitiveLongIterator): Iterator[Long] =
+      new Iterator[Long] {
         def hasNext: Boolean = primitiveIterator.hasNext
-        
+
         def next(): Long = primitiveIterator.next
       }
-    }
   }
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {

@@ -276,11 +276,11 @@ public class PropertyEqualityTest
 
     private static class Test
     {
-        final SafeProperty property;
+        final DefinedProperty property;
         final Object value;
         final boolean shouldMatch;
 
-        private Test( SafeProperty property, Object value, boolean shouldMatch )
+        private Test( DefinedProperty property, Object value, boolean shouldMatch )
         {
             this.property = property;
             this.value = value;

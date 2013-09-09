@@ -93,7 +93,7 @@ public class StoreStatementOperationsTest
         long nodeId, labelId1, labelId2;
         try ( Transaction tx = db.beginTx() )
         {
-            nodeId = db.createNode( label1, label2).getId();
+            nodeId = db.createNode( label1, label2 ).getId();
             String labelName1 = label1.name(), labelName2 = label2.name();
             labelId1 = statement.labelGetForName( state, labelName1 );
             labelId2 = statement.labelGetOrCreateForName( state, labelName2 );
@@ -105,7 +105,7 @@ public class StoreStatementOperationsTest
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
                 addToCollection( readLabels, new HashSet<Long>() ) );
     }
-    
+
     @Test
     public void should_be_able_to_get_label_name_for_label() throws Exception
     {
@@ -159,7 +159,7 @@ public class StoreStatementOperationsTest
     {
         // GIVEN
         String longString =
-            "AlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalong";
+                "AlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalong";
         Object[] properties = {
                 longString,
                 gimme( String.class ),
@@ -222,7 +222,7 @@ public class StoreStatementOperationsTest
         // THEN
         assertTrue( "Should have created a non-negative id", id >= 0 );
     }
-    
+
     @Test
     public void should_get_previously_created_property_key() throws Exception
     {
@@ -235,7 +235,7 @@ public class StoreStatementOperationsTest
         // THEN
         assertEquals( id, secondId );
     }
-    
+
     @Test
     public void should_be_able_to_get_or_create_previously_created_property_key() throws Exception
     {
@@ -248,7 +248,7 @@ public class StoreStatementOperationsTest
         // THEN
         assertEquals( id, secondId );
     }
-    
+
     @Test
     public void should_fail_if_get_non_existent_property_key() throws Exception
     {
@@ -266,16 +266,13 @@ public class StoreStatementOperationsTest
         IndexDescriptor index = createIndexAndAwaitOnline( label1, propertyKey );
         String name = "Mr. Taylor";
         Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label1 );
-        try ( Transaction ignored = db.beginTx() )
-        {
-            // WHEN
-            Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, index, name ) );
-    
-            // THEN
-            assertEquals( asSet( mrTaylor.getId() ), foundNodes );
-        }
+        // WHEN
+        Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, index, name ) );
+
+        // THEN
+        assertEquals( asSet( mrTaylor.getId() ), foundNodes );
     }
-    
+
     private GraphDatabaseAPI db;
     private final Label label1 = label( "first-label" ), label2 = label( "second-label" );
     private final String propertyKey = "name";
@@ -290,7 +287,7 @@ public class StoreStatementOperationsTest
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
         LabelScanStore labelScanStore = resolver.resolveDependency( LabelScanStore.class );
         NeoStore neoStore = resolver.resolveDependency( XaDataSourceManager.class )
-                                    .getNeoStoreDataSource().getNeoStore();
+                .getNeoStoreDataSource().getNeoStore();
         this.statement = new StoreStatementOperations(
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),
                 resolver.resolveDependency( LabelTokenHolder.class ),
@@ -344,46 +341,46 @@ public class StoreStatementOperationsTest
         Object array = Array.newInstance( componentType, length );
         for ( int i = 0; i < length; i++ )
         {
-            Array.set(array, i, gimme( componentType ));
+            Array.set( array, i, gimme( componentType ) );
         }
         return array;
     }
 
     private Object gimme( Class<?> type )
     {
-        if (type == int.class )
+        if ( type == int.class )
         {
             return 666;
         }
-        if (type == long.class)
+        if ( type == long.class )
         {
             return 17l;
         }
-        if (type == double.class)
+        if ( type == double.class )
         {
             return 6.28318530717958647692d;
         }
-        if (type == float.class)
+        if ( type == float.class )
         {
             return 3.14f;
         }
-        if (type == short.class)
+        if ( type == short.class )
         {
             return (short) 8733;
         }
-        if (type == byte.class)
+        if ( type == byte.class )
         {
             return (byte) 123;
         }
-        if (type == boolean.class)
+        if ( type == boolean.class )
         {
             return false;
         }
-        if (type == char.class)
+        if ( type == char.class )
         {
             return 'Z';
         }
-        if (type == String.class)
+        if ( type == String.class )
         {
             return "hello world";
         }

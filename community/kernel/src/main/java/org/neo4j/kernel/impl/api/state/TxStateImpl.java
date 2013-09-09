@@ -28,8 +28,8 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -214,19 +214,19 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<SafeProperty> nodePropertyDiffSets( long nodeId )
+    public DiffSets<DefinedProperty> nodePropertyDiffSets( long nodeId )
     {
         return getOrCreateNodeState( nodeId ).propertyDiffSets();
     }
 
     @Override
-    public DiffSets<SafeProperty> relationshipPropertyDiffSets( long relationshipId )
+    public DiffSets<DefinedProperty> relationshipPropertyDiffSets( long relationshipId )
     {
         return getOrCreateRelationshipState( relationshipId ).propertyDiffSets();
     }
 
     @Override
-    public DiffSets<SafeProperty> graphPropertyDiffSets()
+    public DiffSets<DefinedProperty> graphPropertyDiffSets()
     {
         return getOrCreateGraphState().propertyDiffSets();
     }
@@ -272,14 +272,14 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, SafeProperty newProperty )
+    public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty )
     {
         if ( newProperty.isDefined() )
         {
-            DiffSets<SafeProperty> diffSets = nodePropertyDiffSets( nodeId );
+            DiffSets<DefinedProperty> diffSets = nodePropertyDiffSets( nodeId );
             if ( replacedProperty.isDefined() )
             {
-                diffSets.replace( (SafeProperty)replacedProperty, newProperty );
+                diffSets.replace( (DefinedProperty)replacedProperty, newProperty );
             }
             else
             {
@@ -291,14 +291,14 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty, SafeProperty newProperty )
+    public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty, DefinedProperty newProperty )
     {
         if ( newProperty.isDefined() )
         {
-            DiffSets<SafeProperty> diffSets = relationshipPropertyDiffSets( relationshipId );
+            DiffSets<DefinedProperty> diffSets = relationshipPropertyDiffSets( relationshipId );
             if ( replacedProperty.isDefined() )
             {
-                diffSets.replace( (SafeProperty)replacedProperty, newProperty );
+                diffSets.replace( (DefinedProperty)replacedProperty, newProperty );
             }
             else
             {
@@ -310,14 +310,14 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void graphDoReplaceProperty( Property replacedProperty, SafeProperty newProperty )
+    public void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty )
     {
         if ( newProperty.isDefined() )
         {
-            DiffSets<SafeProperty> diffSets = graphPropertyDiffSets();
+            DiffSets<DefinedProperty> diffSets = graphPropertyDiffSets();
             if ( replacedProperty.isDefined() )
             {
-                diffSets.replace( (SafeProperty)replacedProperty, newProperty );
+                diffSets.replace( (DefinedProperty)replacedProperty, newProperty );
             }
             else
             {
@@ -333,7 +333,7 @@ public final class TxStateImpl implements TxState
     {
         if ( removedProperty.isDefined() )
         {
-            nodePropertyDiffSets( nodeId ).remove( (SafeProperty)removedProperty );
+            nodePropertyDiffSets( nodeId ).remove( (DefinedProperty)removedProperty );
             legacyState.nodeRemoveProperty( nodeId, removedProperty );
             hasChanges = true;
         }
@@ -344,7 +344,7 @@ public final class TxStateImpl implements TxState
     {
         if ( removedProperty.isDefined() )
         {
-            relationshipPropertyDiffSets( relationshipId ).remove( (SafeProperty)removedProperty );
+            relationshipPropertyDiffSets( relationshipId ).remove( (DefinedProperty)removedProperty );
             legacyState.relationshipRemoveProperty( relationshipId, removedProperty );
             hasChanges = true;
         }
@@ -355,7 +355,7 @@ public final class TxStateImpl implements TxState
     {
         if ( removedProperty.isDefined() )
         {
-            graphPropertyDiffSets().remove( (SafeProperty)removedProperty );
+            graphPropertyDiffSets().remove( (DefinedProperty)removedProperty );
             legacyState.graphRemoveProperty( removedProperty );
             hasChanges = true;
         }

@@ -55,9 +55,9 @@ class TransactionBoundSchemaQueryContext(graph: GraphDatabaseAPI, tx: Transactio
     else {
       val tx = graph.beginTx()
       try {
-        val bridge   = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-        val stmCtx   = bridge.schemaStatement()
-        val result   = try {
+        val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+        val stmCtx = bridge.schemaStatement()
+        val result = try {
           work(new TransactionBoundSchemaQueryContext(graph, tx, stmCtx))
         }
         finally {
@@ -169,7 +169,8 @@ class TransactionBoundSchemaQueryContext(graph: GraphDatabaseAPI, tx: Transactio
 
   def createRelationship(start: Node, end: Node, relType: String): Relationship = throw illegalOperation()
 
-  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] = throw illegalOperation()
+  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] =
+    throw illegalOperation()
 
   def getLabelsForNode(node: Long): Iterator[Long] = throw illegalOperation()
 
@@ -178,6 +179,8 @@ class TransactionBoundSchemaQueryContext(graph: GraphDatabaseAPI, tx: Transactio
   def removeLabelsFromNode(node: Long, labelIds: Iterator[Long]): Int = throw illegalOperation()
 
   def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = throw illegalOperation()
+
+  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Node = throw illegalOperation()
 
   def getNodesByLabel(id: Long): Iterator[Node] = throw illegalOperation()
 }

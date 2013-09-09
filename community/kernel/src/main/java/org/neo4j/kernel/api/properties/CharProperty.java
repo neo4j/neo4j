@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
  */
-final class CharProperty extends SafeProperty
+final class CharProperty extends DefinedProperty
 {
     private final char value;
     private final long propertyKeyId;
@@ -48,7 +48,7 @@ final class CharProperty extends SafeProperty
     {
         if ( other instanceof Character )
         {
-            return value == (char) other;
+            return value == ((Character)other).charValue();
         }
         return valueCompare( value, other );
     }

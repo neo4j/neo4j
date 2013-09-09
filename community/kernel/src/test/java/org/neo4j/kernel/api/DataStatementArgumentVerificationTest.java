@@ -36,7 +36,7 @@ public class DataStatementArgumentVerificationTest
         DataStatement statement = new DataStatement( null, null );
 
         // when
-        Property property = statement.nodeGetProperty( 17, TokenRead.NO_SUCH_PROPERTY_KEY );
+        Property property = statement.nodeGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
         assertFalse( "should return NoProperty", property.isDefined() );
@@ -50,7 +50,7 @@ public class DataStatementArgumentVerificationTest
         DataStatement statement = new DataStatement( null, null );
 
         // when
-        Property property = statement.relationshipGetProperty( 17, TokenRead.NO_SUCH_PROPERTY_KEY );
+        Property property = statement.relationshipGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
         assertFalse( "should return NoProperty", property.isDefined() );
@@ -64,7 +64,7 @@ public class DataStatementArgumentVerificationTest
         DataStatement statement = new DataStatement( null, null );
 
         // when
-        Property property = statement.graphGetProperty( TokenRead.NO_SUCH_PROPERTY_KEY );
+        Property property = statement.graphGetProperty( StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
         assertFalse( "should return NoProperty", property.isDefined() );
@@ -77,7 +77,7 @@ public class DataStatementArgumentVerificationTest
         DataStatement statement = new DataStatement( null, null );
 
         // when
-        PrimitiveLongIterator nodes = statement.nodesGetForLabel( TokenRead.NO_SUCH_LABEL );
+        PrimitiveLongIterator nodes = statement.nodesGetForLabel( StatementConstants.NO_SUCH_LABEL );
 
         // then
         assertFalse( "should not contain any ids", nodes.hasNext() );
@@ -90,7 +90,7 @@ public class DataStatementArgumentVerificationTest
         DataStatement statement = new DataStatement( null, null );
 
         // when
-        boolean hasLabel = statement.nodeHasLabel( 17, TokenRead.NO_SUCH_LABEL );
+        boolean hasLabel = statement.nodeHasLabel( 17, StatementConstants.NO_SUCH_LABEL );
 
         // then
         assertFalse( "should not contain any ids", hasLabel );

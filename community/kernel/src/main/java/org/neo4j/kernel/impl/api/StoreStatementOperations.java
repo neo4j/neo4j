@@ -31,6 +31,7 @@ import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -46,8 +47,8 @@ import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -80,36 +81,36 @@ import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLab
 /**
  * This layer interacts with committed data. It currently delegates to several of the older XXXManager-type classes.
  * This should be refactored to use a cleaner read-only interface.
- *
+ * <p/>
  * Also, caching currently lives above this layer, but it really should live *inside* the read-only abstraction that
  * this
  * thing takes.
- *
+ * <p/>
  * Cache reading and invalidation is not the concern of this part of the system, that is an optimization on top of the
  * committed data in the database, and should as such live under that abstraction.
  */
 public class StoreStatementOperations implements
-    KeyReadOperations,
-    KeyWriteOperations,
-    EntityReadOperations,
-    EntityWriteOperations,
-    SchemaReadOperations,
-    AuxiliaryStoreOperations
+        KeyReadOperations,
+        KeyWriteOperations,
+        EntityReadOperations,
+        EntityWriteOperations,
+        SchemaReadOperations,
+        AuxiliaryStoreOperations
 
 {
     private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
             new Function<UniquenessConstraintRule, UniquenessConstraint>()
-    {
-        @Override
-        public UniquenessConstraint apply( UniquenessConstraintRule rule )
-        {
-            // We can use propertyKeyId straight up here, without reading from the record, since we have
-            // verified that it has that propertyKeyId in the predicate. And since we currently only support
-            // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
-            return new UniquenessConstraint( rule.getLabel(), rule.getPropertyKey() );
-        }
-    };
-    
+            {
+                @Override
+                public UniquenessConstraint apply( UniquenessConstraintRule rule )
+                {
+                    // We can use propertyKeyId straight up here, without reading from the record, since we have
+                    // verified that it has that propertyKeyId in the predicate. And since we currently only support
+                    // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
+                    return new UniquenessConstraint( rule.getLabel(), rule.getPropertyKey() );
+                }
+            };
+
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final NeoStore neoStore;
@@ -119,7 +120,7 @@ public class StoreStatementOperations implements
     private final PropertyStore propertyStore;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final SchemaStorage schemaStorage;
-    
+
     // TODO this is here since the move of properties from Primitive and friends to the Kernel API.
     // ideally we'd have StateHandlingStatementContext not delegate setProperty to this StoreStatementContext,
     // but talk to use before commit instead.
@@ -150,20 +151,20 @@ public class StoreStatementOperations implements
         throw new UnsupportedOperationException(
                 "The storage layer can not be written to directly, you have to go through a transaction." );
     }
-    
+
     private UnsupportedOperationException shouldNotHaveReachedAllTheWayHere()
     {
         throw new UnsupportedOperationException(
                 "This call should not reach all the way here" );
     }
-    
+
     private UnsupportedOperationException shouldCallAuxiliaryInstead()
     {
         return new UnsupportedOperationException(
                 "This shouldn't be called directly, but instead to an appropriate method in the " +
                         AuxiliaryStoreOperations.class.getSimpleName() + " interface" );
     }
-    
+
     @Override
     public long labelGetOrCreateForName( Statement state, String label ) throws TooManyLabelsException
     {
@@ -178,7 +179,7 @@ public class StoreStatementOperations implements
             // implementation should not depend on internal kernel exception
             // messages like this.
             if ( e.getCause() instanceof UnderlyingStorageException
-                 && e.getCause().getMessage().equals( "Id capacity exceeded" ) )
+                    && e.getCause().getMessage().equals( "Id capacity exceeded" ) )
             {
                 throw new TooManyLabelsException( e );
             }
@@ -194,7 +195,7 @@ public class StoreStatementOperations implements
     {
         int id = labelTokenHolder.getIdByName( label );
 
-        if(id == TokenHolder.NO_ID)
+        if ( id == TokenHolder.NO_ID )
         {
             return NO_SUCH_LABEL;
         }
@@ -265,7 +266,7 @@ public class StoreStatementOperations implements
     {
         try
         {
-            return ((Token)relationshipTypeTokenHolder.getTokenById( (int)relationshipTypeId )).name();
+            return ((Token) relationshipTypeTokenHolder.getTokenById( (int) relationshipTypeId )).name();
         }
         catch ( TokenNotFoundException e )
         {
@@ -274,7 +275,8 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( Statement state, final long labelId, final long propertyKey )
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( Statement state, final long labelId,
+                                                             final long propertyKey )
             throws SchemaRuleNotFoundException
     {
         return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
@@ -377,11 +379,12 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public InternalIndexState indexGetState( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( Statement state, IndexDescriptor descriptor ) throws
+            IndexNotFoundKernelException
     {
         return indexService.getProxyForRule( indexId( descriptor ) ).getState();
     }
-    
+
     @Override
     public String indexGetFailure( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
@@ -400,12 +403,24 @@ public class StoreStatementOperations implements
         }
     }
 
+    private long constraintIndexId( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        try
+        {
+            return schemaStorage.constraintIndexRule( descriptor.getLabelId(), descriptor.getPropertyKeyId() ).getId();
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            throw new IndexNotFoundKernelException( e.getMessage(), e );
+        }
+    }
+
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( Statement state,
-            long labelId, final long propertyKeyId )
+                                                                                long labelId, final long propertyKeyId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
-                                          labelId, new Predicate<UniquenessConstraintRule>()
+                labelId, new Predicate<UniquenessConstraintRule>()
         {
             @Override
             public boolean accept( UniquenessConstraintRule rule )
@@ -420,7 +435,7 @@ public class StoreStatementOperations implements
     public Iterator<UniquenessConstraint> constraintsGetForLabel( Statement state, long labelId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
-                                          labelId, Predicates.<UniquenessConstraintRule>TRUE() );
+                labelId, Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
     @Override
@@ -446,7 +461,7 @@ public class StoreStatementOperations implements
     public long propertyKeyGetForName( Statement state, String propertyKey )
     {
         int id = propertyKeyTokenHolder.getIdByName( propertyKey );
-        if(id == TokenHolder.NO_ID)
+        if ( id == TokenHolder.NO_ID )
         {
             return NO_SUCH_PROPERTY_KEY;
         }
@@ -466,9 +481,9 @@ public class StoreStatementOperations implements
             throw new PropertyKeyIdNotFoundKernelException( propertyKeyId, e );
         }
     }
-    
+
     @Override
-    public Iterator<SafeProperty> nodeGetAllProperties( Statement state, long nodeId ) throws EntityNotFoundException
+    public Iterator<DefinedProperty> nodeGetAllProperties( Statement state, long nodeId ) throws EntityNotFoundException
     {
         try
         {
@@ -481,7 +496,8 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Iterator<SafeProperty> relationshipGetAllProperties( Statement state, long relationshipId ) throws EntityNotFoundException
+    public Iterator<DefinedProperty> relationshipGetAllProperties( Statement state,
+                                                                   long relationshipId ) throws EntityNotFoundException
     {
         try
         {
@@ -492,21 +508,30 @@ public class StoreStatementOperations implements
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
         }
     }
-    
+
     @Override
-    public Iterator<SafeProperty> graphGetAllProperties( Statement state )
+    public Iterator<DefinedProperty> graphGetAllProperties( Statement state )
     {
         return loadAllPropertiesOf( neoStore.asRecord() );
     }
 
-    private Iterator<SafeProperty> loadAllPropertiesOf( PrimitiveRecord primitiveRecord )
+    @Override
+    public long nodeGetUniqueFromIndexLookup( Statement state, IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException
+
+    {
+        PrimitiveLongIterator iterator = state.getIndexReader( constraintIndexId( index ) ).lookup( value );
+        return IteratorUtil.single( iterator, StatementConstants.NO_SUCH_NODE );
+    }
+
+    private Iterator<DefinedProperty> loadAllPropertiesOf( PrimitiveRecord primitiveRecord )
     {
         Collection<PropertyRecord> records = propertyStore.getPropertyRecordChain( primitiveRecord.getNextProp() );
         if ( null == records )
         {
             return IteratorUtil.emptyIterator();
         }
-        List<SafeProperty> properties = new ArrayList<>();
+        List<DefinedProperty> properties = new ArrayList<>();
         for ( PropertyRecord record : records )
         {
             for ( PropertyBlock block : record.getPropertyBlocks() )
@@ -525,26 +550,26 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public void nodeAddStoreProperty( long nodeId, SafeProperty property )
+    public void nodeAddStoreProperty( long nodeId, DefinedProperty property )
 
     {
         persistenceManager.nodeAddProperty( nodeId, (int) property.propertyKeyId(), property.value() );
     }
 
     @Override
-    public void relationshipAddStoreProperty( long relationshipId, SafeProperty property )
+    public void relationshipAddStoreProperty( long relationshipId, DefinedProperty property )
     {
         persistenceManager.relAddProperty( relationshipId, (int) property.propertyKeyId(), property.value() );
     }
-    
+
     @Override
-    public void graphAddStoreProperty( SafeProperty property )
+    public void graphAddStoreProperty( DefinedProperty property )
     {
         persistenceManager.graphAddProperty( (int) property.propertyKeyId(), property.value() );
     }
 
     @Override
-    public void nodeChangeStoreProperty( long nodeId, SafeProperty previousProperty, SafeProperty property )
+    public void nodeChangeStoreProperty( long nodeId, DefinedProperty previousProperty, DefinedProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -553,17 +578,18 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public void relationshipChangeStoreProperty( long relationshipId, SafeProperty previousProperty, SafeProperty property )
+    public void relationshipChangeStoreProperty( long relationshipId, DefinedProperty previousProperty,
+                                                 DefinedProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
         // on demand. This change was made instead of cramming in record id into the Property objects,
         persistenceManager.relChangeProperty( relationshipId,
-                                              (int) property.propertyKeyId(), property.value() );
+                (int) property.propertyKeyId(), property.value() );
     }
-    
+
     @Override
-    public void graphChangeStoreProperty( SafeProperty previousProperty, SafeProperty property )
+    public void graphChangeStoreProperty( DefinedProperty previousProperty, DefinedProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -572,7 +598,7 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public void nodeRemoveStoreProperty( long nodeId, SafeProperty property )
+    public void nodeRemoveStoreProperty( long nodeId, DefinedProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -581,16 +607,16 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public void relationshipRemoveStoreProperty( long relationshipId, SafeProperty property )
+    public void relationshipRemoveStoreProperty( long relationshipId, DefinedProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
         // on demand. This change was made instead of cramming in record id into the Property objects,
         persistenceManager.relRemoveProperty( relationshipId, (int) property.propertyKeyId() );
     }
-    
+
     @Override
-    public void graphRemoveStoreProperty( SafeProperty property )
+    public void graphRemoveStoreProperty( DefinedProperty property )
     {
         // TODO this should change. We don't have the property record id here, so we PersistenceManager
         // has been changed to only accept the property key and it will find it among the property records
@@ -599,23 +625,23 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( Statement state, long nodeId, SafeProperty property )
+    public Property nodeSetProperty( Statement state, long nodeId, DefinedProperty property )
     {
         throw shouldCallAuxiliaryInstead();
     }
 
     @Override
-    public Property relationshipSetProperty( Statement state, long relationshipId, SafeProperty property )
+    public Property relationshipSetProperty( Statement state, long relationshipId, DefinedProperty property )
     {
         throw shouldCallAuxiliaryInstead();
     }
-    
+
     @Override
-    public Property graphSetProperty( Statement state, SafeProperty property )
+    public Property graphSetProperty( Statement state, DefinedProperty property )
     {
         throw shouldCallAuxiliaryInstead();
     }
-    
+
     @Override
     public Property nodeRemoveProperty( Statement state, long nodeId, long propertyKeyId )
     {
@@ -627,25 +653,25 @@ public class StoreStatementOperations implements
     {
         throw shouldCallAuxiliaryInstead();
     }
-    
+
     @Override
     public Property graphRemoveProperty( Statement state, long propertyKeyId )
     {
         throw shouldCallAuxiliaryInstead();
     }
-    
+
     @Override
     public void nodeDelete( Statement state, long nodeId )
     {
         throw shouldCallAuxiliaryInstead();
     }
-    
+
     @Override
     public void relationshipDelete( Statement state, long relationshipId )
     {
         throw shouldCallAuxiliaryInstead();
     }
-    
+
     @Override
     public void nodeDelete( long nodeId )
     {
@@ -697,7 +723,8 @@ public class StoreStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator relationshipGetPropertyKeys( Statement state, long relationshipId ) throws EntityNotFoundException
+    public PrimitiveLongIterator relationshipGetPropertyKeys( Statement state,
+                                                              long relationshipId ) throws EntityNotFoundException
     {
         throw shouldNotHaveReachedAllTheWayHere();
     }
