@@ -45,7 +45,7 @@ public class KernelTransactionImplementationTest
             }
 
             @Override
-            protected Statement newStatement()
+            protected KernelStatement newStatement()
             {
                 return null;
             }

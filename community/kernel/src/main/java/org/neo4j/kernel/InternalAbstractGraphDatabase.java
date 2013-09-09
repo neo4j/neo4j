@@ -1533,7 +1533,8 @@ public abstract class InternalAbstractGraphDatabase
 
         try
         {
-            IndexDescriptor indexRule = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyId );
+            IndexDescriptor indexRule = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId,
+                    propertyId );
             if ( statement.readOperations().indexGetState( indexRule ) == InternalIndexState.ONLINE )
             {
                 // Ha! We found an index - let's use it to find matching nodes

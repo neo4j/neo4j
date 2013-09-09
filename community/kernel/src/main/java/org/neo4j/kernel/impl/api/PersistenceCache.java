@@ -25,7 +25,7 @@ import java.util.Set;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -83,14 +83,14 @@ public class PersistenceCache
         this.graphProperties = graphProperties;
     }
 
-    public boolean nodeHasLabel( Statement state, long nodeId, long labelId, CacheLoader<Set<Long>> cacheLoader )
+    public boolean nodeHasLabel( KernelStatement state, long nodeId, long labelId, CacheLoader<Set<Long>> cacheLoader )
             throws EntityNotFoundException
     {
         Set<Long> labels = getNode( nodeId ).getLabels( state, cacheLoader );
         return labels.contains( labelId );
     }
     
-    public Set<Long> nodeGetLabels( Statement state, long nodeId, CacheLoader<Set<Long>> loader )
+    public Set<Long> nodeGetLabels( KernelStatement state, long nodeId, CacheLoader<Set<Long>> loader )
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getLabels( state, loader );
@@ -137,53 +137,53 @@ public class PersistenceCache
         nodeCache.remove( nodeId );
     }
 
-    public Iterator<DefinedProperty> nodeGetProperties( Statement state, long nodeId,
+    public Iterator<DefinedProperty> nodeGetProperties( KernelStatement state, long nodeId,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getProperties( state, cacheLoader, NODE_CACHE_SIZE_LISTENER );
     }
     
-    public PrimitiveLongIterator nodeGetPropertyKeys( Statement state, long nodeId,
+    public PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getPropertyKeys( state, cacheLoader, NODE_CACHE_SIZE_LISTENER );
     }
     
-    public Property nodeGetProperty( Statement state, long nodeId, long propertyKeyId,
+    public Property nodeGetProperty( KernelStatement state, long nodeId, long propertyKeyId,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getProperty( state, cacheLoader, NODE_CACHE_SIZE_LISTENER, (int) propertyKeyId );
     }
     
-    public Iterator<DefinedProperty> relationshipGetProperties( Statement state, long relationshipId,
+    public Iterator<DefinedProperty> relationshipGetProperties( KernelStatement state, long relationshipId,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperties( state, cacheLoader,
                 RELATIONSHIP_CACHE_SIZE_LISTENER );
     }
 
-    public Property relationshipGetProperty( Statement state, long relationshipId, long propertyKeyId,
+    public Property relationshipGetProperty( KernelStatement state, long relationshipId, long propertyKeyId,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperty( state, cacheLoader, RELATIONSHIP_CACHE_SIZE_LISTENER,
                 (int) propertyKeyId );
     }
     
-    public Iterator<DefinedProperty> graphGetProperties( Statement state, CacheLoader<Iterator<DefinedProperty>> cacheLoader )
+    public Iterator<DefinedProperty> graphGetProperties( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
         return graphProperties.evaluate().getProperties( state, cacheLoader, NO_UPDATES );
     }
     
-    public PrimitiveLongIterator graphGetPropertyKeys( Statement state,
+    public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
         return graphProperties.evaluate().getPropertyKeys( state, cacheLoader, NO_UPDATES );
     }
 
-    public Property graphGetProperty( Statement state, CacheLoader<Iterator<DefinedProperty>> cacheLoader,
+    public Property graphGetProperty( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> cacheLoader,
             long propertyKeyId )
     {
         return graphProperties.evaluate().getProperty( state, cacheLoader, NO_UPDATES, (int) propertyKeyId );

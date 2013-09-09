@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.operations;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -51,7 +51,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public boolean nodeAddLabel( Statement state, long nodeId, long labelId )
+    public boolean nodeAddLabel( KernelStatement state, long nodeId, long labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
         Iterator<UniquenessConstraint> constraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
@@ -69,7 +69,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public Property nodeSetProperty( Statement state, long nodeId, DefinedProperty property )
+    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
         PrimitiveLongIterator labelIds = entityReadOperations.nodeGetLabels( state, nodeId );
@@ -87,7 +87,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
-    private void validateNoExistingNodeWithLabelAndProperty( Statement state, long labelId, DefinedProperty property )
+    private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state, long labelId, DefinedProperty property )
             throws ConstraintValidationKernelException
     {
         try
@@ -111,7 +111,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
         }
     }
 
-    private void verifyIndexOnline( Statement state, IndexDescriptor indexDescriptor )
+    private void verifyIndexOnline( KernelStatement state, IndexDescriptor indexDescriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         switch ( schemaReadOperations.indexGetState( state, indexDescriptor ) )
@@ -126,64 +126,64 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     // Simply delegate the rest of the invocations
 
     @Override
-    public void nodeDelete( Statement state, long nodeId )
+    public void nodeDelete( KernelStatement state, long nodeId )
     {
         entityWriteOperations.nodeDelete( state, nodeId );
     }
 
     @Override
-    public void relationshipDelete( Statement state, long relationshipId )
+    public void relationshipDelete( KernelStatement state, long relationshipId )
     {
         entityWriteOperations.relationshipDelete( state, relationshipId );
     }
 
     @Override
-    public boolean nodeRemoveLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         return entityWriteOperations.nodeRemoveLabel( state, nodeId, labelId );
     }
 
     @Override
-    public Property relationshipSetProperty( Statement state, long relationshipId, DefinedProperty property )
+    public Property relationshipSetProperty( KernelStatement state, long relationshipId, DefinedProperty property )
             throws EntityNotFoundException
     {
         return entityWriteOperations.relationshipSetProperty( state, relationshipId, property );
     }
 
     @Override
-    public Property graphSetProperty( Statement state, DefinedProperty property )
+    public Property graphSetProperty( KernelStatement state, DefinedProperty property )
     {
         return entityWriteOperations.graphSetProperty( state, property );
     }
 
     @Override
-    public Property nodeRemoveProperty( Statement state, long nodeId, long propertyKeyId )
+    public Property nodeRemoveProperty( KernelStatement state, long nodeId, long propertyKeyId )
             throws EntityNotFoundException
     {
         return entityWriteOperations.nodeRemoveProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
-    public Property relationshipRemoveProperty( Statement state, long relationshipId, long propertyKeyId )
+    public Property relationshipRemoveProperty( KernelStatement state, long relationshipId, long propertyKeyId )
             throws EntityNotFoundException
     {
         return entityWriteOperations.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override
-    public Property graphRemoveProperty( Statement state, long propertyKeyId )
+    public Property graphRemoveProperty( KernelStatement state, long propertyKeyId )
     {
         return entityWriteOperations.graphRemoveProperty( state, propertyKeyId );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( Statement state, long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, long labelId )
     {
         return entityReadOperations.nodesGetForLabel( state, labelId );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexLookup( Statement state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
 
     {
@@ -191,7 +191,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public long nodeGetUniqueFromIndexLookup( Statement state, IndexDescriptor index, Object value ) throws
+    public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value ) throws
             IndexNotFoundKernelException, IndexBrokenKernelException
     {
         verifyIndexOnline( state, index );
@@ -207,70 +207,70 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public boolean nodeHasLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeHasLabel( state, nodeId, labelId );
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetLabels( Statement state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetLabels( state, nodeId );
     }
 
     @Override
-    public Property nodeGetProperty( Statement state, long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    public Property nodeGetProperty( KernelStatement state, long nodeId, long propertyKeyId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
-    public Property relationshipGetProperty( Statement state, long relationshipId, long propertyKeyId ) throws
+    public Property relationshipGetProperty( KernelStatement state, long relationshipId, long propertyKeyId ) throws
             EntityNotFoundException
     {
         return entityReadOperations.relationshipGetProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override
-    public Property graphGetProperty( Statement state, long propertyKeyId )
+    public Property graphGetProperty( KernelStatement state, long propertyKeyId )
     {
         return entityReadOperations.graphGetProperty( state, propertyKeyId );
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetPropertyKeys( Statement state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetPropertyKeys( state, nodeId );
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllProperties( Statement state, long nodeId ) throws EntityNotFoundException
+    public Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetAllProperties( state, nodeId );
     }
 
     @Override
-    public PrimitiveLongIterator relationshipGetPropertyKeys( Statement state, long relationshipId ) throws
+    public PrimitiveLongIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws
             EntityNotFoundException
     {
         return entityReadOperations.relationshipGetPropertyKeys( state, relationshipId );
     }
 
     @Override
-    public Iterator<DefinedProperty> relationshipGetAllProperties( Statement state, long relationshipId ) throws
+    public Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state, long relationshipId ) throws
             EntityNotFoundException
     {
         return entityReadOperations.relationshipGetAllProperties( state, relationshipId );
     }
 
     @Override
-    public PrimitiveLongIterator graphGetPropertyKeys( Statement state )
+    public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state )
     {
         return entityReadOperations.graphGetPropertyKeys( state );
     }
 
     @Override
-    public Iterator<DefinedProperty> graphGetAllProperties( Statement state )
+    public Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state )
     {
         return entityReadOperations.graphGetAllProperties( state );
     }

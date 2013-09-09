@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.operations;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -33,33 +34,33 @@ public interface SchemaReadOperations
     /**
      * Returns the descriptor for the given labelId and propertyKey.
      */
-    IndexDescriptor indexesGetForLabelAndPropertyKey( Statement state, long labelId, long propertyKey )
+    IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, long labelId, long propertyKey )
             throws SchemaRuleNotFoundException;
 
     /**
      * Get all indexes for a label.
      */
-    Iterator<IndexDescriptor> indexesGetForLabel( Statement state, long labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, long labelId );
 
     /**
      * Returns all indexes.
      */
-    Iterator<IndexDescriptor> indexesGetAll( Statement state );
+    Iterator<IndexDescriptor> indexesGetAll( KernelStatement state );
 
     /**
      * Get all constraint indexes for a label.
      */
-    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( Statement state, long labelId );
+    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, long labelId );
 
     /**
      * Returns all constraint indexes.
      */
-    Iterator<IndexDescriptor> uniqueIndexesGetAll( Statement state );
+    Iterator<IndexDescriptor> uniqueIndexesGetAll( KernelStatement state );
 
     /**
      * Retrieve the state of an index.
      */
-    InternalIndexState indexGetState( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 	
     /**
      * Returns the failure description of a failed index.
@@ -70,28 +71,28 @@ public interface SchemaReadOperations
      * Get all constraints applicable to label and propertyKey. There are only {@link UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( Statement state, long labelId, long propertyKeyId );
+    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, long labelId, long propertyKeyId );
 
     /**
      * Get all constraints applicable to label. There are only {@link UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabel( Statement state, long labelId );
+    Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, long labelId );
 
     /**
      * Get all constraints. There are only {@link UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetAll( Statement state );
+    Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state );
 
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( Statement state, IndexDescriptor index ) throws SchemaRuleNotFoundException;
+    Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException;
 
     /**
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
-    long indexGetCommittedId( Statement state, IndexDescriptor index ) throws SchemaRuleNotFoundException;
+    long indexGetCommittedId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException;
 }

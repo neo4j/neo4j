@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -29,9 +29,9 @@ public interface EntityWriteOperations
 {
     // Currently, of course, most relevant operations here are still in the old core API implementation.
 
-    void nodeDelete( Statement state, long nodeId );
+    void nodeDelete( KernelStatement state, long nodeId );
 
-    void relationshipDelete( Statement state, long relationshipId );
+    void relationshipDelete( KernelStatement state, long relationshipId );
 
     /**
      * Labels a node with the label corresponding to the given label id.
@@ -39,7 +39,7 @@ public interface EntityWriteOperations
      * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(org.neo4j.kernel.api.Statement, String)} or {@link
      * KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
      */
-    boolean nodeAddLabel( Statement state, long nodeId, long labelId )
+    boolean nodeAddLabel( KernelStatement state, long nodeId, long labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException;
 
     /**
@@ -48,25 +48,25 @@ public interface EntityWriteOperations
      * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(org.neo4j.kernel.api.Statement, String)} or {@link
      * KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
      */
-    boolean nodeRemoveLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException;
+    boolean nodeRemoveLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException;
 
-    Property nodeSetProperty( Statement state, long nodeId, DefinedProperty property )
+    Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
             throws EntityNotFoundException, ConstraintValidationKernelException;
 
-    Property relationshipSetProperty( Statement state, long relationshipId, DefinedProperty property )
+    Property relationshipSetProperty( KernelStatement state, long relationshipId, DefinedProperty property )
             throws EntityNotFoundException;
-
-    Property graphSetProperty( Statement state, DefinedProperty property );
+    
+    Property graphSetProperty( KernelStatement state, DefinedProperty property );
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Property nodeRemoveProperty( Statement state, long nodeId, long propertyKeyId )
+    Property nodeRemoveProperty( KernelStatement state, long nodeId, long propertyKeyId )
             throws EntityNotFoundException;
 
-    Property relationshipRemoveProperty( Statement state, long relationshipId, long propertyKeyId )
+    Property relationshipRemoveProperty( KernelStatement state, long relationshipId, long propertyKeyId )
             throws EntityNotFoundException;
     
-    Property graphRemoveProperty( Statement state, long propertyKeyId );
+    Property graphRemoveProperty( KernelStatement state, long propertyKeyId );
 }

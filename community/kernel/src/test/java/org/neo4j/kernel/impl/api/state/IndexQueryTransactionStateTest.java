@@ -27,7 +27,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -369,7 +369,7 @@ public class IndexQueryTransactionStateTest
     private StatementOperations store;
     private OldTxStateBridge oldTxState;
     private StateHandlingStatementOperations txContext;
-    private Statement state;
+    private KernelStatement state;
 
     @Before
     public void before() throws Exception

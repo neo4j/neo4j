@@ -33,7 +33,7 @@ public class StatementLifecycleTest
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        Statement statement = new Statement( transaction, mock( IndexReaderFactory.class ), null, null, null );
+        KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null, null, null );
         statement.acquire();
 
         // when
@@ -48,7 +48,7 @@ public class StatementLifecycleTest
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        Statement statement = new Statement( transaction, mock( IndexReaderFactory.class ), null, null, null );
+        KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null, null, null );
         statement.acquire();
         statement.acquire();
 

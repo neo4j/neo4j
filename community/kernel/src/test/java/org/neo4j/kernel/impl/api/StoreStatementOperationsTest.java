@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.scan.LabelScanStore;
@@ -276,7 +276,7 @@ public class StoreStatementOperationsTest
     private GraphDatabaseAPI db;
     private final Label label1 = label( "first-label" ), label2 = label( "second-label" );
     private final String propertyKey = "name";
-    private Statement state;
+    private KernelStatement state;
     private StoreStatementOperations statement;
 
     @Before
@@ -296,7 +296,7 @@ public class StoreStatementOperationsTest
                 neoStore,
                 resolver.resolveDependency( PersistenceManager.class ),
                 indexingService );
-        this.state = new Statement( null, new IndexReaderFactory.Caching( indexingService ), labelScanStore, null, null );
+        this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ), labelScanStore, null, null );
     }
 
     @After

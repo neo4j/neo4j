@@ -58,9 +58,9 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterat
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
     private final KernelTransactionImplementation transaction;
-    final Statement statement;
+    final KernelStatement statement;
 
-    OperationsFacade( KernelTransactionImplementation transaction, Statement statement )
+    OperationsFacade( KernelTransactionImplementation transaction, KernelStatement statement )
     {
         this.transaction = transaction;
         this.statement = statement;

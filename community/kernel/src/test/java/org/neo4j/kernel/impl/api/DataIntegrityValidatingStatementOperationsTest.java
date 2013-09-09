@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -309,5 +309,5 @@ public class DataIntegrityValidatingStatementOperationsTest
         };
     }
 
-    private final Statement state = StatementOperationsTestHelper.mockedState();
+    private final KernelStatement state = StatementOperationsTestHelper.mockedState();
 }

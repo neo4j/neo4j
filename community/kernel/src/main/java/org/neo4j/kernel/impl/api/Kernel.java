@@ -30,9 +30,9 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionImplementation;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -357,9 +357,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         }
 
         @Override
-        protected Statement newStatement()
+        protected KernelStatement newStatement()
         {
-            return new Statement( this, new IndexReaderFactory.Caching( indexService ), labelScanStore, this, lockHolder );
+            return new KernelStatement( this, new IndexReaderFactory.Caching( indexService ), labelScanStore, this, lockHolder );
         }
 
         @Override
