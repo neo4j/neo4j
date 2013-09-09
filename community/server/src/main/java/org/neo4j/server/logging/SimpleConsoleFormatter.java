@@ -28,10 +28,6 @@ import ch.qos.logback.core.CoreConstants;
 import org.neo4j.kernel.logging.ModuleConverter;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.text.MessageFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Formatter;
