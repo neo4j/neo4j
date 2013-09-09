@@ -82,12 +82,18 @@ public class MasterInfoService implements AdvertisableService
             return status( FORBIDDEN ).build();
         }
 
-        if ( haDb.isMaster() )
+        String role = haDb.role().toLowerCase();
+        if ( role.equals( "master" ))
         {
             return positiveResponse();
         }
 
-        return negativeResponse();
+        if ( role.equals( "slave" ))
+        {
+            return negativeResponse();
+        }
+
+        return unknownResponse();
     }
 
     @GET
@@ -99,12 +105,18 @@ public class MasterInfoService implements AdvertisableService
             return status( FORBIDDEN ).build();
         }
 
-        if ( haDb.isMaster() )
+        String role = haDb.role().toLowerCase();
+        if ( role.equals( "slave" ))
+        {
+            return positiveResponse();
+        }
+
+        if ( role.equals( "master" ))
         {
             return negativeResponse();
         }
 
-        return positiveResponse();
+        return unknownResponse();
     }
 
     private Response negativeResponse()
@@ -115,6 +127,11 @@ public class MasterInfoService implements AdvertisableService
     private Response positiveResponse()
     {
         return plainTextResponse( OK, "true" );
+    }
+
+    private Response unknownResponse()
+    {
+        return plainTextResponse( NOT_FOUND, "UNKNOWN" );
     }
 
     private Response plainTextResponse( Response.Status status, String entityBody )
