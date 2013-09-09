@@ -38,12 +38,14 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -69,8 +71,10 @@ public class NeoStoreIndexStoreViewTest
     {
         // given
         NodeUpdateCollectingVisitor visitor = new NodeUpdateCollectingVisitor();
+        @SuppressWarnings( "unchecked" )
+        Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-            storeView.visitNodes( new long[] { labelId }, new long[] { propertyKeyId }, visitor );
+            storeView.visitNodes( new long[] { labelId }, new long[] { propertyKeyId }, visitor, labelVisitor );
 
         // when
         storeScan.run();
@@ -90,8 +94,10 @@ public class NeoStoreIndexStoreViewTest
         deleteAlistairAndStefanNodes();
 
         NodeUpdateCollectingVisitor visitor = new NodeUpdateCollectingVisitor();
+        @SuppressWarnings( "unchecked" )
+        Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new long[] { labelId }, new long[] { propertyKeyId }, visitor );
+                storeView.visitNodes( new long[] { labelId }, new long[] { propertyKeyId }, visitor, labelVisitor );
 
         // when
         storeScan.run();
@@ -122,8 +128,7 @@ public class NeoStoreIndexStoreViewTest
 
     private void createAlistairAndStefanNodes()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             alistair = graphDb.createNode( label );
             alistair.setProperty( "name", "Alistair" );
@@ -131,44 +136,31 @@ public class NeoStoreIndexStoreViewTest
             stefan.setProperty( "name", "Stefan" );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private void deleteAlistairAndStefanNodes()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             alistair.delete();
             stefan.delete();
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private void getOrCreateIds() throws SchemaKernelException
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             ThreadToStatementContextBridge bridge =
                     graphDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-            DataStatement statement = bridge.dataStatement();
-            labelId = statement.labelGetOrCreateForName( "Person" );
-            propertyKeyId = statement.propertyKeyGetOrCreateForName(  "name" );
-            statement.close();
+            try ( DataStatement statement = bridge.dataStatement() )
+            {
+                labelId = statement.labelGetOrCreateForName( "Person" );
+                propertyKeyId = statement.propertyKeyGetOrCreateForName(  "name" );
+            }
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
+
 import javax.transaction.xa.XAException;
 
 import org.junit.Before;
@@ -135,7 +137,7 @@ public class WriteTransactionTest
         // THEN
         verify( cacheAccessBackDoor ).removeSchemaRuleFromCache( ruleId );
     }
-    
+
     @Test
     public void shouldRemoveSchemaRuleWhenRollingBackTransaction() throws Exception
     {
@@ -151,7 +153,7 @@ public class WriteTransactionTest
         // THEN
         verifyNoMoreInteractions( cacheAccessBackDoor );
     }
-    
+
     @Test
     public void shouldWriteProperBeforeAndAfterPropertyRecordsWhenAddingProperty() throws Exception
     {
@@ -174,7 +176,7 @@ public class WriteTransactionTest
                 return true;
             }
         };
-        
+
         // GIVEN
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING, verifier );
         int nodeId = 1;
@@ -187,10 +189,10 @@ public class WriteTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey, value );
         writeTransaction.doPrepare();
     }
-    
+
     // TODO change property record
     // TODO remove property record
-    
+
     @Test
     public void shouldConvertAddedPropertyToNodePropertyUpdates() throws Exception
     {
@@ -200,7 +202,7 @@ public class WriteTransactionTest
         WriteTransaction writeTransaction = newWriteTransaction( indexingService );
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
-        
+
         // WHEN
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
@@ -211,10 +213,10 @@ public class WriteTransactionTest
         assertEquals( asSet(
                 add( nodeId, propertyKey1, value1, none ),
                 add( nodeId, propertyKey2, value2, none ) ),
-                
+
                 indexingService.updates );
     }
-    
+
     @Test
     public void shouldConvertChangedPropertyToNodePropertyUpdates() throws Exception
     {
@@ -227,7 +229,7 @@ public class WriteTransactionTest
         PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         prepareAndCommit( writeTransaction );
-        
+
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         Object newValue1 = "new", newValue2 = "new 2";
@@ -240,10 +242,10 @@ public class WriteTransactionTest
         assertEquals( asSet(
                 change( nodeId, propertyKey1, value1, none, newValue1, none ),
                 change( nodeId, propertyKey2, value2, none, newValue2, none ) ),
-                
+
                 indexingService.updates );
     }
-    
+
     @Test
     public void shouldConvertRemovedPropertyToNodePropertyUpdates() throws Exception
     {
@@ -256,7 +258,7 @@ public class WriteTransactionTest
         PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         prepareAndCommit( writeTransaction );
-        
+
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
@@ -268,7 +270,7 @@ public class WriteTransactionTest
         assertEquals( asSet(
                 remove( nodeId, propertyKey1, value1, none ),
                 remove( nodeId, propertyKey2, value2, none ) ),
-                
+
                 indexingService.updates );
     }
 
@@ -285,7 +287,7 @@ public class WriteTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         prepareAndCommit( writeTransaction );
-        
+
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
@@ -296,7 +298,7 @@ public class WriteTransactionTest
         assertEquals( asSet(
                 add( nodeId, propertyKey1, value1, labelIds ),
                 add( nodeId, propertyKey2, value2, labelIds ) ),
-                
+
                 indexingService.updates );
     }
 
@@ -312,7 +314,7 @@ public class WriteTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         prepareAndCommit( writeTransaction );
-        
+
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
@@ -325,10 +327,10 @@ public class WriteTransactionTest
                 add( nodeId, propertyKey1, value1, new long[] {labelId2} ),
                 add( nodeId, propertyKey2, value2, new long[] {labelId2} ),
                 add( nodeId, propertyKey2, value2, new long[] {labelId1, labelId2} ) ),
-                
+
                 indexingService.updates );
     }
-    
+
     @Test
     public void shouldConvertLabelRemovalToNodePropertyUpdates() throws Exception
     {
@@ -343,7 +345,7 @@ public class WriteTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId, nodeId );
         prepareAndCommit( writeTransaction );
-        
+
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
@@ -354,10 +356,10 @@ public class WriteTransactionTest
         assertEquals( asSet(
                 remove( nodeId, propertyKey1, value1, labelIds ),
                 remove( nodeId, propertyKey2, value2, labelIds ) ),
-                
+
                 indexingService.updates );
     }
-    
+
     @Test
     public void shouldConvertMixedLabelRemovalAndRemovePropertyToNodePropertyUpdates() throws Exception
     {
@@ -372,7 +374,7 @@ public class WriteTransactionTest
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
         prepareAndCommit( writeTransaction );
-        
+
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
@@ -384,7 +386,7 @@ public class WriteTransactionTest
         assertEquals( asSet(
                 remove( nodeId, propertyKey1, value1, new long[] {labelId1, labelId2} ),
                 remove( nodeId, propertyKey2, value2, new long[] {labelId2} ) ),
-                
+
                 indexingService.updates );
     }
 
@@ -417,7 +419,7 @@ public class WriteTransactionTest
 
                 indexingService.updates );
     }
-    
+
     @Test
     public void shouldUpdateHighIdsOnRecoveredTransaction() throws Exception
     {
@@ -454,13 +456,13 @@ public class WriteTransactionTest
         assertEquals( "PropertyKeyToken NameStore", 2, neoStore.getPropertyStore().getPropertyKeyTokenStore().getNameStore().getHighId() );
         assertEquals( "SchemaStore", ruleId+1, neoStore.getSchemaStore().getHighId() );
     }
-    
+
     @Test
     public void createdSchemaRuleRecordMustBeWrittenHeavy() throws Exception
     {
         // THEN
         Visitor<XaCommand, RuntimeException> verifier = heavySchemaRuleVerifier();
-        
+
         // GIVEN
         WriteTransaction tx = newWriteTransaction( NO_INDEXING, verifier );
         long ruleId = 0, labelId = 5, propertyKeyId = 7;
@@ -470,25 +472,25 @@ public class WriteTransactionTest
         tx.createSchemaRule( rule );
         prepareAndCommit( tx );
     }
-    
+
     @Test
     public void shouldWriteProperPropertyRecordsWhenOnlyChangingLinkage() throws Exception
     {
         /* There was an issue where GIVEN:
-         * 
+         *
          *   Legend: () = node, [] = property record
-         * 
+         *
          *   ()-->[0:block{size:1}]
-         * 
+         *
          * WHEN adding a new property record in front of if, not chaning any data in that record i.e:
-         * 
+         *
          *   ()-->[1:block{size:4}]-->[0:block{size:1}]
          *
          * The state of property record 0 would be that it had loaded value records for that block,
          * but those value records weren't heavy, so writing that record to the log would fail
          * w/ an assertion data != null.
          */
-        
+
         // GIVEN
         WriteTransaction tx = newWriteTransaction( NO_INDEXING );
         int nodeId = 0;
@@ -530,24 +532,24 @@ public class WriteTransactionTest
         tx.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
         prepareAndCommit( tx );
     }
-    
+
     @Test
     public void shouldCreateEqualNodePropertyUpdatesOnRecoveryOfCreatedNode() throws Exception
     {
         /* There was an issue where recovering a tx where a node with a label and a property
          * was created resulted in two exact copies of NodePropertyUpdates. */
-        
+
         // GIVEN
         long labelId = 5, propertyKeyId = 7, nodeId = 1;
         NodePropertyUpdate expectedUpdate = NodePropertyUpdate.add( nodeId, propertyKeyId, "Neo", new long[] {labelId} );
-        
+
         // -- an index
         long ruleId = 0;
         WriteTransaction tx = newWriteTransaction( NO_INDEXING );
         SchemaRule rule = IndexRule.indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
         tx.createSchemaRule( rule );
         prepareAndCommit( tx );
-        
+
         // -- and a tx creating a node with that label and property key
         IndexingService index = mock( IndexingService.class );
         CommandCapturingVisitor commandCapturingVisitor = new CommandCapturingVisitor();
@@ -566,7 +568,7 @@ public class WriteTransactionTest
         prepareAndCommitRecovered( tx );
         verify( index, times( 1 ) ).updateIndexes( argThat( matchesAll( expectedUpdate ) ) );
     }
-    
+
     private String string( int length )
     {
         StringBuilder result = new StringBuilder();
@@ -587,7 +589,7 @@ public class WriteTransactionTest
     private StoreFactory storeFactory;
     private NeoStore neoStore;
     private CacheAccessBackDoor cacheAccessBackDoor;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -597,7 +599,7 @@ public class WriteTransactionTest
         neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
     }
-    
+
     private static class VerifyingXaLogicalLog extends XaLogicalLog
     {
         private final Visitor<XaCommand, RuntimeException> verifier;
@@ -608,14 +610,14 @@ public class WriteTransactionTest
                     fs, new SingleLoggingService( DEV_NULL ), LogPruneStrategies.NO_PRUNING, null, 25*1024*1024 );
             this.verifier = verifier;
         }
-        
+
         @Override
         public synchronized void writeCommand( XaCommand command, int identifier ) throws IOException
         {
             this.verifier.visit( command );
         }
     }
-    
+
     private static class CommandCapturingVisitor implements Visitor<XaCommand,RuntimeException>
     {
         private final Collection<XaCommand> commands = new ArrayList<>();
@@ -626,7 +628,7 @@ public class WriteTransactionTest
             commands.add( element );
             return true;
         }
-        
+
         public void injectInto( WriteTransaction tx )
         {
             for ( XaCommand command : commands )
@@ -635,14 +637,14 @@ public class WriteTransactionTest
             }
         }
     }
-    
+
     static IndexingService NO_INDEXING = mock( IndexingService.class );
 
     private WriteTransaction newWriteTransaction( IndexingService indexing )
     {
         return newWriteTransaction( indexing, nullVisitor );
     }
-    
+
     private WriteTransaction newWriteTransaction( IndexingService indexing, Visitor<XaCommand,
             RuntimeException> verifier )
     {
@@ -652,11 +654,11 @@ public class WriteTransactionTest
         result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
         return result;
     }
-    
+
     private class CapturingIndexingService extends IndexingService
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<>();
-        
+
         public CapturingIndexingService()
         {
             super(  null,
@@ -667,14 +669,14 @@ public class WriteTransactionTest
                     new SingleLoggingService( DEV_NULL )
                 );
         }
-        
+
         @Override
         public void updateIndexes( Iterable<NodePropertyUpdate> updates )
         {
             this.updates.addAll( asCollection( updates ) );
         }
     }
-    
+
     private static final long[] none = new long[0];
 
     private static final Visitor<XaCommand, RuntimeException> nullVisitor = new Visitor<XaCommand, RuntimeException>()
@@ -707,7 +709,7 @@ public class WriteTransactionTest
         tx.setRecovered();
         prepareAndCommit( tx );
     }
-    
+
     private void prepareAndCommit( WriteTransaction tx ) throws XAException
     {
         tx.doPrepare();
@@ -717,36 +719,36 @@ public class WriteTransactionTest
     public static final LabelScanStore NO_LABEL_SCAN_STORE = new LabelScanStore()
     {
         @Override
-        public void updateAndCommit( Iterable<NodeLabelUpdate> updates )
+        public void updateAndCommit( Iterator<NodeLabelUpdate> updates )
         {   // Do nothing
         }
-        
+
         @Override
         public void stop()
         {   // Do nothing
         }
-        
+
         @Override
         public void start()
         {   // Do nothing
         }
-        
+
         @Override
         public void shutdown()
         {   // Do nothing
         }
-        
+
         @Override
-        public void recover( Iterable<NodeLabelUpdate> updates )
+        public void recover( Iterator<NodeLabelUpdate> updates )
         {   // Do nothing
         }
-        
+
         @Override
         public LabelScanReader newReader()
         {
             return LabelScanReader.EMPTY;
         }
-        
+
         @Override
         public ResourceIterator<File> snapshotStoreFiles()
         {
@@ -757,7 +759,7 @@ public class WriteTransactionTest
         public void init()
         {   // Do nothing
         }
-        
+
         @Override
         public void force()
         {   // Do nothing

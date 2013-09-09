@@ -17,26 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.scan;
+package org.neo4j.kernel.impl.nioneo.xa;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.helpers.Thunk;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
 
-@Service.Implementation( KernelExtensionFactory.class )
-public class InMemoryLabelScanStoreExtension extends KernelExtensionFactory<InMemoryLabelScanStoreExtension.NoDependencies>
+/**
+ * A provider of a {@link NeoStore}. This interface exists as a bridge between dependency resolution of
+ * both an {@link InternalAbstractGraphDatabase} and {@link BatchInserter}, since batch inserter doesn't
+ * have an {@link XaDataSourceManager} which would normally serve as a provider if a {@link NeoStore}.
+ */
+public interface NeoStoreProvider extends Thunk<NeoStore>
 {
-    public interface NoDependencies
-    {   // No dependencies
-    }
-
-    public InMemoryLabelScanStoreExtension()
-    {
-        super( "in-memory" );
-    }
-
-    @Override
-    public LabelScanStoreProvider newKernelExtension( NoDependencies dependencies ) throws Throwable
-    {
-        return new LabelScanStoreProvider( new InMemoryLabelScanStore(), 2 );
-    }
 }

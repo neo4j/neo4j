@@ -60,6 +60,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.scan.LabelScanStore;
+import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -68,6 +70,7 @@ import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
@@ -102,16 +105,18 @@ import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.Boolean.parseBoolean;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
@@ -128,6 +133,7 @@ public class BatchInserterImpl implements BatchInserter
     private final BatchTokenHolder labelTokens;
     private final IdGeneratorFactory idGeneratorFactory;
     private final SchemaIndexProviderMap schemaIndexProviders;
+    private final LabelScanStore labelScanStore;
     // TODO use Logging instead
     private final StringLogger msgLog;
     private final FileSystemAbstraction fileSystem;
@@ -198,9 +204,11 @@ public class BatchInserterImpl implements BatchInserter
 
         life.start();
 
-        SchemaIndexProvider provider =
-                extensions.resolveDependency( SchemaIndexProvider.class, HIGHEST_PRIORITIZED_OR_NONE );
+        SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,
+                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
         schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
+        labelScanStore = extensions.resolveDependency( LabelScanStoreProvider.class,
+                LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
         actions = new BatchSchemaActions();
     }
 
@@ -316,8 +324,7 @@ public class BatchInserterImpl implements BatchInserter
             populators[i].create();
         }
 
-        StoreScan<IOException> storeScan = storeView.visitNodes( labelIds, propertyKeyIds,
-                new Visitor<NodePropertyUpdate, IOException>()
+        Visitor<NodePropertyUpdate, IOException> propertyUpdateVisitor = new Visitor<NodePropertyUpdate, IOException>()
         {
             @Override
             public boolean visit( NodePropertyUpdate update ) throws IOException
@@ -343,12 +350,45 @@ public class BatchInserterImpl implements BatchInserter
                 }
                 return true;
             }
-        } );
+        };
+
+        NodeLabelUpdateVisitor labelUpdateVisitor = new NodeLabelUpdateVisitor();
+        StoreScan<IOException> storeScan = storeView.visitNodes( labelIds, propertyKeyIds,
+                propertyUpdateVisitor, labelUpdateVisitor );
         storeScan.run();
 
         for ( IndexPopulator populator : populators )
         {
             populator.close( true );
+        }
+        labelUpdateVisitor.close();
+    }
+
+    private class NodeLabelUpdateVisitor implements Visitor<NodeLabelUpdate, IOException>
+    {
+        private final NodeLabelUpdate[] updateBatch = new NodeLabelUpdate[10000];
+        private int cursor;
+
+        @Override
+        public boolean visit( NodeLabelUpdate update ) throws IOException
+        {
+            if ( cursor >= updateBatch.length )
+            {
+                writeAndResetBatch();
+            }
+            updateBatch[cursor++] = update;
+            return true;
+        }
+
+        private void writeAndResetBatch() throws IOException
+        {
+            labelScanStore.updateAndCommit( iterator( cursor, updateBatch ) );
+            cursor = 0;
+        }
+
+        void close() throws IOException
+        {
+            writeAndResetBatch();
         }
     }
 
@@ -1319,6 +1359,17 @@ public class BatchInserterImpl implements BatchInserter
             if ( type.isInstance( config ) )
             {
                 return type.cast( config );
+            }
+            if ( NeoStoreProvider.class.isAssignableFrom( type ) )
+            {
+                return type.cast( new NeoStoreProvider()
+                {
+                    @Override
+                    public NeoStore evaluate()
+                    {
+                        return neoStore;
+                    }
+                } );
             }
             throw new IllegalArgumentException( "Unknown dependency " + type );
         }

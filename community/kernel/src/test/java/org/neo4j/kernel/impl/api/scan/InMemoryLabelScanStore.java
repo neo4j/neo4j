@@ -40,12 +40,13 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 public class InMemoryLabelScanStore implements LabelScanStore
 {
     private final Map<Long, Set<Long>> data = new HashMap<>();
-    
+
     @Override
-    public void updateAndCommit( Iterable<NodeLabelUpdate> updates )
+    public void updateAndCommit( Iterator<NodeLabelUpdate> updates )
     {
-        for ( NodeLabelUpdate update : updates )
+        while ( updates.hasNext() )
         {
+            NodeLabelUpdate update = updates.next();
             // Split up into added/removed from before/after
             long[] added = new long[update.getLabelsAfter().length]; // pessimistic length
             long[] removed = new long[update.getLabelsBefore().length]; // pessimistic length
@@ -78,7 +79,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
             }
         }
     }
-    
+
     private Set<Long> nodeSetForRemoving( long labelId )
     {
         Set<Long> nodes = data.get( labelId );
@@ -97,7 +98,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public void recover( Iterable<NodeLabelUpdate> updates )
+    public void recover( Iterator<NodeLabelUpdate> updates )
     {
         updateAndCommit( updates );
     }
@@ -112,7 +113,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
             {
                 Set<Long> nodes = data.get( labelId );
                 assert nodes != null;
-                
+
                 final Iterator<Long> nodesIterator = nodes.iterator();
                 return new PrimitiveLongIterator()
                 {
@@ -121,7 +122,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
                     {
                         return nodesIterator.next();
                     }
-                    
+
                     @Override
                     public boolean hasNext()
                     {
@@ -129,20 +130,20 @@ public class InMemoryLabelScanStore implements LabelScanStore
                     }
                 };
             }
-            
+
             @Override
             public void close()
             {   // Nothing to close
             }
         };
     }
-    
+
     @Override
     public ResourceIterator<File> snapshotStoreFiles()
     {
         return emptyIterator();
     }
-    
+
     @Override
     public void init()
     {   // Nothing to init

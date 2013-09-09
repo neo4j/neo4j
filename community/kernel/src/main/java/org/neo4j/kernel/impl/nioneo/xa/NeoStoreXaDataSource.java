@@ -111,7 +111,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
  * {@link XaResource XaResources} when running transactions and performing
  * operations on the graph.
  */
-public class NeoStoreXaDataSource extends LogBackedXaDataSource
+public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoStoreProvider
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
@@ -274,7 +274,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public void start() throws IOException
     {
         life = new LifeSupport();
-        
+
         readOnly = config.get( Configuration.read_only );
 
         storeDir = config.get( Configuration.store_dir );
@@ -321,15 +321,15 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                         new NeoStoreIndexStoreView( neoStore ),
                         tokenNameLookup, updateableSchemaState,
                         logging ) );
-        
+
         xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                 new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );
 
         labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                 LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
-        
+
         life.init();
-        
+
         try
         {
             if ( !readOnly )
@@ -394,7 +394,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     {
         return labelScanStore;
     }
-    
+
     public DefaultSchemaIndexProviderMap getProviderMap()
     {
         return providerMap;
@@ -513,7 +513,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             return neoStore.incrementVersion();
         }
-        
+
         @Override
         public void setVersion( long version )
         {
@@ -649,7 +649,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
         return new StoreSnapshot( files.iterator(), labelScanStoreSnapshot );
     }
-    
+
     private static class StoreSnapshot extends PrefetchingIterator<File> implements ResourceIterator<File>
     {
         private final Iterator<File> files;
@@ -666,7 +666,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             return files.hasNext() ? files.next() : null;
         }
-        
+
         @Override
         public void close()
         {
@@ -747,9 +747,15 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             }
         }, neoStore.getSchemaStore().loadAllSchemaRules() ) );
     }
-    
+
     public PersistenceCache getPersistenceCache()
     {
         return persistenceCache;
+    }
+
+    @Override
+    public NeoStore evaluate()
+    {
+        return neoStore;
     }
 }
