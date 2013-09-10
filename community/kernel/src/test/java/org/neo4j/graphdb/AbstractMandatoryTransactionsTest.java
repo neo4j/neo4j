@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.junit.Rule;
+
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.fail;
@@ -33,17 +34,12 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
 
-        Transaction tx = graphDatabaseService.beginTx();
-        try
+        try ( Transaction tx = graphDatabaseService.beginTx() )
         {
             T result = obtainEntityInTransaction( graphDatabaseService );
             tx.success();
 
             return result;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

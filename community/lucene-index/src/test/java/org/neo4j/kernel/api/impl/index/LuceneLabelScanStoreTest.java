@@ -46,6 +46,7 @@ import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.scan.NodeLabelUpdate.labelChanges;
 
@@ -59,64 +60,64 @@ public class LuceneLabelScanStoreTest
         // GIVEN
         long labelId = 1, nodeId = 10;
         start();
-        
+
         // WHEN
-        store.updateAndCommit( asList( labelChanges( nodeId, NO_LABELS, new long[] {labelId} ) ) );
-        
+        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId} ) ) );
+
         // THEN
         assertNodesForLabel( labelId, nodeId );
     }
-    
+
     @Test
     public void shouldUpdateIndexOnAddedLabels() throws Exception
     {
         // GIVEN
         long labelId1 = 1, labelId2 = 2, nodeId = 10;
         start();
-        store.updateAndCommit( asList( labelChanges( nodeId, NO_LABELS, new long[] {labelId1} ) ) );
+        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId1} ) ) );
         assertNodesForLabel( labelId2 );
-        
+
         // WHEN
-        store.updateAndCommit( asList( labelChanges( nodeId, NO_LABELS, new long[] {labelId1, labelId2} ) ) );
-        
+        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId1, labelId2} ) ) );
+
         // THEN
         assertNodesForLabel( labelId1, nodeId );
         assertNodesForLabel( labelId2, nodeId );
     }
-    
+
     @Test
     public void shouldUpdateIndexOnRemovedLabels() throws Exception
     {
         // GIVEN
         long labelId1 = 1, labelId2 = 2, nodeId = 10;
         start();
-        store.updateAndCommit( asList( labelChanges( nodeId, NO_LABELS, new long[] {labelId1, labelId2} ) ) );
+        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId1, labelId2} ) ) );
         assertNodesForLabel( labelId1, nodeId );
         assertNodesForLabel( labelId2, nodeId );
-        
+
         // WHEN
-        store.updateAndCommit( asList( labelChanges( nodeId, new long[] {labelId1, labelId2}, new long[] {labelId2} ) ) );
-        
+        store.updateAndCommit( iterator( labelChanges( nodeId, new long[] {labelId1, labelId2}, new long[] {labelId2} ) ) );
+
         // THEN
         assertNodesForLabel( labelId1 );
         assertNodesForLabel( labelId2, nodeId );
     }
-    
+
     @Test
     public void shouldDeleteFromIndexWhenDeletedNode() throws Exception
     {
         // GIVEN
         long labelId = 1, nodeId = 10;
         start();
-        store.updateAndCommit( asList( labelChanges( nodeId, NO_LABELS, new long[] {labelId} ) ) );
-        
+        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId} ) ) );
+
         // WHEN
-        store.updateAndCommit( asList( labelChanges( nodeId, new long[] {labelId}, NO_LABELS ) ) );
-        
+        store.updateAndCommit( iterator( labelChanges( nodeId, new long[] {labelId}, NO_LABELS ) ) );
+
         // THEN
         assertNodesForLabel( labelId );
     }
-    
+
     @Test
     public void shouldRebuildFromScratchIfIndexMissing() throws Exception
     {
@@ -125,7 +126,7 @@ public class LuceneLabelScanStoreTest
                 labelChanges( 1, NO_LABELS, new long[] {1} ),
                 labelChanges( 2, NO_LABELS, new long[] {1, 2} )
                 ) );
-        
+
         // THEN
         assertTrue( "Didn't rebuild the store on startup",
                 monitor.noIndexCalled&monitor.rebuildingCalled&monitor.rebuiltCalled );
@@ -134,7 +135,7 @@ public class LuceneLabelScanStoreTest
         assertNodesForLabel( 2,
                 2 );
     }
-    
+
     @Test
     public void shouldRebuildFromScratchIfIndexCorrupted() throws Exception
     {
@@ -144,7 +145,7 @@ public class LuceneLabelScanStoreTest
                 labelChanges( 1, NO_LABELS, new long[] {1} ),
                 labelChanges( 2, NO_LABELS, new long[] {1, 2} ) );
         start( data );
-        
+
         // WHEN the index is corrupted and then started again
         scrambleIndexFilesAndRestart( data );
 
@@ -156,7 +157,7 @@ public class LuceneLabelScanStoreTest
         assertNodesForLabel( 2,
                 2 );
     }
-    
+
     private void assertNodesForLabel( long labelId, long... expectedNodeIds )
     {
         Set<Long> nodeSet = new HashSet<>();
@@ -165,7 +166,7 @@ public class LuceneLabelScanStoreTest
         {
             nodeSet.add( nodes.next() );
         }
-        
+
         for ( long expectedNodeId : expectedNodeIds )
         {
             assertTrue( "Expected node " + expectedNodeId + " not found in scan store",
@@ -180,22 +181,22 @@ public class LuceneLabelScanStoreTest
     private LifeSupport life;
     private TrackingMonitor monitor;
     private LuceneLabelScanStore store;
-    
+
     private List<NodeLabelUpdate> noData()
     {
         return emptyList();
     }
-    
+
     private void usePersistentDirectory()
     {
         directoryFactory = DirectoryFactory.PERSISTENT;
     }
-    
+
     private void start()
     {
         start( noData() );
     }
-    
+
     private void start( List<NodeLabelUpdate> existingData )
     {
         life = new LifeSupport();
@@ -205,7 +206,7 @@ public class LuceneLabelScanStoreTest
         life.start();
         assertTrue( monitor.initCalled );
     }
-    
+
     private FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
     {
         return new FullStoreChangeStream()
@@ -215,13 +216,13 @@ public class LuceneLabelScanStoreTest
             {
                 return existingData.iterator();
             }
-            
+
             @Override
             public long highestNodeId()
             {
                 return existingData.size(); // Well... not really
             }
-            
+
             @Override
             public PrimitiveLongIterator labelIds()
             {

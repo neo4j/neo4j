@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.scan;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
@@ -34,56 +35,56 @@ public interface LabelScanStore extends Lifecycle
 {
     /**
      * Update the store with a stream of updates of label->node mappings.
-     * 
+     *
      * @param updates the updates to store.
      * @throws IOException if there was a problem updating the store.
      */
-    void updateAndCommit( Iterable<NodeLabelUpdate> updates ) throws IOException;
-    
+    void updateAndCommit( Iterator<NodeLabelUpdate> updates ) throws IOException;
+
     /**
      * Recover updates the store with a stream of updates of label->node mappings. Done during the recovery
      * phase of the database startup. Updates here may contain duplicates with what's already in the store
      * so extra care needs to be taken to ensure correctness after these updates.
-     * 
+     *
      * @param updates the updates to store.
      * @throws IOException if there was a problem updating the store.
      */
-    void recover( Iterable<NodeLabelUpdate> updates ) throws IOException;
-    
+    void recover( Iterator<NodeLabelUpdate> updates ) throws IOException;
+
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.
-     * 
+     *
      * @throws UnderlyingStorageException if there was a problem forcing the state to persistent storage.
      */
     void force() throws UnderlyingStorageException;
-    
+
     /**
      * From the point a {@link LabelScanReader} is created till it's {@link LabelScanReader#close() closed} the contents it
      * returns cannot change, i.e. it honors repeatable reads.
-     * 
+     *
      * @return a {@link LabelScanReader} capable of retrieving nodes for labels.
      */
     LabelScanReader newReader();
-    
+
     ResourceIterator<File> snapshotStoreFiles() throws IOException;
-    
+
     /**
      * Initializes the store. After this has been called recovery updates can be processed.
      */
     @Override
     void init() throws IOException;
-    
+
     /**
      * Starts the store. After this has been called updates can be processed.
      */
     @Override
     void start() throws IOException;
-    
+
     @Override
     void stop() throws IOException;
-    
+
     /**
      * Shuts down the store and all resources acquired by it.
      */

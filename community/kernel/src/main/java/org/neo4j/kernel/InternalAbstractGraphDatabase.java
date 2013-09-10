@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -114,6 +115,7 @@ import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -275,7 +277,7 @@ public abstract class InternalAbstractGraphDatabase
                 UnsatisfiedDependencyStrategies.fail() );
         this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
                 dependencyResolver );
-        
+
         this.storeDir = config.get( Configuration.store_dir );
     }
 
@@ -348,7 +350,7 @@ public abstract class InternalAbstractGraphDatabase
         {   // If recovery failed then there's no point in going any further here. The database startup will fail.
             return;
         }
-        
+
         kernelAPI.bootstrapAfterRecovery();
         if ( txManager instanceof TxManager )
         {
@@ -435,7 +437,7 @@ public abstract class InternalAbstractGraphDatabase
         stateFactory = createTransactionStateFactory();
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
-        
+
         if ( readOnly )
         {
             txManager = new ReadOnlyTxManager( xaDataSourceManager, logging.getMessagesLog( ReadOnlyTxManager.class ) );
@@ -584,7 +586,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         return new DefaultRelationshipTypeCreator( logging );
     }
-    
+
     protected TokenCreator createPropertyKeyCreator()
     {
         return new DefaultPropertyTokenCreator( logging );
@@ -1382,13 +1384,17 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( neoDataSource.getLabelScanStore() );
             }
+            else if ( NeoStoreProvider.class.isAssignableFrom( type ) )
+            {
+                return type.cast( neoDataSource );
+            }
             else if ( DependencyResolver.class.equals( type ) )
             {
                 return type.cast( DependencyResolverImpl.this );
             }
             return null;
         }
-        
+
         @Override
         public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
         {
@@ -1398,7 +1404,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return selector.select( type, Iterables.option( result ) );
             }
-            
+
             // Try with kernel extensions
             return kernelExtensions.resolveDependency( type, selector );
         }
