@@ -31,9 +31,10 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 public interface SchemaReadOperations
 {
     /**
-     * Returns the index rule for the given labelId and propertyKey.
+     * Returns the descriptor for the given labelId and propertyKey.
      */
-    IndexDescriptor indexesGetForLabelAndPropertyKey( Statement state, long labelId, long propertyKey ) throws SchemaRuleNotFoundException;
+    IndexDescriptor indexesGetForLabelAndPropertyKey( Statement state, long labelId, long propertyKey )
+            throws SchemaRuleNotFoundException;
 
     /**
      * Get all indexes for a label.

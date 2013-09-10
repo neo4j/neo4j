@@ -1,0 +1,232 @@
+/**
+ * Copyright (c) 2002-2013 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.api.integrationtest;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.info.LockInfo;
+import org.neo4j.kernel.info.ResourceType;
+import org.neo4j.kernel.info.WaitingThread;
+import org.neo4j.test.DoubleLatch;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
+{
+    private long labelId, propertyKeyId;
+
+    @Before
+    public void createKeys() throws SchemaKernelException
+    {
+        SchemaStatement statement = schemaStatementInNewTransaction();
+        this.labelId = statement.labelGetOrCreateForName( "Person" );
+        this.propertyKeyId = statement.propertyKeyGetOrCreateForName( "foo" );
+        statement.close();
+        commit();
+    }
+
+    // nodeGetUniqueWithLabelAndProperty(statement, :Person, foo=val)
+    //
+    // Given we have a unique constraint on :Person(foo)
+    // (If not, throw)
+    //
+    // If there is a node n with n:Person and n.foo == val, return it
+    // If there is no such node, return ?
+    //
+    // Ensure that if that method is called again with the same argument from some other transaction,
+    // that transaction blocks until this transaction has finished
+    //
+
+
+    // [X] must return node from the unique index with the given property
+    // [X] must return NO_SUCH_NODE if it is not in the index for the given property
+    //
+    // must block other transactions that try to call it with the same arguments
+
+    @Test
+    public void shouldFindMatchingNode() throws Exception
+    {
+        // given
+        IndexDescriptor index = createUniquenessConstraint();
+        String value = "value";
+        long nodeId = createNodeWithValue( value );
+
+        // when looking for it
+        DataStatement statement = dataStatementInNewTransaction();
+        long foundId = statement.nodeGetUniqueFromIndexLookup( index, value );
+        statement.close();
+        commit();
+
+        // then
+        assertTrue( "Created node was not found", nodeId == foundId );
+    }
+
+    @Test
+    public void shouldNotFindNonMatchingNode() throws Exception
+    {
+        // given
+        IndexDescriptor index = createUniquenessConstraint();
+        String value = "value";
+        createNodeWithValue( "other_" + value );
+
+        // when looking for it
+        DataStatement statement = dataStatementInNewTransaction();
+        long foundId = statement.nodeGetUniqueFromIndexLookup( index, value );
+        statement.close();
+        commit();
+
+        // then
+        assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
+    }
+
+    @Test(timeout = 300)
+    public void shouldBlockUniqueNodeLookupFromCompetingTransaction() throws Exception
+    {
+        // This is the interleaving that we are trying to verify works correctly:
+        // ----------------------------------------------------------------------
+        // Thread1 (main)        : Thread2
+        // create unique node    :
+        // lookup(node)          :
+        // open start latch ----->
+        //    |                  : lookup(node)
+        // wait for T2 to block  :      |
+        //                       :    *block*
+        // commit --------------->   *unblock*
+        // wait for T2 end latch :      |
+        //                       : finish failed transaction
+        //                       : open end latch
+        // *unblock* <-------------‘
+        // assert that we complete before timeout
+        final DoubleLatch latch = new DoubleLatch();
+
+        DependencyResolver resolver = db.getDependencyResolver();
+        LockManager manager = resolver.resolveDependency( LockManager.class );
+
+        final IndexDescriptor index = createUniquenessConstraint();
+        final String value = "value";
+
+        DataStatement dataStatement = dataStatementInNewTransaction();
+        long nodeId = dataStatement.nodeCreate();
+        dataStatement.nodeAddLabel( nodeId, labelId );
+
+        // This adds the node to the unique index and should take an index write lock
+        dataStatement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, value ) );
+
+        Runnable runnableForThread2 = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                latch.awaitStart();
+                Transaction tx = db.beginTx();
+                DataStatement statement = statementContextProvider.dataStatement();
+                try
+                {
+                    statement.nodeGetUniqueFromIndexLookup( index, value );
+                    statement.close();
+                    tx.success();
+                }
+                catch ( IndexNotFoundKernelException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                catch ( IndexBrokenKernelException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                finally
+                {
+                    tx.close();
+                    latch.finish();
+                }
+            }
+        };
+        Thread thread2 = new Thread( runnableForThread2, "Transaction Thread 2" );
+        thread2.start();
+        latch.start();
+
+        spinUntilBlocking:
+        for (; ; )
+        {
+            for ( LockInfo info : manager.getAllLocks() )
+            {
+                for ( WaitingThread waiter : info.getWaitingThreads() )
+                {
+                    if ( waiter.getThreadId() == thread2.getId() )
+                    {
+                        assertThat( info.getReadCount(), equalTo( 0 ) );
+                        assertThat( info.getWriteCount(), equalTo( 1 ) );
+                        assertThat( info.getResourceType(), equalTo( ResourceType.OTHER ) );
+                        assertThat( info.getResourceId(),
+                                equalTo( "IndexEntryLock{labelId=0, propertyKeyId=0, propertyValue=value}" ) );
+                        break spinUntilBlocking;
+                    }
+                }
+            }
+
+        }
+
+        dataStatement.close();
+        commit();
+        latch.awaitFinish();
+    }
+
+    private boolean isNoSuchNode( long foundId )
+    {
+        return StatementConstants.NO_SUCH_NODE == foundId;
+    }
+
+    private long createNodeWithValue( String value ) throws EntityNotFoundException, ConstraintValidationKernelException
+    {
+        DataStatement dataStatement = dataStatementInNewTransaction();
+        long nodeId = dataStatement.nodeCreate();
+        dataStatement.nodeAddLabel( nodeId, labelId );
+        dataStatement.nodeSetProperty( nodeId, Property.stringProperty( propertyKeyId, value ) );
+        dataStatement.close();
+        commit();
+        return nodeId;
+    }
+
+    private IndexDescriptor createUniquenessConstraint() throws Exception
+    {
+        SchemaStatement schemaStatement = schemaStatementInNewTransaction();
+        schemaStatement.uniquenessConstraintCreate( labelId, propertyKeyId );
+        IndexDescriptor result = schemaStatement.uniqueIndexGetForLabelAndPropertyKey( labelId, propertyKeyId );
+        schemaStatement.close();
+        commit();
+        return result;
+    }
+}

@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
-import org.neo4j.kernel.api.operations.ConstraintEnforcingEntityWriteOperations;
+import org.neo4j.kernel.api.operations.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -79,48 +79,48 @@ import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreList
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
  * consumption by both the Core API, Cypher, and any other components that want to interface with the
  * underlying database.
- *
+ * <p/>
  * This is currently in an intermediate phase, with many features still unavailable unless the Core API is also
  * present. We are in the process of moving Core API features into the kernel.
- *
+ * <p/>
  * <h1>Structure</h1>
- *
+ * <p/>
  * The Kernel itself has a simple API - it lets you start transactions. The transactions, in turn, allow you to
  * create statements, which, in turn, operate against the database. The reason for the separation between statements
  * and transactions is database isolation. Please refer to the {@link KernelTransaction} javadoc for details.
- *
+ * <p/>
  * The architecture of the kernel is based around a layered design, where one layer performs some task, and potentially
  * delegates down to a lower layer. For instance, writing to the database will pass through
  * {@link LockingStatementOperations}, which will grab locks and delegate to {@link StateHandlingStatementOperations}
  * which
  * will store the change in the transaction state, to be applied later if the transaction is committed.
- *
+ * <p/>
  * A read will, similarly, pass through {@link LockingStatementOperations}, which should (but does not currently) grab
  * read locks. It then reaches {@link StateHandlingStatementOperations}, which includes any changes that exist in the
  * current transaction, and then finally {@link StoreStatementOperations} will read the current committed state from
  * the
  * stores or caches.
- *
+ * <p/>
  * <h1>Refactoring</h1>
- *
+ * <p/>
  * There are several sources of pain around the current state, which we hope to refactor away down the line. A major
  * source of pain is the interaction between this class and {@link NeoStoreXaDataSource}. We should discuss the role
  * of these two classes. Either one should create the other, or they should be combined into one class.
- *
+ * <p/>
  * Another pain is transaction state, where lots of legacy code still rules supreme. Please refer to {@link TxState}
  * for details about the work in this area.
- *
+ * <p/>
  * Cache invalidation is similarly problematic, where cache invalidation really should be done when changes are applied
  * to the store, through the logical log. However, this is mostly not the case, cache invalidation is done as we work
  * through the Core API. Only in HA mode is cache invalidation done through log application, and then only through
  * evicting whole entities from the cache whenever they change, leading to large performance hits on writes. This area
  * is still open for investigation, but an approach where the logical log simply tells a store write API to apply some
  * change, and the implementation of that API is responsible for keeping caches in sync.
- *
+ * <p/>
  * Please expand and update this as you learn things or find errors in the text above.
- *
+ * <p/>
  * The current interaction with the TransactionManager looks like this:
- *
+ * <p/>
  * <ol>
  * <li>
  * tx.close() --> TransactionImpl.commit() --> *KernelTransaction.commit()* --> TxManager.commit()
@@ -264,7 +264,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         // Start off with the store layer.
         StoreStatementOperations context = new StoreStatementOperations(
-                propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, new SchemaStorage( neoStore.getSchemaStore() ), neoStore,
+                propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
+                new SchemaStorage( neoStore.getSchemaStore() ), neoStore,
                 persistenceManager, indexService );
         StatementOperationParts parts = new StatementOperationParts(
                 context, context, context, context, context, null, null )
@@ -280,9 +281,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // + Transaction-local state awareness
         AuxiliaryStoreOperations auxStoreOperations = parts.resolve( AuxiliaryStoreOperations.class );
         auxStoreOperations = new LegacyAutoIndexAuxStoreOps( auxStoreOperations, propertyKeyTokenHolder,
-                                                             nodeManager.getNodePropertyTrackers(),
-                                                             nodeManager.getRelationshipPropertyTrackers(),
-                                                             nodeManager );
+                nodeManager.getNodePropertyTrackers(),
+                nodeManager.getRelationshipPropertyTrackers(),
+                nodeManager );
 
         // + Transaction state handling
         StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations(
@@ -296,15 +297,19 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 new SchemaStateConcern( schemaState ) );
 
         // + Constraints
-        ConstraintEnforcingEntityWriteOperations constraintEnforcingEntityWriteOperations =
-                new ConstraintEnforcingEntityWriteOperations( parts.entityWriteOperations(), parts.entityReadOperations(), parts.schemaReadOperations() );
+        ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
+                new ConstraintEnforcingEntityOperations( parts.entityWriteOperations(), parts.entityReadOperations(),
+                        parts.schemaReadOperations() );
+
         // + Data integrity
-        DataIntegrityValidatingStatementOperations dataIntegrityContext = new DataIntegrityValidatingStatementOperations(
+        DataIntegrityValidatingStatementOperations dataIntegrityContext = new
+                DataIntegrityValidatingStatementOperations(
                 parts.keyWriteOperations(),
                 parts.schemaReadOperations(),
                 parts.schemaWriteOperations() );
 
-        parts = parts.override( null, dataIntegrityContext, null, constraintEnforcingEntityWriteOperations, null, dataIntegrityContext, null );
+        parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
+                constraintEnforcingEntityOperations, null, dataIntegrityContext, null );
 
         // + Locking
         LockingStatementOperations lockingContext = new LockingStatementOperations(
@@ -459,18 +464,18 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
                     {
                         SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
-                                                                                       .getProviderDescriptor();
+                                .getProviderDescriptor();
                         IndexRule rule;
                         if ( isConstraintIndex )
                         {
                             rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                                                                  element.getPropertyKeyId(), providerDescriptor,
-                                                                  null );
+                                    element.getPropertyKeyId(), providerDescriptor,
+                                    null );
                         }
                         else
                         {
                             rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                                                        element.getPropertyKeyId(), providerDescriptor );
+                                    element.getPropertyKeyId(), providerDescriptor );
                         }
                         persistenceManager.createSchemaRule( rule );
                     }
@@ -489,7 +494,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                             throw new ThisShouldNotHappenError(
                                     "Tobias Lindaaker",
                                     "Index to be removed should exist, since its existence should have " +
-                                    "been validated earlier and the schema should have been locked." );
+                                            "been validated earlier and the schema should have been locked." );
                         }
                     }
 
@@ -527,7 +532,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                             throw new ThisShouldNotHappenError(
                                     "Tobias Lindaaker",
                                     "Constraint to be removed should exist, since its existence should " +
-                                    "have been validated earlier and the schema should have been locked." );
+                                            "have been validated earlier and the schema should have been locked." );
                         }
                         // Remove the index for the constraint as well
                         visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
@@ -553,8 +558,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     }
                     catch ( DropIndexFailureException e )
                     {
-                        throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
-                                                         "possible to drop during rollback of that transaction.", e );
+                        throw new IllegalStateException( "Constraint index that was created in a transaction should " +
+                                "be " +
+                                "possible to drop during rollback of that transaction.", e );
                     }
                     catch ( TransactionFailureException e )
                     {
@@ -562,8 +568,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     }
                     catch ( TransactionalException e )
                     {
-                        throw new IllegalStateException( "The transaction manager could not fulfill the transaction for " +
-                                                         "dropping the constraint.", e );
+                        throw new IllegalStateException( "The transaction manager could not fulfill the transaction " +
+                                "for " +
+                                "dropping the constraint.", e );
                     }
                 }
             }
@@ -588,7 +595,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         @Override
         public boolean hasTxStateWithChanges()
         {
-            return legacyStateBridge.hasChanges() || ( hasTxState() && txState.hasChanges() );
+            return legacyStateBridge.hasChanges() || (hasTxState() && txState.hasChanges());
         }
     }
 }

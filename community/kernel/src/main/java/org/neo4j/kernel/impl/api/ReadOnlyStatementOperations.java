@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
@@ -103,21 +103,21 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( Statement state, long nodeId, SafeProperty property )
+    public Property nodeSetProperty( Statement state, long nodeId, DefinedProperty property )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property relationshipSetProperty( Statement state, long relationshipId, SafeProperty property )
+    public Property relationshipSetProperty( Statement state, long relationshipId, DefinedProperty property )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property graphSetProperty( Statement state, SafeProperty property )
+    public Property graphSetProperty( Statement state, DefinedProperty property )
     {
         throw new ReadOnlyDbException();
     }

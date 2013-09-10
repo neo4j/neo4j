@@ -39,9 +39,9 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
@@ -62,7 +62,7 @@ import static org.neo4j.kernel.api.properties.Property.property;
 public class GraphPropertiesImpl extends Primitive implements GraphProperties
 {
     private final NodeManager nodeManager;
-    private Map<Integer, SafeProperty> properties;
+    private Map<Integer, DefinedProperty> properties;
     private final ThreadToStatementContextBridge statementCtxProvider;
 
     GraphPropertiesImpl( NodeManager nodeManager, ThreadToStatementContextBridge statementCtxProvider )
@@ -204,7 +204,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
             List<String> keys = new ArrayList<>();
-            Iterator<SafeProperty> properties = statement.graphGetAllProperties();
+            Iterator<DefinedProperty> properties = statement.graphGetAllProperties();
             while ( properties.hasNext() )
             {
                 keys.add( statement.propertyKeyGetName( properties.next().propertyKeyId() ) );
@@ -222,10 +222,10 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     {
         try ( ReadStatement statement = statementCtxProvider.readStatement() )
         {
-            return asSet( map( new Function<SafeProperty, Object>()
+            return asSet( map( new Function<DefinedProperty, Object>()
             {
                 @Override
-                public Object apply( SafeProperty prop )
+                public Object apply( DefinedProperty prop )
                 {
                     return prop.value();
                 }
@@ -264,7 +264,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    protected Iterator<SafeProperty> getCachedProperties()
+    protected Iterator<DefinedProperty> getCachedProperties()
     {
         return properties.values().iterator();
     }
@@ -291,14 +291,14 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    protected void setProperties( Iterator<SafeProperty> loadedProperties )
+    protected void setProperties( Iterator<DefinedProperty> loadedProperties )
     {
         if ( loadedProperties != null && loadedProperties.hasNext() )
         {
-            Map<Integer, SafeProperty> newProperties = new HashMap<>();
+            Map<Integer, DefinedProperty> newProperties = new HashMap<>();
             while ( loadedProperties.hasNext() )
             {
-                SafeProperty property = loadedProperties.next();
+                DefinedProperty property = loadedProperties.next();
                 newProperties.put( (int) property.propertyKeyId(), property );
             }
             properties = newProperties;

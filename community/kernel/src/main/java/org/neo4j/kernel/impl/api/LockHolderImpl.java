@@ -74,7 +74,7 @@ public class LockHolderImpl implements LockHolder
         lockManager.getWriteLock( resource, tx );
         locks.add( new LockReleaseCallback( LockType.WRITE, resource ) );
     }
-    
+
     @Override
     public void acquireRelationshipReadLock( long relationshipId )
     {
@@ -90,19 +90,19 @@ public class LockHolderImpl implements LockHolder
         lockManager.getWriteLock( resource, tx );
         locks.add( new LockReleaseCallback( LockType.WRITE, resource ) );
     }
-    
+
     @Override
     public void acquireGraphWriteLock()
     {
-        GraphLock resource = new GraphLock( );
+        GraphLock resource = new GraphLock();
         lockManager.getWriteLock( resource, tx );
         locks.add( new LockReleaseCallback( LockType.WRITE, resource ) );
     }
-    
+
     @Override
     public void acquireSchemaReadLock()
     {
-        SchemaLock resource = new SchemaLock( );
+        SchemaLock resource = new SchemaLock();
         lockManager.getReadLock( resource, tx );
         locks.add( new LockReleaseCallback( LockType.READ, resource ) );
     }
@@ -113,6 +113,14 @@ public class LockHolderImpl implements LockHolder
         SchemaLock resource = new SchemaLock();
         lockManager.getWriteLock( resource, tx );
         locks.add( new LockReleaseCallback( LockType.WRITE, resource ) );
+    }
+
+    @Override
+    public void acquireIndexEntryReadLock( long labelId, long propertyKeyId, String propertyValue )
+    {
+        IndexEntryLock resource = new IndexEntryLock( labelId, propertyKeyId, propertyValue );
+        lockManager.getReadLock( resource, tx );
+        locks.add( new LockReleaseCallback( LockType.READ, resource ) );
     }
 
     @Override
@@ -138,7 +146,9 @@ public class LockHolderImpl implements LockHolder
             {
                 releaseException = e;
                 if ( releaseFailures == null )
+                {
                     releaseFailures = new ArrayList<>();
+                }
                 releaseFailures.add( lockElement );
             }
         }
@@ -159,18 +169,19 @@ public class LockHolderImpl implements LockHolder
             this.lockType = lockType;
             this.lock = lock;
         }
-        
+
         public void release()
         {
             lockType.release( lockManager, lock, tx );
         }
 
-        @Override public String toString()
+        @Override
+        public String toString()
         {
             return String.format( "%s_LOCK(%s)", lockType.name(), lock );
         }
     }
-    
+
     private abstract class EntityLock implements PropertyContainer
     {
         private final long id;
@@ -180,7 +191,8 @@ public class LockHolderImpl implements LockHolder
             this.id = id;
         }
 
-        @Override public String toString()
+        @Override
+        public String toString()
         {
             return String.format( "%s[id=%d]", getClass().getSimpleName(), id );
         }
@@ -189,12 +201,12 @@ public class LockHolderImpl implements LockHolder
         {
             return id;
         }
-        
+
         public void delete()
         {
             throw unsupportedOperation();
         }
-        
+
         @Override
         public GraphDatabaseService getGraphDatabase()
         {
@@ -243,11 +255,11 @@ public class LockHolderImpl implements LockHolder
         {
             throw unsupportedOperation();
         }
-        
+
         @Override
         public int hashCode()
         {
-            return (int) (( id >>> 32 ) ^ id );
+            return (int) ((id >>> 32) ^ id);
         }
 
         protected UnsupportedOperationException unsupportedOperation()
@@ -256,10 +268,10 @@ public class LockHolderImpl implements LockHolder
                     " does not support this operation." );
         }
     }
-    
+
     // Have them be releasable also since they are internal and will save the
     // amount of garbage produced
-    @SuppressWarnings( "deprecation" )
+    @SuppressWarnings("deprecation")
     private class NodeLock extends EntityLock implements Node
     {
         public NodeLock( long id )
@@ -392,7 +404,7 @@ public class LockHolderImpl implements LockHolder
         }
         // NOTE hashCode is implemented in super
     }
-    
+
     private class RelationshipLock extends EntityLock implements Relationship
     {
         public RelationshipLock( long id )
@@ -442,10 +454,10 @@ public class LockHolderImpl implements LockHolder
             return o instanceof Relationship && this.getId() == ((Relationship) o).getId();
         }
     }
-    
+
     private class GraphLock extends EntityLock implements GraphProperties
     {
-        public GraphLock( )
+        public GraphLock()
         {
             super( -1 );
         }
@@ -455,12 +467,12 @@ public class LockHolderImpl implements LockHolder
         {
             return nodeManager;
         }
-        
+
         @Override
         public boolean equals( Object o )
         {
             return o instanceof GraphProperties &&
-                   this.getNodeManager().equals( ((GraphProperties) o).getNodeManager() );
+                    this.getNodeManager().equals( ((GraphProperties) o).getNodeManager() );
         }
     }
 }

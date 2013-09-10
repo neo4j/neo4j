@@ -26,8 +26,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.CacheLoader;
 import org.neo4j.kernel.impl.api.CacheUpdateListener;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -44,7 +44,7 @@ public abstract class Primitive implements SizeOfObject
 {
     // Used for marking that properties have been loaded but there just wasn't any.
     // Saves an extra trip down to the store layer.
-    protected static final SafeProperty[] NO_PROPERTIES = new SafeProperty[0];
+    protected static final DefinedProperty[] NO_PROPERTIES = new DefinedProperty[0];
 
     Primitive( boolean newPrimitive )
     {
@@ -53,27 +53,27 @@ public abstract class Primitive implements SizeOfObject
 
     public abstract long getId();
     
-    public Iterator<SafeProperty> getProperties( Statement state, CacheLoader<Iterator<SafeProperty>> loader,
+    public Iterator<DefinedProperty> getProperties( Statement state, CacheLoader<Iterator<DefinedProperty>> loader,
             CacheUpdateListener updateListener )
     {
         return ensurePropertiesLoaded( state, loader, updateListener );
     }
 
-    public Property getProperty( Statement state, CacheLoader<Iterator<SafeProperty>> loader,
+    public Property getProperty( Statement state, CacheLoader<Iterator<DefinedProperty>> loader,
             CacheUpdateListener updateListener, int key )
     {
         ensurePropertiesLoaded( state, loader, updateListener );
         return getCachedProperty( key );
     }
     
-    public PrimitiveLongIterator getPropertyKeys( Statement state, CacheLoader<Iterator<SafeProperty>> cacheLoader,
+    public PrimitiveLongIterator getPropertyKeys( Statement state, CacheLoader<Iterator<DefinedProperty>> cacheLoader,
             CacheUpdateListener updateListener )
     {
         ensurePropertiesLoaded( state, cacheLoader, updateListener );
         return getCachedPropertyKeys();
     }
     
-    private Iterator<SafeProperty> ensurePropertiesLoaded( Statement state, CacheLoader<Iterator<SafeProperty>> loader,
+    private Iterator<DefinedProperty> ensurePropertiesLoaded( Statement state, CacheLoader<Iterator<DefinedProperty>> loader,
             CacheUpdateListener updateListener )
     {
         if ( !hasLoadedProperties() ) synchronized ( this )
@@ -82,7 +82,7 @@ public abstract class Primitive implements SizeOfObject
             {
                 try
                 {
-                    Iterator<SafeProperty> loadedProperties = loader.load( state, getId() );
+                    Iterator<DefinedProperty> loadedProperties = loader.load( state, getId() );
                     setProperties( loadedProperties );
                     updateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
                 }
@@ -97,7 +97,7 @@ public abstract class Primitive implements SizeOfObject
         return getCachedProperties();
     }
 
-    protected abstract Iterator<SafeProperty> getCachedProperties();
+    protected abstract Iterator<DefinedProperty> getCachedProperties();
     
     protected abstract Property getCachedProperty( int key );
     
@@ -107,7 +107,7 @@ public abstract class Primitive implements SizeOfObject
 
     protected abstract void setEmptyProperties();
     
-    protected abstract void setProperties( Iterator<SafeProperty> properties );
+    protected abstract void setProperties( Iterator<DefinedProperty> properties );
     
     protected abstract PropertyData getPropertyForIndex( int keyId );
     
@@ -163,12 +163,12 @@ public abstract class Primitive implements SizeOfObject
         }
     }
 
-    private Iterator<SafeProperty> toPropertyIterator( ArrayMap<Integer, PropertyData> loadedProperties )
+    private Iterator<DefinedProperty> toPropertyIterator( ArrayMap<Integer, PropertyData> loadedProperties )
     {
-        return map( new Function<PropertyData, SafeProperty>()
+        return map( new Function<PropertyData, DefinedProperty>()
         {
             @Override
-            public SafeProperty apply( PropertyData from )
+            public DefinedProperty apply( PropertyData from )
             {
                 return Property.property( from.getIndex(), from.getValue() );
             }

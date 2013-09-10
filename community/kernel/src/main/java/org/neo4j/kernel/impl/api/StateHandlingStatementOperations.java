@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -32,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -40,9 +40,9 @@ import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -50,15 +50,18 @@ import org.neo4j.kernel.impl.api.state.TxState;
 
 import static java.util.Collections.emptyList;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 public class StateHandlingStatementOperations implements
-    EntityReadOperations,
-    EntityWriteOperations,
-    SchemaReadOperations,
-    SchemaWriteOperations
+        EntityReadOperations,
+        EntityWriteOperations,
+        SchemaReadOperations,
+        SchemaWriteOperations
 {
     private final EntityReadOperations entityReadDelegate;
     private final SchemaReadOperations schemaReadDelegate;
@@ -129,7 +132,8 @@ public class StateHandlingStatementOperations implements
             if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
             {
                 return
-                    toPrimitiveLongIterator( state.txState().nodeStateLabelDiffSets( nodeId ).getAdded().iterator() );
+                        toPrimitiveLongIterator( state.txState().nodeStateLabelDiffSets( nodeId ).getAdded().iterator
+                                () );
             }
 
             return state.txState().nodeStateLabelDiffSets( nodeId ).applyPrimitiveLongIterator(
@@ -247,7 +251,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( Statement state, long labelId, long propertyKeyId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( Statement state, long labelId,
+                                                                                long propertyKeyId )
     {
         return applyConstraintsDiff( state, schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
                 state, labelId, propertyKeyId ), labelId, propertyKeyId );
@@ -266,7 +271,8 @@ public class StateHandlingStatementOperations implements
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( Statement state,
-            Iterator<UniquenessConstraint> constraints, long labelId, long propertyKeyId )
+                                                                 Iterator<UniquenessConstraint> constraints,
+                                                                 long labelId, long propertyKeyId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -282,7 +288,8 @@ public class StateHandlingStatementOperations implements
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( Statement state,
-            Iterator<UniquenessConstraint> constraints, long labelId )
+                                                                 Iterator<UniquenessConstraint> constraints,
+                                                                 long labelId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -297,7 +304,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( Statement state,
-            Iterator<UniquenessConstraint> constraints )
+                                                                 Iterator<UniquenessConstraint> constraints )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -318,12 +325,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( Statement state, long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( Statement state, long labelId,
+                                                             long propertyKey ) throws SchemaRuleNotFoundException
     {
         Iterable<IndexDescriptor> committedRules;
         try
         {
-            committedRules = option( schemaReadDelegate.indexesGetForLabelAndPropertyKey( state, labelId, propertyKey ) );
+            committedRules = option( schemaReadDelegate.indexesGetForLabelAndPropertyKey( state, labelId,
+                    propertyKey ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -332,18 +341,20 @@ public class StateHandlingStatementOperations implements
         DiffSets<IndexDescriptor> ruleDiffSet = state.txState().indexDiffSetsByLabel( labelId );
 
         Iterator<IndexDescriptor> rules =
-            state.hasTxStateWithChanges() ? ruleDiffSet.apply( committedRules.iterator() ) : committedRules.iterator();
+                state.hasTxStateWithChanges() ? ruleDiffSet.apply( committedRules.iterator() ) : committedRules
+                        .iterator();
         IndexDescriptor single = singleOrNull( rules );
         if ( single == null )
         {
             throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
-                                                   propertyKey + " not found" );
+                    propertyKey + " not found" );
         }
         return single;
     }
 
     @Override
-    public InternalIndexState indexGetState( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( Statement state, IndexDescriptor descriptor ) throws
+            IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
         if ( state.hasTxStateWithChanges() )
@@ -352,7 +363,8 @@ public class StateHandlingStatementOperations implements
             {
                 return InternalIndexState.POPULATING;
             }
-            if ( checkIndexState( descriptor, state.txState().constraintIndexDiffSetsByLabel( descriptor.getLabelId() ) ) )
+            if ( checkIndexState( descriptor, state.txState().constraintIndexDiffSetsByLabel( descriptor.getLabelId()
+            ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -371,9 +383,9 @@ public class StateHandlingStatementOperations implements
         if ( diffSet.isRemoved( indexRule ) )
         {
             throw new IndexNotFoundKernelException( String.format( "Index for label id %d on property id %d has been " +
-                                                                   "dropped in this transaction.",
-                                                                   indexRule.getLabelId(),
-                                                                   indexRule.getPropertyKeyId() ) );
+                    "dropped in this transaction.",
+                    indexRule.getLabelId(),
+                    indexRule.getPropertyKeyId() ) );
         }
         return false;
     }
@@ -426,29 +438,43 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public long nodeGetUniqueFromIndexLookup( Statement state, IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+
+        if ( state.hasTxStateWithChanges() )
+        {
+            TxState txState = state.txState();
+            DiffSets<Long> diff = nodesWithLabelAndPropertyDiffSet( state, index, value );
+
+            if ( diff.isEmpty() )
+            {
+                // load from down below
+                long indexNode = entityReadDelegate.nodeGetUniqueFromIndexLookup( state, index, value );
+
+                return (!diff.isRemoved( indexNode )) ? nodeIfNotDeleted( indexNode, txState ) : NO_SUCH_NODE;
+            }
+
+            // created one in current tx
+            Iterator<Long> iterator = diff.getAdded().iterator();
+            return iterator.hasNext() ? nodeIfNotDeleted( single( iterator ), txState ) : NO_SUCH_NODE;
+        }
+
+        return entityReadDelegate.nodeGetUniqueFromIndexLookup( state, index, value );
+    }
+
+    @Override
     public PrimitiveLongIterator nodesGetFromIndexLookup( Statement state, IndexDescriptor index, final Object value )
             throws IndexNotFoundKernelException
     {
         if ( state.hasTxStateWithChanges() )
         {
-            // Start with nodes where the given property has changed
-            DiffSets<Long> diff = state.txState().nodesWithChangedProperty( index.getPropertyKeyId(), value );
-
-            // Ensure remaining nodes have the correct label
-            diff = diff.filterAdded( new HasLabelFilter( state, index.getLabelId() ) );
-
-            // Include newly labeled nodes that already had the correct property
-            HasPropertyFilter hasPropertyFilter = new HasPropertyFilter( state, index.getPropertyKeyId(), value );
-            Iterator<Long> addedNodesWithLabel = state.txState().nodesWithLabelAdded( index.getLabelId() ).iterator();
-            diff.addAll( Iterables.filter( hasPropertyFilter, addedNodesWithLabel ) );
-
-            // Remove de-labeled nodes that had the correct value before
-            Set<Long> removedNodesWithLabel = state.txState().nodesWithLabelChanged( index.getLabelId() ).getRemoved();
-            diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel.iterator() ) );
+            TxState txState = state.txState();
+            DiffSets<Long> diff = nodesWithLabelAndPropertyDiffSet( state, index, value );
 
             // Apply to actual index lookup
             PrimitiveLongIterator committed = entityReadDelegate.nodesGetFromIndexLookup( state, index, value );
-            return state.txState()
+            return txState
                     .nodesDeletedInTx().applyPrimitiveLongIterator( diff.applyPrimitiveLongIterator( committed ) );
         }
 
@@ -456,7 +482,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( Statement state, long nodeId, SafeProperty property )
+    public Property nodeSetProperty( Statement state, long nodeId, DefinedProperty property )
             throws EntityNotFoundException
     {
         Property existingProperty = nodeGetProperty( state, nodeId, property.propertyKeyId() );
@@ -466,14 +492,14 @@ public class StateHandlingStatementOperations implements
         }
         else
         {
-            auxStoreOps.nodeChangeStoreProperty( nodeId, (SafeProperty)existingProperty, property );
+            auxStoreOps.nodeChangeStoreProperty( nodeId, (DefinedProperty) existingProperty, property );
         }
         state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
         return existingProperty;
     }
 
     @Override
-    public Property relationshipSetProperty( Statement state, long relationshipId, SafeProperty property )
+    public Property relationshipSetProperty( Statement state, long relationshipId, DefinedProperty property )
             throws EntityNotFoundException
     {
         Property existingProperty = relationshipGetProperty( state, relationshipId, property.propertyKeyId() );
@@ -483,14 +509,14 @@ public class StateHandlingStatementOperations implements
         }
         else
         {
-            auxStoreOps.relationshipChangeStoreProperty( relationshipId, (SafeProperty)existingProperty, property );
+            auxStoreOps.relationshipChangeStoreProperty( relationshipId, (DefinedProperty) existingProperty, property );
         }
         state.txState().relationshipDoReplaceProperty( relationshipId, existingProperty, property );
         return existingProperty;
     }
-    
+
     @Override
-    public Property graphSetProperty( Statement state, SafeProperty property )
+    public Property graphSetProperty( Statement state, DefinedProperty property )
     {
         Property existingProperty = graphGetProperty( state, property.propertyKeyId() );
         if ( !existingProperty.isDefined() )
@@ -499,7 +525,7 @@ public class StateHandlingStatementOperations implements
         }
         else
         {
-            auxStoreOps.graphChangeStoreProperty( (SafeProperty)existingProperty, property );
+            auxStoreOps.graphChangeStoreProperty( (DefinedProperty) existingProperty, property );
         }
         state.txState().graphDoReplaceProperty( existingProperty, property );
         return existingProperty;
@@ -512,7 +538,7 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = nodeGetProperty( state, nodeId, propertyKeyId );
         if ( existingProperty.isDefined() )
         {
-            auxStoreOps.nodeRemoveStoreProperty( nodeId, (SafeProperty)existingProperty );
+            auxStoreOps.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
         }
         state.txState().nodeDoRemoveProperty( nodeId, existingProperty );
         return existingProperty;
@@ -525,24 +551,24 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = relationshipGetProperty( state, relationshipId, propertyKeyId );
         if ( existingProperty.isDefined() )
         {
-            auxStoreOps.relationshipRemoveStoreProperty( relationshipId, (SafeProperty)existingProperty );
+            auxStoreOps.relationshipRemoveStoreProperty( relationshipId, (DefinedProperty) existingProperty );
         }
         state.txState().relationshipDoRemoveProperty( relationshipId, existingProperty );
         return existingProperty;
     }
-    
+
     @Override
     public Property graphRemoveProperty( Statement state, long propertyKeyId )
     {
         Property existingProperty = graphGetProperty( state, propertyKeyId );
         if ( existingProperty.isDefined() )
         {
-            auxStoreOps.graphRemoveStoreProperty( (SafeProperty)existingProperty );
+            auxStoreOps.graphRemoveStoreProperty( (DefinedProperty) existingProperty );
         }
         state.txState().graphDoRemoveProperty( existingProperty );
         return existingProperty;
     }
-    
+
     @Override
     public PrimitiveLongIterator nodeGetPropertyKeys( Statement state, long nodeId ) throws EntityNotFoundException
     {
@@ -550,17 +576,17 @@ public class StateHandlingStatementOperations implements
         {
             return new PropertyKeyIdIterator( nodeGetAllProperties( state, nodeId ) );
         }
-        
+
         return entityReadDelegate.nodeGetPropertyKeys( state, nodeId );
     }
-    
+
     @Override
     public Property nodeGetProperty( Statement state, long nodeId, long propertyKeyId )
             throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
-            Iterator<SafeProperty> properties = nodeGetAllProperties( state, nodeId );
+            Iterator<DefinedProperty> properties = nodeGetAllProperties( state, nodeId );
             while ( properties.hasNext() )
             {
                 Property property = properties.next();
@@ -571,12 +597,12 @@ public class StateHandlingStatementOperations implements
             }
             return Property.noNodeProperty( nodeId, propertyKeyId );
         }
-        
+
         return entityReadDelegate.nodeGetProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
-    public Iterator<SafeProperty> nodeGetAllProperties( Statement state, long nodeId ) throws EntityNotFoundException
+    public Iterator<DefinedProperty> nodeGetAllProperties( Statement state, long nodeId ) throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -596,7 +622,7 @@ public class StateHandlingStatementOperations implements
 
         return entityReadDelegate.nodeGetAllProperties( state, nodeId );
     }
-    
+
     @Override
     public PrimitiveLongIterator relationshipGetPropertyKeys( Statement state, long relationshipId )
             throws EntityNotFoundException
@@ -605,17 +631,17 @@ public class StateHandlingStatementOperations implements
         {
             return new PropertyKeyIdIterator( relationshipGetAllProperties( state, relationshipId ) );
         }
-        
+
         return entityReadDelegate.relationshipGetPropertyKeys( state, relationshipId );
     }
-    
+
     @Override
     public Property relationshipGetProperty( Statement state, long relationshipId, long propertyKeyId )
             throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
-            Iterator<SafeProperty> properties = relationshipGetAllProperties( state, relationshipId );
+            Iterator<DefinedProperty> properties = relationshipGetAllProperties( state, relationshipId );
             while ( properties.hasNext() )
             {
                 Property property = properties.next();
@@ -630,7 +656,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<SafeProperty> relationshipGetAllProperties( Statement state, long relationshipId ) throws EntityNotFoundException
+    public Iterator<DefinedProperty> relationshipGetAllProperties( Statement state,
+                                                                   long relationshipId ) throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -652,7 +679,7 @@ public class StateHandlingStatementOperations implements
             return entityReadDelegate.relationshipGetAllProperties( state, relationshipId );
         }
     }
-    
+
     @Override
     public PrimitiveLongIterator graphGetPropertyKeys( Statement state )
     {
@@ -660,14 +687,14 @@ public class StateHandlingStatementOperations implements
         {
             return new PropertyKeyIdIterator( graphGetAllProperties( state ) );
         }
-        
+
         return entityReadDelegate.graphGetPropertyKeys( state );
     }
-    
+
     @Override
     public Property graphGetProperty( Statement state, long propertyKeyId )
     {
-        Iterator<SafeProperty> properties = graphGetAllProperties( state );
+        Iterator<DefinedProperty> properties = graphGetAllProperties( state );
         while ( properties.hasNext() )
         {
             Property property = properties.next();
@@ -678,9 +705,9 @@ public class StateHandlingStatementOperations implements
         }
         return Property.noGraphProperty( propertyKeyId );
     }
-    
+
     @Override
-    public Iterator<SafeProperty> graphGetAllProperties( Statement state )
+    public Iterator<DefinedProperty> graphGetAllProperties( Statement state )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -688,6 +715,35 @@ public class StateHandlingStatementOperations implements
         }
 
         return entityReadDelegate.graphGetAllProperties( state );
+    }
+
+    private DiffSets<Long> nodesWithLabelAndPropertyDiffSet( Statement state, IndexDescriptor index, Object value )
+    {
+        TxState txState = state.txState();
+        long labelId = index.getLabelId();
+        long propertyKeyId = index.getPropertyKeyId();
+
+        // Start with nodes where the given property has changed
+        DiffSets<Long> diff = txState.nodesWithChangedProperty( propertyKeyId, value );
+
+        // Ensure remaining nodes have the correct label
+        HasLabelFilter hasLabel = new HasLabelFilter( state, labelId );
+        diff = diff.filterAdded( hasLabel );
+
+        // Include newly labeled nodes that already had the correct property
+        HasPropertyFilter hasPropertyFilter = new HasPropertyFilter( state, propertyKeyId, value );
+        Iterator<Long> addedNodesWithLabel = txState.nodesWithLabelAdded( labelId ).iterator();
+        diff.addAll( filter( hasPropertyFilter, addedNodesWithLabel ) );
+
+        // Remove de-labeled nodes that had the correct value before
+        Set<Long> removedNodesWithLabel = txState.nodesWithLabelChanged( index.getLabelId() ).getRemoved();
+        diff.removeAll( filter( hasPropertyFilter, removedNodesWithLabel.iterator() ) );
+        return diff;
+    }
+
+    private long nodeIfNotDeleted( long nodeId, TxState txState )
+    {
+        return txState.nodeIsDeletedInThisTx( nodeId ) ? NO_SUCH_NODE : nodeId;
     }
 
     private class HasPropertyFilter implements Predicate<Long>
@@ -746,7 +802,7 @@ public class StateHandlingStatementOperations implements
             }
         }
     }
-    
+
     // === TODO Below is unnecessary delegate methods
 
     @Override
@@ -762,7 +818,7 @@ public class StateHandlingStatementOperations implements
     {
         return schemaReadDelegate.indexGetCommittedId( state, index );
     }
-    
+
     @Override
     public String indexGetFailure( Statement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException

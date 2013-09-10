@@ -490,6 +490,7 @@ public abstract class InternalAbstractGraphDatabase
         kernelAPI = life.add( new Kernel( readOnly, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, persistenceManager,
                 xaDataSourceManager, lockManager, updateableSchemaState, dependencyResolver,
                 this.isHighlyAvailable() ) );
+
         // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
         txManager.setKernel(kernelAPI);
 
@@ -1519,11 +1520,11 @@ public abstract class InternalAbstractGraphDatabase
 
         try
         {
-            IndexDescriptor indexRule = statement.indexesGetForLabelAndPropertyKey( labelId, propertyId );
-            if ( statement.indexGetState( indexRule ) == InternalIndexState.ONLINE )
+            IndexDescriptor indexDescriptor = statement.indexesGetForLabelAndPropertyKey( labelId, propertyId );
+            if ( statement.indexGetState( indexDescriptor ) == InternalIndexState.ONLINE )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( statement.nodesGetFromIndexLookup( indexRule, value ),
+                return map2nodes( statement.nodesGetFromIndexLookup( indexDescriptor, value ),
                         statement );
             }
         }

@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
@@ -132,11 +132,11 @@ public interface TxState
 
     public abstract DiffSets<Long> nodeStateLabelDiffSets( long nodeId );
 
-    public abstract DiffSets<SafeProperty> nodePropertyDiffSets( long nodeId );
+    public abstract DiffSets<DefinedProperty> nodePropertyDiffSets( long nodeId );
 
-    public abstract DiffSets<SafeProperty> relationshipPropertyDiffSets( long relationshipId );
+    public abstract DiffSets<DefinedProperty> relationshipPropertyDiffSets( long relationshipId );
 
-    public abstract DiffSets<SafeProperty> graphPropertyDiffSets();
+    public abstract DiffSets<DefinedProperty> graphPropertyDiffSets();
 
     /**
      * Returns all nodes that, in this tx, have had labelId added.
@@ -169,12 +169,12 @@ public interface TxState
 
     public abstract void nodeDoDelete( long nodeId );
 
-    public abstract void nodeDoReplaceProperty( long nodeId, Property replacedProperty, SafeProperty newProperty );
+    public abstract void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty );
 
     public abstract void relationshipDoReplaceProperty( long relationshipId,
-                                                        Property replacedProperty, SafeProperty newProperty );
+                                                        Property replacedProperty, DefinedProperty newProperty );
 
-    public abstract void graphDoReplaceProperty( Property replacedProperty, SafeProperty newProperty );
+    public abstract void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty );
 
     public abstract void nodeDoRemoveProperty( long nodeId, Property removedProperty );
 

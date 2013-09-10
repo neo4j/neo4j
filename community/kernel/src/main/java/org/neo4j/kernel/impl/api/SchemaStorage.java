@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -42,6 +43,19 @@ public class SchemaStorage
         this.schemaStore = schemaStore;
     }
 
+    public IndexRule constraintIndexRule( long labelId, final long propertyKeyId ) throws SchemaRuleNotFoundException
+    {
+        IndexRule rule = indexRule( labelId, propertyKeyId );
+        if ( rule.isConstraintIndex() )
+        {
+            return rule;
+        }
+        else
+        {
+            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "is not a constraint index" );
+        }
+    }
+
     public IndexRule indexRule( long labelId, final long propertyKeyId ) throws SchemaRuleNotFoundException
     {
         Iterator<IndexRule> rules = schemaRules(
@@ -57,15 +71,14 @@ public class SchemaStorage
 
         if ( !rules.hasNext() )
         {
-            throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
-                                                   propertyKeyId + " not found" );
+            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "not found" );
         }
 
         IndexRule rule = rules.next();
 
         if ( rules.hasNext() )
         {
-            throw new SchemaRuleNotFoundException( "Found more than one matching index" );
+            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "found more than one matching index" );
         }
         return rule;
     }
@@ -132,16 +145,27 @@ public class SchemaStorage
                 } );
         if ( !rules.hasNext() )
         {
-            throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
-                                                   propertyKeyId + " not found" );
+            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "not found" );
         }
 
         UniquenessConstraintRule rule = rules.next();
 
         if ( rules.hasNext() )
         {
-            throw new SchemaRuleNotFoundException( "Found more than one matching index" );
+            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "found more than one matching index" );
         }
         return rule;
+    }
+
+    public SchemaRule schemaRuleById( long constraintRuleId ) throws SchemaRuleNotFoundException
+    {
+        try
+        {
+            return schemaStore.loadSingleSchemaRule( constraintRuleId );
+        }
+        catch ( MalformedSchemaRuleException e )
+        {
+            throw new SchemaRuleNotFoundException( "Can not load rule: " + constraintRuleId, e );
+        }
     }
 }

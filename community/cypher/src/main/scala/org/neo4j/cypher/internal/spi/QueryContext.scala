@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
 trait QueryContext extends TokenContext {
-
   def nodeOps: Operations[Node]
 
   def relationshipOps: Operations[Relationship]
@@ -67,6 +66,8 @@ trait QueryContext extends TokenContext {
 
   def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node]
 
+  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Node
+
   def getNodesByLabel(id: Long): Iterator[Node]
 
   def upgradeToLockingQueryContext: LockingQueryContext = upgrade(this)
@@ -75,9 +76,9 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
-  def createUniqueConstraint(labelId:Long, propertyKeyId:Long)
+  def createUniqueConstraint(labelId: Long, propertyKeyId: Long)
 
-  def dropUniqueConstraint(labelId:Long, propertyKeyId:Long)
+  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long)
 
   /**
    * This should not be used. We'll remove sooner (or later). Don't do it.
@@ -108,5 +109,5 @@ trait Operations[T <: PropertyContainer] {
 
   def indexQuery(name: String, query: Any): Iterator[T]
 
-  def all : Iterator[T]
+  def all: Iterator[T]
 }

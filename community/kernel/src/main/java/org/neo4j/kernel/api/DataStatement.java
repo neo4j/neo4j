@@ -21,8 +21,8 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 
 public class DataStatement extends ReadStatement implements DataWrite
@@ -78,7 +78,7 @@ public class DataStatement extends ReadStatement implements DataWrite
     }
 
     @Override
-    public Property nodeSetProperty( long nodeId, SafeProperty property )
+    public Property nodeSetProperty( long nodeId, DefinedProperty property )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
         assertOpen();
@@ -86,7 +86,7 @@ public class DataStatement extends ReadStatement implements DataWrite
     }
 
     @Override
-    public Property relationshipSetProperty( long relationshipId, SafeProperty property )
+    public Property relationshipSetProperty( long relationshipId, DefinedProperty property )
             throws EntityNotFoundException
     {
         assertOpen();
@@ -94,7 +94,7 @@ public class DataStatement extends ReadStatement implements DataWrite
     }
 
     @Override
-    public Property graphSetProperty( SafeProperty property )
+    public Property graphSetProperty( DefinedProperty property )
     {
         assertOpen();
         return dataWrite().graphSetProperty( state, property );

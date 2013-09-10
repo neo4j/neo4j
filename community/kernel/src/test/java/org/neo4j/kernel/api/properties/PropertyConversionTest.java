@@ -211,7 +211,7 @@ public class PropertyConversionTest
 
     private static void assertConverts( Object value )
     {
-        SafeProperty property = PropertyConversion.convertProperty( 17, value );
+        DefinedProperty property = PropertyConversion.convertProperty( 17, value );
         assertDeepEquals( value, property.value() );
         assertTrue( "valueEquals:" + value.getClass(), property.valueEquals( value ) );
         assertTrue( "two conversions are equal", property.equals( PropertyConversion.convertProperty( 17, value ) ) );
