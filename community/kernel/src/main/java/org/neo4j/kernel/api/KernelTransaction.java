@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  */
 public interface KernelTransaction
 {
-    KernelStatement acquireStatement();
+    Statement acquireStatement();
 
     /**
      * Commit this transaction, this will make the changes in this context visible to other
