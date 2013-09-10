@@ -25,6 +25,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+import org.jboss.netty.logging.Slf4JLoggerFactory;
+
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;

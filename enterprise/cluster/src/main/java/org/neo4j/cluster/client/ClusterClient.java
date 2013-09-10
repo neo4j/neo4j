@@ -29,6 +29,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+import org.jboss.netty.logging.Slf4JLoggerFactory;
+
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
@@ -270,6 +273,8 @@ public class ClusterClient extends LifecycleAdapter
                 .getClusterName() ), logging );
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
+
+        InternalLoggerFactory.setDefaultFactory( new Slf4JLoggerFactory() );
 
         NetworkReceiver receiver = new NetworkReceiver( new NetworkReceiver.Configuration()
         {
