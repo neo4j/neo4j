@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
@@ -237,7 +237,7 @@ public class LockingStatementOperationsTest
     }
 
     private final LockHolder lockHolder = mock( LockHolder.class );
-    private final Statement state = mock( Statement.class );
+    private final KernelStatement state = mock( KernelStatement.class );
     
     @Before
     public void before() throws Exception

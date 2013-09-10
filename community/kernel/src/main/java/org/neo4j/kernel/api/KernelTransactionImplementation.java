@@ -41,26 +41,6 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         this.legacyKernelOperations = legacyKernelOperations;
     }
 
-    public ReadStatement acquireReadStatement()
-    {
-        assertOpen();
-        return new ReadStatement( this, acquireStatement() );
-    }
-
-    public DataStatement acquireDataStatement() throws InvalidTransactionTypeException
-    {
-        assertOpen();
-        transactionType = transactionType.upgradeToDataTransaction();
-        return new DataStatement( this, acquireStatement() );
-    }
-
-    public SchemaStatement acquireSchemaStatement() throws InvalidTransactionTypeException
-    {
-        assertOpen();
-        transactionType = transactionType.upgradeToSchemaTransaction();
-        return new SchemaStatement( this, acquireStatement() );
-    }
-
     public void commit() throws TransactionFailureException
     {
         beginClose();
@@ -93,14 +73,9 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
     public <RESULT, FAILURE extends KernelException> RESULT execute( MicroTransaction<RESULT, FAILURE> transaction )
             throws FAILURE
     {
-        Statement statement = acquireStatement();
-        try
+        try ( KernelStatement statement = acquireStatement() )
         {
             return transaction.work.perform( operations, statement );
-        }
-        finally
-        {
-            releaseStatement( statement );
         }
     }
 
@@ -108,13 +83,15 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
 
     protected abstract void doRollback() throws TransactionFailureException;
 
-    protected abstract Statement newStatement();
+    protected abstract KernelStatement newStatement();
 
-    /** Implements reusing the same underlying {@link Statement} for overlapping statements. */
-    private Statement currentStatement;
+    /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
+    private KernelStatement currentStatement;
 
-    private Statement acquireStatement()
+    @Override
+    public KernelStatement acquireStatement()
     {
+        assertOpen();
         if ( currentStatement == null )
         {
             currentStatement = newStatement();
@@ -126,11 +103,7 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
     void releaseStatement( Statement statement )
     {
         assert currentStatement == statement;
-        if ( statement.release() )
-        {
-            currentStatement = null;
-            statement.close();
-        }
+        currentStatement = null;
     }
 
     private void close()
@@ -165,6 +138,16 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
             currentStatement = null;
         }
         closing = true;
+    }
+
+    public void upgradeToDataTransaction() throws InvalidTransactionTypeException
+    {
+        transactionType = transactionType.upgradeToDataTransaction();
+    }
+
+    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeException
+    {
+        transactionType = transactionType.upgradeToSchemaTransaction();
     }
 
     private enum TransactionType

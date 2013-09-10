@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -57,7 +57,7 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts indexCreationContext = mockedParts();
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
-        Statement state = mockedState();
+        KernelStatement state = mockedState();
 
         IndexingService indexingService = mock( IndexingService.class );
         StubTransactor transactor = new StubTransactor( state, indexCreationContext );
@@ -86,7 +86,7 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts constraintCreationContext = mockedParts();
         StatementOperationParts indexCreationContext = mockedParts();
         StatementOperationParts indexDestructionContext = mockedParts();
-        Statement state = mockedState();
+        KernelStatement state = mockedState();
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
 
@@ -126,7 +126,7 @@ public class ConstraintIndexCreatorTest
     {
         // given
         StatementOperationParts indexDestructionTransaction = mockedParts();
-        Statement state = mockedState();
+        KernelStatement state = mockedState();
         StubTransactor transactor = new StubTransactor( state, indexDestructionTransaction );
         IndexingService indexingService = mock( IndexingService.class );
 
@@ -145,9 +145,9 @@ public class ConstraintIndexCreatorTest
     private static class StubTransactor extends Transactor
     {
         private final Iterator<StatementOperationParts> mockContexts;
-        private final Statement state;
+        private final KernelStatement state;
 
-        StubTransactor( Statement state, StatementOperationParts... mockContexts )
+        StubTransactor( KernelStatement state, StatementOperationParts... mockContexts )
         {
             super( null );
             this.state = state;

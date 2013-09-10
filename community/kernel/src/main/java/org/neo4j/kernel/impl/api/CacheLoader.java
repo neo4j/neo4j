@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 
 public interface CacheLoader<T>
 {
-    T load( Statement state, long id ) throws EntityNotFoundException;
+    T load( KernelStatement state, long id ) throws EntityNotFoundException;
 }

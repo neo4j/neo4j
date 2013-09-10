@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.operations;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 
 public interface SchemaStateOperations
 {
@@ -35,10 +35,10 @@ public interface SchemaStateOperations
      * NOTE: This currently is solely used by Cypher and might or might not be turned into
      * a more generic facility in teh future
      */
-    <K, V> V schemaStateGetOrCreate( Statement state, K key, Function<K, V> creator );
+    <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator );
 
     /**
      * Check if some key is in the schema state.
      */
-    <K> boolean schemaStateContains( Statement state, K key );
+    <K> boolean schemaStateContains( KernelStatement state, K key );
 }

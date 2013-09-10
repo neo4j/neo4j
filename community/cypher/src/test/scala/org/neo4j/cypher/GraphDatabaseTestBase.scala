@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.spi.PlanContext
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.kernel.api.{DataStatement, ReadStatement}
+import org.neo4j.kernel.api.DataWriteOperations
 
 class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
@@ -121,9 +121,9 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   }
 
 
-  def execStatement[T](f: (DataStatement => T)): T = {
+  def execStatement[T](f: (DataWriteOperations => T)): T = {
     val tx = graph.beginTx
-    val result = f(dataStatement)
+    val result = f(statement.dataWriteOperations())
     tx.success()
     tx.finish()
     result
@@ -196,13 +196,8 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
     (a, b, c, d)
   }
 
-  def dataStatement:DataStatement =
-    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).dataStatement
-
-  def planContext:PlanContext = new TransactionBoundPlanContext(baseStatement, graph)
-
-  def baseStatement:ReadStatement =
-    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).readStatement
+  def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statement()
+  def planContext:PlanContext = new TransactionBoundPlanContext(statement, graph)
 }
 
 trait Snitch extends GraphDatabaseAPI {

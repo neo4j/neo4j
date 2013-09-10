@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.Thunk;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
@@ -75,7 +75,7 @@ public class PersistenceCacheTest
     private PersistenceCache persistenceCache;
     private LockStripedCache<NodeImpl> nodeCache;
     private final long nodeId = 1;
-    private final Statement state = mock( Statement.class );
+    private final KernelStatement state = mock( KernelStatement.class );
     
     @SuppressWarnings( "unchecked" )
     @Before

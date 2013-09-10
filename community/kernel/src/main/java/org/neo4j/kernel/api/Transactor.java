@@ -35,7 +35,7 @@ public class Transactor
 {
     public interface Work<RESULT, FAILURE extends KernelException>
     {
-        RESULT perform( StatementOperationParts statementContext, Statement statement ) throws FAILURE;
+        RESULT perform( StatementOperationParts statementContext, KernelStatement statement ) throws FAILURE;
     }
 
     private final AbstractTransactionManager txManager;

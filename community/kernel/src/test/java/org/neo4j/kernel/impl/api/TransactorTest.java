@@ -25,9 +25,9 @@ import javax.transaction.SystemException;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.MicroTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
@@ -63,14 +63,14 @@ public class TransactorTest
         when( txManager.suspend() ).thenReturn( existingTransaction );
 
         StatementOperationParts operations = mock( StatementOperationParts.class );
-        Statement statement = mock( Statement.class );
+        KernelStatement statement = mock( KernelStatement.class );
         StubKernelTransaction kernelTransaction = spy( new StubKernelTransaction( operations, statement ) );
         when( txManager.getKernelTransaction() ).thenReturn( kernelTransaction );
 
         @SuppressWarnings("unchecked")
         Transactor.Work<Object, KernelException> work = mock( Transactor.Work.class );
         Object expectedResult = new Object();
-        when( work.perform( eq( operations ), any( Statement.class ) ) ).thenReturn( expectedResult );
+        when( work.perform( eq( operations ), any( KernelStatement.class ) ) ).thenReturn( expectedResult );
 
         Transactor transactor = new Transactor( txManager );
 
@@ -101,14 +101,14 @@ public class TransactorTest
         when( txManager.suspend() ).thenReturn( existingTransaction );
 
         StatementOperationParts operations = mock( StatementOperationParts.class );
-        Statement statement = mock( Statement.class );
+        KernelStatement statement = mock( KernelStatement.class );
         StubKernelTransaction kernelTransaction = spy( new StubKernelTransaction( operations, statement ) );
         when( txManager.getKernelTransaction() ).thenReturn( kernelTransaction );
 
         @SuppressWarnings("unchecked")
         Transactor.Work<Object, KernelException> work = mock( Transactor.Work.class );
         SpecificKernelException exception = new SpecificKernelException();
-        when( work.perform( any( StatementOperationParts.class ), any( Statement.class ) ) ).thenThrow( exception );
+        when( work.perform( any( StatementOperationParts.class ), any( KernelStatement.class ) ) ).thenThrow( exception );
 
         Transactor transactor = new Transactor( txManager );
 
@@ -145,14 +145,14 @@ public class TransactorTest
         when( txManager.suspend() ).thenReturn( null );
 
         StatementOperationParts operations = mock( StatementOperationParts.class );
-        Statement statement = mock( Statement.class );
+        KernelStatement statement = mock( KernelStatement.class );
         StubKernelTransaction kernelTransaction = spy( new StubKernelTransaction( operations, statement ) );
         when( txManager.getKernelTransaction() ).thenReturn( kernelTransaction );
 
         @SuppressWarnings("unchecked")
         Transactor.Work<Object, KernelException> work = mock( Transactor.Work.class );
         Object expectedResult = new Object();
-        when( work.perform( eq( operations ), any( Statement.class ) ) ).thenReturn( expectedResult );
+        when( work.perform( eq( operations ), any( KernelStatement.class ) ) ).thenReturn( expectedResult );
 
         Transactor transactor = new Transactor( txManager );
 
@@ -170,6 +170,7 @@ public class TransactorTest
         order.verify( work ).perform( operations, statement );
         order.verify( statement ).close();
         order.verify( kernelTransaction ).commit();
+        order.verify( statement ).close();
         verifyNoMoreInteractions( txManager, operations, statement, work );
     }
 
@@ -305,9 +306,9 @@ public class TransactorTest
 
     private class StubKernelTransaction extends KernelTransactionImplementation
     {
-        private final Statement statement;
+        private final KernelStatement statement;
 
-        protected StubKernelTransaction( StatementOperationParts operations, Statement statement )
+        protected StubKernelTransaction( StatementOperationParts operations, KernelStatement statement )
         {
             super( operations, mock( LegacyKernelOperations.class ) );
             this.statement = statement;
@@ -324,7 +325,7 @@ public class TransactorTest
         }
 
         @Override
-        protected Statement newStatement()
+        protected KernelStatement newStatement()
         {
             return statement;
         }

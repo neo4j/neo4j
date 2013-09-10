@@ -17,30 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api;
 
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.api.operations.SchemaStateOperations;
+import org.mockito.Mockito;
 
-public class SchemaStateConcern implements SchemaStateOperations
+import org.neo4j.kernel.api.operations.LegacyKernelOperations;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
+
+import static org.mockito.Mockito.mock;
+
+public class StubKernelTransaction extends KernelTransactionImplementation
 {
-    private final UpdateableSchemaState schemaState;
-
-    public SchemaStateConcern( UpdateableSchemaState schemaState )
+    public StubKernelTransaction()
     {
-        this.schemaState = schemaState;
+        super( Mockito.mock( StatementOperationParts.class ), Mockito.mock( LegacyKernelOperations.class ) );
     }
 
     @Override
-    public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator )
+    protected void doCommit()
     {
-        return schemaState.getOrCreate( key, creator );
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public <K> boolean schemaStateContains( KernelStatement state, K key )
+    protected void doRollback()
     {
-        return schemaState.get( key ) != null;
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    protected KernelStatement newStatement()
+    {
+        return new KernelStatement(this, mock( IndexReaderFactory.class ), null, null, null);
     }
 }

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
@@ -53,7 +53,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
             transactor.execute( new Transactor.Work<Void, SchemaKernelException>()
             {
                 @Override
-                public Void perform( StatementOperationParts context, Statement state )
+                public Void perform( StatementOperationParts context, KernelStatement state )
                         throws SchemaKernelException
                 {
                     for ( Iterator<IndexDescriptor> indexes = context.schemaReadOperations().uniqueIndexesGetAll( state );

@@ -24,9 +24,8 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
 /**
  * Represents a transaction of changes to the underlying graph.
- * Actual changes are made in the {@linkplain #acquireDataStatement() data statements} or
- * {@linkplain #acquireSchemaStatement() schema statements}  created from this transaction context. Changes made within
- * a transaction are visible to all operations within it.
+ * Actual changes are made in the {@linkplain #acquireStatement() statements} acquired from this transaction.
+ * Changes made within a transaction are visible to all operations within it.
  *
  * The reason for the separation between transactions and statements is isolation levels. While Neo4j is read-committed
  * isolation, a read can potentially involve multiple operations (think of a cypher statement). Within that read, or
@@ -40,11 +39,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  */
 public interface KernelTransaction
 {
-    ReadStatement acquireReadStatement();
-
-    DataStatement acquireDataStatement() throws InvalidTransactionTypeException;
-
-    SchemaStatement acquireSchemaStatement() throws InvalidTransactionTypeException;
+    Statement acquireStatement();
 
     /**
      * Commit this transaction, this will make the changes in this context visible to other

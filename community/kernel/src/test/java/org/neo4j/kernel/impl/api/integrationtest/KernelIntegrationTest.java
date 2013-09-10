@@ -26,10 +26,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.DataStatement;
+import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.ReadStatement;
-import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -44,23 +46,28 @@ public abstract class KernelIntegrationTest
     protected ThreadToStatementContextBridge statementContextProvider;
 
     private Transaction beansTx;
-    private ReadStatement statement;
+    private Statement statement;
     private EphemeralFileSystemAbstraction fs;
 
-    protected DataStatement dataStatementInNewTransaction()
+    protected DataWriteOperations dataWriteOperationsInNewTransaction() throws InvalidTransactionTypeException
     {
         beansTx = db.beginTx();
-        DataStatement dataStatement = statementContextProvider.dataStatement();
-        statement = dataStatement;
-        return dataStatement;
+        statement = statementContextProvider.statement();
+        return statement.dataWriteOperations();
     }
 
-    protected SchemaStatement schemaStatementInNewTransaction()
+    protected SchemaWriteOperations schemaWriteOperationsInNewTransaction() throws InvalidTransactionTypeException
     {
         beansTx = db.beginTx();
-        SchemaStatement dataStatement = statementContextProvider.schemaStatement();
-        statement = dataStatement;
-        return dataStatement;
+        statement = statementContextProvider.statement();
+        return statement.schemaWriteOperations();
+    }
+
+    protected ReadOperations readOperationsInNewTransaction()
+    {
+        beansTx = db.beginTx();
+        statement = statementContextProvider.statement();
+        return statement.readOperations();
     }
 
     protected void commit()

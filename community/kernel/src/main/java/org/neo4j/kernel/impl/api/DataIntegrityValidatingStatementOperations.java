@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
@@ -83,7 +84,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( Statement state, long labelId, long propertyKey )
+    public IndexDescriptor indexCreate( KernelStatement state, long labelId, long propertyKey )
             throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
         checkIndexExistence( state, labelId, propertyKey );
@@ -91,7 +92,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void indexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         try
         {
@@ -107,13 +108,13 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void uniqueIndexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteDelegate.uniqueIndexDrop( state, descriptor );
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( Statement state, long labelId, long propertyKey )
+    public UniquenessConstraint uniquenessConstraintCreate( KernelStatement state, long labelId, long propertyKey )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
         Iterator<UniquenessConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
@@ -130,7 +131,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void constraintDrop( Statement state, UniquenessConstraint constraint ) throws DropConstraintFailureException
+    public void constraintDrop( KernelStatement state, UniquenessConstraint constraint ) throws DropConstraintFailureException
     {
         try
         {
@@ -144,7 +145,7 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.constraintDrop( state, constraint );
     }
 
-    private void checkIndexExistence( Statement state, long labelId, long propertyKey )
+    private void checkIndexExistence( KernelStatement state, long labelId, long propertyKey )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )

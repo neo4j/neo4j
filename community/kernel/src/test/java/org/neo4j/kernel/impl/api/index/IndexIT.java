@@ -24,7 +24,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -49,7 +49,7 @@ public class IndexIT extends KernelIntegrationTest
         // GIVEN
         IndexDescriptor expectedRule;
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // WHEN
             expectedRule = statement.indexCreate( labelId, propertyKey );
@@ -58,7 +58,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // THEN
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( asSet( expectedRule ),
                           asSet( statement.indexesGetForLabel( labelId ) ) );
             assertEquals( expectedRule, statement.indexesGetForLabelAndPropertyKey( labelId, propertyKey ) );
@@ -72,7 +72,7 @@ public class IndexIT extends KernelIntegrationTest
         // GIVEN
         IndexDescriptor existingRule;
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             existingRule = statement.indexCreate( labelId, propertyKey );
             commit();
         }
@@ -81,7 +81,7 @@ public class IndexIT extends KernelIntegrationTest
         IndexDescriptor addedRule;
         Set<IndexDescriptor> indexRulesInTx;
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             long propertyKey2 = 10;
             addedRule = statement.indexCreate( labelId, propertyKey2 );
             indexRulesInTx = asSet( statement.indexesGetForLabel( labelId ) );
@@ -97,7 +97,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // WHEN
             statement.indexCreate( labelId, propertyKey );
@@ -107,7 +107,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // THEN
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.indexesGetForLabel( labelId ) ) );
             commit();
         }
@@ -125,7 +125,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // then
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.indexesGetForLabel( labelId ) ) );
             commit();
         }
@@ -137,12 +137,12 @@ public class IndexIT extends KernelIntegrationTest
         // given
         IndexDescriptor index;
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             index = statement.indexCreate( labelId, propertyKey );
             commit();
         }
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.indexDrop( index );
             commit();
         }
@@ -150,7 +150,7 @@ public class IndexIT extends KernelIntegrationTest
         // when
         try
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.indexDrop( index );
             commit();
         }
@@ -167,7 +167,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.uniquenessConstraintCreate( labelId, propertyKey );
             commit();
         }
@@ -175,7 +175,7 @@ public class IndexIT extends KernelIntegrationTest
         // when
         try
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.indexCreate( labelId, propertyKey );
             commit();
 
@@ -194,7 +194,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.uniquenessConstraintCreate( statement.labelGetOrCreateForName( "Label1" ),
                                          statement.propertyKeyGetOrCreateForName( "property1" ) );
             commit();
@@ -202,7 +202,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // when
         {
-            schemaStatementInNewTransaction();
+            schemaWriteOperationsInNewTransaction();
             Set<IndexDefinition> indexes = asSet( db.schema().getIndexes() );
 
             // then
@@ -234,14 +234,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.uniquenessConstraintCreate( labelId, propertyKey );
             commit();
         }
 
         // then/when
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertFalse( statement.indexesGetAll().hasNext() );
             assertFalse( statement.indexesGetForLabel( labelId ).hasNext() );
         }
@@ -252,14 +252,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.indexCreate( labelId, propertyKey );
             commit();
         }
 
         // then/when
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertFalse( statement.uniqueIndexesGetAll().hasNext() );
             assertFalse( statement.uniqueIndexesGetForLabel( labelId ).hasNext() );
         }

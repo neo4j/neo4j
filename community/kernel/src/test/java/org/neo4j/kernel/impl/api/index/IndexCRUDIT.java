@@ -35,8 +35,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.DataStatement;
-import org.neo4j.kernel.api.ReadStatement;
+import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -81,7 +81,7 @@ public class IndexCRUDIT
         Transaction tx = db.beginTx();
         try
         {
-            DataStatement statement = ctxProvider.dataStatement();
+            DataWriteOperations statement = ctxProvider.statement().dataWriteOperations();
             long propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updates, equalTo( asSet(
@@ -123,7 +123,7 @@ public class IndexCRUDIT
         tx = db.beginTx();
         try
         {
-            DataStatement statement = ctxProvider.dataStatement();
+            DataWriteOperations statement = ctxProvider.statement().dataWriteOperations();
             long propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updates, equalTo( asSet(
@@ -201,7 +201,7 @@ public class IndexCRUDIT
         @Override
         public void add( long nodeId, Object propertyValue )
         {
-            ReadStatement statement = ctxProvider.readStatement();
+            ReadOperations statement = ctxProvider.statement().readOperations();
             updates.add( NodePropertyUpdate.add(
                     nodeId, statement.propertyKeyGetForName( propertyKey ),
                     propertyValue, new long[]{statement.labelGetForName( myLabel.name() )} ) );

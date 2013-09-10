@@ -21,167 +21,122 @@ package org.neo4j.kernel.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
-import static org.mockito.Mockito.mock;
 
 public class TransactionStatementSharingTest
 {
-    private KernelTransactionImplementation newTransaction()
-    {
-        return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
-                                                    mock( LegacyKernelOperations.class ) )
-        {
-            @Override
-            protected void doCommit()
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected void doRollback()
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected Statement newStatement()
-            {
-                return mock( Statement.class );
-            }
-        };
-    }
-
     @Test
     public void shouldShareStatementStateForConcurrentReadStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        ReadStatement stmt1 = tx.acquireReadStatement();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
-        ReadStatement stmt2 = tx.acquireReadStatement();
+        ReadOperations stmt2 = tx.acquireStatement().readOperations();
 
         // then
-        assertSame( stmt1.state, stmt2.state );
+        assertSame( stmt1, stmt2 );
     }
 
     @Test
     public void shouldShareStatementStateForConcurrentReadStatementAndDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        ReadStatement stmt1 = tx.acquireReadStatement();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
-        DataStatement stmt2 = tx.acquireDataStatement();
+        DataWriteOperations stmt2 = tx.acquireStatement().dataWriteOperations();
 
         // then
-        assertSame( stmt1.state, stmt2.state );
+        assertSame( stmt1, stmt2 );
     }
 
     @Test
     public void shouldShareStatementStateForConcurrentReadStatementAndSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        ReadStatement stmt1 = tx.acquireReadStatement();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
-        SchemaStatement stmt2 = tx.acquireSchemaStatement();
+        SchemaWriteOperations stmt2 = tx.acquireStatement().schemaWriteOperations();
 
         // then
-        assertSame( stmt1.state, stmt2.state );
+        assertSame( stmt1, stmt2 );
     }
 
     @Test
     public void shouldShareStatementStateForConcurrentDataStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        DataStatement stmt1 = tx.acquireDataStatement();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        DataWriteOperations stmt1 = tx.acquireStatement().dataWriteOperations();
 
         // when
-        ReadStatement stmt2 = tx.acquireReadStatement();
+        ReadOperations stmt2 = tx.acquireStatement().readOperations();
 
         // then
-        assertSame( stmt1.state, stmt2.state );
+        assertSame( stmt1, stmt2 );
     }
 
     @Test
     public void shouldShareStatementStateForConcurrentDataStatementAndDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        DataStatement stmt1 = tx.acquireDataStatement();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        DataWriteOperations stmt1 = tx.acquireStatement().dataWriteOperations();
 
         // when
-        DataStatement stmt2 = tx.acquireDataStatement();
+        DataWriteOperations stmt2 = tx.acquireStatement().dataWriteOperations();
 
         // then
-        assertSame( stmt1.state, stmt2.state );
+        assertSame( stmt1, stmt2 );
     }
 
     @Test
     public void shouldShareStatementStateForConcurrentSchemaStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        SchemaStatement stmt1 = tx.acquireSchemaStatement();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        SchemaWriteOperations stmt1 = tx.acquireStatement().schemaWriteOperations();
 
         // when
-        ReadStatement stmt2 = tx.acquireReadStatement();
+        ReadOperations stmt2 = tx.acquireStatement().readOperations();
 
         // then
-        assertSame( stmt1.state, stmt2.state );
+        assertSame( stmt1, stmt2 );
     }
 
     @Test
     public void shouldShareStatementStateForConcurrentSchemaStatementAndSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        SchemaStatement stmt1 = tx.acquireSchemaStatement();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        SchemaWriteOperations stmt1 = tx.acquireStatement().schemaWriteOperations();
 
         // when
-        SchemaStatement stmt2 = tx.acquireSchemaStatement();
+        SchemaWriteOperations stmt2 = tx.acquireStatement().schemaWriteOperations();
 
         // then
-        assertSame( stmt1.state, stmt2.state );
+        assertSame( stmt1, stmt2 );
     }
 
     @Test
     public void shouldNotShareStateForSequentialReadStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = newTransaction();
-        ReadStatement stmt1 = tx.acquireReadStatement();
-        stmt1.close();
+        KernelTransactionImplementation tx = new StubKernelTransaction();
+        Statement statement = tx.acquireStatement();
+        ReadOperations ops1 = statement.readOperations();
+        statement.close();
 
         // when
-        ReadStatement stmt2 = tx.acquireReadStatement();
+        ReadOperations ops2 = tx.acquireStatement().readOperations();
 
         // then
-        assertNotSame( stmt1.state, stmt2.state );
-    }
-
-    @Test
-    public void shouldNotReleaseUnderlyingStatementIfClosingTheSameReadStatementTwice() throws Exception
-    {
-        // given
-        KernelTransactionImplementation tx = newTransaction();
-        ReadStatement stmt1 = tx.acquireReadStatement();
-        ReadStatement stmt2 = tx.acquireReadStatement();
-        stmt1.close();
-
-        // when
-        stmt1.close();
-        ReadStatement stmt3 = tx.acquireReadStatement();
-
-        // then
-        assertSame( "stmt1 == stmt2", stmt1.state, stmt2.state );
-        assertSame( "stmt2 == stmt3", stmt2.state, stmt3.state );
+        assertNotSame( ops1, ops2 );
     }
 }

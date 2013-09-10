@@ -25,9 +25,8 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import java.lang.Iterable
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.pipes.{QueryStateHelper, NullDecorator, QueryState}
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
 /*

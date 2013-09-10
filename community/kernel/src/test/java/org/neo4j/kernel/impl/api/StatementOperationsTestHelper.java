@@ -24,7 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -55,14 +55,14 @@ public abstract class StatementOperationsTestHelper
             mock( SchemaStateOperations.class ));
     }
     
-    public static Statement mockedState()
+    public static KernelStatement mockedState()
     {
         return mockedState( mock( TxState.class ) );
     }
     
-    public static Statement mockedState( final TxState txState )
+    public static KernelStatement mockedState( final TxState txState )
     {
-        Statement state = mock( Statement.class );
+        KernelStatement state = mock( KernelStatement.class );
         LockHolder lockHolder = mock( LockHolder.class );
         try
         {

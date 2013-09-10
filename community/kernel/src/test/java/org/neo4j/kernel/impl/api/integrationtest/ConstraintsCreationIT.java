@@ -25,7 +25,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.SchemaStatement;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
@@ -57,7 +59,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // given
         UniquenessConstraint constraint;
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // when
             constraint = statement.uniquenessConstraintCreate( labelId, propertyKeyId );
@@ -70,7 +72,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             commit();
         }
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // when
             Iterator<UniquenessConstraint> constraints = statement
@@ -86,7 +88,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // given
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             statement.uniquenessConstraintCreate( labelId, propertyKeyId );
 
@@ -94,7 +96,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             rollback();
         }
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // then
             Iterator<UniquenessConstraint> constraints = statement.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
@@ -107,7 +109,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // given
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             UniquenessConstraint constraint = statement.uniquenessConstraintCreate( labelId, propertyKeyId );
 
@@ -121,7 +123,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             commit();
         }
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // then
             assertFalse( "should not have any constraints", statement.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId ).hasNext() );
@@ -133,7 +135,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // given
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.uniquenessConstraintCreate( labelId, propertyKeyId );
             commit();
         }
@@ -141,7 +143,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // when
         try
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             statement.uniquenessConstraintCreate( labelId, propertyKeyId );
 
@@ -160,13 +162,13 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // given
         UniquenessConstraint constraint;
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             constraint = statement.uniquenessConstraintCreate( labelId, propertyKeyId );
             commit();
         }
         SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // when
             statement.constraintDrop( constraint );
@@ -174,7 +176,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             commit();
         }
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // then
             assertEquals( singletonList( constraint ), asCollection( statement.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId ) ) );
@@ -188,14 +190,14 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // given
         SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
 
-        SchemaStatement statement = schemaStatementInNewTransaction();
+        SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
         // when
         statement.uniquenessConstraintCreate( labelId, propertyKeyId );
         commit();
 
         // then
-        schemaStatementInNewTransaction();
+        schemaWriteOperationsInNewTransaction();
         schemaState.assertCleared();
     }
 
@@ -206,7 +208,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         UniquenessConstraint constraint;
         SchemaStateCheck schemaState;
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             constraint = statement.uniquenessConstraintCreate( labelId, propertyKeyId );
             commit();
 
@@ -214,7 +216,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         }
 
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // when
             statement.constraintDrop( constraint );
@@ -222,7 +224,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         }
 
         // then
-        schemaStatementInNewTransaction();
+        schemaWriteOperationsInNewTransaction();
         schemaState.assertCleared();
     }
 
@@ -231,14 +233,14 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // when
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.uniquenessConstraintCreate( labelId, propertyKeyId );
             commit();
         }
 
         // then
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), asSet( statement.uniqueIndexesGetAll() ) );
         }
     }
@@ -248,7 +250,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // given
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.uniquenessConstraintCreate( labelId, propertyKeyId );
             assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ),
                           asSet( statement.uniqueIndexesGetAll() ) );
@@ -259,7 +261,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
 
         // then
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
             commit();
         }
@@ -271,7 +273,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // given
         UniquenessConstraint constraint;
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             constraint = statement.uniquenessConstraintCreate( labelId, propertyKeyId );
             assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), asSet( statement.uniqueIndexesGetAll() ) );
             commit();
@@ -279,14 +281,14 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
 
         // when
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.constraintDrop( constraint );
             commit();
         }
 
         // then
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll( ) ) );
             commit();
         }
@@ -297,7 +299,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     {
         // when
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             try
             {
@@ -313,7 +315,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
 
         // then
         {
-            SchemaStatement statement = schemaStatementInNewTransaction();
+            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
             commit();
         }
@@ -323,7 +325,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     public void committedConstraintRuleShouldCrossReferenceTheCorrespondingIndexRule() throws Exception
     {
         // when
-        SchemaStatement statement = schemaStatementInNewTransaction();
+        SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
         statement.uniquenessConstraintCreate( labelId, propertyKeyId );
         commit();
 
@@ -338,9 +340,9 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     private long labelId, propertyKeyId;
 
     @Before
-    public void createKeys() throws SchemaKernelException
+    public void createKeys() throws SchemaKernelException, InvalidTransactionTypeException
     {
-        SchemaStatement statement = schemaStatementInNewTransaction();
+        SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
         this.labelId = statement.labelGetOrCreateForName( "Foo" );
         this.propertyKeyId = statement.propertyKeyGetOrCreateForName( "bar" );
         commit();
@@ -349,7 +351,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     private class SchemaStateCheck implements Function<String, Integer>
     {
         int invocationCount;
-        private SchemaStatement statement;
+        private ReadOperations readOperations;
 
         @Override
         public Integer apply( String s )
@@ -360,7 +362,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
 
         public SchemaStateCheck setUp()
         {
-            this.statement = schemaStatementInNewTransaction();
+            this.readOperations = readOperationsInNewTransaction();
             checkState();
             commit();
             return this;
@@ -382,7 +384,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
 
         private SchemaStateCheck checkState()
         {
-            assertEquals( Integer.valueOf( 7 ), statement.schemaStateGetOrCreate( "7", this ) );
+            assertEquals( Integer.valueOf( 7 ), readOperations.schemaStateGetOrCreate( "7", this ) );
             return this;
         }
     }

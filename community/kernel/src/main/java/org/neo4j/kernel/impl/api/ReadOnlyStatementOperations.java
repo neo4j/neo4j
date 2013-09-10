@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -79,107 +80,107 @@ public class ReadOnlyStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( Statement state, long nodeId )
+    public void nodeDelete( KernelStatement state, long nodeId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public void relationshipDelete( Statement state, long relationshipId )
+    public void relationshipDelete( KernelStatement state, long relationshipId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public boolean nodeAddLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public boolean nodeRemoveLabel( Statement state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property nodeSetProperty( Statement state, long nodeId, SafeProperty property )
+    public Property nodeSetProperty( KernelStatement state, long nodeId, SafeProperty property )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property relationshipSetProperty( Statement state, long relationshipId, SafeProperty property )
+    public Property relationshipSetProperty( KernelStatement state, long relationshipId, SafeProperty property )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property graphSetProperty( Statement state, SafeProperty property )
+    public Property graphSetProperty( KernelStatement state, SafeProperty property )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property nodeRemoveProperty( Statement state, long nodeId, long propertyKeyId )
+    public Property nodeRemoveProperty( KernelStatement state, long nodeId, long propertyKeyId )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property relationshipRemoveProperty( Statement state, long relationshipId, long propertyKeyId )
+    public Property relationshipRemoveProperty( KernelStatement state, long relationshipId, long propertyKeyId )
             throws EntityNotFoundException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public Property graphRemoveProperty( Statement state, long propertyKeyId )
+    public Property graphRemoveProperty( KernelStatement state, long propertyKeyId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public IndexDescriptor indexCreate( Statement state, long labelId, long propertyKeyId )
+    public IndexDescriptor indexCreate( KernelStatement state, long labelId, long propertyKeyId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public void indexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public void uniqueIndexDrop( Statement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( Statement state, long labelId, long propertyKeyId )
+    public UniquenessConstraint uniquenessConstraintCreate( KernelStatement state, long labelId, long propertyKeyId )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public void constraintDrop( Statement state, UniquenessConstraint constraint )
+    public void constraintDrop( KernelStatement state, UniquenessConstraint constraint )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public <K, V> V schemaStateGetOrCreate( Statement state, K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator )
     {
         return schemaStateDelegate.schemaStateGetOrCreate( state, key, creator );
     }
 
     @Override
-    public <K> boolean schemaStateContains( Statement state, K key )
+    public <K> boolean schemaStateContains( KernelStatement state, K key )
     {
         return schemaStateDelegate.schemaStateContains( state, key );
     }
