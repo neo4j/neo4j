@@ -308,30 +308,30 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         } );
         cacheAccess = new BridgingCacheAccess( nodeManager, schemaCache, updateableSchemaState, persistenceCache );
 
-        final SchemaIndexProvider indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
-                    SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
-
-        // TODO: Build a real provider map
-        providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
-
-        indexingService = life.add(
-                new IndexingService(
-                        scheduler,
-                        providerMap,
-                        new NeoStoreIndexStoreView( neoStore ),
-                        tokenNameLookup, updateableSchemaState,
-                        logging ) );
-
-        xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
-                new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );
-
-        labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
-                LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
-
-        life.init();
-
         try
         {
+            final SchemaIndexProvider indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
+                    SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+
+            // TODO: Build a real provider map
+            providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
+
+            indexingService = life.add(
+                    new IndexingService(
+                            scheduler,
+                            providerMap,
+                            new NeoStoreIndexStoreView( neoStore ),
+                            tokenNameLookup, updateableSchemaState,
+                            logging ) );
+
+            xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
+                    new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );
+
+            labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
+                    LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
+
+            life.init();
+
             if ( !readOnly )
             {
                 neoStore.setRecoveredStatus( true );

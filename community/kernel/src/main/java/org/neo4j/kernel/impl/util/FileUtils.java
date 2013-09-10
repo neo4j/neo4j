@@ -96,7 +96,7 @@ public class FileUtils
             return true;
         }
         int count = 0;
-        boolean deleted = false;
+        boolean deleted;
         do
         {
             deleted = file.delete();

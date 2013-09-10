@@ -31,24 +31,26 @@ import java.util.Random;
 import java.util.Set;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-
-import static org.junit.Assert.assertTrue;
-
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.scan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 public class LuceneLabelScanStoreTest
 {
@@ -141,7 +143,7 @@ public class LuceneLabelScanStoreTest
     }
 
     @Test
-    public void shouldRebuildFromScratchIfIndexCorrupted() throws Exception
+    public void shouldRefuseStartIfIndexCorrupted() throws Exception
     {
         // GIVEN a start of the store with existing data in it
         usePersistentDirectory();
@@ -151,15 +153,19 @@ public class LuceneLabelScanStoreTest
         start( data );
 
         // WHEN the index is corrupted and then started again
-        scrambleIndexFilesAndRestart( data );
-
-        // THEN
-        assertTrue( "Didn't rebuild the store on startup",
-                monitor.corruptIndexCalled&monitor.rebuildingCalled&monitor.rebuiltCalled );
-        assertNodesForLabel( 1,
-                1, 2 );
-        assertNodesForLabel( 2,
-                2 );
+        try
+        {
+            scrambleIndexFilesAndRestart( data );
+            fail("Should not have been able to start.");
+        }
+        catch( LifecycleException e )
+        {
+            assertThat(e.getCause(), instanceOf( IOException.class ));
+            assertThat(e.getCause().getMessage(), equalTo(
+                    "Label scan store is corrupted, and needs to be rebuilt. To trigger a rebuild, ensure the " +
+                    "database is stopped, delete the files in '"+dir.getAbsolutePath()+"', and then start the " +
+                    "database again." ));
+        }
     }
 
     private void assertNodesForLabel( int labelId, long... expectedNodeIds )
@@ -271,8 +277,17 @@ public class LuceneLabelScanStoreTest
         }
     }
 
+    @Before
+    public void clearDir() throws IOException
+    {
+        if(dir.exists())
+        {
+            deleteRecursively( dir );
+        }
+    }
+
     @After
-    public void shutdown()
+    public void shutdown() throws IOException
     {
         life.shutdown();
     }
