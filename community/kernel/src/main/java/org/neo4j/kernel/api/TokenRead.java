@@ -46,6 +46,9 @@ interface TokenRead
     /** Returns the name of a property given its property key id */
     String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 
+    /** Returns the property keys currently stored in the database */
+    Iterator<Token> propertyKeyGetAllTokens();
+
     /** Returns the labels currently stored in the database * */
     Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
 

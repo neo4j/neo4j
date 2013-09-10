@@ -311,6 +311,13 @@ public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRea
     }
 
     @Override
+    public Iterator<Token> propertyKeyGetAllTokens()
+    {
+        assertOpen();
+        return tokenRead().propertyKeyGetAllTokens( state );
+    }
+
+    @Override
     public Iterator<Token> labelsGetAllTokens()
     {
         assertOpen();
