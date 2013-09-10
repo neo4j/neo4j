@@ -21,8 +21,7 @@ package org.neo4j.server.logging;
 
 import java.util.IllegalFormatException;
 
-import org.mortbay.log.Logger;
-
+import org.eclipse.jetty.util.log.Logger;
 /**
  * Simple wrapper over the neo4j native logger class for getting jetty to use
  * our logging framework. See <a
@@ -35,13 +34,21 @@ import org.mortbay.log.Logger;
 
 public class JettyLoggerAdapter implements Logger
 {
+    private static final String SYSTEM = "SYSTEM";
+    
     private org.neo4j.server.logging.Logger delegate;
 
     public JettyLoggerAdapter()
     {
-        delegate = org.neo4j.server.logging.Logger.getLogger( "SYSTEM" );
+        delegate = org.neo4j.server.logging.Logger.getLogger( SYSTEM );
     }
 
+    @Override
+    public void debug( Throwable arg1 )
+    {
+        delegate.debug( arg1.getMessage(), arg1 );
+    }
+    
     @Override
     public void debug( String arg0, Throwable arg1 )
     {
@@ -56,15 +63,15 @@ public class JettyLoggerAdapter implements Logger
     }
 
     @Override
-    public void debug( String arg0, Object arg1, Object arg2 )
+    public void debug( String arg0, Object... args )
     {
         try
         {
-            delegate.debug( wrapNull( arg0 ), arg1, arg2 );
+            delegate.debug( wrapNull( arg0 ), args );
         }
         catch ( IllegalFormatException e )
         {
-            delegate.debug( safeFormat( arg0, arg1, arg2 ) );
+            delegate.debug( safeFormat( arg0, args ) );
         }
     }
 
@@ -77,17 +84,28 @@ public class JettyLoggerAdapter implements Logger
     }
 
     @Override
-    public void info( String arg0, Object arg1, Object arg2 )
+    public void info( String arg0, Object... args )
     {
         try
         {
-            delegate.info( wrapNull( arg0 ), arg1, arg2 );
+            delegate.info( wrapNull( arg0 ), args );
         }
         catch ( IllegalFormatException e )
         {
-            delegate.info( safeFormat( arg0, arg1, arg2 ) );
+            delegate.info( safeFormat( arg0, args ) );
         }
+    }
 
+    @Override
+    public void info( Throwable arg1 )
+    {
+        delegate.debug( arg1.getMessage(), arg1 );
+    }
+
+    @Override
+    public void info( String arg0, Throwable arg1 )
+    {
+        delegate.debug( arg0, arg1 );
     }
 
     @Override
@@ -102,6 +120,12 @@ public class JettyLoggerAdapter implements Logger
     }
 
     @Override
+    public void warn( Throwable arg1 )
+    {
+        delegate.debug( arg1.getMessage(), arg1 );
+    }
+    
+    @Override
     public void warn( String arg0, Throwable arg1 )
     {
         // no need to catch IllegalFormatException as the delegate will use an empty message
@@ -109,15 +133,15 @@ public class JettyLoggerAdapter implements Logger
     }
 
     @Override
-    public void warn( String arg0, Object arg1, Object arg2 )
+    public void warn( String arg0, Object... args )
     {
         try
         {
-            delegate.warn( wrapNull( arg0 ), arg1, arg2 );
+            delegate.warn( wrapNull( arg0 ), args );
         }
         catch ( IllegalFormatException e )
         {
-            delegate.warn( safeFormat( arg0, arg1, arg2 ) );
+            delegate.warn( safeFormat( arg0, args ) );
         }
     }
 
@@ -153,4 +177,16 @@ public class JettyLoggerAdapter implements Logger
     {
         return null == arg0 ? "null" : arg0.toString();
     }
+    
+    @Override
+    public void ignore( Throwable arg1 )
+    {
+        delegate.debug( arg1.getMessage(), arg1 );
+    }
+
+	@Override
+	public String getName() {
+		return SYSTEM;
+	}
+    
 }

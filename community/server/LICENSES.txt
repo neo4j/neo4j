@@ -52,14 +52,20 @@ Apache Software License, Version 2.0
   Data Mapper for Jackson
   Jackson
   JAX-RS provider for JSON content type
-  Jetty Server
-  Jetty Utilities
+  Jetty :: Http Utility
+  Jetty :: IO Utility
+  Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
+  Jetty Orbit :: Servlet API
   JTA 1.1
   Lucene Core
   parboiled-core
   parboiled-scala
   RRD4J
-  Servlet Specification API
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -309,6 +315,7 @@ SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
+  Commons Compiler
   Janino
 ------------------------------------------------------------------------------
 
@@ -729,8 +736,15 @@ County, California.
 
 ------------------------------------------------------------------------------
 Eclipse Public License, Version 1.0
-  Jetty Server
-  Jetty Utilities
+  Jetty :: Http Utility
+  Jetty :: IO Utility
+  Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
+  Jetty Orbit :: Servlet API
   Logback Access Module
   Logback Classic Module
   Logback Core Module
@@ -2690,11 +2704,39 @@ JAX-RS provider for JSON content type
   Apache Software License, Version 2.0
   GNU Lesser General Public License, Version 2.1
 
-Jetty Server
+Jetty :: Http Utility
   Apache Software License, Version 2.0
   Eclipse Public License, Version 1.0
 
-Jetty Utilities
+Jetty :: IO Utility
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Security
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Server Core
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Servlet Handling
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Utilities
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Webapp Application Support
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: XML utilities
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty Orbit :: Servlet API
   Apache Software License, Version 2.0
   Eclipse Public License, Version 1.0
 

@@ -19,21 +19,31 @@
  */
 package org.neo4j.server.security;
 
-import org.mortbay.jetty.security.SslSocketConnector;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+
 
 public class SslSocketConnectorFactory {
 
-    public SslSocketConnector createConnector(KeyStoreInformation config, String host, int port) {
-        SslSocketConnector connector = new SslSocketConnector();
-        
+    public ServerConnector createConnector(Server server, KeyStoreInformation config, String host, int port) {
+
+        SslContextFactory sslContextFactory = new SslContextFactory();
+
+        sslContextFactory.setKeyStorePath( config.getKeyStorePath() );
+        sslContextFactory.setKeyStorePassword( String.valueOf( config.getKeyStorePassword() ) );
+        sslContextFactory.setKeyManagerPassword( String.valueOf( config.getKeyPassword() ) );
+
+        ServerConnector connector = new ServerConnector( server, new SslConnectionFactory( sslContextFactory, HttpVersion.HTTP_1_1.asString() ), new HttpConnectionFactory() );
+
         connector.setPort( port );
         connector.setHost( host );
-        
-        connector.setKeyPassword(String.valueOf(config.getKeyPassword()));
-        connector.setPassword(String.valueOf(config.getKeyStorePassword()));
-        connector.setKeystore(config.getKeyStorePath());
-        
-        return connector; 
+
+        return connector;
+
     }
-    
+
 }

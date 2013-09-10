@@ -34,7 +34,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 
-import org.mortbay.log.Log;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 import org.neo4j.server.rest.batch.BatchOperationResults;
 import org.neo4j.server.rest.batch.NonStreamingBatchOperations;
@@ -44,9 +45,11 @@ import org.neo4j.server.rest.repr.StreamingFormat;
 import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.server.web.WebServer;
 
-@Path( "/batch" )
-public class BatchOperationService
-{
+@Path("/batch")
+public class BatchOperationService {
+
+    private static final Logger LOGGER = Log.getLogger(BatchOperationService.class);
+
     private final OutputFormat output;
     private final WebServer webServer;
     private RepresentationWriteHandler representationWriteHandler = RepresentationWriteHandler.DO_NOTHING;
@@ -98,7 +101,7 @@ public class BatchOperationService
                     }
                     catch ( Exception e )
                     {
-                        Log.warn( "Error executing batch request ", e );
+                        LOGGER.warn( "Error executing batch request ", e );
                     }
                     finally
                     {
