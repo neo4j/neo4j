@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -41,6 +42,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
@@ -60,15 +62,15 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true ) } )
+    @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
     public void adding_a_label_to_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
-        String nodeUri = getNodeUri( nodes.get( "I" ) );
+        String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
             .expectedStatus( 204 )
-            .payload( createJsonFrom( "MyLabel" ) )
+            .payload( createJsonFrom( "Person" ) )
             .post( nodeUri + "/labels"  );
     }
 
@@ -77,19 +79,19 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true ) } )
+    @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
     public void adding_multiple_labels_to_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
-        String nodeUri = getNodeUri( nodes.get( "I" ) );
+        String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
                 .expectedStatus( 204 )
-                .payload( createJsonFrom( new String[]{"MyLabel", "MyOtherLabel"} ) )
+                .payload( createJsonFrom( new String[]{"Person", "Actor"} ) )
                 .post( nodeUri + "/labels"  );
 
         // Then
-        assertThat( nodes.get( "I" ), inTx( graphdb(), hasLabels( "MyLabel", "MyOtherLabel" ) ) );
+        assertThat( nodes.get( "Clint Eastwood" ), inTx( graphdb(), hasLabels( "Person", "Actor" ) ) );
     }
 
     /**
@@ -100,11 +102,11 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true ) } )
+    @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
     public void adding_an_invalid_label_to_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
-        String nodeUri = getNodeUri( nodes.get( "I" ) );
+        String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
             .expectedStatus( 400 )
@@ -120,21 +122,21 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true,
-                                              labels = { @LABEL( "Me" ), @LABEL( "You" ) }) } )
+    @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true,
+                                              labels = { @LABEL( "Person" ) }) } )
     public void replacing_labels_on_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
-        String nodeUri = getNodeUri( nodes.get( "I" ) );
+        String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         // When
         gen.get()
                 .expectedStatus( 204 )
-                .payload( createJsonFrom( new String[]{"MyOtherLabel", "MyThirdLabel"}) )
+                .payload( createJsonFrom( new String[]{"Actor", "Director"}) )
                 .put( nodeUri + "/labels" );
 
         // Then
-        assertThat( nodes.get( "I" ), inTx(graphdb(), hasLabels("MyOtherLabel", "MyThirdLabel")) );
+        assertThat( nodes.get( "Clint Eastwood" ), inTx(graphdb(), hasLabels("Actor", "Director")) );
     }
 
     /**
@@ -142,11 +144,11 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @GraphDescription.Graph( nodes = { @NODE( name = "I", labels = { @LABEL( "Me" ), @LABEL( "You" ) }, setNameProperty = true ) } )
+    @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", labels = { @LABEL( "Actor" ), @LABEL( "Director" ) }, setNameProperty = true ) } )
     public void listing_node_labels() throws PropertyValueException
     {
         Map<String, Node> nodes = data.get();
-        String nodeUri = getNodeUri( nodes.get( "I" ) );
+        String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         String body = gen.get()
             .expectedStatus( 200 )
@@ -154,7 +156,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
             .entity();
         @SuppressWarnings("unchecked")
         List<String> labels = (List<String>) readJson( body );
-        assertEquals( asSet( "Me", "You" ), asSet( labels ) );
+        assertEquals( asSet( "Actor", "Director" ), asSet( labels ) );
     }
 
     /**
@@ -162,14 +164,14 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true, labels = { @LABEL( "MyLabel" ) } ) } )
+    @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Person" ) } ) } )
     public void removing_a_label_from_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
-        Node node = nodes.get( "I" );
+        Node node = nodes.get( "Clint Eastwood" );
         String nodeUri = getNodeUri( node );
 
-        String labelName = "MyLabel";
+        String labelName = "Person";
         gen.get()
             .expectedStatus( 204 )
             .delete( nodeUri + "/labels/" + labelName );
@@ -182,14 +184,14 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true ) } )
+    @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
     public void removing_a_non_existent_label_from_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
-        Node node = nodes.get( "I" );
+        Node node = nodes.get( "Clint Eastwood" );
         String nodeUri = getNodeUri( node );
 
-        String labelName = "MyLabel";
+        String labelName = "Person";
         gen.get()
             .expectedStatus( 204 )
             .delete( nodeUri + "/labels/" + labelName );
@@ -203,21 +205,21 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {
-            @NODE( name = "a", setNameProperty = true, labels = { @LABEL( "first" ), @LABEL( "second" ) } ),
-            @NODE( name = "b", setNameProperty = true, labels = { @LABEL( "first" ) } ),
-            @NODE( name = "c", setNameProperty = true, labels = { @LABEL( "second" ) } )
+            @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Actor" ), @LABEL( "Director" ) } ),
+            @NODE( name = "Donald Sutherland", setNameProperty = true, labels = { @LABEL( "Actor" ) } ),
+            @NODE( name = "Steven Spielberg", setNameProperty = true, labels = { @LABEL( "Director" ) } )
             } )
     public void get_all_nodes_with_label() throws JsonParseException
     {
         data.get();
-        String uri = getNodesWithLabelUri( "first" );
+        String uri = getNodesWithLabelUri( "Actor" );
         String body = gen.get()
             .expectedStatus( 200 )
             .get( uri )
             .entity();
         
         List<?> parsed = (List<?>) readJson( body );
-        assertEquals( asSet( "a", "b" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
+        assertEquals( asSet( "Clint Eastwood", "Donald Sutherland" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
     }
 
     /**
@@ -234,9 +236,9 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
     @Test
     @Documented
     @GraphDescription.Graph( nodes = {
-            @NODE( name = "I",   labels={ @LABEL( "Person" )} ),
-            @NODE( name = "you", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "bob ross" )}),
-            @NODE( name = "him", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "cat stevens" )})})
+            @NODE( name = "Donald Sutherland",   labels={ @LABEL( "Person" )} ),
+            @NODE( name = "Clint Eastwood", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "Clint Eastwood" )}),
+            @NODE( name = "Steven Spielberg", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "Steven Spielberg" )})})
     public void get_nodes_with_label_and_property() throws PropertyValueException, UnsupportedEncodingException
     {
         data.get();
@@ -245,11 +247,11 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
         String result = gen.get()
                 .expectedStatus( 200 )
-                .get( getNodesWithLabelAndPropertyUri( labelName, "name", "bob ross" ) )
+                .get( getNodesWithLabelAndPropertyUri( labelName, "name", "Clint Eastwood" ) )
                 .entity();
 
         List<?> parsed = (List<?>) readJson( result );
-        assertEquals( asSet( "bob ross" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
+        assertEquals( asSet( "Clint Eastwood" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
     }
 
     /**
@@ -257,18 +259,18 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
      */
     @Test
     @GraphDescription.Graph( nodes = {
-            @NODE(name = "I", labels = {@LABEL("Person")}),
-            @NODE(name = "you", labels = {@LABEL("Person")}, properties =
-                    {@PROP(key = "names", value = "bob,ross", type = ARRAY, componentType = STRING)}),
-            @NODE(name = "him", labels = {@LABEL("Person")}, properties =
-                    {@PROP(key = "names", value = "cat,stevens", type = ARRAY, componentType = STRING)})})
+            @NODE(name = "Donald Sutherland", labels = {@LABEL("Person")}),
+            @NODE(name = "Clint Eastwood", labels = {@LABEL("Person")}, properties =
+                    {@PROP(key = "names", value = "Clint,Eastwood", type = ARRAY, componentType = STRING)}),
+            @NODE(name = "Steven Spielberg", labels = {@LABEL("Person")}, properties =
+                    {@PROP(key = "names", value = "Steven,Spielberg", type = ARRAY, componentType = STRING)})})
     public void get_nodes_with_label_and_array_property() throws PropertyValueException, UnsupportedEncodingException
     {
         data.get();
 
         String labelName = "Person";
 
-        String uri = getNodesWithLabelAndPropertyUri( labelName, "names", new String[] { "bob", "ross" } );
+        String uri = getNodesWithLabelAndPropertyUri( labelName, "names", new String[] { "Clint", "Eastwood" } );
 
         String result = gen.get()
                 .expectedStatus( 200 )
@@ -279,7 +281,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, parsed.size() );
 
         //noinspection AssertEqualsBetweenInconvertibleTypes
-        assertEquals( asSet( asList( asList( "bob", "ross" ) ) ),
+        assertEquals( asSet( asList( asList( "Clint", "Eastwood" ) ) ),
                 asSet( map( getProperty( "names", List.class ), parsed ) ) );
     }
 
@@ -289,9 +291,9 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
     @Test
     @Documented
     @GraphDescription.Graph( nodes = {
-            @NODE( name = "a", setNameProperty = true, labels = { @LABEL( "first" ), @LABEL( "second" ) } ),
-            @NODE( name = "b", setNameProperty = true, labels = { @LABEL( "first" ) } ),
-            @NODE( name = "c", setNameProperty = true, labels = { @LABEL( "second" ) } )
+            @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Actor" ), @LABEL( "Director" ) } ),
+            @NODE( name = "Donald Sutherland", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Actor" ) } ),
+            @NODE( name = "Steven Spielberg", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Director" ) } )
     } )
     public void list_all_labels() throws JsonParseException
     {
@@ -303,8 +305,9 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
                 .entity();
 
         Set<?> parsed = asSet((List<?>) readJson( body ));
-        assertTrue( parsed.contains( "first" ) );
-        assertTrue( parsed.contains( "second" ) );
+        assertTrue( parsed.contains( "Person" ) );
+        assertTrue( parsed.contains( "Actor" ) );
+        assertTrue( parsed.contains( "Director" ) );
     }
 
     private <T> Function<Object, T> getProperty( final String propertyKey, final Class<T> propertyType )

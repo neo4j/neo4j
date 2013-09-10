@@ -22,7 +22,6 @@ package org.neo4j.server.rest;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Map;
-
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.Test;
@@ -88,11 +87,11 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     @Test
     @Documented
     @Title( "Retrieve query metadata" )
-    @Graph( nodes = { @NODE( name = "I", labels = { @LABEL("bar") } ) } )
+    @Graph( nodes = { @NODE( name = "I", labels = { @LABEL("Director") } ) } )
     public void testQueryStatistics() throws JsonParseException
     {
         // Given
-        String script = createScript( "START n = node(%I%) SET n:foo REMOVE n:bar RETURN labels(n)" );
+        String script = createScript( "START n = node(%I%) SET n:Actor REMOVE n:Director RETURN labels(n)" );
 
         // When
         Map<String, Object> output = jsonToMap(doCypherRestCall( cypherUri() + "?includeStats=true", script, Status.OK ));
@@ -384,7 +383,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         return doCypherRestCall( cypherUri(), script, status, params );
     }
 
-    private final String cypherRestCall( String script, Status status, String paramString )
+    private String cypherRestCall( String script, Status status, String paramString )
     {
         return doCypherRestCall( cypherUri(), script, status, paramString );
     }
