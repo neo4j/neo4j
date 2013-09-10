@@ -1,0 +1,30 @@
+#!/bin/bash
+BUCKET='https://support-upload.neotechnology.com.s3.amazonaws.com'
+
+die() {
+  echo $1
+  exit 1
+}
+
+action() {
+  local message=$1
+  local command=$2
+  echo -n "${message} ..."
+  eval $command || die "$command failed"
+  echo "... done."
+
+}
+
+[ $# -eq 1 ] || die "Usage: $0 <support ticket number>"  
+echo "THIS WILL UPLOAD ALL YOUR DATA TO A PRIVATE S3 BUCKET. Hit <ctrl>-c now if you disagree with this"
+sleep 10 
+echo "Waited 10 seconds, proceeding to upload"
+
+script_dir=$(dirname $0)
+data_dir="${script_dir}/../data"
+
+data_file="${RANDOM}.${RANDOM}.${ticket_number}.tgz"
+
+action "Stopping Neo4j" "./bin/neo4j stop"
+action "Making an archive of your datastore and logs" "tar -czf ${data_file} ${data_dir}"
+action "Uploading your datastore and logs to Neo Technology" "curl -T ${data_file} ${BUCKET}"
