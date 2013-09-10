@@ -89,6 +89,13 @@ class PrettifierTest extends Assertions {
   }
 
   @Test
+  def shouldNotBreakWhereInComprehensions() {
+    assertIsPrettified(
+      "RETURN [x IN range(0,10) WHERE x + 2 = 0 | x^3] AS result",
+      "return [x in range(0,10) where x + 2 = 0 | x^3] as result")
+  }
+
+  @Test
   def shouldUpcaseExtraKeywords() {
     assertIsPrettified("MATCH david--otherPerson-->()%nWHERE david.name='David'%nWITH otherPerson, count(*) AS foaf%nWHERE foaf > 1%nRETURN otherPerson",
       "match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson")
