@@ -4,8 +4,6 @@ For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 ---------
 Kernel:
   o BREAKING CHANGE: GraphDatabaseSettings now only exposes Setting, deprecated settings classes have been removed.
-  o BREAKING CHANGE: getAllNodes() and getRelationshipTypes() have been removed, replaced since years back by
-    GlobalGraphOperations.
   o Fixed problems with array properties being updated multiple times in a single transaction
   o Adds label store as an index
   o Transaction now implements AutoClosable
