@@ -447,7 +447,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 txState().accept( new TxState.Visitor()
                 {
                     @Override
-                    public void visitNodeLabelChanges( long id, Set<Long> added, Set<Long> removed )
+                    public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
                     {
                         // TODO: move store level changes here.
                     }

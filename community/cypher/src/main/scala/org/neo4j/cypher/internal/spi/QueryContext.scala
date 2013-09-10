@@ -46,21 +46,21 @@ trait QueryContext extends TokenContext {
 
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship]
 
-  def getOrCreateLabelId(labelName: String): Long
+  def getOrCreateLabelId(labelName: String): Int
 
-  def getLabelsForNode(node: Long): Iterator[Long]
+  def getLabelsForNode(node: Long): Iterator[Int]
 
-  def isLabelSetOnNode(label: Long, node: Long): Boolean = getLabelsForNode(node).toIterator.contains(label)
+  def isLabelSetOnNode(label: Int, node: Long): Boolean = getLabelsForNode(node).toIterator.contains(label)
 
-  def setLabelsOnNode(node: Long, labelIds: Iterator[Long]): Int
+  def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterator[Long]): Int
+  def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int
 
-  def getOrCreatePropertyKeyId(propertyKey: String): Long
+  def getOrCreatePropertyKeyId(propertyKey: String): Int
 
-  def addIndexRule(labelIds: Long, propertyKeyId: Long)
+  def addIndexRule(labelId: Int, propertyKeyId: Int)
 
-  def dropIndexRule(labelIds: Long, propertyKeyId: Long)
+  def dropIndexRule(labelId: Int, propertyKeyId: Int)
 
   def close(success: Boolean)
 
@@ -68,7 +68,7 @@ trait QueryContext extends TokenContext {
 
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Node
 
-  def getNodesByLabel(id: Long): Iterator[Node]
+  def getNodesByLabel(id: Int): Iterator[Node]
 
   def upgradeToLockingQueryContext: LockingQueryContext = upgrade(this)
 
@@ -76,9 +76,9 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
-  def createUniqueConstraint(labelId: Long, propertyKeyId: Long)
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int)
 
-  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long)
+  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int)
 
   /**
    * This should not be used. We'll remove sooner (or later). Don't do it.
@@ -93,15 +93,15 @@ trait LockingQueryContext extends QueryContext {
 trait Operations[T <: PropertyContainer] {
   def delete(obj: T)
 
-  def setProperty(obj: T, propertyKeyId: Long, value: Any)
+  def setProperty(obj: T, propertyKeyId: Int, value: Any)
 
-  def removeProperty(obj: T, propertyKeyId: Long)
+  def removeProperty(obj: T, propertyKeyId: Int)
 
-  def getProperty(obj: T, propertyKeyId: Long): Any
+  def getProperty(obj: T, propertyKeyId: Int): Any
 
-  def hasProperty(obj: T, propertyKeyId: Long): Boolean
+  def hasProperty(obj: T, propertyKeyId: Int): Boolean
 
-  def propertyKeyIds(obj: T): Iterator[Long]
+  def propertyKeyIds(obj: T): Iterator[Int]
 
   def getById(id: Long): T
 

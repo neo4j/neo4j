@@ -27,7 +27,9 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
@@ -79,7 +81,7 @@ public class SchemaCacheTest
         assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRules( ) ) );
     }
 
-    private IndexRule newIndexRule( long id, long label, long propertyKey )
+    private IndexRule newIndexRule( long id, int label, int propertyKey )
     {
         return IndexRule.indexRule( id, label, propertyKey, PROVIDER_DESCRIPTOR );
     }

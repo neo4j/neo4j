@@ -59,9 +59,9 @@ public class DataIntegrityValidatingStatementOperations implements
         this.schemaReadDelegate = schemaReadDelegate;
         this.schemaWriteDelegate = schemaWriteDelegate;
     }
-    
+
     @Override
-    public long propertyKeyGetOrCreateForName( Statement state, String propertyKey )
+    public int propertyKeyGetOrCreateForName( Statement state, String propertyKey )
             throws IllegalTokenNameException
     {
         // KISS - but refactor into a general purpose constraint checker later on
@@ -69,14 +69,14 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public long relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName )
+    public int relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName )
             throws IllegalTokenNameException
     {
         return keyWriteDelegate.relationshipTypeGetOrCreateForName( state, checkValidTokenName( relationshipTypeName ) );
     }
 
     @Override
-    public long labelGetOrCreateForName( Statement state, String label )
+    public int labelGetOrCreateForName( Statement state, String label )
             throws IllegalTokenNameException, TooManyLabelsException
     {
         // KISS - but refactor into a general purpose constraint checker later on
@@ -84,7 +84,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, long labelId, long propertyKey )
+    public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKey )
             throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
         checkIndexExistence( state, labelId, propertyKey );
@@ -114,7 +114,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( KernelStatement state, long labelId, long propertyKey )
+    public UniquenessConstraint uniquenessConstraintCreate( KernelStatement state, int labelId, int propertyKey )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
         Iterator<UniquenessConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
@@ -145,7 +145,7 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.constraintDrop( state, constraint );
     }
 
-    private void checkIndexExistence( KernelStatement state, long labelId, long propertyKey )
+    private void checkIndexExistence( KernelStatement state, int labelId, int propertyKey )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )

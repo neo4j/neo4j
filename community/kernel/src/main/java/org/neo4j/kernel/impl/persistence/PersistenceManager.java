@@ -30,16 +30,17 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
+import org.neo4j.kernel.impl.persistence.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -69,21 +70,6 @@ public class PersistenceManager
     public NodeRecord loadLightNode( long id )
     {
         return getReadOnlyResourceIfPossible().nodeLoadLight( id );
-    }
-
-    public Object nodeLoadPropertyValue( long nodeId, int propertyKey )
-    {
-        return getReadOnlyResource().nodeLoadPropertyValue( nodeId, propertyKey );
-    }
-    
-    public Object relationshipLoadPropertyValue( long relationshipId, int propertyKey )
-    {
-        return getReadOnlyResource().relationshipLoadPropertyValue( relationshipId, propertyKey );
-    }
-    
-    public Object graphLoadPropertyValue( int propertyKey )
-    {
-        return getReadOnlyResource().graphLoadPropertyValue( propertyKey );
     }
 
     public Token[] loadAllPropertyKeyTokens()
@@ -136,33 +122,32 @@ public class PersistenceManager
         return getReadOnlyResource().getMoreRelationships( nodeId, position );
     }
 
-    public ArrayMap<Integer,PropertyData> loadNodeProperties( long nodeId, boolean light )
+    public void loadNodeProperties( long nodeId, boolean light, PropertyReceiver receiver )
     {
-        return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId, light );
+        getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId, light, receiver );
     }
 
-    public ArrayMap<Integer,PropertyData> loadRelProperties( long relId,
-            boolean light )
+    public void loadRelProperties( long relId, boolean light, PropertyReceiver receiver )
     {
-        return getReadOnlyResourceIfPossible().relLoadProperties( relId, light );
+        getReadOnlyResourceIfPossible().relLoadProperties( relId, light, receiver );
     }
-    
+
     public RelationshipRecord loadLightRelationship( long id )
     {
         return getReadOnlyResourceIfPossible().relLoadLight( id );
     }
 
-    public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
+    public ArrayMap<Integer,DefinedProperty> nodeDelete( long nodeId )
     {
         return getResource( true ).nodeDelete( nodeId );
     }
 
-    public PropertyData nodeAddProperty( long nodeId, int propertyKey, Object value )
+    public DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
         return getResource( true ).nodeAddProperty( nodeId, propertyKey, value );
     }
 
-    public PropertyData nodeChangeProperty( long nodeId, int propertyKey, Object value )
+    public DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
         return getResource( true ).nodeChangeProperty( nodeId, propertyKey, value );
     }
@@ -183,17 +168,17 @@ public class PersistenceManager
         getResource( true ).relationshipCreate( id, typeId, startNodeId, endNodeId );
     }
 
-    public ArrayMap<Integer,PropertyData> relDelete( long relId )
+    public ArrayMap<Integer,DefinedProperty> relDelete( long relId )
     {
         return getResource( true ).relDelete( relId );
     }
 
-    public PropertyData relAddProperty( long relId, int propertyKey, Object value )
+    public DefinedProperty relAddProperty( long relId, int propertyKey, Object value )
     {
         return getResource( true ).relAddProperty( relId, propertyKey, value );
     }
 
-    public PropertyData relChangeProperty( long relId, int propertyKey, Object value )
+    public DefinedProperty relChangeProperty( long relId, int propertyKey, Object value )
     {
         return getResource( true ).relChangeProperty( relId, propertyKey, value );
     }
@@ -203,12 +188,12 @@ public class PersistenceManager
         getResource( true ).relRemoveProperty( relId, propertyKey );
     }
 
-    public PropertyData graphAddProperty( int propertyKey, Object value )
+    public DefinedProperty graphAddProperty( int propertyKey, Object value )
     {
         return getResource( true ).graphAddProperty( propertyKey, value );
     }
 
-    public PropertyData graphChangeProperty( int propertyKey, Object value )
+    public DefinedProperty graphChangeProperty( int propertyKey, Object value )
     {
         return getResource( true ).graphChangeProperty( propertyKey, value );
     }
@@ -217,12 +202,12 @@ public class PersistenceManager
     {
         getResource( true ).graphRemoveProperty( propertyKey );
     }
-    
-    public ArrayMap<Integer, PropertyData> graphLoadProperties( boolean light )
+
+    public void graphLoadProperties( boolean light, PropertyReceiver receiver )
     {
-        return getReadOnlyResourceIfPossible().graphLoadProperties( light );
+        getReadOnlyResourceIfPossible().graphLoadProperties( light, receiver );
     }
-    
+
     public void createPropertyKeyToken( String key, int id )
     {
         getResource( true ).createPropertyKeyToken( key, id );
@@ -280,7 +265,9 @@ public class PersistenceManager
                 TransactionState state = transactionManager.getTransactionState();
                 tx.registerSynchronization( new TxCommitHook( tx, state ) );
                 if ( registerEventHooks )
+                {
                     registerTransactionEventHookIfNeeded( tx );
+                }
                 txConnectionMap.put( tx, con );
             }
             catch ( RollbackException re )
@@ -413,12 +400,12 @@ public class PersistenceManager
         getResource( true ).createSchemaRule( rule );
     }
 
-    public void addLabelToNode( long labelId, long nodeId )
+    public void addLabelToNode( int labelId, long nodeId )
     {
         getResource( true ).addLabelToNode( labelId, nodeId );
     }
-    
-    public void removeLabelFromNode( long labelId, long nodeId )
+
+    public void removeLabelFromNode( int labelId, long nodeId )
     {
         getResource( true ).removeLabelFromNode( labelId, nodeId );
     }

@@ -21,11 +21,15 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.Arrays;
 
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
 class StringArrayProperty extends FullSizeProperty
 {
     private final String[] value;
 
-    StringArrayProperty( long propertyKeyId, String[] value )
+    StringArrayProperty( int propertyKeyId, String[] value )
     {
         super( propertyKeyId );
         assert value != null;
@@ -58,5 +62,11 @@ class StringArrayProperty extends FullSizeProperty
     boolean hasEqualValue( FullSizeProperty that )
     {
         return Arrays.equals( this.value, ((StringArrayProperty)that).value );
+    }
+
+    @Override
+    public int sizeOfObjectInBytesIncludingOverhead()
+    {
+        return withObjectOverhead( 4 + withReference( sizeOfArray( value ) ) );
     }
 }

@@ -37,11 +37,11 @@ class LabelsFunctionTest extends Assertions with MockitoSugar {
     // GIVEN
     val node = mock[Node]
     val queryContext = mock[QueryContext]
-    val ids = Seq(12L)
-    when(queryContext.getLabelsForNode(node.getId)).then(new Answer[Iterator[Long]]() {
-      def answer(invocation: InvocationOnMock): Iterator[Long] = ids.iterator
+    val ids = Seq(12)
+    when(queryContext.getLabelsForNode(node.getId)).then(new Answer[Iterator[Int]]() {
+      def answer(invocation: InvocationOnMock): Iterator[Int] = ids.iterator
     })
-    when(queryContext.getLabelName(12L)).thenReturn("bambi")
+    when(queryContext.getLabelName(12)).thenReturn("bambi")
     val state = new QueryState(null, queryContext, Map.empty, NullDecorator)
     val ctx = ExecutionContext() += ("n" -> node)
 

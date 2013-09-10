@@ -19,27 +19,26 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
 final class BigLongProperty extends FullSizeProperty
 {
     private final long value;
 
-    BigLongProperty( long propertyKeyId, long value )
+    BigLongProperty( int propertyKeyId, long value )
     {
         super( propertyKeyId );
         this.value = value;
     }
 
     @Override
+    @SuppressWarnings("UnnecessaryUnboxing")
     public boolean valueEquals( Object other )
     {
         if ( other instanceof Long )
         {
-            return value == (long)other;
+            return value == ((Long)other).longValue();
         }
-
         return valueCompare( value, other );
     }
 
@@ -74,9 +73,8 @@ final class BigLongProperty extends FullSizeProperty
     }
 
     @Override
-    @Deprecated
-    public PropertyData asPropertyDataJustForIntegration()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return PropertyDatas.forLong( (int) propertyKeyId, -1, value );
+        return withObjectOverhead( 4 + 8 );
     }
 }

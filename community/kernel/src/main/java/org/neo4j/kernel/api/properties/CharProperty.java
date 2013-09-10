@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
 /**
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
@@ -29,21 +28,22 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 final class CharProperty extends DefinedProperty
 {
     private final char value;
-    private final long propertyKeyId;
+    private final int propertyKeyId;
 
-    CharProperty( long propertyKeyId, char value )
+    CharProperty( int propertyKeyId, char value )
     {
         this.propertyKeyId = propertyKeyId;
         this.value = value;
     }
 
     @Override
-    public long propertyKeyId()
+    public int propertyKeyId()
     {
         return propertyKeyId;
     }
 
     @Override
+    @SuppressWarnings("UnnecessaryUnboxing")
     public boolean valueEquals( Object other )
     {
         if ( other instanceof Character )
@@ -78,15 +78,13 @@ final class CharProperty extends DefinedProperty
     public int hashCode()
     {
         int result = value;
-        result = 31 * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        result = 31 * result + propertyKeyId;
         return result;
     }
 
     @Override
-    @Deprecated
-    @SuppressWarnings("deprecation")
-    public PropertyData asPropertyDataJustForIntegration()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return PropertyDatas.forChar( (int) propertyKeyId, -1, value );
+        return withObjectOverhead( 8 );
     }
 }

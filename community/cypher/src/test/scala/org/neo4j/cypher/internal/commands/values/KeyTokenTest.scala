@@ -65,10 +65,10 @@ class KeyTokenTest extends Assertions {
   }
 }
 
-case class MapKeyTokenType(m: Map[String, Long]) extends TokenType {
-  def getOptIdForName(name: String, tokenContext: TokenContext): Option[Long] = m.get(name)
+case class MapKeyTokenType(m: Map[String, Int]) extends TokenType {
+  def getOptIdForName(name: String, tokenContext: TokenContext): Option[Int] = m.get(name)
 
-  def getIdForNameOrFail(name: String, tokenContext: TokenContext): Long = m(name)
+  def getIdForNameOrFail(name: String, tokenContext: TokenContext): Int = m(name)
 
-  def getOrCreateIdForName(name: String, queryContext: QueryContext): Long = throw new UnsupportedOperationException
+  def getOrCreateIdForName(name: String, queryContext: QueryContext): Int = throw new UnsupportedOperationException
 }

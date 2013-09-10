@@ -45,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 
 public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
 {
-    private long labelId, propertyKeyId;
+    private int labelId, propertyKeyId;
 
     @Before
     public void createKeys() throws Exception

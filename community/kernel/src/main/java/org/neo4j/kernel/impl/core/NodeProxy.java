@@ -38,7 +38,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.FunctionFromPrimitiveLong;
+import org.neo4j.helpers.FunctionFromPrimitiveInt;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.InvalidTransactionTypeException;
@@ -55,7 +55,7 @@ import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -212,7 +212,7 @@ public class NodeProxy implements Node
         boolean requireRollback = true; // TODO: this seems like the wrong level to do this on...
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
+            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
             {
                 statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
@@ -254,7 +254,7 @@ public class NodeProxy implements Node
     {
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
+            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
         }
         catch ( EntityNotFoundException e )
@@ -279,11 +279,13 @@ public class NodeProxy implements Node
     public Object getProperty( String key, Object defaultValue )
     {
         if ( null == key )
+        {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
+        }
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
+            int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).value( defaultValue );
         }
         catch ( EntityNotFoundException e )
@@ -340,11 +342,13 @@ public class NodeProxy implements Node
     public Object getProperty( String key ) throws NotFoundException
     {
         if ( null == key )
+        {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
+        }
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
+            int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new NotFoundException( format( "No such property, '%s'.", key ) );
@@ -361,11 +365,13 @@ public class NodeProxy implements Node
     public boolean hasProperty( String key )
     {
         if ( null == key )
+        {
             return false;
+        }
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
+            int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).isDefined();
         }
         catch ( EntityNotFoundException e )
@@ -523,7 +529,7 @@ public class NodeProxy implements Node
     {
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long labelId = statement.readOperations().labelGetForName( label.name() );
+            int labelId = statement.readOperations().labelGetForName( label.name() );
             if ( labelId != KeyReadOperations.NO_SUCH_LABEL )
             {
                 statement.dataWriteOperations().nodeRemoveLabel( getId(), labelId );
@@ -548,7 +554,7 @@ public class NodeProxy implements Node
     {
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long labelId = statement.readOperations().labelGetForName( label.name() );
+            int labelId = statement.readOperations().labelGetForName( label.name() );
             return statement.readOperations().nodeHasLabel( getId(), labelId );
         }
         catch ( EntityNotFoundException e )
@@ -565,7 +571,7 @@ public class NodeProxy implements Node
             @Override
             public ResourceIterator<Label> iterator()
             {
-                PrimitiveLongIterator labels;
+                PrimitiveIntIterator labels;
                 final Statement statement = statementContextProvider.statement();
                 try
                 {
@@ -577,10 +583,10 @@ public class NodeProxy implements Node
                     throw new NotFoundException( "No node with id " + getId() + " found.", e );
                 }
 
-                return nodeLookup.getCleanupService().resourceIterator( map( new FunctionFromPrimitiveLong<Label>()
+                return nodeLookup.getCleanupService().resourceIterator( map( new FunctionFromPrimitiveInt<Label>()
                 {
                     @Override
-                    public Label apply( long labelId )
+                    public Label apply( int labelId )
                     {
                         try
                         {

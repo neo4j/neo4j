@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -56,7 +56,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowReAddingIndex() throws Exception
     {
         // GIVEN
-        long label = 0, propertyKey = 7;
+        int label = 0, propertyKey = 7;
         IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
@@ -76,14 +76,14 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyInt(), anyInt() );
     }
 
     @Test
     public void shouldDisallowAddingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        long label = 0, propertyKey = 7;
+        int label = 0, propertyKey = 7;
         IndexDescriptor rule = new IndexDescriptor( label, propertyKey );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
@@ -104,14 +104,14 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyInt(), anyInt() );
     }
 
     @Test
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // GIVEN
-        long label = 0, propertyKey = 7;
+        int label = 0, propertyKey = 7;
         IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
@@ -132,14 +132,14 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyInt(), anyInt() );
     }
 
     @Test
     public void shouldDisallowDroppingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        long label = 0, propertyKey = 7;
+        int label = 0, propertyKey = 7;
         IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
@@ -161,14 +161,14 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyInt(), anyInt() );
     }
 
     @Test
     public void shouldDisallowDroppingConstraintIndexThatDoesNotExists() throws Exception
     {
         // GIVEN
-        long label = 0, propertyKey = 7;
+        int label = 0, propertyKey = 7;
         IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
@@ -190,14 +190,14 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyInt(), anyInt() );
     }
 
     @Test
     public void shouldDisallowDroppingConstraintIndexThatIsReallyJustRegularIndex() throws Exception
     {
         // GIVEN
-        long label = 0, propertyKey = 7;
+        int label = 0, propertyKey = 7;
         IndexDescriptor indexDescriptor = new IndexDescriptor( label, propertyKey );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
@@ -219,7 +219,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
 
         // THEN
-        verify( innerWrite, never() ).indexCreate( eq( state ), anyLong(), anyLong() );
+        verify( innerWrite, never() ).indexCreate( eq( state ), anyInt(), anyInt() );
     }
 
     @Test

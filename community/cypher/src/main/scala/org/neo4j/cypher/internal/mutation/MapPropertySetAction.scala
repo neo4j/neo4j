@@ -53,8 +53,8 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
     Iterator(context)
   }
 
-  def propertyKeyMap(qtx: QueryContext, map: Map[String, Any]): Map[Long, Any] = {
-    var builder = Map.newBuilder[Long, Any]
+  def propertyKeyMap(qtx: QueryContext, map: Map[String, Any]): Map[Int, Any] = {
+    var builder = Map.newBuilder[Int, Any]
 
     for ( (k,v) <- map ) {
       if ( null == v ) {
@@ -72,7 +72,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
   }
 
 
-  def setProperties[T <: PropertyContainer](qtx: QueryContext, ops: Operations[T], target: T, map: Map[Long, Any]) {
+  def setProperties[T <: PropertyContainer](qtx: QueryContext, ops: Operations[T], target: T, map: Map[Int, Any]) {
     /*Set all map values on the property container*/
     for ( (k, v) <- map) {
       if (null == v)

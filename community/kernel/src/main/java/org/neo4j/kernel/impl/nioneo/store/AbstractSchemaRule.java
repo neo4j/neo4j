@@ -23,45 +23,45 @@ import java.nio.ByteBuffer;
 
 public abstract class AbstractSchemaRule implements SchemaRule
 {
-    private final long label;
+    private final int label;
     private final Kind kind;
     private final long id;
-    
-    public AbstractSchemaRule( long id, long label, Kind kind )
+
+    public AbstractSchemaRule( long id, int label, Kind kind )
     {
         this.id = id;
         this.label = label;
         this.kind = kind;
     }
-    
+
     @Override
     public long getId()
     {
         return this.id;
     }
-    
+
     @Override
-    public final long getLabel()
+    public final int getLabel()
     {
         return this.label;
     }
-    
+
     @Override
     public final Kind getKind()
     {
         return this.kind;
     }
-    
+
     @Override
     public int length()
     {
         return 4 /*label id*/ + 1 /*kind id*/;
     }
-    
+
     @Override
     public void serialize( ByteBuffer target )
     {
-        target.putInt( (int) label );
+        target.putInt( label );
         target.put( kind.id() );
     }
 
@@ -70,23 +70,33 @@ public abstract class AbstractSchemaRule implements SchemaRule
     {
         final int prime = 31;
         int result = prime + kind.hashCode();
-        return prime * result + (int) (label ^ (label >>> 32));
+        return prime * result + label;
     }
 
     @Override
     public boolean equals( Object obj )
     {
         if ( this == obj )
+        {
             return true;
+        }
         if ( obj == null )
+        {
             return false;
+        }
         if ( getClass() != obj.getClass() )
+        {
             return false;
+        }
         AbstractSchemaRule other = (AbstractSchemaRule) obj;
         if ( kind != other.kind )
+        {
             return false;
+        }
         if ( label != other.label )
+        {
             return false;
+        }
         return true;
     }
 

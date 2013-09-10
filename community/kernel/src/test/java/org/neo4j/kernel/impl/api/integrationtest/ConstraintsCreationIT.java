@@ -336,7 +336,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         assertEquals( indexRule.getId(), constraintRule.getOwnedIndex() );
     }
 
-    private long labelId, propertyKeyId;
+    private int labelId, propertyKeyId;
 
     @Before
     public void createKeys() throws KernelException

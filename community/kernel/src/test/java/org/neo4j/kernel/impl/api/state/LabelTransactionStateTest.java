@@ -44,12 +44,13 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
+import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveIntIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -140,9 +141,9 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         commitLabels(
-                labels( 0, 1L, 2L ),
-                labels( 1, 2L, 3L ),
-                labels( 2, 1L, 3L ) );
+                labels( 0, 1, 2 ),
+                labels( 1, 2, 3 ),
+                labels( 2, 1, 3 ) );
 
         // WHEN
         txContext.nodeAddLabel( state, 2, 2 );
@@ -156,9 +157,9 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         commitLabels(
-                labels( 0, 1L, 2L ),
-                labels( 1, 2L, 3L ),
-                labels( 2, 1L, 3L ) );
+                labels( 0, 1, 2 ),
+                labels( 1, 2, 3 ),
+                labels( 2, 1, 3 ) );
 
         // WHEN
         txContext.nodeRemoveLabel( state, 1, 2 );
@@ -263,7 +264,8 @@ public class LabelTransactionStateTest
 
     // exists
 
-    private final long labelId1 = 10, labelId2 = 12, nodeId = 20;
+    private final int labelId1 = 10, labelId2 = 12;
+    private final long nodeId = 20;
 
     private StatementOperations store;
     private OldTxStateBridge oldTxState;
@@ -281,14 +283,14 @@ public class LabelTransactionStateTest
         when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexCreate( eq( state ), anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
+        when( store.indexCreate( eq( state ), anyInt(), anyInt() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
             public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
             {
                 return new IndexDescriptor(
-                        (Long) invocation.getArguments()[0],
-                        (Long) invocation.getArguments()[1] );
+                        (Integer) invocation.getArguments()[0],
+                        (Integer) invocation.getArguments()[1] );
             }
         } );
 
@@ -304,28 +306,28 @@ public class LabelTransactionStateTest
     private static class Labels
     {
         private final long nodeId;
-        private final Long[] labelIds;
+        private final Integer[] labelIds;
 
-        Labels( long nodeId, Long... labelIds )
+        Labels( long nodeId, Integer... labelIds )
         {
             this.nodeId = nodeId;
             this.labelIds = labelIds;
         }
     }
 
-    private static Labels labels( long nodeId, Long... labelIds )
+    private static Labels labels( long nodeId, Integer... labelIds )
     {
         return new Labels( nodeId, labelIds );
     }
 
     private void commitLabels( Labels... labels ) throws Exception
     {
-        Map<Long, Collection<Long>> allLabels = new HashMap<>();
+        Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
             when( store.nodeGetLabels( state, nodeLabels.nodeId ) )
-                    .then( answerAsPrimitiveLongIteratorFrom( Arrays.<Long>asList( nodeLabels.labelIds ) ) );
-            for ( long label : nodeLabels.labelIds )
+                    .then( answerAsPrimitiveIntIteratorFrom( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
+            for ( int label : nodeLabels.labelIds )
             {
                 when( store.nodeHasLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
                 when( store.nodeRemoveLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
@@ -341,7 +343,7 @@ public class LabelTransactionStateTest
             }
         }
 
-        for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
+        for ( Map.Entry<Integer, Collection<Long>> entry : allLabels.entrySet() )
         {
             when( store.nodesGetForLabel( state, entry.getKey() ) ).then( answerAsPrimitiveLongIteratorFrom( entry
                     .getValue() ) );
@@ -350,18 +352,18 @@ public class LabelTransactionStateTest
 
     private void commitNoLabels() throws Exception
     {
-        commitLabels( new Long[0] );
+        commitLabels( new Integer[0] );
     }
 
-    private void commitLabels( Long... labels ) throws Exception
+    private void commitLabels( Integer... labels ) throws Exception
     {
         commitLabels( labels( nodeId, labels ) );
     }
 
-    private void assertLabels( Long... labels ) throws EntityNotFoundException
+    private void assertLabels( Integer... labels ) throws EntityNotFoundException
     {
         assertEquals( asSet( labels ), asSet( txContext.nodeGetLabels( state, nodeId ) ) );
-        for ( long label : labels )
+        for ( int label : labels )
         {
             assertTrue( "Expected labels not found on node", txContext.nodeHasLabel( state, nodeId, label ) );
         }

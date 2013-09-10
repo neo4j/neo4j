@@ -60,8 +60,8 @@ public class NeoStoreIndexStoreViewTest
     GraphDatabaseAPI graphDb;
     NeoStoreIndexStoreView storeView;
 
-    long labelId;
-    long propertyKeyId;
+    int labelId;
+    int propertyKeyId;
 
     Node alistair;
     Node stefan;
@@ -74,7 +74,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-            storeView.visitNodes( new long[] { labelId }, new long[] { propertyKeyId }, visitor, labelVisitor );
+            storeView.visitNodes( new int[] { labelId }, new int[] { propertyKeyId }, visitor, labelVisitor );
 
         // when
         storeScan.run();
@@ -97,7 +97,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new long[] { labelId }, new long[] { propertyKeyId }, visitor, labelVisitor );
+                storeView.visitNodes( new int[] { labelId }, new int[] { propertyKeyId }, visitor, labelVisitor );
 
         // when
         storeScan.run();

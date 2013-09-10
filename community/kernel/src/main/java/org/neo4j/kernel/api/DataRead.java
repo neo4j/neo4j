@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
@@ -35,7 +36,7 @@ interface DataRead
      * @param labelId the label id of the label that returned nodes are guaranteed to have
      * @return ids of all nodes that have the given label
      */
-    PrimitiveLongIterator nodesGetForLabel( long labelId );
+    PrimitiveLongIterator nodesGetForLabel( int labelId );
 
     /**
      * Returns an iterable with the matched nodes.
@@ -60,19 +61,19 @@ interface DataRead
      * Checks if a node is labeled with a certain label or not. Returns
      * {@code true} if the node is labeled with the label, otherwise {@code false.}
      */
-    boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException;
+    boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException;
 
     /**
      * Returns all labels set on node with id {@code nodeId}.
      * If the node has no labels an empty {@link Iterable} will be returned.
      */
-    PrimitiveLongIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
+    PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
-    Property nodeGetProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException;
+    Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Property relationshipGetProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException;
+    Property relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Property graphGetProperty( long propertyKeyId );
+    Property graphGetProperty( int propertyKeyId );
 
     Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
 

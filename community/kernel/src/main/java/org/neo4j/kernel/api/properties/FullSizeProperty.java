@@ -21,15 +21,15 @@ package org.neo4j.kernel.api.properties;
 
 abstract class FullSizeProperty extends DefinedProperty
 {
-    final long propertyKeyId;
+    final int propertyKeyId;
 
-    protected FullSizeProperty( long propertyKeyId )
+    protected FullSizeProperty( int propertyKeyId )
     {
         this.propertyKeyId = propertyKeyId;
     }
 
     @Override
-    public final long propertyKeyId()
+    public final int propertyKeyId()
     {
         return propertyKeyId;
     }
@@ -52,7 +52,7 @@ abstract class FullSizeProperty extends DefinedProperty
     @Override
     public final int hashCode()
     {
-        return (int) (propertyKeyId ^ (propertyKeyId >>> 32)) ^ valueHash();
+        return propertyKeyId ^ valueHash();
     }
 
     abstract int valueHash();

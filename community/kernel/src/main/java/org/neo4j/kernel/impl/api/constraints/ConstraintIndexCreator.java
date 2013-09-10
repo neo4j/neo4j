@@ -51,7 +51,7 @@ public class ConstraintIndexCreator
      * You MUST hold a schema write lock before you call this method.
      */
     public long createUniquenessConstraintIndex( KernelStatement state, SchemaReadOperations schema,
-            long labelId, long propertyKeyId )
+            int labelId, int propertyKeyId )
             throws ConstraintVerificationFailedKernelException, TransactionalException,
                    CreateConstraintFailureException, DropIndexFailureException
     {
@@ -155,7 +155,7 @@ public class ConstraintIndexCreator
     }
 
     public static Transactor.Work<IndexDescriptor, CreateConstraintFailureException> createConstraintIndex(
-            final long labelId, final long propertyKeyId )
+            final int labelId, final int propertyKeyId )
     {
         return new Transactor.Work<IndexDescriptor, CreateConstraintFailureException>()
         {

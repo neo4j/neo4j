@@ -24,10 +24,10 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -55,7 +55,7 @@ public interface NeoStoreTransaction
      * @param nodeId The id of the node to delete.
      * @return The properties of the node that were removed during the delete.
      */
-    ArrayMap<Integer,PropertyData> nodeDelete( long nodeId );
+    ArrayMap<Integer,DefinedProperty> nodeDelete( long nodeId );
 
     /**
      * Adds a property to the given node, with the given index and value.
@@ -65,7 +65,7 @@ public interface NeoStoreTransaction
      * @param value The value of the property.
      * @return The added property, as a PropertyData object.
      */
-    PropertyData nodeAddProperty( long nodeId, int propertyKey, Object value );
+    DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value );
 
     /**
      * Changes an existing property of the given node, with the given index to
@@ -76,7 +76,7 @@ public interface NeoStoreTransaction
      * @param value The new value of the property.
      * @return The changed property, as a PropertyData object.
      */
-    PropertyData nodeChangeProperty( long nodeId, int propertyKey, Object value );
+    DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value );
 
     /**
      * Removes the given property identified by indexKeyId of the node with the
@@ -117,7 +117,7 @@ public interface NeoStoreTransaction
      * @return The properties of the relationship that were removed during the
      *         delete.
      */
-    ArrayMap<Integer,PropertyData> relDelete( long relId );
+    ArrayMap<Integer,DefinedProperty> relDelete( long relId );
 
     /**
      * Adds a property to the given relationship, with the given index and
@@ -128,7 +128,7 @@ public interface NeoStoreTransaction
      * @param value The value of the property.
      * @return The added property, as a PropertyData object.
      */
-    PropertyData relAddProperty( long relId, int propertyKey, Object value );
+    DefinedProperty relAddProperty( long relId, int propertyKey, Object value );
 
     /**
      * Changes an existing property's value of the given relationship, with the
@@ -140,7 +140,7 @@ public interface NeoStoreTransaction
      * @param value The new value of the property.
      * @return The changed property, as a PropertyData object.
      */
-    PropertyData relChangeProperty( long relId, int propertyKey, Object value );
+    DefinedProperty relChangeProperty( long relId, int propertyKey, Object value );
 
     /**
      * Removes the given property identified by its index from the relationship
@@ -161,42 +161,13 @@ public interface NeoStoreTransaction
     NodeRecord nodeLoadLight( long id );
 
     /**
-     * Attempts to load the value off the store for the given PropertyData
-     * object.
-     *
-     * @param nodeId id of node
-     * @param propertyKey The property to make heavy
-     * @return The property data
-     */
-    Object nodeLoadPropertyValue( long nodeId, int propertyKey );
-
-    /**
-     * Attempts to load the value off the store for the given PropertyData
-     * object.
-     *
-     * @param relationshipId id of relationship
-     * @param propertyKey The property to make heavy
-     * @return The property data
-     */
-    Object relationshipLoadPropertyValue( long relationshipId, int propertyKey );
-    
-    /**
-     * Attempts to load the value off the store for the given PropertyData
-     * object.
-     *
-     * @param propertyKey The property to make heavy
-     * @return The property data
-     */
-    Object graphLoadPropertyValue( int propertyKey);
-    
-    /**
      * Adds a property to the graph, with the given index and value.
      *
      * @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
      * @return The added property, as a PropertyData object.
      */
-    PropertyData graphAddProperty( int propertyKey, Object value );
+    DefinedProperty graphAddProperty( int propertyKey, Object value );
 
     /**
      * Changes an existing property of the graph, with the given index to
@@ -206,7 +177,7 @@ public interface NeoStoreTransaction
      * @param value The new value of the property.
      * @return The changed property, as a PropertyData object.
      */
-    PropertyData graphChangeProperty( int propertyKey, Object value );
+    DefinedProperty graphChangeProperty( int propertyKey, Object value );
 
     /**
      * Removes the given property identified by indexKeyId of the graph with the
@@ -215,25 +186,15 @@ public interface NeoStoreTransaction
      * @param propertyKey The index key of the property.
      */
     void graphRemoveProperty( int propertyKey );
-    
+
     /**
      * Loads the complete property chain for the graph and returns it as a
      * map from property index id to property data.
      *
      * @param light If the properties should be loaded light or not.
-     * @return The properties loaded, as a map from property index id to
-     *         property data.
+     * @param receiver receiver of loaded properties.
      */
-    ArrayMap<Integer,PropertyData> graphLoadProperties( boolean light );
-    
-    /**
-     * Loads the value object for the given property index record id if the
-     * record is light.
-     *
-     * @param id The id of the property index record to make heavy
-     * @return The property index value
-     */
-    String loadIndex( int id );
+    void graphLoadProperties( boolean light, PropertyReceiver receiver );
 
     Token[] loadAllPropertyKeyTokens();
 
@@ -245,10 +206,9 @@ public interface NeoStoreTransaction
      *
      * @param nodeId The id of the node whose properties to load.
      * @param light If the properties should be loaded light or not.
-     * @return The properties loaded, as a map from property index id to
-     *         property data.
+     * @param receiver receiver of loaded properties.
      */
-    ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light );
+    void nodeLoadProperties( long nodeId, boolean light, PropertyReceiver receiver );
 
     /**
      * Loads the complete property chain for the given relationship and returns
@@ -256,11 +216,9 @@ public interface NeoStoreTransaction
      *
      * @param relId The id of the relationship whose properties to load.
      * @param light If the properties should be loaded light or not.
-     * @return The properties loaded, as a map from property index id to
-     *         property data.
+     * @param receiver receiver of loaded properties.
      */
-    ArrayMap<Integer,PropertyData> relLoadProperties( long relId,
-            boolean light);
+    void relLoadProperties( long relId, boolean light, PropertyReceiver receiver );
 
     /**
      * Tries to load the light relationship with the given id, returns the
@@ -312,27 +270,22 @@ public interface NeoStoreTransaction
     Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
             long nodeId, long position );
 
-    /**
-     * Returns the index key ids that are contained within the property record
-     * with the specified id.
-     *
-     * @param property The PropertyData of the property record.
-     * @return an array that contains all the property index ids of the blocks
-     *         in the record.
-     */
-    int getKeyIdForProperty( PropertyData property );
-
     boolean delistResource( Transaction tx, int tmsuccess ) throws SystemException;
-    
+
     void createSchemaRule( SchemaRule schemaRule );
-    
+
     void dropSchemaRule( long id );
-    
-    void addLabelToNode( long labelId, long nodeId );
-    
-    void removeLabelFromNode( long labelId, long nodeId );
+
+    void addLabelToNode( int labelId, long nodeId );
+
+    void removeLabelFromNode( int labelId, long nodeId );
 
     PrimitiveLongIterator getLabelsForNode( long nodeId );
 
     void setConstraintIndexOwner( long constraintIndexId, long constraintId );
+
+    public interface PropertyReceiver
+    {
+        void receive( DefinedProperty property, long propertyRecordId );
+    }
 }

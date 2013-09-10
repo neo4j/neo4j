@@ -27,15 +27,15 @@ import static java.lang.String.format;
 public class PropertyNotFoundException extends KernelException
 {
     private final String entity;
-    private final long propertyKeyId;
+    private final int propertyKeyId;
 
-    public PropertyNotFoundException( long propertyKeyId, EntityType entityType, long entityId )
+    public PropertyNotFoundException( int propertyKeyId, EntityType entityType, long entityId )
     {
         this( entityType == EntityType.GRAPH ? "GraphProperties" : entityType.name() + "[" + entityId + "]",
               propertyKeyId );
     }
 
-    private PropertyNotFoundException( String entity, long propertyKeyId )
+    private PropertyNotFoundException( String entity, int propertyKeyId )
     {
         super( "%s has no property with propertyKeyId=%s.", entity, propertyKeyId );
         this.entity = entity;

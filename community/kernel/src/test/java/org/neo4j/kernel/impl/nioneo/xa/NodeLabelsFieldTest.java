@@ -62,6 +62,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.util.Bits.bits;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeLabelsFieldTest
 {
@@ -72,7 +73,7 @@ public class NodeLabelsFieldTest
         long labelId = 10;
         NodeRecord node = nodeRecordWithInlinedLabels();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
-        
+
         // WHEN
         nodeLabels.add( labelId, null );
 
@@ -87,7 +88,7 @@ public class NodeLabelsFieldTest
         long labelId1 = 10, labelId2 = 30;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
-        
+
         // WHEN
         nodeLabels.add( labelId2, null );
 
@@ -102,14 +103,14 @@ public class NodeLabelsFieldTest
         long labelId1 = 10, labelId2 = 30, labelId3 = 4095;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
-        
+
         // WHEN
         nodeLabels.add( labelId3, null );
 
         // THEN
         assertEquals( inlinedLabelsLongRepresentation( labelId1, labelId2, labelId3 ), node.getLabelField() );
     }
-    
+
     @Test
     public void shouldInlineFourSmallLabels() throws Exception
     {
@@ -117,14 +118,14 @@ public class NodeLabelsFieldTest
         long labelId1 = 10, labelId2 = 30, labelId3 = 45, labelId4 = 60;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2, labelId3 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
-        
+
         // WHEN
         nodeLabels.add( labelId4, null );
 
         // THEN
         assertEquals( inlinedLabelsLongRepresentation( labelId1, labelId2, labelId3, labelId4 ), node.getLabelField() );
     }
-    
+
     @Test
     public void shouldInlineFiveSmallLabels() throws Exception
     {
@@ -140,7 +141,7 @@ public class NodeLabelsFieldTest
         assertEquals( inlinedLabelsLongRepresentation( labelId1, labelId2, labelId3, labelId4, labelId5 ),
                 node.getLabelField() );
     }
-    
+
     @Test
     public void shouldSpillOverToDynamicRecordIfExceedsInlinedSpace() throws Exception
     {
@@ -220,7 +221,6 @@ public class NodeLabelsFieldTest
         // will occupy 61B of data, i.e. just two dynamic records
         Long nodeId = 42l;
         NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, oneByteLongs( 57 ) );
-        Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
         List<DynamicRecord> changedDynamicRecords = addToCollection(
@@ -293,12 +293,12 @@ public class NodeLabelsFieldTest
         assertEquals( dynamicLabelsLongRepresentation( changedDynamicRecords ), node.getLabelField() );
         assertEquals( 1, count( changedDynamicRecords ) );
     }
-    
+
     @Test
     public void addingAnAlreadyAddedLabelWhenLabelsAreInlinedShouldFail() throws Exception
     {
         // GIVEN
-        long labelId = 1;
+        int labelId = 1;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -313,7 +313,7 @@ public class NodeLabelsFieldTest
             // THEN
         }
     }
-    
+
     @Test
     public void addingAnAlreadyAddedLabelWhenLabelsAreInDynamicRecordsShouldFail() throws Exception
     {
@@ -325,7 +325,7 @@ public class NodeLabelsFieldTest
         // WHEN
         try
         {
-            nodeLabels.add( labels[0], nodeStore );
+            nodeLabels.add( safeCastLongToInt( labels[0] ), nodeStore );
             fail( "Should have thrown exception" );
         }
         catch ( IllegalStateException e )
@@ -333,12 +333,12 @@ public class NodeLabelsFieldTest
             // THEN
         }
     }
-    
+
     @Test
     public void removingNonExistentInlinedLabelShouldFail() throws Exception
     {
         // GIVEN
-        long labelId1 = 1, labelId2 = 2;
+        int labelId1 = 1, labelId2 = 2;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -365,7 +365,7 @@ public class NodeLabelsFieldTest
         // WHEN
         try
         {
-            nodeLabels.remove( 123456L, nodeStore );
+            nodeLabels.remove( 123456, nodeStore );
             fail( "Should have thrown exception" );
         }
         catch ( IllegalStateException e )
@@ -373,7 +373,7 @@ public class NodeLabelsFieldTest
             // THEN
         }
     }
-    
+
     @Test
     public void shouldReallocateSomeOfPreviousDynamicRecords() throws Exception
     {
@@ -389,7 +389,7 @@ public class NodeLabelsFieldTest
         assertTrue( reallocatedRecords.containsAll( initialRecords ) );
         assertTrue( reallocatedRecords.size() > initialRecords.size() );
     }
-    
+
     @Test
     public void shouldReallocateAllOfPreviousDynamicRecordsAndThenSome() throws Exception
     {
@@ -397,7 +397,7 @@ public class NodeLabelsFieldTest
         NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, fourByteLongs( 100 ) );
         Set<DynamicRecord> initialRecords = asSet( cloned( node.getDynamicLabelRecords(), DynamicRecord.class ) );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
-        
+
         // WHEN
         Set<DynamicRecord> reallocatedRecords = asUniqueSet( nodeLabels.put( fourByteLongs( 5 ), nodeStore ) );
 
@@ -406,7 +406,7 @@ public class NodeLabelsFieldTest
                 initialRecords.containsAll( used( reallocatedRecords ) ) );
         assertTrue( used( reallocatedRecords ).size() < initialRecords.size() );
     }
-    
+
     private long dynamicLabelsLongRepresentation( Iterable<DynamicRecord> records )
     {
         return 0x8000000000L|first( records ).getId();
@@ -418,13 +418,15 @@ public class NodeLabelsFieldTest
         byte bitsPerLabel = (byte) (36/labelIds.length);
         Bits bits = bits( 5 );
         for ( long labelId : labelIds )
+        {
             bits.put( labelId, bitsPerLabel );
+        }
         return header|bits.getLongs()[0];
     }
-    
+
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NodeStore nodeStore;
-    
+
     @Before
     public void startUp()
     {
@@ -435,22 +437,26 @@ public class NodeLabelsFieldTest
         storeFactory.createNodeStore( storeFile );
         nodeStore = storeFactory.newNodeStore( storeFile );
     }
-    
+
     @After
     public void cleanUp()
     {
         if ( nodeStore != null )
+        {
             nodeStore.close();
+        }
     }
 
     private NodeRecord nodeRecordWithInlinedLabels( long... labels )
     {
         NodeRecord node = new NodeRecord( 0, 0, 0 );
         if ( labels.length > 0 )
+        {
             node.setLabelField( inlinedLabelsLongRepresentation( labels ) );
+        }
         return node;
     }
-    
+
     private NodeRecord nodeRecordWithDynamicLabels( NodeStore nodeStore, long... labels )
     {
         return nodeRecordWithDynamicLabels( 0, nodeStore, labels );
@@ -475,7 +481,9 @@ public class NodeLabelsFieldTest
     {
         long[] result = new long[numberOfLongs];
         for ( int i = 0; i < numberOfLongs; i++ )
+        {
             result[i] = 255-i;
+        }
         Arrays.sort( result );
         return result;
     }
@@ -484,7 +492,9 @@ public class NodeLabelsFieldTest
     {
         long[] result = new long[numberOfLongs];
         for ( int i = 0; i < numberOfLongs; i++ )
+        {
             result[i] = Integer.MAX_VALUE-i;
+        }
         Arrays.sort( result );
         return result;
     }
@@ -493,8 +503,12 @@ public class NodeLabelsFieldTest
     {
         Set<DynamicRecord> used = new HashSet<>();
         for ( DynamicRecord record : reallocatedRecords )
+        {
             if ( record.inUse() )
+            {
                 used.add( record );
+            }
+        }
         return used;
     }
 }

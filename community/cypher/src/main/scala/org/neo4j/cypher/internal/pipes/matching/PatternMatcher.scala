@@ -74,7 +74,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
     val current: MatchingPair = remaining.head
 
     val currentNodeId = current.entity.asInstanceOf[Node].getId
-    val expectedLabels: Seq[Option[Long]] = current.patternNode.labels.map(_.getOptId(state.query))
+    val expectedLabels: Seq[Option[Int]] = current.patternNode.labels.map(_.getOptId(state.query))
 
     val nodeHasLabels = expectedLabels.forall {
       case None          => false

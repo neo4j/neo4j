@@ -42,7 +42,7 @@ import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -71,10 +71,10 @@ public class StateHandlingStatementOperationsTest
                 mock( ConstraintIndexCreator.class ) );
 
         // When
-        ctx.indexCreate( state, 0l, 0l );
-        ctx.nodeAddLabel( state, 0l, 0l );
-        ctx.indexDrop( state, new IndexDescriptor( 0l, 0l ) );
-        ctx.nodeRemoveLabel( state, 0l, 0l );
+        ctx.indexCreate( state, 0, 0 );
+        ctx.nodeAddLabel( state, 0, 0 );
+        ctx.indexDrop( state, new IndexDescriptor( 0, 0 ) );
+        ctx.nodeRemoveLabel( state, 0, 0 );
 
         // These are kind of in between.. property key ids are created in
         // micro-transactions, so these methods
@@ -83,7 +83,7 @@ public class StateHandlingStatementOperationsTest
         // ctx.getOrCreateLabelId("0");
         // ctx.getOrCreatePropertyKeyId("0");
 
-        verify( inner, times( 2 ) ).nodeHasLabel( state, 0l, 0l );
+        verify( inner, times( 2 ) ).nodeHasLabel( state, 0, 0 );
         verifyNoMoreInteractions( inner );
     }
 
@@ -94,8 +94,8 @@ public class StateHandlingStatementOperationsTest
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
         StatementOperations delegate = mock( StatementOperations.class );
         TxState txState = mock( TxState.class );
-        when( txState.nodesWithLabelChanged( anyLong() ) ).thenReturn( DiffSets.<Long>emptyDiffSets() );
-        when( txState.nodesWithChangedProperty( anyLong() ) ).thenReturn( Collections.<Long, Object>emptyMap() );
+        when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( DiffSets.<Long>emptyDiffSets() );
+        when( txState.nodesWithChangedProperty( anyInt() ) ).thenReturn( Collections.<Long, Object>emptyMap() );
         KernelStatement state = mockedState( txState );
         when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( asList( constraint ) ) );

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
-
 /**
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
@@ -29,28 +26,28 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 final class IntProperty extends NumberPropertyWithin4Bytes
 {
     private final int value;
-    private final long propertyKeyId;
+    private final int propertyKeyId;
 
-    IntProperty( long propertyKeyId, int value )
+    IntProperty( int propertyKeyId, int value )
     {
         this.value = value;
         this.propertyKeyId = propertyKeyId;
     }
 
     @Override
-    public long propertyKeyId()
+    public int propertyKeyId()
     {
         return propertyKeyId;
     }
 
     @Override
+    @SuppressWarnings("UnnecessaryUnboxing")
     public boolean valueEquals( Object other )
     {
         if ( other instanceof Integer )
         {
-            return value == (int)other;
+            return value == ((Integer)other).intValue();
         }
-
         return valueCompare( value, other );
     }
 
@@ -76,12 +73,5 @@ final class IntProperty extends NumberPropertyWithin4Bytes
     public long longValue()
     {
         return value;
-    }
-
-    @Override
-    @Deprecated
-    public PropertyData asPropertyDataJustForIntegration()
-    {
-        return PropertyDatas.forInt( (int) propertyKeyId, -1, value );
     }
 }

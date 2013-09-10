@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
 import javax.transaction.xa.XAException;
 
 import org.junit.Before;
@@ -39,6 +38,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -119,7 +118,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         SchemaStore schemaStore = neoStore.getSchemaStore();
-        long labelId = 10, propertyKey = 10;
+        int labelId = 10, propertyKey = 10;
         IndexRule rule = IndexRule.indexRule( schemaStore.nextId(), labelId, propertyKey, PROVIDER_DESCRIPTOR );
         Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : records )
@@ -226,16 +225,16 @@ public class WriteTransactionTest
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
-        PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
+        DefinedProperty property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
+        DefinedProperty property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         prepareAndCommit( writeTransaction );
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         Object newValue1 = "new", newValue2 = "new 2";
         writeTransaction = newWriteTransaction( indexingService );
-        writeTransaction.nodeChangeProperty( nodeId, property1.getIndex(), newValue1 );
-        writeTransaction.nodeChangeProperty( nodeId, property2.getIndex(), newValue2 );
+        writeTransaction.nodeChangeProperty( nodeId, property1.propertyKeyId(), newValue1 );
+        writeTransaction.nodeChangeProperty( nodeId, property2.propertyKeyId(), newValue2 );
         prepareAndCommit( writeTransaction );
 
         // THEN
@@ -255,15 +254,15 @@ public class WriteTransactionTest
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
-        PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
+        DefinedProperty property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
+        DefinedProperty property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         prepareAndCommit( writeTransaction );
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
-        writeTransaction.nodeRemoveProperty( nodeId, property1.getIndex() );
-        writeTransaction.nodeRemoveProperty( nodeId, property2.getIndex() );
+        writeTransaction.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
+        writeTransaction.nodeRemoveProperty( nodeId, property2.propertyKeyId() );
         prepareAndCommit( writeTransaction );
 
         // THEN
@@ -278,10 +277,10 @@ public class WriteTransactionTest
     public void shouldConvertLabelAdditionToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1, labelId = 3;
-        long[] labelIds = new long[] {labelId};
+        long nodeId = 1;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        int propertyKey1 = 1, propertyKey2 = 2;
+        int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
+        long[] labelIds = new long[] {labelId};
         Object value1 = LONG_STRING, value2 = LONG_STRING.getBytes();
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
@@ -306,9 +305,9 @@ public class WriteTransactionTest
     public void shouldConvertMixedLabelAdditionAndSetPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1, labelId1 = 3, labelId2 = 4;
+        long nodeId = 1;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        int propertyKey1 = 1, propertyKey2 = 2;
+        int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
@@ -335,10 +334,10 @@ public class WriteTransactionTest
     public void shouldConvertLabelRemovalToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1, labelId = 3;
-        long[] labelIds = new long[] {labelId};
+        long nodeId = 1;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        int propertyKey1 = 1, propertyKey2 = 2;
+        int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
+        long[] labelIds = new long[] {labelId};
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
@@ -364,12 +363,12 @@ public class WriteTransactionTest
     public void shouldConvertMixedLabelRemovalAndRemovePropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1, labelId1 = 3, labelId2 = 4;
+        long nodeId = 1;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        int propertyKey1 = 1, propertyKey2 = 2;
+        int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
+        DefinedProperty property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
@@ -378,7 +377,7 @@ public class WriteTransactionTest
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
-        writeTransaction.nodeRemoveProperty( nodeId, property1.getIndex() );
+        writeTransaction.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
         writeTransaction.removeLabelFromNode( labelId2, nodeId );
         prepareAndCommit( writeTransaction );
 
@@ -394,9 +393,9 @@ public class WriteTransactionTest
     public void shouldConvertMixedLabelRemovalAndAddPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1, labelId1 = 3, labelId2 = 4;
+        long nodeId = 1;
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
-        int propertyKey1 = 1, propertyKey2 = 2;
+        int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
@@ -465,7 +464,8 @@ public class WriteTransactionTest
 
         // GIVEN
         WriteTransaction tx = newWriteTransaction( NO_INDEXING, verifier );
-        long ruleId = 0, labelId = 5, propertyKeyId = 7;
+        long ruleId = 0;
+        int labelId = 5, propertyKeyId = 7;
         SchemaRule rule = IndexRule.indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
 
         // WHEN
@@ -540,7 +540,8 @@ public class WriteTransactionTest
          * was created resulted in two exact copies of NodePropertyUpdates. */
 
         // GIVEN
-        long labelId = 5, propertyKeyId = 7, nodeId = 1;
+        long nodeId = 1;
+        int labelId = 5, propertyKeyId = 7;
         NodePropertyUpdate expectedUpdate = NodePropertyUpdate.add( nodeId, propertyKeyId, "Neo", new long[] {labelId} );
 
         // -- an index
@@ -556,7 +557,7 @@ public class WriteTransactionTest
         tx = newWriteTransaction( index, commandCapturingVisitor );
         tx.nodeCreate( nodeId );
         tx.addLabelToNode( labelId, nodeId );
-        tx.nodeAddProperty( nodeId, (int) propertyKeyId, "Neo" );
+        tx.nodeAddProperty( nodeId, propertyKeyId, "Neo" );
         prepareAndCommit( tx );
         verify( index, times( 1 ) ).updateIndexes( argThat( matchesAll( expectedUpdate ) ) );
         reset( index );

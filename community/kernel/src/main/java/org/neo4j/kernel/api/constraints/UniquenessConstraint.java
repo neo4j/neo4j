@@ -25,10 +25,10 @@ import org.neo4j.kernel.api.operations.TokenNameLookup;
 // TODO: ...rename this to "Constraint" and add a "type" enum (or something like that).
 public class UniquenessConstraint
 {
-    private final long labelId;
-    private final long propertyKeyId;
+    private final int labelId;
+    private final int propertyKeyId;
 
-    public UniquenessConstraint( long labelId, long propertyKeyId )
+    public UniquenessConstraint( int labelId, int propertyKeyId )
     {
         this.labelId = labelId;
         this.propertyKeyId = propertyKeyId;
@@ -52,22 +52,22 @@ public class UniquenessConstraint
     @Override
     public int hashCode()
     {
-        int result = (int) (labelId ^ (labelId >>> 32));
-        result = 31 * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        int result = labelId;
+        result = 31 * result + propertyKeyId;
         return result;
     }
 
-    public long label()
+    public int label()
     {
         return labelId;
     }
 
-    public long propertyKeyId()
+    public int propertyKeyId()
     {
         return propertyKeyId;
     }
 
-    public boolean equals( long labelId, long propertyKeyId )
+    public boolean equals( int labelId, int propertyKeyId )
     {
         return this.labelId == labelId && this.propertyKeyId == propertyKeyId;
     }

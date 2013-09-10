@@ -45,11 +45,11 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
@@ -170,7 +170,7 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     @Override
     public void init()
-    {
+    {   // Nothing to initialize
     }
 
     @Override
@@ -590,21 +590,6 @@ public class NodeManager implements Lifecycle, EntityFactory
         }
     }
 
-    Object nodeLoadPropertyValue( long nodeId, int propertyKey )
-    {
-        return persistenceManager.nodeLoadPropertyValue( nodeId, propertyKey );
-    }
-
-    Object relationshipLoadPropertyValue( long relationshipId, int propertyKey )
-    {
-        return persistenceManager.relationshipLoadPropertyValue( relationshipId, propertyKey );
-    }
-
-    Object graphLoadPropertyValue( int propertyKey )
-    {
-        return persistenceManager.graphLoadPropertyValue( propertyKey );
-    }
-
     long getRelationshipChainPosition( NodeImpl node )
     {
         return persistenceManager.getRelationshipChainPosition( node.getId() );
@@ -689,20 +674,25 @@ public class NodeManager implements Lifecycle, EntityFactory
         return relImpl;
     }
 
-    ArrayMap<Integer, PropertyData> loadGraphProperties( boolean light )
+    Iterator<DefinedProperty> loadGraphProperties( boolean light )
     {
-        return persistenceManager.graphLoadProperties( light );
+        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
+        persistenceManager.graphLoadProperties( light, receiver );
+        return receiver;
     }
 
-    ArrayMap<Integer, PropertyData> loadProperties( NodeImpl node, boolean light )
+    Iterator<DefinedProperty> loadProperties( NodeImpl node, boolean light )
     {
-        return persistenceManager.loadNodeProperties( node.getId(), light );
+        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
+        persistenceManager.loadNodeProperties( node.getId(), light, receiver );
+        return receiver;
     }
 
-    ArrayMap<Integer, PropertyData> loadProperties(
-            RelationshipImpl relationship, boolean light )
+    Iterator<DefinedProperty> loadProperties( RelationshipImpl relationship, boolean light )
     {
-        return persistenceManager.loadRelProperties( relationship.getId(), light );
+        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
+        persistenceManager.loadRelProperties( relationship.getId(), light, receiver );
+        return receiver;
     }
 
     public void clearCache()
@@ -712,7 +702,6 @@ public class NodeManager implements Lifecycle, EntityFactory
         graphProperties = instantiateGraphProperties();
     }
 
-    @SuppressWarnings("unchecked")
     public Iterable<? extends Cache<?>> caches()
     {
         return asList( nodeCache, relCache );
@@ -728,7 +717,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         {
             // this exception always get generated in a finally block and
             // when it happens another exception has already been thrown
-            // (most likley NotInTransactionException)
+            // (most likely NotInTransactionException)
             logger.debug( "Failed to set transaction rollback only", e );
         }
         catch ( javax.transaction.SystemException se )
@@ -795,7 +784,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         return propertyKeyTokenHolder.getTokenByNameOrNull( key );
     }
 
-    int getRelationshipTypeIdFor( RelationshipType type ) throws TokenNotFoundException
+    int getRelationshipTypeIdFor( RelationshipType type )
     {
         return relTypeHolder.getIdByName( type.name() );
     }
@@ -810,14 +799,14 @@ public class NodeManager implements Lifecycle, EntityFactory
         return cast( relTypeHolder.getAllTokens() );
     }
 
-    public ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
+    public ArrayMap<Integer, DefinedProperty> deleteNode( NodeImpl node, TransactionState tx )
     {
         tx.deleteNode( node.getId() );
         return persistenceManager.nodeDelete( node.getId() );
         // remove from node cache done via event
     }
 
-    public ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
+    public ArrayMap<Integer, DefinedProperty> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
         NodeImpl startNode;
         NodeImpl endNode;
@@ -840,11 +829,10 @@ public class NodeManager implements Lifecycle, EntityFactory
             // no need to load full relationship, all properties will be
             // deleted when relationship is deleted
 
-            ArrayMap<Integer,PropertyData> skipMap =
-                tx.getOrCreateCowPropertyRemoveMap( rel );
+            ArrayMap<Integer,DefinedProperty> skipMap = tx.getOrCreateCowPropertyRemoveMap( rel );
 
             tx.deleteRelationship( rel.getId() );
-            ArrayMap<Integer,PropertyData> removedProps = persistenceManager.relDelete( rel.getId() );
+            ArrayMap<Integer,DefinedProperty> removedProps = persistenceManager.relDelete( rel.getId() );
 
             if ( removedProps.size() > 0 )
             {
@@ -900,12 +888,12 @@ public class NodeManager implements Lifecycle, EntityFactory
         propertyKeyTokenHolder.addTokens( index );
     }
 
-    public String getKeyForProperty( PropertyData property )
+    public String getKeyForProperty( DefinedProperty property )
     {
         // int keyId = persistenceManager.getKeyIdForProperty( property );
         try
         {
-            return propertyKeyTokenHolder.getTokenById( property.getIndex() ).name();
+            return propertyKeyTokenHolder.getTokenById( property.propertyKeyId() ).name();
         }
         catch ( TokenNotFoundException e )
         {

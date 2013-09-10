@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.operations.TokenNameLookup
 import org.neo4j.cypher.internal.spi
 
 class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
-  override def setLabelsOnNode(node: Long, labelIds: Iterator[Long]): Int =
+  override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(super.setLabelsOnNode(node, labelIds))
 
   override def close(success: Boolean) =
@@ -40,19 +40,19 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def createRelationship(start: Node, end: Node, relType: String): Relationship =
     translateException(super.createRelationship(start, end, relType))
 
-  override def getLabelsForNode(node: Long): Iterator[Long] =
+  override def getLabelsForNode(node: Long): Iterator[Int] =
     translateException(super.getLabelsForNode(node))
 
-  override def getLabelName(id: Long): String =
+  override def getLabelName(id: Int): String =
     translateException(super.getLabelName(id))
 
-  override def getOptLabelId(labelName: String): Option[Long] =
+  override def getOptLabelId(labelName: String): Option[Int] =
     translateException(super.getOptLabelId(labelName))
 
-  override def getLabelId(labelName: String): Long =
+  override def getLabelId(labelName: String): Int =
     translateException(super.getLabelId(labelName))
 
-  override def getOrCreateLabelId(labelName: String): Long =
+  override def getOrCreateLabelId(labelName: String): Int =
     translateException(super.getOrCreateLabelId(labelName))
 
   override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] =
@@ -64,31 +64,31 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def relationshipOps: Operations[Relationship] =
     new ExceptionTranslatingOperations[Relationship](super.relationshipOps)
 
-  override def removeLabelsFromNode(node: Long, labelIds: Iterator[Long]): Int =
+  override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(super.removeLabelsFromNode(node, labelIds))
 
-  override def getPropertyKeyName(propertyKeyId: Long): String =
+  override def getPropertyKeyName(propertyKeyId: Int): String =
     translateException(super.getPropertyKeyName(propertyKeyId))
 
-  override def getOptPropertyKeyId(propertyKeyName: String): Option[Long] =
+  override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
     translateException(super.getOptPropertyKeyId(propertyKeyName))
 
-  override def getPropertyKeyId(propertyKey: String): Long =
+  override def getPropertyKeyId(propertyKey: String): Int =
     translateException(super.getPropertyKeyId(propertyKey))
 
-  override def getOrCreatePropertyKeyId(propertyKey: String): Long =
+  override def getOrCreatePropertyKeyId(propertyKey: String): Int =
     translateException(super.getOrCreatePropertyKeyId(propertyKey))
 
-  override def addIndexRule(labelIds: Long, propertyKeyId: Long) =
-    translateException(super.addIndexRule(labelIds, propertyKeyId))
+  override def addIndexRule(labelId: Int, propertyKeyId: Int) =
+    translateException(super.addIndexRule(labelId, propertyKeyId))
 
-  override def dropIndexRule(labelIds: Long, propertyKeyId: Long) =
-    translateException(super.dropIndexRule(labelIds, propertyKeyId))
+  override def dropIndexRule(labelId: Int, propertyKeyId: Int) =
+    translateException(super.dropIndexRule(labelId, propertyKeyId))
 
   override def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] =
     translateException(super.exactIndexSearch(index, value))
 
-  override def getNodesByLabel(id: Long): Iterator[Node] =
+  override def getNodesByLabel(id: Int): Iterator[Node] =
     translateException(super.getNodesByLabel(id))
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
@@ -97,10 +97,10 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def upgrade(context: spi.QueryContext): LockingQueryContext =
     translateException(super.upgrade(context))
 
-  override def createUniqueConstraint(labelId: Long, propertyKeyId: Long) =
+  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     translateException(super.createUniqueConstraint(labelId, propertyKeyId))
 
-  override def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) =
+  override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     translateException(super.dropUniqueConstraint(labelId, propertyKeyId))
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
@@ -109,7 +109,7 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
         work(new ExceptionTranslatingQueryContext(qc))
       ))
 
-  override def isLabelSetOnNode(label: Long, node: Long): Boolean =
+  override def isLabelSetOnNode(label: Int, node: Long): Boolean =
     translateException(super.isLabelSetOnNode(label, node))
 
   class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
@@ -117,22 +117,22 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
     override def delete(obj: T) =
       translateException(super.delete(obj))
 
-    override def setProperty(obj: T, propertyKey: Long, value: Any) =
+    override def setProperty(obj: T, propertyKey: Int, value: Any) =
       translateException(super.setProperty(obj, propertyKey, value))
 
     override def getById(id: Long): T =
       translateException(super.getById(id))
 
-    override def getProperty(obj: T, propertyKeyId: Long): Any =
+    override def getProperty(obj: T, propertyKeyId: Int): Any =
       translateException(super.getProperty(obj, propertyKeyId))
 
-    override def hasProperty(obj: T, propertyKeyId: Long): Boolean =
+    override def hasProperty(obj: T, propertyKeyId: Int): Boolean =
       translateException(super.hasProperty(obj, propertyKeyId))
 
-    override def propertyKeyIds(obj: T): Iterator[Long] =
+    override def propertyKeyIds(obj: T): Iterator[Int] =
       translateException(super.propertyKeyIds(obj))
 
-    override def removeProperty(obj: T, propertyKeyId: Long) =
+    override def removeProperty(obj: T, propertyKeyId: Int) =
       translateException(super.removeProperty(obj, propertyKeyId))
 
     override def indexGet(name: String, key: String, value: Any): Iterator[T] =
@@ -149,9 +149,9 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
     f
   } catch {
     case e: KernelException => throw new CypherExecutionException(e.getUserMessage(new TokenNameLookup {
-      def propertyKeyGetName(propertyKeyId: Long): String = inner.getPropertyKeyName(propertyKeyId)
+      def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
 
-      def labelGetName(labelId: Long): String = inner.getLabelName(labelId)
+      def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
     }), e)
 
   }

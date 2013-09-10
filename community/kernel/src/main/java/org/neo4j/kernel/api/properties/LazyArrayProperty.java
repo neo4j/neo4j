@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.properties;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
+import org.neo4j.kernel.impl.cache.SizeOfs;
+
 class LazyArrayProperty extends LazyProperty<Object>
 {
     /*
@@ -38,7 +40,7 @@ class LazyArrayProperty extends LazyProperty<Object>
      */
     private Type type;
 
-    LazyArrayProperty( long propertyKeyId, final Callable<?> producer )
+    LazyArrayProperty( int propertyKeyId, final Callable<?> producer )
     {
         super( propertyKeyId, producer );
     }
@@ -71,6 +73,12 @@ class LazyArrayProperty extends LazyProperty<Object>
     {
         // this method is invoked after accessing LazyProperty.value, implying a read barrier ...
         return type.clone( value ); // ... so accessing type is safe
+    }
+
+    @Override
+    public int sizeOfObjectInBytesIncludingOverhead()
+    {
+        return super.sizeOfObjectInBytesIncludingOverhead() + SizeOfs.REFERENCE_SIZE;
     }
 
     private enum Type

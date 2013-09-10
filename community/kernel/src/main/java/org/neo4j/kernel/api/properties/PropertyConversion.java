@@ -23,7 +23,7 @@ import java.lang.reflect.Array;
 
 class PropertyConversion
 {
-    static DefinedProperty convertProperty( long propertyKeyId, Object value )
+    static DefinedProperty convertProperty( int propertyKeyId, Object value )
     {
         if ( value instanceof String )
         {
@@ -109,7 +109,7 @@ class PropertyConversion
         }
     }
 
-    private static DefinedProperty arrayProperty( long propertyKeyId, Object[] value )
+    private static DefinedProperty arrayProperty( int propertyKeyId, Object[] value )
     {
         if ( value instanceof String[] )
         {
@@ -165,7 +165,7 @@ class PropertyConversion
         return target;
     }
 
-    static DefinedProperty chooseLongPropertyType( long propertyKeyId, long value )
+    static DefinedProperty chooseLongPropertyType( int propertyKeyId, long value )
     {
         if ( value < 0 )
         {

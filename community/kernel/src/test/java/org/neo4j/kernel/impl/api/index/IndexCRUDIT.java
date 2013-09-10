@@ -78,18 +78,14 @@ public class IndexCRUDIT
         Node node = createNode( map( indexProperty, value1, otherProperty, otherValue ), myLabel );
 
         // Then, for now, this should trigger two NodePropertyUpdates
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             DataWriteOperations statement = ctxProvider.statement().dataWriteOperations();
-            long propertyKey1 = statement.propertyKeyGetForName( indexProperty );
+            int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updates, equalTo( asSet(
                     NodePropertyUpdate.add( node.getId(), propertyKey1, value1, labels ) ) ) );
-        }
-        finally
-        {
-            tx.finish();
+            tx.success();
         }
         // We get two updates because we both add a label and a property to be indexed
         // in the same transaction, in the future, we should optimize this down to
@@ -114,26 +110,22 @@ public class IndexCRUDIT
         assertThat( writer.updates.size(), equalTo( 0 ) );
 
         // AND WHEN
-        Transaction tx = db.beginTx();
-        node.addLabel( myLabel );
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.addLabel( myLabel );
+            tx.success();
+        }
 
         // THEN
-        tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             DataWriteOperations statement = ctxProvider.statement().dataWriteOperations();
-            long propertyKey1 = statement.propertyKeyGetForName( indexProperty );
+            int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updates, equalTo( asSet(
                     NodePropertyUpdate.add( node.getId(), propertyKey1, value, labels ) ) ) );
+            tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
-
     }
 
     private GraphDatabaseAPI db;
@@ -143,18 +135,19 @@ public class IndexCRUDIT
             singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
     private ThreadToStatementContextBridge ctxProvider;
     private final Label myLabel = label( "MYLABEL" );
-    
+
     private Node createNode( Map<String, Object> properties, Label ... labels )
     {
-        Transaction tx = db.beginTx();
-        Node node = db.createNode( labels );
-        for ( Map.Entry<String, Object> prop : properties.entrySet() )
+        try ( Transaction tx = db.beginTx() )
         {
-            node.setProperty( prop.getKey(), prop.getValue() );
+            Node node = db.createNode( labels );
+            for ( Map.Entry<String, Object> prop : properties.entrySet() )
+            {
+                node.setProperty( prop.getKey(), prop.getValue() );
+            }
+            tx.success();
+            return node;
         }
-        tx.success();
-        tx.finish();
-        return node;
     }
 
     @Before
@@ -166,7 +159,7 @@ public class IndexCRUDIT
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
-    
+
     private GatheringIndexWriter newWriter( String propertyKey ) throws IOException
     {
         GatheringIndexWriter writer = new GatheringIndexWriter( propertyKey );
@@ -182,12 +175,12 @@ public class IndexCRUDIT
     {
         db.shutdown();
     }
-    
+
     private class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<>();
         private final String propertyKey;
-        
+
         public GatheringIndexWriter( String propertyKey )
         {
             this.propertyKey = propertyKey;
@@ -212,7 +205,7 @@ public class IndexCRUDIT
         {
             this.updates.addAll( asCollection( updates ) );
         }
-        
+
         @Override
         public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
         {
@@ -223,7 +216,7 @@ public class IndexCRUDIT
         public void close( boolean populationCompletedSuccessfully )
         {
         }
-        
+
         @Override
         public void markAsFailed( String failure )
         {

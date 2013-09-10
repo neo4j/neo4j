@@ -27,14 +27,14 @@ import org.neo4j.kernel.impl.api.UpdateMode;
 public class NodePropertyUpdate
 {
     private final long nodeId;
-    private final long propertyKeyId;
+    private final int propertyKeyId;
     private final Object valueBefore;
     private final Object valueAfter;
     private final UpdateMode updateMode;
     private final long[] labelsBefore;
     private final long[] labelsAfter;
 
-    public NodePropertyUpdate( long nodeId, long propertyKeyId, Object valueBefore, long[] labelsBefore,
+    public NodePropertyUpdate( long nodeId, int propertyKeyId, Object valueBefore, long[] labelsBefore,
                                Object valueAfter, long[] labelsAfter )
     {
         this.nodeId = nodeId;
@@ -70,7 +70,7 @@ public class NodePropertyUpdate
         return nodeId;
     }
 
-    public long getPropertyKeyId()
+    public int getPropertyKeyId()
     {
         return propertyKeyId;
     }
@@ -89,33 +89,23 @@ public class NodePropertyUpdate
     {
         return updateMode;
     }
-    
-    public long[] getLabelsBefore()
-    {
-        return labelsBefore;
-    }
-    
-    public long[] getLabelsAfter()
-    {
-        return labelsAfter;
-    }
-    
+
     /**
      * Whether or not this property update is for the given {@code labelId}.
-     * 
+     *
      * If this property update comes from setting/changing/removing a property it will
      * affect all labels on that {@link Node}.
-     * 
+     *
      * If this property update comes from adding or removing labels to/from a {@link Node}
      * it will affect only those labels.
-     * 
+     *
      * @param labelId the label id the check.
      */
     public boolean forLabel( long labelId )
     {
         return updateMode.forLabel( labelsBefore, labelsAfter, labelId );
     }
-    
+
     @Override
     public String toString()
     {
@@ -140,7 +130,7 @@ public class NodePropertyUpdate
         result = prime * result + Arrays.hashCode( labelsBefore );
         result = prime * result + Arrays.hashCode( labelsAfter );
         result = prime * result + (int) (nodeId ^ (nodeId >>> 32));
-        result = prime * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        result = prime * result + propertyKeyId;
         result = prime * result + updateMode.hashCode();
         return result;
     }
@@ -170,7 +160,7 @@ public class NodePropertyUpdate
                 propertyValuesEqual( valueAfter, other.valueAfter );
     }
 
-    public static boolean propertyValuesEqual(Object a, Object b)
+    public static boolean propertyValuesEqual( Object a, Object b )
     {
         if ( a == null )
         {
@@ -180,7 +170,7 @@ public class NodePropertyUpdate
         {
             return false;
         }
-        
+
         if (a instanceof boolean[] && b instanceof boolean[])
         {
             return Arrays.equals( (boolean[]) a, (boolean[]) b );
@@ -219,21 +209,21 @@ public class NodePropertyUpdate
         }
         return a.equals( b );
     }
-    
+
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
 
-    public static NodePropertyUpdate add( long nodeId, long propertyKeyId, Object value, long[] labels )
+    public static NodePropertyUpdate add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
         return new NodePropertyUpdate( nodeId, propertyKeyId, null, EMPTY_LONG_ARRAY, value, labels );
     }
-    
-    public static NodePropertyUpdate change( long nodeId, long propertyKeyId, Object valueBefore, long[] labelsBefore,
+
+    public static NodePropertyUpdate change( long nodeId, int propertyKeyId, Object valueBefore, long[] labelsBefore,
             Object valueAfter, long[] labelsAfter )
     {
         return new NodePropertyUpdate( nodeId, propertyKeyId, valueBefore, labelsBefore, valueAfter, labelsAfter );
     }
-    
-    public static NodePropertyUpdate remove( long nodeId, long propertyKeyId, Object value, long[] labels )
+
+    public static NodePropertyUpdate remove( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
         return new NodePropertyUpdate( nodeId, propertyKeyId, value, labels, null, EMPTY_LONG_ARRAY );
     }

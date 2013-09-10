@@ -47,7 +47,7 @@ public class CachingStatementOperationsTest
     {
         // GIVEN
         long nodeId = 3;
-        Set<Long> labels = new HashSet<>( asList( 1L, 2L, 3L ) );
+        Set<Integer> labels = new HashSet<>( asList( 1, 2, 3 ) );
         PersistenceCache cache = mock( PersistenceCache.class );
         //noinspection unchecked
         when( cache.nodeGetLabels( any( KernelStatement.class ), eq( nodeId ), any( CacheLoader.class ) ) ).thenReturn( labels );
@@ -55,11 +55,11 @@ public class CachingStatementOperationsTest
         SchemaReadOperations schemaReadOperations = mock( SchemaReadOperations.class );
         CachingStatementOperations context = new CachingStatementOperations(
                 entityReadOperations, schemaReadOperations, cache, null );
-        
+
         // WHEN
-        PrimitiveLongIterator receivedLabels = context.nodeGetLabels( mockedState(), nodeId );
-        
+        PrimitiveIntIterator receivedLabels = context.nodeGetLabels( mockedState(), nodeId );
+
         // THEN
-        assertEquals( labels, addToCollection( receivedLabels, new HashSet<Long>() ) );
+        assertEquals( labels, addToCollection( receivedLabels, new HashSet<Integer>() ) );
     }
 }

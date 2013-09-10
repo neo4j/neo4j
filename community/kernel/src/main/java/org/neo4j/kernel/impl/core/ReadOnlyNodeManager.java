@@ -23,9 +23,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -61,13 +61,13 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
+    public ArrayMap<Integer, DefinedProperty> deleteNode( NodeImpl node, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
+    public ArrayMap<Integer, DefinedProperty> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }

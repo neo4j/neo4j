@@ -19,27 +19,26 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
 final class DoubleProperty extends FullSizeProperty
 {
     private final double value;
 
-    DoubleProperty( long propertyKeyId, double value )
+    DoubleProperty( int propertyKeyId, double value )
     {
         super( propertyKeyId );
         this.value = value;
     }
 
     @Override
+    @SuppressWarnings("UnnecessaryUnboxing")
     public boolean valueEquals( Object other )
     {
         if ( other instanceof Double )
         {
-            return value == (double) other;
+            return value == ((Double) other).doubleValue();
         }
-
         return valueCompare( value, other );
     }
 
@@ -63,9 +62,8 @@ final class DoubleProperty extends FullSizeProperty
     }
 
     @Override
-    @Deprecated
-    public PropertyData asPropertyDataJustForIntegration()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return PropertyDatas.forDouble( (int) propertyKeyId, -1, value );
+        return withObjectOverhead( 4 + 8 );
     }
 }

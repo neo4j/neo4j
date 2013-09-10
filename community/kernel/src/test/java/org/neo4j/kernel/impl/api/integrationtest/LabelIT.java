@@ -38,8 +38,8 @@ public class LabelIT extends KernelIntegrationTest
     public void shouldListAllLabels() throws Exception
     {
         // given
-        long label1Id;
-        long label2Id;
+        int label1Id;
+        int label2Id;
         {
             TokenWriteOperations statement = tokenWriteOperationsInNewTransaction();
             label1Id = statement.labelGetOrCreateForName( "label1" );
@@ -50,7 +50,7 @@ public class LabelIT extends KernelIntegrationTest
 
             // then
             assertThat( asCollection( labelIdsBeforeCommit ),
-                        hasItems( new Token( "label1", (int) label1Id ), new Token( "label2", (int) label2Id )) );
+                        hasItems( new Token( "label1", label1Id ), new Token( "label2", label2Id )) );
 
             // when
             commit();
@@ -61,7 +61,7 @@ public class LabelIT extends KernelIntegrationTest
 
             // then
             assertThat(asCollection( labelIdsAfterCommit ) ,
-                    hasItems( new Token( "label1", (int) label1Id ), new Token( "label2", (int) label2Id ) ));
+                    hasItems( new Token( "label1", label1Id ), new Token( "label2", label2Id ) ));
         }
     }
 }

@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOf;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
 final class StringProperty extends FullSizeProperty
 {
     private final String value;
 
-    StringProperty( long propertyKeyId, String value )
+    StringProperty( int propertyKeyId, String value )
     {
         super( propertyKeyId );
         assert value != null;
@@ -57,5 +61,11 @@ final class StringProperty extends FullSizeProperty
     boolean hasEqualValue( FullSizeProperty that )
     {
         return value.equals( ((StringProperty) that).value );
+    }
+
+    @Override
+    public int sizeOfObjectInBytesIncludingOverhead()
+    {
+        return withObjectOverhead( 4 + withReference( sizeOf( value ) ) );
     }
 }

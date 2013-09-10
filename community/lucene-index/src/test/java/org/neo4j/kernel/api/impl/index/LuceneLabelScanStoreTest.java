@@ -58,7 +58,8 @@ public class LuceneLabelScanStoreTest
     public void shouldUpdateIndexOnLabelChange() throws Exception
     {
         // GIVEN
-        long labelId = 1, nodeId = 10;
+        int labelId = 1;
+        long nodeId = 10;
         start();
 
         // WHEN
@@ -72,7 +73,8 @@ public class LuceneLabelScanStoreTest
     public void shouldUpdateIndexOnAddedLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 1, labelId2 = 2, nodeId = 10;
+        int labelId1 = 1, labelId2 = 2;
+        long nodeId = 10;
         start();
         store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId1} ) ) );
         assertNodesForLabel( labelId2 );
@@ -89,7 +91,8 @@ public class LuceneLabelScanStoreTest
     public void shouldUpdateIndexOnRemovedLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 1, labelId2 = 2, nodeId = 10;
+        int labelId1 = 1, labelId2 = 2;
+        long nodeId = 10;
         start();
         store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId1, labelId2} ) ) );
         assertNodesForLabel( labelId1, nodeId );
@@ -107,7 +110,8 @@ public class LuceneLabelScanStoreTest
     public void shouldDeleteFromIndexWhenDeletedNode() throws Exception
     {
         // GIVEN
-        long labelId = 1, nodeId = 10;
+        int labelId = 1;
+        long nodeId = 10;
         start();
         store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId} ) ) );
 
@@ -158,7 +162,7 @@ public class LuceneLabelScanStoreTest
                 2 );
     }
 
-    private void assertNodesForLabel( long labelId, long... expectedNodeIds )
+    private void assertNodesForLabel( int labelId, long... expectedNodeIds )
     {
         Set<Long> nodeSet = new HashSet<>();
         PrimitiveLongIterator nodes = store.newReader().nodesWithLabel( labelId );
@@ -234,9 +238,13 @@ public class LuceneLabelScanStoreTest
     private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data ) throws IOException
     {
         shutdown();
-        for ( File indexFile : dir.listFiles() )
+        File[] files = dir.listFiles();
+        if ( files != null )
         {
-            scrambleFile( indexFile );
+            for ( File indexFile : files )
+            {
+                scrambleFile( indexFile );
+            }
         }
         start( data );
     }

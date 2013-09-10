@@ -21,11 +21,15 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.concurrent.Callable;
 
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfObject;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
 abstract class LazyProperty<T> extends FullSizeProperty
 {
     private volatile Object value;
 
-    LazyProperty( long propertyKeyId, Callable<? extends T> producer )
+    LazyProperty( int propertyKeyId, Callable<? extends T> producer )
     {
         super( propertyKeyId );
         this.value = producer;
@@ -81,5 +85,15 @@ abstract class LazyProperty<T> extends FullSizeProperty
     protected T castAndPrepareForReturn( Object value )
     {
         return (T) value;
+    }
+
+    @Override
+    public int sizeOfObjectInBytesIncludingOverhead()
+    {
+        int internalSize = withReference(
+                value instanceof Callable<?> ?
+                        withObjectOverhead( 0 ) :
+                        sizeOfObject( value ) );
+        return withObjectOverhead( internalSize );
     }
 }

@@ -23,14 +23,14 @@ import org.neo4j.kernel.impl.api.DiffSets;
 
 public final class NodeState extends PropertyContainerState
 {
-    private DiffSets<Long> labelDiffSets;
+    private DiffSets<Integer> labelDiffSets;
 
     public NodeState( long id )
     {
         super( id );
     }
 
-    public DiffSets<Long> labelDiffSets()
+    public DiffSets<Integer> labelDiffSets()
     {
         if ( null == labelDiffSets )
         {

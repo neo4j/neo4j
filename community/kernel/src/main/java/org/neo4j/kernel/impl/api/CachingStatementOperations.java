@@ -63,7 +63,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
 
 public class CachingStatementOperations implements
         EntityReadOperations,
@@ -71,45 +71,43 @@ public class CachingStatementOperations implements
 {
     private static final Function<? super SchemaRule, IndexDescriptor> TO_INDEX_RULE =
             new Function<SchemaRule, IndexDescriptor>()
-            {
-                @Override
-                public IndexDescriptor apply( SchemaRule from )
-                {
-                    IndexRule rule = (IndexRule) from;
-                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
-                }
-            };
-    private final CacheLoader<Iterator<DefinedProperty>> nodePropertyLoader = new
-            CacheLoader<Iterator<DefinedProperty>>()
-            {
-                @Override
-                public Iterator<DefinedProperty> load( KernelStatement state, long id ) throws EntityNotFoundException
-                {
-                    return entityReadDelegate.nodeGetAllProperties( state, id );
-                }
-            };
-    private final CacheLoader<Iterator<DefinedProperty>> relationshipPropertyLoader = new
-            CacheLoader<Iterator<DefinedProperty>>()
-            {
-                @Override
-                public Iterator<DefinedProperty> load( KernelStatement state, long id ) throws EntityNotFoundException
-                {
-                    return entityReadDelegate.relationshipGetAllProperties( state, id );
-                }
-            };
-    private final CacheLoader<Iterator<DefinedProperty>> graphPropertyLoader = new
-            CacheLoader<Iterator<DefinedProperty>>()
-            {
-                @Override
-                public Iterator<DefinedProperty> load( KernelStatement state, long id ) throws EntityNotFoundException
-                {
-                    return entityReadDelegate.graphGetAllProperties( state );
-                }
-            };
-    private final CacheLoader<Set<Long>> nodeLabelLoader = new CacheLoader<Set<Long>>()
     {
         @Override
-        public Set<Long> load( KernelStatement state, long id ) throws EntityNotFoundException
+        public IndexDescriptor apply( SchemaRule from )
+        {
+            IndexRule rule = (IndexRule) from;
+            // We know that we only have int range of property key ids.
+            return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
+        }
+    };
+    private final CacheLoader<Iterator<DefinedProperty>> nodePropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
+    {
+        @Override
+        public Iterator<DefinedProperty> load( KernelStatement state, long id ) throws EntityNotFoundException
+        {
+            return entityReadDelegate.nodeGetAllProperties( state, id );
+        }
+    };
+    private final CacheLoader<Iterator<DefinedProperty>> relationshipPropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
+    {
+        @Override
+        public Iterator<DefinedProperty> load( KernelStatement state, long id ) throws EntityNotFoundException
+        {
+            return entityReadDelegate.relationshipGetAllProperties( state, id );
+        }
+    };
+    private final CacheLoader<Iterator<DefinedProperty>> graphPropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
+    {
+        @Override
+        public Iterator<DefinedProperty> load( KernelStatement state, long id ) throws EntityNotFoundException
+        {
+            return entityReadDelegate.graphGetAllProperties(state);
+        }
+    };
+    private final CacheLoader<Set<Integer>> nodeLabelLoader = new CacheLoader<Set<Integer>>()
+    {
+        @Override
+        public Set<Integer> load( KernelStatement state, long id ) throws EntityNotFoundException
         {
             return asSet( entityReadDelegate.nodeGetLabels( state, id ) );
         }
@@ -132,21 +130,21 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public boolean nodeHasLabel( KernelStatement state, final long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( KernelStatement state, final long nodeId, int labelId ) throws EntityNotFoundException
     {
         return persistenceCache.nodeHasLabel( state, nodeId, labelId, nodeLabelLoader );
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetLabels( KernelStatement state, final long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetLabels( KernelStatement state, final long nodeId ) throws EntityNotFoundException
     {
         // TODO Make PersistenceCache use primitive longs
-        Iterator<Long> iterator = persistenceCache.nodeGetLabels( state, nodeId, nodeLabelLoader ).iterator();
-        return toPrimitiveLongIterator( iterator );
+        Iterator<Integer> iterator = persistenceCache.nodeGetLabels( state, nodeId, nodeLabelLoader ).iterator();
+        return toPrimitiveIntIterator( iterator );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, long labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
     {
         return toIndexDescriptors( schemaCache.getSchemaRulesForLabel( labelId ), SchemaRule.Kind.INDEX_RULE );
     }
@@ -158,7 +156,7 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, long labelId )
+    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, int labelId )
     {
         return toIndexDescriptors( schemaCache.getSchemaRulesForLabel( labelId ),
                 SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
@@ -230,7 +228,7 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public Property nodeGetProperty( KernelStatement state, long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    public Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         return persistenceCache.nodeGetProperty( state, nodeId, propertyKeyId, nodePropertyLoader );
     }
@@ -249,7 +247,7 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public Property relationshipGetProperty( KernelStatement state, long relationshipId, long propertyKeyId )
+    public Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException
     {
         return persistenceCache.relationshipGetProperty( state, relationshipId, propertyKeyId,
@@ -270,7 +268,7 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public Property graphGetProperty( KernelStatement state, long propertyKeyId )
+    public Property graphGetProperty( KernelStatement state, int propertyKeyId )
     {
         return persistenceCache.graphGetProperty( state, graphPropertyLoader, propertyKeyId );
     }
@@ -291,7 +289,7 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
     {
         return entityReadDelegate.nodesGetForLabel( state, labelId );
     }
@@ -304,7 +302,7 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, long labelId, long propertyKey )
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
             throws SchemaRuleNotFoundException
     {
         return schemaReadDelegate.indexesGetForLabelAndPropertyKey( state, labelId, propertyKey );
@@ -319,13 +317,13 @@ public class CachingStatementOperations implements
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey(
-            KernelStatement state, long labelId, long propertyKeyId )
+            KernelStatement state, int labelId, int propertyKeyId )
     {
         return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, long labelId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
     {
         return schemaReadDelegate.constraintsGetForLabel( state, labelId );
     }

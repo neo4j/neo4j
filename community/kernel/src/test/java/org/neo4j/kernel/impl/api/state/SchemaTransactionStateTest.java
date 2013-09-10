@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -198,8 +198,8 @@ public class SchemaTransactionStateTest
 
     // exists
 
-    private final long labelId1 = 10, labelId2 = 12, nodeId = 20;
-    private final long key1 = 45, key2 = 46;
+    private final int labelId1 = 10, labelId2 = 12, key1 = 45, key2 = 46;
+    private final long nodeId = 20;
 
     private StatementOperations store;
     private OldTxStateBridge oldTxState;
@@ -215,18 +215,18 @@ public class SchemaTransactionStateTest
         txState = new TxStateImpl( oldTxState, mock( PersistenceManager.class ),
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
-        
+
         store = mock( StatementOperations.class );
         when( store.indexesGetForLabel( state, labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.indexesGetForLabel( state, labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll( state ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexCreate( eq( state ), anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
+        when( store.indexCreate( eq( state ), anyInt(), anyInt() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
             public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
             {
-                return new IndexDescriptor((Long) invocation.getArguments()[0],
-                        (Long) invocation.getArguments()[1] );
+                return new IndexDescriptor((Integer) invocation.getArguments()[0],
+                        (Integer) invocation.getArguments()[1] );
             }
         } );
 
@@ -249,28 +249,28 @@ public class SchemaTransactionStateTest
     private static class Labels
     {
         private final long nodeId;
-        private final Long[] labelIds;
+        private final Integer[] labelIds;
 
-        Labels( long nodeId, Long... labelIds )
+        Labels( long nodeId, Integer... labelIds )
         {
             this.nodeId = nodeId;
             this.labelIds = labelIds;
         }
     }
 
-    private static Labels labels( long nodeId, Long... labelIds )
+    private static Labels labels( long nodeId, Integer... labelIds )
     {
         return new Labels( nodeId, labelIds );
     }
 
     private void commitLabels( Labels... labels ) throws Exception
     {
-        Map<Long, Collection<Long>> allLabels = new HashMap<Long, Collection<Long>>();
+        Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.nodeGetLabels( state, nodeLabels.nodeId ) ).then( asAnswer( Arrays.<Long>asList( nodeLabels
-                    .labelIds ) ) );
-            for ( long label : nodeLabels.labelIds )
+            when( store.nodeGetLabels( state, nodeLabels.nodeId ) ).then(
+                    asAnswer( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
+            for ( int label : nodeLabels.labelIds )
             {
                 when( store.nodeHasLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
                 when( store.nodeRemoveLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
@@ -279,14 +279,14 @@ public class SchemaTransactionStateTest
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )
                 {
-                    nodes = new ArrayList<Long>();
+                    nodes = new ArrayList<>();
                     allLabels.put( label, nodes );
                 }
                 nodes.add( nodeLabels.nodeId );
             }
         }
 
-        for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
+        for ( Map.Entry<Integer, Collection<Long>> entry : allLabels.entrySet() )
         {
             when( store.nodesGetForLabel( state, entry.getKey() ) ).then( asAnswer( entry.getValue() ) );
         }
@@ -294,10 +294,10 @@ public class SchemaTransactionStateTest
 
     private void commitNoLabels() throws Exception
     {
-        commitLabels( new Long[0] );
+        commitLabels( new Integer[0] );
     }
 
-    private void commitLabels( Long... labels ) throws Exception
+    private void commitLabels( Integer... labels ) throws Exception
     {
         commitLabels( labels( nodeId, labels ) );
     }

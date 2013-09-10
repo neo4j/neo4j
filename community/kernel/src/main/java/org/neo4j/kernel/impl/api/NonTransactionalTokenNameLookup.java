@@ -43,11 +43,11 @@ public class NonTransactionalTokenNameLookup implements TokenNameLookup
     }
 
     @Override
-    public String labelGetName( long labelId )
+    public String labelGetName( int labelId )
     {
         try
         {
-            Token token = labelTokenHolder.getTokenByIdOrNull( (int) labelId );
+            Token token = labelTokenHolder.getTokenByIdOrNull( labelId );
             if(token != null)
             {
                 return token.name();
@@ -61,11 +61,11 @@ public class NonTransactionalTokenNameLookup implements TokenNameLookup
     }
 
     @Override
-    public String propertyKeyGetName( long propertyKeyId )
+    public String propertyKeyGetName( int propertyKeyId )
     {
         try
         {
-            Token token = propertyKeyTokenHolder.getTokenByIdOrNull( (int) propertyKeyId );
+            Token token = propertyKeyTokenHolder.getTokenByIdOrNull( propertyKeyId );
             if(token != null)
             {
                 return token.name();

@@ -26,12 +26,12 @@ import org.neo4j.kernel.api.Statement
 
 abstract class TransactionBoundTokenContext(statement: Statement) extends TokenContext
 {
-  def getOptPropertyKeyId(propertyKeyName: String): Option[Long] =
+  def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
     TokenContext.tryGet[PropertyKeyNotFoundException](getPropertyKeyId(propertyKeyName))
 
   def getPropertyKeyId(propertyKeyName: String) =
   {
-    val propertyId: Long = statement.readOperations().propertyKeyGetForName(propertyKeyName)
+    val propertyId: Int = statement.readOperations().propertyKeyGetForName(propertyKeyName)
     if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
     {
       throw new PropertyKeyNotFoundException("No such property.", null)
@@ -39,11 +39,11 @@ abstract class TransactionBoundTokenContext(statement: Statement) extends TokenC
     propertyId
   }
 
-  def getPropertyKeyName(propertyKeyId: Long): String = statement.readOperations().propertyKeyGetName(propertyKeyId)
+  def getPropertyKeyName(propertyKeyId: Int): String = statement.readOperations().propertyKeyGetName(propertyKeyId)
 
-  def getLabelId(labelName: String): Long =
+  def getLabelId(labelName: String): Int =
   {
-    val labelId: Long = statement.readOperations().labelGetForName(labelName)
+    val labelId: Int = statement.readOperations().labelGetForName(labelName)
     if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
     {
       throw new LabelNotFoundKernelException("No such label", null)
@@ -51,8 +51,8 @@ abstract class TransactionBoundTokenContext(statement: Statement) extends TokenC
     labelId
   }
 
-  def getOptLabelId(labelName: String): Option[Long] =
+  def getOptLabelId(labelName: String): Option[Int] =
     TokenContext.tryGet[LabelNotFoundKernelException](getLabelId(labelName))
 
-  def getLabelName(labelId: Long): String = statement.readOperations().labelGetName(labelId)
+  def getLabelName(labelId: Int): String = statement.readOperations().labelGetName(labelId)
 }

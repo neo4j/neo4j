@@ -21,13 +21,12 @@ package org.neo4j.kernel.api.properties;
 
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.ArrayUtil.ArrayEquality;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+import org.neo4j.kernel.impl.cache.SizeOfObject;
 
 /**
  * Base class for properties that have a value.
  */
-public abstract class DefinedProperty extends Property
+public abstract class DefinedProperty extends Property implements SizeOfObject
 {
     @Override
     public boolean isDefined()
@@ -129,13 +128,6 @@ public abstract class DefinedProperty extends Property
     public boolean booleanValue( boolean defaultValue )
     {
         return booleanValue();
-    }
-
-    @Override
-    @Deprecated
-    public PropertyData asPropertyDataJustForIntegration()
-    {
-        return PropertyDatas.forStringOrArray( (int) propertyKeyId(), -1, value() );
     }
 
     DefinedProperty()

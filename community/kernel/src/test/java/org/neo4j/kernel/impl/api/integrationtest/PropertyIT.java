@@ -39,6 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 public class PropertyIT extends KernelIntegrationTest
@@ -47,7 +48,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldSetNodePropertyValue() throws Exception
     {
         // GIVEN
-        long propertyKeyId;
+        int propertyKeyId;
         long nodeId;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
@@ -76,7 +77,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldRemoveSetNodeProperty() throws Exception
     {
         // GIVEN
-        long propertyKeyId;
+        int propertyKeyId;
         long nodeId;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
@@ -106,7 +107,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldRemoveSetNodePropertyAcrossTransactions() throws Exception
     {
         // GIVEN
-        long propertyKeyId;
+        int propertyKeyId;
         long nodeId;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
@@ -141,7 +142,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldSilentlyNotRemoveMissingNodeProperty() throws Exception
     {
         // GIVEN
-        long propertyId;
+        int propertyId;
         long nodeId;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
@@ -165,7 +166,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void nodeHasPropertyIfSet() throws Exception
     {
         // GIVEN
-        long propertyKeyId;
+        int propertyKeyId;
         long nodeId;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
@@ -193,7 +194,7 @@ public class PropertyIT extends KernelIntegrationTest
     @Test
     public void nodeHasNotPropertyIfUnset() throws Exception
     {
-        long propertyKeyId;
+        int propertyKeyId;
         long nodeId;
         {
             // GIVEN
@@ -223,7 +224,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldRollbackSetNodePropertyValue() throws Exception
     {
         // GIVEN
-        long propertyKeyId;
+        int propertyKeyId;
         long nodeId;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
@@ -251,7 +252,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldUpdateNodePropertyValue() throws Exception
     {
         // GIVEN
-        long propertyId;
+        int propertyId;
         long nodeId;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
@@ -280,7 +281,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void nodeHasStringPropertyIfSetAndLazyPropertyIfRead() throws Exception
     {
         // GIVEN
-        long propertyKeyId;
+        int propertyKeyId;
         long nodeId;
         String value = "Bozo the Clown is a clown character very popular in the United States, peaking in the 1960s";
         {
@@ -313,7 +314,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void nodeHasArrayPropertyIfSetAndLazyPropertyIfRead() throws Exception
     {
         // GIVEN
-        long propertyKeyId;
+        int propertyKeyId;
         long nodeId;
         int[] value = new int[] {-1,0,1,2,3,4,5,6,7,8,9,10};
         {

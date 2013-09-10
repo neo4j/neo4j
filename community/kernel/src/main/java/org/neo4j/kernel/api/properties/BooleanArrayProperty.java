@@ -21,14 +21,15 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
 class BooleanArrayProperty extends FullSizeProperty
 {
     private final boolean[] value;
 
-    BooleanArrayProperty( long propertyKeyId, boolean[] value )
+    BooleanArrayProperty( int propertyKeyId, boolean[] value )
     {
         super( propertyKeyId );
         assert value != null;
@@ -81,9 +82,8 @@ class BooleanArrayProperty extends FullSizeProperty
     }
 
     @Override
-    @Deprecated
-    public PropertyData asPropertyDataJustForIntegration()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return PropertyDatas.forStringOrArray( (int) propertyKeyId, -1, value );
+        return withObjectOverhead( 4 + withReference( sizeOfArray( value ) ) );
     }
 }

@@ -79,13 +79,13 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   }
 
   @Test def add_label() {
-    context.setLabelsOnNode(0l, Seq(1l, 2l, 3l).iterator)
+    context.setLabelsOnNode(0l, Seq(1, 2, 3).iterator)
 
     assert(context.getStatistics === QueryStatistics(labelsAdded = 3))
   }
 
   @Test def remove_label() {
-    context.removeLabelsFromNode(0l, Seq(1l, 2l, 3l).iterator)
+    context.removeLabelsFromNode(0l, Seq(1, 2, 3).iterator)
 
     assert(context.getStatistics === QueryStatistics(labelsRemoved = 3))
   }

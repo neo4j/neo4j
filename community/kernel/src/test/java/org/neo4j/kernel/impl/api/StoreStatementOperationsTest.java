@@ -90,7 +90,8 @@ public class StoreStatementOperationsTest
     public void should_be_able_to_list_labels_for_node() throws Exception
     {
         // GIVEN
-        long nodeId, labelId1, labelId2;
+        long nodeId;
+        int labelId1, labelId2;
         try ( Transaction tx = db.beginTx() )
         {
             nodeId = db.createNode( label1, label2 ).getId();
@@ -101,9 +102,9 @@ public class StoreStatementOperationsTest
         }
 
         // THEN
-        PrimitiveLongIterator readLabels = statement.nodeGetLabels( state, nodeId );
+        PrimitiveIntIterator readLabels = statement.nodeGetLabels( state, nodeId );
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
-                addToCollection( readLabels, new HashSet<Long>() ) );
+                addToCollection( readLabels, new HashSet<Integer>() ) );
     }
 
     @Test
@@ -111,7 +112,7 @@ public class StoreStatementOperationsTest
     {
         // GIVEN
         String labelName = label1.name();
-        long labelId = statement.labelGetOrCreateForName( state, labelName );
+        int labelId = statement.labelGetOrCreateForName( state, labelName );
 
         // WHEN
         String readLabelName = statement.labelGetName( state, labelId );
@@ -142,8 +143,8 @@ public class StoreStatementOperationsTest
         // GIVEN
         Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );
         Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label1, label2 );
-        long labelId1 = statement.labelGetForName( state, label1.name() );
-        long labelId2 = statement.labelGetForName( state, label2.name() );
+        int labelId1 = statement.labelGetForName( state, label1.name() );
+        int labelId2 = statement.labelGetForName( state, label2.name() );
 
         // WHEN
         PrimitiveLongIterator nodesForLabel1 = statement.nodesGetForLabel( state, labelId1 );
@@ -253,7 +254,7 @@ public class StoreStatementOperationsTest
     public void should_fail_if_get_non_existent_property_key() throws Exception
     {
         // WHEN
-        long propertyKey = statement.propertyKeyGetForName( state, "non-existent-property-key" );
+        int propertyKey = statement.propertyKeyGetForName( state, "non-existent-property-key" );
 
         // THEN
         assertEquals( KeyReadOperations.NO_SUCH_PROPERTY_KEY, propertyKey );
@@ -266,11 +267,14 @@ public class StoreStatementOperationsTest
         IndexDescriptor index = createIndexAndAwaitOnline( label1, propertyKey );
         String name = "Mr. Taylor";
         Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label1 );
-        // WHEN
-        Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, index, name ) );
+        try ( Transaction ignored = db.beginTx() )
+        {
+            // WHEN
+            Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, index, name ) );
 
-        // THEN
-        assertEquals( asSet( mrTaylor.getId() ), foundNodes );
+            // THEN
+            assertEquals( asSet( mrTaylor.getId() ), foundNodes );
+        }
     }
 
     private GraphDatabaseAPI db;

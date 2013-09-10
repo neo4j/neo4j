@@ -21,16 +21,14 @@ package org.neo4j.kernel.api.properties;
 
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 
 final class NoProperty extends Property
 {
-    private final long propertyKeyId;
+    private final int propertyKeyId;
     private final EntityType entityType;
     private final long entityId;
 
-    NoProperty( long propertyKeyId, EntityType entityType, long entityId )
+    NoProperty( int propertyKeyId, EntityType entityType, long entityId )
     {
         this.propertyKeyId = propertyKeyId;
         this.entityType = entityType;
@@ -69,11 +67,11 @@ final class NoProperty extends Property
     @Override
     public int hashCode()
     {
-        return (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        return propertyKeyId;
     }
 
     @Override
-    public long propertyKeyId()
+    public int propertyKeyId()
     {
         return propertyKeyId;
     }
@@ -160,12 +158,5 @@ final class NoProperty extends Property
     public long longValue() throws PropertyNotFoundException
     {
         throw new PropertyNotFoundException( propertyKeyId, entityType, entityId );
-    }
-    
-    @Override
-    @Deprecated
-    public PropertyData asPropertyDataJustForIntegration()
-    {
-        return PropertyDatas.noProperty( propertyKeyId );
     }
 }

@@ -27,17 +27,30 @@ public class SizeOfs
 
     /**
      * The size of a {@link String} object including object overhead and all state.
+     * Excluding the reference to the String.
      * @param value the String to calculate size for.
-     * @return the size of a {@link String} object including object overhead and all state.
+     * @return the size of a {@link String}.
      */
     public static int sizeOf( String value )
     {
         return withObjectOverhead( 4/*offset*/ + 4/*count*/ + 4/*hash*/ + REFERENCE_SIZE/*value[] ref*/ +
                 withArrayOverhead( +value.length() * 2 )/*value[]*/ );
     }
-    
+
+    public static int sizeOfObject( Object stringOrArray )
+    {
+        return stringOrArray.getClass().isArray() ? sizeOfArray( stringOrArray ) : sizeOf( (String ) stringOrArray );
+    }
+
+    /**
+     * The size of an array including object overhead and all items w/ potentially their references if non-primitives.
+     * Excluding the reference to the array.
+     * @param value the array to calculate size for.
+     * @return the size of an array.
+     */
     public static int sizeOfArray( Object value )
     {
+        assert value.getClass().isArray();
         if ( value instanceof String[] )
         {
             int size = 0;
@@ -47,58 +60,56 @@ public class SizeOfs
             }
             return withArrayOverhead( size );
         }
+
+        int base;
+        if ( value instanceof byte[] || value instanceof boolean[] )
+        {
+            base = 1;
+        }
+        else if ( value instanceof short[] || value instanceof char[] )
+        {
+            base = 2;
+        }
+        else if ( value instanceof int[] || value instanceof float[] )
+        {
+            base = 4;
+        }
+        else if ( value instanceof long[] || value instanceof double[] )
+        {
+            base = 8;
+        }
+        else if ( value instanceof Byte[] || value instanceof Boolean[] ||
+                value instanceof Short[] || value instanceof Character[] ||
+                value instanceof Integer[] || value instanceof Float[] ||
+                value instanceof Long[] || value instanceof Double[] )
+        {
+            // worst case
+            base = withObjectOverhead( REFERENCE_SIZE + 8/*value in the boxed Number*/ );
+        }
         else
         {
-            int base;
-            if ( value instanceof byte[] || value instanceof boolean[] )
-            {
-                base = 1;
-            }
-            else if ( value instanceof short[] || value instanceof char[] )
-            {
-                base = 2;
-            }
-            else if ( value instanceof int[] || value instanceof float[] )
-            {
-                base = 4;
-            }
-            else if ( value instanceof long[] || value instanceof double[] )
-            {
-                base = 8;
-            }
-            else if ( value instanceof Byte[] || value instanceof Boolean[] || 
-                    value instanceof Short[] || value instanceof Character[] ||
-                    value instanceof Integer[] || value instanceof Float[] ||
-                    value instanceof Long[] || value instanceof Double[] )
-            {
-                // worst case
-                base = withObjectOverhead( REFERENCE_SIZE + 8/*value in the boxed Number*/ );
-            }
-            else
-            {
-                throw new IllegalStateException( "Unkown type: " + value.getClass() + " [" + value + "]" ); 
-            }
-            return withArrayOverhead( base * Array.getLength( value ) );
+            throw new IllegalStateException( "Unkown type: " + value.getClass() + " [" + value + "]" );
         }
+        return withArrayOverhead( base * Array.getLength( value ) );
     }
-    
+
     public static int withObjectOverhead( int size )
     {
         // worst case, avg is somewhere between 8-16 depending on heap size
         return 16 + size;
     }
-    
+
     public static int withArrayOverhead( int size )
     {
         // worst case, avg is somewhere between 12-24 depending on heap size
         return 24 + size;
     }
-    
+
     public static int withArrayOverheadIncludingReferences( int size, int length )
     {
         return withArrayOverhead( size + length*REFERENCE_SIZE );
     }
-    
+
     public static int withReference( int size )
     {
         // The standard size of a reference to an object.

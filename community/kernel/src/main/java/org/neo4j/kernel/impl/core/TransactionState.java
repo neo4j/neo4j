@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -45,17 +45,17 @@ public interface TransactionState
     LockElement acquireWriteLock( Object resource );
 
     LockElement acquireReadLock( Object resource );
-    
+
     ArrayMap<Integer, RelIdArray> getCowRelationshipAddMap( NodeImpl node );
-    
+
     RelIdArray getOrCreateCowRelationshipAddMap( NodeImpl node, int type );
-    
+
     ArrayMap<Integer, Collection<Long>> getCowRelationshipRemoveMap( NodeImpl node );
 
     Collection<Long> getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type );
 
     void setFirstIds( long nodeId, long firstRel, long firstProp );
-    
+
     void commit();
 
     void commitCows();
@@ -64,14 +64,14 @@ public interface TransactionState
 
     boolean hasLocks();
 
-    ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap( Primitive primitive );
+    ArrayMap<Integer, DefinedProperty> getCowPropertyRemoveMap( Primitive primitive );
 
-    ArrayMap<Integer, PropertyData> getCowPropertyAddMap( Primitive primitive );
+    ArrayMap<Integer, DefinedProperty> getCowPropertyAddMap( Primitive primitive );
 
-    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap( Primitive primitive );
+    ArrayMap<Integer, DefinedProperty> getOrCreateCowPropertyAddMap( Primitive primitive );
 
-    ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap( Primitive primitive );
-    
+    ArrayMap<Integer, DefinedProperty> getOrCreateCowPropertyRemoveMap( Primitive primitive );
+
     void createNode( long id );
 
     void createRelationship( long id );
@@ -81,25 +81,25 @@ public interface TransactionState
     void deleteRelationship( long id );
 
     TransactionData getTransactionData();
-    
+
     boolean nodeIsDeleted( long nodeId );
-    
+
     boolean relationshipIsDeleted( long relationshpId );
-    
+
     boolean hasChanges();
-    
+
     void setRollbackOnly();
-    
+
     TxHook getTxHook();
-    
+
     TxIdGenerator getTxIdGenerator();
-    
+
     Set<Long> getCreatedNodes();
-    
+
     Set<Long> getCreatedRelationships();
 
     // Tech debt, this is here waiting for transaction state to move to the TxState class
     Iterable<WritableTransactionState.CowNodeElement> getChangedNodes();
-    
+
     TransactionState NO_STATE = new NoTransactionState();
 }

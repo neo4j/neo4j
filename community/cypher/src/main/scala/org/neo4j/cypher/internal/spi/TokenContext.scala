@@ -22,20 +22,20 @@ package org.neo4j.cypher.internal.spi
 import org.neo4j.kernel.api.exceptions.KernelException
 
 trait TokenContext {
-  def getLabelName(id: Long): String
+  def getLabelName(id: Int): String
 
-  def getOptLabelId(labelName: String): Option[Long]
+  def getOptLabelId(labelName: String): Option[Int]
 
-  def getLabelId(labelName: String): Long
+  def getLabelId(labelName: String): Int
 
-  def getPropertyKeyName(id: Long): String
+  def getPropertyKeyName(id: Int): String
 
-  def getOptPropertyKeyId(propertyKeyName: String): Option[Long]
+  def getOptPropertyKeyId(propertyKeyName: String): Option[Int]
 
-  def getPropertyKeyId(propertyKeyName: String): Long
+  def getPropertyKeyId(propertyKeyName: String): Int
 }
 
 object TokenContext
 {
-  def tryGet[T <: KernelException : Manifest](result: => Long) = try { Some(result) } catch { case (_: T) => None }
+  def tryGet[T <: KernelException : Manifest](result: => Int) = try { Some(result) } catch { case (_: T) => None }
 }

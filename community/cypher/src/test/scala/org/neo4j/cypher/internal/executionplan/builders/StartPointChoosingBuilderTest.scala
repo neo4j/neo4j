@@ -475,7 +475,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val query = q(
       updates = Seq(MergeNodeAction("x", Seq(HasLabel(Identifier("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None))
     )
-    when(context.getOptLabelId("Label")).thenReturn(Some(42L))
+    when(context.getOptLabelId("Label")).thenReturn(Some(42))
 
     // When
     val plan = assertAccepts(pipe, query)

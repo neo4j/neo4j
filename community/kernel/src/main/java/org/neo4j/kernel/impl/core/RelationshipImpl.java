@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Iterator;
+
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class RelationshipImpl extends ArrayBasedPrimitive
 {
@@ -33,7 +34,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
      * But also the high order bits for the start node (s) and end node (e) as well
      * as the relationship type. This allows for a more compressed memory
      * representation.
-     * 
+     *
      *    2 bytes type      start/end high                   5 bytes of id
      * [tttt,tttt][tttt,tttt][ssss,eeee][iiii,iiii][iiii,iiii][iiii,iiii][iiii,iiii][iiii,iiii]
      */
@@ -69,17 +70,11 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return super.sizeOfObjectInBytesIncludingOverhead() + 8/*idAndMore*/ + 8/*startNodeId and endNodeId*/;
     }
-    
-    @Override
-    protected ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager )
-    {
-        return nodeManager.loadProperties( this, false );
-    }
 
     @Override
-    protected Object loadPropertyValue( NodeManager nodeManager, int propertyKey )
+    protected Iterator<DefinedProperty> loadProperties( NodeManager nodeManager )
     {
-        return nodeManager.relationshipLoadPropertyValue( getId(), propertyKey );
+        return nodeManager.loadProperties( this, false );
     }
 
     @Override
@@ -87,7 +82,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return idAndMore&0xFFFFFFFFFFL;
     }
-    
+
     long getStartNodeId()
     {
         return (startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12);
@@ -97,33 +92,33 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return (endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8);
     }
-    
+
     int getTypeId()
     {
         return (int)((idAndMore&0xFFFF000000000000L)>>>48);
     }
-    
+
     @Override
     public String toString()
     {
         return "RelationshipImpl #" + this.getId() + " of type " + getTypeId()
             + " between Node[" + getStartNodeId() + "] and Node[" + getEndNodeId() + "]";
     }
-    
+
     @Override
     public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
     {
         return element.relationshipElement( getId(), create );
     }
-    
+
     @Override
     PropertyContainer asProxy( NodeManager nm )
     {
         return nm.newRelationshipProxyById( getId() );
     }
-    
+
     @Override
-    protected Property noProperty( long key )
+    protected Property noProperty( int key )
     {
         return Property.noRelationshipProperty( getId(), key );
     }

@@ -25,7 +25,7 @@ import java.util.Set;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -46,7 +46,7 @@ public class NoTransactionState implements TransactionState
     {
         throw new NotInTransactionException();
     }
-    
+
     @Override
     public ArrayMap<Integer, Collection<Long>> getCowRelationshipRemoveMap( NodeImpl node )
     {
@@ -98,25 +98,25 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap( Primitive primitive )
+    public ArrayMap<Integer, DefinedProperty> getCowPropertyRemoveMap( Primitive primitive )
     {
         return null;
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> getCowPropertyAddMap( Primitive primitive )
+    public ArrayMap<Integer, DefinedProperty> getCowPropertyAddMap( Primitive primitive )
     {
         return null;
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap( Primitive primitive )
+    public ArrayMap<Integer, DefinedProperty> getOrCreateCowPropertyAddMap( Primitive primitive )
     {
         throw new NotInTransactionException();
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap( Primitive primitive )
+    public ArrayMap<Integer, DefinedProperty> getOrCreateCowPropertyRemoveMap( Primitive primitive )
     {
         throw new NotInTransactionException();
     }
@@ -132,31 +132,31 @@ public class NoTransactionState implements TransactionState
     {
         throw new NotInTransactionException();
     }
-    
+
     @Override
     public void createNode( long id )
     {
         throw new NotInTransactionException();
     }
-    
+
     @Override
     public void createRelationship( long id )
     {
         throw new NotInTransactionException();
     }
-    
+
     @Override
     public TransactionData getTransactionData()
     {
         throw new NotInTransactionException();
     }
-    
+
     @Override
     public boolean nodeIsDeleted( long nodeId )
     {
         return false;
     }
-    
+
     @Override
     public boolean relationshipIsDeleted( long relationshipId )
     {
@@ -168,18 +168,18 @@ public class NoTransactionState implements TransactionState
     {
         return false;
     }
-    
+
     @Override
     public void setRollbackOnly()
     {
     }
-    
+
     @Override
     public TxHook getTxHook()
     {
         return null;
     }
-    
+
     @Override
     public TxIdGenerator getTxIdGenerator()
     {

@@ -36,13 +36,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CacheLoader;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.CombinedRelIdIterator;
@@ -70,7 +70,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     private volatile RelIdArray[] relationships;
 
     // TODO do this more efficiently, perhaps using a sorted array
-    private volatile Set<Long> labels;
+    private volatile Set<Integer> labels;
     /*
      * This is the id of the next relationship to load from disk.
      */
@@ -95,17 +95,11 @@ public class NodeImpl extends ArrayBasedPrimitive
             relationships = NO_RELATIONSHIPS;
         }
     }
-    
+
     @Override
-    protected ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager )
+    protected Iterator<DefinedProperty> loadProperties( NodeManager nodeManager )
     {
         return nodeManager.loadProperties( this, false );
-    }
-    
-    @Override
-    protected Object loadPropertyValue( NodeManager nodeManager, int propertyKey )
-    {
-        return nodeManager.nodeLoadPropertyValue( id, propertyKey );
     }
 
     @Override
@@ -233,14 +227,9 @@ public class NodeImpl extends ArrayBasedPrimitive
         int actualLength = 0;
         for ( RelationshipType type : types )
         {
-            int typeId;
-            try
+            int typeId = nodeManager.getRelationshipTypeIdFor( type );
+            if ( typeId == TokenHolder.NO_ID )
             {
-                typeId = nodeManager.getRelationshipTypeIdFor( type );
-            }
-            catch ( TokenNotFoundException e )
-            {
-                // This relationship type doesn't even exist in this database
                 continue;
             }
 
@@ -572,7 +561,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     private void putRelIdArray( RelIdArray addRels )
     {
-        // we don't do size update here, instead performed 
+        // we don't do size update here, instead performed
         // when calling commitRelationshipMaps and in getMoreRelationships
 
         // precondition: called under synchronization
@@ -710,7 +699,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         return nm.newNodeProxyById( getId() );
     }
 
-    public Set<Long> getLabels( KernelStatement state, CacheLoader<Set<Long>> loader ) throws EntityNotFoundException
+    public Set<Integer> getLabels( KernelStatement state, CacheLoader<Set<Integer>> loader ) throws EntityNotFoundException
     {
         if ( labels == null )
         {
@@ -725,11 +714,11 @@ public class NodeImpl extends ArrayBasedPrimitive
         return labels;
     }
 
-    public synchronized void commitLabels( Set<Long> added, Set<Long> removed )
+    public synchronized void commitLabels( Set<Integer> added, Set<Integer> removed )
     {
         if ( labels != null )
         {
-            HashSet<Long> newLabels = new HashSet<>( labels );
+            Set<Integer> newLabels = new HashSet<>( labels );
             if ( added != null )
             {
                 newLabels.addAll( added );
@@ -741,9 +730,9 @@ public class NodeImpl extends ArrayBasedPrimitive
             labels = newLabels;
         }
     }
-    
+
     @Override
-    protected Property noProperty( long key )
+    protected Property noProperty( int key )
     {
         return Property.noNodeProperty( getId(), key );
     }

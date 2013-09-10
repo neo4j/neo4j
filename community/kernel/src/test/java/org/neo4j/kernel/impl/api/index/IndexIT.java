@@ -41,7 +41,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class IndexIT extends KernelIntegrationTest
 {
-    long labelId = 5, propertyKey = 8;
+    int labelId = 5, propertyKey = 8;
 
     @Test
     public void addIndexRuleInATransaction() throws Exception
@@ -82,7 +82,7 @@ public class IndexIT extends KernelIntegrationTest
         Set<IndexDescriptor> indexRulesInTx;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            long propertyKey2 = 10;
+            int propertyKey2 = 10;
             addedRule = statement.indexCreate( labelId, propertyKey2 );
             indexRulesInTx = asSet( statement.indexesGetForLabel( labelId ) );
             commit();

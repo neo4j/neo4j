@@ -37,6 +37,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.api.PrimitiveIntIteratorForArray;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray;
 
@@ -412,6 +414,23 @@ public abstract class IteratorUtil
      * with the items from {@code iterator}.
      */
     public static <C extends Collection<Long>> C addToCollection( PrimitiveLongIterator iterator, C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<Integer>> C addToCollection( PrimitiveIntIterator iterator, C collection )
     {
         while ( iterator.hasNext() )
         {
@@ -800,6 +819,11 @@ public abstract class IteratorUtil
         return new PrimitiveLongIteratorForArray( array );
     }
 
+    public static PrimitiveIntIterator asPrimitiveIterator( final int... array )
+    {
+        return new PrimitiveIntIteratorForArray( array );
+    }
+
     @SafeVarargs
     public static <T> Iterator<T> asIterator( final int maxItems, final T... array )
     {
@@ -893,6 +917,21 @@ public abstract class IteratorUtil
         }
     };
 
+    private static final PrimitiveIntIterator EMPTY_PRIMITIVE_INT_ITERATOR = new PrimitiveIntIterator()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public int next()
+        {
+            throw new NoSuchElementException();
+        }
+    };
+
     @SuppressWarnings( "unchecked" )
     public static <T> ResourceIterator<T> emptyIterator()
     {
@@ -902,6 +941,11 @@ public abstract class IteratorUtil
     public static PrimitiveLongIterator emptyPrimitiveLongIterator()
     {
         return EMPTY_PRIMITIVE_LONG_ITERATOR;
+    }
+
+    public static PrimitiveIntIterator emptyPrimitiveIntIterator()
+    {
+        return EMPTY_PRIMITIVE_INT_ITERATOR;
     }
 
     public static <T> boolean contains( Iterator<T> iterator, T item )
@@ -927,6 +971,28 @@ public abstract class IteratorUtil
     }
 
     public static boolean contains( PrimitiveLongIterator iterator, long item )
+    {
+        try
+        {
+            while ( iterator.hasNext() )
+            {
+                if ( item == iterator.next() )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator<?> )
+            {
+                ((ResourceIterator<?>) iterator).close();
+            }
+        }
+    }
+
+    public static boolean contains( PrimitiveIntIterator iterator, int item )
     {
         try
         {
@@ -1055,6 +1121,16 @@ public abstract class IteratorUtil
         return set;
     }
 
+    public static Set<Integer> asSet( PrimitiveIntIterator iterator )
+    {
+        Set<Integer> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            set.add( iterator.next() );
+        }
+        return set;
+    }
+
     /**
      * Creates a {@link Set} from an array of iterator.
      *
@@ -1085,6 +1161,29 @@ public abstract class IteratorUtil
             public long next()
             {
                 Long nextValue = iterator.next();
+                if ( null == nextValue )
+                {
+                    throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
+                }
+                return nextValue;
+            }
+        };
+    }
+
+    public static PrimitiveIntIterator toPrimitiveIntIterator( final Iterator<Integer> iterator )
+    {
+        return new PrimitiveIntIterator()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public int next()
+            {
+                Integer nextValue = iterator.next();
                 if ( null == nextValue )
                 {
                     throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );

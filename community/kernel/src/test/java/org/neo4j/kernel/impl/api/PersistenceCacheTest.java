@@ -44,39 +44,39 @@ public class PersistenceCacheTest
     public void shouldLoadAndCacheNodeLabels() throws Exception
     {
         // GIVEN
-        final Set<Long> labels = asSet( 1L, 2L, 3L );
+        Set<Integer> labels = asSet( 1, 2, 3 );
         @SuppressWarnings( "unchecked" )
-        CacheLoader<Set<Long>> loader = mock( CacheLoader.class );
+        CacheLoader<Set<Integer>> loader = mock( CacheLoader.class );
         when( loader.load( state, nodeId ) ).thenReturn( labels );
         NodeImpl node = new NodeImpl( nodeId );
         when( nodeCache.get( nodeId ) ).thenReturn( node );
-        
+
         // WHEN
         boolean hasLabel1 = persistenceCache.nodeHasLabel( state, nodeId, 1, loader );
         boolean hasLabel2 = persistenceCache.nodeHasLabel( state, nodeId, 2, loader );
-        
+
         // THEN
         assertTrue( hasLabel1 );
         assertTrue( hasLabel2 );
         verify( loader, times( 1 ) ).load( state, nodeId );
         verify( nodeCache, times( 2 ) ).get( nodeId );
     }
-    
+
     @Test
     public void shouldEvictNode() throws Exception
     {
         // WHEN
         persistenceCache.evictNode( nodeId );
-        
+
         // THEN
         verify( nodeCache, times( 1 ) ).remove( nodeId );
     }
-    
+
     private PersistenceCache persistenceCache;
     private LockStripedCache<NodeImpl> nodeCache;
     private final long nodeId = 1;
     private final KernelStatement state = mock( KernelStatement.class );
-    
+
     @SuppressWarnings( "unchecked" )
     @Before
     public void init()
