@@ -41,12 +41,14 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         this.legacyKernelOperations = legacyKernelOperations;
     }
 
+    @Override
     public ReadStatement acquireReadStatement()
     {
         assertOpen();
         return new ReadStatement( this, acquireStatement() );
     }
 
+    @Override
     public DataStatement acquireDataStatement() throws InvalidTransactionTypeException
     {
         assertOpen();
@@ -54,6 +56,7 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         return new DataStatement( this, acquireStatement() );
     }
 
+    @Override
     public SchemaStatement acquireSchemaStatement() throws InvalidTransactionTypeException
     {
         assertOpen();
@@ -61,6 +64,7 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         return new SchemaStatement( this, acquireStatement() );
     }
 
+    @Override
     public void commit() throws TransactionFailureException
     {
         beginClose();
@@ -75,6 +79,7 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         }
     }
 
+    @Override
     public void rollback() throws TransactionFailureException
     {
         beginClose();

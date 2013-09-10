@@ -19,27 +19,23 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.Iterator;
-
 /**
- * Closeable Iterator with associated resources.
- *
- * The associated resources are always released when the owning transaction is committed or rolled back.
- * The resource may also be released eagerly by explicitly calling {@link org.neo4j.graphdb.ResourceIterator#close()}
- * or by exhausting the iterator.
- *
- * @param <T> type of values returned by this Iterator
- *
- * @see ResourceIterable
- * @see Transaction
+ * Resource that should be closed when not needed anymore. Extends {@link AutoCloseable}
+ * with {@link #close()} not throwing any checked exception.
  */
-public interface ResourceIterator<T> extends Iterator<T>, Resource
+public interface Resource extends AutoCloseable
 {
-    /**
-     * Close the iterator early, freeing associated resources
-     *
-     * It is an error to use the iterator after this has been called.
-     */
     @Override
-    void close();
+    public void close();
+
+    /**
+     * Empty resource that doesn't {@link #close() close} anything.
+     */
+    public static final Resource EMPTY = new Resource()
+    {
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
+    };
 }

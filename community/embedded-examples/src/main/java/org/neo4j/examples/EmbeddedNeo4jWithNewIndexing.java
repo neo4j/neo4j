@@ -89,17 +89,19 @@ public class EmbeddedNeo4jWithNewIndexing
             String nameToFind = "user" + idToFind + "@neo4j.org";
             try ( Transaction tx = graphDb.beginTx() )
             {
-                ResourceIterator<Node> users = graphDb.findNodesByLabelAndProperty( label, "username", nameToFind )
-                        .iterator();
-                ArrayList<Node> userNodes = new ArrayList<>();
-                while ( users.hasNext() )
+                try ( ResourceIterator<Node> users =
+                        graphDb.findNodesByLabelAndProperty( label, "username", nameToFind ).iterator() )
                 {
-                    userNodes.add( users.next() );
-                }
+                    ArrayList<Node> userNodes = new ArrayList<>();
+                    while ( users.hasNext() )
+                    {
+                        userNodes.add( users.next() );
+                    }
 
-                for ( Node node : userNodes )
-                {
-                    System.out.println( "The username of user " + idToFind + " is " + node.getProperty( "username" ) );
+                    for ( Node node : userNodes )
+                    {
+                        System.out.println( "The username of user " + idToFind + " is " + node.getProperty( "username" ) );
+                    }
                 }
             }
             // END SNIPPET: findUsers

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -48,7 +49,7 @@ import org.neo4j.kernel.impl.core.Token;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 
-public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRead, SchemaState, AutoCloseable
+public class ReadStatement implements TokenRead, TokenWrite, DataRead, SchemaRead, SchemaState, Resource
 {
     private final KernelTransactionImplementation transaction;
     private boolean closed;

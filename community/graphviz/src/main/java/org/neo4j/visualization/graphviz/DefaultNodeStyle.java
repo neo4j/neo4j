@@ -35,6 +35,7 @@ class DefaultNodeStyle implements NodeStyle
         this.config = configuration;
     }
 
+    @Override
     public void emitNodeStart( Appendable stream, Node node )
             throws IOException
     {
@@ -42,29 +43,32 @@ class DefaultNodeStyle implements NodeStyle
         config.emit( node, stream );
         stream.append( "    label = \"{"
                        + config.escapeLabel( config.getTitle( node ) ) );
-        ResourceIterator<Label> labels = node.getLabels()
-                .iterator();
-        if ( labels.hasNext() )
+        try ( ResourceIterator<Label> labels = node.getLabels().iterator() )
         {
-            stream.append( ": " );
-            while ( labels.hasNext() )
+            if ( labels.hasNext() )
             {
-                stream.append( labels.next()
-                        .name() );
-                if ( labels.hasNext() )
+                stream.append( ": " );
+                while ( labels.hasNext() )
                 {
-                    stream.append( ", " );
+                    stream.append( labels.next()
+                            .name() );
+                    if ( labels.hasNext() )
+                    {
+                        stream.append( ", " );
+                    }
                 }
             }
+            stream.append( "|" );
         }
-        stream.append( "|" );
     }
 
+    @Override
     public void emitEnd( Appendable stream ) throws IOException
     {
         stream.append( "}\"\n  ]\n" );
     }
 
+    @Override
     public void emitProperty( Appendable stream, String key, Object value )
             throws IOException
     {

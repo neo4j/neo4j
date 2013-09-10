@@ -35,7 +35,7 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
@@ -50,7 +50,7 @@ import org.neo4j.kernel.logging.Logging;
 /**
  * {@link LabelScanStore} implemented using Lucene. There's only one big index for all labels because
  * the Lucene document structure handles that quite efficiently. It's as follows (pseudo field keys):
- * 
+ *
  * { // document for node 1
  *     id: 1
  *     label: 4
@@ -77,20 +77,20 @@ public class LuceneLabelScanStore implements LabelScanStore
     private boolean needsRebuild;
     private final File directoryLocation;
     private final FileSystemAbstraction fs;
-    
+
     public interface Monitor
     {
         void init();
-        
+
         void noIndex();
-        
+
         void corruptIndex( IOException e );
-        
+
         void rebuilding();
-        
+
         void rebuilt( long roughNodeCount );
     }
-    
+
     public static Monitor loggerMonitor( Logging logging )
     {
         final StringLogger logger = logging.getMessagesLog( LuceneLabelScanStore.class );
@@ -100,27 +100,27 @@ public class LuceneLabelScanStore implements LabelScanStore
             public void init()
             {
             }
-            
+
             @Override
             public void noIndex()
             {
                 logger.info( "No lucene scan store index found, this might just be first use. " +
                         "Preparing to rebuild." );
             }
-            
+
             @Override
             public void corruptIndex( IOException corruptionException )
             {
                 logger.warn( "Corrupt lucene scan store index found. Preparing to rebuild.",
                         corruptionException );
             }
-            
+
             @Override
             public void rebuilding()
             {
                 logger.info( "Rebuilding lucene scan store, this may take a while" );
             }
-            
+
             @Override
             public void rebuilt( long highNodeId )
             {
@@ -128,7 +128,7 @@ public class LuceneLabelScanStore implements LabelScanStore
             }
         };
     }
-    
+
     public LuceneLabelScanStore( LuceneDocumentStructure luceneDocumentStructure, DirectoryFactory directoryFactory,
             File directoryLocation, FileSystemAbstraction fs, LuceneIndexWriterFactory writerFactory,
             FullStoreChangeStream fullStoreStream, Monitor monitor )
@@ -174,7 +174,7 @@ public class LuceneLabelScanStore implements LabelScanStore
         // which deletes any existing documents and just adds the new and up-to-date version.
         updateAndCommit( updates );
     }
-    
+
     @Override
     public void force()
     {
@@ -208,7 +208,7 @@ public class LuceneLabelScanStore implements LabelScanStore
                     throw new RuntimeException( e );
                 }
             }
-            
+
             @Override
             public void close()
             {
@@ -223,15 +223,15 @@ public class LuceneLabelScanStore implements LabelScanStore
             }
         };
     }
-    
+
     @Override
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
         SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
         return new StoreSnapshot( deletionPolicy );
     }
-    
-    private class StoreSnapshot extends PrefetchingIterator<File> implements ResourceIterator<File>
+
+    private class StoreSnapshot extends PrefetchingResourceIterator<File>
     {
         private final String ID = "backup";
         private final SnapshotDeletionPolicy deletionPolicy;
@@ -254,7 +254,7 @@ public class LuceneLabelScanStore implements LabelScanStore
             }
             return new File( directoryLocation, fileNames.next() );
         }
-        
+
         @Override
         public void close()
         {
@@ -280,7 +280,7 @@ public class LuceneLabelScanStore implements LabelScanStore
             monitor.noIndex();
             prepareRebuildOfIndex();
         }
-        
+
         try
         {
             // Try to open it, this will throw exception if index is corrupt.
@@ -297,7 +297,7 @@ public class LuceneLabelScanStore implements LabelScanStore
         }
         searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
     }
-    
+
     @Override
     public void start() throws IOException
     {
@@ -310,12 +310,12 @@ public class LuceneLabelScanStore implements LabelScanStore
             needsRebuild = false;
         }
     }
-    
+
     @Override
     public void stop()
     {   // Not needed
     }
-    
+
     @Override
     public void shutdown() throws IOException
     {

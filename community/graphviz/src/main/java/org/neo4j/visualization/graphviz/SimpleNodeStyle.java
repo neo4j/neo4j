@@ -41,22 +41,23 @@ public class SimpleNodeStyle extends DefaultNodeStyle
         stream.append( "  N" + node.getId() + " [\n" );
         config.emit( node, stream );
         stream.append( "    label = \"" );
-        ResourceIterator<Label> labels = node.getLabels()
-                .iterator();
-        hasLabels = labels.hasNext();
-        if ( hasLabels )
+        try ( ResourceIterator<Label> labels = node.getLabels() .iterator() )
         {
-            stream.append( "{" );
-            while ( labels.hasNext() )
+            hasLabels = labels.hasNext();
+            if ( hasLabels )
             {
-                stream.append( labels.next()
-                        .name() );
-                if ( labels.hasNext() )
+                stream.append( "{" );
+                while ( labels.hasNext() )
                 {
-                    stream.append( ", " );
+                    stream.append( labels.next()
+                            .name() );
+                    if ( labels.hasNext() )
+                    {
+                        stream.append( ", " );
+                    }
                 }
+                stream.append( "|" );
             }
-            stream.append( "|" );
         }
     }
 

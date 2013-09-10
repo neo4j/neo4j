@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
@@ -51,8 +53,9 @@ public class SchemaIndexAcceptanceRealFsTest
         createSomeData( label, propertyKey );
 
         ResourceIterable<Node> result = db.findNodesByLabelAndProperty( label, propertyKey, "yeah" );
-        ResourceIterator<Node> iterator = result.iterator();
-        iterator.close();
+        try ( ResourceIterator<Node> iterator = result.iterator() )
+        {   // Don't use the result for anything
+        }
 
         // WHEN
         dropIndex( index );
@@ -60,7 +63,7 @@ public class SchemaIndexAcceptanceRealFsTest
         // THEN
         assertThat( getIndexes( db, label ), isEmpty() );
     }
- 
+
     private GraphDatabaseService db;
     private final Label label = label( "PERSON" );
 
@@ -75,7 +78,7 @@ public class SchemaIndexAcceptanceRealFsTest
         return new GraphDatabaseFactory().newEmbeddedDatabase(
                 forTest( getClass() ).graphDbDir( true ).getAbsolutePath() );
     }
-    
+
     @After
     public void after() throws Exception
     {
@@ -84,24 +87,20 @@ public class SchemaIndexAcceptanceRealFsTest
 
     private void dropIndex( IndexDefinition indexDefinition )
     {
-        Transaction tx = db.beginTx();
-        indexDefinition.drop();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            indexDefinition.drop();
+            tx.success();
+        }
     }
 
     private void createSomeData( Label label, String propertyKey )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label );
             node.setProperty( propertyKey, "yeah" );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }
