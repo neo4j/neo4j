@@ -167,7 +167,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<String> keep_logical_logs = setting("keep_logical_logs", STRING, TRUE, illegalValueMessage( "Must be 'true'/'false' or of format '<number><optional unit> <type>' for example '100M size' for " +
                         "limiting logical log space on disk to 100Mb," +
                         " or '200k txs' for limiting the number of transactions to keep to 200 000.", matches(ANY)));
-    
+
     @Description( "Specifies at which file size the logical log will auto-rotate. " +
                   "0 means that no rotation will automatically occur based on file size. " +
                   "Default is 25M" )
@@ -180,7 +180,7 @@ public abstract class GraphDatabaseSettings
 
     // NeoStore memory settings
     @Description("Tell Neo4j to use memory mapped buffers for accessing the native storage layer.")
-    public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!Settings.osIsMacOS()));
+    public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!Settings.osIsWindows()));
 
     @Description("Target size for pages of mapped memory.")
     public static final Setting<Long> mapped_memory_page_size = setting("mapped_memory_page_size", BYTES, "1M" );
@@ -324,11 +324,17 @@ public abstract class GraphDatabaseSettings
     {
         List<String> available = new ArrayList<>();
         for ( CacheProvider cacheProvider : Service.load( CacheProvider.class ) )
+        {
             available.add( cacheProvider.getName() );
+        }
                                            // --- higher prio ---->
         for ( String prioritized : new String[] { "soft", "gcr" } )
+        {
             if ( available.remove( prioritized ) )
+            {
                 available.add( 0, prioritized );
+            }
+        }
         return available.toArray( new String[available.size()] );
     }
 }
