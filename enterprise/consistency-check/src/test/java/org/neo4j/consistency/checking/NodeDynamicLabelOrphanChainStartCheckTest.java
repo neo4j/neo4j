@@ -24,14 +24,14 @@ import java.util.Collection;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
 
 import static org.mockito.Mockito.verify;
 
-import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
@@ -59,7 +59,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
         {
             longs[i] = i;
         }
-        allocateFromNumbers( longs, asIterator( record0, record1, record2 ), RECORD_ALLOCATOR );
+        allocateFromNumbers( longs, iterator( record0, record1, record2 ), RECORD_ALLOCATOR );
         record0.setInUse( false );
 
         // when
@@ -74,7 +74,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     {
         // given
         DynamicRecord nodeDynamicLabelRecord = inUse( new DynamicRecord( 0 ) ) ;
-        allocateFromNumbers( new long[] { }, asIterator( nodeDynamicLabelRecord ), RECORD_ALLOCATOR );
+        allocateFromNumbers( new long[] { }, iterator( nodeDynamicLabelRecord ), RECORD_ALLOCATOR );
 
         // when
         DynamicLabelConsistencyReport report = check( nodeDynamicLabelRecord );
@@ -91,7 +91,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
         add( nodeRecord );
 
         DynamicRecord nodeDynamicLabelRecord = inUse( new DynamicRecord( 0 ) );
-        allocateFromNumbers( new long[]{12l}, asIterator( nodeDynamicLabelRecord ), RECORD_ALLOCATOR );
+        allocateFromNumbers( new long[]{12l}, iterator( nodeDynamicLabelRecord ), RECORD_ALLOCATOR );
 
         // when
         DynamicLabelConsistencyReport report = check( nodeDynamicLabelRecord );
@@ -107,10 +107,10 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
         long nodeId = 12l;
 
         Collection<DynamicRecord> validLabelRecords =
-            allocateFromNumbers( new long[] {nodeId}, asIterator( inUse( new DynamicRecord( 0 ) ) ), RECORD_ALLOCATOR );
+            allocateFromNumbers( new long[] {nodeId}, iterator( inUse( new DynamicRecord( 0 ) ) ), RECORD_ALLOCATOR );
 
         Collection<DynamicRecord> fakePointedToRecords =
-            allocateFromNumbers( new long[] {nodeId}, asIterator( inUse( new DynamicRecord( 1 ) ) ), RECORD_ALLOCATOR );
+            allocateFromNumbers( new long[] {nodeId}, iterator( inUse( new DynamicRecord( 1 ) ) ), RECORD_ALLOCATOR );
 
         NodeRecord nodeRecord = inUse( new NodeRecord( nodeId, -1, -1 ) );
         nodeRecord.setLabelField( dynamicPointer( fakePointedToRecords ), fakePointedToRecords );

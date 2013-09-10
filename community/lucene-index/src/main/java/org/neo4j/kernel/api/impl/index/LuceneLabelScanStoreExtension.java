@@ -28,7 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
@@ -47,24 +47,24 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         Config getConfig();
 
         FileSystemAbstraction getFileSystem();
-        
-        XaDataSourceManager getDataSourceManager();
-        
+
+        NeoStoreProvider getNeoStoreProvider();
+
         Logging getLogging();
     }
-    
+
     public LuceneLabelScanStoreExtension()
     {
         this( 10, null );
     }
-    
+
     LuceneLabelScanStoreExtension( int priority, Monitor monitor )
     {
         super( "lucene");
         this.priority = priority;
         this.monitor = monitor;
     }
-    
+
     @Override
     public LabelScanStoreProvider newKernelExtension( Dependencies dependencies ) throws Throwable
     {
@@ -72,14 +72,14 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         File storeDir = dependencies.getConfig().get( GraphDatabaseSettings.store_dir );
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore(
                 new LuceneDocumentStructure(),
-                
+
                 // <db>/schema/label/lucene
                 directoryFactory, new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
-                
+
                 dependencies.getFileSystem(), standard(),
-                fullStoreLabelUpdateStream( dependencies.getDataSourceManager() ),
+                fullStoreLabelUpdateStream( dependencies.getNeoStoreProvider() ),
                 monitor != null ? monitor : loggerMonitor( dependencies.getLogging() ) );
-        
+
         return new LabelScanStoreProvider( scanStore, priority );
     }
 }

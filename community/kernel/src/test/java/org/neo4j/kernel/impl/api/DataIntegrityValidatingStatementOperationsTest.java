@@ -48,7 +48,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
 public class DataIntegrityValidatingStatementOperationsTest
 {
@@ -304,10 +304,10 @@ public class DataIntegrityValidatingStatementOperationsTest
             @Override
             public Iterator<T> answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
-                return asIterator( content );
+                return iterator( content );
             }
         };
     }
-    
+
     private final Statement state = StatementOperationsTestHelper.mockedState();
 }

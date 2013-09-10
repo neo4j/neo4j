@@ -709,7 +709,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             List<NodePropertyUpdate> propertyUpdates = new ArrayList<>();
             List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
             gatherPropertyAndLabelUpdates( propertyUpdates, labelUpdates );
-            
+
             indexes.updateIndexes( propertyUpdates );
             updateLabelScanStore( labelUpdates );
 
@@ -764,7 +764,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         try
         {
-            labelScanStore.updateAndCommit( labelUpdates );
+            labelScanStore.updateAndCommit( labelUpdates.iterator() );
         }
         catch ( IOException e )
         {
@@ -821,14 +821,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             long[] labelsBefore = parseLabelsField( nodeCommand.getBefore() ).get( nodeStore );
             long[] labelsAfter = parseLabelsField( nodeCommand.getAfter() ).get( nodeStore );
             labelUpdates.add( NodeLabelUpdate.labelChanges( nodeId, labelsBefore, labelsAfter ) );
-            
+
             if ( nodeCommand.getMode() != Mode.UPDATE )
             {
                 // For created and deleted nodes rely on the updates from the perspective of properties to cover it all
                 // otherwise we'll get duplicate update during recovery, or cannot load properties if deleted.
                 continue;
             }
-            
+
             // They are sorted in the store
             for ( long labelAfter : labelsAfter )
             {
