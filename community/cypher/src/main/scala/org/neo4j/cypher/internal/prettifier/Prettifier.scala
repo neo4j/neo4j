@@ -74,9 +74,25 @@ class PrettifierParser extends Parser with Base with Strings {
     ( group( oneOrMore(reservedKeyword, WS) ) ~> BreakingKeywords )
   }
 
-  def grouping: Rule1[GroupingToken] = rule("grouping") { openGroup | closeGroup }
+  // Keywords for which we do not insert breaks while inside a grouping
+  def unbrokenKeywords: Rule1[KeywordToken] =
+    rule("allUnbrokenKeywords") { keyword("WHERE") ~> NonBreakingKeywords }
+
   def openGroup: Rule1[OpenGroup] = rule("openGroup") { ( "(" | "[" | "{" ) ~> OpenGroup }
+
   def closeGroup: Rule1[CloseGroup] = rule("closeGroup") { ( ")" | "]" | "}" ) ~> CloseGroup }
+
+  def grouped(inner: Rule1[Seq[SyntaxToken]]) = rule("grouped") {
+    (openGroup ~~ zeroOrMore(inner, WS) ~~ closeGroup) ~~>
+      ((start: OpenGroup, inner: List[Seq[SyntaxToken]], end: CloseGroup) => {
+        val builder = Seq.newBuilder[SyntaxToken]
+        builder.sizeHint(inner, 2)
+        builder += start
+        inner.foreach( builder ++= _ )
+        builder += end
+        builder.result()
+      })
+  }
 
   def escapedText : Rule1[EscapedText] = rule("string") {
     (((
@@ -87,14 +103,30 @@ class PrettifierParser extends Parser with Base with Strings {
 
   def anyText: Rule1[AnyText] = rule("anyText") { oneOrMore( (!anyOf(" \n\r\t\f(){}[]")) ~ ANY ) ~> AnyText }
 
-  def anyToken: Rule1[SyntaxToken] = rule("anyToken") { allKeywords | grouping | escapedText | anyText }
+  def noTokens: Rule1[Seq[SyntaxToken]] = EMPTY ~ push(Seq.empty)
 
-  def main: Rule1[Seq[SyntaxToken]] = rule("main") { zeroOrMore(anyToken, WS) }
+  def simpleTokens: Rule1[Seq[SyntaxToken]] =
+    rule("simpleTokens") { seq1( allKeywords | escapedText | anyText ) }
+
+  def anyTokens: Rule1[Seq[SyntaxToken]] =
+    rule("anyTokens") { flat( oneOrMore( simpleTokens | grouped( anyUnbrokenTokens ), WS ) ) }
+
+  def simpleUnbrokenTokens: Rule1[Seq[SyntaxToken]] =
+    rule("simpleUnbrokenTokens") { seq1( unbrokenKeywords ) | simpleTokens }
+
+  def anyUnbrokenTokens: Rule1[Seq[SyntaxToken]] =
+    rule("anyUnbrokenTokens") { flat( oneOrMore( simpleUnbrokenTokens | grouped( anyUnbrokenTokens ), WS ) ) }
+
+  def main: Rule1[Seq[SyntaxToken]] = rule("main") { anyTokens | noTokens }
 
   def parse(input: String): Seq[SyntaxToken] = parserunners.ReportingParseRunner(main).run(input) match {
     case (output: ParsingResult[_]) if output.matched => output.result.get
     case (output: ParsingResult[Seq[SyntaxToken]])    => throw new SyntaxException(output.parseErrors.mkString("\n"))
   }
+
+  private def seq1[T](r: Rule1[T]): Rule1[Seq[T]] = r ~~> ((t: T) => Seq(t))
+
+  private def flat[T](r: Rule1[Seq[Seq[T]]]): Rule1[Seq[T]] = r ~~> ((s: Seq[Seq[T]]) => s.flatten )
 }
 
 case object Prettifier extends (String => String) {

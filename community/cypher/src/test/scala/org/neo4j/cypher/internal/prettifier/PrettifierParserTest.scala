@@ -117,4 +117,24 @@ class PrettifierParserTest extends PrettifierParser with ParserTest[Seq[SyntaxTo
         BreakingKeywords("merge"), AnyText("n"),
         BreakingKeywords("on create"), BreakingKeywords("set"), AnyText("n.age=32"))
   }
+
+  @Test
+  def shouldParseComplexGrouping() {
+    val result = parsing("[(0,10)]")
+    result shouldGive Seq(OpenGroup("["),OpenGroup("("), AnyText("0,10"), CloseGroup(")"), CloseGroup("]"))
+  }
+
+  @Test
+  def shouldParseGroupingWithEscapedText() {
+    val result = parsing("( \"Gunhild\" )")
+    result shouldGive Seq(OpenGroup("("), EscapedText("Gunhild"), CloseGroup(")"))
+  }
+
+
+  @Test
+  def shouldParseGrouping() {
+    parsing("(x)") shouldGive Seq(OpenGroup("("), AnyText("x"), CloseGroup(")"))
+    parsing("[x]") shouldGive Seq(OpenGroup("["), AnyText("x"), CloseGroup("]"))
+    parsing("{x}") shouldGive Seq(OpenGroup("{"), AnyText("x"), CloseGroup("}"))
+  }
 }
