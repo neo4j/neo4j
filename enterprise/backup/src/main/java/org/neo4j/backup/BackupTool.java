@@ -209,7 +209,7 @@ public class BackupTool
             catch ( MismatchingStoreIdException e )
             {
                 systemOut.println("Backup failed.");
-                systemOut.println( String.format( MISMATCHED_STORE_ID, e.getExpected(), e.getEncountered() ) );
+                throw new ToolFailureException( String.format( MISMATCHED_STORE_ID, e.getExpected(), e.getEncountered() ) );
             }
         }
         else
