@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.neo4j.kernel.Traversal.traversal;
-import static org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl.addEvaluator;
-import static org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl.nullCheck;
-
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
@@ -33,7 +29,12 @@ import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.SideSelectorPolicies;
+
+import static org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD;
+import static org.neo4j.graphdb.traversal.SideSelectorPolicies.ALTERNATING;
+import static org.neo4j.kernel.Traversal.traversal;
+import static org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl.addEvaluator;
+import static org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl.nullCheck;
 
 public class BidirectionalTraversalDescriptionImpl implements BidirectionalTraversalDescription
 {
@@ -41,11 +42,11 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     final TraversalDescription end;
     final PathEvaluator collisionEvaluator;
     final SideSelectorPolicy sideSelector;
-    final BranchCollisionPolicy collisionPolicy;
+    final org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy;
     final int maxDepth;
 
     private BidirectionalTraversalDescriptionImpl( TraversalDescription start,
-            TraversalDescription end, BranchCollisionPolicy collisionPolicy, PathEvaluator collisionEvaluator,
+            TraversalDescription end, org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy, PathEvaluator collisionEvaluator,
             SideSelectorPolicy sideSelector, int maxDepth )
     {
         this.start = start;
@@ -59,7 +60,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     public BidirectionalTraversalDescriptionImpl()
     {
         // TODO Proper defaults.
-        this( traversal(), traversal(), BranchCollisionPolicies.STANDARD, Evaluators.all(), SideSelectorPolicies.ALTERNATING,
+        this( traversal(), traversal(), STANDARD, Evaluators.all(), ALTERNATING,
                 Integer.MAX_VALUE );
     }
     
@@ -83,7 +84,14 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
         return new BidirectionalTraversalDescriptionImpl( sideDescription, sideDescription.reverse(),
                 collisionPolicy, collisionEvaluator, sideSelector, maxDepth );
     }
-    
+
+    @Override
+    public BidirectionalTraversalDescription collisionPolicy( org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy )
+    {
+        return new BidirectionalTraversalDescriptionImpl( this.start, this.end,
+                collisionPolicy, this.collisionEvaluator, this.sideSelector, this.maxDepth );
+    }
+
     @Override
     public BidirectionalTraversalDescription collisionPolicy( BranchCollisionPolicy collisionPolicy )
     {

@@ -52,6 +52,8 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.graphdb.index.IndexProviderKernelExtensionFactory;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
+import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
@@ -139,6 +141,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
+import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -1592,5 +1596,17 @@ public abstract class InternalAbstractGraphDatabase
             }
             endReached();
         }
+    }
+
+    @Override
+    public TraversalDescription traversalDescription()
+    {
+        return new TraversalDescriptionImpl();
+    }
+
+    @Override
+    public BidirectionalTraversalDescription bidirectionalTraversalDescription()
+    {
+        return new BidirectionalTraversalDescriptionImpl();
     }
 }

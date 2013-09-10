@@ -47,6 +47,12 @@ import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
  * method {@link #traversal()} for creating a new
  * {@link TraversalDescription}, methods for creating new
  * {@link TraversalBranch} instances and more.
+ *
+ * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription} and
+ * {@link org.neo4j.graphdb.GraphDatabaseService#bidirectionalTraversalDescription} plus
+ * {@link org.neo4j.graphdb.PathExpanders}, {@link org.neo4j.graphdb.traversal.SideSelectorPolicies},
+ * {@link org.neo4j.graphdb.traversal.BranchOrderingPolicies},
+ * {@link org.neo4j.graphdb.traversal.BranchCollisionPolicies} and {@link org.neo4j.graphdb.traversal.Uniqueness}
  */
 public class Traversal
 {
@@ -58,6 +64,7 @@ public class Traversal
      * add rules and behaviors to it before traversing.
      *
      * @return a new {@link TraversalDescription} with default values.
+     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription}
      */
     public static TraversalDescription description()
     {
@@ -67,24 +74,33 @@ public class Traversal
     /**
      * More convenient name than {@link #description()} when using static imports.
      * Does the same thing.
-     * 
-     * @see #description()
+     *
+     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription}
      */
     public static TraversalDescription traversal()
     {
         return new TraversalDescriptionImpl();
     }
-    
+
+    /**
+     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription}
+     */
     public static TraversalDescription traversal( UniquenessFactory uniqueness )
     {
         return new TraversalDescriptionImpl().uniqueness( uniqueness );
     }
-    
+
+    /**
+     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription}
+     */
     public static TraversalDescription traversal( UniquenessFactory uniqueness, Object optionalUniquenessParameter )
     {
         return new TraversalDescriptionImpl().uniqueness( uniqueness, optionalUniquenessParameter );
     }
-    
+
+    /**
+     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#bidirectionalTraversalDescription}
+     */
     public static BidirectionalTraversalDescription bidirectionalTraversal()
     {
         return new BidirectionalTraversalDescriptionImpl();
@@ -95,6 +111,8 @@ public class Traversal
      * @param initialState the initial state for a traversal branch.
      * @return an {@link InitialStateFactory} which always will return the supplied
      * {@code initialState}.
+     *
+     * @deprecated because InitialStateFactory is deprecated.
      */
     public static <STATE> InitialStateFactory<STATE> initialState( final STATE initialState )
     {
@@ -107,7 +125,7 @@ public class Traversal
             }
         };
     }
-    
+
     /**
      * Creates a new {@link RelationshipExpander} which is set to expand
      * relationships with {@code type} and {@code direction}.
@@ -115,6 +133,8 @@ public class Traversal
      * @param type the {@link RelationshipType} to expand.
      * @param dir the {@link Direction} to expand.
      * @return a new {@link RelationshipExpander}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypeAndDirection}
      */
     public static Expander expanderForTypes( RelationshipType type,
             Direction dir )
@@ -129,6 +149,8 @@ public class Traversal
      * @param type the {@link RelationshipType} to expand.
      * @param dir the {@link Direction} to expand.
      * @return a new {@link PathExpander}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypeAndDirection}
      */
     @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type, Direction dir )
@@ -142,6 +164,8 @@ public class Traversal
      *
      * @param type the {@link RelationshipType} to expand.
      * @return a new {@link RelationshipExpander}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forType}
      */
     public static Expander expanderForTypes( RelationshipType type )
     {
@@ -154,6 +178,8 @@ public class Traversal
      *
      * @param type the {@link RelationshipType} to expand.
      * @return a new {@link PathExpander}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forType}
      */
     @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type )
@@ -167,6 +193,8 @@ public class Traversal
      * can be added to narrow the {@link Expansion}.
      * @return an empty {@link Expander} which, if not modified, will expand
      * all relationship for {@link Node}s.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#allTypesAndDirections}
      */
     public static Expander emptyExpander()
     {
@@ -179,6 +207,8 @@ public class Traversal
      * can be added to narrow the {@link Expansion}.
      * @return an empty {@link PathExpander} which, if not modified, will expand
      * all relationship for {@link Path}s.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#allTypesAndDirections}
      */
     @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> emptyPathExpander()
@@ -195,6 +225,8 @@ public class Traversal
      * @param type2 another {@link RelationshipType} to expand.
      * @param dir2 another {@link Direction} to expand.
      * @return a new {@link RelationshipExpander}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypesAndDirections}
      */
     public static Expander expanderForTypes( RelationshipType type1,
             Direction dir1, RelationshipType type2, Direction dir2 )
@@ -211,6 +243,8 @@ public class Traversal
      * @param type2 another {@link RelationshipType} to expand.
      * @param dir2 another {@link Direction} to expand.
      * @return a new {@link PathExpander}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypesAndDirections}
      */
     @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type1,
@@ -229,6 +263,8 @@ public class Traversal
      * @param dir2 another {@link Direction} to expand.
      * @param more additional pairs or type/direction to expand.
      * @return a new {@link RelationshipExpander}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypesAndDirections}
      */
     public static Expander expanderForTypes( RelationshipType type1,
             Direction dir1, RelationshipType type2, Direction dir2,
@@ -247,6 +283,8 @@ public class Traversal
      * @param dir2 another {@link Direction} to expand.
      * @param more additional pairs or type/direction to expand.
      * @return a new {@link PathExpander}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypesAndDirections}
      */
     @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type1,
@@ -260,6 +298,8 @@ public class Traversal
      * Returns a {@link RelationshipExpander} which expands relationships
      * of all types and directions.
      * @return a relationship expander which expands all relationships.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#allTypesAndDirections}
      */
     public static Expander expanderForAllTypes()
     {
@@ -270,6 +310,8 @@ public class Traversal
      * Returns a {@link RelationshipExpander} which expands relationships
      * of all types and directions.
      * @return a relationship expander which expands all relationships.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#allTypesAndDirections}
      */
     public static <STATE> PathExpander<STATE> pathExpanderForAllTypes()
     {
@@ -281,6 +323,8 @@ public class Traversal
      * of all types in the given {@code direction}.
      * @return a relationship expander which expands all relationships in
      * the given {@code direction}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forDirection}
      */
     public static Expander expanderForAllTypes( Direction direction )
     {
@@ -292,6 +336,8 @@ public class Traversal
      * of all types in the given {@code direction}.
      * @return a path expander which expands all relationships in
      * the given {@code direction}.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forDirection}
      */
     @SuppressWarnings( "unchecked" )
     public static <STATE> PathExpander<STATE> pathExpanderForAllTypes( Direction direction )
@@ -373,6 +419,8 @@ public class Traversal
      *
      * @return a {@link BranchOrderingPolicy} for a preorder depth first
      *         selector.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.traversal.BranchOrderingPolicies#PREORDER_DEPTH_FIRST}
      */
     public static BranchOrderingPolicy preorderDepthFirst()
     {
@@ -387,6 +435,8 @@ public class Traversal
      *
      * @return a {@link BranchOrderingPolicy} for a postorder depth first
      *         selector.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.traversal.BranchOrderingPolicies#POSTORDER_DEPTH_FIRST}
      */
     public static BranchOrderingPolicy postorderDepthFirst()
     {
@@ -400,6 +450,8 @@ public class Traversal
      *
      * @return a {@link BranchOrderingPolicy} for a preorder breadth first
      *         selector.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.traversal.BranchOrderingPolicies#PREORDER_BREADTH_FIRST}
      */
     public static BranchOrderingPolicy preorderBreadthFirst()
     {
@@ -414,22 +466,33 @@ public class Traversal
      *
      * @return a {@link BranchOrderingPolicy} for a postorder breadth first
      *         selector.
+     *
+     * @deprecated See {@link org.neo4j.graphdb.traversal.BranchOrderingPolicies#POSTORDER_BREADTH_FIRST}
      */
     public static BranchOrderingPolicy postorderBreadthFirst()
     {
         return CommonBranchOrdering.POSTORDER_BREADTH_FIRST;
     }
-    
+
+    /**
+     * @deprecated See {@link org.neo4j.graphdb.traversal.SideSelectorPolicies#ALTERNATING}
+     */
     public static SideSelectorPolicy alternatingSelectorOrdering()
     {
         return SideSelectorPolicies.ALTERNATING;
     }
-    
+
+    /**
+     * @deprecated See {@link org.neo4j.graphdb.traversal.SideSelectorPolicies#LEVEL}
+     */
     public static SideSelectorPolicy levelSelectorOrdering()
     {
         return SideSelectorPolicies.LEVEL;
     }
-    
+
+    /**
+     * @deprecated See {@link org.neo4j.graphdb.traversal.BranchCollisionPolicies#SHORTEST_PATH}
+     */
     public static BranchCollisionDetector shortestPathsCollisionDetector( int maxDepth )
     {
         return new ShortestPathsBranchCollisionDetector( Evaluators.toDepth( maxDepth ) );

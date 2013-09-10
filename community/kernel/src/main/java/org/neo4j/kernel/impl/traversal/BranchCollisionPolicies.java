@@ -19,17 +19,22 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
-import org.neo4j.kernel.StandardBranchCollisionDetector;
+import org.neo4j.graphdb.traversal.Evaluator;
 
+/**
+ * @deprecated See {@link org.neo4j.graphdb.traversal.BranchCollisionPolicies}
+ */
 public enum BranchCollisionPolicies implements BranchCollisionPolicy
 {
+    /**
+     * @deprecated See {@link org.neo4j.graphdb.traversal.BranchCollisionPolicies}
+     */
     STANDARD;
 
     @Override
     public BranchCollisionDetector create( Evaluator evaluator )
     {
-        return new StandardBranchCollisionDetector( evaluator );
+        return org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD.create( evaluator );
     }
 }

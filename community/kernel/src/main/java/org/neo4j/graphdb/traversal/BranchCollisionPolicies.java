@@ -17,12 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.traversal;
+package org.neo4j.graphdb.traversal;
+
+import org.neo4j.kernel.ShortestPathsBranchCollisionDetector;
+import org.neo4j.kernel.StandardBranchCollisionDetector;
 
 /**
- * @deprecated See {@link org.neo4j.graphdb.traversal.BranchCollisionPolicy}
+ * A catalogue of convenient branch collision policies
+ *
+ * Copied from kernel package so that we can hide kernel from the public API.
  */
-public interface BranchCollisionPolicy extends org.neo4j.graphdb.traversal.BranchCollisionPolicy
+public enum BranchCollisionPolicies implements BranchCollisionPolicy
 {
-
+    STANDARD
+    {
+        @Override
+        public BranchCollisionDetector create( Evaluator evaluator )
+        {
+            return new StandardBranchCollisionDetector( evaluator );
+        }
+    },
+    SHORTEST_PATH
+    {
+        @Override
+        public BranchCollisionDetector create( Evaluator evaluator )
+        {
+            return new ShortestPathsBranchCollisionDetector( evaluator );
+        }
+    };
 }

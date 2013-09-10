@@ -38,12 +38,10 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.Arrays.asList;
-import static org.neo4j.kernel.ExtendedPath.extend;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -66,6 +64,9 @@ import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.kernel.impl.util.SingleNodePath;
+
+import static java.util.Arrays.asList;
+import static org.neo4j.kernel.ExtendedPath.extend;
 
 public abstract class StandardExpander implements Expander, PathExpander
 {
@@ -535,6 +536,9 @@ public abstract class StandardExpander implements Expander, PathExpander
         }
     };
 
+    public static final StandardExpander EMPTY =
+            new RegularExpander( Collections.<Direction, RelationshipType[]>emptyMap() );
+
     private static class DirectionAndTypes
     {
         final Direction direction;
@@ -980,12 +984,12 @@ public abstract class StandardExpander implements Expander, PathExpander
         return expander instanceof PathExpander ? (PathExpander) expander : wrap( expander );
     }
 
-    static StandardExpander create( Direction direction )
+    public static StandardExpander create( Direction direction )
     {
         return new AllExpander( direction );
     }
 
-    static StandardExpander create( RelationshipType type, Direction dir )
+    public static StandardExpander create( RelationshipType type, Direction dir )
     {
         Map<Direction, RelationshipType[]> types =
                 new EnumMap<Direction, RelationshipType[]>( Direction.class );
@@ -1051,8 +1055,8 @@ public abstract class StandardExpander implements Expander, PathExpander
         return map;
     }
 
-    static StandardExpander create( RelationshipType type1, Direction dir1,
-                                    RelationshipType type2, Direction dir2, Object... more )
+    public static StandardExpander create( RelationshipType type1, Direction dir1,
+                                           RelationshipType type2, Direction dir2, Object... more )
     {
         Map<Direction, Collection<RelationshipType>> tempMap = temporaryTypeMap();
         tempMap.get( dir1 ).add( type1 );

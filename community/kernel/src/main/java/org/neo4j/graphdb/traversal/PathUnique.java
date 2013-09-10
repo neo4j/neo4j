@@ -17,42 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.kernel.impl.cache.LruCache;
 
-class RecentlyUnique extends AbstractUniquenessFilter
+class PathUnique extends AbstractUniquenessFilter
 {
-    private static final Object PLACE_HOLDER = new Object();
-    private static final int DEFAULT_RECENT_SIZE = 10000; 
-    
-    private final LruCache<Long, Object> recentlyVisited;
-    
-    RecentlyUnique( PrimitiveTypeFetcher type, Object parameter )
+    PathUnique( PrimitiveTypeFetcher type )
     {
         super( type );
-        parameter = parameter != null ? parameter : DEFAULT_RECENT_SIZE;
-        recentlyVisited = new LruCache<Long, Object>( "Recently visited",
-                ((Number) parameter).intValue() );
     }
-
-    public boolean check( TraversalBranch branch )
+    
+    public boolean check( TraversalBranch source )
     {
-        long id = type.getId( branch );
-        boolean add = recentlyVisited.get( id ) == null;
-        if ( add )
+        long idToCompare = type.getId( source );
+        while ( source.length() > 0 )
         {
-            recentlyVisited.put( id, PLACE_HOLDER );
+            source = source.parent();
+            if (type.idEquals(source, idToCompare))
+            {
+                return false;
+            }
         }
-        return add;
+        return true;
     }
     
     @Override
     public boolean checkFull( Path path )
     {
-        // See GloballyUnique for comments.
-        return true;
+        return !type.containsDuplicates( path );
     }
 }

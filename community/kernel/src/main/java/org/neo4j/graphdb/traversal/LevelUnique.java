@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.traversal.TraversalBranch;
 
 class LevelUnique extends AbstractUniquenessFilter
 {

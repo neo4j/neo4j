@@ -17,57 +17,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.traversal.BranchOrderingPolicies;
-import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
-import org.neo4j.graphdb.traversal.BranchSelector;
-import org.neo4j.graphdb.traversal.TraversalBranch;
 
 /**
- * @deprecated See {@link BranchOrderingPolicies}
+ * A catalogue of convenient branch ordering policies.
+ *
+ * Copied from kernel package so that we can hide kernel from the public API.
  */
-public enum CommonBranchOrdering implements BranchOrderingPolicy
+public enum BranchOrderingPolicies implements BranchOrderingPolicy
 {
-    /**
-     * @deprecated See {@link BranchOrderingPolicies}
-     */
     PREORDER_DEPTH_FIRST
     {
         public BranchSelector create( TraversalBranch startSource, PathExpander expander )
         {
-            return BranchOrderingPolicies.PREORDER_DEPTH_FIRST.create( startSource, expander );
+            return new PreorderDepthFirstSelector( startSource, expander );
         }
     },
-    /**
-     * @deprecated See {@link BranchOrderingPolicies}
-     */
     POSTORDER_DEPTH_FIRST
     {
         public BranchSelector create( TraversalBranch startSource, PathExpander expander )
         {
-            return BranchOrderingPolicies.POSTORDER_DEPTH_FIRST.create( startSource, expander );
+            return new PostorderDepthFirstSelector( startSource, expander );
         }
     },
-    /**
-     * @deprecated See {@link BranchOrderingPolicies}
-     */
     PREORDER_BREADTH_FIRST
     {
         public BranchSelector create( TraversalBranch startSource, PathExpander expander )
         {
-            return BranchOrderingPolicies.PREORDER_BREADTH_FIRST.create( startSource, expander );
+            return new PreorderBreadthFirstSelector( startSource, expander );
         }
     },
-    /**
-     * @deprecated See {@link BranchOrderingPolicies}
-     */
     POSTORDER_BREADTH_FIRST
     {
         public BranchSelector create( TraversalBranch startSource, PathExpander expander )
         {
-            return BranchOrderingPolicies.POSTORDER_BREADTH_FIRST.create( startSource, expander );
+            return new PostorderBreadthFirstSelector( startSource, expander );
         }
     };
 }

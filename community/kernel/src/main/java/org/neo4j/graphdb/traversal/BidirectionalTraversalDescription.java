@@ -21,7 +21,6 @@ package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.kernel.impl.traversal.BranchCollisionPolicy;
 
 /**
  * Represents a description of a bidirectional traversal. A Bidirectional
@@ -89,7 +88,12 @@ public interface BidirectionalTraversalDescription
      * @return a new traversal description with the new modifications.
      */
     BidirectionalTraversalDescription collisionPolicy( BranchCollisionPolicy collisionDetection );
-    
+
+    /**
+     * @deprecated Please use {@link #collisionPolicy(BranchCollisionPolicy)}
+     */
+    BidirectionalTraversalDescription collisionPolicy( org.neo4j.kernel.impl.traversal.BranchCollisionPolicy collisionDetection );
+
     /**
      * Sets the {@link Evaluator} to use for branch collisions. The outcome
      * returned from the evaluator affects the colliding branches.
