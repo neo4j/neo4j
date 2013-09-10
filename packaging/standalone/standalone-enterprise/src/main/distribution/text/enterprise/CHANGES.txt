@@ -1,5 +1,51 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.0.0-M05
+---------
+Kernel:
+  o BREAKING CHANGE: GraphDatabaseSettings now only exposes Setting, deprecated settings classes have been removed.
+  o BREAKING CHANGE: getAllNodes() and getRelationshipTypes() have been removed, replaced since years back by
+    GlobalGraphOperations.
+  o Fixed problems with array properties being updated multiple times in a single transaction
+  o Adds label store as an index
+  o Transaction now implements AutoClosable
+  o Distinguish between data and schema transactions
+  o Unique constraint validation for new data
+
+Cypher:
+  o Promote the experimental parser to the default
+  o Added literal maps
+  o Makes RETURN only queries valid
+  o Labels on optional nodes no longer stop the whole MATCH
+    clause from returning results. 
+  o Updated NOT precedence
+  o Added collection slice and collection index
+  o Added list comprehension documentation
+
+ Shell:
+  o Adds support for RETURN only Cypher queries
+ 
+2.0.0-M04
+---------
+Kernel:
+  o BREAKING CHANGE: Require Java 7
+  o BREAKING CHANGE: Transactions are now required for all operations throughout Java Core API,
+    read operations as well as write operations
+  o Define proper equality for indexing of array properties
+  o BREAKING CHANGE: Equality for indexing of number properties compares numbers independent of underlying primitive Java type
+
+Cypher:
+  o Fixes #844 - Label predicate do not work on optional nodes that are null
+  o Fixes #897 - Cypher start doesnt allow combining multiple starting points with start node sets
+  o BREAKING CHANGE: Removes "?", "!" syntax for accessing properties. Missing properties are now treated as null
+  o Introduced a new experimental and fast PEG parser
+  o BREAKING CHANGE: Escaped identifiers in the RETURN clause are kept as the user entered them
+  o BREAKING CHANGE: No longer possible to use expressions and params to identify nodes in patterns
+  o BREAKING CHANGE: Use "|" in favor of ":" in FOREACH, EXTRACT and REDUCE to avoid disambiguity with label syntax
+
+Server:
+  o Added support for extracting and returning the graph structure from the result of a Cypher query executed via the transactional endpoint
+
 2.0.0-M03
 ---------
 Kernel:
