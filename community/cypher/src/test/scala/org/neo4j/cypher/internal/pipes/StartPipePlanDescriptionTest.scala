@@ -53,7 +53,7 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
   @Test
   def schema_index() {
     //GIVEN
-    val planDescription = createPlanDescription(SchemaIndex("n", label, prop, Some(Literal(value))))
+    val planDescription = createPlanDescription(SchemaIndex("n", label, prop, AnyIndex, Some(Literal(value))))
 
     //WHEN
     val result = planDescription.toString

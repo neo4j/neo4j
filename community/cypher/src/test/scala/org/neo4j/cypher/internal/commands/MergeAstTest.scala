@@ -41,7 +41,7 @@ class MergeAstTest extends Assertions {
     val from = MergeAst(Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)), Seq.empty)
 
     // then
-    assert(from.nextStep() === Seq(MergeNodeAction(A, Seq.empty, Seq.empty, Seq.empty, None)))
+    assert(from.nextStep() === Seq(MergeNodeAction(A, Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
   }
 
   @Test
@@ -50,12 +50,15 @@ class MergeAstTest extends Assertions {
     val from = MergeAst(Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq(KeyToken.Unresolved(labelName, Label)), bare = true)), Seq.empty)
 
     // then
-    val a = from.nextStep()
+    val a = from.nextStep().head
     val b = Seq(MergeNodeAction(A,
+      props = Map.empty,
+      labels = Seq(Label(labelName)),
       expectations = Seq(nodeHasLabelPredicate(A)),
       onCreate = Seq(setNodeLabels(A)),
       onMatch = Seq.empty,
-      nodeProducerOption = NO_PRODUCER))
+      maybeNodeProducer = NO_PRODUCER)).head
+
     assert(a === b)
   }
 
@@ -64,12 +67,13 @@ class MergeAstTest extends Assertions {
     // given
     val from = MergeAst(Seq(ParsedEntity(A, Identifier(A), Map(propertyKey.name -> expression), Seq.empty, bare = true)), Seq.empty)
 
-    // then
     assert(from.nextStep() === Seq(MergeNodeAction(A,
+      props = Map(propertyKey -> expression),
+      labels = Seq.empty,
       expectations = Seq(Equals(Nullable(Property(Identifier(A), propertyKey)), expression)),
       onCreate = Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)),
       onMatch = Seq.empty,
-      nodeProducerOption = NO_PRODUCER)))
+      maybeNodeProducer = NO_PRODUCER)))
   }
 
   @Test
@@ -83,10 +87,12 @@ class MergeAstTest extends Assertions {
 
     // then
     assert(from.nextStep() === Seq(MergeNodeAction(A,
+      props = Map.empty,
+      labels = Seq.empty,
       expectations = Seq.empty,
       onCreate = Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)),
       onMatch = Seq.empty,
-      nodeProducerOption = NO_PRODUCER)))
+      maybeNodeProducer = NO_PRODUCER)))
   }
 
   @Test
@@ -100,10 +106,12 @@ class MergeAstTest extends Assertions {
 
     // then
     assert(from.nextStep() === Seq(MergeNodeAction(A,
+      props = Map.empty,
+      labels = Seq.empty,
       expectations = Seq.empty,
       onCreate = Seq.empty,
       onMatch = Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)),
-      nodeProducerOption = NO_PRODUCER)))
+      maybeNodeProducer = NO_PRODUCER)))
   }
 
   val A = "a"

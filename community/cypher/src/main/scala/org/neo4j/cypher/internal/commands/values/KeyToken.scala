@@ -72,6 +72,10 @@ object KeyToken {
 
     override def toString:String = s"$name($id)"
   }
+
+  object Ordering extends Ordering[KeyToken] {
+    def compare(x: KeyToken, y: KeyToken): Int = implicitly[Ordering[String]].compare(x.name, y.name)
+  }
 }
 
 object UnresolvedLabel {

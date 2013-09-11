@@ -27,22 +27,33 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
 
 class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
 
-  def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = try {
+  def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
     val labelId = statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    val rule = statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
-    statement.readOperations().indexGetState(rule) match {
-      case InternalIndexState.ONLINE => Some(rule)
+    getOnlineIndex(statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId))
+  }
+
+  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
+    val labelId = statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
+
+    getOnlineIndex(statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+  }
+
+  private def evalOrNone[T](f: => Option[T]): Option[T] =
+    try { f } catch { case _: SchemaRuleNotFoundException => None }
+
+  private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
+    statement.readOperations().indexGetState(descriptor) match {
+      case InternalIndexState.ONLINE => Some(descriptor)
       case _                         => None
     }
-  } catch {
-    case _: KernelException => None
-  }
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
     val labelId = statement.readOperations().labelGetForName(labelName)

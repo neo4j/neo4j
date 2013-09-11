@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.StatisticsChecker
-import org.junit.Test
+import org.neo4j.cypher.{MergeConstraintConflictException, StatisticsChecker}
+import org.junit.{Before, Test}
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.graphdb.DynamicLabel
 
 class MergeTest extends DocumentingTestBase with StatisticsChecker {
 
@@ -50,6 +51,11 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
     "WallStreet" -> Map("title" -> "Wall Street"),
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
+
+  @Before def setup_constraint() {
+    RichGraph(db).inTx( db.schema().constraintFor(DynamicLabel.label("Person")).on("name").unique().create())
+    RichGraph(db).inTx( db.schema().constraintFor(DynamicLabel.label("Person")).on("role").unique().create())
+  }
 
   @Test def merge_single_node_with_label() {
     testQuery(
@@ -119,5 +125,44 @@ return keanu""",
     )
   }
 
+  @Test def merge_node_and_create_with_unique_constraint() {
+    testQuery(
+      title = "Merge using unique constraints creates a new node if no node is found",
+      text = "Merge using unique constraints creates a new node if no node is found.",
+      queryText = """merge (laurence:Person {name: 'Laurence Fishburne'}) return laurence""",
+      returns = "The query creates the laurence node. If laurence already existed, merge would " +
+        "just return the existing node.",
+      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+    )
+  }
 
+  @Test def merge_node_and_match_with_unique_constraint() {
+    testQuery(
+      title = "Merge using unique constraints matches an existing node",
+      text = "Merge using unique constraints matches an existing node.",
+      queryText = """merge (oliver:Person {name:'Oliver Stone'}) return oliver""",
+      returns = "The oliver node already exists, so merge just returns it.",
+      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 0, labelsAdded = 0)
+    )
+  }
+
+  @Test def merge_node_and_match_many_with_unique_constraint_fails_for_partial_matches() {
+    testFailingQuery[MergeConstraintConflictException](
+      title = "Merge using unique constraints fails when finding partial matches",
+      text = "Merge using unique constraints fails when finding partial matches.",
+      queryText = """merge (michael:Person {name:'Michael Douglas', role:'Gordon Gekko'}) return michael""",
+      returns = "While there is a matching unique michael node with the name 'Michael Douglas', there is no " +
+        "unique node with the role of 'Gordon Gekko' and merge fails to match."
+    )
+  }
+
+  @Test def merge_node_and_match_many_with_unique_constraint_fails_for_conflicting_matches() {
+    testFailingQuery[MergeConstraintConflictException](
+      title = "Merge using unique constraints fails when finding conflicting matches",
+      text = "Merge using unique constraints fails when finding conflicting matches.",
+      queryText = """merge (oliver:Person {name:'Oliver Stone', role:'Gordon Gekko'}) return oliver""",
+      returns = "While there is a matching unique oliver node with the name 'Oliver Stone', there is also another " +
+        "unique node with the role of 'Gordon Gekko' and merge fails to match."
+    )
+  }
 }

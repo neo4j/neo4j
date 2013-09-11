@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.helpers.Materialized
 class EntityProducerFactory extends GraphElementPropertyFunctions {
 
     private def asProducer[T <: PropertyContainer](startItem: StartItem)
-                                                (f: (ExecutionContext, QueryState) => Iterator[T]) =
+                                                  (f: (ExecutionContext, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
 
@@ -122,7 +122,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
 
   val nodeByIndexHint: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, valueExp)) =>
+    case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, AnyIndex, valueExp)) =>
+
       val indexGetter = planContext.getIndexRule(labelName, propertyName)
 
       val index = indexGetter getOrElse
@@ -135,6 +136,22 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         val value = expression(m)(state)
         val neoValue = makeValueNeoSafe(value)
         state.query.exactIndexSearch(index, neoValue)
+      }
+
+    case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, UniqueIndex, valueExp)) =>
+
+      val indexGetter = planContext.getUniqueIndexRule(labelName, propertyName)
+
+      val index = indexGetter getOrElse
+        (throw new IndexHintException(identifier, labelName, propertyName, "No such index found."))
+
+      val expression = valueExp getOrElse
+        (throw new InternalException("Something went wrong trying to build your query."))
+
+      asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
+        val value = expression(m)(state)
+        val neoValue = makeValueNeoSafe(value)
+        state.query.exactUniqueIndexSearch(index, neoValue).toIterator
       }
   }
 

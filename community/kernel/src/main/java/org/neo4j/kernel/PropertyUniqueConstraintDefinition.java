@@ -25,7 +25,8 @@ import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 
 import static java.util.Collections.singletonList;
 
-public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition implements UniquenessConstraintDefinition
+public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition implements
+        UniquenessConstraintDefinition
 {
     private final String propertyKey;
 
@@ -41,7 +42,7 @@ public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition
         assertInTransaction();
         return ConstraintType.UNIQUENESS;
     }
-    
+
     @Override
     public void drop()
     {
@@ -76,25 +77,36 @@ public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition
     public boolean equals( Object obj )
     {
         if ( this == obj )
+        {
             return true;
+        }
         if ( !super.equals( obj ) )
+        {
             return false;
+        }
         if ( getClass() != obj.getClass() )
+        {
             return false;
+        }
         PropertyUniqueConstraintDefinition other = (PropertyUniqueConstraintDefinition) obj;
         if ( propertyKey == null )
         {
             if ( other.propertyKey != null )
+            {
                 return false;
+            }
         }
         else if ( !propertyKey.equals( other.propertyKey ) )
+        {
             return false;
+        }
         return true;
     }
 
     @Override
     public String toString()
     {
+        // using label name as a good identifier name
         return String.format( "%s.%s IS UNIQUE", label.name().toLowerCase(), propertyKey );
     }
 }

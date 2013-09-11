@@ -31,7 +31,10 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
  * to index rule lookup in QueryContext as that should happen at query compile time.
  */
 trait PlanContext extends TokenContext {
+
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
+
+  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint]
 

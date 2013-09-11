@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.spi.{QueryContext, PlanContext}
 import org.scalatest.mock.MockitoSugar
 import org.junit.{Before, Test}
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commands.{NodeByLabel, SchemaIndex}
+import org.neo4j.cypher.internal.commands.{AnyIndex, NodeByLabel, SchemaIndex}
 import org.neo4j.cypher.IndexHintException
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.commands.expressions.Literal
@@ -50,7 +50,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     when(planContext.getIndexRule(label, prop)).thenReturn(None)
 
     //WHEN
-    intercept[IndexHintException](factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, None)))
+    intercept[IndexHintException](factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, AnyIndex, None)))
   }
 
   @Test
@@ -67,7 +67,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     val state = QueryStateHelper.empty.copy(inner = queryContext)
 
     //WHEN
-    val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, Some(Literal(value))))
+    val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, AnyIndex, Some(Literal(value))))
     assert(func(context, state) === indexResult)
   }
 
@@ -95,7 +95,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     val propertyKey = "prop"
     val index: IndexDescriptor = new IndexDescriptor(123, 456)
     when(planContext.getIndexRule(labelName, propertyKey)).thenReturn(Some(index))
-    val producer = factory.nodeByIndexHint(planContext, SchemaIndex("x", labelName, propertyKey, Some(Literal(Seq(1,2,3)))))
+    val producer = factory.nodeByIndexHint(planContext, SchemaIndex("x", labelName, propertyKey, AnyIndex, Some(Literal(Seq(1,2,3)))))
     val queryContext: QueryContext = mock[QueryContext]
     val state = QueryStateHelper.empty.copy(inner = queryContext)
 

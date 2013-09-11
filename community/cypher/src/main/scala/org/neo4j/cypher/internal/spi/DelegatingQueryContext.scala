@@ -86,7 +86,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
-  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Node = inner.exactUniqueIndexSearch(index, value)
+  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = inner.exactUniqueIndexSearch(index, value)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

@@ -109,7 +109,7 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
     //GIVEN
     val q = PartiallySolvedQuery().copy(
       where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
-      start = Seq(Unsolved(SchemaIndex("n", labelName, propertyKey.name, Some(Literal("a"))))))
+      start = Seq(Unsolved(SchemaIndex("n", labelName, propertyKey.name, AnyIndex, Some(Literal("a"))))))
 
     when(context.getIndexRule(labelName, propertyKey.name)).thenReturn(Some(new IndexDescriptor(123,456)))
 
@@ -125,7 +125,7 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
     val propertyKey= PropertyKey("name")
     val q = PartiallySolvedQuery().copy(
       where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
-      start = Seq(Unsolved(SchemaIndex("n", "Person", "name", None))))
+      start = Seq(Unsolved(SchemaIndex("n", "Person", "name", AnyIndex, None))))
 
     when(context.getIndexRule(any(), any())).thenReturn(None)
 
