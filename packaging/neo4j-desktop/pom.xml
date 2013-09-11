@@ -22,6 +22,8 @@
     <config.destination>${project.build.outputDirectory}/org/neo4j/server/config/community</config.destination>
     <maven.site.skip>true</maven.site.skip>
     <maven.site.deploy.skip>true</maven.site.deploy.skip>
+    <desktop.url.path>/webadmin</desktop.url.path>
+    <desktop.app.name>Neo4j</desktop.app.name>
   </properties>
 
   <dependencies>
@@ -181,6 +183,18 @@
       </plugin>
 
     </plugins>
+
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+      </resource>
+      <resource>
+        <directory>src/main/filtered-resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
   </build>
 
   <profiles>
@@ -251,6 +265,20 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <id>neo4j-browser</id>
+      <properties>
+        <desktop.url.path>/browser</desktop.url.path>
+      </properties>
+      <dependencies>
+          <dependency>
+              <groupId>org.neo4j.app</groupId>
+              <artifactId>neo4j-browser</artifactId>
+              <version>0.1.5</version>
+          </dependency>
+      </dependencies>
     </profile>
   </profiles>
 

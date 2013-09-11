@@ -67,7 +67,7 @@ public enum DatabaseStatus
 
     private static JPanel createStartedStatusDisplay( Environment environment )
     {
-        JLabel link = new JLabel( "http://localhost:7474/" );
+        JLabel link = new JLabel( "http://localhost:7474" + environment.desktopProperties().getProperty("desktop.url.path", "/") );
         link.setFont( Components.underlined( link.getFont() ) );
         link.addMouseListener( new OpenBrowserMouseListener( link, environment ) );
 

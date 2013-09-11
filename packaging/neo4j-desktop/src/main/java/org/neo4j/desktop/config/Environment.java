@@ -22,8 +22,10 @@ package org.neo4j.desktop.config;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Properties;
 
 import static java.awt.Desktop.getDesktop;
 import static java.awt.Desktop.isDesktopSupported;
@@ -35,10 +37,12 @@ import static org.neo4j.desktop.ui.Components.alert;
 public class Environment
 {
     private final File appFile;
+    Properties desktopProperties;
 
     public Environment() throws URISyntaxException
     {
         appFile = new File( Environment.class.getProtectionDomain().getCodeSource().getLocation().toURI() );
+        desktopProperties = loadDesktopProperties();
     }
 
     public File getBaseDirectory()
@@ -99,8 +103,25 @@ public class Environment
         alert( format( "Could not edit file %s", file.getAbsoluteFile() ) ) ;
     }
 
+    public Properties desktopProperties() 
+    {
+        return desktopProperties;
+    }
+
     private boolean desktopSupports( Desktop.Action action )
     {
         return isDesktopSupported() && getDesktop().isSupported( action );
+    }
+
+
+    private Properties loadDesktopProperties() {
+        Properties properties = new Properties() ;
+        try {
+            InputStream is =  ClassLoader.getSystemResourceAsStream("desktop.properties");
+            properties.load(is);
+        } catch (IOException ioe) {
+            properties.setProperty("desktop.url.path", "/");
+        }
+        return properties;
     }
 }
