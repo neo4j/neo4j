@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
@@ -211,7 +210,6 @@ public class StateHandlingStatementOperations implements
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         try
         {
-            verifyNoDataChanges( state, labelId, propertyKeyId );
             if ( !state.txState().constraintDoUnRemove( constraint ) )
             {
                 for ( Iterator<UniquenessConstraint> it = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
@@ -228,25 +226,9 @@ public class StateHandlingStatementOperations implements
             }
             return constraint;
         }
-        catch ( TransactionalException | ConstraintVerificationFailedKernelException |
-                SchemaAndDataModificationInSameTransactionException | DropIndexFailureException e )
+        catch ( TransactionalException | ConstraintVerificationFailedKernelException | DropIndexFailureException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
-        }
-    }
-
-    private void verifyNoDataChanges( Statement state, long labelId, long propertyKeyId )
-            throws SchemaAndDataModificationInSameTransactionException
-
-    {
-        if ( state.hasTxState() )
-        {
-            TxState txState = state.txState();
-            if ( !(txState.nodesWithLabelChanged( labelId ).isEmpty()
-                    && txState.nodesWithChangedProperty( propertyKeyId ).isEmpty()) )
-            {
-                throw new SchemaAndDataModificationInSameTransactionException();
-            }
         }
     }
 

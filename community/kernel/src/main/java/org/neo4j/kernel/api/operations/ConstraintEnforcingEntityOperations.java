@@ -26,7 +26,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaAndDataModificationInSameTransactionException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -106,26 +105,19 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
                         existingNodes.next() );
             }
         }
-        catch ( IndexNotFoundKernelException |
-                SchemaAndDataModificationInSameTransactionException |
-                IndexBrokenKernelException e )
+        catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
         {
             throw new UnableToValidateConstraintKernelException( e );
         }
     }
 
     private void verifyIndexOnline( Statement state, IndexDescriptor indexDescriptor )
-            throws IndexNotFoundKernelException, SchemaAndDataModificationInSameTransactionException,
-            IndexBrokenKernelException
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         switch ( schemaReadOperations.indexGetState( state, indexDescriptor ) )
         {
             case ONLINE:
-                // Fine
                 return;
-            case POPULATING:
-                // TODO: Is that guaranteed to be true during recovery?
-                throw new SchemaAndDataModificationInSameTransactionException();
             default:
                 throw new IndexBrokenKernelException( schemaReadOperations.indexGetFailure( state, indexDescriptor ) );
         }
@@ -202,14 +194,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     public long nodeGetUniqueFromIndexLookup( Statement state, IndexDescriptor index, Object value ) throws
             IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        try
-        {
-            verifyIndexOnline( state, index );
-        }
-        catch ( SchemaAndDataModificationInSameTransactionException e )
-        {
-            throw new IndexNotFoundKernelException( "Index is not ready" );
-        }
+        verifyIndexOnline( state, index );
 
         String stringValue = "";
         if ( null != value )
