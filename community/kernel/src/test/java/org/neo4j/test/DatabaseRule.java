@@ -38,20 +38,43 @@ public abstract class DatabaseRule extends ExternalResource
     GraphDatabaseAPI database;
     private String storeDir;
 
-    public <T> T executeAndCommit( Function<GraphDatabaseService, T> function )
+    public <T> T when( Function<GraphDatabaseService, T> function )
+    {
+        return function.apply( getGraphDatabaseService() );
+    }
+
+    public <T> T executeAndCommit( Function<? super GraphDatabaseService, T> function )
     {
         return transaction( function, true );
     }
 
-    public <T> T executeAndRollback( Function<GraphDatabaseService, T> function )
+    public <T> T executeAndRollback( Function<? super GraphDatabaseService, T> function )
     {
         return transaction( function, false );
     }
 
-    public <T> T transaction( Function<GraphDatabaseService, T> function, boolean commit )
+    public <FROM, TO> AlgebraicFunction<FROM, TO> tx( final Function<FROM, TO> function )
     {
-        Transaction tx = database.beginTx();
-        try
+        return new AlgebraicFunction<FROM, TO>()
+        {
+            @Override
+            public TO apply( final FROM from )
+            {
+                return executeAndCommit( new Function<GraphDatabaseService, TO>()
+                {
+                    @Override
+                    public TO apply( GraphDatabaseService graphDb )
+                    {
+                        return function.apply( from );
+                    }
+                } );
+            }
+        };
+    }
+
+    private <T> T transaction( Function<? super GraphDatabaseService, T> function, boolean commit )
+    {
+        try ( Transaction tx = database.beginTx() )
         {
             T result = function.apply( database );
 
@@ -61,15 +84,10 @@ public abstract class DatabaseRule extends ExternalResource
             }
             return result;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     @Override
-    protected void before()
-            throws Throwable
+    protected void before() throws Throwable
     {
         create();
     }
@@ -80,8 +98,8 @@ public abstract class DatabaseRule extends ExternalResource
         shutdown();
     }
 
-    public void create()
-            throws IOException
+    @SuppressWarnings("deprecation")
+    public void create() throws IOException
     {
         createResources();
         try

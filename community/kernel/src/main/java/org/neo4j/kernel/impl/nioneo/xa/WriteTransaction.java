@@ -26,11 +26,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
-
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
@@ -706,7 +707,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             executeDeleted( propCommands, relCommands, nodeCommands.values() );
 
             // property change set for index updates
-            List<NodePropertyUpdate> propertyUpdates = new ArrayList<>();
+            Set<NodePropertyUpdate> propertyUpdates = new HashSet<>();
             List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
             gatherPropertyAndLabelUpdates( propertyUpdates, labelUpdates );
 
@@ -772,8 +773,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private void gatherPropertyAndLabelUpdates( List<NodePropertyUpdate> propertyUpdates,
-            List<NodeLabelUpdate> labelUpdates )
+    private void gatherPropertyAndLabelUpdates( Collection<NodePropertyUpdate> propertyUpdates,
+            Collection<NodeLabelUpdate> labelUpdates )
     {
         gatherUpdatesFromPropertyCommands( propertyUpdates );
         gatherUpdatesFromNodeCommands( propertyUpdates, labelUpdates );
@@ -812,7 +813,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     private void gatherUpdatesFromNodeCommands( Collection<NodePropertyUpdate> propertyUpdates,
-            List<NodeLabelUpdate> labelUpdates )
+            Collection<NodeLabelUpdate> labelUpdates )
     {
         final NodeStore nodeStore = getNodeStore();
         for ( NodeCommand nodeCommand : nodeCommands.values() )
