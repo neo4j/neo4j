@@ -81,7 +81,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     catch {
       case (t: Throwable) =>
         tx.failure()
-        tx.finish()
+        tx.close()
         throw t
     }
   }
@@ -119,14 +119,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         case (t: Throwable) =>
           statement.close()
           tx.failure()
-          tx.finish()
+          tx.close()
           throw t
       }
 
       if (touched) {
         statement.close()
         tx.success()
-        tx.finish()
+        tx.close()
       }
       else {
         val queryContext = executionContext(tx)

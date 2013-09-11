@@ -52,7 +52,7 @@ package org.neo4j.graphdb;
  * operations that modify the graph in a try-finally block with the transaction
  * as resource. At the end of the block, we invoke the {@link #success() tx.success()}
  * method to indicate that the transaction is successful. As we exit the block,
- * the transaction will automatically be closed where {@link #finish() tx.close()}
+ * the transaction will automatically be closed where {@link #close() tx.close()}
  * will be called and commit the transaction if the internal state indicates success
  * or else mark it for rollback.
  * <p>
@@ -119,7 +119,7 @@ public interface Transaction extends AutoCloseable
      * Preferably this method will not be used, instead a {@link Transaction} should participate in a
      * try-with-resource statement so that {@link #close()} is automatically called instead.
      * 
-     * Invoking {@link #close()} (which is unnecessary when in try-with-resource statement) or {@link #finish()}
+     * Invoking {@link #close()} (which is unnecessary when in try-with-resource statement) or this method
      * has the exact same effect.
      * 
      * @deprecated due to implementing {@link AutoCloseable}, where {@link #close()} is called automatically
@@ -136,9 +136,9 @@ public interface Transaction extends AutoCloseable
      * transaction will be automatically closed by this method.
      * 
      * This method comes from {@link AutoCloseable} so that a {@link Transaction} can participate
-     * in try-with-resource statements. It will not throw any declared exception, just like {@link #finish()}.
+     * in try-with-resource statements. It will not throw any declared exception.
      * 
-     * Invoking {@link #close()} (which is unnecessary when in try-with-resource statement) or {@link #finish()}
+     * Invoking this method (which is unnecessary when in try-with-resource statement) or {@link #finish()}
      * has the exact same effect.
      */
     @Override

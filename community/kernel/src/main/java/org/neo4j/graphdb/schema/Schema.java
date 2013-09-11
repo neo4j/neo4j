@@ -99,7 +99,7 @@ public interface Schema
      * Creating a constraint will have the transaction creating it block on commit until
      * all existing data has been verified for compliance. If any existing data doesn't
      * comply with the constraint the transaction will not be able to commit, but
-     * fail in {@link Transaction#finish()}.
+     * fail in {@link Transaction#close()}.
      * 
      * @param label the label this constraint is for.
      * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
