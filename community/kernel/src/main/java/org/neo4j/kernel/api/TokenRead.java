@@ -28,10 +28,8 @@ import org.neo4j.kernel.impl.core.Token;
 
 interface TokenRead
 {
-    long NO_SUCH_LABEL = -1;
-    long NO_SUCH_PROPERTY_KEY = -1;
 
-    /** Returns a label id for a label name. If the label doesn't exist, {@link #NO_SUCH_LABEL} will be returned. */
+    /** Returns a label id for a label name. If the label doesn't exist, {@link StatementConstants#NO_SUCH_LABEL} will be returned. */
     long labelGetForName( String labelName );
 
     /** Returns the label name for the given label id. */
@@ -39,7 +37,7 @@ interface TokenRead
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist,
-     * {@link #NO_SUCH_PROPERTY_KEY} will be returned.
+     * {@link StatementConstants#NO_SUCH_PROPERTY_KEY} will be returned.
      */
     long propertyKeyGetForName( String propertyKeyName );
 

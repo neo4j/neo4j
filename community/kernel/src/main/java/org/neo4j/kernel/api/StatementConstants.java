@@ -17,29 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.schema;
+package org.neo4j.kernel.api;
 
-import static java.lang.String.format;
-
-public class SchemaRuleNotFoundException extends SchemaKernelException
+public final class StatementConstants
 {
-    public SchemaRuleNotFoundException( String message )
+    public static final long NO_SUCH_LABEL = -1;
+    public static final long NO_SUCH_PROPERTY_KEY = -1;
+    public static final long NO_SUCH_NODE = -1;
+
+    private StatementConstants()
     {
-        super( message );
+        throw new UnsupportedOperationException();
     }
 
-    public SchemaRuleNotFoundException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
 
-    public SchemaRuleNotFoundException( long labelId, long propertyKeyId, String message )
-    {
-        this( message( labelId, propertyKeyId, message ) );
-    }
-
-    private static String message( long labelId, long propertyKeyId, String message )
-    {
-        return format( "Index rule(s) for label: %s and property: %s: %s", labelId, propertyKeyId, message );
-    }
 }

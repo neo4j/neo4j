@@ -23,8 +23,9 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.SafeProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
@@ -46,6 +47,16 @@ interface DataRead
             throws IndexNotFoundKernelException;
 
     /**
+     * Returns node id of unique node found in the given unique index for value or
+     * StatementConstants.NO_SUCH_NODE if the index does not contain a matching node.
+     *
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
+     *          if no such index found.
+     */
+    long nodeGetUniqueFromIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
+            IndexBrokenKernelException;
+
+    /**
      * Checks if a node is labeled with a certain label or not. Returns
      * {@code true} if the node is labeled with the label, otherwise {@code false.}
      */
@@ -63,10 +74,10 @@ interface DataRead
 
     Property graphGetProperty( long propertyKeyId );
 
-    Iterator<SafeProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
+    Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
 
-    Iterator<SafeProperty> relationshipGetAllProperties( long relationshipId )
+    Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
             throws EntityNotFoundException;
 
-    Iterator<SafeProperty> graphGetAllProperties();
+    Iterator<DefinedProperty> graphGetAllProperties();
 }

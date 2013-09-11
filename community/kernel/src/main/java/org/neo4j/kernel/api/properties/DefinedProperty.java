@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 /**
  * Base class for properties that have a value.
  */
-public abstract class SafeProperty extends Property
+public abstract class DefinedProperty extends Property
 {
     @Override
     public boolean isDefined()
@@ -138,7 +138,7 @@ public abstract class SafeProperty extends Property
         return PropertyDatas.forStringOrArray( (int) propertyKeyId(), -1, value() );
     }
 
-    SafeProperty()
+    DefinedProperty()
     {
         // package private subclasses
     }

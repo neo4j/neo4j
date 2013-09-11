@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
-import org.neo4j.kernel.api.properties.SafeProperty;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 
 /**
  * A more optimized way of storing built-up transaction state (usually when it's time for commit), instead of
@@ -30,23 +30,23 @@ import org.neo4j.kernel.api.properties.SafeProperty;
  */
 public interface AuxiliaryStoreOperations
 {
-    void nodeAddStoreProperty( long nodeId, SafeProperty property );
+    void nodeAddStoreProperty( long nodeId, DefinedProperty property );
 
-    void nodeChangeStoreProperty( long nodeId, SafeProperty previousProperty, SafeProperty property );
+    void nodeChangeStoreProperty( long nodeId, DefinedProperty previousProperty, DefinedProperty property );
 
-    void relationshipAddStoreProperty( long relationshipId, SafeProperty property );
+    void relationshipAddStoreProperty( long relationshipId, DefinedProperty property );
 
-    void relationshipChangeStoreProperty( long relationshipId, SafeProperty previousProperty, SafeProperty property );
+    void relationshipChangeStoreProperty( long relationshipId, DefinedProperty previousProperty, DefinedProperty property );
 
-    void nodeRemoveStoreProperty( long nodeId, SafeProperty property );
+    void nodeRemoveStoreProperty( long nodeId, DefinedProperty property );
 
-    void relationshipRemoveStoreProperty( long relationshipId, SafeProperty property );
+    void relationshipRemoveStoreProperty( long relationshipId, DefinedProperty property );
 
-    void graphAddStoreProperty( SafeProperty property );
+    void graphAddStoreProperty( DefinedProperty property );
 
-    void graphChangeStoreProperty( SafeProperty previousProperty, SafeProperty property );
+    void graphChangeStoreProperty( DefinedProperty previousProperty, DefinedProperty property );
 
-    void graphRemoveStoreProperty( SafeProperty property );
+    void graphRemoveStoreProperty( DefinedProperty property );
 
     void nodeDelete( long nodeId );
 

@@ -39,6 +39,12 @@ public interface LockHolder
      * @param propertyValue is a string for serialization purposes (HA). There can be clashes, but these are rare
      *                      enough, transient, and does not affect correctness.
      */
+    void acquireIndexEntryReadLock( long labelId, long propertyKeyId, String propertyValue );
+
+    /**
+     * @param propertyValue is a string for serialization purposes (HA). There can be clashes, but these are rare
+     *                      enough, transient, and does not affect correctness.
+     */
     void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, String propertyValue );
 
     void releaseLocks();

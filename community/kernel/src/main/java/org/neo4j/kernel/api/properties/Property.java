@@ -58,7 +58,7 @@ public abstract class Property
             noRelationshipProperty( relationshipId, propertyKeyId ) : property( propertyKeyId, value );
     }
 
-    public static SafeProperty property( long propertyKeyId, Object value )
+    public static DefinedProperty property( long propertyKeyId, Object value )
     {
         return PropertyConversion.convertProperty( propertyKeyId, value );
     }
@@ -95,102 +95,102 @@ public abstract class Property
 
     // more factory methods
 
-    public static SafeProperty stringProperty( long propertyKeyId, String value )
+    public static DefinedProperty stringProperty( long propertyKeyId, String value )
     {
         return new StringProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty lazyStringProperty( long propertyKeyId, Callable<String> producer )
+    public static DefinedProperty lazyStringProperty( long propertyKeyId, Callable<String> producer )
     {
         return new LazyStringProperty( propertyKeyId, producer );
     }
 
-    public static SafeProperty lazyArrayProperty( long propertyKeyId, Callable<Object> producer )
+    public static DefinedProperty lazyArrayProperty( long propertyKeyId, Callable<Object> producer )
     {
         return new LazyArrayProperty( propertyKeyId, producer );
     }
 
-    public static SafeProperty longProperty( long propertyKeyId, long value )
+    public static DefinedProperty longProperty( long propertyKeyId, long value )
     {
         return PropertyConversion.chooseLongPropertyType( propertyKeyId, value );
     }
 
-    public static SafeProperty intProperty( long propertyKeyId, int value )
+    public static DefinedProperty intProperty( long propertyKeyId, int value )
     {
         return new IntProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty shortProperty( long propertyKeyId, short value )
+    public static DefinedProperty shortProperty( long propertyKeyId, short value )
     {
         return new ShortProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty byteProperty( long propertyKeyId, byte value )
+    public static DefinedProperty byteProperty( long propertyKeyId, byte value )
     {
         return new ByteProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty booleanProperty( long propertyKeyId, boolean value )
+    public static DefinedProperty booleanProperty( long propertyKeyId, boolean value )
     {
         return new BooleanProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty charProperty( long propertyKeyId, char value )
+    public static DefinedProperty charProperty( long propertyKeyId, char value )
     {
         return new CharProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty doubleProperty( long propertyKeyId, double value )
+    public static DefinedProperty doubleProperty( long propertyKeyId, double value )
     {
         return new DoubleProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty floatProperty( long propertyKeyId, float value )
+    public static DefinedProperty floatProperty( long propertyKeyId, float value )
     {
         return new FloatProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty stringArrayProperty( long propertyKeyId, String[] value )
+    public static DefinedProperty stringArrayProperty( long propertyKeyId, String[] value )
     {
         return new StringArrayProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty byteArrayProperty( long propertyKeyId, byte[] value )
+    public static DefinedProperty byteArrayProperty( long propertyKeyId, byte[] value )
     {
         return new ByteArrayProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty longArrayProperty( long propertyKeyId, long[] value )
+    public static DefinedProperty longArrayProperty( long propertyKeyId, long[] value )
     {
         return new LongArrayProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty intArrayProperty( long propertyKeyId, int[] value )
+    public static DefinedProperty intArrayProperty( long propertyKeyId, int[] value )
     {
         return new IntArrayProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty doubleArrayProperty( long propertyKeyId, double[] value )
+    public static DefinedProperty doubleArrayProperty( long propertyKeyId, double[] value )
     {
         return new DoubleArrayProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty floatArrayProperty( long propertyKeyId, float[] value )
+    public static DefinedProperty floatArrayProperty( long propertyKeyId, float[] value )
     {
         return new FloatArrayProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty booleanArrayProperty( long propertyKeyId, boolean[] value )
+    public static DefinedProperty booleanArrayProperty( long propertyKeyId, boolean[] value )
     {
         return new BooleanArrayProperty( propertyKeyId,value );
     }
 
-    public static SafeProperty charArrayProperty( long propertyKeyId, char[] value )
+    public static DefinedProperty charArrayProperty( long propertyKeyId, char[] value )
     {
         return new CharArrayProperty( propertyKeyId, value );
     }
 
-    public static SafeProperty shortArrayProperty( long propertyKeyId, short[] value )
+    public static DefinedProperty shortArrayProperty( long propertyKeyId, short[] value )
     {
         return new ShortArrayProperty( propertyKeyId, value );
     }
