@@ -20,7 +20,6 @@
 package org.neo4j.cluster.client;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
