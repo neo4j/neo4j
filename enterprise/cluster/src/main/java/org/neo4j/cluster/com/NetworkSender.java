@@ -48,7 +48,6 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
-import org.jboss.netty.handler.logging.LoggingHandler;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
@@ -262,7 +261,7 @@ public class NetworkSender
                 }
                 catch ( Exception e )
                 {
-                    msgLog.error( "Could not connect to:" + to, e );
+                    msgLog.debug( "Could not connect to:" + to, e );
                     return;
                 }
 

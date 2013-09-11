@@ -338,47 +338,7 @@ public class ClusterClient extends LifecycleAdapter
         life.add( receiver );
 
         // Timeout timer - triggers every 10 ms
-        life.add( new Lifecycle()
-        {
-            private ScheduledExecutorService scheduler;
-            private ScheduledFuture<?> tickFuture;
-
-            @Override
-            public void init() throws Throwable
-            {
-                server.getTimeouts().tick( System.currentTimeMillis() );
-            }
-
-            @Override
-            public void start() throws Throwable
-            {
-                scheduler = Executors.newSingleThreadScheduledExecutor(
-                        new DaemonThreadFactory( "timeout-clusterClient" ) );
-
-                tickFuture = scheduler.scheduleWithFixedDelay( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        long now = System.currentTimeMillis();
-
-                        server.getTimeouts().tick( now );
-                    }
-                }, 0, 10, TimeUnit.MILLISECONDS );
-            }
-
-            @Override
-            public void stop() throws Throwable
-            {
-                tickFuture.cancel( true );
-                scheduler.shutdownNow();
-            }
-
-            @Override
-            public void shutdown() throws Throwable
-            {
-            }
-        } );
+        life.add( new TimeoutTrigger() );
 
         life.add( new ClusterJoin( new ClusterJoin.Configuration()
         {
@@ -559,5 +519,47 @@ public class ClusterClient extends LifecycleAdapter
     public URI getClusterServer()
     {
         return server.boundAt();
+    }
+
+    public class TimeoutTrigger implements Lifecycle
+    {
+        private ScheduledExecutorService scheduler;
+        private ScheduledFuture<?> tickFuture;
+
+        @Override
+        public void init() throws Throwable
+        {
+            server.getTimeouts().tick( System.currentTimeMillis() );
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+            scheduler = Executors.newSingleThreadScheduledExecutor(
+                    new DaemonThreadFactory( "timeout-clusterClient" ) );
+
+            tickFuture = scheduler.scheduleWithFixedDelay( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    long now = System.currentTimeMillis();
+
+                    server.getTimeouts().tick( now );
+                }
+            }, 0, 10, TimeUnit.MILLISECONDS );
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+            tickFuture.cancel( true );
+            scheduler.shutdownNow();
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
     }
 }
