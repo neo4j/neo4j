@@ -17,22 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.graphdb.traversal;
 
-import java.util.concurrent.TimeUnit;
+import org.neo4j.graphdb.Path;
 
-public class FakeClock implements Clock
+class NotUnique extends AbstractUniquenessFilter
 {
-    private long time = 0;
-
-    @Override
-    public long currentTimeMillis()
+    NotUnique()
     {
-        return time;
+        super( null );
     }
 
-    public void forward( long amount, TimeUnit timeUnit)
+    public boolean check( TraversalBranch source )
     {
-        time = time + timeUnit.toMillis( amount );
+        return true;
+    }
+    
+    @Override
+    public boolean checkFull( Path path )
+    {
+        // Where we have no uniqueness, everything is unique.
+        return true;
     }
 }

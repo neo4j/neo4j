@@ -21,7 +21,7 @@ package org.neo4j.server.rest.paging;
 
 import java.util.UUID;
 
-import org.neo4j.tooling.Clock;
+import org.neo4j.helpers.Clock;
 
 public class Lease
 {

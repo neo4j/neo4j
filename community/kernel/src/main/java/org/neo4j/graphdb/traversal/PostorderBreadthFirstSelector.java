@@ -17,16 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.traversal.BranchSelector;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.TraversalContext;
 
 /**
  * Selects {@link TraversalBranch}s according to postorder breadth first

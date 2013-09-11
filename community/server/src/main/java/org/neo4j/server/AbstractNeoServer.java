@@ -29,6 +29,7 @@ import org.apache.commons.configuration.Configuration;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -67,13 +68,12 @@ import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
-import org.neo4j.tooling.Clock;
-import org.neo4j.tooling.RealClock;
 
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
@@ -206,7 +206,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected DatabaseActions createDatabaseActions()
     {
         return new DatabaseActions(
-                new LeaseManager( new RealClock() ),
+                new LeaseManager( SYSTEM_CLOCK ),
                 ForceMode.forced,
                 configurator.configuration().getBoolean(
                         SCRIPT_SANDBOXING_ENABLED_KEY,
@@ -216,7 +216,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private TransactionFacade createTransactionalActions()
     {
         final long timeoutMillis = getTransactionTimeoutMillis();
-        final Clock clock = new RealClock();
+        final Clock clock = SYSTEM_CLOCK;
 
         transactionRegistry =
             new TransactionHandleRegistry( clock, timeoutMillis, logging.getMessagesLog(TransactionRegistry.class) );

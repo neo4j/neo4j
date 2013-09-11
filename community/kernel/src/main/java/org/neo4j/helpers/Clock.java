@@ -21,22 +21,14 @@ package org.neo4j.helpers;
 
 public interface Clock
 {
-    Clock SYSTEM = new Clock()
+    Clock SYSTEM_CLOCK = new Clock()
     {
         @Override
         public long currentTimeMillis()
         {
             return System.currentTimeMillis();
         }
-
-        @Override
-        public long nanoTime()
-        {
-            return System.nanoTime();
-        }
     };
 
     long currentTimeMillis();
-
-    long nanoTime();
 }

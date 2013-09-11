@@ -35,7 +35,7 @@ public class InputStreamAwaiter
 
     public InputStreamAwaiter( InputStream input )
     {
-        this( Clock.SYSTEM, input );
+        this( Clock.SYSTEM_CLOCK, input );
     }
 
     public InputStreamAwaiter( Clock clock, InputStream input )

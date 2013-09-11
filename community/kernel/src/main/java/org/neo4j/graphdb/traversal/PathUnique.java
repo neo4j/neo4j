@@ -17,13 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.graphdb.traversal;
 
-public class RealClock implements Clock
+import org.neo4j.graphdb.Path;
+
+class PathUnique extends AbstractUniquenessFilter
 {
-    @Override
-    public long currentTimeMillis()
+    PathUnique( PrimitiveTypeFetcher type )
     {
-        return System.currentTimeMillis();
+        super( type );
+    }
+    
+    public boolean check( TraversalBranch source )
+    {
+        long idToCompare = type.getId( source );
+        while ( source.length() > 0 )
+        {
+            source = source.parent();
+            if (type.idEquals(source, idToCompare))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    @Override
+    public boolean checkFull( Path path )
+    {
+        return !type.containsDuplicates( path );
     }
 }

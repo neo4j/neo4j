@@ -17,24 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.traversal.BranchSelector;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.TraversalContext;
 
 /**
- * Selects {@link TraversalBranch}s according to preorder depth first pattern,
- * the most natural ordering in a depth first search, see
- * http://en.wikipedia.org/wiki/Depth-first_search
+ * Selects {@link TraversalBranch}s according to postorder depth first pattern,
+ * see http://en.wikipedia.org/wiki/Depth-first_search
  */
-class PreorderDepthFirstSelector implements BranchSelector
+class PostorderDepthFirstSelector implements BranchSelector
 {
     private TraversalBranch current;
     private final PathExpander expander;
     
-    PreorderDepthFirstSelector( TraversalBranch startSource, PathExpander expander )
+    PostorderDepthFirstSelector( TraversalBranch startSource, PathExpander expander )
     {
         this.current = startSource;
         this.expander = expander;
@@ -49,19 +45,16 @@ class PreorderDepthFirstSelector implements BranchSelector
             {
                 return null;
             }
+            
             TraversalBranch next = current.next( expander, metadata );
-            if ( next == null )
-            {
-                current = current.parent();
-                continue;
-            }
-            else
+            if ( next != null )
             {
                 current = next;
             }
-            if ( current != null )
+            else
             {
                 result = current;
+                current = current.parent();
             }
         }
         return result;

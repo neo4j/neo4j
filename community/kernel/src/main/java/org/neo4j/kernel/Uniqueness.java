@@ -23,147 +23,102 @@ import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.graphdb.traversal.UniquenessFilter;
 
 /**
- * Contains some uniqueness modes that are very common in traversals, for
- * example uniqueness of nodes or relationships to visit during a traversal.
+ * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
  */
 public enum Uniqueness implements UniquenessFactory
 {
     /**
-     * A node cannot be traversed more than once. This is what the legacy
-     * traversal framework does.
+     * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     NODE_GLOBAL
     {
         public UniquenessFilter create( Object optionalParameter )
         {
-            acceptNull( optionalParameter );
-            return new GloballyUnique( PrimitiveTypeFetcher.NODE );
+            return org.neo4j.graphdb.traversal.Uniqueness.NODE_GLOBAL.create(optionalParameter);
         }
     },
     /**
-     * For each returned node there's a unique path from the start node to it.
+     * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     NODE_PATH
     {
         public UniquenessFilter create( Object optionalParameter )
         {
-            acceptNull( optionalParameter );
-            return new PathUnique( PrimitiveTypeFetcher.NODE );
+            return org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH.create(optionalParameter);
         }
     },
     /**
-     * This is like {@link Uniqueness#NODE_GLOBAL}, but only guarantees
-     * uniqueness among the most recent visited nodes, with a configurable
-     * count. Traversing a huge graph is quite memory intensive in that it keeps
-     * track of <i>all</i> the nodes it has visited. For huge graphs a traverser
-     * can hog all the memory in the JVM, causing {@link OutOfMemoryError}.
-     * Together with this {@link Uniqueness} you can supply a count, which is
-     * the number of most recent visited nodes. This can cause a node to be
-     * visited more than once, but scales infinitely.
+     *@deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     NODE_RECENT
     {
         public UniquenessFilter create( Object optionalParameter )
         {
-            acceptIntegerOrNull( optionalParameter );
-            return new RecentlyUnique( PrimitiveTypeFetcher.NODE, optionalParameter );
+            return org.neo4j.graphdb.traversal.Uniqueness.NODE_RECENT.create(optionalParameter);
         }
     },
     /**
-     * Entities on the same level are guaranteed to be unique.
+     * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     NODE_LEVEL
     {
         @Override
         public UniquenessFilter create( Object optionalParameter )
         {
-            acceptNull( optionalParameter );
-            return new LevelUnique( PrimitiveTypeFetcher.NODE );
+            return org.neo4j.graphdb.traversal.Uniqueness.NODE_LEVEL.create(optionalParameter);
         }
     },
 
     /**
-     * A relationship cannot be traversed more than once, whereas nodes can.
+     * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     RELATIONSHIP_GLOBAL
     {
         public UniquenessFilter create( Object optionalParameter )
         {
-            acceptNull( optionalParameter );
-            return new GloballyUnique( PrimitiveTypeFetcher.RELATIONSHIP );
+            return org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_GLOBAL.create(optionalParameter);
         }
     },
     /**
-     * For each returned node there's a (relationship wise) unique path from the
-     * start node to it.
+     * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     RELATIONSHIP_PATH
     {
         public UniquenessFilter create( Object optionalParameter )
         {
-            acceptNull( optionalParameter );
-            return new PathUnique( PrimitiveTypeFetcher.RELATIONSHIP );
+            return org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_PATH.create(optionalParameter);
         }
     },
     /**
-     * Same as for {@link Uniqueness#NODE_RECENT}, but for relationships.
+     * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     RELATIONSHIP_RECENT
     {
         public UniquenessFilter create( Object optionalParameter )
         {
-            acceptIntegerOrNull( optionalParameter );
-            return new RecentlyUnique( PrimitiveTypeFetcher.RELATIONSHIP, optionalParameter );
+            return org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_RECENT.create(optionalParameter);
         }
     },
     /**
-     * Entities on the same level are guaranteed to be unique.
+     * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     RELATIONSHIP_LEVEL
     {
         @Override
         public UniquenessFilter create( Object optionalParameter )
         {
-            acceptNull( optionalParameter );
-            return new LevelUnique( PrimitiveTypeFetcher.RELATIONSHIP );
+            return org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_LEVEL.create(optionalParameter);
         }
     },
     
     /**
-     * No restriction (the user will have to manage it).
+     * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     NONE
     {
         public UniquenessFilter create( Object optionalParameter )
         {
-            acceptNull( optionalParameter );
-            return notUniqueInstance;
+            return org.neo4j.graphdb.traversal.Uniqueness.NONE.create(optionalParameter);
         }
     };
-
-    private static final UniquenessFilter notUniqueInstance = new NotUnique();
-
-    private static void acceptNull( Object optionalParameter )
-    {
-        if ( optionalParameter != null )
-        {
-            throw new IllegalArgumentException( "Only accepts null parameter, was " +
-                    optionalParameter );
-        }
-    }
-    
-    private static void acceptIntegerOrNull( Object parameter )
-    {
-        if ( parameter == null )
-        {
-            return;
-        }
-        boolean isDecimalNumber = parameter instanceof Number
-                && !( parameter instanceof Float || parameter instanceof Double );
-        if ( !isDecimalNumber )
-        {
-            throw new IllegalArgumentException( "Doesn't accept non-decimal values"
-                    + ", like '" + parameter + "'" );
-        }
-    }
 }

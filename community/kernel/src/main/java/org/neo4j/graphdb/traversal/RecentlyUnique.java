@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.kernel.impl.cache.LruCache;
 
 class RecentlyUnique extends AbstractUniquenessFilter
