@@ -48,7 +48,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 /**
  * Represents one job of initially populating an index over existing data in the database.
  * Scans the store directly.
- * 
+ *
  * @author Mattias Persson
  */
 public class IndexPopulationJob implements Runnable
@@ -88,7 +88,7 @@ public class IndexPopulationJob implements Runnable
         this.failureDelegate = failureDelegateFactory;
         this.log = logging.getMessagesLog( getClass() );
     }
-    
+
     @Override
     public void run()
     {
@@ -106,8 +106,10 @@ public class IndexPopulationJob implements Runnable
 
                 indexAllNodes();
                 if ( cancelled )
+                {
                     // We remain in POPULATING state
                     return;
+                }
 
                 Callable<Void> duringFlip = new Callable<Void>()
                 {
@@ -236,20 +238,22 @@ public class IndexPopulationJob implements Runnable
             cancelled = true;
             storeScan.stop();
         }
-        
+
         return latchGuardedValue( NO_VALUE, doneSignal );
     }
 
     /**
-     * A transaction happened that produced the given updates. Let this job incorporate its data
-     * into, feeding it to the {@link IndexPopulator}.
+     * A transaction happened that produced the given updates. Let this job incorporate its data,
+     * feeding it to the {@link IndexPopulator}.
      */
     public void update( Iterable<NodePropertyUpdate> updates )
     {
         for ( NodePropertyUpdate update : updates )
+        {
             queue.add( update );
+        }
     }
-    
+
     @Override
     public String toString()
     {

@@ -24,10 +24,13 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
+import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -53,10 +56,11 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
 
         // then
         IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( false ) );
-        IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator nodes = reader.lookup( "value1" );
-        assertEquals( asSet( 1l, 2l ), asSet( nodes ) );
-        reader.close();
+        try ( IndexReader reader = accessor.newReader() )
+        {
+            PrimitiveLongIterator nodes = reader.lookup( "value1" );
+            assertEquals( asSet( 1l, 2l ), asSet( nodes ) );
+        }
         accessor.close();
     }
 
@@ -99,5 +103,32 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         populator.drop();
 
         // THEN - no exception should be thrown (it's been known to!)
+    }
+
+    @Test
+    public void shouldApplyUpdatesIdempotently() throws Exception
+    {
+        // GIVEN
+        IndexPopulator populator = indexProvider.getPopulator( 13, new IndexConfiguration( false ) );
+        populator.create();
+        long nodeId = 1;
+        int propertyKeyId = 10, labelId = 11; // Can we just use arbitrary ids here?
+        String propertyValue = "value1";
+
+        // this update (using add())...
+        populator.add( nodeId, propertyValue );
+        // ...is the same as this update (using update())
+        populator.update( asList( add( nodeId, propertyKeyId, propertyValue, new long[] {labelId} ) ) );
+
+        populator.close( true );
+
+        // then
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 13, new IndexConfiguration( false ) );
+        try ( IndexReader reader = accessor.newReader() )
+        {
+            PrimitiveLongIterator nodes = reader.lookup( propertyValue );
+            assertEquals( asSet( 1l ), asSet( nodes ) );
+        }
+        accessor.close();
     }
 }

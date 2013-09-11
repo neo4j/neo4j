@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,7 +26,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -42,7 +39,7 @@ public class PropertyPhysicalToLogicalConverter
     {
         this.propertyStore = propertyStore;
     }
-    
+
     public Iterable<NodePropertyUpdate> apply(
             PropertyRecord before, long[] labelsBefore,
             PropertyRecord after, long[] labelsAfter )
@@ -52,11 +49,11 @@ public class PropertyPhysicalToLogicalConverter
         long nodeId = before.getNodeId();
         Map<Integer, PropertyBlock> beforeMap = mapBlocks( before );
         Map<Integer, PropertyBlock> afterMap = mapBlocks( after );
-        
+
         @SuppressWarnings( "unchecked" )
         Set<Integer> allKeys = union( beforeMap.keySet(), afterMap.keySet() );
-        
-        Collection<NodePropertyUpdate> result = new ArrayList<NodePropertyUpdate>();
+
+        Collection<NodePropertyUpdate> result = new ArrayList<>();
         for ( int key : allKeys )
         {
             PropertyBlock beforeBlock = beforeMap.get( key );
@@ -70,51 +67,60 @@ public class PropertyPhysicalToLogicalConverter
                 {
                     Object beforeVal = valueOf( beforeBlock );
                     Object afterVal = valueOf( afterBlock );
-                    update = new NodePropertyUpdate( nodeId, key, beforeVal, labelsBefore, afterVal, labelsAfter );
+                    update = NodePropertyUpdate.change( nodeId, key, beforeVal, labelsBefore, afterVal, labelsAfter );
                 }
             }
             else
             {
                 // ADD/REMOVE
-                try {
-                    long[] beforeLabelIds = beforeBlock == null ? EMPTY_LONG_ARRAY : labelsBefore;
-                    long[] afterLabelIds = afterBlock == null ? EMPTY_LONG_ARRAY : labelsAfter;
-                    Object beforeVal = valueOf( beforeBlock );
-                    Object afterVal = valueOf( afterBlock );
-                    update = new NodePropertyUpdate( nodeId, key, beforeVal, beforeLabelIds, afterVal, afterLabelIds );
-                }
-                catch (Exception e)
+                if ( afterBlock != null )
                 {
-                    // MP: break hear to see the issue: There is a broken next pointer chain in the before block
-                    throw Exceptions.launderedException( e );
+                    update = NodePropertyUpdate.add( nodeId, key, valueOf( afterBlock ), labelsAfter );
+                }
+                else if ( beforeBlock != null )
+                {
+                    update = NodePropertyUpdate.remove( nodeId, key, valueOf( beforeBlock ), labelsBefore );
+                }
+                else
+                {
+                    throw new IllegalStateException( "Weird, an update with no property value for before or after" );
                 }
             }
-            if (update != null)
+
+            if ( update != null)
+            {
                 result.add( update );
+            }
         }
         return result;
     }
 
     private <T> Set<T> union( Set<T>... sets )
     {
-        Set<T> union = new HashSet<T>();
+        Set<T> union = new HashSet<>();
         for ( Set<T> set : sets )
+        {
             union.addAll( set );
+        }
         return union;
     }
 
     private Map<Integer, PropertyBlock> mapBlocks( PropertyRecord before )
     {
-        HashMap<Integer, PropertyBlock> map = new HashMap<Integer, PropertyBlock>();
+        HashMap<Integer, PropertyBlock> map = new HashMap<>();
         for ( PropertyBlock block : before.getPropertyBlocks() )
+        {
             map.put( block.getKeyIndexId(), block );
+        }
         return map;
     }
 
     private Object valueOf( PropertyBlock block )
     {
         if ( block == null )
+        {
             return null;
+        }
 
         return block.getType().getValue( block, propertyStore );
     }

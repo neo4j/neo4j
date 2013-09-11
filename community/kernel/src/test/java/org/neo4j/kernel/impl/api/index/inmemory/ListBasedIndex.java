@@ -44,8 +44,12 @@ class ListBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    void doAdd( Object propertyValue, long nodeId )
+    void doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
     {
+        if ( applyIdempotently && find( data.iterator(), propertyValue ).hasNext() )
+        {
+            return;
+        }
         data.add( new Entry( propertyValue, nodeId ) );
     }
 

@@ -31,7 +31,7 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     static final int DEFAULT_QUEUE_THRESHOLD = 10000;
     private final int queueThreshold;
-    private final List<NodePropertyUpdate> updates = new ArrayList<NodePropertyUpdate>();
+    private final List<NodePropertyUpdate> updates = new ArrayList<>();
 
     NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure,
                                    LuceneIndexWriterFactory indexWriterFactory,
@@ -71,16 +71,17 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             long nodeId = update.getNodeId();
             switch ( update.getUpdateMode() )
             {
-            case ADDED:
-                writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, update.getValueAfter() ) );
-                break;
-            case CHANGED:
+            case ADDED: case CHANGED:
+                // We don't look at the "before" value, so adding and changing idempotently is done the same way.
                 writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                                       documentStructure.newDocumentRepresentingProperty( nodeId, update.getValueAfter() ) );
+                                       documentStructure.newDocumentRepresentingProperty( nodeId,
+                                               update.getValueAfter() ) );
                 break;
             case REMOVED:
                 writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
                 break;
+            default:
+                throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
             }
         }
     }

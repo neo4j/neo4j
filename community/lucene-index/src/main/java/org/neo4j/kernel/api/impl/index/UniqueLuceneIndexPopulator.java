@@ -54,7 +54,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     private HashMap<Object, Long> newBatchMap()
     {
-        return new HashMap<Object, Long>( (int) (batchSize / LOAD_FACTOR), LOAD_FACTOR );
+        return new HashMap<>( (int) (batchSize / LOAD_FACTOR), LOAD_FACTOR );
     }
 
     @Override

@@ -53,13 +53,14 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    void doAdd( Object propertyValue, long nodeId )
+    void doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
     {
         Set<Long> nodes = data.get( propertyValue );
         if ( nodes == null )
         {
             data.put( propertyValue, nodes = new HashSet<>() );
         }
+        // In this implementation we don't care about idempotency.
         nodes.add( nodeId );
     }
 
