@@ -406,9 +406,6 @@ public class ClusterManager
             NetworkReceiver receiver = instance( NetworkReceiver.class, clusterClientLife.getLifecycleInstances() );
             receiver.stop();
 
-            Lifecycle timer = instance(ClusterClient.TimeoutTrigger.class, clusterClientLife.getLifecycleInstances());
-            timer.stop();
-
             ExecutorLifecycleAdapter statemachineExecutor = instance(ExecutorLifecycleAdapter.class, clusterClientLife.getLifecycleInstances());
             statemachineExecutor.stop();
 
@@ -418,7 +415,6 @@ public class ClusterManager
             List<Lifecycle> stoppedServices = new ArrayList<Lifecycle>();
             stoppedServices.add( sender );
             stoppedServices.add(statemachineExecutor);
-            stoppedServices.add( timer );
             stoppedServices.add( receiver );
 
             int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );

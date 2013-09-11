@@ -25,8 +25,10 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -86,6 +88,7 @@ public class NetworkSender
     // Sending
     // One executor for each receiving instance, so that one blocking instance cannot block others receiving messages
     private Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
+    private Set<URI> failedInstances = new HashSet<URI>(  ); // Keeps track of what instances we have failed to open connections to
     private ClientBootstrap clientBootstrap;
 
     private Configuration config;
@@ -257,11 +260,19 @@ public class NetworkSender
                     {
                         channel = openChannel( to );
                         openedChannel( to, channel );
+
+                        // Instance could be connected to, remove any marker of it being failed
+                        failedInstances.remove( to );
                     }
                 }
                 catch ( Exception e )
                 {
-                    msgLog.debug( "Could not connect to:" + to, e );
+                    // Only print out failure message on first fail
+                    if (!failedInstances.contains( to ))
+                        msgLog.warn( "Could not connect to:" + to, e );
+                    else
+                        failedInstances.add(to);
+
                     return;
                 }
 

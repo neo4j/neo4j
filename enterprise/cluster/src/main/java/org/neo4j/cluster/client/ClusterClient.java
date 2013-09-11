@@ -30,7 +30,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
-import org.jboss.netty.logging.Slf4JLoggerFactory;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterMonitor;
@@ -43,6 +42,7 @@ import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
+import org.neo4j.cluster.logging.NettyLoggerFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
@@ -274,7 +274,7 @@ public class ClusterClient extends LifecycleAdapter
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 
-        InternalLoggerFactory.setDefaultFactory( new Slf4JLoggerFactory() );
+        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory(logging) );
 
         NetworkReceiver receiver = new NetworkReceiver( new NetworkReceiver.Configuration()
         {
