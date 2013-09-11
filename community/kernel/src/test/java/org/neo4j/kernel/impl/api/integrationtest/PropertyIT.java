@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.integrationtest;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -29,13 +30,16 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataStatement;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.core.Token;
 
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 public class PropertyIT extends KernelIntegrationTest
 {
@@ -335,6 +339,37 @@ public class PropertyIT extends KernelIntegrationTest
             assertArrayEquals( value, (int[]) statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
             assertEquals( Arrays.hashCode( value ), statement.nodeGetProperty( nodeId, propertyKeyId ).hashCode() );
             assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value ) );
+        }
+    }
+
+    @Test
+    public void shouldListAllPropertyKeys() throws Exception
+    {
+        // given
+        long prop1;
+        long prop2;
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            prop1 = statement.propertyKeyGetOrCreateForName( "prop1" );
+            prop2 = statement.propertyKeyGetOrCreateForName( "prop2" );
+
+            // when
+            Iterator<Token> propIdsBeforeCommit = statement.propertyKeyGetAllTokens();
+
+            // then
+            assertThat( asCollection( propIdsBeforeCommit ),
+                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 )) );
+
+            // when
+            commit();
+        }
+        {
+            DataStatement statement = dataStatementInNewTransaction();
+            Iterator<Token> propIdsAfterCommit = statement.propertyKeyGetAllTokens();
+
+            // then
+            assertThat(asCollection( propIdsAfterCommit ) ,
+                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 ) ));
         }
     }
 

@@ -12,7 +12,7 @@ include::streaming.asciidoc[]
 
 include::cypher.asciidoc[]
 
-include::property-values.asciidoc[]
+include::properties.asciidoc[]
 
 include::nodes.asciidoc[]
 

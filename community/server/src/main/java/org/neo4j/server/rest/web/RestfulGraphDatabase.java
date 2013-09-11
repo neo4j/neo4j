@@ -106,6 +106,8 @@ public class RestfulGraphDatabase
 
     private static final String PATH_LABELS = "labels";
 
+    private static final String PATH_PROPERTY_KEYS = "propertykeys";
+
     protected static final String PATH_NODE_INDEX = "index/node";
     protected static final String PATH_NAMED_NODE_INDEX = PATH_NODE_INDEX + "/{indexName}";
     protected static final String PATH_NODE_INDEX_GET = PATH_NAMED_NODE_INDEX + "/{key}/{value}";
@@ -553,6 +555,15 @@ public class RestfulGraphDatabase
     public Response getAllLabels( )
     {
         return output.ok( actions.getAllLabels() );
+    }
+
+    // Property keys
+
+    @GET
+    @Path( PATH_PROPERTY_KEYS )
+    public Response getAllPropertyKeys( )
+    {
+        return output.ok( actions.getAllPropertyKeys() );
     }
 
     // Relationships

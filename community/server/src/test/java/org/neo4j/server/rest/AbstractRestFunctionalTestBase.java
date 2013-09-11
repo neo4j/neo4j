@@ -243,6 +243,11 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return format( "%slabels", getDataUri() );
     }
 
+    public String getPropertyKeysUri()
+    {
+        return format( "%spropertykeys", getDataUri() );
+    }
+
     public String getNodesWithLabelUri( String label )
     {
         return format( "%slabel/%s/nodes", getDataUri(), label );
