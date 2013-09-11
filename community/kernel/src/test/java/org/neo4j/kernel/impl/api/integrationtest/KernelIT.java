@@ -103,7 +103,7 @@ public class KernelIT extends KernelIntegrationTest
         //    same transaction.
         Node node = db.createNode();
 
-        long labelId = statement.readOperations().labelGetOrCreateForName( "labello" );
+        long labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
 
         // 4: Close the StatementContext
@@ -133,7 +133,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId = statement.readOperations().labelGetOrCreateForName( "labello" );
+        long labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.commit();
@@ -149,7 +149,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId = statement.readOperations().labelGetOrCreateForName( "labello" );
+        long labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.finish();
@@ -177,7 +177,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId = statement.readOperations().labelGetOrCreateForName( "labello" );
+        long labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.failure();
@@ -207,8 +207,8 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId1 = statement.readOperations().labelGetOrCreateForName( "labello1" );
-        long labelId2 = statement.readOperations().labelGetOrCreateForName( "labello2" );
+        long labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
+        long labelId2 = statement.dataWriteOperations().labelGetOrCreateForName( "labello2" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
         statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
@@ -233,8 +233,8 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        long labelId1 = statement.readOperations().labelGetOrCreateForName( "labello1" );
-        long labelId2 = statement.readOperations().labelGetOrCreateForName( "labello2" );
+        long labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
+        long labelId2 = statement.dataWriteOperations().labelGetOrCreateForName( "labello2" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
         statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
@@ -255,8 +255,8 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Statement statement = statementContextProvider.statement();;
         Node node = db.createNode();
-        long labelId1 = statement.readOperations().labelGetOrCreateForName( "labello1" );
-        long labelId2 = statement.readOperations().labelGetOrCreateForName( "labello2" );
+        long labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
+        long labelId2 = statement.dataWriteOperations().labelGetOrCreateForName( "labello2" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
         statement.close();
@@ -285,7 +285,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Statement statement = statementContextProvider.statement();
         Node node = db.createNode();
-        long labelId1 = statement.readOperations().labelGetOrCreateForName( "labello1" );
+        long labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.close();
         tx.success();
@@ -317,7 +317,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         Statement statement = statementContextProvider.statement();;
-        long labelId = statement.readOperations().labelGetOrCreateForName( "mylabel" );
+        long labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.success();
@@ -340,7 +340,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         Statement statement = statementContextProvider.statement();
-        long labelId = statement.readOperations().labelGetOrCreateForName( "mylabel" );
+        long labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.close();
         tx.success();
         tx.finish();
@@ -362,7 +362,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         Statement statement = statementContextProvider.statement();
-        long labelId = statement.readOperations().labelGetOrCreateForName( "mylabel" );
+        long labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.success();
@@ -385,7 +385,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         Statement statement = statementContextProvider.statement();
-        long labelId = statement.readOperations().labelGetOrCreateForName( "mylabel" );
+        long labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.close();
         tx.success();
         tx.finish();

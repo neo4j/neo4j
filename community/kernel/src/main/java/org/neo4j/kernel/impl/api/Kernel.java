@@ -29,10 +29,12 @@ import javax.transaction.SystemException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionImplementation;
+import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -131,7 +133,6 @@ import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreList
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {
-    private final boolean readOnly;
     private final AbstractTransactionManager transactionManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
@@ -141,7 +142,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final LockManager lockManager;
     private final DependencyResolver dependencyResolver;
     private final UpdateableSchemaState schemaState;
-    private final boolean highlyAvailableInstance;
+    private final boolean readOnly;
+    private final SchemaWriteGuard schemaWriteGuard;
 
     // These non-final components are all circular dependencies in various configurations.
     // As we work towards refactoring the old kernel, we should work to remove these.
@@ -149,22 +151,19 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private NeoStore neoStore;
     private NodeManager nodeManager;
     private PersistenceCache persistenceCache;
-    private boolean isShutdown = false;
     private StatementOperationParts statementOperations;
-    private StatementOperationParts readOnlyStatementOperations;
     private SchemaCache schemaCache;
     private SchemaIndexProviderMap providerMap = null;
-    private LegacyKernelOperations legacyKernelOperations, readOnlyLegacyKernelOperations;
+    private LegacyKernelOperations legacyKernelOperations;
     private LabelScanStore labelScanStore;
+    private boolean isShutdown = false;
 
-    public Kernel( boolean readOnly, AbstractTransactionManager transactionManager,
-                   PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-                   RelationshipTypeTokenHolder relationshipTypeTokenHolder, PersistenceManager persistenceManager,
-                   XaDataSourceManager dataSourceManager,
-                   LockManager lockManager, UpdateableSchemaState schemaState,
-                   DependencyResolver dependencyResolver, boolean highlyAvailable )
+    public Kernel( AbstractTransactionManager transactionManager, PropertyKeyTokenHolder propertyKeyTokenHolder,
+                   LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+                   PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager,
+                   LockManager lockManager, UpdateableSchemaState schemaState, DependencyResolver dependencyResolver,
+                   boolean readOnly, SchemaWriteGuard schemaWriteGuard )
     {
-        this.readOnly = readOnly;
         this.transactionManager = transactionManager;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
@@ -174,7 +173,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.lockManager = lockManager;
         this.dependencyResolver = dependencyResolver;
         this.schemaState = schemaState;
-        this.highlyAvailableInstance = highlyAvailable;
+        this.readOnly = readOnly;
+        this.schemaWriteGuard = schemaWriteGuard;
     }
 
     @Override
@@ -215,21 +215,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void bootstrapAfterRecovery()
     {
-        StatementOperationParts parts = buildStatementOperations();
-        this.statementOperations = parts;
+        this.statementOperations = buildStatementOperations();
         this.legacyKernelOperations = new DefaultLegacyKernelOperations( nodeManager );
-
-        ReadOnlyStatementOperations readOnlyParts =
-                new ReadOnlyStatementOperations( parts.keyReadOperations(), parts.schemaStateOperations() );
-        this.readOnlyStatementOperations = parts.override(
-                parts.keyReadOperations(),
-                readOnlyParts,
-                parts.entityReadOperations(),
-                readOnlyParts,
-                parts.schemaReadOperations(),
-                readOnlyParts,
-                readOnlyParts );
-        this.readOnlyLegacyKernelOperations = readOnlyParts;
     }
 
     @Override
@@ -242,14 +229,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public KernelTransaction newTransaction()
     {
         checkIfShutdown();
-        if ( readOnly )
-        {
-            return new TransactionImplementation( readOnlyStatementOperations, readOnlyLegacyKernelOperations );
-        }
-        else
-        {
-            return new TransactionImplementation( statementOperations, legacyKernelOperations );
-        }
+        return new TransactionImplementation( statementOperations, legacyKernelOperations );
     }
 
     private void checkIfShutdown()
@@ -319,15 +299,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 parts.schemaStateOperations() );
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext );
 
-        if ( highlyAvailableInstance )
-        {
-            // + Stop HA from creating constraints
-            UniquenessConstraintStoppingStatementOperations stoppingContext =
-                    new UniquenessConstraintStoppingStatementOperations( parts.schemaWriteOperations() );
-
-            parts = parts.override( null, null, null, null, null, stoppingContext, null );
-        }
-
         return parts;
     }
 
@@ -360,6 +331,27 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         protected KernelStatement newStatement()
         {
             return new KernelStatement( this, new IndexReaderFactory.Caching( indexService ), labelScanStore, this, lockHolder );
+        }
+
+        @Override
+        public void assertTokenWriteAllowed() throws ReadOnlyDatabaseKernelException
+        {
+            assertDatabaseWritable();
+        }
+
+        @Override
+        public void upgradeToDataTransaction() throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
+        {
+            assertDatabaseWritable();
+            super.upgradeToDataTransaction();
+        }
+
+        @Override
+        public void upgradeToSchemaTransaction() throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
+        {
+            assertDatabaseWritable();
+            schemaWriteGuard.assertSchemaWritesAllowed();
+            super.upgradeToSchemaTransaction();
         }
 
         @Override
@@ -596,6 +588,14 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         public boolean hasTxStateWithChanges()
         {
             return legacyStateBridge.hasChanges() || (hasTxState() && txState.hasChanges());
+        }
+    }
+
+    private void assertDatabaseWritable() throws ReadOnlyDatabaseKernelException
+    {
+        if ( readOnly )
+        {
+            throw new ReadOnlyDatabaseKernelException();
         }
     }
 }

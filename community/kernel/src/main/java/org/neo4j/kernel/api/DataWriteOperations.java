@@ -19,6 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-public interface DataWriteOperations extends ReadOperations, DataWrite
+public interface DataWriteOperations extends TokenWriteOperations, DataWrite
 {
 }

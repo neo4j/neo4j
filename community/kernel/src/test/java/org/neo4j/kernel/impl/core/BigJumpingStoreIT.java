@@ -26,6 +26,7 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -43,7 +44,9 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
@@ -70,12 +73,6 @@ public class BigJumpingStoreIT
         protected IdGeneratorFactory createIdGeneratorFactory()
         {
             return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
-        }
-
-        @Override
-        protected boolean isHighlyAvailable()
-        {
-            return false;
         }
 
         @Override

@@ -58,14 +58,23 @@ public class KernelStatement implements TxState.Holder, Statement
     }
 
     @Override
-    public DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeException
+    public TokenWriteOperations tokenWriteOperations() throws ReadOnlyDatabaseKernelException
+    {
+        transaction.assertTokenWriteAllowed();
+        return facade;
+    }
+
+    @Override
+    public DataWriteOperations dataWriteOperations()
+            throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
     {
         transaction.upgradeToDataTransaction();
         return facade;
     }
 
     @Override
-    public SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeException
+    public SchemaWriteOperations schemaWriteOperations()
+        throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
     {
         transaction.upgradeToSchemaTransaction();
         return facade;

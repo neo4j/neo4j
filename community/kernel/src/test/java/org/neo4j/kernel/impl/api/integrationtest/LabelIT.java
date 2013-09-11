@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.impl.core.Token;
 
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
@@ -40,7 +41,7 @@ public class LabelIT extends KernelIntegrationTest
         long label1Id;
         long label2Id;
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            TokenWriteOperations statement = tokenWriteOperationsInNewTransaction();
             label1Id = statement.labelGetOrCreateForName( "label1" );
             label2Id = statement.labelGetOrCreateForName( "label2" );
 

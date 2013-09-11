@@ -121,12 +121,6 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
     }
 
     @Override
-    protected boolean isHighlyAvailable()
-    {
-        return false;
-    }
-
-    @Override
     public KernelEventHandler registerKernelEventHandler(
             KernelEventHandler handler )
     {

@@ -19,6 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-public interface SchemaWriteOperations extends ReadOperations, SchemaWrite
+public interface SchemaWriteOperations extends TokenWriteOperations, SchemaWrite
 {
 }

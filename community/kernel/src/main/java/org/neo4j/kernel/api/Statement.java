@@ -23,9 +23,18 @@ public interface Statement extends AutoCloseable
 {
     ReadOperations readOperations();
 
-    DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeException;
+    /**
+     * We create tokens as part of both schema write transactions and data write transactions.
+     * Creating tokens is always allowed, except on read-only databases.
+     * Generally we know from context which of these transaction types we are trying to execute, but in Cypher it
+     * is harder to distinguish the cases. Therefore this operation set is called out separately.
+     */
+    TokenWriteOperations tokenWriteOperations() throws ReadOnlyDatabaseKernelException;
 
-    SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeException;
+    DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException;
+
+    SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeException,
+            ReadOnlyDatabaseKernelException;
 
     void close();
 }

@@ -46,9 +46,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
 
 import static java.nio.ByteBuffer.allocate;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
@@ -67,12 +69,6 @@ public class TestRecoveryVerification
                     Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
             this.verifier = recoveryVerifier;
             run();
-        }
-
-        @Override
-        protected boolean isHighlyAvailable()
-        {
-            return false;
         }
 
         @Override

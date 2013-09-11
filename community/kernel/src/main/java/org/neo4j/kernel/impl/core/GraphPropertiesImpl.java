@@ -35,6 +35,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
@@ -166,7 +167,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         boolean success = false;
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            long propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             statement.dataWriteOperations().graphSetProperty( property( propertyKeyId, value ) );
             success = true;
         }
@@ -178,6 +179,10 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         catch ( InvalidTransactionTypeException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
         }
         finally
         {
@@ -193,7 +198,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     {
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            long propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().graphRemoveProperty( propertyId ).value( null );
         }
         catch ( IllegalTokenNameException e )
@@ -204,6 +209,10 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         catch ( InvalidTransactionTypeException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
         }
     }
 

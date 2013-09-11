@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api;
 
-public class UnsupportedSchemaModificationException extends RuntimeException
+import org.neo4j.kernel.api.exceptions.KernelException;
+
+public class ReadOnlyDatabaseKernelException extends KernelException
 {
-    UnsupportedSchemaModificationException()
+    public ReadOnlyDatabaseKernelException()
     {
-        super( "Creation or deletion of constraints is not possible while running in a HA cluster.  " +
-                "In order to do that, please restart in non-HA mode and propagate the database copy to " +
-                "all slaves" );
-
+        super( (Throwable) null, "Cannot modify a read-only database" );
     }
 }

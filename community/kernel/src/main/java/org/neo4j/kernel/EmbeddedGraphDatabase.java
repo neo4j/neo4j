@@ -99,10 +99,4 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
 
         run();
     }
-
-    @Override
-    protected boolean isHighlyAvailable()
-    {
-        return false;
-    }
 }

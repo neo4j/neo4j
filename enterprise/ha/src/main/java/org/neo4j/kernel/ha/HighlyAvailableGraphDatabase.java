@@ -51,6 +51,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
@@ -182,12 +183,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
     }
 
-    @Override
-    protected boolean isHighlyAvailable()
-    {
-        return true;
-    }
-
     public void start()
     {
         life.start();
@@ -215,7 +210,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Logging createLogging()
     {
-        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, NEW_LOGGER_CONTEXT, DEFAULT_TO_CLASSIC ) );
+        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, NEW_LOGGER_CONTEXT,
+                DEFAULT_TO_CLASSIC ) );
     }
 
     @Override
@@ -406,6 +402,18 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             }
         }, dependencyResolver );
         return txHook;
+    }
+
+    @Override
+    public void assertSchemaWritesAllowed() throws InvalidTransactionTypeException
+    {
+        if (!isMaster())
+        {
+            throw new InvalidTransactionTypeException(
+                    "Creation or deletion of constraints is not possible while running in a HA cluster. " +
+                    "In order to do that, please restart in non-HA mode and propagate the database copy to " +
+                    "all slaves" );
+        }
     }
 
     @Override

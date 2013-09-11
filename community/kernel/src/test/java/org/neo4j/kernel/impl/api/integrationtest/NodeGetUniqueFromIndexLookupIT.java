@@ -25,16 +25,13 @@ import org.junit.Test;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.info.LockInfo;
@@ -150,9 +147,8 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
             public void run()
             {
                 latch.awaitStart();
-                Transaction tx = db.beginTx();
                 Statement statement = statementContextProvider.statement();
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
                     statement.readOperations().nodeGetUniqueFromIndexLookup( index, value );
                     statement.close();
@@ -164,7 +160,6 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
                 }
                 finally
                 {
-                    tx.close();
                     latch.finish();
                 }
             }
@@ -203,8 +198,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
         return StatementConstants.NO_SUCH_NODE == foundId;
     }
 
-    private long createNodeWithValue( String value )
-            throws EntityNotFoundException, ConstraintValidationKernelException, InvalidTransactionTypeException
+    private long createNodeWithValue( String value ) throws KernelException
     {
         DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
         long nodeId = dataStatement.nodeCreate();

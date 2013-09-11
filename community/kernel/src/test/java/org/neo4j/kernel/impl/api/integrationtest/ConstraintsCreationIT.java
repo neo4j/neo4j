@@ -25,14 +25,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.SchemaStorage;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -340,7 +339,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     private long labelId, propertyKeyId;
 
     @Before
-    public void createKeys() throws SchemaKernelException, InvalidTransactionTypeException
+    public void createKeys() throws KernelException
     {
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
         this.labelId = statement.labelGetOrCreateForName( "Foo" );

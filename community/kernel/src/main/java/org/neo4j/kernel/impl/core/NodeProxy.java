@@ -42,6 +42,7 @@ import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -114,6 +115,10 @@ public class NodeProxy implements Node
         catch ( InvalidTransactionTypeException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
         }
     }
 
@@ -207,7 +212,7 @@ public class NodeProxy implements Node
         boolean requireRollback = true; // TODO: this seems like the wrong level to do this on...
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            long propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
             {
                 statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
@@ -231,6 +236,10 @@ public class NodeProxy implements Node
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
+        }
         finally
         {
             if ( requireRollback )
@@ -245,7 +254,7 @@ public class NodeProxy implements Node
     {
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            long propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
         }
         catch ( EntityNotFoundException e )
@@ -259,6 +268,10 @@ public class NodeProxy implements Node
         catch ( InvalidTransactionTypeException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
         }
     }
 
@@ -412,7 +425,7 @@ public class NodeProxy implements Node
         //}
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long relationshipTypeId = statement.readOperations().relationshipTypeGetOrCreateForName( type.name() );
+            long relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
             return nodeLookup.getNodeManager().newRelationshipProxyById(
                     statement.dataWriteOperations().relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
         }
@@ -427,6 +440,10 @@ public class NodeProxy implements Node
         catch ( InvalidTransactionTypeException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
         }
     }
 
@@ -472,7 +489,7 @@ public class NodeProxy implements Node
         {
             try
             {
-                statement.dataWriteOperations().nodeAddLabel( getId(), statement.readOperations().labelGetOrCreateForName( label.name() ) );
+                statement.dataWriteOperations().nodeAddLabel( getId(), statement.tokenWriteOperations().labelGetOrCreateForName( label.name() ) );
             }
             catch ( ConstraintValidationKernelException e )
             {
@@ -495,6 +512,10 @@ public class NodeProxy implements Node
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
+        }
     }
 
     @Override
@@ -515,6 +536,10 @@ public class NodeProxy implements Node
         catch ( InvalidTransactionTypeException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
         }
     }
 

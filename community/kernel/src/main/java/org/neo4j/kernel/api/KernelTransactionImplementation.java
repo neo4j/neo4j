@@ -140,12 +140,16 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         closing = true;
     }
 
-    public void upgradeToDataTransaction() throws InvalidTransactionTypeException
+    public void assertTokenWriteAllowed() throws ReadOnlyDatabaseKernelException
+    {
+    }
+
+    public void upgradeToDataTransaction() throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
     {
         transactionType = transactionType.upgradeToDataTransaction();
     }
 
-    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeException
+    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
     {
         transactionType = transactionType.upgradeToSchemaTransaction();
     }

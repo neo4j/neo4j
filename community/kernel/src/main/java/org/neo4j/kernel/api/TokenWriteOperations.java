@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
-
-public class InvalidTransactionTypeException extends KernelException
+public interface TokenWriteOperations extends ReadOperations, TokenWrite
 {
-    public InvalidTransactionTypeException( String message )
-    {
-        super( (Throwable) null, message );
-    }
 }

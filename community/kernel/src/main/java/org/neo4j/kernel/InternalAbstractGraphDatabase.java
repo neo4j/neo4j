@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -63,6 +62,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.Transactor;
@@ -84,6 +84,7 @@ import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -106,6 +107,7 @@ import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.ReadOnlyNodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -173,7 +175,7 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
  * and lifecycle management of these.
  */
 public abstract class InternalAbstractGraphDatabase
-        extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI
+        extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
     public static class Configuration
     {
@@ -492,9 +494,10 @@ public abstract class InternalAbstractGraphDatabase
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
-        kernelAPI = life.add( new Kernel( readOnly, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, persistenceManager,
+        kernelAPI = life.add( new Kernel(
+                txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, persistenceManager,
                 xaDataSourceManager, lockManager, updateableSchemaState, dependencyResolver,
-                this.isHighlyAvailable() ) );
+                readOnly, this ) );
 
         // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
         txManager.setKernel(kernelAPI);
@@ -561,7 +564,9 @@ public abstract class InternalAbstractGraphDatabase
         life.add( new ConfigurationChangedRestarter() );
     }
 
-    protected abstract boolean isHighlyAvailable();
+    public void assertSchemaWritesAllowed() throws InvalidTransactionTypeException
+    {
+    }
 
     protected CleanupService createCleanupService()
     {
@@ -983,6 +988,10 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
+        }
     }
 
     @Override
@@ -993,7 +1002,7 @@ public abstract class InternalAbstractGraphDatabase
             long nodeId = statement.dataWriteOperations().nodeCreate();
             for ( Label label : labels )
             {
-                long labelId = statement.dataWriteOperations().labelGetOrCreateForName( label.name() );
+                long labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
                 try
                 {
                     statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
@@ -1016,6 +1025,10 @@ public abstract class InternalAbstractGraphDatabase
         catch ( InvalidTransactionTypeException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
         }
     }
 

@@ -28,13 +28,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -134,7 +133,7 @@ public class KernelSchemaStateFlushingTest
         assertEquals( "after", after );
     }
 
-    private UniquenessConstraint createConstraint() throws SchemaKernelException, InvalidTransactionTypeException
+    private UniquenessConstraint createConstraint() throws KernelException
     {
         Transaction tx = db.beginTx();
         Statement statement = ctxProvider.statement();
@@ -145,7 +144,7 @@ public class KernelSchemaStateFlushingTest
         return descriptor;
     }
 
-    private void dropConstraint( UniquenessConstraint descriptor ) throws SchemaKernelException, InvalidTransactionTypeException
+    private void dropConstraint( UniquenessConstraint descriptor ) throws KernelException
 
     {
         Transaction tx = db.beginTx();
@@ -156,7 +155,7 @@ public class KernelSchemaStateFlushingTest
         tx.finish();
     }
 
-    private IndexDescriptor createIndex() throws SchemaKernelException, InvalidTransactionTypeException
+    private IndexDescriptor createIndex() throws KernelException
     {
         Transaction tx = db.beginTx();
         Statement statement = ctxProvider.statement();
@@ -167,7 +166,7 @@ public class KernelSchemaStateFlushingTest
         return descriptor;
     }
 
-    private void dropIndex( IndexDescriptor descriptor ) throws SchemaKernelException, InvalidTransactionTypeException
+    private void dropIndex( IndexDescriptor descriptor ) throws KernelException
     {
         Transaction tx = db.beginTx();
         Statement statement = ctxProvider.statement();

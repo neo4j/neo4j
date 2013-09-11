@@ -36,6 +36,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -356,8 +358,8 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    long labelId = statement.readOperations().labelGetOrCreateForName( label.name() );
-                    long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( propertyKey );
+                    long labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
+                    long propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                     statement.schemaWriteOperations().indexCreate( labelId, propertyKeyId );
                     return new IndexDefinitionImpl( this, label, propertyKey, false );
                 }
@@ -390,6 +392,10 @@ public class SchemaImpl implements Schema
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
+                catch ( ReadOnlyDatabaseKernelException e )
+                {
+                    throw new ReadOnlyDbException();
+                }
             }
         }
 
@@ -416,6 +422,10 @@ public class SchemaImpl implements Schema
             {
                 throw new ConstraintViolationException( e.getMessage(), e );
             }
+            catch ( ReadOnlyDatabaseKernelException e )
+            {
+                throw new ReadOnlyDbException();
+            }
         }
 
         @Override
@@ -425,8 +435,8 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    long labelId = statement.readOperations().labelGetOrCreateForName( label.name() );
-                    long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( propertyKey );
+                    long labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
+                    long propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                     statement.schemaWriteOperations().uniquenessConstraintCreate( labelId, propertyKeyId );
                     return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
                 }
@@ -460,6 +470,10 @@ public class SchemaImpl implements Schema
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
+                catch ( ReadOnlyDatabaseKernelException e )
+                {
+                    throw new ReadOnlyDbException();
+                }
             }
         }
 
@@ -468,8 +482,8 @@ public class SchemaImpl implements Schema
         {
             try ( Statement statement = ctxProvider.statement() )
             {
-                long labelId = statement.readOperations().labelGetOrCreateForName( label.name() );
-                long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( propertyKey );
+                long labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
+                long propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                 UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
                 statement.schemaWriteOperations().constraintDrop( constraint );
             }
@@ -480,6 +494,10 @@ public class SchemaImpl implements Schema
             catch ( InvalidTransactionTypeException e )
             {
                 throw new ConstraintViolationException( e.getMessage(), e );
+            }
+            catch ( ReadOnlyDatabaseKernelException e )
+            {
+                throw new ReadOnlyDbException();
             }
         }
 

@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -188,8 +189,8 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         rollback();
     }
 
-    private Node constrainedNode( String labelName, String propertyKey, Object propertyValue ) throws
-            SchemaKernelException, InvalidTransactionTypeException
+    private Node constrainedNode( String labelName, String propertyKey, Object propertyValue )
+            throws KernelException
     {
         Node node;
         long labelId;

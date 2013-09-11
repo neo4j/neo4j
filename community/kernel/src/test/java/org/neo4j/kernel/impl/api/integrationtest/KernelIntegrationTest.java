@@ -27,11 +27,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -49,14 +50,21 @@ public abstract class KernelIntegrationTest
     private Statement statement;
     private EphemeralFileSystemAbstraction fs;
 
-    protected DataWriteOperations dataWriteOperationsInNewTransaction() throws InvalidTransactionTypeException
+    protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
+    {
+        beansTx = db.beginTx();
+        statement = statementContextProvider.statement();
+        return statement.tokenWriteOperations();
+    }
+
+    protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException
     {
         beansTx = db.beginTx();
         statement = statementContextProvider.statement();
         return statement.dataWriteOperations();
     }
 
-    protected SchemaWriteOperations schemaWriteOperationsInNewTransaction() throws InvalidTransactionTypeException
+    protected SchemaWriteOperations schemaWriteOperationsInNewTransaction() throws KernelException
     {
         beansTx = db.beginTx();
         statement = statementContextProvider.statement();

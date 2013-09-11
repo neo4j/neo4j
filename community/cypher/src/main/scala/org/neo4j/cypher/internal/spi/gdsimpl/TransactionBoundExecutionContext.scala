@@ -96,8 +96,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
     statement.readOperations().nodeHasLabel(node, label)
 
   def getOrCreateLabelId(labelName: String) =
-    statement.readOperations().labelGetOrCreateForName(labelName)
-
+    statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] = types match {
     case Seq() => node.getRelationships(dir).iterator().asScala
@@ -197,7 +196,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
   }
 
   def getOrCreatePropertyKeyId(propertyKey: String) =
-    statement.readOperations().propertyKeyGetOrCreateForName(propertyKey)
+    statement.tokenWriteOperations().propertyKeyGetOrCreateForName(propertyKey)
 
   def upgrade(context: QueryContext): LockingQueryContext = new RepeatableReadQueryContext(context, new Locker {
     private val locks = new mutable.ListBuffer[Lock]

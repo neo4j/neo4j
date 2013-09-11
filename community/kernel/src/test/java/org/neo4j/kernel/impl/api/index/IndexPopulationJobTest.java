@@ -490,13 +490,13 @@ public class IndexPopulationJobTest
 
         Transaction tx = db.beginTx();
         Statement statement = ctxProvider.statement();
-        firstLabelId = statement.readOperations().labelGetOrCreateForName( FIRST.name() );
-        secondLabelId = statement.readOperations().labelGetOrCreateForName( SECOND.name() );
+        firstLabelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
+        secondLabelId = statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
 
-        namePropertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( name );
-        agePropertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( age );
+        namePropertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( name );
+        agePropertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( age );
 
-        statement.readOperations().labelGetOrCreateForName( SECOND.name() );
+        statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
         statement.close();
         tx.success();
         tx.finish();

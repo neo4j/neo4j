@@ -333,14 +333,12 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with 
       val nodeId         = node.getId
       val queryCtx       = state.query
 
-      val labelId = try {
-        label.getOrCreateId(state.query)
-      } catch {
-        // If we are running in a query were we can't write changes,
-        // just return false for this predicate.
-        case _: NotInTransactionException => return false
+      label.getOptId(state.query) match {
+        case None =>
+          false
+        case Some(labelId) =>
+          queryCtx.isLabelSetOnNode(labelId, nodeId)
       }
-      queryCtx.isLabelSetOnNode(labelId, nodeId)
   }
 
   override def toString = s"hasLabel(${entity}:${label})"

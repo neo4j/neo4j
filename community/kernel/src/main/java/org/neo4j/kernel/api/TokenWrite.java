@@ -22,7 +22,7 @@ package org.neo4j.kernel.api;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 
-interface TokenWrite
+public interface TokenWrite
 {
     /**
      * Returns a label id for a label name. If the label doesn't exist prior to

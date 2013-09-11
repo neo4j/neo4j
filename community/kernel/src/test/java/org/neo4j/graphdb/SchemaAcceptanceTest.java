@@ -22,7 +22,6 @@ package org.neo4j.graphdb;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -76,22 +75,35 @@ public class SchemaAcceptanceTest
         assertThat( getIndexes( db, label ), containsOnly( index ) );
     }
 
-    @Test @Ignore("2013-07-24 Non-urgent bug, needs fixing")
+    @Test
     public void addingAnIndexingRuleInNestedTxShouldSucceed() throws Exception
     {
         IndexDefinition index;
 
         // WHEN
         Transaction tx = db.beginTx();
+        IndexDefinition indexDef;
         try
         {
-            index = createIndex( db, label , propertyKey );
+            Transaction tx1 = db.beginTx();
+            try
+            {
+                indexDef = db.schema().indexFor( label ).on( propertyKey ).create();
+                tx1.success();
+            }
+            finally
+            {
+                tx1.finish();
+            }
+
+            index = indexDef;
             tx.success();
         }
         finally
         {
             tx.finish();
         }
+        waitForIndex( db, indexDef );
 
         // THEN
         assertThat( getIndexes( db, label ), containsOnly( index ) );

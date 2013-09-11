@@ -22,11 +22,14 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class KernelTest
@@ -38,14 +41,16 @@ public class KernelTest
         KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         db.beginTx();
         KernelTransaction tx = kernelAPI.newTransaction();
-        SchemaWriteOperations statement = tx.acquireStatement().schemaWriteOperations();
+        Statement statement = tx.acquireStatement();
+
         try
         {
-            statement.uniquenessConstraintCreate( 1, 1 );
+            statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
             fail( "expected exception here" );
         }
-        catch ( UnsupportedSchemaModificationException e )
-        { //Good
+        catch ( InvalidTransactionTypeException e )
+        {
+            assertThat( e.getMessage(), containsString( "HA" ) );
         }
         db.shutdown();
     }
@@ -54,9 +59,12 @@ public class KernelTest
     class FakeHaDatabase extends ImpermanentGraphDatabase
     {
         @Override
-        protected boolean isHighlyAvailable()
+        public void assertSchemaWritesAllowed() throws InvalidTransactionTypeException
         {
-            return true;
+            throw new InvalidTransactionTypeException(
+                    "Creation or deletion of constraints is not possible while running in a HA cluster. " +
+                    "In order to do that, please restart in non-HA mode and propagate the database copy to " +
+                    "all slaves" );
         }
     }
 }

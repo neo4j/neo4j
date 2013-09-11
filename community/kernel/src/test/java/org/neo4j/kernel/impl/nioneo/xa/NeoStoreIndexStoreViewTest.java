@@ -36,7 +36,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -107,7 +107,7 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Before
-    public void before() throws SchemaKernelException
+    public void before() throws KernelException
     {
         String graphDbPath = testDirectory.directory().getAbsolutePath();
         graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( graphDbPath );
@@ -148,7 +148,7 @@ public class NeoStoreIndexStoreViewTest
         }
     }
 
-    private void getOrCreateIds() throws SchemaKernelException
+    private void getOrCreateIds() throws KernelException
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -157,8 +157,8 @@ public class NeoStoreIndexStoreViewTest
 
             try ( Statement statement = bridge.statement() )
             {
-                labelId = statement.readOperations().labelGetOrCreateForName( "Person" );
-                propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( "name" );
+                labelId = statement.dataWriteOperations().labelGetOrCreateForName( "Person" );
+                propertyKeyId = statement.dataWriteOperations().propertyKeyGetOrCreateForName( "name" );
             }
             tx.success();
         }

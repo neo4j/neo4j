@@ -33,6 +33,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -89,6 +90,10 @@ public class RelationshipProxy implements Relationship
         catch ( InvalidTransactionTypeException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
         }
     }
 
@@ -252,7 +257,7 @@ public class RelationshipProxy implements Relationship
         boolean success = false;
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            long propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             statement.dataWriteOperations().relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
             success = true;
         }
@@ -269,6 +274,10 @@ public class RelationshipProxy implements Relationship
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
+        }
         finally
         {
             if ( !success )
@@ -283,7 +292,7 @@ public class RelationshipProxy implements Relationship
     {
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.readOperations().propertyKeyGetOrCreateForName( key );
+            long propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().relationshipRemoveProperty( relId, propertyId ).value( null );
         }
         catch ( EntityNotFoundException e )
@@ -298,6 +307,10 @@ public class RelationshipProxy implements Relationship
         catch ( InvalidTransactionTypeException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( ReadOnlyDatabaseKernelException e )
+        {
+            throw new ReadOnlyDbException();
         }
     }
 
