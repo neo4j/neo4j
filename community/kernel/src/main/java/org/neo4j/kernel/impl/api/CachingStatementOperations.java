@@ -39,7 +39,6 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
-import java.util.Set;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
@@ -62,8 +61,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
+import static org.neo4j.kernel.impl.api.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
 
 public class CachingStatementOperations implements
         EntityReadOperations,
@@ -104,12 +102,12 @@ public class CachingStatementOperations implements
             return entityReadDelegate.graphGetAllProperties(state);
         }
     };
-    private final CacheLoader<Set<Integer>> nodeLabelLoader = new CacheLoader<Set<Integer>>()
+    private final CacheLoader<int[]> nodeLabelLoader = new CacheLoader<int[]>()
     {
         @Override
-        public Set<Integer> load( KernelStatement state, long id ) throws EntityNotFoundException
+        public int[] load( KernelStatement state, long id ) throws EntityNotFoundException
         {
-            return asSet( entityReadDelegate.nodeGetLabels( state, id ) );
+            return primitiveIntIteratorToIntArray( entityReadDelegate.nodeGetLabels( state, id ) );
         }
     };
     private final PersistenceCache persistenceCache;
@@ -130,17 +128,15 @@ public class CachingStatementOperations implements
     }
 
     @Override
-    public boolean nodeHasLabel( KernelStatement state, final long nodeId, int labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
         return persistenceCache.nodeHasLabel( state, nodeId, labelId, nodeLabelLoader );
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetLabels( KernelStatement state, final long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
-        // TODO Make PersistenceCache use primitive longs
-        Iterator<Integer> iterator = persistenceCache.nodeGetLabels( state, nodeId, nodeLabelLoader ).iterator();
-        return toPrimitiveIntIterator( iterator );
+        return new PrimitiveIntIteratorForArray( persistenceCache.nodeGetLabels( state, nodeId, nodeLabelLoader ) );
     }
 
     @Override

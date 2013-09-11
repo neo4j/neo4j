@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.Test;
 
 import org.neo4j.kernel.api.KernelStatement;
@@ -29,15 +26,13 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.kernel.impl.api.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
 public class CachingStatementOperationsTest
@@ -47,9 +42,8 @@ public class CachingStatementOperationsTest
     {
         // GIVEN
         long nodeId = 3;
-        Set<Integer> labels = new HashSet<>( asList( 1, 2, 3 ) );
+        int[] labels = new int[] {1, 2, 3};
         PersistenceCache cache = mock( PersistenceCache.class );
-        //noinspection unchecked
         when( cache.nodeGetLabels( any( KernelStatement.class ), eq( nodeId ), any( CacheLoader.class ) ) ).thenReturn( labels );
         EntityReadOperations entityReadOperations = mock( EntityReadOperations.class );
         SchemaReadOperations schemaReadOperations = mock( SchemaReadOperations.class );
@@ -60,6 +54,6 @@ public class CachingStatementOperationsTest
         PrimitiveIntIterator receivedLabels = context.nodeGetLabels( mockedState(), nodeId );
 
         // THEN
-        assertEquals( labels, addToCollection( receivedLabels, new HashSet<Integer>() ) );
+        assertArrayEquals( labels, primitiveIntIteratorToIntArray( receivedLabels ) );
     }
 }

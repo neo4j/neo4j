@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -39,7 +38,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CacheLoader;
-import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -51,7 +49,10 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
 import static java.lang.System.arraycopy;
+import static java.util.Arrays.binarySearch;
 
+import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.util.RelIdArray.empty;
 import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
@@ -65,12 +66,14 @@ import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
  */
 public class NodeImpl extends ArrayBasedPrimitive
 {
+    /* relationships[] being null means: not even tried to load any relationships - go ahead and load
+     * relationships[] being NO_RELATIONSHIPS means: don't bother loading relationships since there aren't any */
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
 
     private volatile RelIdArray[] relationships;
 
-    // TODO do this more efficiently, perhaps using a sorted array
-    private volatile Set<Integer> labels;
+    // Sorted array
+    private volatile int[] labels;
     /*
      * This is the id of the next relationship to load from disk.
      */
@@ -111,14 +114,21 @@ public class NodeImpl extends ArrayBasedPrimitive
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
-        int size = super.sizeOfObjectInBytesIncludingOverhead() + SizeOfs.REFERENCE_SIZE/*relationships reference*/ + 8/*relChainPosition*/ + 8/*id*/;
-        if ( relationships != null )
+        int size = super.sizeOfObjectInBytesIncludingOverhead() +
+                REFERENCE_SIZE/*relationships reference*/ +
+                8/*relChainPosition*/ + 8/*id*/ +
+                REFERENCE_SIZE/*labels reference*/;
+        if ( relationships != null && relationships.length > 0 )
         {
             size = withArrayOverheadIncludingReferences( size, relationships.length );
             for ( RelIdArray array : relationships )
             {
                 size += array.sizeOfObjectInBytesIncludingOverhead();
             }
+        }
+        if ( labels != null && labels.length > 0 )
+        {
+            size += sizeOfArray( labels );
         }
         return size;
     }
@@ -259,10 +269,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             return new CombinedRelIdIterator( type, direction, src, add, remove );
         }
-        else
-        {
-            return src != null ? src.iterator( direction ) : empty( type ).iterator( direction );
-        }
+        return src != null ? src.iterator( direction ) : empty( type ).iterator( direction );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager )
@@ -699,7 +706,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         return nm.newNodeProxyById( getId() );
     }
 
-    public Set<Integer> getLabels( KernelStatement state, CacheLoader<Set<Integer>> loader ) throws EntityNotFoundException
+    public int[] getLabels( KernelStatement state, CacheLoader<int[]> loader ) throws EntityNotFoundException
     {
         if ( labels == null )
         {
@@ -714,19 +721,35 @@ public class NodeImpl extends ArrayBasedPrimitive
         return labels;
     }
 
+    public boolean hasLabel( KernelStatement state, int labelId, CacheLoader<int[]> loader ) throws EntityNotFoundException
+    {
+        int[] labels = getLabels( state, loader );
+        return binarySearch( labels, labelId ) >= 0;
+    }
+
     public synchronized void commitLabels( Set<Integer> added, Set<Integer> removed )
     {
         if ( labels != null )
         {
-            Set<Integer> newLabels = new HashSet<>( labels );
-            if ( added != null )
+            int estimatedDelta = added.size() - removed.size();
+            int[] newLabels = new int[labels.length+estimatedDelta];
+            int cursor = 0;
+
+            // Remove the removed
+            for ( int label : labels )
             {
-                newLabels.addAll( added );
+                if ( !removed.contains( label ) )
+                {
+                    newLabels[cursor++] = label;
+                }
             }
-            if ( removed != null )
+
+            // Add the added
+            for ( int label : added )
             {
-                newLabels.removeAll( removed );
+                newLabels[cursor++] = label;
             }
+            Arrays.sort( newLabels );
             labels = newLabels;
         }
     }

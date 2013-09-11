@@ -64,10 +64,6 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
 
   @Test def Removing_labels() {
     usingLabels("FOO", "BAR").
-      assertThat("START n=node({node}) REMOVE n :FOO RETURN n").
-      returnsLabels("BAR")
-
-    usingLabels("FOO", "BAR").
       assertThat("START n=node({node}) REMOVE n:FOO RETURN n").
       returnsLabels("BAR")
 

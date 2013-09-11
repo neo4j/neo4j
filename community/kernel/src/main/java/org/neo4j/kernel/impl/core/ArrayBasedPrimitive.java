@@ -29,11 +29,11 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
-import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
@@ -68,8 +68,8 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
-        int size = SizeOfs.REFERENCE_SIZE/*properties reference*/ + 8/*registered size*/;
-        if ( properties != null )
+        int size = REFERENCE_SIZE/*properties reference*/ + 8/*registered size*/;
+        if ( properties != null && properties.length > 0 )
         {
             size = withArrayOverheadIncludingReferences( size, properties.length ); // the actual properties[] object
             for ( DefinedProperty data : properties )

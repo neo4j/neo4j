@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -39,7 +40,11 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
@@ -187,7 +192,6 @@ public class LabelsAcceptanceTest
         Transaction tx = beansAPI.beginTx();
         try
         {
-            myNode = beansAPI.createNode();
             myNode.removeLabel( label );
             tx.success();
         }

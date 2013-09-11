@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Set;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,17 +34,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 public class PersistenceCacheTest
 {
     @Test
     public void shouldLoadAndCacheNodeLabels() throws Exception
     {
         // GIVEN
-        Set<Integer> labels = asSet( 1, 2, 3 );
+        int[] labels = new int[] {1, 2, 3};
         @SuppressWarnings( "unchecked" )
-        CacheLoader<Set<Integer>> loader = mock( CacheLoader.class );
+        CacheLoader<int[]> loader = mock( CacheLoader.class );
         when( loader.load( state, nodeId ) ).thenReturn( labels );
         NodeImpl node = new NodeImpl( nodeId );
         when( nodeCache.get( nodeId ) ).thenReturn( node );

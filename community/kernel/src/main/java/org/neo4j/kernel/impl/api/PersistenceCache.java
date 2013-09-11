@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
-import java.util.Set;
 
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.EntityType;
@@ -83,14 +82,13 @@ public class PersistenceCache
         this.graphProperties = graphProperties;
     }
 
-    public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId, CacheLoader<Set<Integer>> cacheLoader )
+    public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId, CacheLoader<int[]> cacheLoader )
             throws EntityNotFoundException
     {
-        Set<Integer> labels = getNode( nodeId ).getLabels( state, cacheLoader );
-        return labels.contains( labelId );
+        return getNode( nodeId ).hasLabel( state, labelId, cacheLoader );
     }
 
-    public Set<Integer> nodeGetLabels( KernelStatement state, long nodeId, CacheLoader<Set<Integer>> loader )
+    public int[] nodeGetLabels( KernelStatement state, long nodeId, CacheLoader<int[]> loader )
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getLabels( state, loader );

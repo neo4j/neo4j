@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.NoSuchElementException;
 
+import static java.util.Arrays.copyOf;
+
 public class PrimitiveIntIteratorForArray implements PrimitiveIntIterator
 {
     private final int[] values;
@@ -45,9 +47,29 @@ public class PrimitiveIntIteratorForArray implements PrimitiveIntIterator
         {
             return values[i++];
         }
-        else
+        throw new NoSuchElementException( );
+    }
+
+    public static final int[] EMPTY_INT_ARRAY = new int[0];
+
+    public static int[] primitiveIntIteratorToIntArray( PrimitiveIntIterator iterator )
+    {
+        if ( !iterator.hasNext() )
         {
-            throw new NoSuchElementException( );
+            return EMPTY_INT_ARRAY;
         }
+
+        int[] result = new int[5]; // arbitrary initial size
+        int cursor = 0;
+        while ( iterator.hasNext() )
+        {
+            if ( cursor >= result.length )
+            {
+                result = copyOf( result, result.length*2 );
+            }
+            result[cursor++] = iterator.next();
+        }
+        // shrink if needed
+        return cursor == result.length ? result : copyOf( result, cursor );
     }
 }
