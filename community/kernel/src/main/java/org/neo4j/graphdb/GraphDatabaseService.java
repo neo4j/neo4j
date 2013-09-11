@@ -23,6 +23,8 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
+import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -249,4 +251,14 @@ public interface GraphDatabaseService
      * @return the {@link IndexManager} for this database.
      */
     IndexManager index();
+
+    /**
+     * Factory method for unidirectional traversal descriptions
+     */
+    TraversalDescription traversalDescription();
+
+    /**
+     * Factory method for bidirectional traversal descriptions
+     */
+    BidirectionalTraversalDescription bidirectionalTraversalDescription();
 }

@@ -17,22 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
 import java.util.LinkedList;
 import java.util.Queue;
 
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.traversal.BranchSelector;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.TraversalContext;
 
 /**
  * Selects {@link TraversalBranch}s according to breadth first
  * pattern, the most natural ordering in a breadth first search, see
  * http://en.wikipedia.org/wiki/Breadth-first_search
  */
-public class PreorderBreadthFirstSelector implements BranchSelector
+class PreorderBreadthFirstSelector implements BranchSelector
 {
     private final Queue<TraversalBranch> queue = new LinkedList<TraversalBranch>();
     private TraversalBranch current;

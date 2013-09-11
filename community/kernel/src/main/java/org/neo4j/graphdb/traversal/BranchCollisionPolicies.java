@@ -17,35 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.kernel.ShortestPathsBranchCollisionDetector;
+import org.neo4j.kernel.StandardBranchCollisionDetector;
 
-class PathUnique extends AbstractUniquenessFilter
+/**
+ * A catalogue of convenient branch collision policies
+ *
+ * Copied from kernel package so that we can hide kernel from the public API.
+ */
+public enum BranchCollisionPolicies implements BranchCollisionPolicy
 {
-    PathUnique( PrimitiveTypeFetcher type )
+    STANDARD
     {
-        super( type );
-    }
-    
-    public boolean check( TraversalBranch source )
-    {
-        long idToCompare = type.getId( source );
-        while ( source.length() > 0 )
+        @Override
+        public BranchCollisionDetector create( Evaluator evaluator )
         {
-            source = source.parent();
-            if (type.idEquals(source, idToCompare))
-            {
-                return false;
-            }
+            return new StandardBranchCollisionDetector( evaluator );
         }
-        return true;
-    }
-    
-    @Override
-    public boolean checkFull( Path path )
+    },
+    SHORTEST_PATH
     {
-        return !type.containsDuplicates( path );
-    }
+        @Override
+        public BranchCollisionDetector create( Evaluator evaluator )
+        {
+            return new ShortestPathsBranchCollisionDetector( evaluator );
+        }
+    };
 }

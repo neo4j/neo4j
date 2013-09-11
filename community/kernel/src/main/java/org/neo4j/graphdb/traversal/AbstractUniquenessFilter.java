@@ -17,27 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-
-class NotUnique extends AbstractUniquenessFilter
+abstract class AbstractUniquenessFilter implements BidirectionalUniquenessFilter
 {
-    NotUnique()
+    final PrimitiveTypeFetcher type;
+
+    AbstractUniquenessFilter( PrimitiveTypeFetcher type )
     {
-        super( null );
+        this.type = type;
     }
 
-    public boolean check( TraversalBranch source )
+    public boolean checkFirst( TraversalBranch branch )
     {
-        return true;
-    }
-    
-    @Override
-    public boolean checkFull( Path path )
-    {
-        // Where we have no uniqueness, everything is unique.
-        return true;
+        return type == PrimitiveTypeFetcher.RELATIONSHIP ? true : check( branch );
     }
 }

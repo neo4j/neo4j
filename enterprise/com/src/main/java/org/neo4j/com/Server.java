@@ -53,6 +53,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
 import org.neo4j.com.RequestContext.Tx;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -64,7 +65,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.tooling.Clock;
 
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;

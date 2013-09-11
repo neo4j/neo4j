@@ -17,51 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.traversal;
 
-import org.neo4j.graphdb.traversal.BranchSelector;
-import org.neo4j.graphdb.traversal.SideSelector;
-import org.neo4j.graphdb.traversal.SideSelectorPolicy;
+import org.neo4j.kernel.AlternatingSelectorOrderer;
+import org.neo4j.kernel.LevelSelectorOrderer;
 
 /**
- * @deprecated See {@link org.neo4j.graphdb.traversal.SideSelectorPolicies}
+ * A catalogue of convenient side selector policies for use in bidirectional traversals.
+ *
+ * Copied from kernel package so that we can hide kernel from the public API.
  */
 public enum SideSelectorPolicies implements SideSelectorPolicy
 {
-    /**
-     * @deprecated See {@link org.neo4j.graphdb.traversal.SideSelectorPolicies}
-     */
     LEVEL
     {
         @Override
         public SideSelector create( BranchSelector start, BranchSelector end, int maxDepth )
         {
-            return org.neo4j.graphdb.traversal.SideSelectorPolicies.LEVEL.create( start, end, maxDepth );
+            return new LevelSelectorOrderer( start, end, false, maxDepth );
         }
     },
-
-    /**
-     * @deprecated See {@link org.neo4j.graphdb.traversal.SideSelectorPolicies}
-     */
     LEVEL_STOP_DESCENT_ON_RESULT
     {
         @Override
         public SideSelector create( BranchSelector start, BranchSelector end, int maxDepth )
         {
-            return org.neo4j.graphdb.traversal.SideSelectorPolicies.LEVEL_STOP_DESCENT_ON_RESULT
-                    .create( start, end, maxDepth );
+            return new LevelSelectorOrderer( start, end, true, maxDepth );
         }
     },
-
-    /**
-     * @deprecated See {@link org.neo4j.graphdb.traversal.SideSelectorPolicies}
-     */
     ALTERNATING
     {
         @Override
         public SideSelector create( BranchSelector start, BranchSelector end, int maxDepth )
         {
-            return org.neo4j.graphdb.traversal.SideSelectorPolicies.ALTERNATING.create( start, end, maxDepth );
+            return new AlternatingSelectorOrderer( start, end );
         }
-    };
+    }
 }

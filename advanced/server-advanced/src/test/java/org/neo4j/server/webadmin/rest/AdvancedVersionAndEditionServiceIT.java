@@ -27,7 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
@@ -35,12 +35,10 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-import org.neo4j.tooling.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.test.Mute.muteAll;
 
 /*

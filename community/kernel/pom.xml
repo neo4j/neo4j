@@ -293,11 +293,11 @@ public class ComponentVersion extends Version
                 <detectJavaApiLink>true</detectJavaApiLink>
                 <detectLinks>true</detectLinks>
                 <quiet>true</quiet>
-                <excludePackageNames>*.impl.*</excludePackageNames>
+                <excludePackageNames>org.neo4j.kernel,*.impl.*</excludePackageNames>
                 <groups>
                   <group>
                     <title>Graph database</title>
-                    <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*</packages>
+                    <packages>org.neo4j.graphdb:org.neo4j.graphdb.*</packages>
                   </group>
                   <group>
                     <title>Helpers</title>
@@ -345,10 +345,11 @@ public class ComponentVersion extends Version
               <version>${slf4j-api.version}</version>
             </additionnalDependency>
           </additionnalDependencies>
+          <excludePackageNames>org.neo4j.kernel,*.impl.*</excludePackageNames>
           <groups>
             <group>
               <title>Graph database</title>
-<packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*</packages>
+              <packages>org.neo4j.graphdb:org.neo4j.graphdb.*</packages>
             </group>
             <group>
               <title>Helpers</title>

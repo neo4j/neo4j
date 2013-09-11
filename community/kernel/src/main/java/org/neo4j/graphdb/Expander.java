@@ -24,6 +24,8 @@ import org.neo4j.helpers.Predicate;
 /**
  * This interface is an extension of the {@link RelationshipExpander} interface
  * that makes it possible to build customized versions of an {@link Expander}.
+ *
+ * @deprecated Deprecated because {@link RelationshipExpander} is deprecated. See {@link PathExpander} instead.
  */
 public interface Expander extends RelationshipExpander
 {

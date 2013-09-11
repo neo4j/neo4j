@@ -45,6 +45,8 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
+import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -863,6 +865,18 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
     @Override
     public IndexManager index()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TraversalDescription traversalDescription()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BidirectionalTraversalDescription bidirectionalTraversalDescription()
     {
         throw new UnsupportedOperationException();
     }
