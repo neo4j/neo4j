@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,17 +34,19 @@ import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Function;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.test.DatabaseFunctions.addLabel;
+import static org.neo4j.test.DatabaseFunctions.awaitIndexesOnline;
 import static org.neo4j.test.DatabaseFunctions.createNode;
 import static org.neo4j.test.DatabaseFunctions.index;
 import static org.neo4j.test.DatabaseFunctions.setProperty;
@@ -64,6 +70,7 @@ public class UniqueIndexApplicationIT
     public void given() throws Exception
     {
         db.executeAndCommit( createIndex );
+        db.executeAndCommit( awaitIndexesOnline( 5, SECONDS ) );
     }
 
     @Test
@@ -131,19 +138,43 @@ public class UniqueIndexApplicationIT
     @After
     public void then() throws Exception
     {
-        assertEquals( "number of matching nodes in the index",
-                      1, (int) db.when( db.tx( countNodesFromIndexLookup( label( "Label1" ), "key1", "value1" ) ) ) );
+        assertThat( "Matching nodes from index lookup",
+                    db.when( db.tx( listNodeIdsFromIndexLookup( label( "Label1" ), "key1", "value1" ) ) ),
+                    hasSize( 1 ) );
     }
 
-    private static Function<GraphDatabaseService, Integer> countNodesFromIndexLookup(
-            final Label label, final String propertyKey, final Object value )
+    private static Matcher<List<?>> hasSize( final int size )
     {
-        return new Function<GraphDatabaseService, Integer>()
+        return new TypeSafeMatcher<List<?>>()
         {
             @Override
-            public Integer apply( GraphDatabaseService graphDb )
+            protected boolean matchesSafely( List<?> item )
             {
-                return count( graphDb.findNodesByLabelAndProperty( label, propertyKey, value ) );
+                return item.size() == size;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "List with size=" ).appendValue( size );
+            }
+        };
+    }
+
+    private Function<GraphDatabaseService, List<Long>> listNodeIdsFromIndexLookup(
+            final Label label, final String propertyKey, final Object value )
+    {
+        return new Function<GraphDatabaseService, List<Long>>()
+        {
+            @Override
+            public List<Long> apply( GraphDatabaseService graphDb )
+            {
+                ArrayList<Long> ids = new ArrayList<>();
+                for ( Node node : graphDb.findNodesByLabelAndProperty( label, propertyKey, value ) )
+                {
+                    ids.add( node.getId() );
+                }
+                return ids;
             }
         };
     }

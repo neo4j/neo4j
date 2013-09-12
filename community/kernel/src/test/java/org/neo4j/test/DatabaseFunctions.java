@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -86,6 +88,20 @@ public class DatabaseFunctions
             public Void apply( GraphDatabaseService graphDb )
             {
                 graphDb.schema().constraintFor( label ).unique().on( propertyKey ).create();
+                return null;
+            }
+        };
+    }
+
+    public static AlgebraicFunction<GraphDatabaseService, Void> awaitIndexesOnline(
+            final long timeout, final TimeUnit unit )
+    {
+        return new AlgebraicFunction<GraphDatabaseService, Void>()
+        {
+            @Override
+            public Void apply( GraphDatabaseService graphDb )
+            {
+                graphDb.schema().awaitIndexesOnline( timeout, unit );
                 return null;
             }
         };
