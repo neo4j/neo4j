@@ -19,56 +19,45 @@
  */
 package org.neo4j.ha;
 
-import java.io.File;
-
-import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.ha.ConflictingServerIdIT;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.fail;
 
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+
 public class ConstraintsInHAIT
 {
-    private static final File path = TargetDirectory.forTest( ConflictingServerIdIT.class ).graphDbDir( true );
-    private GraphDatabaseService db;
-
     @Test
-    public void shouldFailNicelyWhenRunningInHA() throws Exception
+    public void creatingConstraintOnSlaveIsNotAllowed() throws Exception
     {
-        GraphDatabaseBuilder masterBuilder = new HighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( path( 1 ) )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
-                .setConfig( ClusterSettings.server_id, "1" );
+        // given
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
-        db = masterBuilder.newGraphDatabase();
-        db.beginTx();
-
+        slave.beginTx();
         try
         {
-            db.schema().constraintFor( DynamicLabel.label( "LabelName" ) ).on( "PropertyName" ).unique().create();
-            fail("Expected an exception to be thrown");
+            ConstraintCreator constraintCreator = slave.schema()
+                    .constraintFor( DynamicLabel.label( "LabelName" ) ).on( "PropertyName" ).unique();
+
+            // when
+            constraintCreator.create();
+            fail( "should have thrown exception" );
         }
-        catch ( Exception e )
-        { //Good
+        catch ( ConstraintViolationException e )
+        {
+            // expected
         }
     }
 
-    @After
-    public void cleanUp()
-    {
-        db.shutdown();
-    }
-
-    private static String path( int i )
-    {
-        return new File( path, "" + i ).getAbsolutePath();
-    }
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass(), clusterOfSize( 3 ) );
 }

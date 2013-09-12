@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -85,21 +86,22 @@ public class SchemaIndexHaIT
     }
     
     @Test
-    public void creatingIndexOnSlaveShouldHaveOtherSlavesAndMasterBuiltItAsWell() throws Throwable
+    public void creatingIndexOnSlaveIsNotAllowed() throws Throwable
     {
         // GIVEN
         ManagedCluster cluster = clusterRule.startCluster();
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
-        Map<Object, Node> data = createSomeData( master );
-        cluster.sync();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
         // WHEN
-        IndexDefinition index = createIndex( slave );
-        cluster.sync();
-
-        // THEN
-        awaitIndexOnline( index, cluster, data );
+        try
+        {
+            createIndex( slave );
+            fail( "should have thrown exception" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // expected
+        }
     }
     
     @Test
