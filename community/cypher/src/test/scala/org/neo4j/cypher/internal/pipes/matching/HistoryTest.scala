@@ -19,25 +19,38 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.graphdb.{DynamicRelationshipType, Direction}
+import org.neo4j.graphdb.{Relationship, DynamicRelationshipType, Direction}
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.ExecutionContext
+import org.junit.Assert._
+import org.scalatest.mock.MockitoSugar
 
-class HistoryTest extends GraphDatabaseTestBase with Assertions {
+class HistoryTest extends Assertions with MockitoSugar {
 
   val typ = DynamicRelationshipType.withName("REL")
 
   @Test def excludingPatternRelsWorksAsExpected() {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
-    val pr = a.relateTo("r", b, Seq(), Direction.BOTH, optional = false)
-    val r = graph.inTx(relate(graph.getReferenceNode, graph.getReferenceNode, "rel"))
+    val pr: PatternRelationship = a.relateTo("r", b, Seq(), Direction.BOTH, optional = false)
+    val r: Relationship = mock[Relationship]
     val mp = new MatchingPair(pr, r)
-    val history = new InitialHistory(ExecutionContext.empty).add(mp)
+    val history = new InitialHistory(ExecutionContext.empty, Seq.empty).add(mp)
 
-    assert(history.filter(Set[PatternRelationship](pr),includeOptionals = false) === Set())
+    assert(history.removeSeen(Set[PatternRelationship](pr), includeOptionals = false) === Set())
+  }
+
+  @Test def should_known_that_it_has_seen_a_relationship() {
+    val r = mock[Relationship]
+    val history = new InitialHistory(ExecutionContext.empty, Seq(r))
+    assertTrue("Expected relationship to already have been seen " + r, history.hasSeen(r))
+  }
+
+  @Test def should_know_that_it_has_not_seen_a_relationship() {
+    val r = mock[Relationship]
+    val history = new InitialHistory(ExecutionContext.empty, Seq.empty)
+    assertFalse("Expected relationship to not have been seen " + r, history.hasSeen(r))
   }
 }

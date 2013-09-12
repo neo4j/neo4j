@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.pipes.{MatchPipe, Pipe}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
+import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.matching.{PatternRelationship, PatternNode, PatternGraph}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.commands.ShortestPath
@@ -38,16 +38,18 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
     val predicates = q.where.filter(!_.solved).map(_.token)
     val graph = buildPatternGraph(p.symbols, patterns)
 
+    val identifiersInClause = Pattern.identifiers(q.patterns.map(_.token))
+
     val mandatoryGraph = graph.mandatoryGraph
 
     val mandatoryPipe = if (mandatoryGraph.nonEmpty)
-      new MatchPipe(p, predicates, mandatoryGraph)
+      new MatchPipe(p, predicates, mandatoryGraph, identifiersInClause)
     else
       p
 
     // We'll create one MatchPipe per DoubleOptionalPattern we have
     val newPipe = graph.doubleOptionalPatterns().
-      foldLeft(mandatoryPipe)((lastPipe, patternGraph) => new MatchPipe(lastPipe, predicates, patternGraph))
+      foldLeft(mandatoryPipe)((lastPipe, patternGraph) => new MatchPipe(lastPipe, predicates, patternGraph, identifiersInClause))
 
     plan.copy(
       query = q.copy(patterns = q.patterns.filterNot(items.contains) ++ items.map(_.solve)),
@@ -65,10 +67,10 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
     case Unsolved(x: Pattern)      => {
       val patternIdentifiers: Seq[String] = x.possibleStartPoints.map(_._1)
 
-      val areStartPointsResolved = start.map(si => patternIdentifiers.find(_ == si.token.identifierName) match {
+      val areStartPointsResolved = start.forall(si => patternIdentifiers.find(_ == si.token.identifierName) match {
         case Some(_) => si.solved
         case None    => true
-      }).foldLeft(true)(_ && _)
+      })
 
       areStartPointsResolved
     }
@@ -82,10 +84,6 @@ trait PatternGraphBuilder {
   def buildPatternGraph(symbols: SymbolTable, patterns: Seq[Pattern]): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
-
-    symbols.identifiers.
-      filter(_._2 == NodeType()). //Find all bound nodes...
-      foreach(id => patternNodeMap(id._1) = new PatternNode(id._1)) //...and create patternNodes for them
 
     patterns.foreach(_ match {
       case RelatedTo(left, right, rel, relType, dir, optional) => {
