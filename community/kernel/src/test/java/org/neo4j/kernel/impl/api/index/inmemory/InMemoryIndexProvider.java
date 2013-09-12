@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 public class InMemoryIndexProvider extends SchemaIndexProvider
 {
-    private final Map<Long, InMemoryIndex> indexes = new CopyOnWriteHashMap<Long, InMemoryIndex>();
+    private final Map<Long, InMemoryIndex> indexes = new CopyOnWriteHashMap<>();
 
     public InMemoryIndexProvider()
     {
@@ -47,7 +47,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
     {
-        InMemoryIndex index = config.isUnique() ? new UniqueInMemoryIndex() : new NonUniqueInMemoryIndex();
+        InMemoryIndex index = config.isUnique() ? new UniqueInMemoryIndex() : new InMemoryIndex();
         indexes.put( indexId, index );
         return index.getPopulator();
     }

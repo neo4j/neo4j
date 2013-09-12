@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +28,9 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.DiffSets;
+
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class PropertyUpdateUniquenessValidator
 {
@@ -46,7 +46,7 @@ public class PropertyUpdateUniquenessValidator
     public static void validateUniqueness( Iterable<NodePropertyUpdate> updates, Lookup lookup )
             throws IndexEntryConflictException, IOException
     {
-        Map<Object, DiffSets<Long>> referenceCount = new HashMap<Object, DiffSets<Long>>();
+        Map<Object, DiffSets<Long>> referenceCount = new HashMap<>();
 
         for ( NodePropertyUpdate update : updates )
         {
@@ -94,7 +94,7 @@ public class PropertyUpdateUniquenessValidator
         DiffSets<Long> diffSets = referenceCount.get( value );
         if ( diffSets == null )
         {
-            referenceCount.put( value, diffSets = new DiffSets<Long>() );
+            referenceCount.put( value, diffSets = new DiffSets<>() );
         }
         return diffSets;
     }
