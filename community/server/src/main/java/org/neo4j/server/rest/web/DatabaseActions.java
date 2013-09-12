@@ -252,6 +252,22 @@ public class DatabaseActions
         return new NodeRepresentation( graphDb.getReferenceNode() );
     }
 
+    // Property keys
+
+    public Representation getAllPropertyKeys()
+    {
+        Collection<ValueRepresentation> propKeys = asSet( map( new Function<String, ValueRepresentation>()
+        {
+            @Override
+            public ValueRepresentation apply( String key )
+            {
+                return ValueRepresentation.string( key );
+            }
+        }, GlobalGraphOperations.at( graphDb ).getAllPropertyKeys() ) );
+
+        return new ListRepresentation( RepresentationType.STRING, propKeys );
+    }
+
     // Node properties
 
     public Representation getNodeProperty( long nodeId, String key )

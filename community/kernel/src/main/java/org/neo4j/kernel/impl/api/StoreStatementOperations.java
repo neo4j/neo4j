@@ -250,6 +250,12 @@ public class StoreStatementOperations implements
     }
 
     @Override
+    public Iterator<Token> propertyKeyGetAllTokens( Statement state )
+    {
+        return propertyKeyTokenHolder.getAllTokens().iterator();
+    }
+
+    @Override
     public Iterator<Token> labelsGetAllTokens( Statement state )
     {
         return labelTokenHolder.getAllTokens().iterator();

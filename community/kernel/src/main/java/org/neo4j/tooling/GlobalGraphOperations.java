@@ -157,7 +157,38 @@ public class GlobalGraphOperations
             }
         };
     }
-    
+
+    /**
+     * Returns all property keys currently in the underlying store. This method guarantees that it will return all
+     * property keys currently in use. However, it may also return <i>more</i> than that (e.g. it can return "historic"
+     * labels that are no longer used).
+     *
+     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @return all labels in the underlying store.
+     */
+    public ResourceIterable<String> getAllPropertyKeys()
+    {
+        assertInTransaction();
+        return new ResourceIterable<String>()
+        {
+            @Override
+            public ResourceIterator<String> iterator()
+            {
+                Statement statement = statementCtxProvider.statement();
+                return cleanupService.resourceIterator( map( new Function<Token, String>() {
+
+                    @Override
+                    public String apply( Token propertyToken )
+                    {
+                        return propertyToken.name();
+                    }
+                }, statement.readOperations().propertyKeyGetAllTokens() ), statement );
+            }
+        };
+    }
+
     /**
      * Returns all {@link Node nodes} with a specific {@link Label label}.
      *

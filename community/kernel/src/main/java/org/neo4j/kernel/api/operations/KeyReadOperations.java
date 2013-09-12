@@ -48,6 +48,9 @@ public interface KeyReadOperations
     /** Returns the name of a property given its property key id */
     String propertyKeyGetName( Statement state, long propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 
+    /** Returns the property keys currently stored in the database */
+    Iterator<Token> propertyKeyGetAllTokens( Statement state );
+
     /** Returns the labels currently stored in the database **/
     Iterator<Token> labelsGetAllTokens( Statement state ); // TODO: Token is a store level concern, should not make it this far up the stack
 
@@ -55,4 +58,5 @@ public interface KeyReadOperations
 
     String relationshipTypeGetName( Statement state, long relationshipTypeId )
             throws RelationshipTypeIdNotFoundKernelException;
+
 }

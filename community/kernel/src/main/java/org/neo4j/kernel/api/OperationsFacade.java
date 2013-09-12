@@ -339,6 +339,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public Iterator<Token> propertyKeyGetAllTokens()
+    {
+        statement.assertOpen();
+        return tokenRead().propertyKeyGetAllTokens( statement );
+    }
+
+    @Override
     public Iterator<Token> labelsGetAllTokens()
     {
         statement.assertOpen();
