@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import org.junit.Test;
 
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
@@ -332,7 +333,7 @@ public class TestApps extends AbstractShellTest
         executeCommand( client, "cd -a " + node.getId() );
         executeCommand( client, "ls", "Test" );
     }
-    
+
     @Test
     public void cypherWithSelfParameter() throws Exception
     {
@@ -340,7 +341,7 @@ public class TestApps extends AbstractShellTest
         String name = "name";
         String nodeTwoName = "Node TWO";
         String relationshipName = "The relationship";
-        
+
         beginTx();
         Node node = db.createNode();
         node.setProperty( name, nodeOneName );
@@ -388,7 +389,7 @@ public class TestApps extends AbstractShellTest
         node.setProperty( "name", "Mattias" );
         node.setProperty( "blame", "Someone else" );
         finishTx();
-        
+
         executeCommand( "cd -a " + node.getId() );
         executeCommand( "ls", "Mattias" );
         executeCommand( "ls -pf name", "Mattias", "!Someone else" );
@@ -397,7 +398,7 @@ public class TestApps extends AbstractShellTest
         executeCommand( "ls -pf .*ame", "Mattias", "Someone else" );
         executeCommand( "ls -f .*ame", "Mattias", "Someone else" );
     }
-    
+
     @Test
     public void createNewNode() throws Exception
     {
@@ -406,28 +407,28 @@ public class TestApps extends AbstractShellTest
         executeCommand( "mkrel -t KNOWS 0" );
         executeCommand( "ls", "name", "test", "-", "KNOWS" );
     }
-    
+
     @Test
     public void createNodeWithArrayProperty() throws Exception
     {
         executeCommand( "mknode --np \"{'values':[1,2,3,4]}\" --cd" );
         assertThat( getCurrentNode(), inTx( db, hasProperty( "values" ).withValue( new int[] {1,2,3,4} ) ) );
     }
-    
+
     @Test
     public void createNodeWithLabel() throws Exception
     {
         executeCommand( "mknode --cd -l Person" );
         assertThat( getCurrentNode(), inTx( db, hasLabels( "Person" ) ) );
     }
-    
+
     @Test
     public void createNodeWithColonPrefixedLabel() throws Exception
     {
         executeCommand( "mknode --cd -l :Person" );
         assertThat( getCurrentNode(), inTx( db, hasLabels( "Person" ) ) );
     }
-    
+
     @Test
     public void createNodeWithPropertiesAndLabels() throws Exception
     {
@@ -436,7 +437,7 @@ public class TestApps extends AbstractShellTest
         assertThat( getCurrentNode(), inTx( db, hasProperty( "name" ).withValue( "Test" ) ) );
         assertThat( getCurrentNode(), inTx( db, hasLabels( "Person", "Thing" ) ) );
     }
-    
+
     @Test
     public void createRelationshipWithArrayProperty() throws Exception
     {
@@ -453,7 +454,7 @@ public class TestApps extends AbstractShellTest
             transaction.finish();
         }
     }
-    
+
     @Test
     public void createRelationshipToNewNodeWithLabels() throws Exception
     {
@@ -470,20 +471,20 @@ public class TestApps extends AbstractShellTest
             transaction.finish();
         }
     }
-    
+
     @Test
     public void getDbinfo() throws Exception
     {
         // It's JSON coming back from dbinfo command
         executeCommand( "dbinfo -g Kernel", "\\{", "\\}", "StoreId" );
     }
-    
+
     @Test
     public void evalOneLinerExecutesImmediately() throws Exception
     {
         executeCommand( "eval db.createNode()", "Node\\[" );
     }
-    
+
     @Test
     public void evalMultiLineExecutesAfterAllLines() throws Exception
     {
@@ -655,7 +656,7 @@ public class TestApps extends AbstractShellTest
                 "node.setProperty( \"name\", \"Mattias\" )\n" +
                 "node.getProperty( \"name\" )\n", "Mattias" );
     }
-    
+
     @Test
     public void canAddLabelToNode() throws Exception
     {
@@ -663,14 +664,14 @@ public class TestApps extends AbstractShellTest
         Relationship[] chain = createRelationshipChain( 1 );
         Node node = getEndNode( chain[0] );
         executeCommand( "cd -a " + node.getId() );
-        
+
         // WHEN
         executeCommand( "set -l Person" );
-        
+
         // THEN
         assertThat( node, inTx( db, hasLabels( "Person" ) ) );
     }
-    
+
     @Test
     public void canAddMultipleLabelsToNode() throws Exception
     {
@@ -678,14 +679,14 @@ public class TestApps extends AbstractShellTest
         Relationship[] chain = createRelationshipChain( 1 );
         Node node = getEndNode( chain[0] );
         executeCommand( "cd -a " + node.getId() );
-        
+
         // WHEN
         executeCommand( "set -l ['Person','Thing']" );
-        
+
         // THEN
         assertThat( node, inTx( db, hasLabels( "Person", "Thing" ) ) );
     }
-    
+
     @Test
     public void canRemoveLabelFromNode() throws Exception
     {
@@ -705,7 +706,7 @@ public class TestApps extends AbstractShellTest
         assertThat( node, inTx( db, hasLabels( "Pilot" ) ) );
         assertThat( node, inTx( db, not( hasLabels( "Person" ) ) ) );
     }
-    
+
     @Test
     public void canRemoveMultipleLabelsFromNode() throws Exception
     {
@@ -726,7 +727,7 @@ public class TestApps extends AbstractShellTest
         assertThat( node, inTx( db, hasLabels( "Thing" ) ) );
         assertThat( node, inTx( db, not( hasLabels( "Person", "Object" ) ) ) );
     }
-    
+
     @Test
     public void canListLabels() throws Exception
     {
@@ -742,7 +743,7 @@ public class TestApps extends AbstractShellTest
         // WHEN/THEN
         executeCommand( "ls", ":Person", ":Father" );
     }
-    
+
     @Test
     public void canListFilteredLabels() throws Exception
     {
@@ -758,7 +759,7 @@ public class TestApps extends AbstractShellTest
         // WHEN/THEN
         executeCommand( "ls -f Per.*", ":Person", "!:Father" );
     }
-    
+
     @Test
     public void canListIndexes() throws Exception
     {
@@ -886,5 +887,46 @@ public class TestApps extends AbstractShellTest
 
         // WHEN / THEN
         executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE" );
+    }
+
+    @Test
+    public void committingFailedTransactionShouldProperlyFinishTheTransaction() throws Exception
+    {
+        // GIVEN a transaction with a created constraint in it
+        executeCommand( "begin" );
+        executeCommand( "create constraint on (node:Label1) assert node.key1 is unique;" );
+
+        // WHEN trying to do a data update
+        try
+        {
+            executeCommand( "set foo bar" );
+            fail( "Should have failed" );
+        }
+        catch ( ShellException e )
+        {
+            assertThat( e.getMessage(), containsString( ConstraintViolationException.class.getSimpleName() ) );
+            assertThat( e.getMessage(), containsString( "Cannot perform data updates" ) );
+        }
+
+        // THEN the commit should fail afterwards
+        try
+        {
+            executeCommand( "commit" );
+            fail( "Commit should fail" );
+        }
+        catch ( ShellException e )
+        {
+            assertThat( e.getMessage(), containsString( "The transaction is marked for rollback" ) );
+        }
+        // and also a rollback following it should fail
+        try
+        {
+            executeCommand( "rollback" );
+            fail( "Rolling back at this point should fail since there's no transaction open" );
+        }
+        catch ( ShellException e )
+        {
+            assertThat( e.getMessage(), containsString( "Not in a transaction" ) );
+        }
     }
 }

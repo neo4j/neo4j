@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -32,6 +33,7 @@ import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -110,6 +112,10 @@ class TransactionImpl implements Transaction
                 eventIdentifier, owner.getName(), txManager.getTxStatusAsString( status ), resourceList.size() );
     }
 
+    /**
+     * This implementation assumes this call hierarchy:
+     * {@link TransactionImpl#commit()} --> {@link KernelTransaction#commit()} --> {@link TransactionManager#commit()}
+     */
     @Override
     public synchronized void commit() throws RollbackException,
             HeuristicMixedException, HeuristicRollbackException,

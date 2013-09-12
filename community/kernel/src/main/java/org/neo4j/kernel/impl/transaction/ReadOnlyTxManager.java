@@ -163,7 +163,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         txThreadMap.remove();
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
         throw new RollbackException(
-                "Failed to commit, transaction rolledback" );
+                "Failed to commit, transaction rolled back" );
     }
 
     @Override
