@@ -22,7 +22,11 @@ package org.neo4j.graphdb.index;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 
 /**
  * An {@link Iterator} with additional {@link #size()} and {@link #close()}

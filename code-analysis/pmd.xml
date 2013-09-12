@@ -33,7 +33,16 @@
   </rule>
   <rule ref="rulesets/java/empty.xml"/>
   <rule ref="rulesets/java/finalizers.xml"/>
-  <rule ref="rulesets/java/imports.xml"/>
+  <rule ref="rulesets/java/imports.xml/DuplicateImports"/>
+  <rule ref="rulesets/java/imports.xml/DontImportJavaLang"/>
+  <rule ref="rulesets/java/imports.xml/UnusedImports"/>
+  <rule ref="rulesets/java/imports.xml/ImportFromSamePackage"/>
+  <rule ref="rulesets/java/imports.xml/TooManyStaticImports">
+    <properties>
+      <property name="maximumStaticImports" value="10"/>
+    </properties>
+  </rule>
+  <rule ref="rulesets/java/imports.xml/UnnecessaryFullyQualifiedName"/>
   <rule ref="rulesets/java/naming.xml">
     <exclude name="ShortVariable"/>
     <exclude name="LongVariable"/>

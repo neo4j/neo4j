@@ -25,8 +25,6 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static java.nio.ByteBuffer.wrap;
-
 /**
  * Helper class for storing a failure message that happens during an OutOfDisk situation in
  * a pre-allocated file
@@ -64,17 +62,12 @@ public class FailureStorage
     public synchronized void reserveForIndex( long indexId ) throws IOException
     {
         File failureFile = failureFile( indexId );
-        RandomAccessFile rwFile = new RandomAccessFile( failureFile, "rw" );
-        try
+        try ( RandomAccessFile rwFile = new RandomAccessFile( failureFile, "rw" ) )
         {
             FileChannel channel = rwFile.getChannel();
-            channel.write( wrap( new byte[ MAX_FAILURE_SIZE ] ) );
+            channel.write( ByteBuffer.wrap( new byte[MAX_FAILURE_SIZE] ) );
             channel.force( true );
             channel.close();
-        }
-        finally
-        {
-            rwFile.close();
         }
     }
 
@@ -118,19 +111,14 @@ public class FailureStorage
     public synchronized void storeIndexFailure( long indexId, String failure ) throws IOException
     {
         File failureFile = failureFile( indexId );
-        RandomAccessFile rwFile = new RandomAccessFile( failureFile, "rw" );
-        try
+        try ( RandomAccessFile rwFile = new RandomAccessFile( failureFile, "rw" ) )
         {
             FileChannel channel = rwFile.getChannel();
             byte[] data = failure.getBytes( "utf-8" );
-            channel.write( wrap( data, 0, Math.min( data.length, MAX_FAILURE_SIZE ) ) );
+            channel.write( ByteBuffer.wrap( data, 0, Math.min( data.length, MAX_FAILURE_SIZE ) ) );
 
             channel.force( true );
             channel.close();
-        }
-        finally
-        {
-            rwFile.close();
         }
     }
 
@@ -138,26 +126,20 @@ public class FailureStorage
     {
         File folder = folderLayout.getFolder( indexId );
         folder.mkdirs();
-        File failureFile = new File( folder, failureFileName );
-        return failureFile;
+        return new File( folder, failureFileName );
     }
 
 
     private String readFailure( File failureFile ) throws IOException
     {
-        RandomAccessFile rwFile = new RandomAccessFile( failureFile, "r" );
-        try
+        try ( RandomAccessFile rwFile = new RandomAccessFile( failureFile, "r" ) )
         {
             FileChannel channel = rwFile.getChannel();
-            byte[] data = new byte[ (int) channel.size() ];
-            int readData = channel.read( wrap( data ) );
+            byte[] data = new byte[(int) channel.size()];
+            int readData = channel.read( ByteBuffer.wrap( data ) );
             channel.close();
 
-            return readData <= 0 ? "" : new String( withoutZeros( data) , "utf-8" );
-        }
-        finally
-        {
-            rwFile.close();
+            return readData <= 0 ? "" : new String( withoutZeros( data ), "utf-8" );
         }
     }
 
@@ -182,18 +164,13 @@ public class FailureStorage
 
     private boolean isFailed( File failureFile ) throws IOException
     {
-        RandomAccessFile rFile = new RandomAccessFile( failureFile, "r" );
-        try
+        try ( RandomAccessFile rFile = new RandomAccessFile( failureFile, "r" ) )
         {
             FileChannel channel = rFile.getChannel();
-            byte[] data = new byte[ (int) channel.size() ];
+            byte[] data = new byte[(int) channel.size()];
             channel.read( ByteBuffer.wrap( data ) );
             channel.close();
             return !allZero( data );
-        }
-        finally
-        {
-            rFile.close();
         }
     }
 

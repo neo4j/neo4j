@@ -30,7 +30,7 @@ public final class StatementTokenNameLookup implements TokenNameLookup
 {
     private final ReadOperations statement;
 
-    public StatementTokenNameLookup( org.neo4j.kernel.api.ReadOperations statement )
+    public StatementTokenNameLookup( ReadOperations statement )
     {
         this.statement = statement;
     }

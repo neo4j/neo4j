@@ -42,18 +42,17 @@ public abstract class IndexConnectionBroker<T extends XaConnection>
 
     public T acquireResourceConnection()
     {
-        T con = null;
         Transaction tx = this.getCurrentTransaction();
         if ( tx == null )
         {
             throw new NotInTransactionException();
         }
-        con = txConnectionMap.get( tx );
+        T con = txConnectionMap.get( tx );
         if ( con == null )
         {
             try
             {
-                con = (T) newConnection();
+                con = newConnection();
                 if ( !con.enlistResource( tx ) )
                 {
                     throw new RuntimeException( "Unable to enlist '"
@@ -68,7 +67,7 @@ public abstract class IndexConnectionBroker<T extends XaConnection>
                 String msg = "The transaction is marked for rollback only.";
                 throw new RuntimeException( msg, re );
             }
-            catch ( javax.transaction.SystemException se )
+            catch ( SystemException se )
             {
                 String msg = "TM encountered an unexpected error condition.";
                 throw new RuntimeException( msg, se );
@@ -109,12 +108,7 @@ public abstract class IndexConnectionBroker<T extends XaConnection>
             {
                 con.delistResource(tx, XAResource.TMSUCCESS);
             }
-            catch ( IllegalStateException e )
-            {
-                throw new RuntimeException(
-                        "Unable to delist lucene resource from tx", e );
-            }
-            catch ( SystemException e )
+            catch ( IllegalStateException | SystemException e )
             {
                 throw new RuntimeException(
                         "Unable to delist lucene resource from tx", e );
