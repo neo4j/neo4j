@@ -50,19 +50,13 @@ public class UniqueConstraintHaIT
             tx.success();
         }
 
-        cluster.sync();
-        Thread.sleep( 5000 );
-
         // then
-        for ( HighlyAvailableGraphDatabase clusterMember : cluster.getAllMembers() )
+        try ( Transaction tx = master.beginTx() )
         {
-            try ( Transaction tx = clusterMember.beginTx() )
-            {
-                UniquenessConstraintDefinition constraint = single( clusterMember.schema().getConstraints( label( "Label1" ) ) )
-                        .asUniquenessConstraint();
-                assertEquals( "key1", single( constraint.getPropertyKeys() ) );
-                tx.success();
-            }
+            UniquenessConstraintDefinition constraint = single( master.schema().getConstraints( label( "Label1" ) ) )
+                    .asUniquenessConstraint();
+            assertEquals( "key1", single( constraint.getPropertyKeys() ) );
+            tx.success();
         }
     }
 
