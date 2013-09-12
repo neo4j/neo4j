@@ -93,7 +93,7 @@ public class MainWindow
         this.environment = environment;
         this.databaseActions = databaseActions;
 
-        this.frame = new JFrame( "Neo4j Community" );
+        this.frame = new JFrame( environment.desktopProperties().getProperty("desktop.app.name", "Neo4j") );
         this.frame.setIconImages( Graphics.loadIcons() );
         this.sysTray = SysTray.install( new SysTrayActions(), frame );
 

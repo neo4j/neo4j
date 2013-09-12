@@ -20,9 +20,13 @@
 package org.neo4j.desktop;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -69,6 +73,7 @@ public final class Neo4jDesktop
         MainWindow window = new MainWindow( databaseActions, environment, model );
         window.display();
     }
+
 
     private void selectPlatformUI()
     {

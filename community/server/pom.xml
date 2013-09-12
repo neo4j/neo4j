@@ -312,6 +312,12 @@
               </exclusion>
             </exclusions>
         </dependency>
+
+        <dependency>
+            <groupId>bouncycastle</groupId>
+            <artifactId>bcprov-jdk16</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -875,6 +881,17 @@
                     <url>http://m2.neo4j.org/content/groups/everything/</url>
                 </repository>
             </repositories>
+        </profile>
+
+        <profile>
+            <id>neo4j-browser</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.neo4j.app</groupId>
+                    <artifactId>neo4j-browser</artifactId>
+                    <version>0.0.2</version>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 
