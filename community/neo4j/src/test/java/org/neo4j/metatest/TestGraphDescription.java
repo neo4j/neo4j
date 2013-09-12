@@ -19,28 +19,40 @@
  */
 package org.neo4j.metatest;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.neo4j.graphdb.*;
-import org.neo4j.test.*;
-import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.GraphDescription.NODE;
-import org.neo4j.test.GraphDescription.PROP;
-import org.neo4j.test.GraphDescription.REL;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.GraphDescription;
+import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.NODE;
+import org.neo4j.test.GraphDescription.PROP;
+import org.neo4j.test.GraphDescription.REL;
+import org.neo4j.test.GraphHolder;
+import org.neo4j.test.TestData;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class TestGraphDescription implements GraphHolder
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( TestGraphDescription.class );
     private static GraphDatabaseService graphdb;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
@@ -57,7 +69,7 @@ public class TestGraphDescription implements GraphHolder
     @Graph( "I know you" )
     public void canCreateGraphFromSingleString() throws Exception
     {
-        verifyIknowYou( "know", "I" );
+        verifyIKnowYou( "know", "I" );
     }
 
     @Test
@@ -69,16 +81,11 @@ public class TestGraphDescription implements GraphHolder
         Node n = graph.get( "a" );
         while ( unique.add( n ) )
         {
-            Transaction transaction = graphdb.beginTx();
-            try
+            try(Transaction ignored = graphdb.beginTx())
             {
                 n = n.getSingleRelationship(
                         DynamicRelationshipType.withName( "TO" ),
                         Direction.OUTGOING ).getEndNode();
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
         assertEquals( graph.size(), unique.size() );
@@ -92,15 +99,10 @@ public class TestGraphDescription implements GraphHolder
         Node a = graph.get( "a" );
         Node b = graph.get( "b" );
 
-        Transaction transaction = graphdb.beginTx();
-        try
+        try(Transaction ignored = graphdb.beginTx())
         {
             assertTrue( a.hasLabel( label( "Person" ) ) );
             assertTrue( b.hasLabel( label( "Banana" ) ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -112,16 +114,11 @@ public class TestGraphDescription implements GraphHolder
         Node a = graph.get( "a" );
         Node b = graph.get( "b" );
 
-        Transaction transaction = graphdb.beginTx();
-        try
+        try(Transaction ignored = graphdb.beginTx())
         {
             assertTrue( "Person label missing", a.hasLabel( label( "Person" ) ) );
             assertTrue( "Banana label missing", b.hasLabel( label( "Banana" ) ) );
             assertTrue( "Apple label missing", b.hasLabel( label( "Apple" ) ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -131,17 +128,12 @@ public class TestGraphDescription implements GraphHolder
     {
         data.get();
 
-        Transaction transaction = graphdb.beginTx();
-        try
+        try(Transaction ignored = graphdb.beginTx())
         {
             assertTrue(
                     "can't look up node.",
                     graphdb().index().getNodeAutoIndexer().getAutoIndex().get(
                             "name", "I" ).hasNext() );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
     
@@ -152,17 +144,12 @@ public class TestGraphDescription implements GraphHolder
     {
         data.get();
 
-        Transaction transaction = graphdb.beginTx();
-        try
+        try(Transaction ignored = graphdb.beginTx())
         {
             assertTrue(
                     "can't look up node.",
                     graphdb().index().getNodeAutoIndexer().getAutoIndex().get(
                             "name", "I" ).hasNext() );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -178,9 +165,8 @@ public class TestGraphDescription implements GraphHolder
             throws Exception
     {
         data.get();
-        verifyIknowYou( "knows", "me" );
-        Transaction transaction = graphdb.beginTx();
-        try
+        verifyIKnowYou( "knows", "me" );
+        try(Transaction ignored = graphdb.beginTx())
         {
             assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
             assertFalse( "node autoindex enabled.",
@@ -192,18 +178,12 @@ public class TestGraphDescription implements GraphHolder
             assertTrue( "relationship autoindex enabled.",
                     graphdb().index().getRelationshipAutoIndexer().isEnabled() );
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     @Graph( value = { "I know you" }, nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ) } ) } )
-    private void verifyIknowYou( String type, String myName )
+    private void verifyIKnowYou( String type, String myName )
     {
-        Transaction transaction = graphdb.beginTx();
-
-        try
+        try(Transaction ignored = graphdb.beginTx())
         {
             Map<String, Node> graph = data.get();
             assertEquals( "Wrong graph size.", 2, graph.size() );
@@ -230,10 +210,6 @@ public class TestGraphDescription implements GraphHolder
             assertFalse( "'you' has too many relationships", rels.hasNext() );
 
             assertEquals( "wrong direction", I, rel.getStartNode() );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

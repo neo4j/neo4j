@@ -24,6 +24,7 @@ import java.util.HashSet;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -51,8 +52,7 @@ public class TestDatasourceCommitOrderDataVisibility
     @Test
     public void shouldNotMakeIndexWritesVisibleUntilCommit() throws Exception
     {
-        Transaction transaction = graphDatabaseService.beginTx();
-        try
+        try(Transaction transaction = graphDatabaseService.beginTx())
         {
             // index write first so that that datastore is added first
             graphDatabaseService.index().forNodes( INDEX_NAME ).add( graphDatabaseService.getReferenceNode(),
@@ -66,10 +66,6 @@ public class TestDatasourceCommitOrderDataVisibility
 
             assertReferenceNodeIsNotIndexedOutsideThisTransaction();
             assertReferenceNodeIsUnchangedOutsideThisTransaction();
-        }
-        finally
-        {
-            transaction.finish();
         }
 
         assertReferenceNodeIsIndexed();
@@ -85,8 +81,7 @@ public class TestDatasourceCommitOrderDataVisibility
             @Override
             public void run()
             {
-                Transaction transaction = graphDatabaseService.beginTx();
-                try
+                try(Transaction ignored = graphDatabaseService.beginTx())
                 {
                     assertThat( graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY,
                             INDEX_VALUE ).size(), is( 0 ) );
@@ -94,10 +89,6 @@ public class TestDatasourceCommitOrderDataVisibility
                 catch ( Throwable t )
                 {
                     problems.add( new Exception( t ) );
-                }
-                finally
-                {
-                    transaction.finish();
                 }
             }
         } );
@@ -119,18 +110,13 @@ public class TestDatasourceCommitOrderDataVisibility
             @Override
             public void run()
             {
-                Transaction transaction = graphDatabaseService.beginTx();
-                try
+                try(Transaction ignored = graphDatabaseService.beginTx())
                 {
                     assertThat( graphDatabaseService.getReferenceNode().hasProperty( PROPERTY_NAME ), is( false ) );
                 }
                 catch ( Throwable t )
                 {
                     problems.add( new Exception( t ) );
-                }
-                finally
-                {
-                    transaction.finish();
                 }
             }
         } );
@@ -152,8 +138,7 @@ public class TestDatasourceCommitOrderDataVisibility
             @Override
             public void run()
             {
-                Transaction transaction = graphDatabaseService.beginTx();
-                try
+                try(Transaction ignored = graphDatabaseService.beginTx())
                 {
                     Node node = graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY,
                             INDEX_VALUE ).getSingle();
@@ -162,10 +147,6 @@ public class TestDatasourceCommitOrderDataVisibility
                 catch ( Throwable t )
                 {
                     problems.add( new Exception( t ) );
-                }
-                finally
-                {
-                    transaction.finish();
                 }
             }
         } );
@@ -187,8 +168,7 @@ public class TestDatasourceCommitOrderDataVisibility
             @Override
             public void run()
             {
-                Transaction transaction = graphDatabaseService.beginTx();
-                try
+                try(Transaction ignored = graphDatabaseService.beginTx())
                 {
                     assertThat( (Integer) graphDatabaseService.getReferenceNode().getProperty( PROPERTY_NAME ),
                             is( PROPERTY_VALUE ) );
@@ -196,10 +176,6 @@ public class TestDatasourceCommitOrderDataVisibility
                 catch ( Throwable t )
                 {
                     problems.add( new Exception( t ) );
-                }
-                finally
-                {
-                    transaction.finish();
                 }
             }
         } );

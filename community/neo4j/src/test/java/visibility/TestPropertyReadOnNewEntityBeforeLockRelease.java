@@ -19,12 +19,10 @@
  */
 package visibility;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -35,6 +33,9 @@ import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @SuppressWarnings( "serial" )
 public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubProcessTestBase
@@ -55,8 +56,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 Node node = graphdb.createNode();
                 node.setProperty( "value", "present" );
@@ -64,10 +64,6 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
                 enableBreakPoints();
 
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
             done();
         }
@@ -93,18 +89,12 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction transaction = graphdb.beginTx();
-            try
+            try(Transaction ignored = graphdb.beginTx())
             {
                 Node node = graphdb.index().forNodes( "nodes" ).get( "value", "present" ).getSingle();
                 assertNotNull( "did not get the node from the index", node );
                 assertEquals( "present", node.getProperty( "value" ) );
             }
-            finally
-            {
-                transaction.finish();
-            }
-
             resumeThread();
         }
     }

@@ -46,8 +46,10 @@ import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakPoint.Event;
 
 import static java.lang.Integer.parseInt;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.SillyUtils.nonNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -105,8 +107,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 Node parent = graphdb.createNode();
                 for ( int i = 0; i < 10; i++ )
@@ -115,10 +116,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
                     parent.createRelationshipTo( child, TYPE );
                 }
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
     }
@@ -128,8 +125,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 Node parent = graphdb.createNode();
                 graphdb.index().forNodes( "index" ).add( parent, "name", "test" );
@@ -139,10 +135,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
                     parent.createRelationshipTo( child, TYPE );
                 }
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
     }
