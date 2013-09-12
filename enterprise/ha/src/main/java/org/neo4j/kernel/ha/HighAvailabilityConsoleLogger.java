@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import java.net.URI;
 
+import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -35,10 +36,12 @@ public class HighAvailabilityConsoleLogger
     implements ClusterMemberListener, ClusterListener, InstanceAccessGuard.AccessListener
 {
     private ConsoleLogger console;
+    private InstanceId myId;
 
-    public HighAvailabilityConsoleLogger( ConsoleLogger console )
+    public HighAvailabilityConsoleLogger( ConsoleLogger console, InstanceId myId )
     {
         this.console = console;
+        this.myId = myId;
     }
 
     // Cluster events
@@ -50,7 +53,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void enteredCluster( ClusterConfiguration clusterConfiguration )
     {
-        console.log( "Joined cluster:"+clusterConfiguration );
+        console.log( String.format("Instance %d (this server) joined the cluster", myId.toIntegerIndex() ));
     }
 
     /**
@@ -59,7 +62,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void leftCluster()
     {
-        console.log("Left cluster");
+        console.log(String.format("Instance %d (this server) left the cluster", myId.toIntegerIndex() ));
     }
 
     /**
@@ -82,7 +85,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void leftCluster( InstanceId instanceId )
     {
-        console.log("Instance "+instanceId+" left the cluster");
+        console.log("Instance "+instanceId+" has left the cluster");
     }
 
     /**
@@ -95,7 +98,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void elected( String role, InstanceId instanceId, URI electedMember )
     {
-        console.log("Instance "+instanceId+" was elected as "+role);
+        console.log("Instance "+printId(instanceId)+"was elected as "+role);
     }
 
     /**
@@ -108,7 +111,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void unelected( String role, InstanceId instanceId, URI electedMember )
     {
-        console.log("Instance "+instanceId+" was demoted as "+role);
+        console.log("Instance "+printId(instanceId)+"was demoted as "+role);
     }
 
     // HA events
@@ -127,7 +130,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsAvailable( String role, InstanceId availableId, URI atUri )
     {
-        console.log("Instance "+availableId+" is available as "+role+" at "+atUri.toASCIIString());
+        console.log("Instance "+printId(availableId)+"is available as "+role+" at "+atUri.toASCIIString());
     }
 
     /**
@@ -139,7 +142,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsUnavailable( String role, InstanceId unavailableId )
     {
-        console.log("Instance "+unavailableId+" is unavailable as "+role);
+        console.log("Instance "+printId(unavailableId)+"is unavailable as "+role);
     }
 
     /**
@@ -150,7 +153,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsFailed( InstanceId instanceId )
     {
-        console.log("Instance "+instanceId+" has failed");
+        console.log("Instance "+printId(instanceId)+"has failed");
     }
 
     /**
@@ -161,7 +164,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsAlive( InstanceId instanceId )
     {
-        console.log("Instance "+instanceId+" is alive");
+        console.log("Instance "+printId(instanceId)+"is alive");
     }
 
     // InstanceAccessGuard events
@@ -172,7 +175,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void accessGranted()
     {
-        console.log( "Database access granted" );
+        console.log( "Database available for write transactions" );
     }
 
     /**
@@ -181,6 +184,11 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void accessDenied()
     {
-        console.log( "Database access denied" );
+        console.log( "Write transactions to database disabled" );
+    }
+
+    private String printId( InstanceId id )
+    {
+        return id+(id.equals(myId)?" (this server) ":" ");
     }
 }
