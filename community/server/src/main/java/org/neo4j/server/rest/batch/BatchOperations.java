@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
@@ -39,6 +38,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.ObjectMapper;
+
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 import org.neo4j.server.web.WebServer;
@@ -68,10 +68,14 @@ public abstract class BatchOperations
             final String key = header.getKey();
             final List<String> value = header.getValue();
             if (value == null)
+            {
                 continue;
+            }
             if (value.size() != 1)
+            {
                 throw new IllegalArgumentException(
                         "expecting one value per header");
+            }
             if ( !key.equals( "Accept" ) && !key.equals( "Content-Type" ) )
             {
                 res.addHeader(key, value.get(0));
@@ -103,20 +107,27 @@ public abstract class BatchOperations
 
 
     private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d+)\\}");
-    
+
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )
     {
-        if (!str.contains( "{" )) return str;
+        if (!str.contains( "{" ))
+        {
+            return str;
+        }
         Matcher matcher = PLACHOLDER_PATTERN.matcher(str);
         StringBuffer sb=new StringBuffer();
         while (matcher.find()) {
             String id = matcher.group(1);
             String replacement = locations.get(Integer.valueOf(id));
             if (replacement!=null)
+            {
                 matcher.appendReplacement(sb,replacement);
-            else 
+            }
+            else
+            {
                 matcher.appendReplacement(sb,matcher.group());
+            }
         }
         matcher.appendTail(sb);
         return sb.toString();
@@ -183,7 +194,7 @@ public abstract class BatchOperations
 
         InternalJettyServletResponse res = new InternalJettyServletResponse();
         InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res );
-        
+
         addHeaders( req, httpHeaders );
 
         invoke( method, path, body, id, targetUri, req, res );
