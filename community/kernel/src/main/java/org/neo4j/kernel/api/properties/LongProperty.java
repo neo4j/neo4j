@@ -21,56 +21,56 @@ package org.neo4j.kernel.api.properties;
 
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
-/**
- * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
- * we don't extend a class that has fields.
- */
-abstract class NumberPropertyWithin4Bytes extends DefinedProperty
+final class LongProperty extends DefinedProperty
 {
-    @Override
-    public int hashCode()
+    private final long value;
+
+    LongProperty( int propertyKeyId, long value )
     {
-        int propertyKeyId = propertyKeyId();
-        return valueBits() ^ propertyKeyId;
+        super( propertyKeyId );
+        this.value = value;
     }
 
     @Override
-    public boolean equals( Object obj )
+    @SuppressWarnings("UnnecessaryUnboxing")
+    public boolean valueEquals( Object other )
     {
-        if ( obj == this )
+        if ( other instanceof Long )
         {
-            return true;
+            return value == ((Long)other).longValue();
         }
-        if ( obj == null || obj.getClass() != this.getClass() )
-        {
-            return false;
-        }
-        NumberPropertyWithin4Bytes that = (NumberPropertyWithin4Bytes) obj;
-        return this.propertyKeyId() == that.propertyKeyId() && hasEqualValue( that );
-    }
-
-    abstract boolean hasEqualValue( NumberPropertyWithin4Bytes that );
-
-    int valueBits()
-    {
-        return intValue();
+        return valueCompare( value, other );
     }
 
     @Override
-    public abstract Number value();
-
-    @Override
-    public Number numberValue()
+    public Long value()
     {
-        return value();
+        return value;
     }
 
     @Override
-    public Number numberValue( Number defaultValue )
+    public int intValue()
     {
-        return value();
+        throw new ClassCastException( String.format( "[%s:long] is not small enough to fit into an int.", value ) );
     }
 
+    @Override
+    public long longValue()
+    {
+        return value;
+    }
+
+    @Override
+    int valueHash()
+    {
+        return (int) (value ^ (value >>> 32));
+    }
+
+    @Override
+    boolean hasEqualValue( DefinedProperty that )
+    {
+        return value == ((LongProperty) that).value;
+    }
 
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()

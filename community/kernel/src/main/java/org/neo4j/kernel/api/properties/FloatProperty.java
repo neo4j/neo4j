@@ -21,21 +21,16 @@ package org.neo4j.kernel.api.properties;
 
 import static java.lang.Float.floatToIntBits;
 
-final class FloatProperty extends NumberPropertyWithin4Bytes
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+
+final class FloatProperty extends DefinedProperty
 {
     private final float value;
-    private final int propertyKeyId;
 
     FloatProperty( int propertyKeyId, float value )
     {
-        this.propertyKeyId = propertyKeyId;
+        super( propertyKeyId );
         this.value = value;
-    }
-
-    @Override
-    public int propertyKeyId()
-    {
-        return propertyKeyId;
     }
 
     @Override
@@ -44,26 +39,32 @@ final class FloatProperty extends NumberPropertyWithin4Bytes
     {
         if ( other instanceof Float )
         {
-            return value == ((Float)other).floatValue();
+            return value == ((Float) other).floatValue();
         }
         return valueCompare( value, other );
     }
 
     @Override
-    boolean hasEqualValue( NumberPropertyWithin4Bytes that )
+    boolean hasEqualValue( DefinedProperty that )
     {
         return value == ((FloatProperty) that).value;
-    }
-
-    @Override
-    int valueBits()
-    {
-        return floatToIntBits( value );
     }
 
     @Override
     public Number value()
     {
         return value;
+    }
+
+    @Override
+    int valueHash()
+    {
+        return floatToIntBits( value );
+    }
+
+    @Override
+    public int sizeOfObjectInBytesIncludingOverhead()
+    {
+        return withObjectOverhead( 8 );
     }
 }

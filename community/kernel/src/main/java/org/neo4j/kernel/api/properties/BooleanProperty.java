@@ -28,31 +28,36 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 final class BooleanProperty extends DefinedProperty
 {
     private final boolean value;
-    private final int propertyKeyId;
 
     BooleanProperty( int propertyKeyId, boolean value )
     {
-        this.propertyKeyId = propertyKeyId;
+        super( propertyKeyId );
         this.value = value;
-    }
-
-    @Override
-    public int propertyKeyId()
-    {
-        return propertyKeyId;
     }
 
     @Override
     @SuppressWarnings("UnnecessaryUnboxing")
     public boolean valueEquals( Object other )
     {
-        return other instanceof Boolean && value == ((Boolean)other).booleanValue();
+        return other instanceof Boolean && value == ((Boolean) other).booleanValue();
     }
 
     @Override
     public Boolean value()
     {
         return value;
+    }
+
+    @Override
+    int valueHash()
+    {
+        return value ? -1 : 0;
+    }
+
+    @Override
+    boolean hasEqualValue( DefinedProperty that )
+    {
+        return value == ((BooleanProperty) that).value;
     }
 
     @Override
@@ -65,28 +70,6 @@ final class BooleanProperty extends DefinedProperty
     public boolean booleanValue( boolean defaultValue )
     {
         return value;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o instanceof BooleanProperty )
-        {
-            BooleanProperty that = (BooleanProperty) o;
-            return propertyKeyId == that.propertyKeyId && value == that.value;
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = propertyKeyId;
-        return value ? result : -result;
     }
 
     @Override

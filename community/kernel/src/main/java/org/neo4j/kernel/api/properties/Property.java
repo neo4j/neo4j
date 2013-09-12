@@ -51,7 +51,17 @@ public abstract class Property
         return PropertyConversion.convertProperty( propertyKeyId, value );
     }
 
-    public abstract int propertyKeyId();
+    final int propertyKeyId;
+
+    Property( int propertyKeyId )
+    {
+        this.propertyKeyId = propertyKeyId;
+    }
+
+    public final int propertyKeyId()
+    {
+        return propertyKeyId;
+    }
 
     public abstract boolean valueEquals( Object other );
 
@@ -81,7 +91,15 @@ public abstract class Property
 
     public abstract boolean booleanValue( boolean defaultValue );
 
-    // more factory methods
+    @Override
+    public abstract boolean equals( Object obj );
+
+    @Override
+    public abstract int hashCode();
+
+    public abstract boolean isDefined();
+
+    // direct factory methods
 
     public static DefinedProperty stringProperty( int propertyKeyId, String value )
     {
@@ -100,7 +118,7 @@ public abstract class Property
 
     public static DefinedProperty longProperty( int propertyKeyId, long value )
     {
-        return PropertyConversion.chooseLongPropertyType( propertyKeyId, value );
+        return new LongProperty( propertyKeyId, value );
     }
 
     public static DefinedProperty intProperty( int propertyKeyId, int value )
@@ -182,16 +200,4 @@ public abstract class Property
     {
         return new ShortArrayProperty( propertyKeyId, value );
     }
-
-    Property()
-    {
-    }
-
-    @Override
-    public abstract boolean equals( Object obj );
-
-    @Override
-    public abstract int hashCode();
-
-    public abstract boolean isDefined();
 }

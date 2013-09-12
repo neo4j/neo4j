@@ -25,7 +25,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfObject;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
-abstract class LazyProperty<T> extends FullSizeProperty
+abstract class LazyProperty<T> extends DefinedProperty
 {
     private volatile Object value;
 
@@ -36,7 +36,7 @@ abstract class LazyProperty<T> extends FullSizeProperty
     }
 
     @Override
-    final boolean hasEqualValue( FullSizeProperty that )
+    final boolean hasEqualValue( DefinedProperty that )
     {
         return valueEquals( ((LazyProperty<?>)that).value() );
     }

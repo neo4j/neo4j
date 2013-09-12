@@ -55,9 +55,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 public class TestSizeOf
 {
     private static GraphDatabaseAPI db;
-    public static final int _8_BYTES_FOR_ID = 8;
-    public static final int _4_BYTES_FOR_KEY = 4;
-    public static final int _4_BYTES_FOR_VALUE = 4;
+    public static final int _8_BYTES_FOR_VALUE = 8;
 
     @BeforeClass
     public static void setupDB()
@@ -237,6 +235,7 @@ public class TestSizeOf
                 REFERENCE_SIZE/*relationships reference*/+
                 8/*relChainPosition*/+
                 8/*id*/+
+                8/*labels[] reference*/+
                 size );
     }
 
@@ -337,17 +336,17 @@ public class TestSizeOf
 
         PropertiesSize withSmallPrimitiveProperty()
         {
-            return add( _4_BYTES_FOR_KEY + _4_BYTES_FOR_VALUE );
+            return add( _8_BYTES_FOR_VALUE );
         }
 
         PropertiesSize withStringProperty( String value )
         {
-            return add( _4_BYTES_FOR_KEY + withReference( sizeOf( value ) ) );
+            return add( withReference( sizeOf( value ) ) );
         }
 
         PropertiesSize withArrayProperty( Object array )
         {
-            return add( _4_BYTES_FOR_KEY + withReference( sizeOfArray( array ) ) );
+            return add( withReference( sizeOfArray( array ) ) );
         }
 
         public int size()

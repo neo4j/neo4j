@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.properties;
 
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
-final class DoubleProperty extends FullSizeProperty
+final class DoubleProperty extends DefinedProperty
 {
     private final double value;
 
@@ -56,7 +56,7 @@ final class DoubleProperty extends FullSizeProperty
     }
 
     @Override
-    boolean hasEqualValue( FullSizeProperty that )
+    boolean hasEqualValue( DefinedProperty that )
     {
         return Double.compare( this.value, ((DoubleProperty) that).value ) == 0;
     }
@@ -64,6 +64,6 @@ final class DoubleProperty extends FullSizeProperty
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return withObjectOverhead( 4 + 8 );
+        return withObjectOverhead( 8 );
     }
 }

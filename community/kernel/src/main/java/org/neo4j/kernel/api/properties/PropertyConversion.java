@@ -164,30 +164,4 @@ class PropertyConversion
         }
         return target;
     }
-
-    static DefinedProperty chooseLongPropertyType( int propertyKeyId, long value )
-    {
-        if ( value < 0 )
-        {
-            if ( value >= Integer.MIN_VALUE )
-            {
-                return new SmallLongProperty( propertyKeyId, (int) value );
-            }
-            else
-            {
-                return new BigLongProperty( propertyKeyId, value );
-            }
-        }
-        else
-        {
-            if ( value <= Integer.MAX_VALUE )
-            {
-                return new SmallLongProperty( propertyKeyId, (int) value );
-            }
-            else
-            {
-                return new BigLongProperty( propertyKeyId, value );
-            }
-        }
-    }
 }

@@ -23,7 +23,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOf;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
-final class StringProperty extends FullSizeProperty
+final class StringProperty extends DefinedProperty
 {
     private final String value;
 
@@ -58,7 +58,7 @@ final class StringProperty extends FullSizeProperty
     }
 
     @Override
-    boolean hasEqualValue( FullSizeProperty that )
+    boolean hasEqualValue( DefinedProperty that )
     {
         return value.equals( ((StringProperty) that).value );
     }
@@ -66,6 +66,6 @@ final class StringProperty extends FullSizeProperty
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return withObjectOverhead( 4 + withReference( sizeOf( value ) ) );
+        return withObjectOverhead( withReference( sizeOf( value ) ) );
     }
 }

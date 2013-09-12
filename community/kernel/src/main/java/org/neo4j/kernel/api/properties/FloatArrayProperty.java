@@ -25,7 +25,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
-class FloatArrayProperty extends FullSizeProperty
+class FloatArrayProperty extends DefinedProperty
 {
     private final float[] value;
 
@@ -59,7 +59,7 @@ class FloatArrayProperty extends FullSizeProperty
     }
 
     @Override
-    boolean hasEqualValue( FullSizeProperty that )
+    boolean hasEqualValue( DefinedProperty that )
     {
         return Arrays.equals( this.value, ((FloatArrayProperty)that).value );
     }

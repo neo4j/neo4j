@@ -25,7 +25,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
-class DoubleArrayProperty extends FullSizeProperty
+class DoubleArrayProperty extends DefinedProperty
 {
     private final double[] value;
 
@@ -60,7 +60,7 @@ class DoubleArrayProperty extends FullSizeProperty
     }
 
     @Override
-    boolean hasEqualValue( FullSizeProperty that )
+    boolean hasEqualValue( DefinedProperty that )
     {
         return Arrays.equals( this.value, ((DoubleArrayProperty)that).value );
     }
@@ -68,6 +68,6 @@ class DoubleArrayProperty extends FullSizeProperty
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return withObjectOverhead( 4 + withReference( sizeOfArray( value ) ) );
+        return withObjectOverhead( withReference( sizeOfArray( value ) ) );
     }
 }

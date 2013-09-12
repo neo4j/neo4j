@@ -24,13 +24,12 @@ import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 
 final class NoProperty extends Property
 {
-    private final int propertyKeyId;
     private final EntityType entityType;
     private final long entityId;
 
     NoProperty( int propertyKeyId, EntityType entityType, long entityId )
     {
-        this.propertyKeyId = propertyKeyId;
+        super( propertyKeyId );
         this.entityType = entityType;
         this.entityId = entityId;
     }
@@ -66,12 +65,6 @@ final class NoProperty extends Property
 
     @Override
     public int hashCode()
-    {
-        return propertyKeyId;
-    }
-
-    @Override
-    public int propertyKeyId()
     {
         return propertyKeyId;
     }
