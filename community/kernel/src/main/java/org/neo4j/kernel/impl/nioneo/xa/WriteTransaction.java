@@ -37,12 +37,10 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -208,25 +206,42 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private ArrayList<Command.PropertyKeyTokenCommand> propertyKeyTokenCommands;
     private Command.NeoStoreCommand neoStoreCommand;
 
-    private final NeoStore neoStore;
     private boolean committed = false;
     private boolean prepared = false;
 
-    private final TransactionState state;
     private XaConnection xaConnection;
+
+    private final long lastCommittedTxWhenTransactionStarted;
+    private final TransactionState state;
     private final CacheAccessBackDoor cacheAccess;
     private final IndexingService indexes;
+    private final NeoStore neoStore;
     private final LabelScanStore labelScanStore;
+    private final IntegrityValidator integrityValidator;
 
-    WriteTransaction( int identifier, XaLogicalLog log, TransactionState state, NeoStore neoStore,
-                      CacheAccessBackDoor cacheAccess, IndexingService indexingService, LabelScanStore labelScanStore )
+    /**
+     * @param lastCommittedTxWhenTransactionStarted is the highest committed transaction id when this transaction
+     *                                              begun. No operations in this transaction are allowed to have
+     *                                              taken place before that transaction id. This is used by
+     *                                              constraint validation - if a constraint was not online when this
+     *                                              transaction begun, it will be verified during prepare. If you are
+     *                                              writing code against this API and are unsure about what to set
+     *                                              this value to, 0 is a safe choice. That will ensure all
+     *                                              constraints are checked.
+     */
+    WriteTransaction( int identifier, long lastCommittedTxWhenTransactionStarted, XaLogicalLog log,
+                      TransactionState state, NeoStore neoStore, CacheAccessBackDoor cacheAccess,
+                      IndexingService indexingService, LabelScanStore labelScanStore,
+                      IntegrityValidator integrityValidator )
     {
         super( identifier, log, state );
+        this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.neoStore = neoStore;
         this.state = state;
         this.cacheAccess = cacheAccess;
         this.indexes = indexingService;
         this.labelScanStore = labelScanStore;
+        this.integrityValidator = integrityValidator;
     }
 
     @Override
@@ -277,6 +292,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new XAException( "Cannot prepare prepared transaction["
                                    + getIdentifier() + "]" );
         }
+
         /*
          * Generate records first, then write all together to logical log via
          * addCommand method but before give the option to intercept.
@@ -309,12 +325,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         for ( RecordChange<Long, NodeRecord, Void> change : nodeRecords.changes() )
         {
             NodeRecord record = change.forReadingLinkage();
-            if ( !record.inUse() && record.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {
-                throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ),
-                                            new ConstraintViolationException(
-                                                    "Node record " + record + " still has relationships" ) );
-            }
+            integrityValidator.validateNodeRecord( record );
             Command.NodeCommand command = new Command.NodeCommand(
                     neoStore.getNodeStore(), change.getBefore(), record );
             nodeCommands.put( record.getId(), command );
@@ -356,9 +367,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         for ( Pair<Collection<DynamicRecord>, SchemaRule> records : schemaRuleRecords.values() )
         {
-            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( neoStore.getSchemaStore(),
+            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( neoStore, neoStore.getSchemaStore(),
                                                                                indexes, records.first(),
-                                                                               records.other() );
+                                                                               records.other(), -1 );
             schemaRuleCommands.add( command );
             commands.add( command );
         }
@@ -371,6 +382,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             addCommand( command );
         }
+
+        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
     }
 
     protected void intercept( List<Command> commands )
@@ -655,6 +668,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new RuntimeException( "Tx id: " + getCommitTxId() +
                                         " not next transaction (" + neoStore.getLastCommittedTx() + ")" );
         }
+
         applyCommit( false );
     }
 
@@ -730,6 +744,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             //    entries for the same property
             for ( SchemaRuleCommand command : schemaRuleCommands )
             {
+                command.setTxId( getCommitTxId() );
                 command.execute();
                 switch ( command.getMode() )
                 {

@@ -25,7 +25,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -52,6 +54,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
@@ -234,11 +237,6 @@ public abstract class Command extends XaCommand
         if ( !readDynamicRecords( byteChannel, buffer, toReturn, PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER ) )
             return null;
 
-        // TODO we had this assertion before, necessary?
-//            assert toReturn.getValueRecords().size() == noOfDynRecs : "read in "
-//                                                                      + toReturn.getValueRecords().size()
-//                                                                      + " instead of the proper "
-//                                                                      + noOfDynRecs;
         return toReturn;
     }
     
@@ -1157,19 +1155,24 @@ public abstract class Command extends XaCommand
 
     static class SchemaRuleCommand extends Command
     {
+        private final NeoStore neoStore;
         private final IndexingService indexes;
         private final SchemaStore store;
         private final Collection<DynamicRecord> records;
         private final SchemaRule schemaRule;
 
-        SchemaRuleCommand( SchemaStore store, IndexingService indexes,
-                           Collection<DynamicRecord> records, SchemaRule schemaRule )
+        private long txId;
+
+        SchemaRuleCommand( NeoStore neoStore, SchemaStore store, IndexingService indexes,
+                           Collection<DynamicRecord> records, SchemaRule schemaRule, long txId )
         {
             super( first( records ).getId(), Mode.fromRecordState( first( records ) ) );
+            this.neoStore = neoStore;
             this.indexes = indexes;
             this.store = store;
             this.records = records;
             this.schemaRule = schemaRule;
+            this.txId = txId;
         }
 
         @Override
@@ -1206,26 +1209,44 @@ public abstract class Command extends XaCommand
                 switch ( getMode() )
                 {
                 case UPDATE:
+                    // Shouldn't we be more clear about that we are waiting for an index to come online here?
+                    // right now we just assume that an update to index records means wait for it to be online.
                     if ( ((IndexRule) schemaRule).isConstraintIndex() )
                     {
                         try
                         {
                             indexes.activateIndex( schemaRule.getId() );
                         }
-                        catch ( IndexNotFoundKernelException e )
+                        catch ( IndexNotFoundKernelException | IndexActivationFailedKernelException |
+                                IndexPopulationFailedKernelException e )
                         {
-                            throw new IllegalStateException( "Index should have existed.", e );
+                            throw new IllegalStateException( "Unable to enable constraint, backing index is not online.", e );
                         }
                     }
                     break;
                 case CREATE:
-                    indexes.createIndex( (IndexRule)schemaRule );
+                    indexes.createIndex( (IndexRule) schemaRule );
                     break;
                 case DELETE:
                     indexes.dropIndex( (IndexRule)schemaRule );
                     break;
                 default:
                     throw new IllegalStateException( getMode().name() );
+                }
+            }
+
+            if( schemaRule instanceof UniquenessConstraintRule )
+            {
+                switch ( getMode() )
+                {
+                    case UPDATE:
+                    case CREATE:
+                        neoStore.setLatestConstraintIntroducingTx( txId );
+                        break;
+                    case DELETE:
+                        break;
+                    default:
+                        throw new IllegalStateException( getMode().name() );
                 }
             }
         }
@@ -1236,11 +1257,22 @@ public abstract class Command extends XaCommand
             buffer.put( SCHEMA_RULE_COMMAND );
             writeDynamicRecords( buffer, records );
             buffer.put( first( records ).isCreated() ? (byte) 1 : 0);
+            buffer.putLong( txId );
         }
         
         public SchemaRule getSchemaRule()
         {
             return schemaRule;
+        }
+
+        public long getTxId()
+        {
+            return txId;
+        }
+
+        public void setTxId( long txId )
+        {
+            this.txId = txId;
         }
 
         static Command readFromFile( NeoStore neoStore, IndexingService indexes, ReadableByteChannel byteChannel,
@@ -1261,6 +1293,11 @@ public abstract class Command extends XaCommand
                 }
             }
 
+            if ( !readAndFlip( byteChannel, buffer, 8 ) )
+                throw new IllegalStateException( "Missing SchemaRule.txId in deserialization" );
+
+            long txId = buffer.getLong();
+
             SchemaRule rule = null;
             if ( first( records ).inUse() )
             {
@@ -1275,8 +1312,9 @@ public abstract class Command extends XaCommand
                     throw launderedException( e );
                 }
             }
-            return new SchemaRuleCommand( neoStore != null ? neoStore.getSchemaStore() : null,
-                    indexes, records, rule );
+
+            return new SchemaRuleCommand( neoStore, neoStore != null ? neoStore.getSchemaStore() : null,
+                    indexes, records, rule, txId );
         }
     }
     

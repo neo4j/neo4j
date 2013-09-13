@@ -88,6 +88,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.test.AllItemsMatcher.matchesAll;
 
@@ -608,7 +609,8 @@ public class WriteTransactionTest
         public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand, RuntimeException> verifier )
         {
             super( new File( "log" ), null, null, null, new DefaultLogBufferFactory(),
-                    fs, new SingleLoggingService( DEV_NULL ), LogPruneStrategies.NO_PRUNING, null, 25*1024*1024 );
+                    fs, new SingleLoggingService( DEV_NULL ), LogPruneStrategies.NO_PRUNING, null, 25*1024*1024,
+                    ALLOW_ALL );
             this.verifier = verifier;
         }
 
@@ -650,8 +652,8 @@ public class WriteTransactionTest
             RuntimeException> verifier )
     {
         log = new VerifyingXaLogicalLog( fs.get(), verifier );
-        WriteTransaction result = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE );
+        WriteTransaction result = new WriteTransaction( 0, 0l, log, transactionState, neoStore,
+                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator(neoStore));
         result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
         return result;
     }

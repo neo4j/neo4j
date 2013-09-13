@@ -60,15 +60,15 @@ import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.L
  * will also be written to the log.
  * <p/>
  * Normally you don't have to do anything with this log except open it after it
- * has been instanciated (see {@link XaContainer}). The only method that may be
+ * has been instantiated (see {@link XaContainer}). The only method that may be
  * of use when implementing a XA compatible resource is the
  * {@link #getCurrentTxIdentifier}. Leave everything else be unless you know
  * what you're doing.
  * <p/>
- * When the log is opened it will be scaned for uncompleted transactions and
+ * When the log is opened it will be scanned for uncompleted transactions and
  * those transactions will be re-created. When scan of log is complete all
  * transactions that hasn't entered prepared state will be marked as done
- * (implies rolledback) and dropped. All transactions that have been prepared
+ * (implies rolled back) and dropped. All transactions that have been prepared
  * will be held in memory until the transaction manager tells them to commit.
  * Transaction that already started commit but didn't get flagged as done will
  * be re-committed.
@@ -108,13 +108,14 @@ public class XaLogicalLog implements LogLoader
     private final LogPruneStrategy pruneStrategy;
     private final XaLogicalLogFiles logFiles;
     private final PartialTransactionCopier partialTransactionCopier;
+    private final InjectedTransactionValidator injectedTxValidator;
 
     private final TransactionStateFactory stateFactory;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem,
                          Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
-                         long rotateAtSize )
+                         long rotateAtSize, InjectedTransactionValidator injectedTxValidator )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
@@ -133,6 +134,7 @@ public class XaLogicalLog implements LogLoader
         msgLog = logging.getMessagesLog( getClass() );
 
         this.partialTransactionCopier = new PartialTransactionCopier( sharedBuffer, cf, msgLog, positionCache, this, xidIdentMap );
+        this.injectedTxValidator = injectedTxValidator;
     }
 
     synchronized void open() throws IOException
@@ -261,14 +263,21 @@ public class XaLogicalLog implements LogLoader
         return nextIdentifier;
     }
 
+    /**
+     * @param highestKnownCommittedTx is the highest committed tx id when this transaction *started*. This is used
+     *                                to perform prepare-time checks that need to know the state of the system when
+     *                                the transaction started. Specifically, it is used by constraint validation, to
+     *                                ensure that transactions that began before a constraint was enabled are checked
+     *                                to ensure they do not violate the constraint.
+     */
     // returns identifier for transaction
     // [TX_START][xid[gid.length,bid.lengh,gid,bid]][identifier][format id]
-    public synchronized int start( Xid xid, int masterId, int myId ) throws XAException
+    public synchronized int start( Xid xid, int masterId, int myId, long highestKnownCommittedTx ) throws XAException
     {
         int xidIdent = getNextIdentifier();
         long timeWritten = System.currentTimeMillis();
         LogEntry.Start start = new LogEntry.Start( xid, xidIdent, masterId,
-                myId, -1, timeWritten );
+                myId, -1, timeWritten, highestKnownCommittedTx );
         /*
          * We don't write the entry yet. We will store it and hope
          * that when the commands/commit/prepare/done entry are going to be
@@ -288,7 +297,7 @@ public class XaLogicalLog implements LogLoader
             start.setStartPosition( position );
             LogIoUtils.writeStart( writeBuffer, identifier, start.getXid(),
                     start.getMasterId(), start.getLocalId(),
-                    start.getTimeWritten() );
+                    start.getTimeWritten(), start.getLastCommittedTxWhenTransactionStarted() );
         }
         catch ( IOException e )
         {
@@ -458,7 +467,8 @@ public class XaLogicalLog implements LogLoader
         // re-create the transaction
         Xid xid = entry.getXid();
         xidIdentMap.put( identifier, entry );
-        XaTransaction xaTx = xaTf.create( identifier, stateFactory.create( null ) );
+        XaTransaction xaTx = xaTf.create( identifier, entry.getLastCommittedTxWhenTransactionStarted(),
+                                          stateFactory.create( null ) );
         xaTx.setRecovered();
         recoveredTxMap.put( identifier, xaTx );
         xaRm.injectStart( xid, xaTx );
@@ -1228,6 +1238,7 @@ public class XaLogicalLog implements LogLoader
         scanIsComplete = false;
         LogDeserializer logApplier = getLogDeserializer( byteChannel );
         xidIdent = getNextIdentifier();
+
         long startEntryPosition = writeBuffer.getFileChannelPosition();
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
         {
@@ -1238,9 +1249,20 @@ public class XaLogicalLog implements LogLoader
         {
             throw new IOException( "Unable to find start entry" );
         }
+
+        try
+        {
+            injectedTxValidator.assertInjectionAllowed( startEntry.getLastCommittedTxWhenTransactionStarted() );
+        }
+        catch ( XAException e )
+        {
+            throw new IOException( e );
+        }
+
         startEntry.setStartPosition( startEntryPosition );
         LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
                 xidIdent, nextTxId, System.currentTimeMillis() );
+
         LogIoUtils.writeLogEntry( commit, writeBuffer );
         // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
         forceMode.force( writeBuffer );

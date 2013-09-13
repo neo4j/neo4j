@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.rules.ExternalResource;
-
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 
@@ -47,15 +46,28 @@ public class ClusterRule extends ExternalResource
 
     public ClusterManager.ManagedCluster startCluster() throws Exception
     {
-        return startCluster( new HighlyAvailableGraphDatabaseFactory() );
+        return startCluster( new HighlyAvailableGraphDatabaseFactory(), stringMap() );
+    }
+
+    public ClusterManager.ManagedCluster startCluster(Map<String, String> config) throws Exception
+    {
+        return startCluster( new HighlyAvailableGraphDatabaseFactory(), config );
     }
 
     public ClusterManager.ManagedCluster startCluster( HighlyAvailableGraphDatabaseFactory databaseFactory )
             throws Exception
     {
-        clusterManager = new ClusterManager( provider, storeDirectory, stringMap(
-                default_timeout.name(), "1s", tx_push_factor.name(), "0" ),
-                new HashMap<Integer, Map<String,String>>(), databaseFactory );
+        return startCluster( databaseFactory, stringMap() );
+    }
+
+    public ClusterManager.ManagedCluster startCluster( HighlyAvailableGraphDatabaseFactory databaseFactory, Map<String, String> config )
+            throws Exception
+    {
+        config.putAll(stringMap(
+                default_timeout.name(), "1s",
+                tx_push_factor.name(), "0" ));
+        clusterManager = new ClusterManager( provider, storeDirectory,
+                config, new HashMap<Integer, Map<String,String>>(), databaseFactory );
         try
         {
             clusterManager.start();

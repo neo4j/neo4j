@@ -366,7 +366,22 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             txThreadMap.remove();
             if ( hasAnyLocks )
             {
-                tx.finish( successful );
+                if(successful)
+                {
+                    tx.finish( true );
+                }
+                else
+                {
+                    try
+                    {
+                        tx.finish( false );
+                    }
+                    catch(RuntimeException e)
+                    {
+                        log.error( "Failed to commit transaction, and was then subsequently unable to " +
+                                   "finish the failed tx.", e );
+                    }
+                }
             }
         }
     }
@@ -443,10 +458,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 {
                     log.logMessage( "Commit failed", t );
 
-                        setTmNotOk( t );
-                        // this should never be
-                        throw logAndReturn("TM error tx commit",new TransactionFailureException(
-                                "commit threw exception but status is committed?", t ));
+                    setTmNotOk( t );
+                    // this should never be
+                    throw logAndReturn("TM error tx commit",new TransactionFailureException(
+                            "commit threw exception but status is committed?", t ));
                 }
             }
 

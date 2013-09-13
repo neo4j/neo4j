@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import java.util.Random;
 
 import javax.transaction.xa.Xid;
@@ -37,6 +34,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.*;
 
 public class TestTxEntries
 {
@@ -75,25 +74,25 @@ public class TestTxEntries
     public void startEntryShouldBeUniqueIfEitherValueChanges() throws Exception
     {
         // Positive Xid hashcode
-        assertorrectChecksumEquality( randomXid( Boolean.TRUE ) );
+        assertCorrectChecksumEquality( randomXid( Boolean.TRUE ) );
         
         // Negative Xid hashcode
-        assertorrectChecksumEquality( randomXid( Boolean.FALSE ) );
+        assertCorrectChecksumEquality( randomXid( Boolean.FALSE ) );
     }
 
-    private void assertorrectChecksumEquality( Xid refXid )
+    private void assertCorrectChecksumEquality( Xid refXid )
     {
-        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime ); 
-        assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime ) );
+        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l );
+        assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l ) );
         
         // Different Xids
-        assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime ) );
+        assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime, 0l ) );
 
         // Different master
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster+1, refMe, startPosition, refTime ) );
+        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster+1, refMe, startPosition, refTime, 0l ) );
 
         // Different me
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster, refMe+1, startPosition, refTime ) );
+        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster, refMe+1, startPosition, refTime, 0l ) );
     }
 
     private void assertChecksumsNotEqual( Start ref, Start other )

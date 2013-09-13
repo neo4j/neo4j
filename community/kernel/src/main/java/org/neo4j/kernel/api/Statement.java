@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+
 public interface Statement extends AutoCloseable
 {
     ReadOperations readOperations();
@@ -31,9 +33,9 @@ public interface Statement extends AutoCloseable
      */
     TokenWriteOperations tokenWriteOperations() throws ReadOnlyDatabaseKernelException;
 
-    DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException;
+    DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException;
 
-    SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeException,
+    SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException,
             ReadOnlyDatabaseKernelException;
 
     void close();

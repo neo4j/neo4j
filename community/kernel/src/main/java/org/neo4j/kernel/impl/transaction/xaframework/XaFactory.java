@@ -59,7 +59,8 @@ public class XaFactory
     }
 
     public XaContainer newXaContainer( XaDataSource xaDataSource, File logicalLog, XaCommandFactory cf,
-            XaTransactionFactory tf, TransactionStateFactory stateFactory, TransactionInterceptorProviders providers )
+        InjectedTransactionValidator injectedTxValidator, XaTransactionFactory tf, TransactionStateFactory stateFactory,
+        TransactionInterceptorProviders providers )
     {
         if ( logicalLog == null || cf == null || tf == null )
         {
@@ -76,12 +77,12 @@ public class XaFactory
         if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
         {
             log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, logBufferFactory,
-                    fileSystemAbstraction, logging, pruneStrategy, stateFactory, rotateAtSize );
+                    fileSystemAbstraction, logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator);
         }
         else
         {
             log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction,
-                    logging, pruneStrategy, stateFactory, rotateAtSize );
+                    logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator );
         }
 
         // TODO These setters should be removed somehow

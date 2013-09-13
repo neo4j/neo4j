@@ -41,14 +41,10 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveInt;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.exceptions.*;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
@@ -112,7 +108,7 @@ public class NodeProxy implements Node
         {
             statement.dataWriteOperations().nodeDelete( getId() );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -232,7 +228,7 @@ public class NodeProxy implements Node
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -265,7 +261,7 @@ public class NodeProxy implements Node
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -443,7 +439,7 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( e );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -514,7 +510,7 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( "No node with id " + getId() + " found.", e );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -539,7 +535,7 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( "No node with id " + getId() + " found.", e );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }

@@ -31,6 +31,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
+import org.neo4j.kernel.impl.nioneo.xa.IntegrityValidator;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.DatabaseFiles;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
@@ -58,7 +59,7 @@ public class StoreFactory
     private final FileSystemAbstraction fileSystemAbstraction;
     private final StringLogger stringLogger;
     private final TxHook txHook;
-    
+
     public static final String LABELS_PART = ".labels";
     public static final String NAMES_PART = ".names";
     public static final String INDEX_PART = ".index";

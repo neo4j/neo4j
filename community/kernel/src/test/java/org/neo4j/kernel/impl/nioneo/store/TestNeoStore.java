@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -38,16 +39,17 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DependencyResolver.Adapter;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
@@ -86,12 +88,8 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TestNeoStore
@@ -100,9 +98,11 @@ public class TestNeoStore
     private RelationshipTypeTokenStore rtStore;
     private NeoStoreXaDataSource ds;
     private NeoStoreXaConnection xaCon;
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TargetDirectory targetDirectory;
     private File path;
+
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
 
     private File file( String name )
     {
@@ -184,9 +184,8 @@ public class TestNeoStore
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                                 dependencyResolverForConfig( config ) ), null, new SingleLoggingService( DEV_NULL ),
                                 new KernelSchemaStateStore(),
-                                nodeManager,
-                                mock(TokenNameLookup.class),
-                                dependencyResolverForNoIndexProvider( nodeManager ) );
+                mock(TokenNameLookup.class),
+                dependencyResolverForNoIndexProvider( nodeManager ) );
         ds.init();
         ds.start();
 
@@ -1113,5 +1112,38 @@ public class TestNeoStore
         NeoStore neoStore = sf.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         assertEquals( 12, neoStore.getVersion() );
         neoStore.close();
+    }
+
+    @Test
+    public void testSetLatestConstraintTx() throws Exception
+    {
+        // given
+        new GraphDatabaseFactory().newEmbeddedDatabase( testDir.absolutePath() ).shutdown();
+        StoreFactory sf = new StoreFactory( new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ),
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
+                StringLogger.DEV_NULL, null );
+
+        // when
+        NeoStore neoStore = sf.newNeoStore( new File( testDir.absolutePath(), NeoStore.DEFAULT_NAME ) );
+
+        // then the default is 0
+        assertEquals( 0l, neoStore.getLatestConstraintIntroducingTx() );
+
+
+        // when
+        neoStore.setLatestConstraintIntroducingTx( 10l );
+
+        // then
+        assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
+
+
+        // when
+        neoStore.flushAll();
+        neoStore.close();
+        neoStore = sf.newNeoStore( new File( testDir.absolutePath(), NeoStore.DEFAULT_NAME ) );
+
+        // then the value should have been stored
+        assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
+
     }
 }

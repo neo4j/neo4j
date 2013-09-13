@@ -472,7 +472,6 @@ public class
                     resolver.resolveDependency( JobScheduler.class ),
                     logging,
                     updateableSchemaState,
-                    resolver.resolveDependency( NodeManager.class ),
                     new NonTransactionalTokenNameLookup(
                             resolver.resolveDependency( LabelTokenHolder.class ),
                             resolver.resolveDependency( PropertyKeyTokenHolder.class ) ),

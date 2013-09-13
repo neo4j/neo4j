@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -60,13 +61,13 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -163,7 +164,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.api.operations.KeyReadOperations.NO_SUCH_LABEL;
@@ -177,6 +177,7 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
+
     public static class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
@@ -564,7 +565,7 @@ public abstract class InternalAbstractGraphDatabase
         life.add( new ConfigurationChangedRestarter() );
     }
 
-    public void assertSchemaWritesAllowed() throws InvalidTransactionTypeException
+    public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
     {
     }
 
@@ -871,7 +872,7 @@ public abstract class InternalAbstractGraphDatabase
         neoDataSource = new NeoStoreXaDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
-                updateableSchemaState, nodeManager,
+                updateableSchemaState,
                 new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver );
         xaDataSourceManager.registerDataSource( neoDataSource );
@@ -984,7 +985,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             return nodeManager.newNodeProxyById( statement.dataWriteOperations().nodeCreate() );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -1022,7 +1023,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new IllegalArgumentException( e );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
