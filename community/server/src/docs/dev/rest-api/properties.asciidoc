@@ -21,9 +21,3 @@ Server cannot determine the type. In these cases, it will check if an array is a
 and will use the stored arrays type when storing the empty array. If no array exists already, the server will reject
 the request.
 
-== Property keys ==
-
-You can list all available property keys in the database.
-
-include::list-all-property-keys.asciidoc[]
-
