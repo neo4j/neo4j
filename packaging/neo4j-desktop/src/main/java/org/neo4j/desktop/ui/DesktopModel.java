@@ -27,13 +27,13 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import org.neo4j.desktop.config.DatabaseConfiguration;
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.OperatingSystemFamily;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.Version;
 
 import static java.lang.String.format;
+import static org.neo4j.desktop.config.DatabaseConfiguration.copyDefaultDatabaseConfigurationProperties;
 
 public class DesktopModel
 {
@@ -171,7 +171,7 @@ public class DesktopModel
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void prepareGraphDirectoryForStart() throws UnsuitableGraphDatabaseDirectory, IOException
+    public void prepareGraphDirectoryForStart() throws UnsuitableGraphDatabaseDirectory
     {
         verifyGraphDirectory( databaseDirectory );
         if ( !databaseDirectory.exists() )
@@ -182,11 +182,19 @@ public class DesktopModel
         File configurationFile = getDatabaseConfigurationFile();
         if ( !configurationFile.exists() )
         {
-            DatabaseConfiguration.copyDefaultDatabaseConfigurationProperties( configurationFile );
+            try
+            {
+                copyDefaultDatabaseConfigurationProperties( configurationFile );
+            }
+            catch ( IOException e )
+            {
+                throw new UnsuitableGraphDatabaseDirectory( "Unable to write default configuration to %s",
+                        databaseDirectory );
+            }
         }
     }
 
-    public void verifyGraphDirectory( File dir ) throws UnsuitableGraphDatabaseDirectory
+    private static void verifyGraphDirectory( File dir ) throws UnsuitableGraphDatabaseDirectory
     {
         if ( !dir.isDirectory() )
         {
