@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package concurrency;
+package org.neo4j.concurrencytest;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
@@ -30,11 +31,11 @@ import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
 import org.neo4j.test.AbstractSubProcessTestBase;
+import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
-import org.neo4j.test.subprocess.BreakPoint;
 
-public class ShutdownRaceTest extends AbstractSubProcessTestBase
+public class ShutdownRaceIT extends AbstractSubProcessTestBase
 {
     private final CountDownLatch restart = new CountDownLatch( 1 ), last = new CountDownLatch( 1 );
     @Test
