@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.DiffSets;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 
 /**
  * Temporary anti-corruption while the old {@link org.neo4j.kernel.impl.core.TransactionState} class
@@ -34,7 +33,7 @@ public interface OldTxStateBridge
     /**
      * A diff set of nodes that have had the given property key and value added or removed/changed.
      */
-    DiffSets<Long> getNodesWithChangedProperty( long propertyKey, Object value );
+    DiffSets<Long> getNodesWithChangedProperty( int propertyKey, Object value );
 
     void deleteNode( long nodeId );
 
@@ -46,17 +45,17 @@ public interface OldTxStateBridge
 
     boolean relationshipIsAddedInThisTx( long relationshipId );
 
-    void nodeSetProperty( long nodeId, PropertyData property );
+    void nodeSetProperty( long nodeId, DefinedProperty property );
 
-    void relationshipSetProperty( long relationshipId, PropertyData property );
+    void relationshipSetProperty( long relationshipId, DefinedProperty property );
 
-    void graphSetProperty( PropertyData property );
+    void graphSetProperty( DefinedProperty property );
 
-    void nodeRemoveProperty( long nodeId, Property removedProperty );
+    void nodeRemoveProperty( long nodeId, DefinedProperty removedProperty );
 
-    void relationshipRemoveProperty( long relationshipId, Property removedProperty );
+    void relationshipRemoveProperty( long relationshipId, DefinedProperty removedProperty );
 
-    void graphRemoveProperty( Property removedProperty );
+    void graphRemoveProperty( DefinedProperty removedProperty );
 
-    Map<Long, Object> getNodesWithChangedProperty( long propertyKeyId );
+    Map<Long, Object> getNodesWithChangedProperty( int propertyKeyId );
 }

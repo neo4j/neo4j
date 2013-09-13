@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.commands.values
 
 import org.neo4j.cypher.internal.spi.{TokenContext, QueryContext}
 
-
 object TokenType extends Enumeration {
   case object Label extends TokenType {
     def getOptIdForName(name: String, tokenContext: TokenContext) = tokenContext.getOptLabelId(name)
@@ -43,13 +42,13 @@ object TokenType extends Enumeration {
 trait TokenType  {
   def apply(name: String) = KeyToken.Unresolved(name, this)
 
-  def apply(name: String, id: Long) = KeyToken.Resolved(name, id, this)
+  def apply(name: String, id: Int) = KeyToken.Resolved(name, id, this)
 
-  def getOptIdForName(name: String, tokenContext: TokenContext): Option[Long]
+  def getOptIdForName(name: String, tokenContext: TokenContext): Option[Int]
 
-  def getIdForNameOrFail(name: String, tokenContext: TokenContext): Long
+  def getIdForNameOrFail(name: String, tokenContext: TokenContext): Int
 
-  def getOrCreateIdForName(name: String, queryContext: QueryContext): Long
+  def getOrCreateIdForName(name: String, queryContext: QueryContext): Int
 }
 
 

@@ -47,7 +47,6 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -99,26 +98,22 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    protected ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager )
+    protected Iterator<DefinedProperty> loadProperties( NodeManager nodeManager )
     {
         return nodeManager.loadGraphProperties( false );
-    }
-
-    @Override
-    protected Object loadPropertyValue( NodeManager nodeManager, int propertyKey )
-    {
-        return nodeManager.graphLoadPropertyValue( propertyKey );
     }
 
     @Override
     public boolean hasProperty( String key )
     {
         if ( null == key )
+        {
             return false;
+        }
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.readOperations().propertyKeyGetForName( key );
+            int propertyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().graphGetProperty( propertyId ).isDefined();
         }
     }
@@ -127,11 +122,13 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     public Object getProperty( String key )
     {
         if ( null == key )
+        {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
+        }
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.readOperations().propertyKeyGetForName( key );
+            int propertyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
@@ -148,11 +145,13 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     public Object getProperty( String key, Object defaultValue )
     {
         if ( null == key )
+        {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
+        }
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.readOperations().propertyKeyGetForName( key );
+            int propertyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return false;
@@ -167,7 +166,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         boolean success = false;
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
+            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             statement.dataWriteOperations().graphSetProperty( property( propertyKeyId, value ) );
             success = true;
         }
@@ -198,7 +197,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     {
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
+            int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().graphRemoveProperty( propertyId ).value( null );
         }
         catch ( IllegalTokenNameException e )
@@ -302,10 +301,10 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
 
     @Override
     @SuppressWarnings("deprecation")
-    protected PropertyData getPropertyForIndex( int keyId )
+    protected DefinedProperty getPropertyForIndex( int keyId )
     {
-        Property property = properties.get( keyId );
-        return property != null ? property.asPropertyDataJustForIntegration() : null;
+        DefinedProperty property = properties.get( keyId );
+        return property != null ? property : null;
     }
 
     @Override
@@ -317,7 +316,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             while ( loadedProperties.hasNext() )
             {
                 DefinedProperty property = loadedProperties.next();
-                newProperties.put( (int) property.propertyKeyId(), property );
+                newProperties.put( property.propertyKeyId(), property );
             }
             properties = newProperties;
         }
@@ -340,16 +339,22 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    protected void commitPropertyMaps( ArrayMap<Integer, PropertyData> cowPropertyAddMap,
-                                       ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp )
+    protected void commitPropertyMaps( ArrayMap<Integer, DefinedProperty> cowPropertyAddMap,
+                                       ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap, long firstProp )
     {
-        if ( cowPropertyAddMap != null ) for ( Map.Entry<Integer, PropertyData> entry : cowPropertyAddMap.entrySet() )
+        if ( cowPropertyAddMap != null )
         {
-            properties.put( entry.getKey(), Property.property( entry.getKey(), entry.getValue().getValue() ) );
+            for ( Map.Entry<Integer, DefinedProperty> entry : cowPropertyAddMap.entrySet() )
+            {
+                properties.put( entry.getKey(), Property.property( entry.getKey(), entry.getValue().value() ) );
+            }
         }
-        if ( cowPropertyRemoveMap != null ) for ( Map.Entry<Integer, PropertyData> entry : cowPropertyRemoveMap.entrySet() )
+        if ( cowPropertyRemoveMap != null )
         {
-            properties.remove( entry.getKey() );
+            for ( Map.Entry<Integer, DefinedProperty> entry : cowPropertyRemoveMap.entrySet() )
+            {
+                properties.remove( entry.getKey() );
+            }
         }
     }
 }

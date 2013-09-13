@@ -24,10 +24,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -193,8 +191,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             throws KernelException
     {
         Node node;
-        long labelId;
-        long propertyKeyId;
+        int labelId, propertyKeyId;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             node = db.createNode( label( labelName ) );

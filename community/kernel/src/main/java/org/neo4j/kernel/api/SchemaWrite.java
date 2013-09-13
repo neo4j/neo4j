@@ -34,13 +34,13 @@ interface SchemaWrite
      * Creates an index, indexing properties with the given {@code propertyKeyId} for nodes with the given
      * {@code labelId}.
      */
-    IndexDescriptor indexCreate( long labelId, long propertyKeyId )
+    IndexDescriptor indexCreate( int labelId, int propertyKeyId )
             throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException;
 
     /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 
-    UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
+    UniquenessConstraint uniquenessConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException;
 
     void constraintDrop( UniquenessConstraint constraint ) throws DropConstraintFailureException;

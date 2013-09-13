@@ -39,7 +39,7 @@ public interface EntityWriteOperations
      * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(org.neo4j.kernel.api.Statement, String)} or {@link
      * KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
      */
-    boolean nodeAddLabel( KernelStatement state, long nodeId, long labelId )
+    boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException;
 
     /**
@@ -48,25 +48,25 @@ public interface EntityWriteOperations
      * are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(org.neo4j.kernel.api.Statement, String)} or {@link
      * KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
      */
-    boolean nodeRemoveLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException;
+    boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException;
 
     Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
             throws EntityNotFoundException, ConstraintValidationKernelException;
 
     Property relationshipSetProperty( KernelStatement state, long relationshipId, DefinedProperty property )
             throws EntityNotFoundException;
-    
+
     Property graphSetProperty( KernelStatement state, DefinedProperty property );
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Property nodeRemoveProperty( KernelStatement state, long nodeId, long propertyKeyId )
+    Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException;
 
-    Property relationshipRemoveProperty( KernelStatement state, long relationshipId, long propertyKeyId )
+    Property relationshipRemoveProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException;
-    
-    Property graphRemoveProperty( KernelStatement state, long propertyKeyId );
+
+    Property graphRemoveProperty( KernelStatement state, int propertyKeyId );
 }

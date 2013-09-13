@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Iterator;
-
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
@@ -29,11 +26,6 @@ import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 /** The indexing services view of the universe. */
 public interface IndexStoreView
 {
-    /**
-     * Get properties of a node, if those properties exist.
-     */
-    Iterator<Pair<Integer, Object>> nodeProperties( long nodeId, Iterator<Long> propertyKeys );
-
     /**
      * Retrieve all nodes in the database with a given label and property, as pairs of node id and property value.
      *
@@ -48,7 +40,7 @@ public interface IndexStoreView
      *
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( long[] labelIds, long[] propertyKeyIds,
+    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, int[] propertyKeyIds,
             Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
 }

@@ -54,7 +54,7 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
-import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 public class StateHandlingStatementOperations implements
@@ -94,7 +94,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public boolean nodeHasLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -120,23 +120,22 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
             if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
             {
-                return IteratorUtil.emptyPrimitiveLongIterator();
+                return IteratorUtil.emptyPrimitiveIntIterator();
             }
 
             if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
             {
-                return
-                        toPrimitiveLongIterator( state.txState().nodeStateLabelDiffSets( nodeId ).getAdded().iterator
-                                () );
+                return toPrimitiveIntIterator(
+                        state.txState().nodeStateLabelDiffSets( nodeId ).getAdded().iterator() );
             }
 
-            return state.txState().nodeStateLabelDiffSets( nodeId ).applyPrimitiveLongIterator(
+            return state.txState().nodeStateLabelDiffSets( nodeId ).applyPrimitiveIntIterator(
                     entityReadDelegate.nodeGetLabels( state, nodeId ) );
         }
 
@@ -144,7 +143,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public boolean nodeAddLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
         if ( nodeHasLabel( state, nodeId, labelId ) )
         {
@@ -157,7 +156,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
         if ( !nodeHasLabel( state, nodeId, labelId ) )
         {
@@ -171,7 +170,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -185,7 +184,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, long labelId, long propertyKey )
+    public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKey )
     {
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
         state.txState().indexRuleDoAdd( rule );
@@ -205,7 +204,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( KernelStatement state, long labelId, long propertyKeyId )
+    public UniquenessConstraint uniquenessConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
             throws CreateConstraintFailureException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
@@ -234,14 +233,15 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, long labelId, long propertyKeyId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
+            int labelId, int propertyKeyId )
     {
         return applyConstraintsDiff( state, schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
                 state, labelId, propertyKeyId ), labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, long labelId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
     {
         return applyConstraintsDiff( state, schemaReadDelegate.constraintsGetForLabel( state, labelId ), labelId );
     }
@@ -253,7 +253,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( KernelStatement state,
-            Iterator<UniquenessConstraint> constraints, long labelId, long propertyKeyId )
+            Iterator<UniquenessConstraint> constraints, int labelId, int propertyKeyId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -269,7 +269,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( KernelStatement state,
-            Iterator<UniquenessConstraint> constraints, long labelId )
+            Iterator<UniquenessConstraint> constraints, int labelId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -305,7 +305,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, long labelId, long propertyKey )
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
             throws SchemaRuleNotFoundException
     {
         Iterable<IndexDescriptor> committedRules;
@@ -371,7 +371,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, long labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -394,7 +394,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, long labelId )
+    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, int labelId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -512,7 +512,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, long nodeId, long propertyKeyId )
+    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException
     {
         Property existingProperty = nodeGetProperty( state, nodeId, propertyKeyId );
@@ -525,7 +525,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property relationshipRemoveProperty( KernelStatement state, long relationshipId, long propertyKeyId )
+    public Property relationshipRemoveProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException
     {
         Property existingProperty = relationshipGetProperty( state, relationshipId, propertyKeyId );
@@ -538,7 +538,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property graphRemoveProperty( KernelStatement state, long propertyKeyId )
+    public Property graphRemoveProperty( KernelStatement state, int propertyKeyId )
     {
         Property existingProperty = graphGetProperty( state, propertyKeyId );
         if ( existingProperty.isDefined() )
@@ -561,7 +561,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property nodeGetProperty( KernelStatement state, long nodeId, long propertyKeyId )
+    public Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
@@ -617,7 +617,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property relationshipGetProperty( KernelStatement state, long relationshipId, long propertyKeyId )
+    public Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
@@ -673,7 +673,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property graphGetProperty( KernelStatement state, long propertyKeyId )
+    public Property graphGetProperty( KernelStatement state, int propertyKeyId )
     {
         Iterator<DefinedProperty> properties = graphGetAllProperties( state );
         while ( properties.hasNext() )
@@ -701,8 +701,8 @@ public class StateHandlingStatementOperations implements
     private DiffSets<Long> nodesWithLabelAndPropertyDiffSet( KernelStatement state, IndexDescriptor index, Object value )
     {
         TxState txState = state.txState();
-        long labelId = index.getLabelId();
-        long propertyKeyId = index.getPropertyKeyId();
+        int labelId = index.getLabelId();
+        int propertyKeyId = index.getPropertyKeyId();
 
         // Start with nodes where the given property has changed
         DiffSets<Long> diff = txState.nodesWithChangedProperty( propertyKeyId, value );
@@ -730,10 +730,10 @@ public class StateHandlingStatementOperations implements
     private class HasPropertyFilter implements Predicate<Long>
     {
         private final Object value;
-        private final long propertyKeyId;
+        private final int propertyKeyId;
         private final KernelStatement state;
 
-        public HasPropertyFilter( KernelStatement state, long propertyKeyId, Object value )
+        public HasPropertyFilter( KernelStatement state, int propertyKeyId, Object value )
         {
             this.state = state;
             this.value = value;
@@ -761,10 +761,10 @@ public class StateHandlingStatementOperations implements
 
     private class HasLabelFilter implements Predicate<Long>
     {
-        private final long labelId;
+        private final int labelId;
         private final KernelStatement state;
 
-        public HasLabelFilter( KernelStatement state, long labelId )
+        public HasLabelFilter( KernelStatement state, int labelId )
         {
             this.state = state;
             this.labelId = labelId;

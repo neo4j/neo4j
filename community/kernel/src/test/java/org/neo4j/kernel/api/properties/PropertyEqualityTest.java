@@ -206,12 +206,12 @@ public class PropertyEqualityTest
 
     public static Test shouldMatch( long propertyValue, Object value )
     {
-        return new Test( new BigLongProperty( 0, propertyValue ), value, true );
+        return new Test( new LongProperty( 0, propertyValue ), value, true );
     }
 
     public static Test shouldNotMatch( long propertyValue, Object value )
     {
-        return new Test( new BigLongProperty( 0, propertyValue ), value, false );
+        return new Test( new LongProperty( 0, propertyValue ), value, false );
     }
 
     public static Test shouldMatch( double propertyValue, Object value )

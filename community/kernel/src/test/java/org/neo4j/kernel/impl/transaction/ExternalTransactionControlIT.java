@@ -41,7 +41,6 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class ExternalTransactionControlIT
 {
-
     public @Rule
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
@@ -109,7 +108,7 @@ public class ExternalTransactionControlIT
         final Transaction jtaTx = tm.suspend();
 
         // When
-        OtherThreadExecutor<Boolean> otherThread = new OtherThreadExecutor<Boolean>( "Thread to resume tx in", null );
+        OtherThreadExecutor<Boolean> otherThread = new OtherThreadExecutor<>( "Thread to resume tx in", null );
         boolean result = otherThread.execute( new OtherThreadExecutor.WorkerCommand<Boolean, Boolean>()
         {
             @Override
@@ -135,10 +134,11 @@ public class ExternalTransactionControlIT
     private Node createNode()
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        org.neo4j.graphdb.Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        tx.success();
-        tx.finish();
-        return node;
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            tx.success();
+            return node;
+        }
     }
 }

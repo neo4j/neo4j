@@ -19,50 +19,35 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
-
 import static java.lang.Float.floatToIntBits;
 
-final class FloatProperty extends NumberPropertyWithin4Bytes
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+
+final class FloatProperty extends DefinedProperty
 {
     private final float value;
-    private final long propertyKeyId;
 
-    FloatProperty( long propertyKeyId, float value )
+    FloatProperty( int propertyKeyId, float value )
     {
-        this.propertyKeyId = propertyKeyId;
+        super( propertyKeyId );
         this.value = value;
     }
 
     @Override
-    public long propertyKeyId()
-    {
-        return propertyKeyId;
-    }
-
-    @Override
+    @SuppressWarnings("UnnecessaryUnboxing")
     public boolean valueEquals( Object other )
     {
         if ( other instanceof Float )
         {
-            boolean b = value == (float)other;
-            return b;
+            return value == ((Float) other).floatValue();
         }
-
         return valueCompare( value, other );
     }
 
     @Override
-    boolean hasEqualValue( NumberPropertyWithin4Bytes that )
+    boolean hasEqualValue( DefinedProperty that )
     {
         return value == ((FloatProperty) that).value;
-    }
-
-    @Override
-    int valueBits()
-    {
-        return floatToIntBits( value );
     }
 
     @Override
@@ -72,9 +57,14 @@ final class FloatProperty extends NumberPropertyWithin4Bytes
     }
 
     @Override
-    @Deprecated
-    public PropertyData asPropertyDataJustForIntegration()
+    int valueHash()
     {
-        return PropertyDatas.forFloat( (int) propertyKeyId, -1, value );
+        return floatToIntBits( value );
+    }
+
+    @Override
+    public int sizeOfObjectInBytesIncludingOverhead()
+    {
+        return withObjectOverhead( 8 );
     }
 }

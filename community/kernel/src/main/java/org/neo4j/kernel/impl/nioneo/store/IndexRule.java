@@ -26,6 +26,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.UTF8.getDecodedStringFrom;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
@@ -34,17 +35,17 @@ public class IndexRule extends AbstractSchemaRule
 {
     private static final long NO_OWNING_CONSTRAINT = -1;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private final long propertyKey;
+    private final int propertyKey;
     /**
      * Non-null for constraint indexes, equal to {@link #NO_OWNING_CONSTRAINT} for
      * constraint indexes with no owning constraint record.
      */
     private final Long owningConstraint;
 
-    static IndexRule readIndexRule( long id, boolean constraintIndex, long label, ByteBuffer serialized )
+    static IndexRule readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
     {
         SchemaIndexProvider.Descriptor providerDescriptor = readProviderDescriptor( serialized );
-        long propertyKeyId = readPropertyKey( serialized );
+        int propertyKeyId = readPropertyKey( serialized );
         if ( constraintIndex )
         {
             long owningConstraint = readOwningConstraint( serialized );
@@ -56,13 +57,13 @@ public class IndexRule extends AbstractSchemaRule
         }
     }
 
-    public static IndexRule indexRule( long id, long label, long propertyKeyId,
+    public static IndexRule indexRule( long id, int label, int propertyKeyId,
                                        SchemaIndexProvider.Descriptor providerDescriptor )
     {
         return new IndexRule( id, label, propertyKeyId, providerDescriptor, null );
     }
 
-    public static IndexRule constraintIndexRule( long id, long label, long propertyKeyId,
+    public static IndexRule constraintIndexRule( long id, int label, int propertyKeyId,
                                                  SchemaIndexProvider.Descriptor providerDescriptor,
                                                  Long owningConstraint )
     {
@@ -70,7 +71,7 @@ public class IndexRule extends AbstractSchemaRule
                               owningConstraint == null ? NO_OWNING_CONSTRAINT : owningConstraint );
     }
 
-    private IndexRule( long id, long label, long propertyKey, SchemaIndexProvider.Descriptor providerDescriptor,
+    private IndexRule( long id, int label, int propertyKey, SchemaIndexProvider.Descriptor providerDescriptor,
                        Long owningConstraint )
     {
         super( id, label, indexKind( owningConstraint ) );
@@ -97,12 +98,14 @@ public class IndexRule extends AbstractSchemaRule
         return new SchemaIndexProvider.Descriptor( providerKey, providerVersion );
     }
 
-    private static long readPropertyKey( ByteBuffer serialized )
+    private static int readPropertyKey( ByteBuffer serialized )
     {
         // Currently only one key is supported although the data format supports multiple
         int count = serialized.getShort();
         assert count == 1;
-        return serialized.getLong();
+
+        // Changed from being a long to an int 2013-09-10, but keeps reading a long to not change the store format.
+        return safeCastLongToInt( serialized.getLong() );
     }
 
     private static long readOwningConstraint( ByteBuffer serialized )
@@ -115,7 +118,7 @@ public class IndexRule extends AbstractSchemaRule
         return providerDescriptor;
     }
 
-    public long getPropertyKey()
+    public int getPropertyKey()
     {
         return propertyKey;
     }
@@ -167,7 +170,7 @@ public class IndexRule extends AbstractSchemaRule
     public int hashCode()
     {
         // TODO: Think if this needs to be extended with providerDescriptor
-        return 31 * super.hashCode() + (int) propertyKey;
+        return 31 * super.hashCode() + propertyKey;
     }
 
     @Override

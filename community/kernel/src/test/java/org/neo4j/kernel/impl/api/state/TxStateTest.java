@@ -54,10 +54,10 @@ public class TxStateTest
         state.nodeDoAddLabel( 2, 1 );
 
         // WHEN
-        Set<Long> addedLabels = state.nodeStateLabelDiffSets( 1 ).getAdded();
+        Set<Integer> addedLabels = state.nodeStateLabelDiffSets( 1 ).getAdded();
 
         // THEN
-        assertEquals( asSet( 1L, 2L ), addedLabels );
+        assertEquals( asSet( 1, 2 ), addedLabels );
     }
 
     @Test
@@ -69,10 +69,10 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 2, 1 );
 
         // WHEN
-        Set<Long> removedLabels = state.nodeStateLabelDiffSets( 1 ).getRemoved();
+        Set<Integer> removedLabels = state.nodeStateLabelDiffSets( 1 ).getRemoved();
 
         // THEN
-        assertEquals( asSet( 1L, 2L ), removedLabels );
+        assertEquals( asSet( 1, 2 ), removedLabels );
     }
 
     @Test
@@ -87,7 +87,7 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2L ), state.nodeStateLabelDiffSets( 1 ).getAdded() );
+        assertEquals( asSet( 2 ), state.nodeStateLabelDiffSets( 1 ).getAdded() );
     }
 
     @Test
@@ -102,7 +102,7 @@ public class TxStateTest
         state.nodeDoAddLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2L ), state.nodeStateLabelDiffSets( 1 ).getRemoved() );
+        assertEquals( asSet( 2 ), state.nodeStateLabelDiffSets( 1 ).getRemoved() );
     }
 
     @Test
@@ -143,7 +143,7 @@ public class TxStateTest
     public void shouldAddAndGetByLabel() throws Exception
     {
         // GIVEN
-        long labelId = 2, labelId2 = 5, propertyKey = 3;
+        int labelId = 2, labelId2 = 5, propertyKey = 3;
 
         // WHEN
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );
@@ -158,7 +158,7 @@ public class TxStateTest
     public void shouldAddAndGetByRuleId() throws Exception
     {
         // GIVEN
-        long labelId = 2, propertyKey = 3;
+        int labelId = 2, propertyKey = 3;
 
         // WHEN
         IndexDescriptor rule = new IndexDescriptor( labelId, propertyKey );

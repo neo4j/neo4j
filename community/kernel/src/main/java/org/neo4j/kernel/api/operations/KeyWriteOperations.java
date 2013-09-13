@@ -29,15 +29,15 @@ public interface KeyWriteOperations
      * Returns a label id for a label name. If the label doesn't exist prior to
      * this call it gets created.
      */
-    long labelGetOrCreateForName( Statement state, String labelName )
+    int labelGetOrCreateForName( Statement state, String labelName )
             throws IllegalTokenNameException, TooManyLabelsException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
-    long propertyKeyGetOrCreateForName( Statement state, String propertyKeyName ) throws IllegalTokenNameException;
+    int propertyKeyGetOrCreateForName( Statement state, String propertyKeyName ) throws IllegalTokenNameException;
 
-    long relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName )
+    int relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName )
             throws IllegalTokenNameException;
 }

@@ -41,8 +41,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -141,7 +139,6 @@ public class IndexPopulationJobTest
         verifyNoMoreInteractions( populator );
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void shouldIndexUpdatesWhenDoingThePopulation() throws Exception
     {
@@ -152,7 +149,7 @@ public class IndexPopulationJobTest
         long node3 = createNode( map( name, value3 ), FIRST );
         @SuppressWarnings("UnnecessaryLocalVariable")
         long changeNode = node1;
-        long propertyKeyId = getPropertyKeyForName( name );
+        int propertyKeyId = getPropertyKeyForName( name );
         NodeChangingWriter populator = new NodeChangingWriter( changeNode, propertyKeyId, value1, changedValue,
                 firstLabelId );
         IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
@@ -178,7 +175,7 @@ public class IndexPopulationJobTest
         long node1 = createNode( map( name, value1 ), FIRST );
         long node2 = createNode( map( name, value2 ), FIRST );
         long node3 = createNode( map( name, value3 ), FIRST );
-        long propertyKeyId = getPropertyKeyForName( name );
+        int propertyKeyId = getPropertyKeyForName( name );
         NodeDeletingWriter populator = new NodeDeletingWriter( node2, propertyKeyId, value2, firstLabelId );
         IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
         populator.setJob( job );
@@ -366,11 +363,10 @@ public class IndexPopulationJobTest
         private final long changedNode;
         private final Object newValue;
         private final Object previousValue;
-        private final long propertyKeyId;
-        private final long label;
+        private final int label, propertyKeyId;
 
-        public NodeChangingWriter( long changedNode, long propertyKeyId, Object previousValue, Object newValue,
-                                   long label )
+        public NodeChangingWriter( long changedNode, int propertyKeyId, Object previousValue, Object newValue,
+                                   int label )
         {
             this.changedNode = changedNode;
             this.propertyKeyId = propertyKeyId;
@@ -418,11 +414,11 @@ public class IndexPopulationJobTest
         private final Map<Long, Object> removed = new HashMap<>();
         private final long nodeToDelete;
         private IndexPopulationJob job;
-        private final long propertyKeyId;
+        private final int propertyKeyId;
         private final Object valueToDelete;
-        private final long label;
+        private final int label;
 
-        public NodeDeletingWriter( long nodeToDelete, long propertyKeyId, Object valueToDelete, long label )
+        public NodeDeletingWriter( long nodeToDelete, int propertyKeyId, Object valueToDelete, int label )
         {
             this.nodeToDelete = nodeToDelete;
             this.propertyKeyId = propertyKeyId;
@@ -474,11 +470,7 @@ public class IndexPopulationJobTest
     private IndexPopulator populator;
     private KernelSchemaStateStore stateHolder;
 
-    private long firstLabelId;
-    private long secondLabelId;
-
-    private long namePropertyKeyId;
-    private long agePropertyKeyId;
+    private int firstLabelId;
 
     @Before
     public void before() throws Exception
@@ -491,10 +483,6 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         Statement statement = ctxProvider.statement();
         firstLabelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
-        secondLabelId = statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
-
-        namePropertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( name );
-        agePropertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( age );
 
         statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
         statement.close();
@@ -511,7 +499,6 @@ public class IndexPopulationJobTest
     @SuppressWarnings("deprecation")
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
                                                       FlippableIndexProxy flipper )
-            throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         NeoStore neoStore = db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
         return newIndexPopulationJob( label, propertyKey, populator, flipper, new NeoStoreIndexStoreView( neoStore ),
@@ -522,7 +509,6 @@ public class IndexPopulationJobTest
                                                       IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
                                                       StringLogger logger )
-            throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         return newIndexPopulationJob( label, propertyKey,
                 mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logger );
@@ -533,20 +519,14 @@ public class IndexPopulationJobTest
                                                       IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
                                                       StringLogger logger )
-            throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         IndexDescriptor descriptor;
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             ReadOperations statement = ctxProvider.statement().readOperations();
             descriptor = new IndexDescriptor( statement.labelGetForName( label.name() ),
                     statement.propertyKeyGetForName( propertyKey ) );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
@@ -560,8 +540,7 @@ public class IndexPopulationJobTest
 
     private long createNode( Map<String, Object> properties, Label... labels )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( labels );
             for ( Map.Entry<String, Object> property : properties.entrySet() )
@@ -571,25 +550,15 @@ public class IndexPopulationJobTest
             tx.success();
             return node.getId();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
-    private long getPropertyKeyForName( String name ) throws PropertyKeyNotFoundException
+    private int getPropertyKeyForName( String name )
     {
-        Long result;
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            result = ctxProvider.statement().readOperations().propertyKeyGetForName( name );
+            int result = ctxProvider.statement().readOperations().propertyKeyGetForName( name );
             tx.success();
+            return result;
         }
-        finally
-        {
-            tx.finish();
-        }
-        return result;
     }
 }

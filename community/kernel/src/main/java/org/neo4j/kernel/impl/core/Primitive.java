@@ -23,7 +23,6 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -35,10 +34,7 @@ import org.neo4j.kernel.impl.cache.SizeOfObject;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
-
-import static org.neo4j.helpers.collection.Iterables.map;
 
 public abstract class Primitive implements SizeOfObject
 {
@@ -48,11 +44,14 @@ public abstract class Primitive implements SizeOfObject
 
     Primitive( boolean newPrimitive )
     {
-        if ( newPrimitive ) setEmptyProperties();
+        if ( newPrimitive )
+        {
+            setEmptyProperties();
+        }
     }
 
     public abstract long getId();
-    
+
     public Iterator<DefinedProperty> getProperties( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> loader,
             CacheUpdateListener updateListener )
     {
@@ -65,32 +64,35 @@ public abstract class Primitive implements SizeOfObject
         ensurePropertiesLoaded( state, loader, updateListener );
         return getCachedProperty( key );
     }
-    
+
     public PrimitiveLongIterator getPropertyKeys( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> cacheLoader,
             CacheUpdateListener updateListener )
     {
         ensurePropertiesLoaded( state, cacheLoader, updateListener );
         return getCachedPropertyKeys();
     }
-    
+
     private Iterator<DefinedProperty> ensurePropertiesLoaded( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> loader,
             CacheUpdateListener updateListener )
     {
-        if ( !hasLoadedProperties() ) synchronized ( this )
+        if ( !hasLoadedProperties() )
         {
-            if ( !hasLoadedProperties() )
+            synchronized ( this )
             {
-                try
+                if ( !hasLoadedProperties() )
                 {
-                    Iterator<DefinedProperty> loadedProperties = loader.load( state, getId() );
-                    setProperties( loadedProperties );
-                    updateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
-                }
-                catch ( InvalidRecordException | EntityNotFoundException e )
-                {
-                    throw new NotFoundException( this + " not found. This can be because someone " +
-                            "else deleted this entity while we were trying to read properties from it, or because of " +
-                            "concurrent modification of other properties on this entity. The problem should be temporary.", e );
+                    try
+                    {
+                        Iterator<DefinedProperty> loadedProperties = loader.load( state, getId() );
+                        setProperties( loadedProperties );
+                        updateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
+                    }
+                    catch ( InvalidRecordException | EntityNotFoundException e )
+                    {
+                        throw new NotFoundException( this + " not found. This can be because someone " +
+                                "else deleted this entity while we were trying to read properties from it, or because of " +
+                                "concurrent modification of other properties on this entity. The problem should be temporary.", e );
+                    }
                 }
             }
         }
@@ -98,22 +100,22 @@ public abstract class Primitive implements SizeOfObject
     }
 
     protected abstract Iterator<DefinedProperty> getCachedProperties();
-    
+
     protected abstract Property getCachedProperty( int key );
-    
+
     protected abstract PrimitiveLongIterator getCachedPropertyKeys();
 
     protected abstract boolean hasLoadedProperties();
 
     protected abstract void setEmptyProperties();
-    
+
     protected abstract void setProperties( Iterator<DefinedProperty> properties );
-    
-    protected abstract PropertyData getPropertyForIndex( int keyId );
-    
+
+    protected abstract DefinedProperty getPropertyForIndex( int keyId );
+
     protected abstract void commitPropertyMaps(
-            ArrayMap<Integer, PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp );
+            ArrayMap<Integer, DefinedProperty> cowPropertyAddMap,
+            ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap, long firstProp );
 
     @Override
     public int hashCode()
@@ -126,58 +128,31 @@ public abstract class Primitive implements SizeOfObject
     @Override
     public abstract boolean equals(Object other);
 
-    private Object getPropertyValue( NodeManager nodeManager, PropertyData property )
-    {
-        Object value = property.getValue();
-        if ( value == null )
-        {
-            /*
-             * This will only happen for "heavy" property value, such as
-             * strings/arrays
-             */
-            value = loadPropertyValue( nodeManager, property.getIndex() );
-            property.setNewValue( value );
-        }
-        return value;
-    }
-
     private void ensurePropertiesLoaded( NodeManager nodeManager )
     {
         // double checked locking
-        if ( !hasLoadedProperties() ) synchronized ( this )
+        if ( !hasLoadedProperties() )
         {
-            if ( !hasLoadedProperties() )
+            synchronized ( this )
             {
-                try
+                if ( !hasLoadedProperties() )
                 {
-                    ArrayMap<Integer, PropertyData> loadedProperties = loadProperties( nodeManager );
-                    setProperties( toPropertyIterator( loadedProperties ) );
-                }
-                catch ( InvalidRecordException e )
-                {
-                    throw new NotFoundException( asProxy( nodeManager ) + " not found. This can be because someone " +
-                            "else deleted this entity while we were trying to read properties from it, or because of " +
-                            "concurrent modification of other properties on this entity. The problem should be temporary.", e );
+                    try
+                    {
+                        setProperties( loadProperties( nodeManager ) );
+                    }
+                    catch ( InvalidRecordException e )
+                    {
+                        throw new NotFoundException( asProxy( nodeManager ) + " not found. This can be because someone " +
+                                "else deleted this entity while we were trying to read properties from it, or because of " +
+                                "concurrent modification of other properties on this entity. The problem should be temporary.", e );
+                    }
                 }
             }
         }
     }
 
-    private Iterator<DefinedProperty> toPropertyIterator( ArrayMap<Integer, PropertyData> loadedProperties )
-    {
-        return map( new Function<PropertyData, DefinedProperty>()
-        {
-            @Override
-            public DefinedProperty apply( PropertyData from )
-            {
-                return Property.property( from.getIndex(), from.getValue() );
-            }
-        }, loadedProperties.values() ).iterator();
-    }
-
-    protected abstract ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager );
-    
-    protected abstract Object loadPropertyValue( NodeManager nodeManager, int propertyKey );
+    protected abstract Iterator<DefinedProperty> loadProperties( NodeManager nodeManager );
 
     protected Object getCommittedPropertyValue( NodeManager nodeManager, String key )
     {
@@ -185,16 +160,16 @@ public abstract class Primitive implements SizeOfObject
         Token index = nodeManager.getPropertyKeyTokenOrNull( key );
         if ( index != null )
         {
-            PropertyData property = getPropertyForIndex( index.id() );
+            DefinedProperty property = getPropertyForIndex( index.id() );
             if ( property != null )
             {
-                return getPropertyValue( nodeManager, property );
+                return property.value();
             }
         }
         return null;
     }
-    
+
     public abstract CowEntityElement getEntityElement( PrimitiveElement element, boolean create );
-    
+
     abstract PropertyContainer asProxy( NodeManager nm );
 }

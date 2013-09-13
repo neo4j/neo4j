@@ -60,7 +60,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   override def relationshipOps: Operations[Relationship] = new CountingOps[Relationship](inner.relationshipOps,
     relationshipsDeleted)
 
-  override def setLabelsOnNode(node: Long, labelIds: Iterator[Long]): Int = {
+  override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
     val added = inner.setLabelsOnNode(node, labelIds)
     labelsAdded.increase(added)
     added
@@ -71,28 +71,28 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.createRelationship(start, end, relType)
   }
 
-  override def removeLabelsFromNode(node: Long, labelIds: Iterator[Long]): Int = {
+  override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = {
     val removed = inner.removeLabelsFromNode(node, labelIds)
     labelsRemoved.increase(removed)
     removed
   }
 
-  override def addIndexRule(labelIds: Long, propertyKeyId: Long) {
-    inner.addIndexRule(labelIds, propertyKeyId)
+  override def addIndexRule(labelId: Int, propertyKeyId: Int) {
+    inner.addIndexRule(labelId, propertyKeyId)
     indexesAdded.increase()
   }
 
-  override def dropIndexRule(labelIds: Long, propertyKeyId: Long) {
-    inner.dropIndexRule(labelIds, propertyKeyId)
+  override def dropIndexRule(labelId: Int, propertyKeyId: Int) {
+    inner.dropIndexRule(labelId, propertyKeyId)
     indexesRemoved.increase()
   }
 
-  override def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) {
     inner.createUniqueConstraint(labelId, propertyKeyId)
     constraintsAdded.increase()
   }
 
-  override def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+  override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {
     inner.dropUniqueConstraint(labelId, propertyKeyId)
     constraintsRemoved.increase()
   }
@@ -115,13 +115,13 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     }
 
 
-    override def removeProperty(obj: T, propertyKeyId: Long)
+    override def removeProperty(obj: T, propertyKeyId: Int)
     {
       propertiesSet.increase()
       inner.removeProperty(obj, propertyKeyId)
     }
 
-    override def setProperty(obj: T, propertyKeyId: Long, value: Any) {
+    override def setProperty(obj: T, propertyKeyId: Int, value: Any) {
       propertiesSet.increase()
       inner.setProperty(obj, propertyKeyId, value)
     }

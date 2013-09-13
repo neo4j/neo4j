@@ -55,7 +55,7 @@ public class RelationshipProxy implements Relationship
         GraphDatabaseService getGraphDatabaseService();
         NodeManager getNodeManager();
     }
-    
+
     private final long relId;
     private final RelationshipLookups relationshipLookups;
     private final ThreadToStatementContextBridge statementContextProvider;
@@ -199,11 +199,13 @@ public class RelationshipProxy implements Relationship
     public Object getProperty( String key )
     {
         if ( null == key )
+        {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
+        }
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.readOperations().propertyKeyGetForName( key );
+            int propertyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
@@ -220,11 +222,13 @@ public class RelationshipProxy implements Relationship
     public Object getProperty( String key, Object defaultValue )
     {
         if ( null == key )
+        {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
+        }
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.readOperations().propertyKeyGetForName( key );
+            int propertyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().relationshipGetProperty( relId, propertyId ).value( defaultValue );
         }
         catch ( EntityNotFoundException e )
@@ -237,11 +241,13 @@ public class RelationshipProxy implements Relationship
     public boolean hasProperty( String key )
     {
         if ( null == key )
+        {
             return false;
+        }
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.readOperations().propertyKeyGetForName( key );
+            int propertyId = statement.readOperations().propertyKeyGetForName( key );
             return propertyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY &&
                    statement.readOperations().relationshipGetProperty( relId, propertyId ).isDefined();
         }
@@ -257,7 +263,7 @@ public class RelationshipProxy implements Relationship
         boolean success = false;
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
+            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             statement.dataWriteOperations().relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
             success = true;
         }
@@ -292,7 +298,7 @@ public class RelationshipProxy implements Relationship
     {
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
+            int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().relationshipRemoveProperty( relId, propertyId ).value( null );
         }
         catch ( EntityNotFoundException e )

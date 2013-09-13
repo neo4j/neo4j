@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class OldTxStateBridgeImpl implements OldTxStateBridge
@@ -45,14 +44,14 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     }
 
     @Override
-    public DiffSets<Long> getNodesWithChangedProperty( long propertyKey, Object value )
+    public DiffSets<Long> getNodesWithChangedProperty( int propertyKey, Object value )
     {
-        DiffSets<Long> diff = new DiffSets<Long>();
+        DiffSets<Long> diff = new DiffSets<>();
         for ( WritableTransactionState.CowNodeElement changedNode : state.getChangedNodes() )
         {
             // All nodes where the property has been removed altogether
-            PropertyData removed = propertyChange( changedNode.getPropertyRemoveMap( false ), propertyKey );
-            if ( removed != null && removed.getValue().equals( value ) )
+            DefinedProperty removed = propertyChange( changedNode.getPropertyRemoveMap( false ), propertyKey );
+            if ( removed != null && removed.value().equals( value ) )
             {
                 diff.remove( changedNode.getId() );
             }
@@ -60,10 +59,10 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
             // All nodes where property has been added or changed
             if ( !changedNode.isDeleted() )
             {
-                PropertyData added = propertyChange( changedNode.getPropertyAddMap( false ), propertyKey );
+                DefinedProperty added = propertyChange( changedNode.getPropertyAddMap( false ), propertyKey );
                 if ( added != null )
                 {
-                    if ( added.getValue().equals( value ) )
+                    if ( added.valueEquals( value ) )
                     {
                         diff.add( changedNode.getId() );
                     }
@@ -78,7 +77,7 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     }
 
     @Override
-    public Map<Long, Object> getNodesWithChangedProperty( long propertyKeyId )
+    public Map<Long, Object> getNodesWithChangedProperty( int propertyKeyId )
     {
         HashMap<Long, Object> result = new HashMap<>();
         for ( WritableTransactionState.CowNodeElement changedNode : state.getChangedNodes() )
@@ -88,10 +87,10 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
                 result.put( changedNode.getId(), new Object() );
                 continue;
             }
-            PropertyData added = propertyChange( changedNode.getPropertyAddMap( false ), propertyKeyId );
+            DefinedProperty added = propertyChange( changedNode.getPropertyAddMap( false ), propertyKeyId );
             if ( added != null )
             {
-                result.put( changedNode.getId(), added.getValue() );
+                result.put( changedNode.getId(), added.value() );
             }
             else if ( null != propertyChange( changedNode.getPropertyRemoveMap( false ), propertyKeyId ) )
             {
@@ -101,7 +100,7 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
         return result;
     }
 
-    private static PropertyData propertyChange( ArrayMap<Integer, PropertyData> propertyDataMap, long propertyKeyId )
+    private static DefinedProperty propertyChange( ArrayMap<Integer, DefinedProperty> propertyDataMap, long propertyKeyId )
     {
         return propertyDataMap == null ? null : propertyDataMap.get( (int) propertyKeyId );
     }
@@ -113,8 +112,8 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
         boolean success = false;
         try
         {
-            ArrayMap<Integer, PropertyData> skipMap = state.getOrCreateCowPropertyRemoveMap( node );
-            ArrayMap<Integer, PropertyData> removedProps = nodeManager.deleteNode( node, state );
+            ArrayMap<Integer, DefinedProperty> skipMap = state.getOrCreateCowPropertyRemoveMap( node );
+            ArrayMap<Integer, DefinedProperty> removedProps = nodeManager.deleteNode( node, state );
             if ( removedProps.size() > 0 )
             {
                 for ( Integer index : removedProps.keySet() )
@@ -146,8 +145,8 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
         boolean success = false;
         try
         {
-            ArrayMap<Integer, PropertyData> skipMap = state.getOrCreateCowPropertyRemoveMap( relationship );
-            ArrayMap<Integer, PropertyData> removedProps = nodeManager.deleteRelationship( relationship, state );
+            ArrayMap<Integer, DefinedProperty> skipMap = state.getOrCreateCowPropertyRemoveMap( relationship );
+            ArrayMap<Integer, DefinedProperty> removedProps = nodeManager.deleteRelationship( relationship, state );
             if ( removedProps.size() > 0 )
             {
                 for ( Integer index : removedProps.keySet() )
@@ -179,78 +178,74 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     }
 
     @Override
-    public void nodeSetProperty( long nodeId, PropertyData property )
+    public void nodeSetProperty( long nodeId, DefinedProperty property )
     {
         NodeImpl node = nodeManager.getNodeForProxy( nodeId, null );
-        state.getOrCreateCowPropertyAddMap( node ).put( property.getIndex(), property );
-        ArrayMap<Integer, PropertyData> removed = state.getCowPropertyRemoveMap( node );
+        state.getOrCreateCowPropertyAddMap( node ).put( property.propertyKeyId(), property );
+        ArrayMap<Integer, DefinedProperty> removed = state.getCowPropertyRemoveMap( node );
         if ( removed != null )
         {
-            removed.remove( property.getIndex() );
+            removed.remove( property.propertyKeyId() );
         }
     }
 
     @Override
-    public void relationshipSetProperty( long relationshipId, PropertyData property )
+    public void relationshipSetProperty( long relationshipId, DefinedProperty property )
     {
         RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId, null );
-        state.getOrCreateCowPropertyAddMap( relationship ).put( property.getIndex(), property );
-        ArrayMap<Integer, PropertyData> removed = state.getCowPropertyRemoveMap( relationship );
+        state.getOrCreateCowPropertyAddMap( relationship ).put( property.propertyKeyId(), property );
+        ArrayMap<Integer, DefinedProperty> removed = state.getCowPropertyRemoveMap( relationship );
         if ( removed != null )
         {
-            removed.remove( property.getIndex() );
+            removed.remove( property.propertyKeyId() );
         }
     }
 
     @Override
-    public void graphSetProperty( PropertyData property )
+    public void graphSetProperty( DefinedProperty property )
     {
         GraphPropertiesImpl properties = nodeManager.getGraphProperties();
-        state.getOrCreateCowPropertyAddMap( properties ).put( property.getIndex(), property );
-        ArrayMap<Integer, PropertyData> removed = state.getCowPropertyRemoveMap( properties );
+        state.getOrCreateCowPropertyAddMap( properties ).put( property.propertyKeyId(), property );
+        ArrayMap<Integer, DefinedProperty> removed = state.getCowPropertyRemoveMap( properties );
         if ( removed != null )
         {
-            removed.remove( property.getIndex() );
+            removed.remove( property.propertyKeyId() );
         }
     }
 
     @Override
-    public void nodeRemoveProperty( long nodeId, Property property )
+    public void nodeRemoveProperty( long nodeId, DefinedProperty property )
     {
         NodeImpl node = nodeManager.getNodeForProxy( nodeId, null );
-        state.getOrCreateCowPropertyRemoveMap( node ).put( (int) property.propertyKeyId(),
-                property.asPropertyDataJustForIntegration() );
-        ArrayMap<Integer, PropertyData> added = state.getCowPropertyAddMap( node );
+        state.getOrCreateCowPropertyRemoveMap( node ).put( property.propertyKeyId(), property );
+        ArrayMap<Integer, DefinedProperty> added = state.getCowPropertyAddMap( node );
         if ( added != null )
         {
-            added.remove( (int) property.propertyKeyId() );
+            added.remove( property.propertyKeyId() );
         }
     }
 
     @Override
-    public void relationshipRemoveProperty( long relationshipId, Property property )
+    public void relationshipRemoveProperty( long relationshipId, DefinedProperty property )
     {
         RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId, null );
-        state.getOrCreateCowPropertyRemoveMap( relationship ).put( (int) property.propertyKeyId(),
-                property.asPropertyDataJustForIntegration() );
-        ArrayMap<Integer, PropertyData> added = state.getCowPropertyAddMap( relationship );
+        state.getOrCreateCowPropertyRemoveMap( relationship ).put( property.propertyKeyId(), property );
+        ArrayMap<Integer, DefinedProperty> added = state.getCowPropertyAddMap( relationship );
         if ( added != null )
         {
-            added.remove( (int) property.propertyKeyId() );
+            added.remove( property.propertyKeyId() );
         }
     }
 
     @Override
-    public void graphRemoveProperty( Property property )
+    public void graphRemoveProperty( DefinedProperty property )
     {
         GraphPropertiesImpl properties = nodeManager.getGraphProperties();
-        state.getOrCreateCowPropertyRemoveMap( properties ).put( (int) property.propertyKeyId(),
-                property.asPropertyDataJustForIntegration() );
-        ArrayMap<Integer, PropertyData> added = state.getCowPropertyAddMap( properties );
+        state.getOrCreateCowPropertyRemoveMap( properties ).put( property.propertyKeyId(), property );
+        ArrayMap<Integer, DefinedProperty> added = state.getCowPropertyAddMap( properties );
         if ( added != null )
         {
-            added.remove( (int) property.propertyKeyId() );
+            added.remove( property.propertyKeyId() );
         }
-
     }
 }

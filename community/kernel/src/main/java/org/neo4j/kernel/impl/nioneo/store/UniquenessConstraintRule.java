@@ -22,24 +22,26 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+
 public class UniquenessConstraintRule extends AbstractSchemaRule
 {
-    private final long[] propertyKeyIds;
+    private final int[] propertyKeyIds;
     private final long ownedIndexRule;
 
     /** We currently only support uniqueness constraints on a single property. */
-    public static UniquenessConstraintRule uniquenessConstraintRule( long id, long labelId, long propertyKeyId,
+    public static UniquenessConstraintRule uniquenessConstraintRule( long id, int labelId, int propertyKeyId,
                                                                      long ownedIndexRule )
     {
-        return new UniquenessConstraintRule( id, labelId, new long[] {propertyKeyId}, ownedIndexRule );
+        return new UniquenessConstraintRule( id, labelId, new int[] {propertyKeyId}, ownedIndexRule );
     }
 
-    public static UniquenessConstraintRule readUniquenessConstraintRule( long id, long labelId, ByteBuffer buffer )
+    public static UniquenessConstraintRule readUniquenessConstraintRule( long id, int labelId, ByteBuffer buffer )
     {
         return new UniquenessConstraintRule( id, labelId, readPropertyKeys( buffer ), readOwnedIndexRule( buffer ) );
     }
 
-    private UniquenessConstraintRule( long id, long labelId, long[] propertyKeyIds, long ownedIndexRule )
+    private UniquenessConstraintRule( long id, int labelId, int[] propertyKeyIds, long ownedIndexRule )
     {
         super( id, labelId, Kind.UNIQUENESS_CONSTRAINT );
         this.ownedIndexRule = ownedIndexRule;
@@ -79,19 +81,19 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
     {
         super.serialize( target );
         target.put( (byte) propertyKeyIds.length );
-        for ( long propertyKeyId : propertyKeyIds )
+        for ( int propertyKeyId : propertyKeyIds )
         {
             target.putLong( propertyKeyId );
         }
         target.putLong( ownedIndexRule );
     }
 
-    private static long[] readPropertyKeys( ByteBuffer buffer )
+    private static int[] readPropertyKeys( ByteBuffer buffer )
     {
-        long[] keys = new long[buffer.get()];
+        int[] keys = new int[buffer.get()];
         for ( int i = 0; i < keys.length; i++ )
         {
-            keys[i] = buffer.getLong();
+            keys[i] = safeCastLongToInt( buffer.getLong() );
         }
         return keys;
     }
@@ -101,17 +103,20 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
         return buffer.getLong();
     }
 
-    public boolean containsPropertyKeyId( long propertyKeyId )
+    public boolean containsPropertyKeyId( int propertyKeyId )
     {
-        for ( long keyId : propertyKeyIds )
+        for ( int keyId : propertyKeyIds )
         {
-            if (keyId == propertyKeyId) return true;
+            if ( keyId == propertyKeyId )
+            {
+                return true;
+            }
         }
         return false;
     }
-    
+
     // This method exists as long as only single property keys are supported
-    public long getPropertyKey()
+    public int getPropertyKey()
     {
         // Property key "singleness" is checked elsewhere, in the constructor and when deserializing.
         return propertyKeyIds[0];

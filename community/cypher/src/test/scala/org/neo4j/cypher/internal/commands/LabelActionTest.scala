@@ -70,13 +70,13 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
 class SnitchingQueryContext extends QueryContext {
 
   var node: Long = -666
-  var ids: Seq[Long] = null
+  var ids: Seq[Int] = null
 
-  var highLabelId: Long = 0
-  var labels: Map[String, Long] = Map("green" -> 12, "blue" -> 42)
+  var highLabelId: Int = 0
+  var labels: Map[String, Int] = Map("green" -> 12, "blue" -> 42)
 
 
-  override def setLabelsOnNode(n: Long, input: Iterator[Long]): Int = {
+  override def setLabelsOnNode(n: Long, input: Iterator[Int]): Int = {
     node = n
     ids = input.toSeq
     ids.size
@@ -92,7 +92,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def createRelationship(start: Node, end: Node, relType: String) = ???
 
-  def getLabelName(id: Long) = ???
+  def getLabelName(id: Int) = ???
 
   def getLabelsForNode(node: Long) = ???
 
@@ -102,23 +102,23 @@ class SnitchingQueryContext extends QueryContext {
 
   def relationshipOps = ???
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterator[Long]): Int = {???}
+  def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = {???}
 
   def getTransaction = ???
 
   def getOrCreatePropertyKeyId(propertyKey: String) = ???
 
-  def getOptPropertyKeyId(propertyKey: String): Option[Long] = ???
+  def getOptPropertyKeyId(propertyKey: String): Option[Int] = ???
 
   def getPropertyKeyId(propertyKey: String) = ???
 
-  def addIndexRule(labelIds: Long, propertyKeyId: Long) = ???
+  def addIndexRule(labelId: Int, propertyKeyId: Int) = ???
 
-  def dropIndexRule(labelIds: Long, propertyKeyId: Long) = ???
+  def dropIndexRule(labelId: Int, propertyKeyId: Int) = ???
 
   def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = ???
 
-  def getNodesByLabel(id: Long): Iterator[Node] = ???
+  def getNodesByLabel(id: Int): Iterator[Node] = ???
 
   def upgrade(context: QueryContext): LockingQueryContext = ???
 
@@ -126,15 +126,15 @@ class SnitchingQueryContext extends QueryContext {
 
   def schemaStateContains(key: String) = ???
 
-  def getOptLabelId(labelName: String): Option[Long] = labels.get(labelName)
+  def getOptLabelId(labelName: String): Option[Int] = labels.get(labelName)
 
-  def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {???}
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) {???}
 
-  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {???}
+  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {???}
 
-  def getLabelId(labelName: String): Long = ???
+  def getLabelId(labelName: String): Int = ???
 
-  def getPropertyKeyName(id: Long): String = ???
+  def getPropertyKeyName(id: Int): String = ???
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 

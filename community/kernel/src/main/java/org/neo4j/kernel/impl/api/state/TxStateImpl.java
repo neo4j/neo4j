@@ -137,7 +137,7 @@ public final class TxStateImpl implements TxState
         {
             for ( NodeState node : nodeStates() )
             {
-                DiffSets<Long> labelDiff = node.labelDiffSets();
+                DiffSets<Integer> labelDiff = node.labelDiffSets();
                 visitor.visitNodeLabelChanges( node.getId(), labelDiff.getAdded(), labelDiff.getRemoved() );
             }
         }
@@ -202,13 +202,13 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<Long> labelStateNodeDiffSets( long labelId )
+    public DiffSets<Long> labelStateNodeDiffSets( int labelId )
     {
         return getOrCreateLabelState( labelId ).getNodeDiffSets();
     }
 
     @Override
-    public DiffSets<Long> nodeStateLabelDiffSets( long nodeId )
+    public DiffSets<Integer> nodeStateLabelDiffSets( long nodeId )
     {
         return getOrCreateNodeState( nodeId ).labelDiffSets();
     }
@@ -285,7 +285,7 @@ public final class TxStateImpl implements TxState
             {
                 diffSets.add( newProperty );
             }
-            legacyState.nodeSetProperty( nodeId, newProperty.asPropertyDataJustForIntegration() );
+            legacyState.nodeSetProperty( nodeId, newProperty );
             hasChanges = true;
         }
     }
@@ -304,7 +304,7 @@ public final class TxStateImpl implements TxState
             {
                 diffSets.add( newProperty );
             }
-            legacyState.relationshipSetProperty( relationshipId, newProperty.asPropertyDataJustForIntegration() );
+            legacyState.relationshipSetProperty( relationshipId, newProperty );
             hasChanges = true;
         }
     }
@@ -323,7 +323,7 @@ public final class TxStateImpl implements TxState
             {
                 diffSets.add( newProperty );
             }
-            legacyState.graphSetProperty( newProperty.asPropertyDataJustForIntegration() );
+            legacyState.graphSetProperty( newProperty );
             hasChanges = true;
         }
     }
@@ -334,7 +334,7 @@ public final class TxStateImpl implements TxState
         if ( removedProperty.isDefined() )
         {
             nodePropertyDiffSets( nodeId ).remove( (DefinedProperty)removedProperty );
-            legacyState.nodeRemoveProperty( nodeId, removedProperty );
+            legacyState.nodeRemoveProperty( nodeId, (DefinedProperty)removedProperty );
             hasChanges = true;
         }
     }
@@ -345,7 +345,7 @@ public final class TxStateImpl implements TxState
         if ( removedProperty.isDefined() )
         {
             relationshipPropertyDiffSets( relationshipId ).remove( (DefinedProperty)removedProperty );
-            legacyState.relationshipRemoveProperty( relationshipId, removedProperty );
+            legacyState.relationshipRemoveProperty( relationshipId, (DefinedProperty)removedProperty );
             hasChanges = true;
         }
     }
@@ -356,13 +356,13 @@ public final class TxStateImpl implements TxState
         if ( removedProperty.isDefined() )
         {
             graphPropertyDiffSets().remove( (DefinedProperty)removedProperty );
-            legacyState.graphRemoveProperty( removedProperty );
+            legacyState.graphRemoveProperty( (DefinedProperty)removedProperty );
             hasChanges = true;
         }
     }
 
     @Override
-    public void nodeDoAddLabel( long labelId, long nodeId )
+    public void nodeDoAddLabel( int labelId, long nodeId )
     {
         labelStateNodeDiffSets( labelId ).add( nodeId );
         nodeStateLabelDiffSets( nodeId ).add( labelId );
@@ -371,7 +371,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public void nodeDoRemoveLabel( long labelId, long nodeId )
+    public void nodeDoRemoveLabel( int labelId, long nodeId )
     {
         labelStateNodeDiffSets( labelId ).remove( nodeId );
         nodeStateLabelDiffSets( nodeId ).remove( labelId );
@@ -380,12 +380,12 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public UpdateTriState labelState( long nodeId, long labelId )
+    public UpdateTriState labelState( long nodeId, int labelId )
     {
         NodeState nodeState = getState( nodeStatesMap(), nodeId, null );
         if ( nodeState != null )
         {
-            DiffSets<Long> labelDiff = nodeState.labelDiffSets();
+            DiffSets<Integer> labelDiff = nodeState.labelDiffSets();
             if ( labelDiff.isAdded( labelId ) )
             {
                 return UpdateTriState.ADDED;
@@ -399,7 +399,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public Set<Long> nodesWithLabelAdded( long labelId )
+    public Set<Long> nodesWithLabelAdded( int labelId )
     {
         if ( hasLabelStatesMap() )
         {
@@ -414,7 +414,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<Long> nodesWithLabelChanged( long labelId )
+    public DiffSets<Long> nodesWithLabelChanged( int labelId )
     {
         if ( hasLabelStatesMap() )
         {
@@ -460,7 +460,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<IndexDescriptor> indexDiffSetsByLabel( long labelId )
+    public DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
     {
         if ( hasLabelStatesMap() )
         {
@@ -474,7 +474,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( long labelId )
+    public DiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( int labelId )
     {
         if ( hasLabelStatesMap() )
         {
@@ -518,13 +518,13 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<Long> nodesWithChangedProperty( long propertyKeyId, Object value )
+    public DiffSets<Long> nodesWithChangedProperty( int propertyKeyId, Object value )
     {
         return legacyState.getNodesWithChangedProperty( propertyKeyId, value );
     }
 
     @Override
-    public Map<Long, Object> nodesWithChangedProperty( long propertyKeyId )
+    public Map<Long, Object> nodesWithChangedProperty( int propertyKeyId )
     {
         return legacyState.getNodesWithChangedProperty( propertyKeyId );
     }
@@ -558,7 +558,7 @@ public final class TxStateImpl implements TxState
         return deletedRelationships != null;
     }
 
-    private LabelState getOrCreateLabelState( long labelId )
+    private LabelState getOrCreateLabelState( int labelId )
     {
         return getState( labelStatesMap(), labelId, LABEL_STATE_CREATOR );
     }
@@ -615,7 +615,7 @@ public final class TxStateImpl implements TxState
 
 
     @Override
-    public DiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( long labelId, final long propertyKey )
+    public DiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( int labelId, final int propertyKey )
     {
         return getOrCreateLabelState( labelId ).constraintsChanges().filterAdded( new Predicate<UniquenessConstraint>()
         {
@@ -628,7 +628,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<UniquenessConstraint> constraintsChangesForLabel( long labelId )
+    public DiffSets<UniquenessConstraint> constraintsChangesForLabel( int labelId )
     {
         return getOrCreateLabelState( labelId ).constraintsChanges();
     }

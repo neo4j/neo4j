@@ -50,7 +50,8 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
     public void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
     {
         // given
-        long node1, node2, foo, name;
+        long node1, node2;
+        int foo, name;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             // name is not unique for Foo in the existing data
@@ -90,7 +91,8 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
             throws Exception
     {
         // given
-        long node1, foo, name;
+        long node1;
+        int foo, name;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             Node node = db.createNode( label( "Foo" ) );
@@ -109,17 +111,12 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
             @Override
             public Long call()
             {
-                Transaction tx = db.beginTx();
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
                     Node node = db.createNode( label( "Foo" ) );
                     node.setProperty( "name", "foo" );
                     tx.success();
                     return node.getId();
-                }
-                finally
-                {
-                    tx.finish();
                 }
             }
         } ).get();

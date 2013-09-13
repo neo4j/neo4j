@@ -36,12 +36,12 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends De
     lockAll(inner.getRelationshipsFor(node, dir, types))
   }
 
-  override def getLabelsForNode(node: Long): Iterator[Long] = {
+  override def getLabelsForNode(node: Long): Iterator[Int] = {
     lockNode(node)
     inner.getLabelsForNode(node)
   }
 
-  override def isLabelSetOnNode(label: Long, node: Long): Boolean = {
+  override def isLabelSetOnNode(label: Int, node: Long): Boolean = {
     lockNode(node)
     inner.isLabelSetOnNode(label, node)
   }
@@ -49,7 +49,7 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends De
   override def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] =
     lockAll(inner.exactIndexSearch(index, value))
 
-  override def getNodesByLabel(id: Long): Iterator[Node] = lockAll(inner.getNodesByLabel(id))
+  override def getNodesByLabel(id: Int): Iterator[Node] = lockAll(inner.getNodesByLabel(id))
 
   val nodeOpsValue = new RepeatableReadOperations[Node](inner.nodeOps)
   val relationshipOpsValue = new RepeatableReadOperations[Relationship](inner.relationshipOps)
@@ -63,12 +63,12 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends De
   }
 
   class RepeatableReadOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
-    override def getProperty(obj: T, propertyKeyId: Long) = {
+    override def getProperty(obj: T, propertyKeyId: Int) = {
       locker.acquireLock(obj)
       inner.getProperty(obj, propertyKeyId)
     }
 
-    override def hasProperty(obj: T, propertyKeyId: Long) = {
+    override def hasProperty(obj: T, propertyKeyId: Int) = {
       locker.acquireLock(obj)
       inner.hasProperty(obj, propertyKeyId)
     }

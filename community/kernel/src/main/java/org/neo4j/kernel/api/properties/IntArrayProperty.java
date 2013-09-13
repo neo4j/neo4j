@@ -21,11 +21,15 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.Arrays;
 
-class IntArrayProperty extends FullSizeProperty
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
+class IntArrayProperty extends DefinedProperty
 {
     private final int[] value;
 
-    IntArrayProperty( long propertyKeyId, int[] value )
+    IntArrayProperty( int propertyKeyId, int[] value )
     {
         super( propertyKeyId );
         assert value != null;
@@ -55,8 +59,14 @@ class IntArrayProperty extends FullSizeProperty
     }
 
     @Override
-    boolean hasEqualValue( FullSizeProperty that )
+    boolean hasEqualValue( DefinedProperty that )
     {
         return Arrays.equals( this.value, ((IntArrayProperty) that).value );
+    }
+
+    @Override
+    public int sizeOfObjectInBytesIncludingOverhead()
+    {
+        return withObjectOverhead( withReference( withArrayOverhead( value.length*4 ) ) );
     }
 }

@@ -41,6 +41,6 @@ public class PropertyKeyIdIterator implements PrimitiveLongIterator
     @Override
     public long next()
     {
-        return properties.next().propertyKeyId();
+        return properties.next().propertyKeyId;
     }
 }

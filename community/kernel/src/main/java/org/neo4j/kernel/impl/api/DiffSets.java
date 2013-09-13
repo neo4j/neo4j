@@ -182,6 +182,11 @@ public class DiffSets<T>
         return new DiffApplyingPrimitiveLongIterator( source, added( false ), removed( false ) );
     }
 
+    public PrimitiveIntIterator applyPrimitiveIntIterator( final PrimitiveIntIterator source )
+    {
+        return new DiffApplyingPrimitiveIntIterator( source, added( false ), removed( false ) );
+    }
+
     public DiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
         Iterable<T> newAdded = filter( addedFilter, added( false ) );

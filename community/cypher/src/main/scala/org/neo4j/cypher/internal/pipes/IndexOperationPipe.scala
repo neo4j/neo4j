@@ -33,10 +33,10 @@ class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
 
     indexOp match {
       case CreateIndex(_, propertyKeys, _) =>
-        val propertyKeyIds: Seq[Long] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
+        val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
         queryContext.addIndexRule(labelId, single(propertyKeyIds))
       case DropIndex(_, propertyKeys, _) =>
-        val propertyKeyIds: Seq[Long] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
+        val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
         queryContext.dropIndexRule(labelId, single(propertyKeyIds))
 
       case _ =>
@@ -54,5 +54,5 @@ class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
 
   def symbols = new SymbolTable()
 
-  def executionPlanDescription() = PlanDescription(this, indexOp.toString)
+  def executionPlanDescription = PlanDescription(this, indexOp.toString)
 }

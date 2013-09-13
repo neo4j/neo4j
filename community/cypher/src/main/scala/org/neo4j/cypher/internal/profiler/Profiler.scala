@@ -96,17 +96,17 @@ class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends Delega
       inner.getById(id)
     }
 
-    override def getProperty(obj: T, propertyKeyId: Long): Any = {
+    override def getProperty(obj: T, propertyKeyId: Int): Any = {
       increment()
       inner.getProperty(obj, propertyKeyId)
     }
 
-    override def hasProperty(obj: T, propertyKeyId: Long): Boolean = {
+    override def hasProperty(obj: T, propertyKeyId: Int): Boolean = {
       increment()
       inner.hasProperty(obj, propertyKeyId)
     }
 
-    override def setProperty(obj: T, propertyKeyId: Long, value: Any) {
+    override def setProperty(obj: T, propertyKeyId: Int, value: Any) {
       increment()
       inner.setProperty(obj, propertyKeyId, value)
     }

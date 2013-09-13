@@ -23,8 +23,9 @@ import java.util.Arrays;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
 
 public class TestBinarySearchPerformance
 {
@@ -38,10 +39,10 @@ public class TestBinarySearchPerformance
             test( i );
         }
     }
-    
+
     private void test( int size )
     {
-        final PropertyData[] array = datas( size );
+        final DefinedProperty[] array = datas( size );
         final int times = 10000000;
         measure( "scan", new Runnable()
         {
@@ -49,40 +50,48 @@ public class TestBinarySearchPerformance
             public void run()
             {
                 for ( int i = 0; i < times; i++ )
+                {
                     doScan( array, i%array.length );
+                }
             }
         } );
-        
+
         measure( "bs", new Runnable()
         {
             @Override
             public void run()
             {
                 for ( int i = 0; i < times; i++ )
+                {
                     doBinarySearch( array, 0 );
+                }
             }
         } );
     }
-    
-    private PropertyData[] datas( int size )
+
+    private DefinedProperty[] datas( int size )
     {
-        PropertyData[] result = new PropertyData[size];
+        DefinedProperty[] result = new DefinedProperty[size];
         for ( int i = 0; i < size; i++ )
-            result[i] = PropertyDatas.forByte( i, 0, (byte) 0 );
+        {
+            result[i] = Property.byteProperty( i, (byte) 0 );
+        }
         return result;
     }
-    
-    private PropertyData doScan( PropertyData[] array, int keyId )
+
+    private DefinedProperty doScan( DefinedProperty[] array, long keyId )
     {
-        for ( PropertyData pd : array )
+        for ( DefinedProperty pd : array )
         {
-            if ( pd.getIndex() == keyId )
+            if ( pd.propertyKeyId() == keyId )
+            {
                 return pd;
+            }
         }
         return null;
     }
-    
-    private PropertyData doBinarySearch( PropertyData[] array, int keyId )
+
+    private DefinedProperty doBinarySearch( DefinedProperty[] array, int keyId )
     {
         return array[Arrays.binarySearch( array, keyId, ArrayBasedPrimitive.PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH )];
     }
@@ -91,7 +100,7 @@ public class TestBinarySearchPerformance
     {
         // Warmup
         runnable.run();
-        
+
         // Run
         System.out.print( name + "... " );
         Measurement m = new Measurement();
@@ -108,13 +117,13 @@ public class TestBinarySearchPerformance
     {
         private long time;
         private int count;
-        
+
         public void add( long time )
         {
             this.time += time;
             this.count++;
         }
-        
+
         public double average()
         {
             return (double)time/count;

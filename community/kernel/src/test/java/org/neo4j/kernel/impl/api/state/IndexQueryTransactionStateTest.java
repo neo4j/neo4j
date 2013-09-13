@@ -44,6 +44,7 @@ import static java.util.Arrays.asList;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -62,8 +63,7 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeRemovedNodesFromIndexQuery() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2, propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -85,8 +85,8 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeRemovedNodeFromUniqueIndexQuery() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2;
+        int propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -107,8 +107,7 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeChangedNodesWithMissingLabelFromIndexQuery() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2, propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -131,8 +130,8 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeChangedNodeWithMissingLabelFromUniqueIndexQuery() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2;
+        int propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -153,8 +152,7 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeCreatedNodesWithCorrectLabelAndProperty() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2, propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -182,8 +180,8 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeUniqueCreatedNodeWithCorrectLabelAndProperty() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2;
+        int propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -212,8 +210,7 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeExistingNodesWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2, propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -240,8 +237,8 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeExistingUniqueNodeWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2;
+        int propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -267,8 +264,7 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeExistingNodesWithCorrectPropertyAfterRemovingLabel() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2, propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -294,8 +290,8 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeExistingUniqueNodeWithCorrectPropertyAfterRemovingLabel() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2;
+        int propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -320,8 +316,7 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeNodesWithRemovedProperty() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2, propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -345,8 +340,8 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeUniqueNodeWithRemovedProperty() throws Exception
     {
         // Given
-        long labelId = 2l;
-        long propertyKeyId = 3l;
+        int labelId = 2;
+        int propertyKeyId = 3;
         String value = "My Value";
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
@@ -374,21 +369,21 @@ public class IndexQueryTransactionStateTest
     @Before
     public void before() throws Exception
     {
-        long labelId1 = 10, labelId2 = 12;
+        int labelId1 = 10, labelId2 = 12;
         store = mock( StatementOperations.class );
         when( store.indexesGetForLabel( state, labelId1 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexCreate( eq( state ), anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexDescriptor>()
+        when( store.indexCreate( eq( state ), anyInt(), anyInt() ) ).thenAnswer( new Answer<IndexDescriptor>()
         {
             @Override
             public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
             {
                 return new IndexDescriptor(
-                        (Long) invocation.getArguments()[0],
-                        (Long) invocation.getArguments()[1] );
+                        (Integer) invocation.getArguments()[0],
+                        (Integer) invocation.getArguments()[1] );
             }
         } );
 

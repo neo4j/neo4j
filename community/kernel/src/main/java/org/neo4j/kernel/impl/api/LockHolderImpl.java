@@ -116,7 +116,7 @@ public class LockHolderImpl implements LockHolder
     }
 
     @Override
-    public void acquireIndexEntryReadLock( long labelId, long propertyKeyId, String propertyValue )
+    public void acquireIndexEntryReadLock( int labelId, int propertyKeyId, String propertyValue )
     {
         IndexEntryLock resource = new IndexEntryLock( labelId, propertyKeyId, propertyValue );
         lockManager.getReadLock( resource, tx );
@@ -124,7 +124,7 @@ public class LockHolderImpl implements LockHolder
     }
 
     @Override
-    public void acquireIndexEntryWriteLock( long labelId, long propertyKeyId, String propertyValue )
+    public void acquireIndexEntryWriteLock( int labelId, int propertyKeyId, String propertyValue )
     {
         IndexEntryLock resource = new IndexEntryLock( labelId, propertyKeyId, propertyValue );
         lockManager.getWriteLock( resource, tx );

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator
+import org.neo4j.kernel.impl.api.PrimitiveIntIterator
 
 object JavaConversionSupport
 {
@@ -29,6 +30,16 @@ object JavaConversionSupport
   }
 
   def mapToScala[T](iterator: PrimitiveLongIterator)(f: Long => T): Iterator[T] = new Iterator[T] {
+    def hasNext = iterator.hasNext
+    def next() = f(iterator.next())
+  }
+
+  def asScala(iterator: PrimitiveIntIterator): Iterator[Int] = new Iterator[Int] {
+    def hasNext = iterator.hasNext
+    def next() = iterator.next()
+  }
+
+  def mapToScala[T](iterator: PrimitiveIntIterator)(f: Int => T): Iterator[T] = new Iterator[T] {
     def hasNext = iterator.hasNext
     def next() = f(iterator.next())
   }

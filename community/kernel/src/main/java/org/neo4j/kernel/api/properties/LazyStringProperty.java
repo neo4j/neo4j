@@ -23,7 +23,7 @@ import java.util.concurrent.Callable;
 
 class LazyStringProperty extends LazyProperty<String>
 {
-    LazyStringProperty( long propertyKeyId, Callable<String> producer )
+    LazyStringProperty( int propertyKeyId, Callable<String> producer )
     {
         super( propertyKeyId, producer );
     }

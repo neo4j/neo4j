@@ -29,10 +29,10 @@ public class AddIndexFailureException extends SchemaKernelException
 {
     private final static String MESSAGE = "Unable to add index %s : %s";
 
-    private final long labelId;
-    private final long propertyKey;
+    private final int labelId;
+    private final int propertyKey;
 
-    public AddIndexFailureException( long labelId, long propertyKey, KernelException cause )
+    public AddIndexFailureException( int labelId, int propertyKey, KernelException cause )
     {
         super( format( MESSAGE, new IndexDescriptor( labelId, propertyKey ), cause.getMessage() ), cause );
         this.labelId = labelId;

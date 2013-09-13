@@ -25,14 +25,14 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterat
 
 public interface LabelScanReader
 {
-    PrimitiveLongIterator nodesWithLabel( long labelId );
+    PrimitiveLongIterator nodesWithLabel( int labelId );
 
     void close();
 
     LabelScanReader EMPTY = new LabelScanReader()
     {
         @Override
-        public PrimitiveLongIterator nodesWithLabel( long labelId )
+        public PrimitiveLongIterator nodesWithLabel( int labelId )
         {
             return emptyPrimitiveLongIterator();
         }

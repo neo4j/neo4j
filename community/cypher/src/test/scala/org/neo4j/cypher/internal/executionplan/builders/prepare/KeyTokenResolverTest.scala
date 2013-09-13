@@ -44,8 +44,8 @@ class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
   val (unresolvedFoo, resolvedFoo) = labelToken("Foo", 0)
   val (unresolvedBar, resolvedBar) = labelToken("Bar", 1)
 
-  when(context.getOptLabelId("Foo")).thenReturn(Some(0L))
-  when(context.getOptLabelId("Bar")).thenReturn(Some(1L))
+  when(context.getOptLabelId("Foo")).thenReturn(Some(0))
+  when(context.getOptLabelId("Bar")).thenReturn(Some(1))
 
   @Test
   def should_not_accept_empty_query() {
@@ -121,7 +121,7 @@ class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
     assert(result.query.start === Seq(Unsolved(CreateUniqueStartItem(CreateUniqueAction(resolvedLink)))))
   }
 
-  private def labelToken(name: String, id: Long): (KeyToken, KeyToken) =
+  private def labelToken(name: String, id: Int): (KeyToken, KeyToken) =
     (UnresolvedLabel(name), Resolved(name, id, TokenType.Label))
 }
 
