@@ -63,6 +63,15 @@ public class ElectionContext
         this.electionCredentialsProvider = electionCredentialsProvider;
     }
 
+    public void created()
+    {
+        for ( ElectionRole role : roles )
+        {
+            // Elect myself for all roles
+            clusterContext.elected( role.getName(), clusterContext.getMyId() );
+        }
+    }
+
     public List<ElectionRole> getPossibleRoles()
     {
         return roles;
