@@ -30,18 +30,20 @@ import org.neo4j.kernel.impl.api.index.PropertyUpdateUniquenessValidator;
 class UniqueInMemoryIndex extends InMemoryIndex implements PropertyUpdateUniquenessValidator.Lookup
 {
     @Override
-    protected void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+    protected void add( long nodeId, Object propertyValue, boolean applyIdempotently )
+            throws IndexEntryConflictException, IOException
     {
         PrimitiveLongIterator nodes = lookup( propertyValue );
         if ( nodes.hasNext() )
         {
             throw new PreexistingIndexEntryConflictException( propertyValue, nodes.next(), nodeId );
         }
-        super.add( nodeId, propertyValue );
+        super.add( nodeId, propertyValue, applyIdempotently );
     }
 
     @Override
-    protected void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+    protected void update( Iterable<NodePropertyUpdate> updates, boolean applyIdempotently )
+            throws IndexEntryConflictException, IOException
     {
         PropertyUpdateUniquenessValidator.validateUniqueness( updates, UniqueInMemoryIndex.this );
         for ( NodePropertyUpdate update : updates )
@@ -59,7 +61,7 @@ class UniqueInMemoryIndex extends InMemoryIndex implements PropertyUpdateUniquen
             {
             case ADDED:
             case CHANGED:
-                add( update.getNodeId(), update.getValueAfter() );
+                add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
             }
         }
     }

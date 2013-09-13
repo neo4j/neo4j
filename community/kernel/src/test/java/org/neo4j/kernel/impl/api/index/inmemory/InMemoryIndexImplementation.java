@@ -33,9 +33,9 @@ abstract class InMemoryIndexImplementation implements IndexReader
         return doLookup( encode( value ) );
     }
 
-    final void add( long nodeId, Object propertyValue )
+    final void add( long nodeId, Object propertyValue, boolean applyIdempotently )
     {
-        doAdd( encode( propertyValue ), nodeId );
+        doAdd( encode( propertyValue ), nodeId, applyIdempotently );
     }
 
     final void remove( long nodeId, Object propertyValue )
@@ -45,7 +45,7 @@ abstract class InMemoryIndexImplementation implements IndexReader
 
     abstract PrimitiveLongIterator doLookup( Object propertyValue );
 
-    abstract void doAdd( Object propertyValue, long nodeId );
+    abstract void doAdd( Object propertyValue, long nodeId, boolean applyIdempotently );
 
     abstract void doRemove( Object propertyValue, long nodeId );
 

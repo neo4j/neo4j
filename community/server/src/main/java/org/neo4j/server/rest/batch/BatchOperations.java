@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.servlet.ServletException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
@@ -37,7 +38,6 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.ObjectMapper;
-
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 import org.neo4j.server.web.WebServer;

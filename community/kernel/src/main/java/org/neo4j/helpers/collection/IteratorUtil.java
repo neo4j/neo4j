@@ -1113,10 +1113,24 @@ public abstract class IteratorUtil
 
     public static Set<Long> asSet( PrimitiveLongIterator iterator )
     {
+        return internalAsSet( iterator, false );
+    }
+
+    public static Set<Long> asSetAllowDuplicates( PrimitiveLongIterator iterator )
+    {
+        return internalAsSet( iterator, true );
+    }
+
+    private static Set<Long> internalAsSet( PrimitiveLongIterator iterator, boolean allowDuplicates )
+    {
         Set<Long> set = new HashSet<>();
         while ( iterator.hasNext() )
         {
-            set.add( iterator.next() );
+            long value = iterator.next();
+            if ( !set.add( value ) && !allowDuplicates )
+            {
+                throw new IllegalStateException( "Duplicates found. Tried to add " + value + " to " + set );
+            }
         }
         return set;
     }

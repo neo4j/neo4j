@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.UpdateMode;
+
 /**
  * Used for initial population of an index.
  */
@@ -35,12 +37,12 @@ public interface IndexPopulator
      * Closes and deletes this index.
      */
     void drop() throws IOException;
-    
+
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
      * called by the same thread every time. All data coming in here is guaranteed to not
-     * have been added to this index previously, by any method.
-     * 
+     * have been added to this index previously, so no checks needs to be performed before applying it.
+     *
      * @param nodeId node id to index.
      * @param propertyValue property value for the entry to index.
      */
@@ -48,6 +50,22 @@ public interface IndexPopulator
 
     /**
      * Apply a set of changes to this index, generally this will be a set of changes from a transaction.
+     * In index population goes through the existing data in the graph and feeds relevant data to this populator.
+     * Simultaneously as population progresses there might be {@link #update(Iterable) incoming updates}
+     * from committing transactions, which needs to be applied as well. This populator will only receive updates
+     * for nodes that it already has seen. Updates coming in here must be applied idempotently as the same data
+     * may have been {@link #add(long, Object) added previously}.
+     * Updates can come in two different {@link NodePropertyUpdate#getUpdateMode() modes}.
+     * <ol>
+     *   <li>{@link UpdateMode#ADDED} means that there's an added property to a node already seen by this
+     *   populator and so needs to be added. Note that this addition needs to be applied idempotently.
+     *   <li>{@link UpdateMode#CHANGED} means that there's a change to a property for a node already seen by
+     *   this populator and that this new change needs to be applied. Note that this change needs to be
+     *   applied idempotently.</li>
+     *   <li>{@link UpdateMode#REMOVED} means that a property already seen by this populator or even the node itself
+     *   has been removed and need to be removed from this index as well. Note that this removal needs to be
+     *   applied idempotently.</li>
+     * </ol>
      */
     void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException;
 
@@ -61,29 +79,29 @@ public interface IndexPopulator
      * {@link SchemaIndexProvider#getInitialState(long)} also returns {@link InternalIndexState#ONLINE}.
      */
     void close( boolean populationCompletedSuccessfully ) throws IOException;
-    
+
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by
      * {@link SchemaIndexProvider#getPopulationFailure(long)}. Called before {@link #close(boolean)}
      * if there was a failure during population.
-     * 
+     *
      * @param failure the description of the failure.
      * @throws IOException if marking failed.
      */
     void markAsFailed( String failure ) throws IOException;
-    
+
     class Adapter implements IndexPopulator
     {
         @Override
         public void create() throws IOException
         {
         }
-        
+
         @Override
         public void drop() throws IOException
         {
         }
-        
+
         @Override
         public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
         {
