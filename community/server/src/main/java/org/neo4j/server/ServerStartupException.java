@@ -20,15 +20,12 @@
 package org.neo4j.server;
 
 /**
- * Thrown during start-up of the server, with an explicit error code.
+ * Thrown during start-up of the server.
  */
-@SuppressWarnings( "serial" )
 public class ServerStartupException extends RuntimeException
 {
-    private Integer errorCode;
-
     /**
-     * Creates a new exception with an message and error code.
+     * Creates a new exception with a message and an error code.
      * 
      * @param message sensible explanation about the exception, excluding the
      *            error code value, which will be automatically appended
@@ -37,18 +34,15 @@ public class ServerStartupException extends RuntimeException
     public ServerStartupException( String message, Integer errorCode )
     {
         super( message + " Error code: " + errorCode.toString() );
-        this.errorCode = errorCode;
     }
 
     public ServerStartupException( String message, Throwable t )
     {
         super( message, t);
-        this.errorCode = -1;
     }
 
-    public Integer getErrorCode()
+    public ServerStartupException( String message )
     {
-        return errorCode;
+        super( message );
     }
-
 }

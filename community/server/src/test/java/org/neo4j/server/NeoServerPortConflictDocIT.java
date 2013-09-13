@@ -19,9 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -31,6 +28,10 @@ import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 {
@@ -46,7 +47,16 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
                 .onHost( Jetty6WebServer.DEFAULT_ADDRESS )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
-        server.start();
+        try
+        {
+            server.start();
+
+            fail( "Should have reported failure to start" );
+        }
+        catch ( ServerStartupException e )
+        {
+
+        }
 
         // Don't include the SEVERE string since it's
         // OS-regional-settings-specific

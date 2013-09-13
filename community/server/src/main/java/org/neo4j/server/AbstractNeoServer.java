@@ -112,6 +112,8 @@ public abstract class AbstractNeoServer implements NeoServer
             return selector.select( type, option( resolveKnownSingleDependency( type ) ) );
         }
     };
+    private static final boolean SUCCESS = true;
+    private static final boolean FAILURE = ! SUCCESS;
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -180,12 +182,13 @@ public abstract class AbstractNeoServer implements NeoServer
 
             startModules( logger );
 
-            startWebServer( logger );
+            boolean webServerStartupSuccessful = startWebServer( logger );
 
             logger.logMessage( "--- SERVER STARTED END ---", true );
 
             interruptStartupTimer.stopCountdown();
 
+            if (webServerStartupSuccessful) return;
         }
         catch ( Throwable t )
         {
@@ -214,6 +217,8 @@ public abstract class AbstractNeoServer implements NeoServer
                 throw new ServerStartupException( "Starting neo server failed, see nested exception.", t );
             }
         }
+
+        throw new ServerStartupException( "Starting neo server failed, see logs for details." );
     }
 
     public DependencyResolver getDependencyResolver()
@@ -334,7 +339,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 .availableProcessors();
     }
 
-    private void startWebServer( StringLogger logger )
+    private boolean startWebServer( StringLogger logger )
     {
         try
         {
@@ -359,12 +364,16 @@ public abstract class AbstractNeoServer implements NeoServer
                 logger.logMessage( "Server started on: " + baseUri() );
             }
             log.info( "Remote interface ready and available at [%s]", baseUri() );
+
+            return SUCCESS;
         }
         catch ( Exception e )
         {
             e.printStackTrace();
             log.error( "Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage() );
         }
+
+        return FAILURE;
     }
 
 
