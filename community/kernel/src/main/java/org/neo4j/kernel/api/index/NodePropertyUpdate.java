@@ -24,6 +24,10 @@ import java.util.Arrays;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.api.UpdateMode;
 
+import static org.neo4j.kernel.impl.api.UpdateMode.ADDED;
+import static org.neo4j.kernel.impl.api.UpdateMode.CHANGED;
+import static org.neo4j.kernel.impl.api.UpdateMode.REMOVED;
+
 public class NodePropertyUpdate
 {
     private final long nodeId;
@@ -34,8 +38,8 @@ public class NodePropertyUpdate
     private final long[] labelsBefore;
     private final long[] labelsAfter;
 
-    public NodePropertyUpdate( long nodeId, int propertyKeyId, Object valueBefore, long[] labelsBefore,
-                               Object valueAfter, long[] labelsAfter )
+    private NodePropertyUpdate( long nodeId, int propertyKeyId, Object valueBefore, long[] labelsBefore,
+                               Object valueAfter, long[] labelsAfter, UpdateMode updateMode )
     {
         this.nodeId = nodeId;
         this.propertyKeyId = propertyKeyId;
@@ -43,26 +47,7 @@ public class NodePropertyUpdate
         this.labelsBefore = labelsBefore;
         this.valueAfter = valueAfter;
         this.labelsAfter = labelsAfter;
-        this.updateMode = figureOutUpdateMode( valueBefore, valueAfter );
-    }
-
-    private UpdateMode figureOutUpdateMode( Object valueBefore, Object valueAfter )
-    {
-        boolean beforeSet = valueBefore != null;
-        boolean afterSet = valueAfter != null;
-        if ( !beforeSet && afterSet )
-        {
-            return UpdateMode.ADDED;
-        }
-        if ( beforeSet && afterSet )
-        {
-            return UpdateMode.CHANGED;
-        }
-        if ( beforeSet )
-        {
-            return UpdateMode.REMOVED;
-        }
-        throw new IllegalArgumentException( "Neither before or after set" );
+        this.updateMode = updateMode;
     }
 
     public long getNodeId()
@@ -214,17 +199,18 @@ public class NodePropertyUpdate
 
     public static NodePropertyUpdate add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
-        return new NodePropertyUpdate( nodeId, propertyKeyId, null, EMPTY_LONG_ARRAY, value, labels );
+        return new NodePropertyUpdate( nodeId, propertyKeyId, null, EMPTY_LONG_ARRAY, value, labels, ADDED );
     }
 
     public static NodePropertyUpdate change( long nodeId, int propertyKeyId, Object valueBefore, long[] labelsBefore,
             Object valueAfter, long[] labelsAfter )
     {
-        return new NodePropertyUpdate( nodeId, propertyKeyId, valueBefore, labelsBefore, valueAfter, labelsAfter );
+        return new NodePropertyUpdate( nodeId, propertyKeyId, valueBefore, labelsBefore, valueAfter, labelsAfter,
+                CHANGED );
     }
 
     public static NodePropertyUpdate remove( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
-        return new NodePropertyUpdate( nodeId, propertyKeyId, value, labels, null, EMPTY_LONG_ARRAY );
+        return new NodePropertyUpdate( nodeId, propertyKeyId, value, labels, null, EMPTY_LONG_ARRAY, REMOVED );
     }
 }

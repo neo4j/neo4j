@@ -66,9 +66,9 @@ class InMemoryIndex
         return indexData.lookup( propertyValue );
     }
 
-    protected void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+    protected void add( long nodeId, Object propertyValue, boolean applyIdempotently ) throws IndexEntryConflictException, IOException
     {
-        indexData.add( nodeId, propertyValue );
+        indexData.add( nodeId, propertyValue, applyIdempotently );
     }
 
     protected void remove( long nodeId, Object propertyValue )
@@ -76,18 +76,19 @@ class InMemoryIndex
         indexData.remove( nodeId, propertyValue );
     }
 
-    protected void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+    protected void update( Iterable<NodePropertyUpdate> updates, boolean applyIdempotently )
+            throws IndexEntryConflictException, IOException
     {
         for ( NodePropertyUpdate update : updates )
         {
             switch ( update.getUpdateMode() )
             {
             case ADDED:
-                add( update.getNodeId(), update.getValueAfter() );
+                add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
                 break;
             case CHANGED:
                 remove( update.getNodeId(), update.getValueBefore() );
-                add( update.getNodeId(), update.getValueAfter() );
+                add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
                 break;
             case REMOVED:
                 remove( update.getNodeId(), update.getValueBefore() );
@@ -114,13 +115,13 @@ class InMemoryIndex
         @Override
         public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
         {
-            InMemoryIndex.this.add( nodeId, propertyValue );
+            InMemoryIndex.this.add( nodeId, propertyValue, false );
         }
 
         @Override
         public void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
         {
-            InMemoryIndex.this.update( updates );
+            InMemoryIndex.this.update( updates, true );
         }
 
         @Override
@@ -153,7 +154,7 @@ class InMemoryIndex
         {
             try
             {
-                update( updates );
+                update( updates, true );
             }
             catch ( IndexEntryConflictException e )
             {
@@ -165,7 +166,7 @@ class InMemoryIndex
         public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
                 throws IOException, IndexEntryConflictException
         {
-            InMemoryIndex.this.update( updates );
+            InMemoryIndex.this.update( updates, false );
         }
 
         @Override

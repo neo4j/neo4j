@@ -25,20 +25,29 @@ import java.util.Collection;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+
 import static org.powermock.api.mockito.PowerMockito.mock;
 
 public class RuleUpdateFilterIndexProxyTest
 {
 
     private Collection<NodePropertyUpdate> lastUpdates;
-    private Answer<?> saveUpdatesInLastUpdatesField = new Answer()
+    @SuppressWarnings( "rawtypes" )
+    private final Answer<?> saveUpdatesInLastUpdatesField = new Answer()
     {
+        @SuppressWarnings( "unchecked" )
         @Override
         public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
         {
@@ -47,6 +56,7 @@ public class RuleUpdateFilterIndexProxyTest
         }
     };
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldFilterUpdates() throws Exception
     {
@@ -58,12 +68,13 @@ public class RuleUpdateFilterIndexProxyTest
         RuleUpdateFilterIndexProxy indexProxy = new RuleUpdateFilterIndexProxy( delegate );
 
         // When I send normal updates, things work
-        assertUpdates(       indexProxy, new NodePropertyUpdate( 1, 1337, null, new long[]{}, 1, new long[]{1337} ) );
+        assertUpdates(       indexProxy, add( 1, 1337, 1, new long[]{1337} ) );
 
-        assertDoesntUpdate(  indexProxy, new NodePropertyUpdate( 1, 1336, null, new long[]{}, 1, new long[]{1337} ) );
-        assertDoesntUpdate(  indexProxy, new NodePropertyUpdate( 1, 1337, null, new long[]{}, 1, new long[]{1336} ) );
+        assertDoesntUpdate(  indexProxy, add( 1, 1336, 1, new long[]{1337} ) );
+        assertDoesntUpdate(  indexProxy, add( 1, 1337, 1, new long[]{1336} ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldFilterRecoveryUpdates() throws Exception
     {
@@ -75,10 +86,10 @@ public class RuleUpdateFilterIndexProxyTest
         RuleUpdateFilterIndexProxy indexProxy = new RuleUpdateFilterIndexProxy( delegate );
 
         // When I send recovery updates, things work
-        assertRecovers(      indexProxy, new NodePropertyUpdate( 1, 1337, null, new long[]{}, 1, new long[]{1337} ) );
+        assertRecovers(      indexProxy, add( 1, 1337, 1, new long[]{1337} ) );
 
-        assertDoesntRecover( indexProxy, new NodePropertyUpdate( 1, 1336, null, new long[]{}, 1, new long[]{1337} ) );
-        assertDoesntRecover( indexProxy, new NodePropertyUpdate( 1, 1337, null, new long[]{}, 1, new long[]{1336} ) );
+        assertDoesntRecover( indexProxy, add( 1, 1336, 1, new long[]{1337} ) );
+        assertDoesntRecover( indexProxy, add( 1, 1337, 1, new long[]{1336} ) );
     }
 
     private void assertRecovers( IndexProxy outer, NodePropertyUpdate update ) throws IOException
@@ -104,5 +115,4 @@ public class RuleUpdateFilterIndexProxyTest
         outer.update( asList( update ) );
         assertEquals( 0, lastUpdates.size() );
     }
-
 }
