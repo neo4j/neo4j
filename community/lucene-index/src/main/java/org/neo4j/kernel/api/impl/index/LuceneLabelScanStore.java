@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
@@ -290,11 +291,20 @@ public class LuceneLabelScanStore implements LabelScanStore
 
             writer = writerFactory.create( directory );
         }
-        catch ( IOException e )
-        {   // The index was somehow corrupted, prepare to rebuild from scratch.
-            monitor.corruptIndex( e );
+        catch ( IndexNotFoundException e )
+        {
+            // No index present, create one
+            monitor.noIndex();
             prepareRebuildOfIndex();
             writer = writerFactory.create( directory );
+        }
+        catch( IOException e )
+        {
+            // The index was somehow corrupted, fail
+            monitor.corruptIndex( e );
+            throw new IOException( "Label scan store is corrupted, and needs to be rebuilt. " +
+                    "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
+                    directoryLocation.getAbsolutePath() + "', and then start the database again." );
         }
         searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
     }

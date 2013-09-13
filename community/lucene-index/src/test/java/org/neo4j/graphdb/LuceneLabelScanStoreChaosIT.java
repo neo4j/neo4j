@@ -35,9 +35,14 @@ import org.neo4j.test.DatabaseRule.RestartAction;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.Exceptions.exceptionsOfType;
+import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
@@ -55,38 +60,41 @@ public class LuceneLabelScanStoreChaosIT
         Node node2 = createLabeledNode( Labels.First );
         Node node3 = createLabeledNode( Labels.First );
         deleteNode( node2 ); // just to create a hole in the store
-        
+
         // WHEN
         // TODO how do we make sure it was deleted and then fully rebuilt? I mean if we somehow deleted
         // the wrong directory here then it would also work, right?
         dbRule.restartDatabase( deleteTheLabelScanStoreIndex() );
-        
+
         // THEN
         assertEquals(
                 asSet( node1, node3 ),
                 getAllNodesWithLabel( Labels.First ) );
     }
-    
+
     @Test
-    public void shouldRebuildCorruptedLabelScanStoreOnStartup() throws Exception
+    public void shouldPreventCorruptedLabelScanStoreToStartup() throws Exception
     {
         // GIVEN
-        Node node1 = createLabeledNode( Labels.First );
-        Node node2 = createLabeledNode( Labels.First );
-        Node node3 = createLabeledNode( Labels.First );
-        deleteNode( node2 ); // just to create a hole in the store
-        
+        createLabeledNode( Labels.First );
+
         // WHEN
         // TODO how do we make sure it was deleted and then fully rebuilt? I mean if we somehow deleted
         // the wrong directory here then it would also work, right?
-        dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
-        
-        // THEN
-        assertEquals(
-                asSet( node1, node3 ),
-                getAllNodesWithLabel( Labels.First ) );
+        try
+        {
+            dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
+            fail( "Shouldn't be able to start up" );
+        }
+        catch ( RuntimeException e )
+        {
+            // THEN
+            @SuppressWarnings( "unchecked" )
+            Throwable ioe = peel( e, exceptionsOfType( RuntimeException.class ) );
+            assertThat( ioe.getMessage(), containsString( "Label scan store is corrupted" ) );
+        }
     }
-    
+
     private RestartAction corruptTheLabelScanStoreIndex()
     {
         return new RestartAction()
@@ -111,7 +119,7 @@ public class LuceneLabelScanStoreChaosIT
             }
         };
     }
-    
+
     private RestartAction deleteTheLabelScanStoreIndex()
     {
         return new RestartAction()
@@ -133,13 +141,13 @@ public class LuceneLabelScanStoreChaosIT
             }
         };
     }
-    
+
     private File labelScanStoreIndexDirectory( File storeDirectory )
     {
         File directory = new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" );
         return directory;
     }
-    
+
     private Node createLabeledNode( Label... labels )
     {
         try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
@@ -149,7 +157,7 @@ public class LuceneLabelScanStoreChaosIT
             return node;
         }
     }
-    
+
     private Set<Node> getAllNodesWithLabel( Label label )
     {
         try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
@@ -157,7 +165,7 @@ public class LuceneLabelScanStoreChaosIT
             return asSet( GlobalGraphOperations.at( dbRule.getGraphDatabaseService() ).getAllNodesWithLabel( label ) );
         }
     }
-    
+
     private void deleteNode( Node node )
     {
         try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
@@ -166,7 +174,7 @@ public class LuceneLabelScanStoreChaosIT
             tx.success();
         }
     }
-    
+
     private void scrambleFile( File file ) throws IOException
     {
         try ( RandomAccessFile fileAccess = new RandomAccessFile( file, "rw" );
@@ -188,7 +196,7 @@ public class LuceneLabelScanStoreChaosIT
             bytes[i] = (byte) random.nextInt();
         }
     }
-    
+
     private static enum Labels implements Label
     {
         First,

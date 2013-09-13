@@ -129,7 +129,6 @@ public class IndexingService extends LifecycleAdapter
             switch ( initialState )
             {
                 case ONLINE:
-                    // TODO ask provider to verify
                     indexProxy = createAndStartOnlineIndexProxy(
                             ruleId, descriptor, providerDescriptor, indexRule.isConstraintIndex() );
                     break;
