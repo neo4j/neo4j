@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
     <version>40</version>
-    <relativePath />
+    <relativePath/>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -15,7 +15,7 @@
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
-  
+
   <properties>
     <jta.groupId>org.apache.geronimo.specs</jta.groupId>
     <jta.artifactId>geronimo-jta_1.1_spec</jta.artifactId>
@@ -34,7 +34,7 @@
     <module>advanced</module>
     <module>enterprise</module>
   </modules>
-  
+
   <build>
     <plugins>
       <plugin>
@@ -67,7 +67,8 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>2.0</version> <!-- 2.1 ? -->
+          <version>2.0</version>
+          <!-- 2.1 ? -->
         </plugin>
         <plugin>
           <groupId>com.voltvoodoo</groupId>
@@ -110,7 +111,9 @@
             <failIfMissing>true</failIfMissing>
             <plainTextReport>true</plainTextReport>
             <prependText>${licensing.prepend.text}</prependText>
-            <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
+            <excludedGroups>
+              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$
+            </excludedGroups>
             <includedScopes>compile</includedScopes>
           </configuration>
           <executions>
@@ -125,7 +128,8 @@
                   <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                   <licensingRequirementFile>licensing-requirements-oss.xml</licensingRequirementFile>
                 </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-oss.txt</thirdPartyLicensingFilename>
+                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-oss.txt
+                </thirdPartyLicensingFilename>
               </configuration>
             </execution>
             <execution>
@@ -152,7 +156,8 @@
                 <licensingRequirementFiles>
                   <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                 </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-NOTICE.txt</thirdPartyLicensingFilename>
+                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-NOTICE.txt
+                </thirdPartyLicensingFilename>
                 <checkExistingNoticeFile>${project.build.directory}/../NOTICE.txt</checkExistingNoticeFile>
                 <listPrependText>list-prefix.txt</listPrependText>
                 <listReport>${project.artifactId}-${project.version}-LICENSES.txt</listReport>
@@ -171,7 +176,7 @@
       </plugins>
     </pluginManagement>
   </build>
-  
+
   <profiles>
     <profile>
       <id>neo-full-build</id>
@@ -223,7 +228,8 @@
             <artifactId>findbugs-maven-plugin</artifactId>
             <configuration>
               <xmlOutput>true</xmlOutput>
-              <findbugsXmlOutput>true</findbugsXmlOutput><!-- For jenkins to pick stuff up -->
+              <findbugsXmlOutput>true</findbugsXmlOutput>
+              <!-- For jenkins to pick stuff up -->
             </configuration>
           </plugin>
         </plugins>
@@ -267,9 +273,9 @@
               <artifactId>maven-failsafe-plugin</artifactId>
               <configuration>
                 <includes>
-                 <include>**/DocIT*.java</include>
-                 <include>**/*DocIT.java</include>
-                 <include>**/*DocITCase.java</include>
+                  <include>**/DocIT*.java</include>
+                  <include>**/*DocIT.java</include>
+                  <include>**/*DocITCase.java</include>
                 </includes>
               </configuration>
             </plugin>
@@ -310,14 +316,50 @@
         </plugins>
       </build>
     </profile>
+    <profile><!-- used for testing -->
+      <id>unix-dependency-tools.jar</id>
+      <activation>
+        <file>
+          <exists>${java.home}/../lib/tools.jar</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>tools</artifactId>
+          <version>${sun.tools.version}</version>
+          <scope>system</scope>
+          <systemPath>${java.home}/../lib/tools.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile><!-- used for testing -->
+      <id>Windows-dependency-tools.jar</id>
+      <activation>
+        <os>
+          <family>Windows</family>
+        </os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>tools</artifactId>
+          <version>${sun.tools.version}</version>
+          <scope>system</scope>
+          <systemPath>${java.home}\\..\\lib\\tools.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
-  
+
   <dependencyManagement>
     <dependencies>
       <dependency>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-core</artifactId>
-          <version>${lucene.version}</version>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-core</artifactId>
+        <version>${lucene.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.zookeeper</groupId>
@@ -393,7 +435,8 @@
       <dependency>
         <groupId>org.jmock</groupId>
         <artifactId>jmock-junit4</artifactId>
-        <version>2.5.1</version> <!-- 2.6.0 ? -->
+        <version>2.5.1</version>
+        <!-- 2.6.0 ? -->
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -494,9 +537,9 @@
         <version>1.6.1</version>
       </dependency>
       <dependency>
-          <groupId>org.codehaus.janino</groupId>
-          <artifactId>janino</artifactId>
-          <version>2.6.1</version>
+        <groupId>org.codehaus.janino</groupId>
+        <artifactId>janino</artifactId>
+        <version>2.6.1</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
@@ -569,7 +612,7 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-  
+
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
