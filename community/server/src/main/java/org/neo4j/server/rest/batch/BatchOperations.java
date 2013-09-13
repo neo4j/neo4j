@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
@@ -39,6 +37,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.ObjectMapper;
+
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 import org.neo4j.server.web.WebServer;
@@ -68,10 +67,14 @@ public abstract class BatchOperations
             final String key = header.getKey();
             final List<String> value = header.getValue();
             if (value == null)
+            {
                 continue;
+            }
             if (value.size() != 1)
+            {
                 throw new IllegalArgumentException(
                         "expecting one value per header");
+            }
             if ( !key.equals( "Accept" ) && !key.equals( "Content-Type" ) )
             {
                 res.addHeader(key, value.get(0));
@@ -103,20 +106,27 @@ public abstract class BatchOperations
 
 
     private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d+)\\}");
-    
+
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )
     {
-        if (!str.contains( "{" )) return str;
+        if (!str.contains( "{" ))
+        {
+            return str;
+        }
         Matcher matcher = PLACHOLDER_PATTERN.matcher(str);
         StringBuffer sb=new StringBuffer();
         while (matcher.find()) {
             String id = matcher.group(1);
             String replacement = locations.get(Integer.valueOf(id));
             if (replacement!=null)
+            {
                 matcher.appendReplacement(sb,replacement);
-            else 
+            }
+            else
+            {
                 matcher.appendReplacement(sb,matcher.group());
+            }
         }
         matcher.appendTail(sb);
         return sb.toString();
@@ -141,19 +151,20 @@ public abstract class BatchOperations
                 {
                     String field = jp.getText();
                     jp.nextToken();
-                    if (field.equals(METHOD_KEY))
+                    switch ( field )
                     {
+                    case METHOD_KEY:
                         jobMethod = jp.getText().toUpperCase();
-                    } else if (field.equals(TO_KEY))
-                    {
+                        break;
+                    case TO_KEY:
                         jobPath = jp.getText();
-                    } else if (field.equals(ID_KEY))
-                    {
+                        break;
+                    case ID_KEY:
                         jobId = jp.getIntValue();
-                    } else if (field.equals(BODY_KEY))
-                    {
+                        break;
+                    case BODY_KEY:
                         jobBody = readBody( jp );
-
+                        break;
                     }
                 }
                 // Read one job description. Execute it.
@@ -183,7 +194,7 @@ public abstract class BatchOperations
 
         InternalJettyServletResponse res = new InternalJettyServletResponse();
         InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res );
-        
+
         addHeaders( req, httpHeaders );
 
         invoke( method, path, body, id, targetUri, req, res );

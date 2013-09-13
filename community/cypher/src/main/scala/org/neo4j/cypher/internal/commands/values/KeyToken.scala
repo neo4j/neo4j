@@ -34,9 +34,9 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 
   def name: String
 
-  def getOrCreateId(state: QueryContext): Long
-  def getIdOrFail(state: TokenContext): Long
-  def getOptId(state: TokenContext): Option[Long]
+  def getOrCreateId(state: QueryContext): Int
+  def getIdOrFail(state: TokenContext): Int
+  def getOptId(state: TokenContext): Option[Int]
 
   def resolve(tokenContext: TokenContext): KeyToken
 
@@ -54,19 +54,19 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 object KeyToken {
 
   case class Unresolved(name: String, typ: TokenType) extends KeyToken(typ) {
-    def getOrCreateId(state: QueryContext): Long = typ.getOrCreateIdForName(name, state)
-    def getIdOrFail(state: TokenContext): Long = typ.getIdForNameOrFail(name, state)
-    def getOptId(state: TokenContext): Option[Long] = typ.getOptIdForName(name, state)
+    def getOrCreateId(state: QueryContext): Int = typ.getOrCreateIdForName(name, state)
+    def getIdOrFail(state: TokenContext): Int = typ.getIdForNameOrFail(name, state)
+    def getOptId(state: TokenContext): Option[Int] = typ.getOptIdForName(name, state)
 
     def resolve(tokenContext: TokenContext) = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
 
     override def toString:String = name
   }
 
-  case class Resolved(name: String, id: Long, typ: TokenType) extends KeyToken(typ) {
-    def getOrCreateId(state: QueryContext): Long = id
-    def getIdOrFail(state: TokenContext): Long = id
-    def getOptId(state: TokenContext): Option[Long] = Some(id)
+  case class Resolved(name: String, id: Int, typ: TokenType) extends KeyToken(typ) {
+    def getOrCreateId(state: QueryContext): Int = id
+    def getIdOrFail(state: TokenContext): Int = id
+    def getOptId(state: TokenContext): Option[Int] = Some(id)
 
     override def resolve(tokenContext: TokenContext): Resolved = this
 

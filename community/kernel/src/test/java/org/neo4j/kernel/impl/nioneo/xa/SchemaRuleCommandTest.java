@@ -35,11 +35,13 @@ import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 
 import static java.nio.ByteBuffer.allocate;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
@@ -75,7 +77,7 @@ public class SchemaRuleCommandTest
         verify( store ).updateRecord( first( records ) );
         verify( indexes ).dropIndex( rule );
     }
-    
+
     @Test
     public void shouldWriteSchemaRuleToLog() throws Exception
     {
@@ -97,7 +99,7 @@ public class SchemaRuleCommandTest
     private final SchemaStore store = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
     private final int labelId = 2;
-    private final long propertyKey = 8;
+    private final int propertyKey = 8;
     private final long id = 0;
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 

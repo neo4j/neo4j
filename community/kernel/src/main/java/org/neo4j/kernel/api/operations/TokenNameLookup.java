@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.operations;
 
 public interface TokenNameLookup
 {
-    String labelGetName( long labelId );
+    String labelGetName( int labelId );
 
-    String propertyKeyGetName( long propertyKeyId );
+    String propertyKeyGetName( int propertyKeyId );
 }

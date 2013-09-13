@@ -21,11 +21,15 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.Arrays;
 
-class ByteArrayProperty extends FullSizeProperty
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
+class ByteArrayProperty extends DefinedProperty
 {
     private final byte[] value;
 
-    ByteArrayProperty( long propertyKeyId, byte[] value )
+    ByteArrayProperty( int propertyKeyId, byte[] value )
     {
         super( propertyKeyId );
         assert value != null;
@@ -55,8 +59,14 @@ class ByteArrayProperty extends FullSizeProperty
     }
 
     @Override
-    boolean hasEqualValue( FullSizeProperty that )
+    boolean hasEqualValue( DefinedProperty that )
     {
         return Arrays.equals( this.value, ((ByteArrayProperty)that).value );
+    }
+
+    @Override
+    public int sizeOfObjectInBytesIncludingOverhead()
+    {
+        return withObjectOverhead( withReference( sizeOfArray( value ) ) );
     }
 }

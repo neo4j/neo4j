@@ -43,7 +43,7 @@ interface DataWrite
      * String)} or {@link
      * org.neo4j.kernel.api.operations.KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
      */
-    boolean nodeAddLabel( long nodeId, long labelId )
+    boolean nodeAddLabel( long nodeId, int labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException;
 
     /**
@@ -53,7 +53,7 @@ interface DataWrite
      * String)} or {@link
      * org.neo4j.kernel.api.operations.KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
      */
-    boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException;
+    boolean nodeRemoveLabel( long nodeId, int labelId ) throws EntityNotFoundException;
 
     Property nodeSetProperty( long nodeId, DefinedProperty property )
             throws EntityNotFoundException, ConstraintValidationKernelException;
@@ -66,9 +66,9 @@ interface DataWrite
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Property nodeRemoveProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException;
+    Property nodeRemoveProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Property relationshipRemoveProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException;
+    Property relationshipRemoveProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Property graphRemoveProperty( long propertyKeyId );
+    Property graphRemoveProperty( int propertyKeyId );
 }

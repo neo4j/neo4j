@@ -196,7 +196,7 @@ public class LuceneLabelScanStore implements LabelScanStore
         return new LabelScanReader()
         {
             @Override
-            public PrimitiveLongIterator nodesWithLabel( long labelId )
+            public PrimitiveLongIterator nodesWithLabel( int labelId )
             {
                 try
                 {

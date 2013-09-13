@@ -98,7 +98,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextProvider.statement() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
-            long labelId = statement.readOperations().labelGetForName( label.name() );
+            int labelId = statement.readOperations().labelGetForName( label.name() );
             if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
             {
                 return emptyList();
@@ -185,9 +185,11 @@ public class SchemaImpl implements Schema
         for ( Iterator<IndexDefinition> iter = getIndexes().iterator(); iter.hasNext(); )
         {
             if ( millisLeft < 0 )
+            {
                 throw new IllegalStateException( "Expected all indexes to come online within a reasonable time."
                                                  + "Indexes brought online: " + onlineIndexes
                                                  + ". Indexes not guaranteed to be online: " + asCollection( iter ) );
+            }
 
             IndexDefinition index = iter.next();
             long millisBefore = System.currentTimeMillis();
@@ -206,8 +208,8 @@ public class SchemaImpl implements Schema
         String propertyKey = single( index.getPropertyKeys() );
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
-            long propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
+            int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
+            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
 
             if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
             {
@@ -248,8 +250,8 @@ public class SchemaImpl implements Schema
         String propertyKey = single( index.getPropertyKeys() );
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
-            long propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
+            int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
+            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
 
             if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
             {
@@ -298,7 +300,7 @@ public class SchemaImpl implements Schema
 
         try ( Statement statement = statementContextProvider.statement() )
         {
-            long labelId = statement.readOperations().labelGetForName( label.name() );
+            int labelId = statement.readOperations().labelGetForName( label.name() );
             if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
             {
                 return emptyList();
@@ -317,7 +319,7 @@ public class SchemaImpl implements Schema
                     @Override
                     public ConstraintDefinition apply( UniquenessConstraint constraint )
                     {
-                        long labelId = constraint.label();
+                        int labelId = constraint.label();
                         try
                         {
                             Label label = label( readOperations.labelGetName( labelId ) );
@@ -358,8 +360,8 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    long labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
-                    long propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+                    int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
+                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                     statement.schemaWriteOperations().indexCreate( labelId, propertyKeyId );
                     return new IndexDefinitionImpl( this, label, propertyKey, false );
                 }
@@ -404,8 +406,8 @@ public class SchemaImpl implements Schema
         {
             try ( Statement statement = ctxProvider.statement() )
             {
-                long labelId = statement.readOperations().labelGetForName( label.name() );
-                long propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
+                int labelId = statement.readOperations().labelGetForName( label.name() );
+                int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
 
                 if ( labelId != KeyReadOperations.NO_SUCH_LABEL && propertyKeyId != KeyReadOperations
                         .NO_SUCH_PROPERTY_KEY )
@@ -435,8 +437,8 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    long labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
-                    long propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+                    int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
+                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                     statement.schemaWriteOperations().uniquenessConstraintCreate( labelId, propertyKeyId );
                     return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
                 }
@@ -482,8 +484,8 @@ public class SchemaImpl implements Schema
         {
             try ( Statement statement = ctxProvider.statement() )
             {
-                long labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
-                long propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+                int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
+                int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                 UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
                 statement.schemaWriteOperations().constraintDrop( constraint );
             }

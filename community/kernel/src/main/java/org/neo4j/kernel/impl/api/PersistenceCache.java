@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
-import java.util.Set;
 
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.EntityType;
@@ -42,7 +41,7 @@ import static org.neo4j.kernel.impl.api.CacheUpdateListener.NO_UPDATES;
 /**
  * This is a cache for the {@link KernelAPI}. Currently it piggy-backs on NodeImpl/RelationshipImpl
  * to gather all caching in one place.
- * 
+ *
  * NOTE:
  * NodeImpl/RelationshipImpl manages caching, locking and transaction state merging. In the future
  * they might disappear and split up into {@link CachingStatementOperations},
@@ -83,19 +82,18 @@ public class PersistenceCache
         this.graphProperties = graphProperties;
     }
 
-    public boolean nodeHasLabel( KernelStatement state, long nodeId, long labelId, CacheLoader<Set<Long>> cacheLoader )
+    public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId, CacheLoader<int[]> cacheLoader )
             throws EntityNotFoundException
     {
-        Set<Long> labels = getNode( nodeId ).getLabels( state, cacheLoader );
-        return labels.contains( labelId );
+        return getNode( nodeId ).hasLabel( state, labelId, cacheLoader );
     }
-    
-    public Set<Long> nodeGetLabels( KernelStatement state, long nodeId, CacheLoader<Set<Long>> loader )
+
+    public int[] nodeGetLabels( KernelStatement state, long nodeId, CacheLoader<int[]> loader )
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getLabels( state, loader );
     }
-    
+
     private NodeImpl getNode( long nodeId ) throws EntityNotFoundException
     {
         NodeImpl node = nodeCache.get( nodeId );
@@ -115,7 +113,7 @@ public class PersistenceCache
         }
         return relationship;
     }
-    
+
     public void apply( TxState state )
     {
         for ( NodeState stateEntity : state.nodeStates() )
@@ -143,21 +141,21 @@ public class PersistenceCache
     {
         return getNode( nodeId ).getProperties( state, cacheLoader, NODE_CACHE_SIZE_LISTENER );
     }
-    
+
     public PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getPropertyKeys( state, cacheLoader, NODE_CACHE_SIZE_LISTENER );
     }
-    
-    public Property nodeGetProperty( KernelStatement state, long nodeId, long propertyKeyId,
+
+    public Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader )
             throws EntityNotFoundException
     {
-        return getNode( nodeId ).getProperty( state, cacheLoader, NODE_CACHE_SIZE_LISTENER, (int) propertyKeyId );
+        return getNode( nodeId ).getProperty( state, cacheLoader, NODE_CACHE_SIZE_LISTENER, propertyKeyId );
     }
-    
+
     public Iterator<DefinedProperty> relationshipGetProperties( KernelStatement state, long relationshipId,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
@@ -165,18 +163,18 @@ public class PersistenceCache
                 RELATIONSHIP_CACHE_SIZE_LISTENER );
     }
 
-    public Property relationshipGetProperty( KernelStatement state, long relationshipId, long propertyKeyId,
+    public Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperty( state, cacheLoader, RELATIONSHIP_CACHE_SIZE_LISTENER,
-                (int) propertyKeyId );
+                propertyKeyId );
     }
-    
+
     public Iterator<DefinedProperty> graphGetProperties( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
         return graphProperties.evaluate().getProperties( state, cacheLoader, NO_UPDATES );
     }
-    
+
     public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state,
             CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
@@ -184,8 +182,8 @@ public class PersistenceCache
     }
 
     public Property graphGetProperty( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> cacheLoader,
-            long propertyKeyId )
+            int propertyKeyId )
     {
-        return graphProperties.evaluate().getProperty( state, cacheLoader, NO_UPDATES, (int) propertyKeyId );
+        return graphProperties.evaluate().getProperty( state, cacheLoader, NO_UPDATES, propertyKeyId );
     }
 }

@@ -79,6 +79,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+
 /**
  * This is the real master code that executes on a master. The actual
  * communication over network happens in {@link org.neo4j.kernel.ha.com.slave.MasterClient} and
@@ -604,7 +606,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public Response<LockResult> acquireIndexEntryWriteLock( RequestContext context, long labelId, long propertyKeyId,
                                                             String propertyValue )
     {
-        return acquireLock( context, WRITE_LOCK_GRABBER, new IndexEntryLock( labelId, propertyKeyId, propertyValue ) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, new IndexEntryLock(
+                safeCastLongToInt( labelId ), safeCastLongToInt( propertyKeyId ), propertyValue ) );
     }
 
     @SuppressWarnings("deprecation")

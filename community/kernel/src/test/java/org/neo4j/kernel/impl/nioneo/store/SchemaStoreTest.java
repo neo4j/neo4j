@@ -49,14 +49,14 @@ public class SchemaStoreTest
     public void serializationAndDeserialization() throws Exception
     {
         // GIVEN
-        long propertyKey = 4;
+        int propertyKey = 4;
         int labelId = 1;
         IndexRule indexRule = IndexRule.indexRule( store.nextId(), labelId, propertyKey, PROVIDER_DESCRIPTOR );
-        
+
         // WHEN
         byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
         IndexRule readIndexRule = (IndexRule) SchemaRule.Kind.deserialize( indexRule.getId(), wrap( serialized ) );
-        
+
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.getKind(), readIndexRule.getKind() );
@@ -64,7 +64,7 @@ public class SchemaStoreTest
         assertEquals( indexRule.getPropertyKey(), readIndexRule.getPropertyKey() );
         assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
     }
-    
+
     @Test
     public void storeAndLoadAllShortRules() throws Exception
     {
@@ -74,7 +74,9 @@ public class SchemaStoreTest
                 IndexRule.indexRule( store.nextId(), 1, 6, PROVIDER_DESCRIPTOR ),
                 IndexRule.indexRule( store.nextId(), 1, 7, PROVIDER_DESCRIPTOR ) );
         for ( SchemaRule rule : rules )
+        {
             storeRule( rule );
+        }
 
         // WHEN
         Collection<SchemaRule> readRules = asCollection( store.loadAllSchemaRules() );
@@ -82,7 +84,7 @@ public class SchemaStoreTest
         // THEN
         assertEquals( rules, readRules );
     }
-  
+
 //    ENABLE WHEN MULTIPLE PROPERTY KEYS PER INDEX RULE IS SUPPORTED
 //    @Test
 //    public void storeAndLoadSingleLongRule() throws Exception
@@ -128,7 +130,9 @@ public class SchemaStoreTest
     {
         Collection<DynamicRecord> records = store.allocateFrom( rule );
         for ( DynamicRecord record : records )
+        {
             store.updateRecord( record );
+        }
         return first( records ).getId();
     }
 
@@ -136,7 +140,7 @@ public class SchemaStoreTest
     private SchemaStore store;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private StoreFactory storeFactory;
-    
+
     @Before
     public void before() throws Exception
     {

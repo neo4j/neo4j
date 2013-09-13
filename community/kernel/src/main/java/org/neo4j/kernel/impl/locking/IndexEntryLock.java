@@ -23,23 +23,23 @@ import static java.lang.String.format;
 
 public final class IndexEntryLock
 {
-    private final long labelId;
-    private final long propertyKeyId;
+    private final int labelId;
+    private final int propertyKeyId;
     private final String propertyValue;
 
-    public IndexEntryLock( long labelId, long propertyKeyId, String propertyValue )
+    public IndexEntryLock( int labelId, int propertyKeyId, String propertyValue )
     {
         this.labelId = labelId;
         this.propertyKeyId = propertyKeyId;
         this.propertyValue = propertyValue;
     }
 
-    public long labelId()
+    public int labelId()
     {
         return labelId;
     }
 
-    public long propertyKeyId()
+    public int propertyKeyId()
     {
         return propertyKeyId;
     }
@@ -75,8 +75,8 @@ public final class IndexEntryLock
     @Override
     public int hashCode()
     {
-        int result = (int) (labelId ^ (labelId >>> 32));
-        result = 31 * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        int result = labelId;
+        result = 31 * result + propertyKeyId;
         result = 31 * result + propertyValue.hashCode();
         return result;
     }

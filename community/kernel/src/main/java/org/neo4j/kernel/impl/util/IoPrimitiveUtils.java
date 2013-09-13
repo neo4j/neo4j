@@ -37,10 +37,9 @@ public abstract class IoPrimitiveUtils
             ByteBuffer buffer ) throws IOException
     {
         Integer length = readInt( channel, buffer );
-        String result = length != null ? readString( channel, buffer, length ) : null;
-        return result;
+        return length != null ? readString( channel, buffer, length ) : null;
     }
-    
+
     public static String readString( ReadableByteChannel channel, ByteBuffer buffer,
             int length ) throws IOException
     {
@@ -58,29 +57,32 @@ public abstract class IoPrimitiveUtils
         buffer.put( (byte)(chars.length >> 16) );
         buffer.put( chars );
     }
-    
+
     public static String read3bLengthAndString( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         Short lengthShort = readShort( channel, buffer );
         Byte lengthByte = readByte( channel, buffer );
-        if ( lengthShort == null || lengthByte == null ) return null;
+        if ( lengthShort == null || lengthByte == null )
+        {
+            return null;
+        }
         int length = (lengthByte << 16) | lengthShort;
         return readString( channel, buffer, length );
     }
-    
+
     public static void write2bLengthAndString( LogBuffer buffer, String string ) throws IOException
     {
         char[] chars = string.toCharArray();
         buffer.putShort( (short)chars.length );
         buffer.put( chars );
     }
-    
+
     public static String read2bLengthAndString( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         Short length = readShort( channel, buffer );
         return length == null ? null : readString( channel, buffer, length );
     }
-    
+
     private static char[] readCharArray( ReadableByteChannel channel,
             ByteBuffer buffer, char[] charArray ) throws IOException
     {
@@ -131,12 +133,12 @@ public abstract class IoPrimitiveUtils
     {
         return readAndFlip( channel, buffer, 1 ) ? buffer.get() : null;
     }
-    
+
     public static Short readShort( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         return readAndFlip( channel, buffer, 2 ) ? buffer.getShort() : null;
     }
-    
+
     public static Integer readInt( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         return readAndFlip( channel, buffer, 4 ) ? buffer.getInt() : null;
@@ -146,31 +148,31 @@ public abstract class IoPrimitiveUtils
     {
         return readAndFlip( channel, buffer, 8 ) ? buffer.getLong() : null;
     }
-    
+
     public static Float readFloat( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         return readAndFlip( channel, buffer, 4 ) ? buffer.getFloat() : null;
     }
-    
+
     public static Double readDouble( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         return readAndFlip( channel, buffer, 8 ) ? buffer.getDouble() : null;
     }
-    
+
     public static byte[] readBytes( ReadableByteChannel channel, byte[] array ) throws IOException
     {
         return readBytes( channel, array, array.length );
     }
-    
+
     public static byte[] readBytes( ReadableByteChannel channel, byte[] array, int bytes ) throws IOException
     {
         return readAndFlip( channel, ByteBuffer.wrap( array ), bytes ) ? array : null;
     }
-    
+
     public static Map<String, String> readMap( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         int size = readInt( channel, buffer );
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = new HashMap<>();
         for ( int i = 0; i < size; i++ )
         {
             String key = readLengthAndString( channel, buffer );
@@ -183,12 +185,15 @@ public abstract class IoPrimitiveUtils
         }
         return map;
     }
-    
+
     public static Map<String, String> read2bMap( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         Short size = readShort( channel, buffer );
-        if ( size == null ) return null;
-        Map<String, String> map = new HashMap<String, String>();
+        if ( size == null )
+        {
+            return null;
+        }
+        Map<String, String> map = new HashMap<>();
         for ( int i = 0; i < size; i++ )
         {
             String key = read2bLengthAndString( channel, buffer );
@@ -201,7 +206,7 @@ public abstract class IoPrimitiveUtils
         }
         return map;
     }
-    
+
     public static void writeLengthAndString( FileChannel channel, ByteBuffer buffer, String value )
             throws IOException
     {
@@ -210,7 +215,7 @@ public abstract class IoPrimitiveUtils
         writeInt( channel, buffer, length );
         writeChars( channel, buffer, chars );
     }
-    
+
     private static void writeChars( FileChannel channel, ByteBuffer buffer, char[] chars )
             throws IOException
     {
@@ -236,7 +241,7 @@ public abstract class IoPrimitiveUtils
             }
         } while ( position < chars.length );
     }
-    
+
     public static void writeInt( FileChannel channel, ByteBuffer buffer, int value )
             throws IOException
     {
@@ -245,18 +250,7 @@ public abstract class IoPrimitiveUtils
         buffer.flip();
         channel.write( buffer );
     }
-    
-    public static void writeMap( FileChannel channel, ByteBuffer buffer, Map<String, String> map )
-            throws IOException
-    {
-        writeInt( channel, buffer, map.size() );
-        for ( Map.Entry<String, String> entry : map.entrySet() )
-        {
-            writeLengthAndString( channel, buffer, entry.getKey() );
-            writeLengthAndString( channel, buffer, entry.getValue() );
-        }
-    }
-    
+
     public static Object[] asArray( Object propertyValue )
     {
         if ( propertyValue.getClass().isArray() )
@@ -274,14 +268,26 @@ public abstract class IoPrimitiveUtils
             return new Object[] { propertyValue };
         }
     }
-    
+
     public static Collection<Object> arrayAsCollection( Object arrayValue )
     {
         assert arrayValue.getClass().isArray();
-        
-        Collection<Object> result = new ArrayList<Object>();
+
+        Collection<Object> result = new ArrayList<>();
         int length = Array.getLength( arrayValue );
-        for ( int i = 0; i < length; i++ ) result.add( Array.get( arrayValue, i ) );
+        for ( int i = 0; i < length; i++ )
+        {
+            result.add( Array.get( arrayValue, i ) );
+        }
         return result;
+    }
+
+    public static int safeCastLongToInt( long value )
+    {
+        if ( value >= Integer.MAX_VALUE )
+        {
+            throw new IllegalArgumentException( "Casting long value " + value + " to an int would wrap around" );
+        }
+        return (int) value;
     }
 }

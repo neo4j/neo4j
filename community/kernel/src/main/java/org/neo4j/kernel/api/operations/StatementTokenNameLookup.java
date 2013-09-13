@@ -39,7 +39,7 @@ public final class StatementTokenNameLookup implements TokenNameLookup
      * Returns the label name for the given label id. In case of downstream failure, returns label[id].
      */
     @Override
-    public String labelGetName( long labelId )
+    public String labelGetName( int labelId )
     {
         try
         {
@@ -55,7 +55,7 @@ public final class StatementTokenNameLookup implements TokenNameLookup
      * Returns the name of a property given its property key id. In case of downstream failure, returns property[id].
      */
     @Override
-    public String propertyKeyGetName( long propertyKeyId )
+    public String propertyKeyGetName( int propertyKeyId )
     {
         try
         {

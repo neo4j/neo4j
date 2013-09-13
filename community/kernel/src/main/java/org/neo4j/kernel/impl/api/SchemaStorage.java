@@ -24,7 +24,6 @@ import java.util.Iterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -43,20 +42,17 @@ public class SchemaStorage
         this.schemaStore = schemaStore;
     }
 
-    public IndexRule constraintIndexRule( long labelId, final long propertyKeyId ) throws SchemaRuleNotFoundException
+    public IndexRule constraintIndexRule( int labelId, int propertyKeyId ) throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( labelId, propertyKeyId );
         if ( rule.isConstraintIndex() )
         {
             return rule;
         }
-        else
-        {
-            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "is not a constraint index" );
-        }
+        throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "is not a constraint index" );
     }
 
-    public IndexRule indexRule( long labelId, final long propertyKeyId ) throws SchemaRuleNotFoundException
+    public IndexRule indexRule( int labelId, final int propertyKeyId ) throws SchemaRuleNotFoundException
     {
         Iterator<IndexRule> rules = schemaRules(
                 IndexRule.class, labelId,
@@ -83,14 +79,14 @@ public class SchemaStorage
         return rule;
     }
 
-    public <T extends SchemaRule> Iterator<T> schemaRules( final Class<T> type, long labelId, Predicate<T> predicate )
+    public <T extends SchemaRule> Iterator<T> schemaRules( final Class<T> type, int labelId, Predicate<T> predicate )
     {
         return schemaRules( Functions.cast( type ), type, labelId, predicate );
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
             Function<? super R, T> conversion, final Class<R> ruleType,
-            final long labelId, final Predicate<R> predicate )
+            final int labelId, final Predicate<R> predicate )
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
@@ -130,7 +126,7 @@ public class SchemaStorage
         return schemaStore.nextId();
     }
 
-    public UniquenessConstraintRule uniquenessConstraint( long labelId, final long propertyKeyId )
+    public UniquenessConstraintRule uniquenessConstraint( int labelId, final int propertyKeyId )
             throws SchemaRuleNotFoundException
     {
         Iterator<UniquenessConstraintRule> rules = schemaRules(
@@ -155,17 +151,5 @@ public class SchemaStorage
             throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "found more than one matching index" );
         }
         return rule;
-    }
-
-    public SchemaRule schemaRuleById( long constraintRuleId ) throws SchemaRuleNotFoundException
-    {
-        try
-        {
-            return schemaStore.loadSingleSchemaRule( constraintRuleId );
-        }
-        catch ( MalformedSchemaRuleException e )
-        {
-            throw new SchemaRuleNotFoundException( "Can not load rule: " + constraintRuleId, e );
-        }
     }
 }

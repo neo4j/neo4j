@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
@@ -38,7 +39,7 @@ public interface EntityReadOperations
      * @param labelId the label id of the label that returned nodes are guaranteed to have
      * @return ids of all nodes that have the given label
      */
-    PrimitiveLongIterator nodesGetForLabel( KernelStatement state, long labelId );
+    PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
 
     /**
      * Returns an iterable with the matched nodes.
@@ -64,20 +65,20 @@ public interface EntityReadOperations
      * String)} or
      * {@link KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
      */
-    boolean nodeHasLabel( KernelStatement state, long nodeId, long labelId ) throws EntityNotFoundException;
+    boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException;
 
     /**
      * Returns all labels set on node with id {@code nodeId}.
-     * If the node has no labels an empty {@link Iterable} will be returned.
+     * If the node has no labels an empty iterator will be returned.
      */
-    PrimitiveLongIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
+    PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
 
-    Property nodeGetProperty( KernelStatement state, long nodeId, long propertyKeyId ) throws EntityNotFoundException;
+    Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Property relationshipGetProperty( KernelStatement state, long relationshipId, long propertyKeyId )
+    Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException;
 
-    Property graphGetProperty( KernelStatement state, long propertyKeyId );
+    Property graphGetProperty( KernelStatement state, int propertyKeyId );
 
     // TODO: decide if this should be replaced by nodeGetAllProperties()
 

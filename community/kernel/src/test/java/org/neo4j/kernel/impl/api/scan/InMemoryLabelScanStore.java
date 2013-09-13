@@ -109,9 +109,9 @@ public class InMemoryLabelScanStore implements LabelScanStore
         return new LabelScanReader()
         {
             @Override
-            public PrimitiveLongIterator nodesWithLabel( long labelId )
+            public PrimitiveLongIterator nodesWithLabel( int labelId )
             {
-                Set<Long> nodes = data.get( labelId );
+                Set<Long> nodes = data.get( (long) labelId );
                 assert nodes != null;
 
                 final Iterator<Long> nodesIterator = nodes.iterator();

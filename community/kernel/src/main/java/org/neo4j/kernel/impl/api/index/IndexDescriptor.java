@@ -30,10 +30,10 @@ import static java.lang.String.format;
  */
 public class IndexDescriptor
 {
-    private final long labelId;
-    private final long propertyKeyId;
+    private final int labelId;
+    private final int propertyKeyId;
 
-    public IndexDescriptor( long labelId, long propertyKeyId )
+    public IndexDescriptor( int labelId, int propertyKeyId )
     {
         this.labelId = labelId;
         this.propertyKeyId = propertyKeyId;
@@ -58,17 +58,17 @@ public class IndexDescriptor
     @Override
     public int hashCode()
     {
-        int result = (int) (labelId ^ (labelId >>> 32));
-        result = 31 * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        int result = labelId;
+        result = 31 * result + propertyKeyId;
         return result;
     }
 
-    public long getLabelId()
+    public int getLabelId()
     {
         return labelId;
     }
 
-    public long getPropertyKeyId()
+    public int getPropertyKeyId()
     {
         return propertyKeyId;
     }

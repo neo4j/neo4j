@@ -29,23 +29,23 @@ public interface SchemaRule extends RecordSerializable
      * The persistence id for this rule.
      */
     long getId();
-    
+
     /**
      * @return id of label to which this schema rule has been attached
      */
-    long getLabel();
+    int getLabel();
 
     /**
      * @return the kind of this schema rule
      */
     Kind getKind();
-    
+
     public static enum Kind
     {
         INDEX_RULE( 1, IndexRule.class )
         {
             @Override
-            protected SchemaRule newRule( long id, long labelId, ByteBuffer buffer )
+            protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
             {
                 return IndexRule.readIndexRule( id, false, labelId, buffer );
             }
@@ -53,7 +53,7 @@ public interface SchemaRule extends RecordSerializable
         CONSTRAINT_INDEX_RULE( 2, IndexRule.class )
         {
             @Override
-            protected SchemaRule newRule( long id, long labelId, ByteBuffer buffer )
+            protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
             {
                 return IndexRule.readIndexRule( id, true, labelId, buffer );
             }
@@ -61,7 +61,7 @@ public interface SchemaRule extends RecordSerializable
         UNIQUENESS_CONSTRAINT( 3, UniquenessConstraintRule.class )
         {
             @Override
-            protected SchemaRule newRule( long id, long labelId, ByteBuffer buffer )
+            protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
             {
                 return UniquenessConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
             }
@@ -76,22 +76,22 @@ public interface SchemaRule extends RecordSerializable
             this.id = (byte) id;
             this.ruleClass = ruleClass;
         }
-        
+
         public Class<? extends SchemaRule> getRuleClass()
         {
             return this.ruleClass;
         }
-        
+
         public byte id()
         {
             return this.id;
         }
-        
-        protected abstract SchemaRule newRule( long id, long labelId, ByteBuffer buffer );
-        
+
+        protected abstract SchemaRule newRule( long id, int labelId, ByteBuffer buffer );
+
         public static SchemaRule deserialize( long id, ByteBuffer buffer ) throws MalformedSchemaRuleException
         {
-            long labelId = buffer.getInt();
+            int labelId = buffer.getInt();
             Kind kind = kindForId( buffer.get() );
             try
             {
@@ -109,7 +109,7 @@ public interface SchemaRule extends RecordSerializable
                         "Could not deserialize schema rule for id %d with kind %s", id, kind.name() );
             }
         }
-        
+
         public static Kind kindForId( byte id ) throws MalformedSchemaRuleException
         {
             switch ( id )

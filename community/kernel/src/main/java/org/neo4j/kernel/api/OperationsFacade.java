@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -109,7 +110,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // <DataRead>
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( long labelId )
+    public PrimitiveLongIterator nodesGetForLabel( int labelId )
     {
         statement.assertOpen();
         if ( labelId == StatementConstants.NO_SUCH_LABEL )
@@ -136,21 +137,21 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public boolean nodeHasLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         return labelId != StatementConstants.NO_SUCH_LABEL && dataRead().nodeHasLabel( statement, nodeId, labelId );
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         return dataRead().nodeGetLabels( statement, nodeId );
     }
 
     @Override
-    public Property nodeGetProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    public Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
@@ -161,7 +162,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Property relationshipGetProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException
+    public Property relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
@@ -172,7 +173,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Property graphGetProperty( long propertyKeyId )
+    public Property graphGetProperty( int propertyKeyId )
     {
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
@@ -207,7 +208,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // <SchemaRead>
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, final long propertyKeyId )
+    public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
@@ -215,7 +216,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( long labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().indexesGetForLabel( statement, labelId );
@@ -229,7 +230,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
+    public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
             throws SchemaRuleNotFoundException
 
     {
@@ -260,7 +261,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId )
+    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().uniqueIndexesGetForLabel( statement, labelId );
@@ -288,14 +289,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabel( statement, labelId );
@@ -311,28 +312,28 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // <TokenRead>
     @Override
-    public long labelGetForName( String labelName )
+    public int labelGetForName( String labelName )
     {
         statement.assertOpen();
         return tokenRead().labelGetForName( statement, labelName );
     }
 
     @Override
-    public String labelGetName( long labelId ) throws LabelNotFoundKernelException
+    public String labelGetName( int labelId ) throws LabelNotFoundKernelException
     {
         statement.assertOpen();
         return tokenRead().labelGetName( statement, labelId );
     }
 
     @Override
-    public long propertyKeyGetForName( String propertyKeyName )
+    public int propertyKeyGetForName( String propertyKeyName )
     {
         statement.assertOpen();
         return tokenRead().propertyKeyGetForName( statement, propertyKeyName );
     }
 
     @Override
-    public String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
+    public String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
     {
         statement.assertOpen();
         return tokenRead().propertyKeyGetName( statement, propertyKeyId );
@@ -353,14 +354,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public long relationshipTypeGetForName( String relationshipTypeName )
+    public int relationshipTypeGetForName( String relationshipTypeName )
     {
         statement.assertOpen();
         return tokenRead().relationshipTypeGetForName( statement, relationshipTypeName );
     }
 
     @Override
-    public String relationshipTypeGetName( long relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException
+    public String relationshipTypeGetName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException
     {
         statement.assertOpen();
         return tokenRead().relationshipTypeGetName( statement, relationshipTypeId );
@@ -369,21 +370,21 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // <TokenWrite>
     @Override
-    public long labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
+    public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
         statement.assertOpen();
         return tokenWrite().labelGetOrCreateForName( statement, labelName );
     }
 
     @Override
-    public long propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
+    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         statement.assertOpen();
         return tokenWrite().propertyKeyGetOrCreateForName( statement, propertyKeyName );
     }
 
     @Override
-    public long relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
+    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
         statement.assertOpen();
         return tokenWrite().relationshipTypeGetOrCreateForName( statement, relationshipTypeName );
@@ -429,7 +430,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public boolean nodeAddLabel( long nodeId, long labelId )
+    public boolean nodeAddLabel( long nodeId, int labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
         statement.assertOpen();
@@ -437,7 +438,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public boolean nodeRemoveLabel( long nodeId, long labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( long nodeId, int labelId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         return dataWrite().nodeRemoveLabel( statement, nodeId, labelId );
@@ -467,21 +468,21 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Property nodeRemoveProperty( long nodeId, long propertyKeyId ) throws EntityNotFoundException
+    public Property nodeRemoveProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         return dataWrite().nodeRemoveProperty( statement, nodeId, propertyKeyId );
     }
 
     @Override
-    public Property relationshipRemoveProperty( long relationshipId, long propertyKeyId ) throws EntityNotFoundException
+    public Property relationshipRemoveProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         return dataWrite().relationshipRemoveProperty( statement, relationshipId, propertyKeyId );
     }
 
     @Override
-    public Property graphRemoveProperty( long propertyKeyId )
+    public Property graphRemoveProperty( int propertyKeyId )
     {
         statement.assertOpen();
         return dataWrite().graphRemoveProperty( statement, propertyKeyId );
@@ -490,7 +491,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // <SchemaWrite>
     @Override
-    public IndexDescriptor indexCreate( long labelId, long propertyKeyId )
+    public IndexDescriptor indexCreate( int labelId, int propertyKeyId )
             throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
         statement.assertOpen();
@@ -505,7 +506,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( long labelId, long propertyKeyId )
+    public UniquenessConstraint uniquenessConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
     {
         statement.assertOpen();

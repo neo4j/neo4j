@@ -28,13 +28,13 @@ public interface TokenWrite
      * Returns a label id for a label name. If the label doesn't exist prior to
      * this call it gets created.
      */
-    long labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException;
+    int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
-    long propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException;
+    int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException;
 
-    long relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
+    int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
 }

@@ -64,7 +64,7 @@ public class GlobalGraphOperations
 
     /**
      * Get a {@link GlobalGraphOperations} for the given {@code db}.
-     * 
+     *
      * @param db the {@link GraphDatabaseService} to get global operations for.
      * @return {@link GlobalGraphOperations} for the given {@code db}.
      */
@@ -75,7 +75,7 @@ public class GlobalGraphOperations
 
     /**
      * Returns all nodes in the graph.
-     * 
+     *
      * @return all nodes in the graph.
      */
     public Iterable<Node> getAllNodes()
@@ -93,7 +93,7 @@ public class GlobalGraphOperations
 
     /**
      * Returns all relationships in the graph.
-     * 
+     *
      * @return all relationships in the graph.
      */
     public Iterable<Relationship> getAllRelationships()
@@ -116,7 +116,7 @@ public class GlobalGraphOperations
      * guaranteed to return all known relationship types, but it does not guarantee that it won't
      * return <i>more</i> than that (e.g. it can return "historic" relationship types that no longer
      * have any relationships in the graph).
-     * 
+     *
      * @return all relationship types in the underlying store
      */
     public Iterable<RelationshipType> getAllRelationshipTypes()
@@ -215,8 +215,7 @@ public class GlobalGraphOperations
     {
         Statement statement = statementCtxProvider.statement();
 
-        long labelId = statement.readOperations().labelGetForName( label );
-
+        int labelId = statement.readOperations().labelGetForName( label );
         if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
         {
             statement.close();

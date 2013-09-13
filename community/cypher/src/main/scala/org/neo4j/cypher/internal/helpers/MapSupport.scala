@@ -54,7 +54,7 @@ trait MapSupport {
 
     def -(key: String) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
 
-    def get(key: String) = ctx.getOptPropertyKeyId(key).flatMap( (pkId: Long) => Option(ops.getProperty(n, pkId)) )
+    def get(key: String) = ctx.getOptPropertyKeyId(key).flatMap( (pkId: Int) => Option(ops.getProperty(n, pkId)) )
 
     def iterator: Iterator[(String, Any)] =
       ops.propertyKeyIds(n).map(id => ctx.getPropertyKeyName(id) -> ops.getProperty(n, id)).toIterator

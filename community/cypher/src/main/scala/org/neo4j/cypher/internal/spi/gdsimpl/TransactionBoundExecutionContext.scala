@@ -40,7 +40,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
 
   private var open = true
 
-  def setLabelsOnNode(node: Long, labelIds: Iterator[Long]): Int = labelIds.foldLeft(0) {
+  def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
   }
 
@@ -92,7 +92,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
   def getLabelsForNode(node: Long) =
     JavaConversionSupport.asScala( statement.readOperations().nodeGetLabels(node) )
 
-  override def isLabelSetOnNode(label: Long, node: Long) =
+  override def isLabelSetOnNode(label: Int, node: Long) =
     statement.readOperations().nodeHasLabel(node, label)
 
   def getOrCreateLabelId(labelName: String) =
@@ -113,12 +113,12 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
 
   val relationshipOps = new RelationshipOperations
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterator[Long]): Int = labelIds.foldLeft(0) {
+  def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) =>
       if (statement.dataWriteOperations().nodeRemoveLabel(node, labelId)) count + 1 else count
   }
 
-  def getNodesByLabel(id: Long): Iterator[Node] =
+  def getNodesByLabel(id: Int): Iterator[Node] =
     mapToScala( statement.readOperations().nodesGetForLabel(id) )(nodeOps.getById)
 
   class NodeOperations extends BaseOperations[Node] {
@@ -126,21 +126,21 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
       statement.dataWriteOperations().nodeDelete(obj.getId)
     }
 
-    def propertyKeyIds(obj: Node): Iterator[Long] =
+    def propertyKeyIds(obj: Node): Iterator[Int] =
       statement.readOperations().nodeGetAllProperties(obj.getId).asScala.map(_.propertyKeyId())
 
-    def getProperty(obj: Node, propertyKeyId: Long): Any = {
+    def getProperty(obj: Node, propertyKeyId: Int): Any = {
       statement.readOperations().nodeGetProperty(obj.getId, propertyKeyId).value(null)
     }
 
-    def hasProperty(obj: Node, propertyKey: Long) =
+    def hasProperty(obj: Node, propertyKey: Int) =
       statement.readOperations().nodeGetProperty(obj.getId, propertyKey).isDefined
 
-    def removeProperty(obj: Node, propertyKeyId: Long) {
+    def removeProperty(obj: Node, propertyKeyId: Int) {
       statement.dataWriteOperations().nodeRemoveProperty(obj.getId, propertyKeyId)
     }
 
-    def setProperty(obj: Node, propertyKeyId: Long, value: Any) {
+    def setProperty(obj: Node, propertyKeyId: Int, value: Any) {
       statement.dataWriteOperations().nodeSetProperty(obj.getId, properties.Property.property(propertyKeyId, value) )
     }
 
@@ -166,20 +166,20 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
       statement.dataWriteOperations().relationshipDelete(obj.getId)
     }
 
-    def propertyKeyIds(obj: Relationship): Iterator[Long] =
+    def propertyKeyIds(obj: Relationship): Iterator[Int] =
       statement.readOperations().relationshipGetAllProperties(obj.getId).asScala.map(_.propertyKeyId())
 
-    def getProperty(obj: Relationship, propertyKeyId: Long): Any =
+    def getProperty(obj: Relationship, propertyKeyId: Int): Any =
       statement.readOperations().relationshipGetProperty(obj.getId, propertyKeyId).value(null)
 
-    def hasProperty(obj: Relationship, propertyKey: Long) =
+    def hasProperty(obj: Relationship, propertyKey: Int) =
       statement.readOperations().relationshipGetProperty(obj.getId, propertyKey).isDefined
 
-    def removeProperty(obj: Relationship, propertyKeyId: Long) {
+    def removeProperty(obj: Relationship, propertyKeyId: Int) {
       statement.dataWriteOperations().relationshipRemoveProperty(obj.getId, propertyKeyId)
     }
 
-    def setProperty(obj: Relationship, propertyKeyId: Long, value: Any) {
+    def setProperty(obj: Relationship, propertyKeyId: Int, value: Any) {
       statement.dataWriteOperations().relationshipSetProperty(obj.getId, properties.Property.property(propertyKeyId, value) )
     }
 
@@ -226,15 +226,15 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def addIndexRule(labelIds: Long, propertyKeyId: Long) =
-    statement.schemaWriteOperations().indexCreate(labelIds, propertyKeyId)
+  def addIndexRule(labelId: Int, propertyKeyId: Int) =
+    statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId)
 
-  def dropIndexRule(labelId: Long, propertyKeyId: Long) =
+  def dropIndexRule(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().indexDrop(new IndexDescriptor(labelId, propertyKeyId))
 
-  def createUniqueConstraint(labelId: Long, propertyKeyId: Long) =
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().uniquenessConstraintCreate(labelId, propertyKeyId)
 
-  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) =
+  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 }

@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,7 +39,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Function;
+import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.BaseConstraintCreator;
@@ -60,6 +61,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
@@ -86,7 +88,6 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -114,11 +115,12 @@ import static java.lang.Boolean.parseBoolean;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -141,12 +143,12 @@ public class BatchInserterImpl implements BatchInserter
     private final Config config;
     private boolean isShutdown = false;
 
-    private final Function<Long, Label> labelIdToLabelFunction = new Function<Long, Label>()
+    private final FunctionFromPrimitiveLong<Label> labelIdToLabelFunction = new FunctionFromPrimitiveLong<Label>()
     {
         @Override
-        public Label apply( Long from )
+        public Label apply( long from )
         {
-            return label( labelTokens.nameOf( from.intValue() ) );
+            return label( labelTokens.nameOf( safeCastLongToInt( from ) ) );
         }
     };
 
@@ -310,8 +312,8 @@ public class BatchInserterImpl implements BatchInserter
         final IndexPopulator[] populators = new IndexPopulator[rules.length];
         IndexStoreView storeView = new NeoStoreIndexStoreView( neoStore );
 
-        final long[] labelIds = new long[rules.length];
-        final long[] propertyKeyIds = new long[rules.length];
+        final int[] labelIds = new int[rules.length];
+        final int[] propertyKeyIds = new int[rules.length];
 
         for ( int i = 0; i < labelIds.length; i++ )
         {
@@ -330,10 +332,10 @@ public class BatchInserterImpl implements BatchInserter
             public boolean visit( NodePropertyUpdate update ) throws IOException
             {
                 // Do a lookup from which property has changed to a list of indexes worried about that property.
-                long propertyInQuestion = update.getPropertyKeyId();
+                int propertyKeyInQuestion = update.getPropertyKeyId();
                 for ( int i = 0; i < propertyKeyIds.length; i++ )
                 {
-                    if ( propertyKeyIds[i] == propertyInQuestion )
+                    if ( propertyKeyIds[i] == propertyKeyInQuestion )
                     {
                         if ( update.forLabel( labelIds[i] ) )
                         {
@@ -638,9 +640,9 @@ public class BatchInserterImpl implements BatchInserter
         return propertyKeyTokens.idOf( name );
     }
 
-    private long getOrCreateLabelId( String name )
+    private int getOrCreateLabelId( String name )
     {
-        long labelId = getLabelId( name );
+        int labelId = getLabelId( name );
         if ( labelId == -1 )
         {
             labelId = createNewLabelId( name );
@@ -648,7 +650,7 @@ public class BatchInserterImpl implements BatchInserter
         return labelId;
     }
 
-    private long getLabelId( String name )
+    private int getLabelId( String name )
     {
         return labelTokens.idOf( name );
     }
@@ -754,25 +756,31 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     @Override
-    public Iterable<Label> getNodeLabels( long node )
+    public Iterable<Label> getNodeLabels( final long node )
     {
-        NodeStore nodeStore = neoStore.getNodeStore();
-        return map( labelIdToLabelFunction,
-                    asIterable( parseLabelsField( nodeStore.getRecord( node ) ).get( getNodeStore() ) ) );
+        return new Iterable<Label>()
+        {
+            @Override
+            public Iterator<Label> iterator()
+            {
+                NodeStore nodeStore = neoStore.getNodeStore();
+                long[] labels = parseLabelsField( nodeStore.getRecord( node ) ).get( getNodeStore() );
+                return map( labelIdToLabelFunction, asPrimitiveIterator( labels ) );
+            }
+        };
     }
 
     @Override
     public boolean nodeHasLabel( long node, Label label )
     {
-        long labelId = getLabelId( label.name() );
+        int labelId = getLabelId( label.name() );
         return labelId != -1 && nodeHasLabel( node, labelId );
     }
 
-    private boolean nodeHasLabel( long node, long labelId )
+    private boolean nodeHasLabel( long node, int labelId )
     {
         NodeStore nodeStore = neoStore.getNodeStore();
-        long[] labels = parseLabelsField( nodeStore.getRecord( node ) ).get( getNodeStore() );
-        for ( long label : labels )
+        for ( long label : parseLabelsField( nodeStore.getRecord( node ) ).get( getNodeStore() ) )
         {
             if ( label == labelId )
             {
@@ -936,7 +944,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         long nextRel = nodeRecord.getNextRel();
-        List<BatchRelationship> rels = new ArrayList<BatchRelationship>();
+        List<BatchRelationship> rels = new ArrayList<>();
         while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             RelationshipRecord relRecord = getRelationshipRecord( nextRel );
@@ -1134,8 +1142,8 @@ public class BatchInserterImpl implements BatchInserter
             for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
             {
                 String key = propertyKeyTokens.nameOf( propBlock.getKeyIndexId() );
-                PropertyData propertyData = propBlock.newPropertyData( propRecord );
-                Object value = propertyData.getValue() != null ? propertyData.getValue() :
+                DefinedProperty propertyData = propBlock.newPropertyData( propStore );
+                Object value = propertyData.value() != null ? propertyData.value() :
                                propBlock.getType().getValue( propBlock, getPropertyStore() );
                 properties.put( key, value );
             }
@@ -1317,7 +1325,7 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
         {
-            long labelId = getOrCreateLabelId( label.name() );
+            int labelId = getOrCreateLabelId( label.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
             createConstraintRule( new UniquenessConstraint( labelId, propertyKeyId ) );
             return new PropertyUniqueConstraintDefinition( this, label, propertyKey );

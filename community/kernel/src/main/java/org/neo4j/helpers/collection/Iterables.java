@@ -34,8 +34,10 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.FunctionFromPrimitiveInt;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
@@ -209,7 +211,7 @@ public final class Iterables
     {
         return new FilterIterable.FilterIterator<>( i, specification );
     }
-    
+
     public static <X> X first( Iterable<? extends X> i )
     {
         Iterator<? extends X> iter = i.iterator();
@@ -384,6 +386,31 @@ public final class Iterables
 
     public static <T> Iterator<T> map( final FunctionFromPrimitiveLong<T> mapFunction,
                                        final PrimitiveLongIterator source )
+    {
+        return new Iterator<T>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return source.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                return mapFunction.apply( source.next() );
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    public static <T> Iterator<T> map( final FunctionFromPrimitiveInt<T> mapFunction,
+            final PrimitiveIntIterator source )
     {
         return new Iterator<T>()
         {
@@ -872,7 +899,7 @@ public final class Iterables
             };
         }
     }
-    
+
     /**
      * Returns the index of the first occurrence of the specified element
      * in this iterable, or -1 if this iterable does not contain the element.
@@ -888,7 +915,9 @@ public final class Iterables
             for ( T item : iterable )
             {
                 if ( item == null )
+                {
                     return index;
+                }
                 index++;
             }
         }
@@ -898,18 +927,22 @@ public final class Iterables
             for ( T item : iterable )
             {
                 if ( itemToFind.equals( item ) )
+                {
                     return index;
+                }
                 index++;
             }
         }
         return -1;
     }
-    
+
     public static <T> Iterable<T> option( final T item )
     {
         if ( item == null )
+        {
             return Collections.emptyList();
-        
+        }
+
         return new Iterable<T>()
         {
             @Override
@@ -918,7 +951,7 @@ public final class Iterables
                 return new PrefetchingIterator<T>()
                 {
                     private boolean returned;
-                    
+
                     @Override
                     protected T fetchNextOrNull()
                     {
@@ -935,7 +968,7 @@ public final class Iterables
             }
         };
     }
-    
+
     @SuppressWarnings( "rawtypes" )
     public static <T, S extends Comparable> Iterable<T> sort( Iterable<T> iterable, final Function<T, S> compareFunction )
     {

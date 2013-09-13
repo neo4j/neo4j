@@ -28,21 +28,23 @@ import org.neo4j.kernel.impl.core.Token;
 
 interface TokenRead
 {
+    int NO_SUCH_LABEL = -1;
+    int NO_SUCH_PROPERTY_KEY = -1;
 
-    /** Returns a label id for a label name. If the label doesn't exist, {@link StatementConstants#NO_SUCH_LABEL} will be returned. */
-    long labelGetForName( String labelName );
+    /** Returns a label id for a label name. If the label doesn't exist, {@link #NO_SUCH_LABEL} will be returned. */
+    int labelGetForName( String labelName );
 
     /** Returns the label name for the given label id. */
-    String labelGetName( long labelId ) throws LabelNotFoundKernelException;
+    String labelGetName( int labelId ) throws LabelNotFoundKernelException;
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist,
      * {@link StatementConstants#NO_SUCH_PROPERTY_KEY} will be returned.
      */
-    long propertyKeyGetForName( String propertyKeyName );
+    int propertyKeyGetForName( String propertyKeyName );
 
     /** Returns the name of a property given its property key id */
-    String propertyKeyGetName( long propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
+    String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 
     /** Returns the property keys currently stored in the database */
     Iterator<Token> propertyKeyGetAllTokens();
@@ -50,7 +52,7 @@ interface TokenRead
     /** Returns the labels currently stored in the database * */
     Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
 
-    long relationshipTypeGetForName( String relationshipTypeName );
+    int relationshipTypeGetForName( String relationshipTypeName );
 
-    String relationshipTypeGetName( long relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException;
+    String relationshipTypeGetName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException;
 }

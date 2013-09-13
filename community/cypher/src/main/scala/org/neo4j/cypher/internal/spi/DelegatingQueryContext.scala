@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
-  def setLabelsOnNode(node: Long, labelIds: Iterator[Long]): Int = {
+  def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
     inner.setLabelsOnNode(node, labelIds)
   }
 
@@ -38,11 +38,11 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getLabelsForNode(node: Long) = inner.getLabelsForNode(node)
 
-  def getLabelName(id: Long) = inner.getLabelName(id)
+  def getLabelName(id: Int) = inner.getLabelName(id)
 
-  def getOptLabelId(labelName: String): Option[Long] = inner.getOptLabelId(labelName)
+  def getOptLabelId(labelName: String): Option[Int] = inner.getOptLabelId(labelName)
 
-  def getLabelId(labelName: String): Long = inner.getLabelId(labelName)
+  def getLabelId(labelName: String): Int = inner.getLabelId(labelName)
 
   def getOrCreateLabelId(labelName: String) = inner.getOrCreateLabelId(labelName)
 
@@ -52,35 +52,35 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def relationshipOps = inner.relationshipOps
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterator[Long]): Int = {
+  def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = {
     inner.removeLabelsFromNode(node, labelIds)
   }
 
-  def getPropertyKeyName(propertyKeyId: Long): String = inner.getPropertyKeyName(propertyKeyId)
+  def getPropertyKeyName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
 
-  def getOptPropertyKeyId(propertyKeyName: String): Option[Long] = inner.getOptPropertyKeyId(propertyKeyName)
+  def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = inner.getOptPropertyKeyId(propertyKeyName)
 
   def getPropertyKeyId(propertyKey: String) = inner.getPropertyKeyId(propertyKey)
 
   def getOrCreatePropertyKeyId(propertyKey: String) = inner.getOrCreatePropertyKeyId(propertyKey)
 
-  def addIndexRule(labelIds: Long, propertyKeyId: Long) { inner.addIndexRule(labelIds, propertyKeyId) }
+  def addIndexRule(labelId: Int, propertyKeyId: Int) { inner.addIndexRule(labelId, propertyKeyId) }
 
-  def dropIndexRule(labelIds: Long, propertyKeyId: Long) { inner.dropIndexRule(labelIds, propertyKeyId) }
+  def dropIndexRule(labelId: Int, propertyKeyId: Int) { inner.dropIndexRule(labelId, propertyKeyId) }
 
   def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = inner.exactIndexSearch(index, value)
 
-  def getNodesByLabel(id: Long): Iterator[Node] = inner.getNodesByLabel(id)
+  def getNodesByLabel(id: Int): Iterator[Node] = inner.getNodesByLabel(id)
 
   def upgrade(context: QueryContext): LockingQueryContext = inner.upgrade(context)
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = inner.getOrCreateFromSchemaState(key, creator)
 
-  def createUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) {
     inner.createUniqueConstraint(labelId, propertyKeyId)
   }
 
-  def dropUniqueConstraint(labelId: Long, propertyKeyId: Long) {
+  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {
     inner.dropUniqueConstraint(labelId, propertyKeyId)
   }
 
@@ -94,19 +94,19 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
     inner.delete(obj)
   }
 
-  def setProperty(obj: T, propertyKey: Long, value: Any) {
+  def setProperty(obj: T, propertyKey: Int, value: Any) {
     inner.setProperty(obj, propertyKey, value)
   }
 
   def getById(id: Long) = inner.getById(id)
 
-  def getProperty(obj: T, propertyKeyId: Long) = inner.getProperty(obj, propertyKeyId)
+  def getProperty(obj: T, propertyKeyId: Int) = inner.getProperty(obj, propertyKeyId)
 
-  def hasProperty(obj: T, propertyKeyId: Long) = inner.hasProperty(obj, propertyKeyId)
+  def hasProperty(obj: T, propertyKeyId: Int) = inner.hasProperty(obj, propertyKeyId)
 
   def propertyKeyIds(obj: T) = inner.propertyKeyIds(obj)
 
-  def removeProperty(obj: T, propertyKeyId: Long) {
+  def removeProperty(obj: T, propertyKeyId: Int) {
     inner.removeProperty(obj, propertyKeyId)
   }
 

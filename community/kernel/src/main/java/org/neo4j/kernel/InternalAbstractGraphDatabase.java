@@ -1002,7 +1002,7 @@ public abstract class InternalAbstractGraphDatabase
             long nodeId = statement.dataWriteOperations().nodeCreate();
             for ( Label label : labels )
             {
-                long labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
+                int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
                 try
                 {
                     statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
@@ -1535,8 +1535,8 @@ public abstract class InternalAbstractGraphDatabase
     {
         Statement statement = statementContextProvider.statement();
 
-        long propertyId = statement.readOperations().propertyKeyGetForName( key );
-        long labelId = statement.readOperations().labelGetForName( myLabel.name() );
+        int propertyId = statement.readOperations().propertyKeyGetForName( key );
+        int labelId = statement.readOperations().labelGetForName( myLabel.name() );
 
         if ( propertyId == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
         {
@@ -1563,8 +1563,8 @@ public abstract class InternalAbstractGraphDatabase
         return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
     }
 
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( long propertyId, Object value,
-            Statement statement, long labelId )
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Object value,
+            Statement statement, int labelId )
     {
         return map2nodes( new PropertyValueFilteringNodeIdIterator(
                 statement.readOperations().nodesGetForLabel( labelId ), statement.readOperations(), propertyId, value ), statement );
@@ -1586,15 +1586,15 @@ public abstract class InternalAbstractGraphDatabase
     {
         private final PrimitiveLongIterator nodesWithLabel;
         private final ReadOperations statement;
-        private final long propertyId;
+        private final int propertyKeyId;
         private final Object value;
 
         PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadOperations statement,
-                                              long propertyId, Object value )
+                                              int propertyKeyId, Object value )
         {
             this.nodesWithLabel = nodesWithLabel;
             this.statement = statement;
-            this.propertyId = propertyId;
+            this.propertyKeyId = propertyKeyId;
             this.value = value;
             computeNext();
         }
@@ -1607,7 +1607,7 @@ public abstract class InternalAbstractGraphDatabase
                 long nextValue = nodesWithLabel.next();
                 try
                 {
-                    if ( statement.nodeGetProperty( nextValue, propertyId ).valueEquals( value ) )
+                    if ( statement.nodeGetProperty( nextValue, propertyKeyId ).valueEquals( value ) )
                     {
                         next( nextValue );
                         return;

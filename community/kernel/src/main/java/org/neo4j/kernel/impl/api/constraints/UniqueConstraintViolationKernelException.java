@@ -25,12 +25,12 @@ import static java.lang.String.format;
 
 public class UniqueConstraintViolationKernelException extends ConstraintViolationKernelException
 {
-    private final long labelId;
-    private final long propertyKeyId;
+    private final int labelId;
+    private final int propertyKeyId;
     private final Object value;
     private final long existingNodeId;
 
-    public UniqueConstraintViolationKernelException( long labelId, long propertyKeyId, Object value, long existingNodeId )
+    public UniqueConstraintViolationKernelException( int labelId, int propertyKeyId, Object value, long existingNodeId )
     {
         super( "Node %d already exists with label %d and property %d=%s", existingNodeId, labelId, propertyKeyId, value );
         this.labelId = labelId;

@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
@@ -51,7 +50,7 @@ public class KernelSchemaStateFlushingTest
     private ThreadToStatementContextBridge ctxProvider;
 
     @Test
-    public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
+    public void shouldKeepSchemaStateIfSchemaIsNotModified()
     {
         // given
         String before = commitToSchemaState( "test", "before" );
@@ -71,11 +70,11 @@ public class KernelSchemaStateFlushingTest
     {
         // given
         commitToSchemaState( "test", "before" );
-        
+
         IndexDescriptor descriptor = createIndex();
 
         awaitIndexOnline( descriptor );
-        
+
         // when
         String after = commitToSchemaState( "test", "after" );
 
@@ -135,74 +134,86 @@ public class KernelSchemaStateFlushingTest
 
     private UniquenessConstraint createConstraint() throws KernelException
     {
-        Transaction tx = db.beginTx();
-        Statement statement = ctxProvider.statement();
-        UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
-        statement.close();
-        tx.success();
-        tx.finish();
-        return descriptor;
+        try ( Transaction tx = db.beginTx() )
+        {
+            UniquenessConstraint descriptor;
+            try ( Statement statement = ctxProvider.statement() )
+            {
+                descriptor = statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
+            }
+            tx.success();
+            return descriptor;
+        }
     }
 
     private void dropConstraint( UniquenessConstraint descriptor ) throws KernelException
-
     {
-        Transaction tx = db.beginTx();
-        Statement statement = ctxProvider.statement();
-        statement.schemaWriteOperations().constraintDrop( descriptor );
-        statement.close();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Statement statement = ctxProvider.statement() )
+            {
+                statement.schemaWriteOperations().constraintDrop( descriptor );
+            }
+            tx.success();
+        }
     }
 
     private IndexDescriptor createIndex() throws KernelException
     {
-        Transaction tx = db.beginTx();
-        Statement statement = ctxProvider.statement();
-        IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( 1, 1 );
-        statement.close();
-        tx.success();
-        tx.finish();
-        return descriptor;
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDescriptor descriptor;
+            try ( Statement statement = ctxProvider.statement() )
+            {
+                descriptor = statement.schemaWriteOperations().indexCreate( 1, 1 );
+            }
+            tx.success();
+            return descriptor;
+        }
     }
 
     private void dropIndex( IndexDescriptor descriptor ) throws KernelException
     {
-        Transaction tx = db.beginTx();
-        Statement statement = ctxProvider.statement();
-        statement.schemaWriteOperations().indexDrop( descriptor );
-        statement.close();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Statement statement = ctxProvider.statement() )
+            {
+                statement.schemaWriteOperations().indexDrop( descriptor );
+            }
+            tx.success();
+        }
     }
 
     private void awaitIndexOnline( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        Transaction tx = db.beginTx();
-        Statement statement = ctxProvider.statement();
-        SchemaIndexTestHelper.awaitIndexOnline( statement.readOperations(), descriptor );
-        statement.close();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Statement statement = ctxProvider.statement() )
+            {
+                SchemaIndexTestHelper.awaitIndexOnline( statement.readOperations(), descriptor );
+            }
+            tx.success();
+        }
     }
 
-    private String commitToSchemaState( String key, String value ) throws TransactionFailureException
+    private String commitToSchemaState( String key, String value )
     {
-        Transaction tx = db.beginTx();
-        KernelTransaction txc = txManager.getKernelTransaction();
-        String result;
-        try 
+        try ( Transaction tx = db.beginTx() )
         {
-            result = getOrCreateFromState( txc, key, value );
-            return result;            
-        }
-        finally
-        {
-            tx.success();
-            tx.finish();
+            KernelTransaction txc = txManager.getKernelTransaction();
+            String result;
+            try
+            {
+                result = getOrCreateFromState( txc, key, value );
+                return result;
+            }
+            finally
+            {
+                tx.success();
+            }
         }
     }
-    
+
     private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
     {
         try ( Statement statement = tx.acquireStatement() )
@@ -217,19 +228,18 @@ public class KernelSchemaStateFlushingTest
             } );
         }
     }
-    
+
     @Before
-    public void setup() 
+    public void setup()
     {
-        db = dbRule.getGraphDatabaseAPI();         
+        db = dbRule.getGraphDatabaseAPI();
         txManager = db.getDependencyResolver().resolveDependency( AbstractTransactionManager.class );
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
-    
+
     @After
     public void after()
     {
         db.shutdown();
     }
-
 }

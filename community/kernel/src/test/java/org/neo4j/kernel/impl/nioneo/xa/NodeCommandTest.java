@@ -48,6 +48,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeCommandTest
 {
@@ -102,7 +103,7 @@ public class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
-        nodeLabels.add( 1337l, nodeStore );
+        nodeLabels.add( 1337, nodeStore );
 
         // When
         assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
@@ -145,12 +146,14 @@ public class NodeCommandTest
 
     }
 
-    private Set<Long> labels( NodeRecord record )
+    private Set<Integer> labels( NodeRecord record )
     {
         long[] rawLabels = parseLabelsField( record ).get( nodeStore );
-        Set<Long> labels = new HashSet<Long>( rawLabels.length );
+        Set<Integer> labels = new HashSet<>( rawLabels.length );
         for ( long label : rawLabels )
-            labels.add( label );
+        {
+            labels.add( safeCastLongToInt( label ) );
+        }
         return labels;
     }
 

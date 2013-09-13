@@ -21,13 +21,27 @@ package org.neo4j.kernel.api.properties;
 
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.ArrayUtil.ArrayEquality;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+import org.neo4j.kernel.impl.cache.SizeOfObject;
 
 /**
  * Base class for properties that have a value.
+ *
+ * About {@link #sizeOfObjectInBytesIncludingOverhead() size} of property objects.
+ * Java Object layout:
+ *
+ * |----4b----|----4b----|
+ * |  header  |   ref    |
+ * | hashCode | (unused) |
+ * | (members of object) |
+ * |   ...    |   ...    |
+ * |   ...    |   ...    |
+ * |---------------------|
+ *
+ * The property key, being an int and the first member of {@link Property} objects will be squeezed into
+ * the (unused) area. Added members after that will be appended after that. The total space of the object
+ * will be aligned to whole 8 bytes.
  */
-public abstract class DefinedProperty extends Property
+public abstract class DefinedProperty extends Property implements SizeOfObject
 {
     @Override
     public boolean isDefined()
@@ -49,6 +63,31 @@ public abstract class DefinedProperty extends Property
     {
         return getClass().getSimpleName() + "[propertyKeyId=" + propertyKeyId() + ", value=" + valueAsString() + "]";
     }
+
+    @Override
+    public final boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o != null && getClass() == o.getClass() )
+        {
+            DefinedProperty that = (DefinedProperty) o;
+            return this.propertyKeyId == that.propertyKeyId && hasEqualValue( that );
+        }
+        return false;
+    }
+
+    @Override
+    public final int hashCode()
+    {
+        return propertyKeyId ^ valueHash();
+    }
+
+    abstract int valueHash();
+
+    abstract boolean hasEqualValue( DefinedProperty that );
 
     @Override
     public String valueAsString()
@@ -131,16 +170,9 @@ public abstract class DefinedProperty extends Property
         return booleanValue();
     }
 
-    @Override
-    @Deprecated
-    public PropertyData asPropertyDataJustForIntegration()
+    DefinedProperty( int propertyKeyId )
     {
-        return PropertyDatas.forStringOrArray( (int) propertyKeyId(), -1, value() );
-    }
-
-    DefinedProperty()
-    {
-        // package private subclasses
+        super( propertyKeyId );
     }
 
     protected boolean valueCompare( Object lhs, Object rhs )

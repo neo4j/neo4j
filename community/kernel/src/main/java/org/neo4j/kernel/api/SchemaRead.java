@@ -30,21 +30,21 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 interface SchemaRead
 {
     /** Returns the index rule for the given labelId and propertyKey. */
-    IndexDescriptor indexesGetForLabelAndPropertyKey( long labelId, long propertyKey )
+    IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
-    Iterator<IndexDescriptor> indexesGetForLabel( long labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
     /** Returns all indexes. */
     Iterator<IndexDescriptor> indexesGetAll();
 
     /** Returns the constraint index for the given labelId and propertyKey. */
-    IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( long labelId, long propertyKeyId )
+    IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
         throws SchemaRuleNotFoundException;
 
     /** Get all constraint indexes for a label. */
-    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( long labelId );
+    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId );
 
     /** Returns all constraint indexes. */
     Iterator<IndexDescriptor> uniqueIndexesGetAll();
@@ -60,13 +60,13 @@ interface SchemaRead
      * org.neo4j.kernel.api.constraints.UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( long labelId, long propertyKeyId );
+    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId );
 
     /**
      * Get all constraints applicable to label. There are only {@link UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabel( long labelId );
+    Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId );
 
     /**
      * Get all constraints. There are only {@link UniquenessConstraint}

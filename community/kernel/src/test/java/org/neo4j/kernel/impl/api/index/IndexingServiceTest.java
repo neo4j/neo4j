@@ -80,8 +80,7 @@ public class IndexingServiceTest
 {
     @Rule
     public final LifeRule life = new LifeRule();
-    private long labelId;
-    private long propertyKeyId;
+    private int labelId, propertyKeyId;
 
     @Test
     public void shouldBringIndexOnlineAndFlipOverToIndexAccessor() throws Exception

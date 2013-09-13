@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
 /**
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
@@ -29,30 +28,36 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
 final class BooleanProperty extends DefinedProperty
 {
     private final boolean value;
-    private final long propertyKeyId;
 
-    BooleanProperty( long propertyKeyId, boolean value )
+    BooleanProperty( int propertyKeyId, boolean value )
     {
-        this.propertyKeyId = propertyKeyId;
+        super( propertyKeyId );
         this.value = value;
     }
 
     @Override
-    public long propertyKeyId()
-    {
-        return propertyKeyId;
-    }
-
-    @Override
+    @SuppressWarnings("UnnecessaryUnboxing")
     public boolean valueEquals( Object other )
     {
-        return other instanceof Boolean && (Boolean) value == other;
+        return other instanceof Boolean && value == ((Boolean) other).booleanValue();
     }
 
     @Override
     public Boolean value()
     {
         return value;
+    }
+
+    @Override
+    int valueHash()
+    {
+        return value ? -1 : 0;
+    }
+
+    @Override
+    boolean hasEqualValue( DefinedProperty that )
+    {
+        return value == ((BooleanProperty) that).value;
     }
 
     @Override
@@ -68,32 +73,8 @@ final class BooleanProperty extends DefinedProperty
     }
 
     @Override
-    public boolean equals( Object o )
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o instanceof BooleanProperty )
-        {
-            BooleanProperty that = (BooleanProperty) o;
-            return propertyKeyId == that.propertyKeyId && value == that.value;
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = (int) (propertyKeyId ^ (propertyKeyId >>> 32));
-        return value ? result : -result;
-    }
-
-    @Override
-    @Deprecated
-    @SuppressWarnings("deprecation")
-    public PropertyData asPropertyDataJustForIntegration()
-    {
-        return PropertyDatas.forBoolean( (int) propertyKeyId, -1, value );
+        return withObjectOverhead( 8 );
     }
 }

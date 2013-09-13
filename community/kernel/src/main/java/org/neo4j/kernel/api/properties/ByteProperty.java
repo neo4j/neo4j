@@ -19,49 +19,47 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyDatas;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
 /**
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
  */
-final class ByteProperty extends NumberPropertyWithin4Bytes
+final class ByteProperty extends DefinedProperty
 {
     private final byte value;
-    private final long propertyKeyId;
 
-    ByteProperty( long propertyKeyId, byte value )
+    ByteProperty( int propertyKeyId, byte value )
     {
+        super(propertyKeyId);
         this.value = value;
-        this.propertyKeyId = propertyKeyId;
     }
 
     @Override
-    public long propertyKeyId()
-    {
-        return propertyKeyId;
-    }
-
-    @Override
+    @SuppressWarnings("UnnecessaryUnboxing")
     public boolean valueEquals( Object other )
     {
         if ( other instanceof Byte )
         {
             return ((Byte)other).byteValue() == value;
         }
-
         return valueCompare( value, other );
     }
 
     @Override
-    boolean hasEqualValue( NumberPropertyWithin4Bytes that )
+    boolean hasEqualValue( DefinedProperty that )
     {
         return value == ((ByteProperty) that).value;
     }
 
     @Override
     public Byte value()
+    {
+        return value;
+    }
+
+    @Override
+    int valueHash()
     {
         return value;
     }
@@ -77,11 +75,10 @@ final class ByteProperty extends NumberPropertyWithin4Bytes
     {
         return value;
     }
-    
+
     @Override
-    @Deprecated
-    public PropertyData asPropertyDataJustForIntegration()
+    public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return PropertyDatas.forByte( (int) propertyKeyId, -1, value );
+        return withObjectOverhead( 8 );
     }
 }

@@ -33,14 +33,15 @@ public interface SchemaReadOperations
 {
     /**
      * Returns the descriptor for the given labelId and propertyKey.
+     * @throws SchemaRuleNotFoundException
      */
-    IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, long labelId, long propertyKey )
+    IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
             throws SchemaRuleNotFoundException;
 
     /**
      * Get all indexes for a label.
      */
-    Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, long labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId );
 
     /**
      * Returns all indexes.
@@ -50,7 +51,7 @@ public interface SchemaReadOperations
     /**
      * Get all constraint indexes for a label.
      */
-    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, long labelId );
+    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, int labelId );
 
     /**
      * Returns all constraint indexes.
@@ -61,7 +62,7 @@ public interface SchemaReadOperations
      * Retrieve the state of an index.
      */
     InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-	
+
     /**
      * Returns the failure description of a failed index.
      */
@@ -71,13 +72,13 @@ public interface SchemaReadOperations
      * Get all constraints applicable to label and propertyKey. There are only {@link UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, long labelId, long propertyKeyId );
+    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId );
 
     /**
      * Get all constraints applicable to label. There are only {@link UniquenessConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, long labelId );
+    Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId );
 
     /**
      * Get all constraints. There are only {@link UniquenessConstraint}

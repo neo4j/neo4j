@@ -45,7 +45,7 @@ public abstract class IndexEntryConflictException extends Exception
      * allowed to be thrown in the first place. Typically where the index we performed an operation on is not a
      * unique index.
      */
-    public RuntimeException notAllowed( long labelId, long propertyKeyId )
+    public RuntimeException notAllowed( int labelId, int propertyKeyId )
     {
         return new IllegalStateException( String.format(
                 "Index for label:%s propertyKey:%s should not require unique values.",
