@@ -104,7 +104,7 @@ public class TestJetty6WebServer {
         config.configuration().setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, 1000 );
         WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
         testBootstrapper.start();
-        assertThat( appender.toString(), containsString( "Server started on" ) );
+        assertThat( appender.toString(), containsString( "Remote interface ready and available at" ) );
         testBootstrapper.stop();
     }
 	
