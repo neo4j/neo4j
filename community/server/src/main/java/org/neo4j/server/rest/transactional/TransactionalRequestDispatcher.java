@@ -95,7 +95,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
                 @Override
                 public void onRepresentationFinal()
                 {
-                    transaction.finish();
+                    transaction.close();
                 }
             } );
         }
@@ -123,7 +123,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
                 {
                     if ( transaction != null )
                     {
-                        transaction.finish();
+                        transaction.close();
                     }
                 }
             } );

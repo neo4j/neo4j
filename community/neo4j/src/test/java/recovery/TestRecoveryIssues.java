@@ -19,14 +19,10 @@
  */
 package recovery;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,6 +42,9 @@ import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 // TODO These tests need review. Don't work after refactoring
 
@@ -98,29 +97,19 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
             Node node;
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 node = graphdb.createNode();
 
                 tx.success();
             }
-            finally
-            {
-                tx.finish();
-            }
-            tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 node.setProperty( "correct", "yes" );
                 graphdb.index().forNodes( "nodes" ).add( node, "name", "value" );
 
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
     }
@@ -130,18 +119,13 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 Node node = graphdb.createNode();
                 node.setProperty( "correct", "yes" );
                 graphdb.index().forNodes( "nodes" ).add( node, "name", "value" );
 
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
     }

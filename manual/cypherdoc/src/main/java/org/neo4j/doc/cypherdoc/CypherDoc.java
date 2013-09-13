@@ -66,8 +66,7 @@ public final class CypherDoc
 
         StringBuilder output = new StringBuilder( 4096 );
         GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Transaction transaction = database.beginTx();
-        try
+        try(Transaction ignored = database.beginTx())
         {
             ExecutionEngine engine = new ExecutionEngine( database );
             State state = new State( engine, database );
@@ -91,10 +90,6 @@ public final class CypherDoc
             }
 
             return output.toString();
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -134,19 +129,14 @@ public final class CypherDoc
         return blocks;
     }
 
-    @SuppressWarnings( "deprecation" )
     static void removeReferenceNode( GraphDatabaseService database )
     {
-        Transaction tx = database.beginTx();
-        try
+        try(Transaction tx = database.beginTx())
         {
+            //noinspection deprecation
             database.getReferenceNode()
                     .delete();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

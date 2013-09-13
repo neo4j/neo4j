@@ -20,8 +20,10 @@
 package synchronization;
 
 import java.util.concurrent.CountDownLatch;
+
 import org.apache.lucene.index.IndexWriter;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
@@ -32,7 +34,7 @@ import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class TestConcurrentRotation extends AbstractSubProcessTestBase
 {
@@ -107,14 +109,9 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction transaction = graphdb.beginTx();
-            try
+            try(Transaction ignored = graphdb.beginTx())
             {
                 assertTrue( (Boolean) graphdb.getReferenceNode().getProperty( "success" ) );
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
     }
@@ -124,15 +121,10 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 for ( int i = 0; i < 3; i++ ) graphdb.index().forNodes( "index" + i ).add( graphdb.createNode(), "name", "" + i );
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
     }
@@ -151,14 +143,9 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction transaction = graphdb.beginTx();
-            try
+            try(Transaction ignored = graphdb.beginTx())
             {
                 for ( int i = 0; i < count; i++ ) graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
-            }
-            finally
-            {
-                transaction.finish();
             }
             if ( resume ) resumeFlushThread();
         }
@@ -166,8 +153,6 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
     
     private static class RotateIndexLogTask implements Task
     {
-        private volatile boolean success;
-        
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
@@ -189,21 +174,11 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         
         private void setSuccess( GraphDatabaseAPI graphdb, boolean success )
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 graphdb.getReferenceNode().setProperty( "success", success );
                 tx.success();
             }
-            finally
-            {
-                tx.finish();
-            }
-        }
-
-        public boolean isSuccess()
-        {
-            return success;
         }
     }
 }

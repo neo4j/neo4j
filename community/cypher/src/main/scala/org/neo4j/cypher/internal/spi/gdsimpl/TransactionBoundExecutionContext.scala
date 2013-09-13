@@ -52,7 +52,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
         tx.success()
       else
         tx.failure()
-      tx.finish()
+      tx.close()
     }
     finally {
       open = false
@@ -78,7 +78,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
         result
       }
       finally {
-        tx.finish()
+        tx.close()
       }
     }
   }
