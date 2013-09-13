@@ -44,11 +44,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class XaResourceManager
 {
     private final ArrayMap<XAResource,Xid> xaResourceMap =
-        new ArrayMap<XAResource,Xid>();
+        new ArrayMap<>();
     private final ArrayMap<Xid,XidStatus> xidMap =
-        new ArrayMap<Xid,XidStatus>();
+        new ArrayMap<>();
     private int recoveredTxCount = 0;
-    private final Map<Integer, TransactionInfo> recoveredTransactions = new HashMap<Integer, TransactionInfo>();
+    private final Map<Integer, TransactionInfo> recoveredTransactions = new HashMap<>();
 
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
@@ -99,8 +99,8 @@ public class XaResourceManager
         xaResourceMap.put( xaResource, xid );
         if ( xidMap.get( xid ) == null )
         {
-            int identifier = log.start( xid, txIdGenerator.getCurrentMasterId(), txIdGenerator.getMyId() );
-            XaTransaction xaTx = tf.create( identifier, transactionManager.getTransactionState() );
+            int identifier = log.start( xid, txIdGenerator.getCurrentMasterId(), txIdGenerator.getMyId(), dataSource.getLastCommittedTxId() );
+            XaTransaction xaTx = tf.create( identifier, dataSource.getLastCommittedTxId(), transactionManager.getTransactionState() );
             xidMap.put( xid, new XidStatus( xaTx ) );
         }
     }

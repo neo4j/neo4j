@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
@@ -144,12 +145,12 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
     {
     }
 
-    public void upgradeToDataTransaction() throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
+    public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
     {
         transactionType = transactionType.upgradeToDataTransaction();
     }
 
-    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
+    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
     {
         transactionType = transactionType.upgradeToSchemaTransaction();
     }
@@ -160,28 +161,28 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         DATA
                 {
                     @Override
-                    TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeException
+                    TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
                     {
-                        throw new InvalidTransactionTypeException(
+                        throw new InvalidTransactionTypeKernelException(
                                 "Cannot perform schema updates in a transaction that has performed data updates." );
                     }
                 },
         SCHEMA
                 {
                     @Override
-                    TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeException
+                    TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
                     {
-                        throw new InvalidTransactionTypeException(
+                        throw new InvalidTransactionTypeKernelException(
                                 "Cannot perform data updates in a transaction that has performed schema updates." );
                     }
                 };
 
-        TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeException
+        TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
         {
             return DATA;
         }
 
-        TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeException
+        TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
         {
             return SCHEMA;
         }

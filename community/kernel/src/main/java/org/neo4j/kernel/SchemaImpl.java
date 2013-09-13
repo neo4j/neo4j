@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -35,7 +36,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -390,7 +391,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalStateException( e );
                 }
-                catch ( InvalidTransactionTypeException e )
+                catch ( InvalidTransactionTypeKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -420,7 +421,7 @@ public class SchemaImpl implements Schema
                 throw new ConstraintViolationException( String.format(
                         "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
             }
-            catch ( InvalidTransactionTypeException e )
+            catch ( InvalidTransactionTypeKernelException e )
             {
                 throw new ConstraintViolationException( e.getMessage(), e );
             }
@@ -468,9 +469,9 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalStateException( e );
                 }
-                catch ( InvalidTransactionTypeException e )
+                catch ( InvalidTransactionTypeKernelException e )
                 {
-                    throw new ConstraintViolationException( e.getMessage(), e );
+                    throw new InvalidTransactionTypeException( e.getMessage(), e );
                 }
                 catch ( ReadOnlyDatabaseKernelException e )
                 {
@@ -493,7 +494,7 @@ public class SchemaImpl implements Schema
             {
                 throw new ThisShouldNotHappenError( "Mattias", "Unable to drop property unique constraint" );
             }
-            catch ( InvalidTransactionTypeException e )
+            catch ( InvalidTransactionTypeKernelException e )
             {
                 throw new ConstraintViolationException( e.getMessage(), e );
             }

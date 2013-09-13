@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -35,15 +34,13 @@ import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 
 import static java.nio.ByteBuffer.allocate;
-
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
 
 public class SchemaRuleCommandTest
@@ -52,8 +49,8 @@ public class SchemaRuleCommandTest
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> records = serialize( rule, id, true );
-        SchemaRuleCommand command = new SchemaRuleCommand( store, indexes, records, rule );
+        Collection<DynamicRecord> records = serialize( rule, id, true, true );
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule, txId );
 
         // WHEN
         command.execute();
@@ -64,11 +61,27 @@ public class SchemaRuleCommandTest
     }
 
     @Test
+    public void shouldSetLatestConstraintRule() throws Exception
+    {
+        // Given
+        Collection<DynamicRecord> records = serialize( rule, id, true, false );
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records,
+                uniquenessConstraintRule( id, labelId, propertyKey, 0 ), txId );
+
+        // WHEN
+        command.execute();
+
+        // THEN
+        verify( store ).updateRecord( first( records ) );
+        verify( neoStore ).setLatestConstraintIntroducingTx( txId );
+    }
+
+    @Test
     public void shouldDropSchemaRuleFromStore() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> records = serialize( rule, id, false );
-        SchemaRuleCommand command = new SchemaRuleCommand( store, indexes, records, rule );
+        Collection<DynamicRecord> records = serialize( rule, id, false, true );
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule, txId );
 
         // WHEN
         command.execute();
@@ -82,10 +95,9 @@ public class SchemaRuleCommandTest
     public void shouldWriteSchemaRuleToLog() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> records = serialize( rule, id, true );
-        SchemaRuleCommand command = new SchemaRuleCommand( store, indexes, records, rule );
+        Collection<DynamicRecord> records = serialize( rule, id, true, true );
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule, txId );
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-        NeoStore neoStore = mock( NeoStore.class );
         when( neoStore.getSchemaStore() ).thenReturn( store );
 
         // WHEN
@@ -94,24 +106,32 @@ public class SchemaRuleCommandTest
 
         // THEN
         assertThat( readCommand, instanceOf( SchemaRuleCommand.class ) );
+
+        SchemaRuleCommand readSchemaCommand = (SchemaRuleCommand)readCommand;
+        assertThat(readSchemaCommand.getTxId(), equalTo(txId));
     }
 
+    private final NeoStore neoStore = mock( NeoStore.class );
     private final SchemaStore store = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
     private final int labelId = 2;
     private final int propertyKey = 8;
     private final long id = 0;
+    private final long txId = 1337l;
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
-    private Collection<DynamicRecord> serialize( SchemaRule rule, long id, boolean inUse )
+    private Collection<DynamicRecord> serialize( SchemaRule rule, long id, boolean inUse, boolean created )
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( rule );
         DynamicRecord record = new DynamicRecord( id );
         record.setData( serializer.serialize() );
-        if ( inUse )
+        if ( created )
         {
             record.setCreated();
+        }
+        if ( inUse )
+        {
             record.setInUse( true );
         }
         return Arrays.asList( record );

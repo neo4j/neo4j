@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -48,7 +48,7 @@ public class KernelTest
             statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
             fail( "expected exception here" );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             assertThat( e.getMessage(), containsString( "HA" ) );
         }
@@ -59,9 +59,9 @@ public class KernelTest
     class FakeHaDatabase extends ImpermanentGraphDatabase
     {
         @Override
-        public void assertSchemaWritesAllowed() throws InvalidTransactionTypeException
+        public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
         {
-            throw new InvalidTransactionTypeException(
+            throw new InvalidTransactionTypeKernelException(
                     "Creation or deletion of constraints is not possible while running in a HA cluster. " +
                     "In order to do that, please restart in non-HA mode and propagate the database copy to " +
                     "all slaves" );

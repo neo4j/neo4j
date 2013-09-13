@@ -127,12 +127,19 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     public static final byte BRANCH_ID[] = UTF8.encode( "414141" );
     public static final String LOGICAL_LOG_DEFAULT_NAME = "nioneo_logical.log";
 
+    private final StringLogger msgLog;
+    private final Logging logging;
+    private final DependencyResolver dependencyResolver;
+
+    private final TransactionStateFactory stateFactory;
+    private final TransactionInterceptorProviders providers;
+    private final TokenNameLookup tokenNameLookup;
     private final StoreFactory storeFactory;
     private final XaFactory xaFactory;
     private final JobScheduler scheduler;
     private final UpdateableSchemaState updateableSchemaState;
-
     private final Config config;
+
     private LifeSupport life;
 
     private NeoStore neoStore;
@@ -140,24 +147,17 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private DefaultSchemaIndexProviderMap providerMap;
     private XaContainer xaContainer;
     private ArrayMap<Class<?>,Store> idGenerators;
+    private IntegrityValidator integrityValidator;
 
     private File storeDir;
     private boolean readOnly;
 
-    private final TransactionInterceptorProviders providers;
-
     private boolean logApplied = false;
 
-    private final StringLogger msgLog;
-    private final TransactionStateFactory stateFactory;
     private CacheAccessBackDoor cacheAccess;
     private PersistenceCache persistenceCache;
     private SchemaCache schemaCache;
 
-    private final Logging logging;
-
-    private final TokenNameLookup tokenNameLookup;
-    private final DependencyResolver dependencyResolver;
     private LabelScanStore labelScanStore;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
@@ -243,7 +243,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
                                  TransactionInterceptorProviders providers,
                                  JobScheduler scheduler, Logging logging,
-                                 UpdateableSchemaState updateableSchemaState, NodeManager nodeManager,
+                                 UpdateableSchemaState updateableSchemaState,
                                  TokenNameLookup tokenNameLookup,
                                  DependencyResolver dependencyResolver )
     {
@@ -293,6 +293,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         neoStore = storeFactory.newNeoStore( store );
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
+
+        integrityValidator = new IntegrityValidator( neoStore );
 
         final NodeManager nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
         Iterator<? extends Cache<?>> caches = nodeManager.caches().iterator();
@@ -472,21 +474,21 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private class InterceptingTransactionFactory extends TransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier, TransactionState state )
+        public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
-            return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, state, cacheAccess,
-                    indexingService, labelScanStore, first );
+            return new InterceptingWriteTransaction( identifier, lastCommittedTxWhenTransactionStarted, getLogicalLog(),
+                    neoStore, state, cacheAccess, indexingService, labelScanStore, first, integrityValidator );
         }
     }
 
     private class TransactionFactory extends XaTransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier, TransactionState state )
+        public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
-            return new WriteTransaction( identifier, getLogicalLog(), state,
-                neoStore, cacheAccess, indexingService, labelScanStore );
+            return new WriteTransaction( identifier, lastCommittedTxWhenTransactionStarted, getLogicalLog(), state,
+                neoStore, cacheAccess, indexingService, labelScanStore, integrityValidator );
         }
 
         @Override

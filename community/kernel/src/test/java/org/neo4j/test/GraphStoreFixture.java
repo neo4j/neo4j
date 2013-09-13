@@ -79,7 +79,7 @@ public abstract class GraphStoreFixture implements TestRule
         {
             InMemoryLogBuffer buffer = new InMemoryLogBuffer();
             TransactionWriter writer = new TransactionWriter( buffer, localId );
-            writer.start( globalId, masterId, myId, startTimestamp );
+            writer.start( globalId, masterId, myId, startTimestamp, txId == null ? 0l : txId );
 
             transactionData( new TransactionDataBuilder( writer ), idGenerator );
 

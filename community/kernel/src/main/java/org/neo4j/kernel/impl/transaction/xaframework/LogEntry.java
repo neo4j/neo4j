@@ -58,15 +58,18 @@ public abstract class LogEntry
         return toString();
     }
 
-    public static class Start extends LogEntry
+    public static class
+            Start extends LogEntry
     {
         private final Xid xid;
         private final int masterId;
         private final int myId;
         private final long timeWritten;
+        private final long lastCommittedTxWhenTransactionStarted;
         private long startPosition;
 
-        Start( Xid xid, int identifier, int masterId, int myId, long startPosition, long timeWritten )
+        Start( Xid xid, int identifier, int masterId, int myId, long startPosition, long timeWritten,
+               long lastCommittedTxWhenTransactionStarted )
         {
             super( identifier );
             this.xid = xid;
@@ -74,6 +77,7 @@ public abstract class LogEntry
             this.myId = myId;
             this.startPosition = startPosition;
             this.timeWritten = timeWritten;
+            this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         }
 
         public Xid getXid()
@@ -105,6 +109,11 @@ public abstract class LogEntry
         {
             return timeWritten;
         }
+
+        public long getLastCommittedTxWhenTransactionStarted()
+        {
+            return lastCommittedTxWhenTransactionStarted;
+        }
         
         /**
          * @return combines necessary state to get a unique checksum to identify this transaction uniquely.
@@ -126,7 +135,9 @@ public abstract class LogEntry
         @Override
         public String toString( TimeZone timeZone )
         {
-            return "Start[" + getIdentifier() + ",xid=" + xid + ",master=" + masterId + ",me=" + myId + ",time=" + timestamp( timeWritten, timeZone ) + "]";
+            return "Start[" + getIdentifier() + ",xid=" + xid + ",master=" + masterId + ",me=" + myId + ",time=" +
+                    timestamp( timeWritten, timeZone ) + ",lastCommittedTxWhenTransactionStarted="+
+                    lastCommittedTxWhenTransactionStarted+"]";
         }
     }
     

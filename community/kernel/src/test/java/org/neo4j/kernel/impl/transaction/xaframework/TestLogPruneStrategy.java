@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -43,6 +37,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.*;
 
 public class TestLogPruneStrategy
 {
@@ -340,7 +338,8 @@ public class TestLogPruneStrategy
         public boolean addTransaction( int commandSize, long date ) throws IOException
         {
             InMemoryLogBuffer tempLogBuffer = new InMemoryLogBuffer();
-            LogIoUtils.writeStart( tempLogBuffer, identifier, new XidImpl( XidImpl.getNewGlobalId(), RESOURCE_XID ), -1, -1, date );
+            LogIoUtils.writeStart( tempLogBuffer, identifier, new XidImpl( XidImpl.getNewGlobalId(), RESOURCE_XID ), -1,
+                    -1, date, Long.MAX_VALUE );
             LogIoUtils.writeCommand( tempLogBuffer, identifier, new TestXaCommand( commandSize ) );
             LogIoUtils.writeCommit( false, tempLogBuffer, identifier, ++tx, date );
             LogIoUtils.writeDone( tempLogBuffer, identifier );

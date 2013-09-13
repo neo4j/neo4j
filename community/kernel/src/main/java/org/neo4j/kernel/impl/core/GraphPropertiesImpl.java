@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -175,7 +175,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -205,7 +205,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             // TODO: Maybe throw more context-specific error than just IllegalArgument
             throw new IllegalArgumentException( e );
         }
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
