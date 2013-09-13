@@ -57,6 +57,7 @@ class PipeExecutionResult(result: ClosingIterator,
 
   private def makeValueJavaCompatible(value: Any): Any = value match {
     case iter: Seq[_] => iter.map(makeValueJavaCompatible).asJava
+    case iter: Map[_, _] => iter.mapValues(makeValueJavaCompatible).asJava
     case x => x
   }
 
