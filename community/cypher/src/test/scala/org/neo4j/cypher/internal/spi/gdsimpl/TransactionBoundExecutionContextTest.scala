@@ -52,7 +52,7 @@ class TransactionBoundExecutionContextTest extends JUnitSuite with Assertions wi
 
     // THEN
     Mockito.verify(outerTx).success()
-    Mockito.verify(outerTx).finish()
+    Mockito.verify(outerTx).close()
     Mockito.verifyNoMoreInteractions(outerTx)
   }
 
@@ -66,7 +66,7 @@ class TransactionBoundExecutionContextTest extends JUnitSuite with Assertions wi
 
     // THEN
     Mockito.verify(outerTx).failure()
-    Mockito.verify(outerTx).finish()
+    Mockito.verify(outerTx).close()
     Mockito.verifyNoMoreInteractions(outerTx)
   }
 

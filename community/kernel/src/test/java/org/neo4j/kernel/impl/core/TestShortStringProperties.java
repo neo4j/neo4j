@@ -192,12 +192,6 @@ public class TestShortStringProperties extends TestShortString
         encode( string, true );
     }
 
-    @Override
-    protected void assertCannotEncode( String string )
-    {
-        encode( string, false );
-    }
-
     private void encode( String string, boolean isShort )
     {
         long recordCount = dynamicRecordsInUse();

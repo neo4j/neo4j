@@ -57,6 +57,6 @@ public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements R
     @Override
     public void onRepresentationFinal()
     {
-        transaction.finish();
+        transaction.close();
     }
 }

@@ -76,8 +76,7 @@ public class ExtensionService
 
     private Node node( long id ) throws NodeNotFoundException
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try(Transaction tx = graphDb.beginTx())
         {
             Node node = graphDb.getNodeById( id );
 
@@ -88,16 +87,11 @@ public class ExtensionService
         {
             throw new NodeNotFoundException( e );
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private Relationship relationship( long id ) throws RelationshipNotFoundException
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try(Transaction tx = graphDb.beginTx())
         {
             Relationship relationship = graphDb.getRelationshipById( id );
 
@@ -107,10 +101,6 @@ public class ExtensionService
         catch ( NotFoundException e )
         {
             throw new RelationshipNotFoundException();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
