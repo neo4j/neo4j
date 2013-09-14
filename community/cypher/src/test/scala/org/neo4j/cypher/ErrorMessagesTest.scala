@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.neo4j.cypher.CypherVersion._
 import org.neo4j.cypher.internal.commands.expressions.StringHelper
 import com.sun.tools.javac.resources.legacy
@@ -144,7 +144,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def create_with_identifier_already_existing() {
     expectError("START a=node(0) CREATE (a {name:'foo'}) RETURN a",
-      v2_0 -> "Can't create `a` with properties here. It already exists in this context"
+      v2_0 -> "a already declared (line 1, column 25)"
     )
   }
 

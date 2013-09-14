@@ -2117,8 +2117,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
   @Test def foreach_on_path_with_multiple_updates() {
     val secondQ = Query.
       updates(ForeachAction(Collection(Literal(1), Literal(2), Literal(3)), "n", Seq(
-      CreateRelationship("r", RelationshipEndpoint("x"), RelationshipEndpoint("z"), "HAS", Map.empty),
-      CreateRelationship("r", RelationshipEndpoint("x"), RelationshipEndpoint("z2"), "HAS", Map.empty)
+      CreateRelationship("r1", RelationshipEndpoint("x"), RelationshipEndpoint("z"), "HAS", Map.empty),
+      CreateRelationship("r2", RelationshipEndpoint("x"), RelationshipEndpoint("z2"), "HAS", Map.empty)
     ))).
       returns()
 
@@ -2127,7 +2127,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       tail(secondQ).
       returns(AllIdentifiers())
 
-    test(vFrom2_0, "match n foreach(n in [1,2,3] | create (x)-[r:HAS]->(z) create (x)-[r:HAS]->(z2) )", q)
+    test(vFrom2_0, "match n foreach(n in [1,2,3] | create (x)-[r1:HAS]->(z) create (x)-[r2:HAS]->(z2) )", q)
   }
 
   @Test def simple_read_first_and_update_next() {

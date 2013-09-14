@@ -109,7 +109,6 @@ case class Remove(items: Seq[RemoveItem], token: InputToken) extends UpdateClaus
   def toLegacyUpdateActions = items.map(_.toLegacyUpdateAction)
 }
 
-
 case class Merge(patterns: Seq[Pattern], actions: Seq[MergeAction], token: InputToken) extends UpdateClause {
   def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
 

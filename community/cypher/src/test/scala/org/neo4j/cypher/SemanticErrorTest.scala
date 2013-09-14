@@ -116,6 +116,24 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
+  @Test def shouldNotAllowIdentifierToBeOverwrittenByCreate() {
+    test("start a=node(0) create (a)",
+      v2_0    -> "a already declared (line 1, column 25)"
+    )
+  }
+
+  @Test def shouldNotAllowIdentifierToBeOverwrittenByMerge() {
+    test("start a=node(0) merge (a)",
+      v2_0    -> "a already declared (line 1, column 24)"
+    )
+  }
+
+  @Test def shouldNotAllowIdentifierToBeOverwrittenByCreateRelationship() {
+    test("start a=node(0), r=rel(1) create (a)-[r:TYP]->()",
+      v2_0    -> "r already declared (line 1, column 39)"
+    )
+  }
+
   @Test def shouldFailWhenReduceUsedWithWrongSeparator() {
     test("""
         |START s=node(1), e=node(2)
