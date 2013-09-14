@@ -1,5 +1,10 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.0.0-XX
+---------
+Cypher:
+  o Parenthesis around nodes are now mandatory if a label is used on the node
+
 2.0.0-M05
 ---------
 Kernel:
