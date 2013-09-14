@@ -55,7 +55,7 @@ class UniqueConstraintValidationAcceptanceTest
 
     // WHEN
     try {
-      parseAndExecute("match node2:Label1 where node2.seq = 2 set node2.key1 = 'value1'")
+      parseAndExecute("match (node2:Label1) where node2.seq = 2 set node2.key1 = 'value1'")
 
       fail("should have thrown exception")
     }
@@ -114,13 +114,13 @@ class UniqueConstraintValidationAcceptanceTest
     {
       // WHEN
       parseAndExecute(
-        "match toRemove:Label1 where toRemove.key1 = 'value1' " +
+        "match (toRemove:Label1) where toRemove.key1 = 'value1' " +
           resolve +
           " create ( toAdd:Label1 { seq: {seq}, key1: 'value1' } )",
         "seq" -> seq)
 
       // THEN
-      val result: ExecutionResult = parseAndExecute("match n:Label1 where n.key1 = 'value1' return n.seq as seq")
+      val result: ExecutionResult = parseAndExecute("match (n:Label1) where n.key1 = 'value1' return n.seq as seq")
       assertEquals(List(seq), result.columnAs[Int]("seq").toList)
       seq += 1
     }

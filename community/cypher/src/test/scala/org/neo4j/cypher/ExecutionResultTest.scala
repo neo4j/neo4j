@@ -43,7 +43,7 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
   }
 
   @Test def correctLabelStatisticsForCreate() {
-    val result = parseAndExecute("create n:foo:bar")
+    val result = parseAndExecute("create (n:foo:bar)")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)

@@ -34,7 +34,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val b = createNode()
     relate(a, b, "X")
 
-    val result = parseAndExecute("start a = node(1) create unique a-[r:X]->b:FOO return b")
+    val result = parseAndExecute("start a = node(1) create unique a-[r:X]->(b:FOO) return b")
     val createdNode = result.columnAs[Node]("b").toList.head
 
     assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)
@@ -47,7 +47,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val b = createNode()
     relate(a, b, "X")
 
-    val result = parseAndExecute("start b = node(1) create unique a:FOO-[r:X]->b return a")
+    val result = parseAndExecute("start b = node(1) create unique (a:FOO)-[r:X]->b return a")
     val createdNode = result.columnAs[Node]("a").toList.head
 
     assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)

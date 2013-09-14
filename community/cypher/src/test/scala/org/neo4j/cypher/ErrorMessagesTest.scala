@@ -99,8 +99,8 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def badMatch5() {
     expectSyntaxError("start p=node(2) match p[:likes]->dude return dude.name",
-      vLegacy ->("expected valid query body", 23),
-      v2_0 ->("Invalid input '[': expected an identifier character, whitespace, '=', node labels, a relationship pattern, ',', USING, WHERE, CREATE, DELETE, SET, REMOVE, RETURN, WITH, UNION, ';' or end of input (line 1, column 24)", 23)
+      vLegacy -> ("expected valid query body", 23),
+      v2_0 -> ("Invalid input '[': expected an identifier character, whitespace, '=', a relationship pattern, ',', USING, WHERE, CREATE, DELETE, SET, REMOVE, RETURN, WITH, UNION, ';' or end of input (line 1, column 24)", 23)
     )
   }
 

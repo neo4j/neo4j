@@ -2461,7 +2461,7 @@ RETURN x0.name
     relate(a, b2)
 
     // WHEN
-    val result = parseAndExecute(s"START a=node(${nodeId(a)}) MATCH a-[?]->b:foo RETURN b")
+    val result = parseAndExecute(s"START a=node(${nodeId(a)}) MATCH a-[?]->(b:foo) RETURN b")
 
     // THEN
     assert(result.toList === List(Map("b" -> b1)))
@@ -2477,7 +2477,7 @@ RETURN x0.name
     relate(a2, b)
 
     // WHEN
-    val result = parseAndExecute( "START a=node(1,2), b=node(3) MATCH a:bar --> b:foo RETURN a")
+    val result = parseAndExecute( "START a=node(1,2), b=node(3) MATCH (a:bar) --> (b:foo) RETURN a")
 
     // THEN
     assert(result.toList === List(Map("a" -> a1)))
@@ -2650,7 +2650,7 @@ RETURN x0.name
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = parseAndExecute("MATCH n:Person-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+    val result = parseAndExecute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
     println(result.executionPlanDescription())
 
     //THEN
@@ -2666,7 +2666,7 @@ RETURN x0.name
     relate(jake, createNode())
 
     //WHEN
-    val result = parseAndExecute("MATCH n:Person-->() WHERE n.name = 'Jacob' RETURN n")
+    val result = parseAndExecute("MATCH (n:Person)-->() WHERE n.name = 'Jacob' RETURN n")
 
     //THEN
     assert(result.toList === List(Map("n"->jake)))

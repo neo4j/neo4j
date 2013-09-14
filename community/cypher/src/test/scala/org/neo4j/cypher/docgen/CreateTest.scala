@@ -100,7 +100,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create a relationship between two nodes",
       text = "To create a relationship between two nodes, we first get the two nodes. " +
         "Once the nodes are loaded, we simply create a relationship between them.",
-      queryText = "match a:Person, b:Person where a.name = 'Node A' and b.name = 'Node B' create a-[r:RELTYPE]->b return r",
+      queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create a-[r:RELTYPE]->b return r",
       returns = "The created relationship is returned by the query.",
       assertions = (p) => assert(p.size === 1)
     )
@@ -148,7 +148,7 @@ will be created. """,
       title = "Create a relationship and set properties",
       text = "Setting properties on relationships is done in a similar manner to how it's done when creating nodes. " +
         "Note that the values can be any expression.",
-      queryText = "match a:Person, b:Person where a.name = 'Node A' and b.name = 'Node B' create a-[r:RELTYPE {name : a.name + '<->' + b.name }]->b return r",
+      queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create a-[r:RELTYPE {name : a.name + '<->' + b.name }]->b return r",
       returns = "The newly created relationship is returned by the example query.",
       assertions = (p) => {
         val result = p.toList

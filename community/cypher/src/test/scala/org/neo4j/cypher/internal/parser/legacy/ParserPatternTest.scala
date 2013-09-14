@@ -49,10 +49,14 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
     parsing("(n)") shouldGive
       ParsedEntity("n", Identifier("n"), Map.empty, Seq.empty, true)
 
+    parsing("(n:Foo:Bar)") shouldGive
+      ParsedEntity("n", Identifier("n"), Map.empty, Seq(KeyToken.Unresolved("Foo", TokenType.Label), KeyToken.Unresolved("Bar", TokenType.Label)), false)
+
     parsing("(n {name:'Andres'})") shouldGive
       ParsedEntity("n", Identifier("n"), Map("name" -> Literal("Andres")), Seq.empty, false)
 
     assertFails("n {name:'Andres'}")
+    assertFails("n:Foo:Bar")
   }
 
   @Test def paths() {
