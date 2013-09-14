@@ -24,7 +24,7 @@ import org.junit.Test
 class OptionalBehaviourAcceptanceTest extends ExecutionEngineHelper {
   @Test def optional_nodes_with_labels_in_match_clause_should_return_null_when_where_is_no_match() {
     createNode()
-    val result = parseAndExecute("start n=node(1) match n-[r?]-m:Person return r")
+    val result = parseAndExecute("start n=node(1) match n-[r?]-(m:Person) return r")
     assert(result.toList === List(Map("r" -> null)))
   }
 

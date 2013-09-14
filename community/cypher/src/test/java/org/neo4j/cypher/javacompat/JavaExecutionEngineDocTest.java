@@ -365,13 +365,13 @@ public class JavaExecutionEngineDocTest
         // END SNIPPET: create_multiple_nodes_from_map
         dumpToFile( "create_multiple_nodes_from_map", query, params );
 
-        ExecutionResult result = engine.execute( "match n:Person where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
+        ExecutionResult result = engine.execute( "match (n:Person) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
         assertThat( count( result ), is( 2 ) );
 
-        result = engine.execute( "match n:Person where n.children = 3 return n" );
+        result = engine.execute( "match (n:Person) where n.children = 3 return n" );
         assertThat( count( result ), is( 1 ) );
 
-        result = engine.execute( "match n:Person where n.awesome = true return n" );
+        result = engine.execute( "match (n:Person) where n.awesome = true return n" );
         assertThat( count( result ), is( 1 ) );
     }
 

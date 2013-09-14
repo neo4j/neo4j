@@ -348,7 +348,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 
         // when
         Response response = http.POST( "/db/data/transaction/commit", quotedJson(
-                "{ 'statements': [ { 'statement': 'MATCH n:Foo RETURN COLLECT(n)' } ] }" ) );
+                "{ 'statements': [ { 'statement': 'MATCH (n:Foo) RETURN COLLECT(n)' } ] }" ) );
 
         // then
         assertThat( response.status(), equalTo( 200 ) );

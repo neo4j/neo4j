@@ -73,7 +73,7 @@ class UniqueConstraintVerificationAcceptanceTest
   def should_add_constraint_using_recreated_unique_data() {
     // GIVEN
     parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
-    parseAndExecute("match n:Person delete n")
+    parseAndExecute("match (n:Person) delete n")
     parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
 
     // WHEN

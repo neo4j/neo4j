@@ -524,7 +524,7 @@ return distinct center""")
 
   @Test
   def should_be_able_to_create_node_with_labels() {
-    val result = parseAndExecute("create n:FOO:BAR return n")
+    val result = parseAndExecute("create (n:FOO:BAR) return n")
     val createdNode = result.columnAs[Node]("n").next()
 
     assertThat(createdNode, inTx(graph, hasLabels("FOO", "BAR")))

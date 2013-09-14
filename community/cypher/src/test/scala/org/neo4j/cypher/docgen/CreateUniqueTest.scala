@@ -93,7 +93,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create labeled node if missing",
       text = "If the pattern described needs a labeled node and there is none with the given labels, " +
              "Cypher will create a new one.",
-      queryText = "match a where a.name = 'A' create unique a-[:KNOWS]-c:blue return c",
+      queryText = "match a where a.name = 'A' create unique (a)-[:KNOWS]-(c:blue) return c",
       returns = "The A node is connected in a `KNOWS` relationship to the c node, but since C doesn't have " +
                 "the `:blue` label, a new node labeled as `:blue` is created along with a `KNOWS` relationship "+
                 "from A to it.",
