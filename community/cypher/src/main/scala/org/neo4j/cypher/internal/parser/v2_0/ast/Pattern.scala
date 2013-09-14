@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.parser.v2_0.ast
 
 import org.neo4j.cypher.internal.parser.v2_0._
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.{PatternException, CypherException, SyntaxException}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.symbols._
@@ -366,10 +366,7 @@ sealed abstract class RelationshipPattern extends AstNode {
     val (from, to) = direction match {
       case Direction.OUTGOING => (fromEnd, toEnd)
       case Direction.INCOMING => (toEnd, fromEnd)
-      case Direction.BOTH => (fromEnd.node, toEnd.node) match {
-        case (legacy.Identifier(a), legacy.Identifier(b)) if a >= b => (toEnd, fromEnd)
-        case _ => (fromEnd, toEnd)
-      }
+      case Direction.BOTH     => throw new PatternException("Relationships need to have a direction when used to CREATE.")
     }
     val typeName = types match {
       case Seq(i) => i.name

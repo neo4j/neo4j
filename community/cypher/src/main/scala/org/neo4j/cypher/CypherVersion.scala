@@ -40,10 +40,6 @@ object CypherVersion {
     val parser = new internal.parser.v2_0.CypherParserImpl
   }
 
-  case object vLegacy extends CypherVersion("legacy") {
-    val parser = new internal.parser.legacy.CypherParserImpl
-  }
-
   def apply(versionName: String) = findVersionByExactName(CypherVersionName.asCanonicalName(versionName)).getOrElse {
     throw new SyntaxException(s"Supported versions are: $allVersionNames")
   }
@@ -52,6 +48,6 @@ object CypherVersion {
 
   val vDefault = v2_0
 
-  val allVersions = Seq(v1_9, v2_0, vLegacy)
+  val allVersions = Seq(v1_9, v2_0)
   val allVersionNames = CypherVersion.allVersions.map(_.name).mkString(", ")
 }
