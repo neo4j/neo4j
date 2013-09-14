@@ -1791,7 +1791,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_a_label() {
-    test(vFrom2_0, "create a:FOO",
+    test(vFrom2_0, "create (a:FOO)",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), LabelSupport.labelCollection("FOO"), false))).
         returns()
@@ -1799,7 +1799,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_multiple_labels() {
-    test(vFrom2_0, "create a:FOO:BAR",
+    test(vFrom2_0, "create (a:FOO:BAR)",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), LabelSupport.labelCollection("FOO", "BAR"), false))).
         returns()
@@ -1807,7 +1807,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_multiple_labels_with_spaces() {
-    test(vFrom2_0, "create a :FOO :BAR",
+    test(vFrom2_0, "create (a :FOO :BAR)",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), LabelSupport.labelCollection("FOO", "BAR"), false))).
         returns()
@@ -1815,7 +1815,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_nodes_with_labels_and_a_rel() {
-    test(vFrom2_0, "CREATE (n:Person:Husband)-[:FOO]->x:Person",
+    test(vFrom2_0, "CREATE (n:Person:Husband)-[:FOO]->(x:Person)",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED25",
         RelationshipEndpoint(Identifier("n"),Map(), LabelSupport.labelCollection("Person", "Husband"), false),
@@ -2810,29 +2810,29 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def match_left_with_single_label() {
-    val query    = "start a = NODE(1) match a:foo -[r:MARRIED]-> () return a"
+    val query    = "start a = NODE(1) match (a:foo) -[r:MARRIED]-> () return a"
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo(SingleNode("a", Seq(UnresolvedLabel("foo"))), SingleNode("  UNNAMED46"), "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo(SingleNode("a", Seq(UnresolvedLabel("foo"))), SingleNode("  UNNAMED48"), "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("a"), "a"))
 
     test(vFrom2_0, query, expected)
   }
 
   @Test def match_left_with_multiple_labels() {
-    val query    = "start a = NODE(1) match a:foo:bar -[r:MARRIED]-> () return a"
+    val query    = "start a = NODE(1) match (a:foo:bar) -[r:MARRIED]-> () return a"
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo(SingleNode("a", Seq(UnresolvedLabel("foo"), UnresolvedLabel("bar"))), SingleNode("  UNNAMED50"), "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo(SingleNode("a", Seq(UnresolvedLabel("foo"), UnresolvedLabel("bar"))), SingleNode("  UNNAMED52"), "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("a"), "a"))
 
     test(vFrom2_0, query, expected)
   }
 
   @Test def match_right_with_multiple_labels() {
-    val query    = "start a = NODE(1) match () -[r:MARRIED]-> a:foo:bar return a"
+    val query    = "start a = NODE(1) match () -[r:MARRIED]-> (a:foo:bar) return a"
     val expected =
       Query.
         start(NodeById("a", 1)).
@@ -2843,7 +2843,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def match_both_with_labels() {
-    val query    = "start a = NODE(1) match b:foo -[r:MARRIED]-> a:bar return a"
+    val query    = "start a = NODE(1) match (b:foo) -[r:MARRIED]-> (a:bar) return a"
     val expected =
       Query.
         start(NodeById("a", 1)).
@@ -2895,10 +2895,10 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def keywords_in_reltype_and_label() {
-    test(vFrom2_0, "START n=node(0) MATCH n:On-[:WHERE]->() RETURN n",
+    test(vFrom2_0, "START n=node(0) MATCH (n:On)-[:WHERE]->() RETURN n",
       Query.
         start(NodeById("n", 0)).
-        matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("On"))), SingleNode("  UNNAMED38"), "  UNNAMED26", Seq("WHERE"), Direction.OUTGOING, false)).
+        matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("On"))), SingleNode("  UNNAMED40"), "  UNNAMED28", Seq("WHERE"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("n"), "n"))
     )
   }
@@ -2909,8 +2909,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def simple_query_with_index_hint() {
-    test(vFrom2_0, "match n:Person-->() using index n:Person(name) where n.name = 'Andres' return n",
-      Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED18"), "  UNNAMED14", Seq(), Direction.OUTGOING, optional = false)).
+    test(vFrom2_0, "match (n:Person)-->() using index n:Person(name) where n.name = 'Andres' return n",
+      Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED20"), "  UNNAMED16", Seq(), Direction.OUTGOING, optional = false)).
         where(Equals(Property(Identifier("n"), PropertyKey("name")), Literal("Andres"))).
         using(SchemaIndex("n", "Person", "name", None)).
         returns(ReturnItem(Identifier("n"), "n", renamed = false)))
@@ -2925,7 +2925,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def awesome_single_labeled_node_match_pattern() {
-    test(vFrom2_0, "match s:nostart return s",
+    test(vFrom2_0, "match (s:nostart) return s",
       Query.
         matches(SingleNode("s", Seq(UnresolvedLabel("nostart")))).
         returns(ReturnItem(Identifier("s"), "s")))
@@ -2941,7 +2941,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def label_scan_hint() {
-    test(vFrom2_0, "match p:Person using scan p:Person return p",
+    test(vFrom2_0, "match (p:Person) using scan p:Person return p",
       Query.
         matches(SingleNode("p", Seq(UnresolvedLabel("Person")))).
         using(NodeByLabel("p", "Person")).

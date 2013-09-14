@@ -40,7 +40,9 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
 
   @Test def Creating_nodes_with_literal_labels() {
     assertDoesNotWork("CREATE node :FOO:BAR {name: 'Stefan'}")
-    assertThat("CREATE node :FOO:BAR", List("FOO", "BAR"))
+    assertDoesNotWork("CREATE node :FOO:BAR")
+    assertThat("CREATE node", List())
+    assertThat("CREATE (node :FOO:BAR)", List("FOO", "BAR"))
     assertThat("CREATE (node:FOO:BAR {name: 'Mattias'})", List("FOO", "BAR"))
     assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog) RETURN n AS node", List("Person"))
   }

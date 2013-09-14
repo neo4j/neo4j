@@ -66,7 +66,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Get all nodes with a label",
       text = "Getting all nodes with a label on them is done with a single node pattern where the node has a label on it.",
-      queryText = """match movie:Movie return movie""",
+      queryText = """match (movie:Movie) return movie""",
       returns = "Returns all the movies in the database.",
       assertions = (p) => assertEquals(nodes("WallStreet", "TheAmericanPresident").toSet, p.columnAs[Node]("movie").toSet)
     )
@@ -299,7 +299,7 @@ Cypher will try to match the relationship where the connected nodes switch sides
     testQuery(
       title = "Match with labels",
       text = "To constrain your pattern with labels on nodes, you add it to your pattern nodes, using the label syntax.",
-      queryText = "match charlie:Person-->movie:Movie where charlie.name='Charlie Sheen' return movie",
+      queryText = "match (charlie:Person)-->(movie:Movie) where charlie.name='Charlie Sheen' return movie",
       returns = "Return any nodes connected with Charlie that are labeled +Movie+.",
       assertions = p => assertEquals(List(node("WallStreet")), p.columnAs[Node]("movie").toList)
     )

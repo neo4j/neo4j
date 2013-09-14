@@ -27,7 +27,7 @@ Let's find the node we created:
 // output
 [source,cypher]
 ----
-MATCH person:Person
+MATCH (person:Person)
 WHERE person.name = "Adam"
 RETURN person;
 ----
