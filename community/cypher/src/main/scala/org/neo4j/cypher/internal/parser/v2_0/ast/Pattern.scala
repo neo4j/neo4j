@@ -122,7 +122,10 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
   val name: String
   val single: Boolean
 
-  def semanticCheck(ctx: SemanticContext) = checkContainsSingle(ctx) then checkNoMinimalLength
+  def semanticCheck(ctx: SemanticContext) = ctx match {
+    case Update => SemanticError("shortestPath cannot be used to CREATE", token, element.token)
+    case _      => checkContainsSingle(ctx) then checkNoMinimalLength
+  }
 
   private def checkContainsSingle(ctx: SemanticContext): SemanticCheck = element match {
     case RelationshipChain(l: NamedNodePattern, _, r: NamedNodePattern, _) => {

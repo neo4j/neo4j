@@ -134,6 +134,18 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
+  @Test def shouldFailWhenTryingToCreateShortestPaths() {
+    test("match a, b create shortestPath((a)-[:T]->(b))",
+      v2_0    -> "shortestPath cannot be used to CREATE (line 1, column 19)"
+    )
+  }
+
+  @Test def shouldFailWhenTryingToUniquelyCreateShortestPaths() {
+    test("match a, b create unique shortestPath((a)-[:T]->(b))",
+      v2_0    -> "shortestPath cannot be used to CREATE (line 1, column 26)"
+    )
+  }
+
   @Test def shouldFailWhenReduceUsedWithWrongSeparator() {
     test("""
         |START s=node(1), e=node(2)
