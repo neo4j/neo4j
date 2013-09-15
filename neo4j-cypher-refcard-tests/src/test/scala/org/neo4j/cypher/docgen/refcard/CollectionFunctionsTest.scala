@@ -94,7 +94,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as coll
 RETURN
 
-extract(x IN coll : x.prop)
+extract(x IN coll | x.prop)
 ###
 
 A collection of the value of the expression for each element in the collection.
@@ -105,7 +105,7 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as coll
 RETURN
 
-filter(x IN coll : x.prop <> {value})
+filter(x IN coll WHERE x.prop <> {value})
 ###
 
 A collection of the elements where the predicate is `TRUE`.
@@ -139,7 +139,7 @@ MATCH path=(n)-[*]->(m)
 WITH nodes(path) as coll
 RETURN
 
-reduce(s = "", n IN coll : s + n.prop)
+reduce(s = "", n IN coll | s + n.prop)
 ###
 
 Evaluate expression for each element in the collection, accumulate the results.
@@ -150,7 +150,7 @@ START begin = node(%A%), end = node(%B%)
 MATCH path = begin -[*]-> end
 WITH nodes(path) AS coll
 
-FOREACH (n IN coll : SET n.marked = TRUE)
+FOREACH (n IN coll | SET n.marked = TRUE)
 ###
 
 Execute a mutating operation for each element in a collection.

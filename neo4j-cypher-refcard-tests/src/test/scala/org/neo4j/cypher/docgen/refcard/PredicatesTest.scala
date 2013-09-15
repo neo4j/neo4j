@@ -143,7 +143,7 @@ Non-existing property returns `NULL`, which is only equal to `NULL`.
 START n=node(*)
 WHERE HAS(n.property) AND
 
-n.property =~ {regex}
+n.property =~ "Tob.*"
 
 RETURN n###
 
