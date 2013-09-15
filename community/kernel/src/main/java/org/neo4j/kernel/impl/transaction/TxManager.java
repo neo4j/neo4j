@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -247,8 +248,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     synchronized void setTmNotOk( Throwable cause )
     {
         if ( !tmOk )
+        {
             return;
-        
+        }
+
         tmOk = false;
         tmNotOkCause = cause;
         log.logMessage( "setting TM not OK", cause );
@@ -499,13 +502,13 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 if ( commitFailureCause == null )
                 {
                     throw logAndReturn( "TM error tx commit", new HeuristicRollbackException(
-                            "Failed to commit, transaction rolledback ---> "
+                            "Failed to commit, transaction rolled back ---> "
                                     + "error code was: " + xaErrorCode ) );
                 }
                 else
                 {
                     throw logAndReturn( "TM error tx commit", Exceptions.withCause( new HeuristicRollbackException(
-                            "Failed to commit, transaction rolledback ---> " +
+                            "Failed to commit, transaction rolled back ---> " +
                                     commitFailureCause ), commitFailureCause ) );
                 }
             }
@@ -566,7 +569,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
         RollbackException rollbackException = new RollbackException(
-                "Failed to commit, transaction rolledback" );
+                "Failed to commit, transaction rolled back" );
         ExceptionCauseSetter.setCause( rollbackException, tx.getRollbackCause() );
         throw rollbackException;
     }
@@ -659,7 +662,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         assertTmOk();
         return txThreadMap.get();
     }
-    
+
     @Override
     public void resume( Transaction tx ) throws IllegalStateException,
             SystemException
@@ -949,7 +952,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     {
         this.kernel = kernel;
     }
-    
+
     @Override
     @SuppressWarnings("deprecation")
     public KernelTransaction getKernelTransaction()
@@ -965,7 +968,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         return tx != null ? ((TransactionImpl)tx).getTransactionContext() : null;
     }
-    
+
     private class TxManagerDataSourceRegistrationListener implements DataSourceRegistrationListener
     {
         @Override

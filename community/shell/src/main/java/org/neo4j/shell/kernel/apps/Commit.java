@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import static org.neo4j.shell.ShellException.wrapCause;
-
 import java.rmi.RemoteException;
 
 import javax.transaction.SystemException;
@@ -34,6 +32,8 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.Variables;
+
+import static org.neo4j.shell.ShellException.wrapCause;
 
 @Service.Implementation(App.class)
 public class Commit extends NonTransactionProvidingApp
@@ -49,9 +49,9 @@ public class Commit extends NonTransactionProvidingApp
     {
         try
         {
-
             return getServer().getDb().getTxManager().getTransaction();
-        } catch ( SystemException e )
+        }
+        catch ( SystemException e )
         {
             throw wrapCause( e );
         }
@@ -76,7 +76,8 @@ public class Commit extends NonTransactionProvidingApp
             {
                 out.println( "Warning: committing a transaction not started by the shell" );
                 txCount = 1;
-            } else
+            }
+            else
             {
                 throw new ShellException( "Not in a transaction" );
             }
@@ -95,11 +96,13 @@ public class Commit extends NonTransactionProvidingApp
                 session.remove( Variables.TX_COUNT );
                 out.println( "Transaction committed" );
                 return Continuation.INPUT_COMPLETE;
-            } catch ( Exception e )
+            }
+            catch ( Exception e )
             {
                 throw fail( session, e.getMessage() );
             }
-        } else
+        }
+        else
         {
             session.set( Variables.TX_COUNT, --txCount );
             out.println( String.format( "Nested transaction committed (Tx count: %d)", txCount ) );

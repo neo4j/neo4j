@@ -170,11 +170,6 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void setRollbackOnly()
-    {
-    }
-
-    @Override
     public TxHook getTxHook()
     {
         return null;
