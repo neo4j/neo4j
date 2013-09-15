@@ -81,8 +81,8 @@ Paths can be of arbitrary length, and the same node may appear in multiple place
 expressions, and since these expressions are collections, they can also be used as predicates (where a non-empty
 collection signifies true).
 
-Node identifiers can be used with or without surrounding parenthesis. The following match is semantically identical to
-the one we saw above -- the difference is purely aesthetic.
+Node identifiers can be used without surrounding parenthesis as long as no labels are used on the node. The following
+match is semantically identical to the one we saw above -- the difference is purely aesthetic.
 
 +`a-->b`+
 
@@ -94,11 +94,11 @@ If you don't care about a node, you don't need to name it. Empty parenthesis are
 
 You can declare that nodes should have a certain label in your pattern.
 
-+`a:User-->b`+
++`(a:User)-->b`+
 
 Or that it should have multiple labels:
 
-+`a:User:Admin-->b`+
++`(a:User:Admin)-->b`+
 
 == Working with relationships ==
 
