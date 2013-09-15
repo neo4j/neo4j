@@ -88,8 +88,6 @@ public interface TransactionState
 
     boolean hasChanges();
 
-    void setRollbackOnly();
-
     TxHook getTxHook();
 
     TxIdGenerator getTxIdGenerator();

@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
@@ -774,27 +775,6 @@ public class WritableTransactionState implements TransactionState
         public void afterCompletion( int status )
         {
             releaseLocks();
-        }
-    }
-
-    @Override
-    public void setRollbackOnly()
-    {
-        try
-        {
-            tx.setRollbackOnly();
-        }
-        catch ( IllegalStateException e )
-        {
-            // this exception always get generated in a finally block and
-            // when it happens another exception has already been thrown
-            // (most likley NotInTransactionException)
-            log.warn( "Failed to set transaction rollback only", e );
-        }
-        catch ( javax.transaction.SystemException se )
-        {
-            // our TM never throws this exception
-            log.warn( "Failed to set transaction rollback only", se );
         }
     }
 

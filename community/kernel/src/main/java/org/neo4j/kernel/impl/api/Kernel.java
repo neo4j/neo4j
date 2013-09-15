@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionForcefullyRolledBackException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -363,7 +365,22 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 boolean success = false;
                 try
                 {
-                    createTransactionCommands();
+                    try
+                    {
+                        // All operations taking place before the call to transactionManager.commit/rollback
+                        // must be within this try clause and its catch block must be broad enough to catch
+                        // any exceptions thrown.
+                        createTransactionCommands();
+                    }
+                    catch ( RuntimeException e )
+                    {
+                        // Some pre-commit operation failed. Roll back the transaction and
+                        // throw exception stating that fact.
+                        transactionManager.rollback();
+                        throw new TransactionForcefullyRolledBackException( e );
+                    }
+
+                    // Pre-commit operations completed, move on to the actual commit.
                     transactionManager.commit();
                     success = true;
                 }
