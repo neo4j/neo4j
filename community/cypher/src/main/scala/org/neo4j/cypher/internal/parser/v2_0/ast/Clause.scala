@@ -48,7 +48,9 @@ trait UpdateClause extends Clause {
 }
 
 case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
-  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
+  def semanticCheck = {
+    patterns.semanticCheck(Pattern.SemanticContext.Update)
+  }
 
   def toLegacyStartItems: Seq[commands.UpdatingStartItem] = toLegacyUpdateActions.map {
     case createNode: mutation.CreateNode                 => commands.CreateNodeStartItem(createNode)
@@ -106,7 +108,6 @@ case class Remove(items: Seq[RemoveItem], token: InputToken) extends UpdateClaus
 
   def toLegacyUpdateActions = items.map(_.toLegacyUpdateAction)
 }
-
 
 case class Merge(patterns: Seq[Pattern], actions: Seq[MergeAction], token: InputToken) extends UpdateClause {
   def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
