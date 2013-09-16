@@ -38,8 +38,9 @@ class DoubleOptionalPatternMatcher(bindings: Map[String, MatchingPair],
                                    includeOptionals: Boolean,
                                    source: ExecutionContext,
                                    state: QueryState,
-                                   doubleOptionalPaths: Seq[DoubleOptionalPath])
-  extends PatternMatcher(bindings, predicates, includeOptionals, source, state) {
+                                   doubleOptionalPaths: Seq[DoubleOptionalPath],
+                                   identifiersInClause: Set[String])
+  extends PatternMatcher(bindings, predicates, includeOptionals, source, state, identifiersInClause) {
 
   override protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],
                                                      history: History,

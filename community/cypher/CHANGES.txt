@@ -2,6 +2,7 @@
 ------------
 o Parenthesis around nodes are now mandatory if a label is used on the node
 o Removes the legacy parser
+o Relationship uniqueness is now more explicit and documented
 
 2.0.0-M05
 ---------

@@ -155,7 +155,7 @@ object PipeLazynessTest extends MockitoSugar {
     val patternNodes = Map("x" -> x, "y" -> y)
     val patternRels = Map("r" -> rel)
     val graph = new PatternGraph(patternNodes, patternRels, Seq("x"))
-    val pipe = new MatchPipe(src, Seq(), graph)
+    val pipe = new MatchPipe(src, Seq(), graph, Set("x", "r", "y"))
     Seq(pipe, iter)
   }
 

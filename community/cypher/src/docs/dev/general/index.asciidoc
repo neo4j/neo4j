@@ -19,6 +19,10 @@ include::transactions.asciidoc[]
 
 :leveloffset: 2
 
+include::uniqueness.asciidoc[]
+
+:leveloffset: 2
+
 // aggregation ?
 
 :leveloffset: 2

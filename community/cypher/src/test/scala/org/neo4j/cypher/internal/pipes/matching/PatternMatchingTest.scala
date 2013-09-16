@@ -42,7 +42,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
 
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty)
+    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
     val aNode = createNode()
 
     // When
@@ -55,7 +55,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
   @Test def should_handle_a_single_relationship_with_1_match() {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty)
+    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
     val aNode = createNode()
     val bNode = createNode()
     val relationship = relate(aNode, bNode)
@@ -70,7 +70,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
   @Test def should_handle_a_single_optional_relationship_with_no_match() {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship.copy(optional = true)))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty)
+    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
     val aNode = createNode()
 
     // When
@@ -83,7 +83,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
   @Test def should_handle_a_mandatory_labeled_node_with_no_matches() {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)))
+    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)), Set("a", "r", "b"))
     val aNode = createNode()
     val bNode = createNode()
     relate(aNode, bNode)
@@ -98,7 +98,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
   @Test def should_handle_a_mandatory_labeled_node_with_matches() {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)))
+    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)), Set("a", "r", "b"))
     val aNode = createNode()
     val bNode = createLabeledNode("Person")
     val relationship = relate(aNode, bNode)
@@ -113,7 +113,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
   @Test def should_handle_a_optional_labeled_node_with_matches() {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship.copy(optional = true, right = rightNode.copy(optional = true))))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)))
+    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)), Set("a", "r", "b"))
     val aNode = createNode()
     val bNode = createLabeledNode("Person")
     val relationship = relate(aNode, bNode)
@@ -128,10 +128,10 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
   @Test def should_handle_an_optional_relationship_to_an_optional_labeled_node_with_no_matches() {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship.copy(optional = true, right = rightNode.copy(optional = true, labels = Seq(label)))))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq())
+    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
     val aNode = createNode()
     val bNode = createNode()
-    val relationship = relate(aNode, bNode)
+    relate(aNode, bNode)
 
     // When
     val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), QueryStateHelper.queryStateFrom(graph)).toList

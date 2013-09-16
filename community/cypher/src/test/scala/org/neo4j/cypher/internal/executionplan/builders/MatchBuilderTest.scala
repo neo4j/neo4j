@@ -23,6 +23,7 @@ import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.{SingleNode, ShortestPath, NodeById, RelatedTo}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.pipes.MatchPipe
 
 
 class MatchBuilderTest extends BuilderTest {
@@ -114,5 +115,24 @@ class MatchBuilderTest extends BuilderTest {
     val inP = createPipe(nodes = Seq("l"))
 
     assertRejects(inP, inQ)
+  }
+
+  @Test
+  def should_pass_on_the_whole_list_of_identifier_in_match_to_created_pipe() {
+    // GIVEN MATCH a-[r1]->b-[r2]->c
+    // a-[r1]->b is already solved
+    val inQ = PartiallySolvedQuery().
+      copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
+      patterns = Seq(
+        Solved(RelatedTo("a", "b", "r1", Seq.empty, Direction.OUTGOING)),
+        Unsolved(RelatedTo("b", "c", "r2", Seq.empty, Direction.OUTGOING))
+      ))
+
+    val inP = createPipe(nodes = Seq("a"))
+
+    val result = assertAccepts(inP, inQ)
+
+    val matchPipe = result.pipe.asInstanceOf[MatchPipe]
+    assert(matchPipe.identifiersInClause === Set("a", "r1", "b", "r2", "c"))
   }
 }

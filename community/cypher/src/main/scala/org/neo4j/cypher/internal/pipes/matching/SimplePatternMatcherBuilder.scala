@@ -21,14 +21,18 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import collection.{immutable, Map}
 import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
-import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode, PatternRelationship=>SimplePatternRelationship}
+import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode,
+PatternRelationship => SimplePatternRelationship, PatternMatch}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 
-class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate], symbolTable: SymbolTable) extends MatcherBuilder {
+class SimplePatternMatcherBuilder(pattern: PatternGraph,
+                                  predicates: Seq[Predicate],
+                                  symbolTable: SymbolTable,
+                                  identifiersInClause: Set[String]) extends MatcherBuilder {
   def createPatternNodes: immutable.Map[String, SimplePatternNode] = {
     pattern.patternNodes.map {
       case (key, pn) => {
@@ -64,35 +68,58 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
     patternNodes.values.foreach(pn => {
       sourceRow.get(pn.getLabel) match {
         case Some(node: Node) => pn.setAssociation(node)
-        case _ => pn.setAssociation(null)
+        case _                => pn.setAssociation(null)
       }
     })
 
     patternRels.values.foreach(pr => {
       sourceRow.get(pr.getLabel) match {
         case Some(rel: Relationship) => pr.setAssociation(rel)
-        case _ => pr.setAssociation(null)
+        case _                       => pr.setAssociation(null)
       }
     })
 
     (patternNodes, patternRels)
   }
 
-  def getMatches(ctx: ExecutionContext, state:QueryState) = {
+  def getMatches(ctx: ExecutionContext, state: QueryState) = {
     val (patternNodes, patternRels) = setAssociations(ctx)
     val validPredicates = predicates.filter(p => p.symbolDependenciesMet(symbolTable))
     val startPoint = patternNodes.values.find(_.getAssociation != null).get
+
+    val incomingRels: Set[Relationship] = ctx.collect {
+      case (k, r: Relationship) if identifiersInClause.contains(k) => r
+    }.toSet
+
+    val boundRels = patternRels.values.collect {
+      case r: SimplePatternRelationship if r.getAssociation != null => r.getAssociation
+    }.toSet
+    val unboundIncomingRels = incomingRels -- boundRels
+
+    val alreadyUsed = { pattern: PatternMatch =>
+      patternRels.values.exists { r =>
+          val relationship = pattern.getRelationshipFor(r)
+          unboundIncomingRels.contains(relationship)
+      }
+    }
+
     SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.flatMap(patternMatch => {
-      val result = ctx.clone
+      if (alreadyUsed(patternMatch)) {
+        None
+      } else {
+        val result: ExecutionContext = ctx.clone
 
-      patternNodes.foreach {
-        case (key, pn) => result += key -> patternMatch.getNodeFor(pn)
-      }
-      patternRels.foreach {
-        case (key, pr) => result += key -> patternMatch.getRelationshipFor(pr)
-      }
+        patternNodes.foreach {
+          case (key, pn) => val tuple = key -> patternMatch.getNodeFor(pn)
+            result += tuple
+        }
+        patternRels.foreach {
+          case (key, pr) => val tuple = key -> patternMatch.getRelationshipFor(pr)
+            result += tuple
+        }
 
-      Some(result).filter(r => validPredicates.forall(_.isMatch(r)(state)))
+        Some(result).filter(r => validPredicates.forall(_.isMatch(r)(state)))
+      }
     })
   }
 }

@@ -24,8 +24,11 @@ import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
-class MatchPipe(source: Pipe, predicates: Seq[Predicate], patternGraph: PatternGraph) extends PipeWithSource(source) {
-  val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph)
+case class MatchPipe(source: Pipe,
+                     predicates: Seq[Predicate],
+                     patternGraph: PatternGraph,
+                     identifiersInClause: Set[String]) extends PipeWithSource(source) {
+  val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph, identifiersInClause)
   val symbols = matchingContext.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = {
