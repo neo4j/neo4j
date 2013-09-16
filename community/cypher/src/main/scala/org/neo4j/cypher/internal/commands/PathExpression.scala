@@ -33,9 +33,10 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   with PathExtractor
   with PatternGraphBuilder {
   val identifiers: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
-
   val symbols2 = SymbolTable(identifiers.toMap)
-  val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern))
+  val identifiersInClause = Pattern.identifiers(pathPattern)
+
+  val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern), identifiersInClause)
   val interestingPoints: Seq[String] = pathPattern.
     flatMap(_.possibleStartPoints.map(_._1)).
     filter(isNamed).
@@ -46,7 +47,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
     val returnNull = interestingPoints.exists(key => ctx.get(key) match {
       case None       => throw new ThisShouldNotHappenError("Andres", "This execution plan should not exist.")
       case Some(null) => true
-      case Some(x)    => false
+      case Some(_)    => false
     })
 
     if (returnNull) {

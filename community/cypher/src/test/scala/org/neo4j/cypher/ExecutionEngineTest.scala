@@ -2007,12 +2007,14 @@ RETURN x0.name
 
   @Test
   def optional_expression_used_to_be_supported() {
-    val a = createNode()
-    val b = createNode()
-    val r = relate(a,b)
+    graph.inTx {
+      val a = createNode()
+      val b = createNode()
+      val r = relate(a, b)
 
-    val result = parseAndExecute("CYPHER 1.9 START a=node(1) match a-->b RETURN a-[?]->b").toList
-    assert(result === List(Map("a-[?]->b" -> List(PathImpl(a, r, b)))))
+      val result = parseAndExecute("CYPHER 1.9 START a=node(1) match a-->b RETURN a-[?]->b").toList
+      assert(result === List(Map("a-[?]->b" -> List(PathImpl(a, r, b)))))
+    }
   }
 
   @Test

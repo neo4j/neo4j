@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.junit.Test
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.cypher.internal.pipes._
+import org.neo4j.graphdb.{Direction, Node, Path}
 import org.neo4j.graphdb.Direction.OUTGOING
-import org.neo4j.graphdb.Direction.BOTH
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.commands.True
@@ -38,20 +37,20 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
   val pr2 = SingleStep(1, Seq(B), OUTGOING, None, True(), True())
   val pr1 = SingleStep(0, Seq(A), OUTGOING, Some(pr2), True(), True())
 
+  def queryState = QueryStateHelper.queryStateFrom(graph)
+
   @Test def basic() {
     //Data nodes and rels
     val a = createNode("a")
     val b = createNode("b")
     val c = createNode("c")
-    val r1 = relate(a, b, "A")
+    relate(a, b, "A")
     val r2 = relate(b, c, "B")
 
-    val start = produce(a)
-    val end = produce(c)
+    val start = createStartPointIterator(a)
+    val end = createStartPointIterator(c)
 
     val matcher = new BidirectionalTraversalMatcher(pr1, start, end)
-
-    val queryState = QueryStateHelper.queryStateFrom(graph)
 
     val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
 
@@ -61,7 +60,9 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     assert(result.head.lastRelationship() === r2)
   }
 
-  private def produce(x: Node*) = EntityProducer[Node]("Produce") { (_: ExecutionContext, _: QueryState) => x.iterator }
+  private def createStartPointIterator(x: Node*) = EntityProducer[Node]("Produce") {
+    (_: ExecutionContext, _: QueryState) => x.iterator
+  }
 
   @Test def tree() {
     /*Data nodes and rels
@@ -85,14 +86,12 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     relate(b, c, "B")
     relate(b3, c, "B")
 
-    val start = produce(a)
-    val end = produce(c, c2)
+    val start = createStartPointIterator(a)
+    val end = createStartPointIterator(c, c2)
 
     //Pattern nodes and relationships
 
     val matcher = new BidirectionalTraversalMatcher(pr1, start, end)
-
-    val queryState = QueryStateHelper.queryStateFrom(graph)
 
     val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
 
@@ -102,26 +101,22 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     assert(result.head.endNode() === c)
   }
 
-  @Test def fullUndirected2NodeGraph()
-  {
+  @Test def fullUndirected2NodeGraph() {
     val nodeA = createNode("a")
     val nodeB = createNode("b")
 
     relate(nodeA, nodeB, "LINK")
 
-    val start = produce(nodeA, nodeB)
-    val end = produce(nodeA, nodeB)
+    val start = createStartPointIterator(nodeA, nodeB)
+    val end = createStartPointIterator(nodeA, nodeB)
 
-    val pr = SingleStep(0, Seq("LINK"), BOTH, None, True(), True())
+    val pr = SingleStep(0, Seq("LINK"), Direction.BOTH, None, True(), True())
     val matcher = new BidirectionalTraversalMatcher(pr, start, end)
-
-    val queryState = QueryStateHelper.queryStateFrom(graph)
 
     val result: Set[(Long, Long)] =
       matcher
-        .findMatchingPaths(queryState, ExecutionContext()).map( (p: Path) => (p.startNode().getId, p.endNode().getId ) )
+        .findMatchingPaths(queryState, ExecutionContext()).map((p: Path) => (p.startNode().getId, p.endNode().getId))
         .toSet
-
 
     val a = nodeA.getId
     val b = nodeB.getId
@@ -129,8 +124,7 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     assert( Set((a, b), (b, a)) === result )
   }
 
-  @Test def fullUndirected3NodeGraph()
-  {
+  @Test def fullUndirected3NodeGraph() {
     val nodeA = createNode("a")
     val nodeB = createNode("b")
     val nodeC = createNode("c")
@@ -139,17 +133,15 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     relate(nodeC, nodeA, "LINK")
     relate(nodeB, nodeC, "LINK")
 
-    val start = produce(nodeA, nodeB, nodeC)
-    val end = produce(nodeA, nodeB, nodeC)
+    val start = createStartPointIterator(nodeA, nodeB, nodeC)
+    val end = createStartPointIterator(nodeA, nodeB, nodeC)
 
-    val pr = SingleStep(0, Seq("LINK"), BOTH, None, True(), True())
+    val pr = SingleStep(0, Seq("LINK"), Direction.BOTH, None, True(), True())
     val matcher = new BidirectionalTraversalMatcher(pr, start, end)
-
-    val queryState = QueryStateHelper.queryStateFrom(graph)
 
     val result: Set[(Long, Long)] =
       matcher
-        .findMatchingPaths(queryState, ExecutionContext()).map( (p: Path) => (p.startNode().getId, p.endNode().getId ) )
+        .findMatchingPaths(queryState, ExecutionContext()).map((p: Path) => (p.startNode().getId, p.endNode().getId))
         .toSet
 
 
@@ -157,6 +149,32 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     val b = nodeB.getId
     val c = nodeC.getId
 
-    assert( Set((a, b), (a, c), (b, a), (b, c), (c, a), (c, b)) === result )
+    assert(Set((a, b), (a, c), (b, a), (b, c), (c, a), (c, b)) === result)
+  }
+
+  @Test def should_not_return_paths_that_traverse_the_same_graph_relationship_multiple_times() {
+    // Given MATCH a-->b-->c-->d
+    val pr3 = SingleStep(id = 3, typ = Seq.empty, direction = OUTGOING, next = None, relPredicate = True(), nodePredicate = True())
+    val pr2 = SingleStep(id = 2, typ = Seq.empty, direction = OUTGOING, next = Some(pr3), relPredicate = True(), nodePredicate = True())
+    val pr1 = SingleStep(id = 1, typ = Seq.empty, direction = OUTGOING, next = Some(pr2), relPredicate = True(), nodePredicate = True())
+    val pr0 = SingleStep(id = 0, typ = Seq.empty, direction = OUTGOING, next = Some(pr1), relPredicate = True(), nodePredicate = True())
+
+    val n0 = createNode("n0")
+    val n1 = createNode("n1")
+
+    relate(n0, n1, "r0")
+    relate(n1, n0, "r1")
+
+    val start = createStartPointIterator(n0)
+
+    // When
+    val matcher = new MonoDirectionalTraversalMatcher(pr0, start)
+    val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
+
+    // Then
+    // If there were no uniqueness constraint then this path would match the pattern:
+    //   (n0)-[r0]->(n1)-[r1]->(n0)-[r0]->(n1)
+    // but this traverses r0 twice, so it should be excluded.
+    assert(result.size === 0)
   }
 }

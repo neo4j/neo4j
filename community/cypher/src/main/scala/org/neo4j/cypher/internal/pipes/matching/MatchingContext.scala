@@ -33,7 +33,8 @@ import org.neo4j.cypher.internal.pipes.QueryState
  */
 class MatchingContext(boundIdentifiers: SymbolTable,
                       predicates: Seq[Predicate] = Seq(),
-                      patternGraph: PatternGraph) {
+                      patternGraph: PatternGraph,
+                      identifiersInClause: Set[String]) {
 
   val builder: MatcherBuilder = decideWhichMatcherToUse()
 
@@ -56,9 +57,9 @@ class MatchingContext(boundIdentifiers: SymbolTable,
 
   private def decideWhichMatcherToUse(): MatcherBuilder = {
     if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
-      new SimplePatternMatcherBuilder(patternGraph, predicates, symbols)
+      new SimplePatternMatcherBuilder(patternGraph, predicates, symbols, identifiersInClause)
     } else {
-      new PatternMatchingBuilder(patternGraph, predicates)
+      new PatternMatchingBuilder(patternGraph, predicates, identifiersInClause)
     }
   }
 }

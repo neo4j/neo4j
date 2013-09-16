@@ -27,6 +27,7 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
                    val boundElements: Seq[String]) {
   def nonEmpty: Boolean = !isEmpty
 
+  def identifiers = patternGraph.keys.toSeq
 
   def isEmpty: Boolean = patternNodes.isEmpty && patternRels.isEmpty
 

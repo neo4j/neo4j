@@ -34,7 +34,8 @@ case class PatternPredicate(pathPattern: Seq[Pattern]) extends Predicate
   val identifiers: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
 
   val symbols2 = SymbolTable(identifiers.toMap)
-  val matchingContext = new MatchingContext(symbols2, Seq.empty, buildPatternGraph(symbols2, pathPattern))
+  val identifiersInClause = Pattern.identifiers(pathPattern)
+  val matchingContext = new MatchingContext(symbols2, Seq.empty, buildPatternGraph(symbols2, pathPattern), identifiersInClause)
   val interestingPoints: Seq[String] = pathPattern.
     flatMap(_.possibleStartPoints.map(_._1)).
     filter(isNamed).

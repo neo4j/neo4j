@@ -37,6 +37,12 @@ trait Pattern extends TypeSafe with AstNode[Pattern] {
   def rewrite( f : Expression => Expression) : Pattern
 
   def rels:Seq[String]
+
+  def identifiers: Seq[String] = possibleStartPoints.map(_._1)
+}
+
+object Pattern {
+  def identifiers(patterns: Seq[Pattern]): Set[String] = patterns.flatMap(_.identifiers).toSet
 }
 
 object RelationshipPattern {
