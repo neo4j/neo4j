@@ -164,10 +164,10 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
         verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
-        int onlineAccessorInvocationCount = 2;//once when we create the index, and once when we restart the db
+        int onlineAccessorInvocationCount = 2; // once when we create the index, and once when we restart the db
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
                 .getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
-        assertEquals( expectedUpdates, writer.updates );
+        assertEquals( expectedUpdates, writer.recoveredUpdates );
     }
 
     @Test
@@ -317,6 +317,7 @@ public class IndexRecoveryIT
     private static class GatheringIndexWriter extends IndexAccessor.Adapter
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<>();
+        private final Set<NodePropertyUpdate> recoveredUpdates = new HashSet<>();
 
         @Override
         public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
@@ -327,7 +328,7 @@ public class IndexRecoveryIT
         @Override
         public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
         {
-            this.updates.addAll( asCollection( updates ) );
+            this.recoveredUpdates.addAll( asCollection( updates ) );
         }
     }
 
