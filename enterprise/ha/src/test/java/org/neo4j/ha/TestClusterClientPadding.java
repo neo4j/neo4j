@@ -45,6 +45,7 @@ public class TestClusterClientPadding
                 dir.directory( "dbs", true ), stringMap() );
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
+        cluster.await( masterAvailable(  ));
         cluster.await( masterSeesMembers( 3 ) );
     }
 

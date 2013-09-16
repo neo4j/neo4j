@@ -93,13 +93,16 @@ public abstract class AbstractNeoServer implements NeoServer
     protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
     private PreFlightTasks preflight;
-    private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
+    private final List<ServerModule> serverModules = new ArrayList<>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
     private Logging logging;
+
+    private static final boolean SUCCESS = true;
+    private static final boolean FAILURE = ! SUCCESS;
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -156,12 +159,16 @@ public abstract class AbstractNeoServer implements NeoServer
 
             startModules( diagnosticsLog );
 
-            startWebServer( diagnosticsLog );
+            boolean webServerStartupSuccessful = startWebServer( diagnosticsLog );
 
             diagnosticsLog.info( "--- SERVER STARTED END ---" );
 
             interruptStartupTimer.stopCountdown();
 
+            if (webServerStartupSuccessful)
+            {
+                return;
+            }
         }
         catch ( Throwable t )
         {
@@ -196,6 +203,8 @@ public abstract class AbstractNeoServer implements NeoServer
                 throw new ServerStartupException( "Starting neo server failed, see nested exception.", t );
             }
         }
+
+        throw new ServerStartupException( "Starting neo server failed, see logs for details." );
     }
 
     public DependencyResolver getDependencyResolver()
@@ -334,7 +343,7 @@ public abstract class AbstractNeoServer implements NeoServer
         int sslPort = getHttpsPort();
         boolean sslEnabled = getHttpsEnabled();
 
-        log.info( "Starting Neo Server on port [%s] with [%d] threads available", webServerPort, maxThreads );
+        log.info( "Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
         webServer.setMaxThreads( maxThreads );
@@ -348,7 +357,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( sslEnabled )
         {
-            log.info( "Enabling HTTPS on port [%s]", sslPort );
+            log.info( "Enabling HTTPS on port :%s", sslPort );
             webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
         }
     }
@@ -366,7 +375,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 .availableProcessors();
     }
 
-    private void startWebServer( StringLogger logger )
+    private boolean startWebServer( StringLogger logger )
     {
         try
         {
@@ -390,13 +399,17 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 logger.logMessage( "Server started on: " + baseUri() );
             }
-            log.info( "Server started on [%s]", baseUri() );
+            log.info( "Remote interface ready and available at [%s]", baseUri() );
+
+            return SUCCESS;
         }
         catch ( Exception e )
         {
             e.printStackTrace();
             log.error( "Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage() );
         }
+
+        return FAILURE;
     }
 
 
