@@ -161,7 +161,7 @@ public abstract class Bootstrapper
                     @Override
                     public void run()
                     {
-                        log.info( "Neo4j Server shutdown initiated by kill signal" );
+                        log.info( "Neo4j Server shutdown initiated by request" );
                         if ( server != null )
                         {
                             server.stop();

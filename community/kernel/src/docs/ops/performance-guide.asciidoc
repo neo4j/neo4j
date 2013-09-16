@@ -83,8 +83,7 @@ can handle graphs with a few tens of millions of primitives with 1-2GB of RAM.
 need a good server with 16-32GB to handle billions of primitives. However, if you 
 invest in a good SSD you will be able to handle much larger graphs on less RAM. 
 
-Neo4j likes Java 1.6 JVMs and running in server mode so consider upgrading 
-to that if you haven't yet (or at least give the -server flag). Use tools like +vmstat+ or 
+Use tools like +vmstat+ or 
 equivalent to gather info when your application is running. If you have high I/O 
 waits and not that many blocks going out/in to disks when running write/read 
 transactions its a sign that you need to tweak your Java heap, Neo4j cache 

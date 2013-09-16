@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster.client;
 
-import static java.lang.String.format;
-
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -45,6 +43,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.lang.String.format;
 
 /**
  * This service starts quite late, and is available for the instance to join as a member in the cluster.

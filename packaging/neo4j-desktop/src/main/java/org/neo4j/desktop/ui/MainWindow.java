@@ -27,7 +27,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
+
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -50,7 +50,6 @@ import static javax.swing.JFileChooser.DIRECTORIES_ONLY;
 import static javax.swing.JOptionPane.CANCEL_OPTION;
 import static javax.swing.JOptionPane.showConfirmDialog;
 import static javax.swing.SwingUtilities.invokeLater;
-
 import static org.neo4j.desktop.ui.Components.alert;
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
@@ -61,6 +60,9 @@ import static org.neo4j.desktop.ui.Components.withFlowLayout;
 import static org.neo4j.desktop.ui.Components.withLayout;
 import static org.neo4j.desktop.ui.Components.withSpacingBorder;
 import static org.neo4j.desktop.ui.Components.withTitledBorder;
+import static org.neo4j.desktop.ui.DatabaseStatus.STARTED;
+import static org.neo4j.desktop.ui.DatabaseStatus.STARTING;
+import static org.neo4j.desktop.ui.DatabaseStatus.STOPPED;
 import static org.neo4j.desktop.ui.Graphics.loadImage;
 
 /**
@@ -112,7 +114,7 @@ public class MainWindow
         frame.pack();
         frame.setResizable( false );
 
-        updateStatus( DatabaseStatus.STOPPED );
+        updateStatus( STOPPED );
     }
 
     private JPanel createRootPanel( JTextField directoryDisplay, JButton browseButton, Component statusPanel,
@@ -255,7 +257,7 @@ public class MainWindow
             @Override
             public void actionPerformed( ActionEvent event )
             {
-                updateStatus( DatabaseStatus.STARTING );
+                updateStatus( STARTING );
 
                 invokeLater( new Runnable()
                 {
@@ -267,18 +269,22 @@ public class MainWindow
                             model.prepareGraphDirectoryForStart();
 
                             databaseActions.start();
-                            updateStatus( DatabaseStatus.STARTED );
+                            updateStatus( STARTED );
                         }
                         catch ( UnsuitableGraphDatabaseDirectory e )
                         {
-                            alert( e.getMessage() );
-                            updateStatus( DatabaseStatus.STOPPED );
+                            updateUserWithErrorMessageAndStatus( e );
                         }
-                        catch ( IOException e )
+                        catch ( UnableToStartServerException e )
                         {
-                            alert( e.getMessage() );
-                            updateStatus( DatabaseStatus.STOPPED );
+                            updateUserWithErrorMessageAndStatus( e );
                         }
+                    }
+
+                    private void updateUserWithErrorMessageAndStatus( Exception e )
+                    {
+                        alert( e.getMessage() );
+                        updateStatus( STOPPED );
                     }
                 } );
             }
@@ -300,7 +306,7 @@ public class MainWindow
                     public void run()
                     {
                         databaseActions.stop();
-                        updateStatus( DatabaseStatus.STOPPED );
+                        updateStatus( STOPPED );
                     }
                 } );
             }
@@ -309,10 +315,10 @@ public class MainWindow
 
     private void updateStatus(DatabaseStatus status)
     {
-        browseButton.setEnabled( DatabaseStatus.STOPPED == status );
-        settingsButton.setEnabled( DatabaseStatus.STOPPED == status );
-        startButton.setEnabled( DatabaseStatus.STOPPED == status );
-        stopButton.setEnabled( DatabaseStatus.STARTED == status );
+        browseButton.setEnabled( STOPPED == status );
+        settingsButton.setEnabled( STOPPED == status );
+        startButton.setEnabled( STOPPED == status );
+        stopButton.setEnabled( STARTED == status );
         statusPanelLayout.show( statusPanel, status.name() );
         databaseStatus = status;
         sysTray.changeStatus( status );
@@ -335,7 +341,7 @@ public class MainWindow
         @Override
         public void clickCloseButton()
         {
-            if ( databaseStatus == DatabaseStatus.STOPPED )
+            if ( databaseStatus == STOPPED )
             {
                 shutdown();
             }

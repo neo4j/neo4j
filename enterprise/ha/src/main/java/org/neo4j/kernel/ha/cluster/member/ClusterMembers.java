@@ -181,7 +181,9 @@ public class ClusterMembers
         public void failed( InstanceId server )
         {
             if (members.containsKey( server ))
+            {
                 members.put( server, getMember( server ).failed() );
+            }
         }
 
         @Override

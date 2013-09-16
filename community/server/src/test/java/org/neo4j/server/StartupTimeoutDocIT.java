@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -122,8 +123,9 @@ public class StartupTimeoutDocIT
 
         assertThat(timer.getState(), is( InterruptThreadTimer.State.IDLE));
 	}
-    
+
 	@Test
+	@Ignore
 	public void shouldNotTimeOutIfTimeoutDisabled() throws IOException
 	{
         Configurator configurator = buildProperties();
@@ -169,7 +171,7 @@ public class StartupTimeoutDocIT
         };
         return server;
 	}
-	
+
     private Configurator buildProperties() throws IOException
     {
         new File( test.directory().getAbsolutePath() + DIRSEP + "conf" ).mkdirs();
@@ -208,7 +210,7 @@ public class StartupTimeoutDocIT
         }
 
         clearAll();
-        
+
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();

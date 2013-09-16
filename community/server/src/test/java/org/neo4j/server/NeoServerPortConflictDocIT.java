@@ -32,29 +32,38 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 {
-
     @Test
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int contestedPort = 9999;
-        ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty9WebServer.DEFAULT_ADDRESS) );
-        InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
-        CommunityNeoServer server = CommunityServerBuilder.server()
-                .onPort( contestedPort )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
-                .onHost( Jetty9WebServer.DEFAULT_ADDRESS )
-                .build();
-        server.start();
+        try ( ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty9WebServer.DEFAULT_ADDRESS) ) )
+        {
+            InMemoryAppender appender = new InMemoryAppender( AbstractNeoServer.log );
+            CommunityNeoServer server = CommunityServerBuilder.server()
+                    .onPort( contestedPort )
+                    .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                    .onHost( Jetty9WebServer.DEFAULT_ADDRESS )
+                    .build();
+            try
+            {
+                server.start();
 
-        // Don't include the SEVERE string since it's
-        // OS-regional-settings-specific
-        assertThat(
-                appender.toString(),
-                containsString( String.format( ": Failed to start Neo Server" ) ) );
-        socket.close();
-        server.stop();
+                fail( "Should have reported failure to start" );
+            }
+            catch ( ServerStartupException e )
+            {
+            }
+
+            // Don't include the SEVERE string since it's
+            // OS-regional-settings-specific
+            assertThat(
+                    appender.toString(),
+                    containsString( String.format( ": Failed to start Neo Server" ) ) );
+            server.stop();
+        }
     }
 }

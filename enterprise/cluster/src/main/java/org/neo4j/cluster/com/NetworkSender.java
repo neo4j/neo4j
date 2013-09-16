@@ -24,8 +24,11 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,7 +50,6 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
-import org.jboss.netty.handler.logging.LoggingHandler;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
@@ -84,7 +86,9 @@ public class NetworkSender
     private ChannelGroup channels;
 
     // Sending
-    private ExecutorService sendExecutor;
+    // One executor for each receiving instance, so that one blocking instance cannot block others receiving messages
+    private Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
+    private Set<URI> failedInstances = new HashSet<URI>(  ); // Keeps track of what instances we have failed to open connections to
     private ClientBootstrap clientBootstrap;
 
     private Configuration config;
@@ -131,7 +135,6 @@ public class NetworkSender
     public void start()
             throws Throwable
     {
-        sendExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender" ) );
         channels = new DefaultChannelGroup();
 
         // Start client bootstrap
@@ -140,7 +143,6 @@ public class NetworkSender
                 Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster client worker" ) ), 2 ) );
         clientBootstrap.setOption( "tcpNoDelay", true );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
-        clientBootstrap.setOption("tcpNoDelay", true);
     }
 
     @Override
@@ -148,11 +150,15 @@ public class NetworkSender
             throws Throwable
     {
         msgLog.debug( "Shutting down NetworkSender" );
-        sendExecutor.shutdown();
-        if ( !sendExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
+        for ( ExecutorService executorService : senderExecutors.values() )
         {
-            msgLog.warn( "Could not shut down send executor" );
+            executorService.shutdown();
+            if ( !executorService.awaitTermination( 100, TimeUnit.SECONDS ) )
+            {
+                msgLog.warn( "Could not shut down send executor" );
+            }
         }
+        senderExecutors.clear();
 
         channels.close().awaitUninterruptibly();
         clientBootstrap.releaseExternalResources();
@@ -169,24 +175,17 @@ public class NetworkSender
     @Override
     public void process( final List<Message<? extends MessageType>> messages )
     {
-        sendExecutor.submit( new Runnable()
+        for ( Message<? extends MessageType> message : messages )
         {
-            @Override
-            public void run()
+            try
             {
-                for ( Message<? extends MessageType> message : messages )
-                {
-                    try
-                    {
-                        process( message );
-                    }
-                    catch ( Exception e )
-                    {
-                        msgLog.warn( "Error sending message " + message + "(" + e.getMessage() + ")" );
-                    }
-                }
+                process( message );
             }
-        } );
+            catch ( Exception e )
+            {
+                msgLog.warn( "Error sending message " + message + "(" + e.getMessage() + ")" );
+            }
+        }
     }
 
     @Override
@@ -239,55 +238,67 @@ public class NetworkSender
 
     private synchronized void send( final Message message )
     {
-        URI to;
-        try
+        final URI to = URI.create( message.getHeader( Message.TO ) );
+
+        ExecutorService senderExecutor = senderExecutors.get(to);
+        if (senderExecutor == null)
         {
-            to = new URI( message.getHeader( Message.TO ) );
-        }
-        catch ( URISyntaxException e )
-        {
-            msgLog.error( "Not valid URI:" + message.getHeader( Message.TO ) );
-            return;
+            senderExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender "+to.toASCIIString() ) );
+            senderExecutors.put( to, senderExecutor );
         }
 
-        Channel channel = getChannel( to );
-
-        try
+        senderExecutor.submit( new Runnable()
         {
-            if ( channel == null )
+            @Override
+            public void run()
             {
-                channel = openChannel( to );
-                openedChannel( to, channel );
-            }
-        }
-        catch ( Exception e )
-        {
-            msgLog.debug( "Could not connect to:" + to );
-            return;
-        }
+                Channel channel = getChannel( to );
 
-        try
-        {
-            msgLog.debug( "Sending to " + to + ": " + message );
-            ChannelFuture future = channel.write( message );
-            future.addListener( new ChannelFutureListener()
-            {
-                @Override
-                public void operationComplete( ChannelFuture future ) throws Exception
+                try
                 {
-                    if ( !future.isSuccess() )
+                    if ( channel == null )
                     {
-                        msgLog.debug( "Unable to write " + message + " to " + future.getChannel(), future.getCause() );
+                        channel = openChannel( to );
+                        openedChannel( to, channel );
+
+                        // Instance could be connected to, remove any marker of it being failed
+                        failedInstances.remove( to );
                     }
                 }
-            } );
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            channel.close();
-            closedChannel( to );
-        }
+                catch ( Exception e )
+                {
+                    // Only print out failure message on first fail
+                    if (!failedInstances.contains( to ))
+                        msgLog.warn( "Could not connect to:" + to, e );
+                    else
+                        failedInstances.add(to);
+
+                    return;
+                }
+
+                try
+                {
+                    msgLog.debug( "Sending to " + to + ": " + message );
+                    ChannelFuture future = channel.write( message );
+                    future.addListener( new ChannelFutureListener()
+                    {
+                        @Override
+                        public void operationComplete( ChannelFuture future ) throws Exception
+                        {
+                            if ( !future.isSuccess() )
+                            {
+                                msgLog.debug( "Unable to write " + message + " to " + future.getChannel(), future.getCause() );
+                            }
+                        }
+                    } );
+                }
+                catch ( Exception e )
+                {
+                    msgLog.warn( "Could not send message", e );
+                    channel.close();
+                }
+            }
+        });
     }
 
     protected void openedChannel( final URI uri, Channel ctxChannel )
@@ -307,7 +318,7 @@ public class NetworkSender
     protected void closedChannel( final URI uri )
     {
         Channel channel = connections.remove( uri );
-        if ( channel != null )
+        if ( channel != null && channel.isOpen())
         {
             channel.close();
         }
@@ -367,7 +378,7 @@ public class NetworkSender
         public ChannelPipeline getPipeline() throws Exception
         {
             ChannelPipeline pipeline = Channels.pipeline();
-            pipeline.addFirst( "log", new LoggingHandler() );
+//            pipeline.addFirst( "log", new LoggingHandler() );
             pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
             pipeline.addLast( "sender", new NetworkSender.MessageSender() );
             return pipeline;
@@ -391,12 +402,6 @@ public class NetworkSender
             final Message message = (Message) event.getMessage();
             msgLog.debug( "Received:" + message );
             receiver.receive( message );
-        }
-
-        @Override
-        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
-        {
-            closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
         }
 
         @Override
