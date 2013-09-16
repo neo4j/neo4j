@@ -36,12 +36,11 @@ import org.junit.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -49,10 +48,12 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -73,8 +74,6 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstan
 
 public class IndexRecoveryIT
 {
-    private final Label myLabel = label( "MyLabel" );
-
     @Test
     public void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex() throws Exception
     {
@@ -82,7 +81,8 @@ public class IndexRecoveryIT
         startDb();
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) )
+                .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
 
         // And Given
@@ -93,7 +93,8 @@ public class IndexRecoveryIT
         // When
         when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) )
+                .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
 
         // Then
@@ -111,7 +112,8 @@ public class IndexRecoveryIT
         startDb();
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) )
+                .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
         rotateLogs();
 
@@ -120,7 +122,8 @@ public class IndexRecoveryIT
         latch.countDown();
         killFuture.get();
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) )
+                .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
 
         // When
@@ -144,14 +147,15 @@ public class IndexRecoveryIT
                 .thenReturn( mock( IndexPopulator.class ) );
         when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) )
                 .thenReturn( mock( IndexAccessor.class ) );
-        createIndex( myLabel );
+        createIndexAndAwaitPopulation( myLabel );
         Set<NodePropertyUpdate> expectedUpdates = createSomeBananas( myLabel );
 
         // And Given
         killDb();
         when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( writer );
+        when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) )
+                .thenReturn( writer );
 
         // When
         startDb();
@@ -197,12 +201,15 @@ public class IndexRecoveryIT
             singleInstanceSchemaIndexProviderFactory( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR.getKey(),
                     mockedIndexProvider );
     private final String key = "number_of_bananas_owned";
+    private final Label myLabel = label( "MyLabel" );
 
     @Before
     public void setUp()
     {
-        when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
-        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) ).thenReturn( 1 ); // always pretend to have highest priority
+        when( mockedIndexProvider.getProviderDescriptor() )
+                .thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
+        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
+                .thenReturn( 1 ); // always pretend to have highest priority
     }
 
     private void startDb()
@@ -259,45 +266,51 @@ public class IndexRecoveryIT
         }
     }
 
-    @SuppressWarnings("deprecation")
     private void rotateLogs()
     {
-        db.getXaDataSourceManager().rotateLogicalLogs();
+        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
     }
 
-    private void createIndex( Label label )
+    private void createIndexAndAwaitPopulation( Label label )
     {
-        Transaction tx = db.beginTx();
-        db.schema().indexFor( label ).on( key ).create();
-        tx.success();
-        tx.finish();
+        IndexDefinition index = createIndex( label );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexOnline( index, 10, SECONDS );
+            tx.success();
+        }
+    }
+
+    private IndexDefinition createIndex( Label label )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = db.schema().indexFor( label ).on( key ).create();
+            tx.success();
+            return index;
+        }
     }
 
     private Set<NodePropertyUpdate> createSomeBananas( Label label )
-            throws PropertyKeyNotFoundException, LabelNotFoundKernelException
     {
         Set<NodePropertyUpdate> updates = new HashSet<>();
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             ThreadToStatementContextBridge ctxProvider = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            Statement statement = ctxProvider.statement();
-            for ( int number : new int[] {4, 10} )
+            try ( Statement statement = ctxProvider.statement() )
             {
-                Node node = db.createNode( label );
-                node.setProperty( key, number );
-                updates.add( NodePropertyUpdate.add( node.getId(), statement.readOperations().propertyKeyGetForName(
-                        key ), number,
-                        new long[]{statement.readOperations().labelGetForName( label.name() )} ) );
+                for ( int number : new int[] {4, 10} )
+                {
+                    Node node = db.createNode( label );
+                    node.setProperty( key, number );
+                    updates.add( NodePropertyUpdate.add( node.getId(),
+                            statement.readOperations().propertyKeyGetForName( key ), number,
+                            new long[]{statement.readOperations().labelGetForName( label.name() )} ) );
+                }
             }
-            statement.close();
             tx.success();
             return updates;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
