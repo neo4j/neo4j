@@ -43,6 +43,6 @@ class FilterExpressionTest extends Assertions {
   def shouldRaiseSyntaxErrorIfMissingPredicate() {
     val filter = FilterExpression(Identifier("x", DummyToken(5, 6)), dummyExpression, None, DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("FILTER requires a WHERE predicate", DummyToken(0, 10))), result.errors)
+    assertEquals(Seq(SemanticError("filter(...) requires a WHERE predicate", DummyToken(0, 10))), result.errors)
   }
 }

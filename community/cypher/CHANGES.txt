@@ -3,6 +3,8 @@
 o Parenthesis around nodes are now mandatory if a label is used on the node
 o Removes the legacy parser
 o Relationship uniqueness is now more explicit and documented
+o Use camelCase names for all functions
+o Rename percentile_cont and percentile_disc to percentileCont and percentileDisc respectively
 
 2.0.0-M05
 ---------

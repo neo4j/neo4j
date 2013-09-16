@@ -74,8 +74,8 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def sumProperty() {
     testQuery(
-      title = "SUM",
-      text = "The +SUM+ aggregation function simply sums all the numeric values it encounters. " +
+      title = "sum",
+      text = "The +sum+ aggregation function simply sums all the numeric values it encounters. " +
         "Nulls are silently dropped. This is an example of how you can use +SUM+.",
       queryText = "match (n:Person) where has(n.property) return sum(n.property)",
       returns = "This returns the sum of all the values in the property `property`.",
@@ -84,8 +84,8 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def avg() {
     testQuery(
-      title = "AVG",
-      text = "+AVG+ calculates the average of a numeric column.",
+      title = "avg",
+      text = "+avg+ calculates the average of a numeric column.",
       queryText = "match (n:Person) where has(n.property) return avg(n.property)",
       returns = "The average of all the values in the property `property` is returned by the example query.",
       assertions = p => assertEquals(Map("avg(n.property)" -> 30), p.toList.head))
@@ -93,8 +93,8 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def min() {
     testQuery(
-      title = "MIN",
-      text = "+MIN+ takes a numeric property as input, and returns the smallest value in that column.",
+      title = "min",
+      text = "+min+ takes a numeric property as input, and returns the smallest value in that column.",
       queryText = "match (n:Person) where has(n.property) return min(n.property)",
       returns = "This returns the smallest of all the values in the property `property`.",
       assertions = p => assertEquals(Map("min(n.property)" -> 13), p.toList.head))
@@ -102,8 +102,8 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def max() {
     testQuery(
-      title = "MAX",
-      text = "+MAX+ find the largest value in a numeric column.",
+      title = "max",
+      text = "+max+ find the largest value in a numeric column.",
       queryText = "match (n:Person) where has(n.property) return max(n.property)",
       returns = "The largest of all the values in the property `property` is returned.",
       assertions = p => assertEquals(Map("max(n.property)" -> 44), p.toList.head))
@@ -111,8 +111,8 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def collect() {
     testQuery(
-      title = "COLLECT",
-      text = "+COLLECT+ collects all the values into a list. It will ignore null values,",
+      title = "collect",
+      text = "+collect+ collects all the values into a list. It will ignore null values,",
       queryText = "match (n:Person) return collect(n.property)",
       returns = "Returns a single row, with all the values collected.",
       assertions = p => assertEquals(Map("collect(n.property)" -> Seq(13, 33, 44)), p.toList.head))
@@ -169,28 +169,28 @@ An example might be helpful:""",
       assertions = p => assertTrue(true))
   }
 
-  @Test def percentile_disc() {
+  @Test def percentileDisc() {
     testQuery(
-      title = "PERCENTILE_DISC",
-      text = "+PERCENTILE_DISC+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a rounding method, returning the nearest value to the percentile. For interpolated values, see PERCENTILE_CONT.",
-      queryText = "match (n:Person) where has(n.property) return percentile_disc(n.property, 0.5)",
+      title = "percentileDisc",
+      text = "+percentileDisc+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a rounding method, returning the nearest value to the percentile. For interpolated values, see PERCENTILE_CONT.",
+      queryText = "match (n:Person) where has(n.property) return percentileDisc(n.property, 0.5)",
       returns = "The 50th percentile of the values in the property `property` is returned by the example query. In this case, 0.5 is the median, or 50th percentile.",
-      assertions = p => assertEquals(Map("percentile_disc(n.property, 0.5)" -> 33), p.toList.head))
+      assertions = p => assertEquals(Map("percentileDisc(n.property, 0.5)" -> 33), p.toList.head))
   }
 
-  @Test def percentile_cont() {
+  @Test def percentileCont() {
     testQuery(
-      title = "PERCENTILE_CONT",
-      text = "+PERCENTILE_CONT+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a linear interpolation method, calculating a weighted average between two values, if the desired percentile lies between them. For nearest values using a rounding method, see PERCENTILE_DISC.",
-      queryText = "match (n:Person) where has(n.property) return percentile_cont(n.property, 0.4)",
+      title = "percentileCont",
+      text = "+percentileCont+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a linear interpolation method, calculating a weighted average between two values, if the desired percentile lies between them. For nearest values using a rounding method, see PERCENTILE_DISC.",
+      queryText = "match (n:Person) where has(n.property) return percentileCont(n.property, 0.4)",
       returns = "The 40th percentile of the values in the property `property` is returned by the example query, calculated with a weighted average.",
-      assertions = p => assertEquals(Map("percentile_cont(n.property, 0.4)" -> 29), p.toList.head))
+      assertions = p => assertEquals(Map("percentileCont(n.property, 0.4)" -> 29), p.toList.head))
   }
 
   @Test def stdev() {
     testQuery(
-      title = "STDEV",
-      text = "+STDEV+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N-1 as the denominator, and should be used when taking a sample of the population for an unbiased estimate. When the standard variation of the entire population is being calculated, STDEVP should be used.",
+      title = "stdev",
+      text = "+stdev+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N-1 as the denominator, and should be used when taking a sample of the population for an unbiased estimate. When the standard variation of the entire population is being calculated, STDEVP should be used.",
       queryText = "start n=node(%A%,%B%,%C%) return stdev(n.property)",
       returns = "The standard deviation of the values in the property `property` is returned by the example query.",
       assertions = p => assertEquals(15.7162336455,p.toList.head("stdev(n.property)").asInstanceOf[Double], 0.0000001))
@@ -198,8 +198,8 @@ An example might be helpful:""",
 
   @Test def stdevp() {
     testQuery(
-      title = "STDEVP",
-      text = "+STDEVP+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N as the denominator, and should be used when calculating the standard deviation for an entire population. When the standard variation of only a sample of the population is being calculated, STDEV should be used.",
+      title = "stdevp",
+      text = "+stdevp+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N as the denominator, and should be used when calculating the standard deviation for an entire population. When the standard variation of only a sample of the population is being calculated, STDEV should be used.",
       queryText = "start n=node(%A%,%B%,%C%) return stdevp(n.property)",
       returns = "The population standard deviation of the values in the property `property` is returned by the example query.",
       assertions = p => assertEquals(12.8322510366, p.toList.head("stdevp(n.property)").asInstanceOf[Double], 0.0000001))
