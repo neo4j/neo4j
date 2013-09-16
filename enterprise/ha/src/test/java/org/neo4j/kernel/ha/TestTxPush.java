@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.test.TargetDirectory.forTest;
 
 @Ignore("Need to properly setup instances with priorities such that slave only instances are present")
 public class TestTxPush
@@ -52,7 +54,7 @@ public class TestTxPush
             long nodeId = node.getId();
             node.setProperty( "foo", "bar" );
             tx.success();
-            tx.finish();
+            tx.close();
 
             try
             {
@@ -101,7 +103,7 @@ public class TestTxPush
             long nodeId = node.getId();
             node.setProperty( "foo", "bar" );
             tx.success();
-            tx.finish();
+            tx.close();
 
             /*
              * This is the slave only, it will not get transactions pushed at even though it is in higher prio and

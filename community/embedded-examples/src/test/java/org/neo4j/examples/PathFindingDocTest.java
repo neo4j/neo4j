@@ -26,6 +26,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -73,7 +74,7 @@ public class PathFindingDocTest
     public void doAfter()
     {
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @AfterClass

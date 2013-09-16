@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Iterator;
 import java.util.Random;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -38,6 +35,10 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestNeo4j extends AbstractNeo4jTestCase
 {
@@ -69,15 +70,12 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     public void testBasicNodeRelationships()
     {
-        Node firstNode = null;
-        Node secondNode = null;
-        Relationship rel = null;
         // Create nodes and a relationship between them
-        firstNode = getGraphDb().createNode();
+        Node firstNode = getGraphDb().createNode();
         assertNotNull( "Failure creating first node", firstNode );
-        secondNode = getGraphDb().createNode();
+        Node secondNode = getGraphDb().createNode();
         assertNotNull( "Failure creating second node", secondNode );
-        rel = firstNode.createRelationshipTo( secondNode, MyRelTypes.TEST );
+        Relationship rel = firstNode.createRelationshipTo( secondNode, MyRelTypes.TEST );
         assertNotNull( "Relationship is null", rel );
         RelationshipType relType = rel.getType();
         assertNotNull( "Relationship's type is is null", relType );
@@ -87,7 +85,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         assertTrue( firstNode.getRelationships( relType ).iterator().hasNext() );
         assertTrue( secondNode.getRelationships( relType ).iterator().hasNext() );
 
-        Iterable<Relationship> allRels = null;
+        Iterable<Relationship> allRels;
 
         // Verify that both nodes return the relationship we created above
         allRels = firstNode.getRelationships();
@@ -200,7 +198,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     public void testNodeChangePropertyArray() throws Exception
     {
         Transaction tx = getTransaction();
-        tx.finish();
+        tx.close();
         tx = getGraphDb().beginTx();
         Node node;
         try

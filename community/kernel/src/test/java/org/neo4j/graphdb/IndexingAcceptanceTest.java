@@ -238,7 +238,7 @@ public class IndexingAcceptanceTest
         firstNode.delete();
         long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias" ) );
 
-        tx.finish();
+        tx.close();
 
         // THEN
         assertThat( sizeBeforeDelete, equalTo(1l) );
@@ -260,7 +260,7 @@ public class IndexingAcceptanceTest
         firstNode.delete();
         long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias" ) );
 
-        tx.finish();
+        tx.close();
 
         // THEN
         assertThat( sizeBeforeDelete, equalTo(1l) );
@@ -282,13 +282,14 @@ public class IndexingAcceptanceTest
         createNode( beansAPI, map( "name", "Mattias" ), MY_LABEL );
         long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( MY_LABEL, "name", "Mattias" ) );
 
-        tx.finish();
+        tx.close();
 
         // THEN
         assertThat( sizeBeforeDelete, equalTo(1l) );
         assertThat( sizeAfterDelete, equalTo(2l) );
     }
 
+    @SuppressWarnings("RedundantCast")
     @Test
     public void shouldBeAbleToQuerySupportedPropertyTypes() throws Exception
     {

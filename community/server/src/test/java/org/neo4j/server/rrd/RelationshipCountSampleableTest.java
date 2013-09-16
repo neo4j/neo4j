@@ -31,6 +31,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class RelationshipCountSampleableTest
@@ -59,7 +60,7 @@ public class RelationshipCountSampleableTest
         Node node2 = db.createNode();
         node1.createRelationshipTo( node2, withName( "friend" ) );
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @Before

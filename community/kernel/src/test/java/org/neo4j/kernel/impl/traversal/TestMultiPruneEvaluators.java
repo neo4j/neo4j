@@ -77,7 +77,7 @@ public class TestMultiPruneEvaluators extends TraversalTestBase
             assertTrue( name + " shouldn't have been returned", expectedNodes.remove( name ) );
         }
         tx.success();
-        tx.finish();
+        tx.close();
         assertTrue( expectedNodes.isEmpty() );
     }
 }

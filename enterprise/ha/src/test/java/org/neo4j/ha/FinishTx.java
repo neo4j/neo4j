@@ -39,7 +39,7 @@ public class FinishTx implements WorkerCommand<HighlyAvailableGraphDatabase, Voi
     {
         if ( successful )
             tx.success();
-        tx.finish();
+        tx.close();
         return null;
     }
 }

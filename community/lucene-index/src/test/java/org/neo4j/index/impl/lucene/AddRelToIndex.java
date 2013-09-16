@@ -40,7 +40,7 @@ public class AddRelToIndex
         Relationship relationship = db.getReferenceNode().createRelationshipTo( node, DynamicRelationshipType.withName( "KNOWS" ) );
         index.add( relationship, "key", "value" );
         tx.success();
-        tx.finish();
+        tx.close();
         // Skip shutdown
     }
 }

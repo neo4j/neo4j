@@ -80,7 +80,7 @@ public class TestReadOnlyNeo4j
         {
             // good
         }
-        tx.finish();
+        tx.close();
         readGraphDb.shutdown();
     }
     
@@ -99,7 +99,7 @@ public class TestReadOnlyNeo4j
             rel.setProperty( "since", System.currentTimeMillis() );
         }
         tx.success();
-        tx.finish();
+        tx.close();
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;
@@ -118,7 +118,7 @@ public class TestReadOnlyNeo4j
         node1.setProperty( "key1", "value1" );
         rel.setProperty( "key1", "value1" );
         tx.success();
-        tx.finish();
+        tx.close();
         
         // make sure write operations still throw exception
         try

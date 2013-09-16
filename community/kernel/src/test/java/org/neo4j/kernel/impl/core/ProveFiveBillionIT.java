@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.lang.Math.pow;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-
 import java.io.File;
 import java.util.Map;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,6 +33,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
+
+import static java.lang.Math.pow;
+
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 @Ignore( "Requires a lot of disk space" )
 public class ProveFiveBillionIT
@@ -87,7 +89,7 @@ public class ProveFiveBillionIT
             if ( i % 100000 == 0 )
             {
                 tx.success();
-                tx.finish();
+                tx.close();
                 System.out.println( (i/1000000) + "M" );
                 tx = db.beginTx();
             }

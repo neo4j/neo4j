@@ -84,7 +84,7 @@ public class JavaQuery
             nodeResult = node + ": " + node.getProperty( "name" );
         }
         // END SNIPPET: items
-        tx.finish();
+        tx.close();
         // the result is now empty, get a new one
         result = engine.execute( "start n=node(*) where n.name = 'my node' return n, n.name" );
         // START SNIPPET: rows

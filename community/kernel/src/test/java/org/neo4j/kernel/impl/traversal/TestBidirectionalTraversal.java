@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
@@ -43,7 +44,9 @@ import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
@@ -69,7 +72,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     @After
     public void tearDown()
     {
-        tx.finish();
+        tx.close();
     }
     
     @Test( expected = IllegalArgumentException.class )

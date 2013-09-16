@@ -26,6 +26,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -34,7 +35,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.Settings.TRUE;
 
 public class TestExceptionTypeOnInvalidIds
@@ -85,7 +87,7 @@ public class TestExceptionTypeOnInvalidIds
     @After
     public void endTransaction()
     {
-        tx.finish();
+        tx.close();
         tx = null;
     }
 

@@ -19,11 +19,6 @@
  */
 package matching;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,6 +28,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -48,6 +44,12 @@ import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class TestMatchingOfCircularPattern
 {
@@ -213,7 +215,7 @@ public class TestMatchingOfCircularPattern
     @After
     public void verifyCount()
     {
-        tx.finish();
+        tx.close();
         tx = null;
         assertEquals( EXPECTED_VISIBLE_MESSAGE_COUNT, count );
     }

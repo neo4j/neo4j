@@ -28,6 +28,7 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -54,6 +55,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -316,7 +318,7 @@ public class TestLuceneBatchInsert
         assertTrue(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "peter" ).hasNext());
         assertTrue(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "bob" ).hasNext());
         assertFalse(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "joe" ).hasNext());
-        tx.finish();
+        tx.close();
     }
 
     @Test

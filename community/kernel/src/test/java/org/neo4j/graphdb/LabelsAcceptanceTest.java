@@ -352,7 +352,7 @@ public class LabelsAcceptanceTest
         Node node = beansAPI.createNode();
         node.addLabel( Labels.MY_LABEL );
         tx.success();
-        tx.finish();
+        tx.close();
 
         // THEN
         assertThat(glops, inTx( beansAPI, hasNodes( Labels.MY_LABEL, node )));
@@ -434,7 +434,7 @@ public class LabelsAcceptanceTest
             node.addLabel( label );
             node.setProperty( "name", "bla" );
             tx.success();
-            tx.finish();
+            tx.close();
         }
 
         // WHEN
@@ -446,7 +446,7 @@ public class LabelsAcceptanceTest
                 node.delete(); // ... and afterwards the node
             }
             tx.success();
-            tx.finish(); // here comes the exception
+            tx.close(); // here comes the exception
         }
 
         // THEN

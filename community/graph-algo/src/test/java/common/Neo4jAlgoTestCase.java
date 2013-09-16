@@ -41,6 +41,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.SillyUtils.nonNull;
 
 /**
@@ -83,7 +84,7 @@ public abstract class Neo4jAlgoTestCase
     {
         graph.clear();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     public static void deleteFileOrDirectory( File file )

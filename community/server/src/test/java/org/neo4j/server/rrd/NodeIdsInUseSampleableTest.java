@@ -62,7 +62,7 @@ public class NodeIdsInUseSampleableTest
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @Before

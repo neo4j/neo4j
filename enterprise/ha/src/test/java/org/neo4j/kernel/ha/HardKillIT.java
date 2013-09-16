@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
@@ -47,6 +43,12 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class HardKillIT
 {
@@ -191,7 +193,7 @@ public class HardKillIT
                 .setConfig( HaSettings.tx_push_factor, "0" );
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
         Transaction tx = db.beginTx();
-        tx.finish();
+        tx.close();
         try
         {
             Thread.sleep( 2000 );

@@ -50,7 +50,7 @@ public class TestApplyTransactions
         Transaction tx = origin.beginTx();
         origin.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
         XaDataSource originNeoDataSource = origin.getXaDataSourceManager().getXaDataSource(
                 NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         int latestTxId = (int) originNeoDataSource.getLastCommittedTxId();

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -60,7 +61,7 @@ public class TestMultipleFilters extends TraversalTestBase
     @After
     public void tearDown()
     {
-         tx.finish();
+         tx.close();
     }
     
     private static class MustBeConnectedToNodeFilter implements Predicate<Path>, Evaluator

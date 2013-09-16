@@ -19,15 +19,6 @@
  */
 package org.neo4j.shell;
 
-import static java.lang.Integer.parseInt;
-import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
-import static org.neo4j.shell.ShellLobby.remoteLocation;
-
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collections;
@@ -37,19 +28,31 @@ import java.util.regex.Pattern;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.Integer.parseInt;
+import static java.util.regex.Pattern.compile;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
+import static org.neo4j.shell.ShellLobby.remoteLocation;
 
 public abstract class AbstractShellTest
 {
@@ -151,7 +154,7 @@ public abstract class AbstractShellTest
         assert tx != null;
         if ( success )
             tx.success();
-        tx.finish();
+        tx.close();
         tx = null;
     }
 
@@ -338,7 +341,7 @@ public abstract class AbstractShellTest
             firstNode = secondNode;
         }
         tx.success();
-        tx.finish();
+        tx.close();
         return rels;
     }
 
@@ -347,7 +350,7 @@ public abstract class AbstractShellTest
         Transaction tx = db.beginTx();
         relationship.delete();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     protected void setProperty( Node node, String key, Object value )
@@ -355,7 +358,7 @@ public abstract class AbstractShellTest
         Transaction tx = db.beginTx();
         node.setProperty( key, value );
         tx.success();
-        tx.finish();
+        tx.close();
     }
     
     protected Node getCurrentNode() throws RemoteException, ShellException

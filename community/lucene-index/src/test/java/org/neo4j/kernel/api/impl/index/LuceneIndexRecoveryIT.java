@@ -266,11 +266,11 @@ public class LuceneIndexRecoveryIT
         Transaction tx = db.beginTx();
         IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
         tx.success();
-        tx.finish();
+        tx.close();
 
         tx = db.beginTx();
         db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
-        tx.finish();
+        tx.close();
     }
 
     private Set<Node> doIndexLookup( Label myLabel, Object value )
@@ -279,7 +279,7 @@ public class LuceneIndexRecoveryIT
         Iterable<Node> iter = db.findNodesByLabelAndProperty( myLabel, NUM_BANANAS_KEY, value );
         Set<Node> nodes = asUniqueSet( iter );
         tx.success();
-        tx.finish();
+        tx.close();
         return nodes;
     }
 

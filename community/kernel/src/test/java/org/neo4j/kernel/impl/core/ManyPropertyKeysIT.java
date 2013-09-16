@@ -178,7 +178,7 @@ public class ManyPropertyKeysIT
         public Void doWork( WorkerState state )
         {
             state.tx.success();
-            state.tx.finish();
+            state.tx.close();
             return null;
         }
     }

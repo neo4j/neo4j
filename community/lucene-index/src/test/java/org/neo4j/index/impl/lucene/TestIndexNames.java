@@ -33,6 +33,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 
 public class TestIndexNames
@@ -66,7 +67,7 @@ public class TestIndexNames
             {
                 tx.success();
             }
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }

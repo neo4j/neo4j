@@ -324,7 +324,7 @@ public class TestApps extends AbstractShellTest
         String name = "Test";
         node.setProperty( "name", name );
         tx.success();
-        tx.finish();
+        tx.close();
 
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( db );
         ShellClient client = newShellClient( server );

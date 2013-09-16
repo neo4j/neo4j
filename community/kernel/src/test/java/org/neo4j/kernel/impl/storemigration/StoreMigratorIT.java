@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -60,6 +61,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -217,7 +219,7 @@ public class StoreMigratorIT
                 currentNode = relationship.getEndNode();
             }
             tx.success();
-            tx.finish();
+            tx.close();
             assertEquals( 500, traversalCount );
         }
 
@@ -234,7 +236,7 @@ public class StoreMigratorIT
                 }
             }
             tx.success();
-            tx.finish();
+            tx.close();
             assertEquals( 501, nodeCount );
         }
 

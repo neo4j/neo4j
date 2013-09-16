@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -41,6 +33,7 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -53,6 +46,15 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 public class TestIdGenerator
 {
@@ -444,7 +446,6 @@ public class TestIdGenerator
     @Test
     public void testRandomTest()
     {
-        int numberOfCloses = 0;
         java.util.Random random = new java.util.Random( System.currentTimeMillis() );
         int capacity = random.nextInt( 1024 ) + 1024;
         int grabSize = random.nextInt( 128 ) + 128;
@@ -474,7 +475,6 @@ public class TestIdGenerator
                     closeIdGenerator( idGenerator );
                     grabSize = random.nextInt( 128 ) + 128;
                     idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), grabSize, capacity * 2, false, 0 );
-                    numberOfCloses++;
                 }
             }
             closeIdGenerator( idGenerator );
@@ -643,7 +643,7 @@ public class TestIdGenerator
             }
         }
         tx.success();
-        tx.finish();
+        tx.close();
         db.shutdown();
 
         // After a clean shutdown, create new nodes and relationships and see so
@@ -665,7 +665,7 @@ public class TestIdGenerator
             }
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         // Verify by loading everything from scratch
         ((GraphDatabaseAPI) db).getNodeManager().clearCache();
@@ -674,7 +674,7 @@ public class TestIdGenerator
         {
             lastOrNull( node.getRelationships() );
         }
-        tx.finish();
+        tx.close();
         db.shutdown();
     }
 

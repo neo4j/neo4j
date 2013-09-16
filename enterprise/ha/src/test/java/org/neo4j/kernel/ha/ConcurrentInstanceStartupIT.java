@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,11 +30,14 @@ import java.util.concurrent.Executors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertTrue;
 
 public class ConcurrentInstanceStartupIT
 {
@@ -119,7 +120,7 @@ public class ConcurrentInstanceStartupIT
             }
             Transaction tx = db.beginTx();
             db.createNode();
-            tx.success(); tx.finish();
+            tx.success(); tx.close();
         }
 
         assertTrue( masterDone );

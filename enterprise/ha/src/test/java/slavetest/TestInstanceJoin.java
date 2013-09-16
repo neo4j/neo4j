@@ -19,15 +19,10 @@
  */
 package slavetest;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.com.ServerUtil.rotateLogs;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -36,6 +31,13 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.com.ServerUtil.rotateLogs;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 /*
  * This test case ensures that instances with the same store id but very old txids
@@ -113,13 +115,8 @@ public class TestInstanceJoin
         Node node = db.createNode();
         node.setProperty( key, value );
         tx.success();
-        tx.finish();
+        tx.close();
         return node.getId();
-    }
-
-    private static HighlyAvailableGraphDatabase start( String storeDir, int i )
-    {
-        return start( storeDir, i, stringMap() );
     }
 
     private static HighlyAvailableGraphDatabase start( String storeDir, int i, Map<String, String> additionalConfig )

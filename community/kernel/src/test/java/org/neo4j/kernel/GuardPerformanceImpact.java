@@ -118,7 +118,7 @@ public class GuardPerformanceImpact
                 db.createNode();
             }
             tx.success();
-            tx.finish();
+            tx.close();
         }
     }
 

@@ -19,9 +19,6 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -37,6 +35,10 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * This is a test for the Neo4j HA self-inflicted DDOS "pull storm" phenomenon. In a 2 instance setup, whereby
@@ -82,7 +84,7 @@ public class PullStormIT
                     master.createNode().setProperty( "foo", "bar" );
                 }
                 tx.success();
-                tx.finish();
+                tx.close();
             }
 
             // Slave goes down
@@ -102,7 +104,7 @@ public class PullStormIT
                         master.createNode().setProperty( "foo", "bar" );
                     }
                     tx.success();
-                    tx.finish();
+                    tx.close();
                 }
             }
 
@@ -127,7 +129,7 @@ public class PullStormIT
                         Transaction tx = master.beginTx();
                         master.createNode().setProperty( "foo", "bar" );
                         tx.success();
-                        tx.finish(); // This should cause lots of concurrent calls to pullUpdate()
+                        tx.close(); // This should cause lots of concurrent calls to pullUpdate()
                     }
                 } );
             }

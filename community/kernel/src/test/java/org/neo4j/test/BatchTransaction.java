@@ -28,25 +28,15 @@ public class BatchTransaction
 
     public static BatchTransaction beginBatchTx( GraphDatabaseService db )
     {
-        return new BatchTransaction( db, MAX_SIZE );
-    }
-    
-    public static BatchTransaction beginBatchTx( GraphDatabaseService db, int maxSize )
-    {
-        return new BatchTransaction( db, maxSize );
+        return new BatchTransaction( db );
     }
     
     private final GraphDatabaseService db;
     private Transaction tx;
-    private int txSize;
-    private int total;
-    private boolean printProgress;
-    private final int maxSize;
-    
-    private BatchTransaction( GraphDatabaseService db, int maxSize )
+
+    private BatchTransaction( GraphDatabaseService db )
     {
         this.db = db;
-        this.maxSize = maxSize;
         beginTx();
     }
 
@@ -54,35 +44,7 @@ public class BatchTransaction
     {
         this.tx = db.beginTx();
     }
-    
-    public GraphDatabaseService getDb()
-    {
-        return db;
-    }
-    
-    public boolean increment()
-    {
-        return increment( 1 );
-    }
-    
-    public boolean increment( int count )
-    {
-        txSize += count;
-        total++;
-        if ( txSize >= MAX_SIZE )
-        {
-            if ( printProgress )
-            {
-                System.out.println( total );
-            }
-            txSize = 0;
-            finish();
-            beginTx();
-            return true;
-        }
-        return false;
-    }
-    
+
     public void restart()
     {
         finish();
@@ -92,26 +54,11 @@ public class BatchTransaction
     public void finish()
     {
         tx.success();
-        tx.finish();
+        tx.close();
     }
-    
-    public int size()
-    {
-        return txSize;
-    }
-    
+
     public int limit()
     {
         return MAX_SIZE;
-    }
-    
-    public int total()
-    {
-        return total;
-    }
-    
-    public void printProgress( boolean value )
-    {
-        printProgress = value;
     }
 }

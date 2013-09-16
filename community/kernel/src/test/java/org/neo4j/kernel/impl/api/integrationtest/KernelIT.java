@@ -153,7 +153,7 @@ public class KernelIT extends KernelIntegrationTest
         int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
-        tx.finish();
+        tx.close();
 
         // THEN
         tx = db.beginTx();
@@ -167,7 +167,7 @@ public class KernelIT extends KernelIntegrationTest
         {
             // Yay!
         }
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -183,7 +183,7 @@ public class KernelIT extends KernelIntegrationTest
         statement.close();
         tx.failure();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // THEN
         tx = db.beginTx();
@@ -197,7 +197,7 @@ public class KernelIT extends KernelIntegrationTest
         {
             // Yay!
         }
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -215,7 +215,7 @@ public class KernelIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // THEN
         tx = db.beginTx();
@@ -223,7 +223,7 @@ public class KernelIT extends KernelIntegrationTest
 
         assertEquals( asSet( labelId1 ), asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
 
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -246,7 +246,7 @@ public class KernelIT extends KernelIntegrationTest
 
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -262,7 +262,7 @@ public class KernelIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
         tx = db.beginTx();
         statement = statementContextProvider.statement();
 
@@ -276,7 +276,7 @@ public class KernelIT extends KernelIntegrationTest
         assertEquals( asSet( labelId1 ), labels );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -290,7 +290,7 @@ public class KernelIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // WHEN
         tx = db.beginTx();
@@ -298,7 +298,7 @@ public class KernelIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId1 );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // THEN
         tx = db.beginTx();
@@ -306,7 +306,7 @@ public class KernelIT extends KernelIntegrationTest
         PrimitiveIntIterator labels = statement.readOperations().nodeGetLabels( node.getId() );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
 
         assertThat( asSet( labels ), equalTo( Collections.<Integer>emptySet() ) );
     }
@@ -322,7 +322,7 @@ public class KernelIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // WHEN
         tx = db.beginTx();
@@ -331,7 +331,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertFalse( "Shouldn't have been added now", added );
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -344,7 +344,7 @@ public class KernelIT extends KernelIntegrationTest
         int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // WHEN
         tx = db.beginTx();
@@ -353,7 +353,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertTrue( "Should have been added now", added );
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -367,7 +367,7 @@ public class KernelIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // WHEN
         tx = db.beginTx();
@@ -376,7 +376,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertTrue( "Should have been removed now", removed );
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -389,7 +389,7 @@ public class KernelIT extends KernelIntegrationTest
         int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // WHEN
         tx = db.beginTx();
@@ -398,7 +398,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertFalse( "Shouldn't have been removed now", removed );
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -409,7 +409,7 @@ public class KernelIT extends KernelIntegrationTest
         Label label = label( "labello" );
         Node node = db.createNode( label );
         tx.success();
-        tx.finish();
+        tx.close();
 
         tx = db.beginTx();
         Statement statement = statementContextProvider.statement();
@@ -426,7 +426,7 @@ public class KernelIT extends KernelIntegrationTest
         statement.close();
 
         tx.success();
-        tx.finish();
+        tx.close();
 
         assertEquals( emptySetOf( Long.class ), nodes );
         assertEquals( emptySetOf( Integer.class ), labels );
@@ -441,13 +441,13 @@ public class KernelIT extends KernelIntegrationTest
         Label label = label( "labello" );
         Node node = db.createNode( label );
         tx.success();
-        tx.finish();
+        tx.close();
 
         // AND GIVEN I DELETE IT
         tx = db.beginTx();
         node.delete();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // WHEN
         tx = db.beginTx();
@@ -456,7 +456,7 @@ public class KernelIT extends KernelIntegrationTest
         PrimitiveLongIterator nodes = statement.readOperations().nodesGetForLabel( labelId );
         Set<Long> nodeSet = asSet( nodes );
         tx.success();
-        tx.finish();
+        tx.close();
 
         // THEN
         assertThat( nodeSet, equalTo( Collections.<Long>emptySet() ) );
@@ -521,7 +521,7 @@ public class KernelIT extends KernelIntegrationTest
             }
         } );
         tx.success();
-        tx.finish();
+        tx.close();
         return state;
     }
 
@@ -540,7 +540,7 @@ public class KernelIT extends KernelIntegrationTest
             }
         } );
         tx.success();
-        tx.finish();
+        tx.close();
         return result.get();
     }
 }

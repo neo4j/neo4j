@@ -35,6 +35,7 @@ import org.junit.ClassRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -146,7 +147,7 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.finish();
+            tx.close();
         }
 
         if ( restartGraphDbBetweenTests() )
@@ -178,7 +179,7 @@ public abstract class AbstractNeo4jTestCase
         if ( tx != null )
         {
             tx.success();
-            tx.finish();
+            tx.close();
         }
         tx = graphDb.beginTx();
         return tx;
@@ -189,7 +190,7 @@ public abstract class AbstractNeo4jTestCase
         if ( tx != null )
         {
             tx.success();
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }
@@ -198,7 +199,7 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }
@@ -208,7 +209,7 @@ public abstract class AbstractNeo4jTestCase
         if ( tx != null )
         {
             tx.failure();
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }

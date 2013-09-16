@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -78,7 +79,7 @@ public class TestTxApplicationSynchronization
         nodeId = node.getId();
         node.setProperty( "propName", "propValue" );
         tx.success();
-        tx.finish();
+        tx.close();
 
         targetDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( dir.directory( "target", true ).getAbsolutePath() );
         applyTransactions( baseDb, targetDb );
@@ -104,7 +105,7 @@ public class TestTxApplicationSynchronization
         Transaction tx = baseDb.beginTx();
         baseDb.getNodeById( nodeId ).removeProperty( "propName" );
         tx.success();
-        tx.finish();
+        tx.close();
 
         final CountDownLatch localLatch = new CountDownLatch( 1 );
 
@@ -163,12 +164,14 @@ public class TestTxApplicationSynchronization
     private static DebuggedThread updater;
     private static final CountDownLatch latch = new CountDownLatch( 1 );
 
+    @SuppressWarnings("UnusedParameters")
     @BreakpointHandler("waitForSuspend")
     public static void suspendHandler( BreakPoint self, DebugInterface di ) throws Exception
     {
         latch.await();
     }
 
+    @SuppressWarnings("UnusedParameters")
     @BreakpointHandler("resumeAll")
     public static void resumeAllHandler( BreakPoint self, DebugInterface di )
     {
@@ -197,7 +200,7 @@ public class TestTxApplicationSynchronization
     }
 
     @BreakpointHandler("execute")
-    public static void handleExecute( BreakPoint self, DebugInterface di )
+    public static void handleExecute( @SuppressWarnings("UnusedParameters") BreakPoint self, DebugInterface di )
     {
         updater = di.thread();
         updater.suspend( null );

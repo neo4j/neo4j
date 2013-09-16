@@ -278,7 +278,7 @@ public class QuorumWritesIT
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
         return node;
     }
 }

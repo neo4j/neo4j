@@ -106,7 +106,7 @@ public class TestSlaveOnlyCluster
             node.setProperty( "foo", "bar" );
             long nodeId = node.getId();
             tx.success();
-            tx.finish();
+            tx.close();
 
             Transaction transaction = master.beginTx();
             try

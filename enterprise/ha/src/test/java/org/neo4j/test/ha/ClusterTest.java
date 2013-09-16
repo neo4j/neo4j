@@ -64,7 +64,7 @@ public class ClusterTest
             long nodeId = node.getId();
             node.setProperty( "foo", "bar" );
             tx.success();
-            tx.finish();
+            tx.close();
 
 
             HighlyAvailableGraphDatabase slave = clusterManager.getDefaultCluster().getAnySlave();
@@ -99,7 +99,7 @@ public class ClusterTest
             Transaction tx = master.beginTx();
             master.createNode();
             tx.success();
-            tx.finish();
+            tx.close();
         }
         finally
         {
@@ -216,7 +216,7 @@ public class ClusterTest
             master.createNode();
             logging.getLogger().info( "CREATED NODE" );
             tx.success();
-            tx.finish();
+            tx.close();
 
             logging.getLogger().info( "STOPPING CLUSTER" );
         }

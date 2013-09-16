@@ -25,6 +25,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -74,7 +75,7 @@ public abstract class AbstractLuceneIndexTestIT
             {
                 tx.success();
             }
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }

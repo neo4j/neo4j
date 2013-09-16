@@ -72,7 +72,7 @@ public class MultipleClusterTest
                 cluster1NodeId = node.getId();
                 logging.getLogger().info( "CREATED NODE" );
                 tx.success();
-                tx.finish();
+                tx.close();
             }
 
             ManagedCluster cluster2 = clusterManager.getCluster( "neo4j.ha2" );
@@ -86,7 +86,7 @@ public class MultipleClusterTest
                 cluster2NodeId = node.getId();
                 logging.getLogger().info( "CREATED NODE" );
                 tx.success();
-                tx.finish();
+                tx.close();
             }
 
             // Verify properties in all cluster nodes

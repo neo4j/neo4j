@@ -36,8 +36,10 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.valueOf;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
@@ -71,7 +73,7 @@ public class TestRelationshipGrabSize
     private void finishTx( boolean success )
     {
         if ( success ) tx.success();
-        tx.finish();
+        tx.close();
     }
     
     private void clearCache()
@@ -143,7 +145,7 @@ public class TestRelationshipGrabSize
             node1.createRelationshipTo( node2, type );
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         db.getNodeManager().clearCache();
 
@@ -152,20 +154,20 @@ public class TestRelationshipGrabSize
         node1.getRelationships().iterator().next().delete();
         node1.setProperty( "foo", "bar" );
         int relCount = 0;
-        for ( Relationship rel : node2.getRelationships() )
+        for ( Relationship ignored : node2.getRelationships() )
         {
             relCount++;
         }
         assertEquals( relCount, GRAB_SIZE + 1 );
         relCount = 0;
-        for (Relationship rel : node1.getRelationships())
+        for (Relationship ignored : node1.getRelationships())
         {
             relCount++;
         }
         assertEquals( relCount, GRAB_SIZE + 1 );
         assertEquals( "bar", node1.getProperty( "foo" ) );
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -218,7 +220,7 @@ public class TestRelationshipGrabSize
             count++;
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         clearCacheAndCreateDeleteCount( db, node1, node2, type1, type2, count );
         clearCacheAndCreateDeleteCount( db, node1, node2, type2, type1, count );
@@ -239,11 +241,11 @@ public class TestRelationshipGrabSize
         assertEquals( expectedCount, count( node1.getRelationships() ) );
         assertEquals( expectedCount, count( node2.getRelationships() ) );
         tx.success();
-        tx.finish();
+        tx.close();
 
         tx = db.beginTx();
         assertEquals( expectedCount, count( node1.getRelationships() ) );
         assertEquals( expectedCount, count( node2.getRelationships() ) );
-        tx.finish();
+        tx.close();
     }
 }

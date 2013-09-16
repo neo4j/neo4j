@@ -48,9 +48,11 @@ import org.neo4j.kernel.IdType;
 
 import static java.lang.Math.pow;
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
@@ -158,12 +160,12 @@ public class BigStoreIT implements RelationshipType
             if ( i % 100 == 0 && i > 0 )
             {
                 tx.success();
-                tx.finish();
+                tx.close();
                 tx = db.beginTx();
             }
         }
         tx.success();
-        tx.finish();
+        tx.close();
         
         db.shutdown();
         db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
@@ -262,7 +264,7 @@ public class BigStoreIT implements RelationshipType
         assertEquals( stringPropertyValue, nodeAboveTheLine.getProperty( propertyKey ) );
         assertTrue( Arrays.equals( arrayPropertyValue, (long[]) relBelowTheLine.getProperty( propertyKey ) ) );
         tx.success();
-        tx.finish();
+        tx.close();
 
         for ( int i = 0; i < 2; i++ )
         {

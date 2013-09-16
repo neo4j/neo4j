@@ -73,7 +73,7 @@ public class TestTxTimestamps
             Node node = db.createNode();
             node.setProperty( "name", "Mattias " + i );
             tx.success();
-            tx.finish();
+            tx.close();
             expectedCommitTimestamps[i] = System.currentTimeMillis();
         }
         db.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
