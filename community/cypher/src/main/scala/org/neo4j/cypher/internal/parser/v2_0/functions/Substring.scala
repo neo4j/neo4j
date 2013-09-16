@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
 case object Substring extends Function with LegacyPredicate {
-  def name = "SUBSTRING"
+  def name = "substring"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkMinArgs(invocation, 2) then checkMaxArgs(invocation, 3) then when(invocation.arguments.length >= 2) {

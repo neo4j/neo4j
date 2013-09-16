@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
 case object Range extends Function with LegacyPredicate {
-  def name = "RANGE"
+  def name = "range"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkMinArgs(invocation, 2) then checkMaxArgs(invocation, 3) then
