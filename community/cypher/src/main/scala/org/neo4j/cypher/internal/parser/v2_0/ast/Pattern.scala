@@ -132,15 +132,15 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
       element.semanticCheck(ctx)
     }
     case RelationshipChain(l: NodePattern, _, _, _)                        =>
-      SemanticError(s"shortestPath requires named nodes", token, l.token)
+      SemanticError(s"shortestPath(...) requires named nodes", token, l.token)
     case _                                                                 =>
-      SemanticError(s"shortestPath requires a pattern containing a single relationship", token, element.token)
+      SemanticError(s"shortestPath(...) requires a pattern containing a single relationship", token, element.token)
   }
 
   private def checkNoMinimalLength: SemanticCheck = element match {
     case RelationshipChain(_, rel, _, _) => rel.length match {
       case Some(Some(Range(Some(_), _, _))) =>
-        SemanticError(s"shortestPath does not support a minimal length", token, element.token)
+        SemanticError(s"shortestPath(...) does not support a minimal length", token, element.token)
       case _                                =>
         SemanticCheckResult.success
     }

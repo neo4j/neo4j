@@ -211,12 +211,12 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     }
   }
 
-  def percentileFunctionNames: Parser[String] = ignoreCases("percentile_cont", "percentile_disc")
+  def percentileFunctionNames: Parser[String] = ignoreCases("percentileCont", "percentileDisc")
 
   def percentileFunction: Parser[Expression] = percentileFunctionNames ~ parens(expression ~ "," ~ expression) ^^ {
     case function ~ (property ~ "," ~ percentile) => function match {
-      case "percentile_cont" => PercentileCont(property, percentile)
-      case "percentile_disc" => PercentileDisc(property, percentile)
+      case "percentileCont" => PercentileCont(property, percentile)
+      case "percentileDisc" => PercentileDisc(property, percentile)
     } 
   }
 

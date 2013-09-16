@@ -96,13 +96,13 @@ class SyntaxExceptionTest extends JUnitSuite with Assertions {
 
   @Test def shortestPathCanNotHaveMinimumDepth() {
     test("start a=node(0), b=node(1) match p=shortestPath(a-[*2..3]->b) return p",
-      v2_0    -> "shortestPath does not support a minimal length (line 1, column 36)"
+      v2_0    -> "shortestPath(...) does not support a minimal length (line 1, column 36)"
     )
   }
 
   @Test def shortestPathCanNotHaveMultipleLinksInIt() {
     test("start a=node(0), b=node(1) match p=shortestPath(a-->()-->b) return p",
-      v2_0    -> "shortestPath requires a pattern containing a single relationship (line 1, column 36)"
+      v2_0    -> "shortestPath(...) requires a pattern containing a single relationship (line 1, column 36)"
     )
   }
 

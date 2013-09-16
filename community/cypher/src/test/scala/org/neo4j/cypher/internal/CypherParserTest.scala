@@ -2954,13 +2954,13 @@ class CypherParserTest extends JUnitSuite with Assertions {
     val percentileDisc = PercentileDisc(property, Literal(0.5))
     val stdev = Stdev(property)
     val stdevP = StdevP(property)
-    test(vFrom2_0, "match n return percentile_cont(n.property, 0.4), percentile_disc(n.property, 0.5), stdev(n.property), stdevp(n.property)",
+    test(vFrom2_0, "match n return percentileCont(n.property, 0.4), percentileDisc(n.property, 0.5), stdev(n.property), stdevp(n.property)",
       Query.
         matches(SingleNode("n")).
         aggregation(percentileCont, percentileDisc, stdev, stdevP).
         returns(
-        ReturnItem(percentileCont, "percentile_cont(n.property, 0.4)"),
-        ReturnItem(percentileDisc, "percentile_disc(n.property, 0.5)"),
+        ReturnItem(percentileCont, "percentileCont(n.property, 0.4)"),
+        ReturnItem(percentileDisc, "percentileDisc(n.property, 0.5)"),
         ReturnItem(stdev, "stdev(n.property)"),
         ReturnItem(stdevP, "stdevp(n.property)")))
   }
