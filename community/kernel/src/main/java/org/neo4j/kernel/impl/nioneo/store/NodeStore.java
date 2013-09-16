@@ -165,21 +165,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         return forceGetRecord( id );
     }
 
-//    public void updateRecord( NodeRecord record, boolean recovered )
-//    {
-//        assert recovered;
-//        setRecovered();
-//        try
-//        {
-//            updateRecord( record );
-//            registerIdFromUpdateRecord( record.getId() );
-//        }
-//        finally
-//        {
-//            unsetRecovered();
-//        }
-//    }
-
     @Override
     public void forceUpdateRecord( NodeRecord record )
     {

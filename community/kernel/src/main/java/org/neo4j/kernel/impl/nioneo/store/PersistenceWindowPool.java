@@ -90,7 +90,7 @@ public class PersistenceWindowPool implements WindowPool
      *            A fileChannel to the store
      * @param mappedMem
      *            Number of bytes dedicated to memory mapped windows
-     * @throws IOException
+     * @throws UnderlyingStorageException
      *             If unable to create pool
      */
     public PersistenceWindowPool( File storeName, int blockSize,
@@ -118,8 +118,6 @@ public class PersistenceWindowPool implements WindowPool
      * @param operationType
      *            The type of operation (READ or WRITE)
      * @return A locked window encapsulating the position
-     * @throws IOException
-     *             If unable to acquire the window
      */
     @Override
     public PersistenceWindow acquire( long position, OperationType operationType )
@@ -212,8 +210,6 @@ public class PersistenceWindowPool implements WindowPool
      *
      * @param window
      *            The window to be released
-     * @throws IOException
-     *             If unable to release window
      */
     @Override
     public void release( PersistenceWindow window )

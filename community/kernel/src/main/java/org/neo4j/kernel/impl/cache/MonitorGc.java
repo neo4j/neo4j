@@ -68,8 +68,6 @@ public class MonitorGc implements Lifecycle
     @Override
     public void shutdown() throws Throwable
     {
-        // TODO Auto-generated method stub
-
     }
 
 }

@@ -56,15 +56,11 @@ public class UseJOTMAsTxManagerIT
         @Override
         public void afterCommit( TransactionData data, Object state )
         {
-            // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void afterRollback( TransactionData data, Object state )
         {
-            // TODO Auto-generated method stub
-            
         }
     };
 

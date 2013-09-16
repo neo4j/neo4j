@@ -409,6 +409,7 @@ public class Traversal
         {
             relationships[i] = iter.next();
         }
+        // TODO returning FinalTraversalBranch cannot possibly be correct here. It makes this method an expensive noop.
         return new FinalTraversalBranch();
     }
 
