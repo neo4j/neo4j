@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.parser.v2_0.ast
 
 import org.neo4j.cypher.internal.parser.v2_0._
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.{PatternException, SyntaxException}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.symbols._
@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.parser._
 import org.neo4j.cypher.internal.commands.values.KeyToken.Unresolved
 import org.neo4j.cypher.internal.parser.ParsedNamedPath
 import org.neo4j.cypher.internal.commands.values.UnresolvedLabel
+import org.neo4j.cypher.internal.parser.v2_0.ast.Pattern.SemanticContext.Update
 
 object Pattern {
   sealed trait SemanticContext
@@ -100,7 +101,10 @@ sealed abstract class PathPattern extends AstNode {
 case class EveryPath(element: PatternElement) extends PathPattern {
   def token = element.token
 
-  def semanticCheck(ctx: SemanticContext) = element.semanticCheck(ctx)
+  def semanticCheck(ctx: SemanticContext) = (element, ctx) match {
+    case (n: NamedNodePattern, Update) => n.identifier.declare(NodeType()) then element.semanticCheck(ctx)
+    case _                             => element.semanticCheck(ctx)
+  }
 
   def toLegacyPatterns(pathName: Option[String]) = element.toLegacyPatterns(pathName.isEmpty)
   def toLegacyNamedPath(pathName: String) = Some(commands.NamedPath(pathName, element.toAbstractPatterns:_*))
@@ -118,7 +122,10 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
   val name: String
   val single: Boolean
 
-  def semanticCheck(ctx: SemanticContext) = checkContainsSingle(ctx) then checkNoMinimalLength
+  def semanticCheck(ctx: SemanticContext) = ctx match {
+    case Update => SemanticError("shortestPath cannot be used to CREATE", token, element.token)
+    case _      => checkContainsSingle(ctx) then checkNoMinimalLength
+  }
 
   private def checkContainsSingle(ctx: SemanticContext): SemanticCheck = element match {
     case RelationshipChain(l: NamedNodePattern, _, r: NamedNodePattern, _) => {
@@ -366,10 +373,7 @@ sealed abstract class RelationshipPattern extends AstNode {
     val (from, to) = direction match {
       case Direction.OUTGOING => (fromEnd, toEnd)
       case Direction.INCOMING => (toEnd, fromEnd)
-      case Direction.BOTH => (fromEnd.node, toEnd.node) match {
-        case (legacy.Identifier(a), legacy.Identifier(b)) if a >= b => (toEnd, fromEnd)
-        case _ => (fromEnd, toEnd)
-      }
+      case Direction.BOTH     => throw new PatternException("Relationships need to have a direction when used to CREATE.")
     }
     val typeName = types match {
       case Seq(i) => i.name
@@ -390,7 +394,13 @@ case class NamedRelationshipPattern(
 {
   override def semanticCheck(ctx: SemanticContext) = {
     val possibleType = if (length.isEmpty) RelationshipType() else CollectionType(RelationshipType())
-    super.semanticCheck(ctx) then identifier.implicitDeclaration(possibleType)
+
+    val identifierCheck = ctx match {
+      case Update => identifier.declare(possibleType)
+      case _      => identifier.implicitDeclaration(possibleType)
+    }
+
+    super.semanticCheck(ctx) then identifierCheck
   }
 
   val legacyName = identifier.name

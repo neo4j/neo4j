@@ -1,6 +1,7 @@
-2.0.0-XX
----------
+2.0-SNAPSHOT
+------------
 o Parenthesis around nodes are now mandatory if a label is used on the node
+o Removes the legacy parser
 
 2.0.0-M05
 ---------

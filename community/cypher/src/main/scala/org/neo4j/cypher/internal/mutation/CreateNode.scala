@@ -33,8 +33,6 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   with GraphElementPropertyFunctions
   with CollectionSupport {
 
-
-
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     def fromAnyToLiteral(x: Map[String, Any]): Map[String, Expression] = x.map {
       case (k, v:Any) => k -> Literal(v)

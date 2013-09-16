@@ -22,34 +22,22 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commands._
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Matchers
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.parser.legacy.DefaultFalse
 import org.neo4j.cypher.internal.pipes.FakePipe
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.symbols.NodeType
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
-import org.scalatest.mock.MockitoSugar
-import org.mockito.Matchers
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.cypher.internal.commands.values.TokenType._
-import org.neo4j.cypher.internal.commands.expressions.IdFunction
 import org.neo4j.cypher.internal.mutation.MergeNodeAction
-import org.neo4j.cypher.internal.commands.AllNodes
-import org.neo4j.cypher.internal.commands.SchemaIndex
-import org.neo4j.cypher.internal.commands.expressions.Literal
-import scala.Some
-import org.neo4j.cypher.internal.commands.HasLabel
-import org.neo4j.cypher.internal.commands.SingleNode
-import org.neo4j.cypher.internal.commands.Equals
-import org.neo4j.cypher.internal.commands.NodeByLabel
-import org.neo4j.cypher.internal.commands.ShortestPath
-import org.neo4j.cypher.internal.commands.expressions.Nullable
-import org.neo4j.cypher.internal.commands.expressions.Property
+import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.parser.v1_9.DefaultFalse
 
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
@@ -216,7 +204,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(new Nullable(Property(Identifier(identifier), propertyKey)) with DefaultFalse, expression)
+      Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -236,7 +224,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(expression, new Nullable(Property(Identifier(identifier), propertyKey)) with DefaultFalse)
+      Equals(expression, Property(Identifier(identifier), propertyKey))
     ), patterns = Seq(
       SingleNode(identifier)
     ))
@@ -256,7 +244,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // Given
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label)),
-      Equals(new Nullable(Property(Identifier(identifier), propertyKey)) with DefaultFalse, expression)
+      Equals(Property(Identifier(identifier), propertyKey), expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))

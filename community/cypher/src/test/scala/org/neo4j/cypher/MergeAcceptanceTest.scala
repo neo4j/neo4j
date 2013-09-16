@@ -194,12 +194,4 @@ class MergeAcceptanceTest extends ExecutionEngineHelper with Assertions with Sta
     assertInTx(a.getProperty("prop") === 42)
     assertInTx(other.getProperty("prop") === 666)
   }
-
-  @Test
-  def can_not_rebind_an_identifier() {
-    // Given common database with reference node
-
-    // When
-    intercept[CypherTypeException](parseAndExecute("match (a) merge (a) return a"))
-  }
 }
