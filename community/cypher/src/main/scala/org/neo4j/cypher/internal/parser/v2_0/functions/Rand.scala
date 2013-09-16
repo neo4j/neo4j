@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 import org.neo4j.cypher.internal.symbols.DoubleType
 
 case object Rand extends Function {
-  def name = "RAND"
+  def name = "rand"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 0) then

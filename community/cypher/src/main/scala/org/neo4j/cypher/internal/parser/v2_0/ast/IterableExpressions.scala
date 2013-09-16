@@ -40,12 +40,12 @@ trait FilteringExpression extends Expression {
 
   protected def checkPredicateDefined =
     when (innerPredicate.isEmpty) {
-      SemanticError(s"${name} requires a WHERE predicate", token)
+      SemanticError(s"${name}(...) requires a WHERE predicate", token)
     }
 
   protected def checkPredicateNotDefined =
     when (innerPredicate.isDefined) {
-      SemanticError(s"${name} should not contain a WHERE predicate", token)
+      SemanticError(s"${name}(...) should not contain a WHERE predicate", token)
     }
 
   private def checkInnerPredicate : SemanticCheck = {
@@ -73,7 +73,7 @@ trait FilteringExpression extends Expression {
 
 
 case class FilterExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends FilteringExpression {
-  val name = "FILTER"
+  val name = "filter"
 
   override def semanticCheck(ctx: SemanticContext) =
     checkPredicateDefined then
@@ -91,7 +91,7 @@ case class ExtractExpression(
     extractExpression: Option[Expression],
     token: InputToken) extends FilteringExpression
 {
-  val name = "EXTRACT"
+  val name = "extract"
 
   override def semanticCheck(ctx: SemanticContext) =
     checkPredicateNotDefined then
@@ -101,7 +101,7 @@ case class ExtractExpression(
 
   private def checkExtractExpressionDefined =
     when (extractExpression.isEmpty) {
-      SemanticError(s"${name} requires '| expression' (an extract expression)", token)
+      SemanticError(s"${name}(...) requires '| expression' (an extract expression)", token)
     }
 
   private def checkInnerExpression : SemanticCheck =
@@ -170,28 +170,28 @@ sealed trait IterablePredicateExpression extends FilteringExpression {
 }
 
 case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
-  val name = "ALL"
+  val name = "all"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) = {
     commands.AllInCollection(command, identifier.name, inner)
   }
 }
 
 case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
-  val name = "ANY"
+  val name = "any"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) = {
     commands.AnyInCollection(command, identifier.name, inner)
   }
 }
 
 case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
-  val name = "NONE"
+  val name = "none"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) = {
     commands.NoneInCollection(command, identifier.name, inner)
   }
 }
 
 case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
-  val name = "SINGLE"
+  val name = "single"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) = {
     commands.SingleInCollection(command, identifier.name, inner)
   }

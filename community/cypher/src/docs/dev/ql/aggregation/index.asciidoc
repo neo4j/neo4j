@@ -27,9 +27,9 @@ include::sum.asciidoc[]
 
 include::avg.asciidoc[]
 
-include::percentile_disc.asciidoc[]
+include::percentiledisc.asciidoc[]
 
-include::percentile_cont.asciidoc[]
+include::percentilecont.asciidoc[]
 
 include::stdev.asciidoc[]
 
