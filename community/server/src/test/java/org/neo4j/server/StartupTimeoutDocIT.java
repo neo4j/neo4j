@@ -19,16 +19,8 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Properties;
-
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -36,6 +28,16 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.test.TargetDirectory;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Properties;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class StartupTimeoutDocIT
 {
@@ -100,6 +102,7 @@ public class StartupTimeoutDocIT
 	}
     
 	@Test
+	@Ignore
 	public void shouldNotTimeOutIfTimeoutDisabled() throws IOException 
 	{
 		Configurator configurator = buildProperties();
