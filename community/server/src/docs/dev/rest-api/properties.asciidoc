@@ -21,3 +21,11 @@ Server cannot determine the type. In these cases, it will check if an array is a
 and will use the stored arrays type when storing the empty array. If no array exists already, the server will reject
 the request.
 
+=== Property keys ===
+
+You can list all property keys ever used in the database. This includes and property keys you have used, but deleted.
+
+There is currently no way to tell which ones are in use and which ones are not, short of walking the entire set of
+properties in the database.
+
+include::list-all-property-keys.asciidoc[]

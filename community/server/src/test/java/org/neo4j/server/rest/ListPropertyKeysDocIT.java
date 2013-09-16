@@ -33,7 +33,6 @@ import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 public class ListPropertyKeysDocIT extends AbstractRestFunctionalTestBase
 {
-
     /**
      * List all property keys.
      */
@@ -44,7 +43,7 @@ public class ListPropertyKeysDocIT extends AbstractRestFunctionalTestBase
             @GraphDescription.NODE( name = "b", setNameProperty = true ),
             @GraphDescription.NODE( name = "c", setNameProperty = true )
     } )
-    public void list_all_property_keys() throws JsonParseException
+    public void list_all_property_keys_ever_used() throws JsonParseException
     {
         data.get();
         String uri = getPropertyKeysUri();
@@ -56,5 +55,4 @@ public class ListPropertyKeysDocIT extends AbstractRestFunctionalTestBase
         Set<?> parsed = asSet((List<?>) readJson( body ));
         assertTrue( parsed.contains( "name" ) );
     }
-    
 }
