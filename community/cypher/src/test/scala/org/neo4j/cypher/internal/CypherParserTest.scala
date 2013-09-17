@@ -2885,7 +2885,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     test(vFrom2_0, "match (n:Person)-->() using index n:Person(name) where n.name = 'Andres' return n",
       Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED20"), "  UNNAMED16", Seq(), Direction.OUTGOING, optional = false)).
         where(Equals(Property(Identifier("n"), PropertyKey("name")), Literal("Andres"))).
-        using(SchemaIndex("n", "Person", "name", None)).
+        using(SchemaIndex("n", "Person", "name", AnyIndex, None)).
         returns(ReturnItem(Identifier("n"), "n", renamed = false)))
   }
 

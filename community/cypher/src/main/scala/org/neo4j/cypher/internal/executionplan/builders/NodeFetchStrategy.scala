@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions._
 import org.neo4j.cypher.internal.spi.PlanContext
+import org.neo4j.cypher.internal.commands.values.KeyToken
 
 /*
 This rather simple class finds a starting strategy for a given single node and a list of predicates required
@@ -30,13 +31,37 @@ to be true for that node
 @see NodeStrategy
  */
 object NodeFetchStrategy {
+
   val nodeStrategies: Seq[NodeStrategy] = Seq(NodeByIdStrategy, IndexSeekStrategy, LabelScanStrategy, GlobalStrategy)
 
   def findStartStrategy(node: String, where: Seq[Predicate], ctx: PlanContext): RatedStartItem = {
     val ratedItems = nodeStrategies.flatMap(_.findRatedStartItems(node, where, ctx))
     ratedItems.sortBy(_.rating).head
   }
+
+  def findUniqueIndexes(props: Map[KeyToken, Expression], labels: Seq[KeyToken], ctx: PlanContext): Seq[(KeyToken, KeyToken)] = {
+    val indexes = labels.flatMap { (label: KeyToken) => findUniqueIndexesForLabel( label, props.keys, ctx ) }
+    implicit val ordering = KeyToken.Ordering
+    indexes.sorted
+  }
+
+  def findUniqueIndexesForLabel(label: KeyToken, keys: Iterable[KeyToken], ctx: PlanContext): Seq[(KeyToken, KeyToken)] =
+    keys.flatMap { (key: KeyToken) =>
+      ctx.getUniquenessConstraint(label.name, key.name).map { _ => (label, key) }
+    }.toSeq
+
+  val Single = 0
+  val IndexEquality = 1
+  val IndexRange = 2
+  val IndexScan = 3
+  val LabelScan = 4
+  val Global = 5
 }
+
+import NodeFetchStrategy.Single
+import NodeFetchStrategy.Global
+import NodeFetchStrategy.IndexEquality
+import NodeFetchStrategy.LabelScan
 
 /*
 Bundles a possible start item with a rating (where lower implies better) and a list of predicates that
@@ -48,16 +73,10 @@ case class RatedStartItem(s: StartItem, rating: Integer, solvedPredicates: Seq[P
 Finders produce StartItemWithRatings for a node and a set of required predicates over that node
  */
 trait NodeStrategy {
+
   type LabelName = String
   type IdentifierName = String
   type PropertyKey = String
-
-  val Single = 0
-  val IndexEquality = 1
-  val IndexRange = 2
-  val IndexScan = 3
-  val LabelScan = 4
-  val Global = 5
 
   def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem]
 
@@ -70,6 +89,8 @@ trait NodeStrategy {
 }
 
 object NodeByIdStrategy extends NodeStrategy {
+
+
   def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
     val idPredicates: Seq[SolvedPredicate[Long]] = findEqualityPredicatesUsingNodeId(node, where)
     val ids: Seq[Long] = idPredicates.map(_.solution)
@@ -98,7 +119,7 @@ object IndexSeekStrategy extends NodeStrategy {
       labelPredicate <- labelPredicates;
       propertyPredicate <- propertyPredicates if (ctx.getIndexRule(labelPredicate.solution, propertyPredicate.solution).nonEmpty)
     ) yield {
-      val schemaIndex = SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, None)
+      val schemaIndex = SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, AnyIndex, None)
       val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, propertyPredicate.solution)
       val rating = if (optConstraint.isDefined) Single else IndexEquality
       val predicates = Seq(labelPredicate.predicate, propertyPredicate.predicate)

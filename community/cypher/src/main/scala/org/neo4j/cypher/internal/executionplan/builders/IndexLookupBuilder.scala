@@ -74,8 +74,8 @@ class IndexLookupBuilder extends PlanBuilder {
     plan.query.start.filter(interestingFilter).head.asInstanceOf[QueryToken[SchemaIndex]]
 
   private def interestingFilter: PartialFunction[QueryToken[StartItem], Boolean] = {
-    case Unsolved(SchemaIndex(_, _, _, None)) => true
-    case _                                    => false
+    case Unsolved(SchemaIndex(_, _, _, _, None)) => true
+    case _                                       => false
   }
 
   def priority = PlanBuilder.IndexLookup

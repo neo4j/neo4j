@@ -66,7 +66,7 @@ trait QueryContext extends TokenContext {
 
   def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node]
 
-  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Node
+  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node]
 
   def getNodesByLabel(id: Int): Iterator[Node]
 

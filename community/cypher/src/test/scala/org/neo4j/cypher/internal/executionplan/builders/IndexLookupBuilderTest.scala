@@ -72,7 +72,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val property = "prop"
 
     val q = PartiallySolvedQuery().copy(
-      start = Seq(Unsolved(SchemaIndex(identifier, label, property, None)))
+      start = Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None)))
     )
 
     //WHEN
@@ -98,7 +98,7 @@ class IndexLookupBuilderTest extends BuilderTest {
       Unsolved(propertyPredicate))
 
     val q = PartiallySolvedQuery().copy(
-      start = Seq(Unsolved(SchemaIndex(identifier, label1, property, None))),
+      start = Seq(Unsolved(SchemaIndex(identifier, label1, property, AnyIndex, None))),
       where = predicates
     )
 
@@ -106,7 +106,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val plan = assertAccepts(q)
 
     //THEN
-    assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label1, property, Some(valueExpression)))))
+    assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label1, property, AnyIndex, Some(valueExpression)))))
     val a = plan.query.where.toSet
     val b = Set(Solved(label1Predicate), Unsolved(label2Predicate), Solved(propertyPredicate))
     assert(a === b)
@@ -116,7 +116,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val labelPredicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
 
     val q = PartiallySolvedQuery().copy(
-      start = Seq(Unsolved(SchemaIndex(identifier, label, property, None))),
+      start = Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))),
       where = Seq(Unsolved(predicate), Unsolved(labelPredicate))
     )
 
@@ -124,7 +124,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val plan = assertAccepts(q)
 
     //THEN
-    assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label, property, Some(valueExpression)))))
+    assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, Some(valueExpression)))))
     assert(plan.query.where.toSet === Set(Solved(predicate), Solved(labelPredicate)))
   }
 }

@@ -17,20 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0.ast
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.parser.v2_0._
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues, AnyIndex}
+import org.scalatest.Assertions
+import org.junit.Test
+import org.neo4j.graphdb.Node
 
-sealed trait Hint extends AstNode {
-  def toLegacySchemaIndex : commands.StartItem with commands.Hint
-}
+// Delete this once the reference node is gone
+class ReferenceNodeAcceptanceTest extends ExecutionEngineHelper with Assertions with StatisticsChecker {
+  @Test
+  def merge_node_and_find_reference_node() {
+    // Given common database with reference node
 
-case class UsingIndexHint(node: Identifier, label: Identifier, property: Identifier, token: InputToken) extends Hint {
-  def toLegacySchemaIndex = commands.SchemaIndex(node.name, label.name, property.name, AnyIndex, None)
-}
+    // When
+    val result = parseAndExecute("merge (a) return a")
 
-case class UsingScanHint(node: Identifier, label: Identifier, token: InputToken) extends Hint {
-  def toLegacySchemaIndex = commands.NodeByLabel(node.name, label.name)
+    // Then
+    val createdNodes = result.columnAs[Node]("a").toList
+
+    assertInTx(createdNodes === List(graph.getReferenceNode))
+    assertStats(result, nodesCreated = 0)
+  }
 }

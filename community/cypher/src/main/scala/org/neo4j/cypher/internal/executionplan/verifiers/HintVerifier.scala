@@ -66,7 +66,7 @@ object HintVerifier extends Verifier {
           throw new LabelScanHintException(hintIdentifier, hintLabel,
             "Cannot use label scan hint in this context. The label must be specified on a non-optional node")
 
-        case SchemaIndex(id, label, prop, _) if !hasExpectedPredicate(id, prop) || !containsLabel(id, label) =>
+        case SchemaIndex(id, label, prop, _, _) if !hasExpectedPredicate(id, prop) || !containsLabel(id, label) =>
           throw new IndexHintException(id, label, prop,
             "Cannot use index hint in this context. The label and property comparison must be specified on a non-optional node")
 
