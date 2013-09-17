@@ -19,11 +19,10 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
-import static org.neo4j.cluster.com.message.Message.timeout;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,6 +36,8 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.cluster.com.message.Message.timeout;
 
 /**
  * Context used by the {@link HeartbeatState} state machine.
@@ -92,9 +93,14 @@ public class HeartbeatContext
 
     public void suspect( final InstanceId node )
     {
-        logger.info( "Suspecting " + node );
         Set<InstanceId> serverSuspicions = getSuspicionsFor( clusterContext.getMyId() );
-        serverSuspicions.add( node );
+
+        if (!serverSuspicions.contains( node ))
+        {
+            serverSuspicions.add( node );
+
+            logger.info(clusterContext.getMyId()+"(me) is now suspecting "+node);
+        }
 
         if ( isFailed( node ) && !failed.contains( node ) )
         {
@@ -114,9 +120,30 @@ public class HeartbeatContext
     public void suspicions( InstanceId from, Set<InstanceId> suspicions )
     {
         Set<InstanceId> serverSuspicions = getSuspicionsFor( from );
-        serverSuspicions.clear();
-        serverSuspicions.addAll( suspicions );
 
+        // Check removals
+        Iterator<InstanceId> suspicionsIterator = serverSuspicions.iterator();
+        while ( suspicionsIterator.hasNext() )
+        {
+            InstanceId currentSuspicion = suspicionsIterator.next();
+            if (!suspicions.contains( currentSuspicion ))
+            {
+                logger.info(from+" is no longer suspecting "+currentSuspicion);
+                suspicionsIterator.remove();
+            }
+        }
+
+        // Check additions
+        for ( InstanceId suspicion : suspicions )
+        {
+            if (!serverSuspicions.contains( suspicion ))
+            {
+                logger.info(from+" is now suspecting "+suspicion);
+                serverSuspicions.add(suspicion);
+            }
+        }
+
+        // Check if anyone is considered failed
         for ( final InstanceId node : suspicions )
         {
             if ( isFailed( node ) && !failed.contains( node ) )

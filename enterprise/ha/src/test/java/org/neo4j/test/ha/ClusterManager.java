@@ -24,9 +24,11 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -42,6 +44,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
@@ -111,13 +114,13 @@ public class ClusterManager
                 }
             } );
         }
-        
+
         public Builder withStoreDirInitializer( StoreDirInitializer initializer )
         {
             this.initializer = initializer;
             return this;
         }
-        
+
         public Builder withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory )
         {
             this.factory = dbFactory;
@@ -129,7 +132,7 @@ public class ClusterManager
             return new ClusterManager( this );
         }
     }
-    
+
     public interface StoreDirInitializer
     {
         void initializeStoreDir( int serverId, File storeDir ) throws IOException;
@@ -273,7 +276,7 @@ public class ClusterManager
     {
         this( clustersProvider, root, commonConfig, instanceConfig, new HighlyAvailableGraphDatabaseFactory() );
     }
-    
+
     public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig )
     {
         this( clustersProvider, root, commonConfig, Collections.<Integer, Map<String, String>>emptyMap(),
@@ -472,12 +475,22 @@ public class ClusterManager
             ClusterClient clusterClient = db.getDependencyResolver().resolveDependency( ClusterClient.class );
             LifeSupport clusterClientLife = (LifeSupport) accessible( clusterClient.getClass().getDeclaredField(
                     "life" ) ).get( clusterClient );
+
             NetworkReceiver receiver = instance( NetworkReceiver.class, clusterClientLife.getLifecycleInstances() );
             receiver.stop();
+
+            ExecutorLifecycleAdapter statemachineExecutor = instance(ExecutorLifecycleAdapter.class, clusterClientLife.getLifecycleInstances());
+            statemachineExecutor.stop();
+
             NetworkSender sender = instance( NetworkSender.class, clusterClientLife.getLifecycleInstances() );
             sender.stop();
 
-            return new StartNetworkAgainKit( db, receiver, sender );
+            List<Lifecycle> stoppedServices = new ArrayList<>();
+            stoppedServices.add( sender );
+            stoppedServices.add(statemachineExecutor);
+            stoppedServices.add( receiver );
+
+            return new StartNetworkAgainKit( db, stoppedServices );
         }
 
         private void startMember( int serverId ) throws URISyntaxException, IOException
@@ -966,21 +979,21 @@ public class ClusterManager
     private class StartNetworkAgainKit implements RepairKit
     {
         private final HighlyAvailableGraphDatabase db;
-        private final NetworkReceiver receiver;
-        private final NetworkSender sender;
+        private final Iterable<Lifecycle> stoppedServices;
 
-        StartNetworkAgainKit( HighlyAvailableGraphDatabase db, NetworkReceiver receiver, NetworkSender sender )
+        StartNetworkAgainKit( HighlyAvailableGraphDatabase db, Iterable<Lifecycle> stoppedServices )
         {
             this.db = db;
-            this.receiver = receiver;
-            this.sender = sender;
+            this.stoppedServices = stoppedServices;
         }
 
         @Override
         public HighlyAvailableGraphDatabase repair() throws Throwable
         {
-            receiver.start();
-            sender.start();
+            for ( Lifecycle stoppedService : stoppedServices )
+            {
+                stoppedService.start();
+            }
             return db;
         }
     }

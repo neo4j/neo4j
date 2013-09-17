@@ -23,7 +23,10 @@ import java.util.ArrayList;
 
 import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
+import org.neo4j.desktop.ui.UnableToStartServerException;
 import org.neo4j.server.Bootstrapper;
+
+import static org.neo4j.server.Bootstrapper.OK;
 
 /**
  * Lifecycle actions for the Neo4j server living inside this JVM. Typically reacts to button presses
@@ -39,18 +42,25 @@ public class DatabaseActions
         this.model = model;
     }
 
-    public void start()
+    public void start() throws UnableToStartServerException
     {
         if ( isRunning() )
         {
-            throw new IllegalStateException( "Already started" );
+            throw new UnableToStartServerException( "Already started" );
         }
 
         server = new DesktopBootstrapper(
                 model.getDatabaseDirectory(),
                 model.getDatabaseConfigurationFile(),
                 new ArrayList<String>() );
-        server.start();
+
+        int startupCode = server.start();
+
+        if (startupCode == OK) return;
+
+        stop();
+
+        throw new UnableToStartServerException( "Unable to start Neo4j Server on port 7474. See logs for details." );
     }
     
     public void stop()
