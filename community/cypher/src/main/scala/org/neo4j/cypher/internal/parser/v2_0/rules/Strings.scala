@@ -24,8 +24,8 @@ import org.parboiled.Context
 
 trait Strings extends Base {
 
-  protected def StringCharacters(c: Char) = {
-    push(new StringBuilder) ~ zeroOrMore(EscapedChar(c) | NormalChar(c)) ~~> (_.toString)
+  protected def StringCharacters(c: Char): Rule1[String] = {
+    push(new StringBuilder) ~ zeroOrMore(EscapedChar(c) | NormalChar(c)) ~~> (_.toString())
   }
 
   protected def NormalChar(c: Char) = {
