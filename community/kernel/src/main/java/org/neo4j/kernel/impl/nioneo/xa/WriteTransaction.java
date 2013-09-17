@@ -31,8 +31,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
+
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
@@ -96,10 +96,13 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 import static java.util.Arrays.binarySearch;
+import static java.util.Arrays.copyOf;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
@@ -709,8 +712,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             executeDeleted( propCommands, relCommands, nodeCommands.values() );
 
             // property change set for index updates
-            Set<NodePropertyUpdate> propertyUpdates = new HashSet<>();
-            List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
+            Collection<NodePropertyUpdate> propertyUpdates = new HashSet<>();
+            Collection<NodeLabelUpdate> labelUpdates = new ArrayList<>();
             gatherPropertyAndLabelUpdates( propertyUpdates, labelUpdates );
 
             indexes.updateIndexes( propertyUpdates );
@@ -832,35 +835,85 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 continue;
             }
 
-            // They are sorted in the store
+            LabelChangeSummary summary = new LabelChangeSummary( labelsBefore, labelsAfter );
+            Iterator<DefinedProperty> properties = nodeFullyLoadProperties( nodeId );
+            while ( properties.hasNext() )
+            {
+                DefinedProperty property = properties.next();
+                if ( summary.hasAddedLabels() )
+                {
+                    propertyUpdates.add(
+                            add( nodeId, property.propertyKeyId(), property.value(), summary.getAddedLabels() ) );
+                }
+                if ( summary.hasRemovedLabels() )
+                {
+                    propertyUpdates.add(
+                            remove( nodeId, property.propertyKeyId(), property.value(), summary.getRemovedLabels() ) );
+                }
+            }
+        }
+    }
+
+    private static class LabelChangeSummary
+    {
+        private static final long[] NO_LABELS = new long[0];
+
+        private final long[] addedLabels;
+        private final long[] removedLabels;
+
+        LabelChangeSummary( long[] labelsBefore, long[] labelsAfter )
+        {
+            // Ids are sorted in the store
+            long[] addedLabels = new long[labelsAfter.length];
+            long[] removedLabels = new long[labelsBefore.length];
+            int addedLabelsCursor = 0, removedLabelsCursor = 0;
             for ( long labelAfter : labelsAfter )
             {
                 if ( binarySearch( labelsBefore, labelAfter ) < 0 )
                 {
-                    // This label has been added. Go through all node properties and create updates for this label
-                    Iterator<DefinedProperty> properties = nodeFullyLoadProperties( nodeId );
-                    while ( properties.hasNext() )
-                    {
-                        DefinedProperty property = properties.next();
-                        propertyUpdates.add( NodePropertyUpdate.add( nodeId, property.propertyKeyId(), property.value(),
-                                new long[]{labelAfter} ) );
-                    }
+                    addedLabels[addedLabelsCursor++] = labelAfter;
                 }
             }
             for ( long labelBefore : labelsBefore )
             {
                 if ( binarySearch( labelsAfter, labelBefore ) < 0 )
                 {
-                    // This label has been removed. Go through all node properties and create updates for this label
-                    Iterator<DefinedProperty> properties = nodeFullyLoadProperties( nodeId );
-                    while ( properties.hasNext() )
-                    {
-                        DefinedProperty property = properties.next();
-                        propertyUpdates.add( NodePropertyUpdate.remove( nodeId, property.propertyKeyId(), property.value(),
-                                new long[]{labelBefore} ) );
-                    }
+                    removedLabels[removedLabelsCursor++] = labelBefore;
                 }
             }
+
+            // For each property on the node, produce one update for added labels and one for removed labels.
+            this.addedLabels = shrink( addedLabels, addedLabelsCursor );
+            this.removedLabels = shrink( removedLabels, removedLabelsCursor );
+        }
+
+        private long[] shrink( long[] array, int toLength )
+        {
+            if ( toLength == 0 )
+            {
+                return NO_LABELS;
+            }
+            return array.length == toLength ? array : copyOf( array, toLength );
+        }
+
+        public boolean hasAddedLabels()
+        {
+            return addedLabels.length > 0;
+        }
+
+        public boolean hasRemovedLabels()
+        {
+            return removedLabels.length > 0;
+        }
+
+        public long[] getAddedLabels()
+        {
+            return addedLabels;
+        }
+
+        public long[] getRemovedLabels()
+        {
+            return removedLabels;
         }
     }
 
