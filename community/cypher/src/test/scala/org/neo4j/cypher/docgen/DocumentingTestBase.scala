@@ -29,7 +29,7 @@ import org.neo4j.visualization.graphviz.{ AsciiDocStyle, GraphvizWriter, GraphSt
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
-import org.neo4j.cypher.{ ExecutionResult, ExecutionEngine }
+import org.neo4j.cypher.{CypherException, ExecutionResult, ExecutionEngine}
 import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.prettifier.Prettifier
 import org.neo4j.cypher.internal.CypherParser
 import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
 import org.neo4j.tooling.GlobalGraphOperations
+import scala.reflect.ClassTag
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -94,14 +95,19 @@ trait DocumentationHelper extends GraphIcing {
 abstract class DocumentingTestBase extends Assertions with DocumentationHelper with GraphIcing {
 
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
-    internalTestQuery(title, text, queryText, returns, None, assertions: _*)
+    internalTestQuery(title, text, queryText, returns, None, None, assertions: _*)
+  }
+
+  def testFailingQuery[T <: CypherException : ClassTag](title: String, text: String, queryText: String, returns: String) {
+    val classTag = implicitly[ClassTag[T]]
+    internalTestQuery(title, text, queryText, returns, Some(classTag), None)
   }
 
   def prepareAndTestQuery(title: String, text: String, queryText: String, returns: String, prepare: (() => Any), assertions: (ExecutionResult => Unit)*) {
-    internalTestQuery(title, text, queryText, returns, Some(prepare), assertions: _*)
+    internalTestQuery(title, text, queryText, returns, None, Some(prepare), assertions: _*)
   }
 
-  def internalTestQuery(title: String, text: String, queryText: String, returns: String, prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
+  def internalTestQuery(title: String, text: String, queryText: String, returns: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
     parameters = null
     dumpGraphViz(dir, graphvizOptions.trim)
     if (!graphvizExecutedAfter) {
@@ -130,24 +136,52 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
       prepare.foreach { (prepareStep: () => Any) => prepareStep() }
       keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
       val result = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
+      if (expectedException.isDefined) {
+        fail(s"Expected the test to throw an exception: ${expectedException}")
+      }
       assertions.foreach(_.apply(result))
       tx1.failure()
+    } catch {
+      case e: CypherException =>
+        expectedException match {
+          case Some(expectedExceptionType) => e match {
+            case expectedExceptionType(typedE) =>
+            case _ => fail(s"Expected an exception of type ${expectedException} but got ${e.getClass}", e)
+          }
+          case None => throw e
+        }
     } finally {
       tx1.finish()
     }
+
     val tx2 = db.beginTx()
+    val writer: PrintWriter = createWriter(title, dir)
     try {
       prepare.foreach { (prepareStep: () => Any) => prepareStep() }
       val result = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
-      val writer: PrintWriter = createWriter(title, dir)
+      if (expectedException.isDefined) {
+        fail(s"Expected the test to throw an exception: ${expectedException}")
+      }
       dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
       if (graphvizExecutedAfter) {
         dumpGraphViz(dir, graphvizOptions.trim)
       }
+    } catch {
+      case e: CypherException =>
+        expectedException match {
+          case Some(expectedExceptionType) => e match {
+            case expectedExceptionType(typedE) =>
+              dumpToFile(dir, writer, title, query, returns, text, typedE, consoleData)
+            case _ => fail(s"Expected an exception of type ${expectedException} but got ${e.getClass}", e)
+          }
+          case None => throw e
+        }
     } finally {
       tx2.finish()
     }
   }
+
+
 
   var db: GraphDatabaseAPI = null
   val parser: CypherParser = CypherParser()
@@ -171,6 +205,14 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   def indexProps: List[String] = List()
 
   def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult, consoleData: String) {
+    dumpToFile(dir, writer, title, query, returns, text, Right(result), consoleData)
+  }
+
+  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, failure: CypherException, consoleData: String) {
+    dumpToFile(dir, writer, title, query, returns, text, Left(failure), consoleData)
+  }
+
+  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
     val testId = nicefy(section + " " + title)
     writer.println("[[" + testId + "]]")
     if (!noTitle) writer.println("== " + title + " ==")
@@ -272,7 +314,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     case v: Any => v
   }
 
-  def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: ExecutionResult, consoleData: String) {
+  def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
     if (parameters != null) {
       writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
     }
@@ -284,10 +326,14 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     writer.println(returns)
     writer.println
 
-    val resultText = result.dumpToString()
     output.clear
     output.append(".Result\n")
-    output.append(AsciidocHelper.createQueryResultSnippet(resultText))
+    result match {
+      case Left(failure) =>
+        output.append(AsciidocHelper.createQueryFailureSnippet(s"${failure.getClass.getName}: ${failure.getMessage}"))
+      case Right(result) =>
+        output.append(AsciidocHelper.createQueryResultSnippet(result.dumpToString))
+    }
     output.append('\n')
     writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".result", output.toString))
 

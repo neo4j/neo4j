@@ -34,3 +34,22 @@ include::merge-with-on-create.asciidoc[]
 include::merge-with-on-match.asciidoc[]
 
 include::merge-with-on-create-and-on-match.asciidoc[]
+
+
+== Using unique constraints with merge ==
+
+Cypher prevents getting conflicting results from +MERGE+ when using patterns that involve uniqueness constrains.
+In this case, there must be at most one node that matches that pattern.
+
+For example, given two uniqueness constraints on `:Person(id)` and
++:Person(ssn)+, then a query such as `MERGE (n:Person {id: 12, ssn: 437})` will fail, if there are two different nodes
+(one with id 12 and one with ssn 437) or if there is only one node with only one of the properties. In other words,
+there must be exactly one node that matches the pattern, or no matching nodes.
+
+Note that the following examples assume the existence of uniqueness constraints on `:Person(name)` and `:Person(role)` that
+have been created using `CREATE CONSTRAINT ON (n:Person) ASSERT n.name IS UNIQUE` and
+`CREATE CONSTRAINT ON (n:Person) ASSERT n.role IS UNIQUE`:
+
+include::merge-using-unique-constraints-creates-a-new-node-if-no-node-is-found.asciidoc[]
+
+include::merge-using-unique-constraints-matches-an-existing-node.asciidoc[]

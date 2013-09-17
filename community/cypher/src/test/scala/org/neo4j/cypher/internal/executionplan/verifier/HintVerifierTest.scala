@@ -47,7 +47,7 @@ class HintVerifierTest extends Assertions {
       where = Or(
         Equals(Property(Identifier("n"), PropertyKey("name")), Literal("Stefan")),
         Equals(Property(Identifier("n"), PropertyKey("age")), Literal(35))),
-      hints = Seq(SchemaIndex("n", "Person", "name", None)))
+      hints = Seq(SchemaIndex("n", "Person", "name", AnyIndex, None)))
 
     //THEN
     intercept[IndexHintException](HintVerifier.verify(q))
@@ -129,7 +129,7 @@ class HintVerifierTest extends Assertions {
     val q = Query.
       matches(relatedTo.copy(left = labeledA.copy(optional = true))).
       where(Equals(Property(Identifier("a"), PropertyKey("foo")), Literal("bar"))).
-      using(SchemaIndex("a", "Person", "foo", None)).
+      using(SchemaIndex("a", "Person", "foo", AnyIndex, None)).
       returns()
 
     //THEN
@@ -142,7 +142,7 @@ class HintVerifierTest extends Assertions {
     val q = Query.
       matches(relatedTo.copy(left = labeledA)).
       where(Equals(Literal("bar"), Property(Identifier("a"), PropertyKey("foo")))).
-      using(SchemaIndex("a", "Person", "foo", None)).
+      using(SchemaIndex("a", "Person", "foo", AnyIndex, None)).
       returns()
 
     //THEN
@@ -155,7 +155,7 @@ class HintVerifierTest extends Assertions {
     val q = Query.
       matches(relatedTo.copy(left = SingleNode("a"))).
       where(Equals(Property(Identifier("a"), PropertyKey("foo")), Literal("bar"))).
-      using(SchemaIndex("a", "Person", "foo", None)).
+      using(SchemaIndex("a", "Person", "foo", AnyIndex, None)).
       returns()
 
     //THEN

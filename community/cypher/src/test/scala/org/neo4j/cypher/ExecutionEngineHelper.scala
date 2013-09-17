@@ -26,6 +26,13 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.hamcrest.CoreMatchers._
+import org.junit.Assert._
+
+
+case class ExpectedException[T <: Throwable](e: T) {
+  def messageContains(s: String) = assertThat(e.getMessage, containsString(s))
+}
 
 trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
 
@@ -41,6 +48,9 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
 
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult =
     engine.execute(q, params.toMap)
+
+  def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
+    ExpectedException(intercept[T](parseAndExecute(q)))
 
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
     case List(m) => if (m.size!=1)

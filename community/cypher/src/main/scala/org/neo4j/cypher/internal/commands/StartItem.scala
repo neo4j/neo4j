@@ -75,7 +75,12 @@ case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
 
 trait Hint
 
-case class SchemaIndex(identifier: String, label: String, property: String, query: Option[Expression])
+sealed abstract class SchemaIndexKind
+
+case object AnyIndex extends SchemaIndexKind
+case object UniqueIndex extends SchemaIndexKind
+
+case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[Expression])
   extends StartItem(identifier, Map("label" -> label, "property" -> property) ++ query.map("query" -> _.toString()))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers
 

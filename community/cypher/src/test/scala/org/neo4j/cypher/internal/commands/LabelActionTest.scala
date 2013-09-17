@@ -138,5 +138,5 @@ class SnitchingQueryContext extends QueryContext {
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 
-  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Node = ???
+  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = ???
 }

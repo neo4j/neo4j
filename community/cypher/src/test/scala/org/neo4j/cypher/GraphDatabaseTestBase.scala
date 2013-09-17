@@ -42,8 +42,11 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   @Before
   def baseInit() {
     graph = new ImpermanentGraphDatabase() with Snitch
-    refNode = graph.inTx(graph.getReferenceNode)
+    refNode = getReferenceNode
   }
+
+
+  def getReferenceNode = graph.inTx(graph.getReferenceNode)
 
   def assertInTx(f: => Option[String]) {
     graph.inTx {
@@ -64,15 +67,25 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
     graph.inTx(r.getGraphDatabase.index.forRelationships(idxName).add(r, key, value))
   }
 
-  def nodeId(n: Node) = graph.inTx { n.getId }
+  def nodeId(n: Node) = graph.inTx {
+    n.getId
+  }
 
-  def relationshipId(r: Relationship) = graph.inTx { r.getId }
+  def relationshipId(r: Relationship) = graph.inTx {
+    r.getId
+  }
 
-  def labels(n: Node) = graph.inTx { n.getLabels.iterator().asScala.map(_.toString).toSet }
+  def labels(n: Node) = graph.inTx {
+    n.getLabels.iterator().asScala.map(_.toString).toSet
+  }
 
-  def countNodes() = graph.inTx { GlobalGraphOperations.at(graph).getAllNodes.asScala.size }
+  def countNodes() = graph.inTx {
+    GlobalGraphOperations.at(graph).getAllNodes.asScala.size
+  }
 
-  def countRelationships() = graph.inTx { GlobalGraphOperations.at(graph).getAllRelationships.asScala.size }
+  def countRelationships() = graph.inTx {
+    GlobalGraphOperations.at(graph).getAllRelationships.asScala.size
+  }
 
   def createNode(): Node = createNode(Map[String, Any]())
 
@@ -110,12 +123,12 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   def deleteAllEntities() = graph.inTx {
     val relIterator = GlobalGraphOperations.at(graph).getAllRelationships.iterator()
 
-    while ( relIterator.hasNext ) {
+    while (relIterator.hasNext) {
       relIterator.next().delete()
     }
 
     val nodeIterator = GlobalGraphOperations.at(graph).getAllNodes.iterator()
-    while ( nodeIterator.hasNext ) {
+    while (nodeIterator.hasNext) {
       nodeIterator.next().delete()
     }
   }
@@ -147,11 +160,11 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   }
 
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = graph.inTx {
-      val r = n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
+    val r = n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
 
-      props.foreach((kv) => r.setProperty(kv._1, kv._2))
-      r
-    }
+    props.foreach((kv) => r.setProperty(kv._1, kv._2))
+    r
+  }
 
   def relate(x: ((String, String), String)): Relationship = graph.inTx {
     x match {
@@ -197,7 +210,18 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   }
 
   def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statement()
-  def planContext:PlanContext = new TransactionBoundPlanContext(statement, graph)
+
+  def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
+}
+
+trait DeletedReferenceNode {
+
+  self: GraphDatabaseTestBase =>
+
+  override def getReferenceNode: Node = {
+    RichGraph(graph).inTx(graph.getReferenceNode.delete())
+    null
+  }
 }
 
 trait Snitch extends GraphDatabaseAPI {
