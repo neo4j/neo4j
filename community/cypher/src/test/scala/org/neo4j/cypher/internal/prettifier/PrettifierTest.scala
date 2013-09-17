@@ -82,7 +82,7 @@ class PrettifierTest extends Assertions {
     assertIsPrettified(
       "START me=node(3)%n" +
         "MATCH p1 = me-[*2]-friendOfFriend%n" +
-        "CREATE p2 = me-[:MARRIED_TO]-(wife { name: 'Gunhild' })%n" +
+        "CREATE p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" })%n" +
         "CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend%n" +
         "RETURN p1,p2,p3",
       "start me=node(3) match p1 = me-[*2]-friendOfFriend create p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" }) create unique p3 = wife-[:KNOWS]-friendOfFriend return p1,p2,p3")
@@ -101,6 +101,12 @@ class PrettifierTest extends Assertions {
       "match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson")
   }
 
+  @Test
+  def shouldPrettifyWithCorrectStringQuotes() {
+    assertIsPrettified(
+      "MATCH a\nWHERE a.name='A'\nRETURN a.age > 30, \"I'm a literal\", a-->()",
+      "mATCH a WhERE a.name='A' RETURN a.age > 30, \"I'm a literal\", a-->()")
+  }
   private def assertIsPrettified(expected: String, query: String) {
     assertEquals(String.format(expected), Prettifier(query))
   }

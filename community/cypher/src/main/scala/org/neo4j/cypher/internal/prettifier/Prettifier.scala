@@ -41,11 +41,16 @@ sealed abstract class GroupingToken extends SyntaxToken
 final case class OpenGroup(text: String) extends GroupingToken
 final case class CloseGroup(text: String) extends GroupingToken
 
-final case class EscapedText(text: String) extends SyntaxToken {
-  override def toString = s"'${text}'"
+final case class EscapedText(text: String, quote: Char = '\"') extends SyntaxToken {
+  override def toString = s"$quote$text$quote"
 }
 
 final case class AnyText(text: String) extends SyntaxToken
+
+case object Comma extends SyntaxToken {
+  override val text: String = ","
+}
+
 
 class PrettifierParser extends Parser with Base with Strings {
 
@@ -94,19 +99,21 @@ class PrettifierParser extends Parser with Base with Strings {
       })
   }
 
-  def escapedText : Rule1[EscapedText] = rule("string") {
-    (((
-      ch('\'') ~ StringCharacters('\'') ~ ch('\'')
-        | ch('"') ~ StringCharacters('"') ~ ch('"')
-      ) memoMismatches) suppressSubnodes) ~~> EscapedText
-  }
+    def escapedText : Rule1[EscapedText] = rule("string") {
+      (((
+        ch('\'') ~ StringCharacters('\'') ~ ch('\'') ~ push('\'')
+          | ch('"') ~ StringCharacters('"') ~ ch('"')  ~ push('\"')
+        ) memoMismatches) suppressSubnodes) ~~> (EscapedText(_, _))
+    }
+
+  def comma: Rule1[Comma.type] = rule("comma") { "," ~> ( _ => Comma ) }
 
   def anyText: Rule1[AnyText] = rule("anyText") { oneOrMore( (!anyOf(" \n\r\t\f(){}[]")) ~ ANY ) ~> AnyText }
 
   def noTokens: Rule1[Seq[SyntaxToken]] = EMPTY ~ push(Seq.empty)
 
   def simpleTokens: Rule1[Seq[SyntaxToken]] =
-    rule("simpleTokens") { seq1( allKeywords | escapedText | anyText ) }
+    rule("simpleTokens") { seq1( allKeywords | comma | escapedText | anyText ) }
 
   def anyTokens: Rule1[Seq[SyntaxToken]] =
     rule("anyTokens") { flat( oneOrMore( simpleTokens | grouped( anyUnbrokenTokens ), WS ) ) }
@@ -186,6 +193,9 @@ case object Prettifier extends (String => String) {
 
         // <HEAD> <GROUPING>
         case (_:SyntaxToken,          _:GroupingToken)               => token.toString
+
+        // <HEAD> <COMMA>
+        case (_:SyntaxToken,          Comma)                         => token.toString
 
         // default
         case _                                                       => token.toString + space
