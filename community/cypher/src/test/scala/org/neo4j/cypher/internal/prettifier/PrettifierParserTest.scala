@@ -137,4 +137,11 @@ class PrettifierParserTest extends PrettifierParser with ParserTest[Seq[SyntaxTo
     parsing("[x]") shouldGive Seq(OpenGroup("["), AnyText("x"), CloseGroup("]"))
     parsing("{x}") shouldGive Seq(OpenGroup("{"), AnyText("x"), CloseGroup("}"))
   }
+
+  @Test
+  def shouldParseStringsAndKeepQuotes() {
+    parsing("\"I'm a literal\"") shouldGive Seq(EscapedText("I'm a literal"))
+    parsing("'Im a literal'") shouldGive Seq(EscapedText("Im a literal", '\''))
+    parsing("'I\\'m a literal'") shouldGive Seq(EscapedText("I\'m a literal", '\''))
+  }
 }
