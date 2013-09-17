@@ -76,19 +76,19 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
 
   @Test def shouldComplainIfShortestPathHasNoRelationship() {
     test("start n=node(0) match p=shortestPath(n) return p",
-      v2_0 -> "shortestPath requires a pattern containing a single relationship (line 1, column 25)"
+      v2_0 -> "shortestPath(...) requires a pattern containing a single relationship (line 1, column 25)"
     )
   }
 
   @Test def shouldComplainIfShortestPathHasMultipleRelationships() {
     test("start a=node(0), b=node(1) match p=shortestPath(a--()--b) return p",
-      v2_0    -> "shortestPath requires a pattern containing a single relationship (line 1, column 36)"
+      v2_0    -> "shortestPath(...) requires a pattern containing a single relationship (line 1, column 36)"
     )
   }
 
   @Test def shouldComplainIfShortestPathHasAMinimalLength() {
     test("start a=node(0), b=node(1) match p=shortestPath(a-[*1..2]->b) return p",
-      v2_0    -> "shortestPath does not support a minimal length (line 1, column 36)"
+      v2_0    -> "shortestPath(...) does not support a minimal length (line 1, column 36)"
     )
   }
 
@@ -153,37 +153,37 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
         |RETURN reduce(weight=0, r in relationships(topRoute) : weight+r.cost) AS score
         |ORDER BY score ASC LIMIT 1
       """.stripMargin,
-      v2_0 -> "REDUCE requires '| expression' (an accumulation expression) (line 4, column 8)"
+      v2_0 -> "reduce(...) requires '| expression' (an accumulation expression) (line 4, column 8)"
     )
   }
 
   @Test def shouldWarnOfOldIterableSeparator() {
     test("start a=node(0) return filter(x in a.collection : x.prop = 1)",
-      v2_0 -> "FILTER requires a WHERE predicate (line 1, column 24)"
+      v2_0 -> "filter(...) requires a WHERE predicate (line 1, column 24)"
     )
 
     test("start a=node(0) return extract(x in a.collection : x.prop)",
-      v2_0 -> "EXTRACT requires '| expression' (an extract expression) (line 1, column 24)"
+      v2_0 -> "extract(...) requires '| expression' (an extract expression) (line 1, column 24)"
     )
 
     test("start a=node(0) return reduce(i = 0, x in a.collection : i + x.prop)",
-      v2_0 -> "REDUCE requires '| expression' (an accumulation expression) (line 1, column 24)"
+      v2_0 -> "reduce(...) requires '| expression' (an accumulation expression) (line 1, column 24)"
     )
 
     test("start a=node(0) return any(x in a.collection : x.prop = 1)",
-      v2_0 -> "ANY requires a WHERE predicate (line 1, column 24)"
+      v2_0 -> "any(...) requires a WHERE predicate (line 1, column 24)"
     )
 
     test("start a=node(0) return all(x in a.collection : x.prop = 1)",
-      v2_0 -> "ALL requires a WHERE predicate (line 1, column 24)"
+      v2_0 -> "all(...) requires a WHERE predicate (line 1, column 24)"
     )
 
     test("start a=node(0) return single(x in a.collection : x.prop = 1)",
-      v2_0 -> "SINGLE requires a WHERE predicate (line 1, column 24)"
+      v2_0 -> "single(...) requires a WHERE predicate (line 1, column 24)"
     )
 
     test("start a=node(0) return none(x in a.collection : x.prop = 1)",
-      v2_0 -> "NONE requires a WHERE predicate (line 1, column 24)"
+      v2_0 -> "none(...) requires a WHERE predicate (line 1, column 24)"
     )
   }
 

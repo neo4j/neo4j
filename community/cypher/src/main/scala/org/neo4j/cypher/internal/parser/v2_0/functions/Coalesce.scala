@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.parser.v2_0._
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
 case object Coalesce extends Function {
-  def name = "COALESCE"
+  def name = "coalesce"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkMinArgs(invocation, 1) then

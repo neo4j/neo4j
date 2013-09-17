@@ -146,7 +146,7 @@ abstract class Function extends SemanticChecking {
 abstract class AggregatingFunction extends Function {
   override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     when(ctx == ast.Expression.SemanticContext.Simple) {
-      SemanticError(s"Invalid use of aggregating function ${name} in this context", invocation.token)
+      SemanticError(s"Invalid use of aggregating function ${name}(...) in this context", invocation.token)
     } then invocation.arguments.semanticCheck(ctx) then semanticCheck(ctx, invocation)
 }
 

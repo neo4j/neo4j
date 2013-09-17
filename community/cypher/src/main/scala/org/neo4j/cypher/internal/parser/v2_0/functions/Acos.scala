@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
 case object Acos extends Function {
-  def name = "ACOS"
+  def name = "acos"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) then

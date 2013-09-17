@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
 case object PercentileCont extends AggregatingFunction {
-  def name = "PERCENTILE_CONT"
+  def name = "percentileCont"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 2) ifOkThen {
