@@ -39,7 +39,6 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
-import org.neo4j.kernel.impl.traversal.FinalTraversalBranch;
 import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
 
 /**
@@ -366,51 +365,6 @@ public class Traversal
             return (Expander) expander;
         }
         return StandardExpander.wrap( expander );
-    }
-
-    /**
-     * Combines two {@link TraversalBranch}s with a common
-     * {@link TraversalBranch#endNode() head node} in order to obtain an
-     * {@link TraversalBranch} representing a path from the start node of the
-     * <code>source</code> {@link TraversalBranch} to the start node of the
-     * <code>target</code> {@link TraversalBranch}. The resulting
-     * {@link TraversalBranch} will not
-     * {@link TraversalBranch#next(PathExpander, org.neo4j.graphdb.traversal.TraversalContext)
-     * ) expand further}, and does not provide a
-     * {@link TraversalBranch#parent() parent} {@link TraversalBranch}.
-     * 
-     * @param source the {@link TraversalBranch} where the resulting path starts
-     * @param target the {@link TraversalBranch} where the resulting path ends
-     * @throws IllegalArgumentException if the {@link TraversalBranch#endNode()
-     *             head nodes} of the supplied {@link TraversalBranch}s does not
-     *             match
-     * @return an {@link TraversalBranch} that represents the path from the
-     *         start node of the <code>source</code> {@link TraversalBranch} to
-     *         the start node of the <code>target</code> {@link TraversalBranch}
-     */
-    public static TraversalBranch combineSourcePaths( TraversalBranch source,
-            TraversalBranch target )
-    {
-        if ( !source.endNode().equals( target.endNode() ) )
-        {
-            throw new IllegalArgumentException(
-                    "The nodes of the head and tail must match" );
-        }
-        Path headPath = source, tailPath = target;
-        Relationship[] relationships = new Relationship[headPath.length()
-                                                        + tailPath.length()];
-        Iterator<Relationship> iter = headPath.relationships().iterator();
-        for ( int i = 0; iter.hasNext(); i++ )
-        {
-            relationships[i] = iter.next();
-        }
-        iter = tailPath.relationships().iterator();
-        for ( int i = relationships.length - 1; iter.hasNext(); i-- )
-        {
-            relationships[i] = iter.next();
-        }
-        // TODO returning FinalTraversalBranch cannot possibly be correct here. It makes this method an expensive noop.
-        return new FinalTraversalBranch();
     }
 
     /**
