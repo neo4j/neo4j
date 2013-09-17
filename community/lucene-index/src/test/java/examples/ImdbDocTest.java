@@ -188,7 +188,7 @@ public class ImdbDocTest
     @After
     public void finishTx()
     {
-        tx.finish();
+        tx.close();
     }
 
     private void rollbackTx()
@@ -582,7 +582,7 @@ public class ImdbDocTest
         // Note that to use a compound query, we can't combine committed
         // and uncommitted index entries, so we'll commit before querying:
         tx.success();
-        tx.finish();
+        tx.close();
 
         // and now we can search for it:
         try ( Transaction tx = graphDb.beginTx() )

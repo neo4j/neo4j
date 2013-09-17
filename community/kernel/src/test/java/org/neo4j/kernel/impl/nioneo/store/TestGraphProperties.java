@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -79,7 +81,7 @@ public class TestGraphProperties
         graphProperties.setProperty( "test", "yo" );
         assertEquals( "yo", graphProperties.getProperty( "test" ) );
         tx.success();
-        tx.finish();
+        tx.close();
         assertThat( graphProperties, inTx( db, hasProperty( "test" ).withValue( "yo" ) ) );
         tx = db.beginTx();
         assertNull( graphProperties.removeProperty( "something non existent" ) );
@@ -89,7 +91,7 @@ public class TestGraphProperties
         assertEquals( 10, graphProperties.getProperty( "other" ) );
         graphProperties.setProperty( "new", "third" );
         tx.success();
-        tx.finish();
+        tx.close();
         assertThat( graphProperties, inTx( db, not( hasProperty( "test" ) ) ) );
         assertThat( graphProperties, inTx( db, hasProperty( "other" ).withValue( 10 ) ) );
         assertThat( getPropertyKeys( db, graphProperties ), containsOnly( "other", "new" ) );
@@ -97,7 +99,7 @@ public class TestGraphProperties
         tx = db.beginTx();
         graphProperties.setProperty( "rollback", true );
         assertEquals( true, graphProperties.getProperty( "rollback" ) );
-        tx.finish();
+        tx.close();
         assertThat( graphProperties, inTx( db, not( hasProperty( "rollback" ) ) ) );
         db.shutdown();
     }
@@ -116,7 +118,7 @@ public class TestGraphProperties
             properties( db ).setProperty( "key" + i, values[i % values.length] );
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         for ( int i = 0; i < count; i++ )
         {
@@ -144,7 +146,7 @@ public class TestGraphProperties
         properties( db ).setProperty( key, array );
         assertThat( properties( db ), hasProperty( key ).withValue( array ) );
         tx.success();
-        tx.finish();
+        tx.close();
 
         assertThat( properties( db ), inTx( db, hasProperty( key ).withValue( array ) ) );
         db.getNodeManager().clearCache();
@@ -166,14 +168,14 @@ public class TestGraphProperties
         Node node = db.createNode();
         node.setProperty( "name", "Yo" );
         tx.success();
-        tx.finish();
+        tx.close();
         db.shutdown();
 
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
         tx = db.beginTx();
         db.getNodeManager().getGraphProperties().setProperty( "test", "something" );
         tx.success();
-        tx.finish();
+        tx.close();
         db.shutdown();
 
         NeoStore neoStore = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
@@ -241,7 +243,7 @@ public class TestGraphProperties
         Node node = db.createNode();
         node.setProperty( "name", "Something" );
         tx.success();
-        tx.finish();
+        tx.close();
         db.shutdown();
 
         removeLastNeoStoreRecord( fileSystem, storeDir );
@@ -252,7 +254,7 @@ public class TestGraphProperties
         tx = db.beginTx();
         properties.setProperty( "a property", "a value" );
         tx.success();
-        tx.finish();
+        tx.close();
         db.getNodeManager().clearCache();
         assertThat( properties, inTx( db, hasProperty( "a property" ).withValue( "a value" ) ) );
         db.shutdown();
@@ -366,7 +368,7 @@ public class TestGraphProperties
                 public Void doWork( State state )
                 {
                     state.tx.success();
-                    state.tx.finish();
+                    state.tx.close();
                     return null;
                 }
             } );
@@ -408,7 +410,7 @@ public class TestGraphProperties
         node.setProperty( "name", "Something" );
         ((GraphDatabaseAPI)db).getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
         tx.success();
-        tx.finish();
+        tx.close();
         EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
         db.shutdown();
         return snapshot;

@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.lang.Thread.State;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,6 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -39,19 +34,25 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 public class TestNode extends AbstractNeo4jTestCase
 {
     @Test
     public void testNodeCreateAndDelete()
     {
-        long nodeId = -1;
         Node node = getGraphDb().createNode();
-        nodeId = node.getId();
+        long nodeId = node.getId();
         getGraphDb().getNodeById( nodeId );
         node.delete();
         Transaction tx = getTransaction();
         tx.success();
-        tx.finish();
+        tx.close();
         setTransaction( getGraphDb().beginTx() );
         try
         {
@@ -321,12 +322,12 @@ public class TestNode extends AbstractNeo4jTestCase
         node.setProperty( "test", "test" );
         Transaction tx = getTransaction();
         tx.success();
-        tx.finish();
+        tx.close();
         tx = getGraphDb().beginTx();
         node.setProperty( "test2", "test2" );
         node.delete();
         tx.success();
-        tx.finish();
+        tx.close();
         setTransaction( getGraphDb().beginTx() );
     }
     

@@ -187,7 +187,7 @@ public class TreeGraphTest extends TraversalTestBase
             assertEquals( expectedDepth( ( 12 - i++ ) ), pos.length() );
         }
         tx.success();
-        tx.finish();
+        tx.close();
         assertEquals( 13, i );
 
         assertTrue( encounteredNodes.indexOf( "5" ) < encounteredNodes.indexOf( "2" ) );

@@ -25,6 +25,7 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -35,6 +36,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
@@ -56,7 +58,7 @@ public class SchemaIndexAcceptanceTest
         Node node2 = createNode( label, "name", "Two" );
         Node node3 = createNode( label, "name", "Three" );
         tx.success();
-        tx.finish();
+        tx.close();
 
         createIndex( db, label, propertyKey );
 
@@ -75,7 +77,7 @@ public class SchemaIndexAcceptanceTest
         Transaction tx = db.beginTx();
         Node node1 = createNode( label, propertyKey, arrayPropertyValue );
         tx.success();
-        tx.finish();
+        tx.close();
 
         restart();
 
@@ -93,7 +95,7 @@ public class SchemaIndexAcceptanceTest
         Transaction tx = db.beginTx();
         Node node1 = createNode( label, propertyKey, arrayPropertyValue );
         tx.success();
-        tx.finish();
+        tx.close();
 
         restart();
 
@@ -111,7 +113,7 @@ public class SchemaIndexAcceptanceTest
         Transaction tx = db.beginTx();
         Node node1 = createNode( label, propertyKey, arrayPropertyValue );
         tx.success();
-        tx.finish();
+        tx.close();
 
         createIndex( db, label, propertyKey );
 
@@ -192,7 +194,7 @@ public class SchemaIndexAcceptanceTest
         Transaction tx = db.beginTx();
         indexDefinition.drop();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private static void doStuff( GraphDatabaseService db, Label label, String propertyKey )

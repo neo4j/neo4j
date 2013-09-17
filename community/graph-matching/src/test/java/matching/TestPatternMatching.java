@@ -19,11 +19,6 @@
  */
 package matching;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +33,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -53,9 +49,14 @@ import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestPatternMatching implements GraphHolder
 {
@@ -103,7 +104,7 @@ public class TestPatternMatching implements GraphHolder
     @After
     public void tearDownTx()
     {
-        tx.finish();
+        tx.close();
     }
 
     @AfterClass
@@ -164,8 +165,8 @@ public class TestPatternMatching implements GraphHolder
         Node a1 = createInstance( "a1" );
         Node b1 = createInstance( "b1" );
 
-        Relationship rel = a1.createRelationshipTo( b1, R1 );
-        rel = a1.createRelationshipTo( b1, R2 );
+        a1.createRelationshipTo( b1, R1 );
+        Relationship rel = a1.createRelationshipTo( b1, R2 );
         rel.setProperty( "musthave", true );
 
         PatternNode pA = new PatternNode();
@@ -768,12 +769,6 @@ public class TestPatternMatching implements GraphHolder
             assertTrue( "Unexpected node matched: " + matchedNode.getProperty( "name" ), remove );
         }
         assertTrue( "Not all nodes were found", expected.isEmpty() );
-    }
-
-    private void execAndWait( String... args ) throws Exception
-    {
-        Process process = Runtime.getRuntime().exec( args );
-        new ProcessStreamHandler( process, true ).waitForResult();
     }
 
     @Test

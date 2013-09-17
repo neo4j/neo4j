@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
@@ -43,7 +44,7 @@ public class DepthOneTraversalTest extends TraversalTestBase
     @After
     public void tearDown()
     {
-        tx.finish();
+        tx.close();
     }
     
     private void shouldGetBothNodesOnDepthOne( TraversalDescription description )

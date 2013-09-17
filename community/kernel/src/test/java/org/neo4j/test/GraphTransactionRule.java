@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import org.junit.rules.ExternalResource;
+
 import org.neo4j.graphdb.Transaction;
 
 /**
@@ -59,12 +60,12 @@ public class GraphTransactionRule
     public void success()
     {
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     public void failure()
     {
         tx.failure();
-        tx.finish();
+        tx.close();
     }
 }

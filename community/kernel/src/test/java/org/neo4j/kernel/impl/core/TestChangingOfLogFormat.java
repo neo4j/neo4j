@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.store.TestXa.copyLogicalLog;
-import static org.neo4j.kernel.impl.nioneo.store.TestXa.renameCopiedLogicalLog;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,12 +28,18 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.nioneo.store.TestXa.copyLogicalLog;
+import static org.neo4j.kernel.impl.nioneo.store.TestXa.renameCopiedLogicalLog;
 
 public class TestChangingOfLogFormat
 {
@@ -50,7 +52,7 @@ public class TestChangingOfLogFormat
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
         
         Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( fs.get(), logBaseFileName );
         decrementLogFormat( copy.other().other() );

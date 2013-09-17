@@ -91,6 +91,6 @@ public class TestImpermanentGraphDatabase
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 }

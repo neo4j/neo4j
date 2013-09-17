@@ -28,6 +28,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -58,7 +59,7 @@ public class TestIsolationMultipleThreads
         }
 
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @After
@@ -387,7 +388,7 @@ public class TestIsolationMultipleThreads
                 for (int round = 0; round < 100; round++)
                 {
                     int deadLocks = 0;
-                    DeadlockDetectedException ex = null;
+                    DeadlockDetectedException ex;
                     do
                     {
                         ex = null;

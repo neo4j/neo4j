@@ -36,6 +36,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.SillyUtils.nonNull;
 
 public abstract class Neo4jTestCase
@@ -80,7 +81,7 @@ public abstract class Neo4jTestCase
         {
             tx.success();
         }
-        tx.finish();
+        tx.close();
         tx = null;
     }
     

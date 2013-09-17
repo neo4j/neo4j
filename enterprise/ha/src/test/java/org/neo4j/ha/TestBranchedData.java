@@ -35,6 +35,7 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.SillyUtils.nonNull;
 
 public class TestBranchedData
@@ -89,7 +90,7 @@ public class TestBranchedData
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
         db.shutdown();
     }
 }

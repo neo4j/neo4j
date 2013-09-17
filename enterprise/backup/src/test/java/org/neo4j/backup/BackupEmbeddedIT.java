@@ -42,6 +42,7 @@ import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.Settings.osIsWindows;
 
 public class BackupEmbeddedIT
@@ -69,7 +70,7 @@ public class BackupEmbeddedIT
         node.setProperty( "name", "Neo" );
         db.getReferenceNode().createRelationshipTo( node, DynamicRelationshipType.withName( "KNOWS" ) );
         tx.success();
-        tx.finish();
+        tx.close();
         return DbRepresentation.of( db );
     }
 

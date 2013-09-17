@@ -19,19 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
-
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -43,6 +38,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 public class TestInjectMultipleStartEntries
 {
@@ -95,7 +96,7 @@ public class TestInjectMultipleStartEntries
         tx.success();
         try
         {
-            tx.finish();
+            tx.close();
             fail( "This transaction shouldn't be successful" );
         }
         catch ( TransactionFailureException e )

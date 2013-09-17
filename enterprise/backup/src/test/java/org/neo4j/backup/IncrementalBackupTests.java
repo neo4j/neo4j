@@ -92,7 +92,7 @@ public class IncrementalBackupTests
                 DynamicRelationshipType.withName( "LOVES" ) );
         knows.setProperty( "since", 1940 );
         tx.success();
-        tx.finish();
+        tx.close();
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;
@@ -109,7 +109,7 @@ public class IncrementalBackupTests
                 DynamicRelationshipType.withName( "HATES" ) );
         hates.setProperty( "since", 1948 );
         tx.success();
-        tx.finish();
+        tx.close();
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;

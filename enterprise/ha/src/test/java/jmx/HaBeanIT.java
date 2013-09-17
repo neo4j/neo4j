@@ -19,13 +19,6 @@
  */
 package jmx;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
 import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -36,6 +29,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -59,6 +53,15 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.RepairKit;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class HaBeanIT
 {
@@ -131,7 +134,7 @@ public class HaBeanIT
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
         assertEquals( lastCommitted + 1, masterHa.getLastCommittedTxId() );
     }
 
@@ -144,7 +147,7 @@ public class HaBeanIT
         Transaction tx = master.beginTx();
         master.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
         HighAvailability slaveBean = ha( slave );
         DateFormat format = new SimpleDateFormat( "yyyy-MM-DD kk:mm:ss.SSSZZZZ" );
         // To begin with, no updates
@@ -373,11 +376,9 @@ public class HaBeanIT
     private void await( HighAvailability ha, Predicate<ClusterMemberInfo> predicate ) throws InterruptedException
     {
         long end = System.currentTimeMillis() + SECONDS.toMillis( 300 );
-        boolean conditionMet = false;
         while ( System.currentTimeMillis() < end )
         {
-            conditionMet = predicate.accept( member( ha.getInstancesInCluster(), 2 ) );
-            if ( conditionMet )
+            if ( predicate.accept( member( ha.getInstancesInCluster(), 2 ) ) )
             {
                 return;
             }

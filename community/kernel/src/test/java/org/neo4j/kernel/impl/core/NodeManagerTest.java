@@ -98,7 +98,7 @@ public class NodeManagerTest
         node.removeProperty( "wut" );
         node.delete();
         tx.success();
-        tx.finish();
+        tx.close();
 
         //THEN prop is removed only once
         assertThat( tracker.removed, is( "1:wut" ) );
@@ -132,13 +132,13 @@ public class NodeManagerTest
         Node secondCommittedNode = db.createNode();
         Node thirdCommittedNode = db.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
         
         // Second one deleted, just to create a hole
         tx = db.beginTx();
         secondCommittedNode.delete();
         tx.success();
-        tx.finish();
+        tx.close();
         
         // WHEN
         tx = db.beginTx();
@@ -147,7 +147,7 @@ public class NodeManagerTest
         thirdCommittedNode.delete();
         List<Node> allNodes = addToCollection( getNodeManager().getAllNodes(), new ArrayList<Node>() );
         Set<Node> allNodesSet = new HashSet<>( allNodes );
-        tx.finish();
+        tx.close();
 
         // THEN
         assertEquals( allNodes.size(), allNodesSet.size() );
@@ -164,12 +164,12 @@ public class NodeManagerTest
         Relationship secondCommittedRelationship = createRelationshipAssumingTxWith( "committed", 2 );
         Relationship thirdCommittedRelationship = createRelationshipAssumingTxWith( "committed", 3 );
         tx.success();
-        tx.finish();
+        tx.close();
         
         tx = db.beginTx();
         secondCommittedRelationship.delete();
         tx.success();
-        tx.finish();
+        tx.close();
         
         // WHEN
         tx = db.beginTx();
@@ -179,7 +179,7 @@ public class NodeManagerTest
         List<Relationship> allRelationships = addToCollection( getNodeManager().getAllRelationships(),
                 new ArrayList<Relationship>() );
         Set<Relationship> allRelationshipsSet = new HashSet<>( allRelationships );
-        tx.finish();
+        tx.close();
 
         // THEN
         assertEquals( allRelationships.size(), allRelationshipsSet.size() );
@@ -196,7 +196,7 @@ public class NodeManagerTest
             db.createNode();
             db.createNode();
             tx.success();
-            tx.finish();
+            tx.close();
         }
 
         // WHEN iterator is started
@@ -234,7 +234,7 @@ public class NodeManagerTest
         Relationship relationship1 = createRelationshipAssumingTxWith( "key", 1 );
         Relationship relationship2 = createRelationshipAssumingTxWith( "key", 2 );
         tx.success();
-        tx.finish();
+        tx.close();
         
         // WHEN
         tx = db.beginTx();
@@ -245,7 +245,7 @@ public class NodeManagerTest
         assertEquals( asList( relationship1, relationship2, relationship3 ),
                 addToCollection( allRelationships, new ArrayList<Relationship>() ) );
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private void delete( Relationship relationship )
@@ -253,7 +253,7 @@ public class NodeManagerTest
         Transaction tx = db.beginTx();
         relationship.delete();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private Node createNodeWith( String key, Object value )
@@ -262,7 +262,7 @@ public class NodeManagerTest
         Node node = db.createNode();
         node.setProperty( key, value );
         tx.success();
-        tx.finish();
+        tx.close();
         return node;
     }
 
@@ -272,7 +272,7 @@ public class NodeManagerTest
         Transaction tx = db.beginTx();
         Relationship relationship = createRelationshipAssumingTxWith( key, value );
         tx.success();
-        tx.finish();
+        tx.close();
         return relationship;
     }
 
@@ -290,7 +290,7 @@ public class NodeManagerTest
         Transaction tx = db.beginTx();
         node.delete();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private class NodeLoggingTracker implements PropertyTracker<Node>

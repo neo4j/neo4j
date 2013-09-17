@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,6 +33,11 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class TestNeo4jApiExceptions
 {
@@ -194,7 +196,7 @@ public class TestNeo4jApiExceptions
         if ( tx != null )
         {
             tx.success();
-            tx.finish();
+            tx.close();
         }
         tx = graph.beginTx();
     }
@@ -204,7 +206,7 @@ public class TestNeo4jApiExceptions
         if ( tx != null )
         {
             tx.success();
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }

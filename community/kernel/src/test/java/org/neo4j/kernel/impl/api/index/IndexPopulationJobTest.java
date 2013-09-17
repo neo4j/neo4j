@@ -484,7 +484,7 @@ public class IndexPopulationJobTest
         statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
         statement.close();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @After

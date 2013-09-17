@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -49,6 +50,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.Predicates.stringContains;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.qa.tooling.DumpProcessInformation.doThreadDump;
@@ -102,7 +104,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
             first.createRelationshipTo( db.createNode(), DynamicRelationshipType.withName( "AC" ) );
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         // This is required, otherwise relChainPosition is never consulted, everything will already be in mem.
         db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
@@ -115,7 +117,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
                 Transaction tx = db.beginTx();
                 theOneAfterTheGap.delete();
                 tx.success();
-                tx.finish();
+                tx.close();
             }
         };
 
@@ -194,6 +196,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
     {
     }
 
+    @SuppressWarnings("UnusedParameters")
     @BreakpointHandler( "readDone" )
     public static void onReadDone( BreakPoint self, DebugInterface di )
     {

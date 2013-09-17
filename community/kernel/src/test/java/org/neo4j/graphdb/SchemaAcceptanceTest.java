@@ -144,7 +144,7 @@ public class SchemaAcceptanceTest
         Schema schema = db.schema();
         schema.indexFor( label ).on( propertyKey ).create();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // WHEN
         ConstraintViolationException caught = null;

@@ -19,10 +19,6 @@
  */
 package org.neo4j.index.timeline;
 
-import static java.util.Collections.sort;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -31,6 +27,7 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -44,6 +41,12 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.Collections.sort;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 public class TestTimeline
 {
@@ -70,7 +73,7 @@ public class TestTimeline
     private void commitTx()
     {
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private interface EntityCreator<T extends PropertyContainer>

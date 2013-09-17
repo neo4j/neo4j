@@ -34,6 +34,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class DatabaseMetadataServiceTest
@@ -48,7 +49,7 @@ public class DatabaseMetadataServiceTest
         node.createRelationshipTo( db.createNode(), withName( "b" ) );
         node.createRelationshipTo( db.createNode(), withName( "c" ) );
         tx.success();
-        tx.finish();
+        tx.close();
         
         Database database = new WrappedDatabase( db );
         DatabaseMetadataService service = new DatabaseMetadataService( database );
@@ -60,7 +61,7 @@ public class DatabaseMetadataServiceTest
         List<Map<String, Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
                 .toString() );
         assertEquals( 3, jsonList.size() );
-        tx.finish();
+        tx.close();
         database.stop();
     }
 }

@@ -145,14 +145,14 @@ public class TestBatchInsert
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider )
     {
-        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList(
+        List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 provider, new InMemoryLabelScanStoreExtension() );
         return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
     }
 
     private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider )
     {
-        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList(
+        List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 new InMemoryIndexProviderFactory(), provider );
         return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
     }
@@ -778,7 +778,7 @@ public class TestBatchInsert
         }
         node.delete();
         tx.success();
-        tx.finish();
+        tx.close();
         db.shutdown();
     }
 

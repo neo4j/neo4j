@@ -19,14 +19,12 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -42,6 +40,9 @@ import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /*
  * This test fails. What it tries to assert is that when a slave pulls updates from the master they are applied
@@ -78,7 +79,7 @@ public class TestPartialPullUpdates
         node.setProperty( "uuid", "123" );
         master.index().forNodes( "auto" ).add( node, "uuid", "123" );
         tx.success();
-        tx.finish();
+        tx.close();
 
         slave1 = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).directory(
@@ -111,7 +112,7 @@ public class TestPartialPullUpdates
         master.index().forNodes( "auto" ).remove( toRemove );
         toRemove.delete();
         tx.success();
-        tx.finish();
+        tx.close();
 
         // Do the update pulling in a different thread so we can kill it.
         Thread t = new Thread( new Runnable()

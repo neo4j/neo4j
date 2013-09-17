@@ -41,6 +41,7 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.impl.lucene.Contains.contains;
 
@@ -92,7 +93,7 @@ public class TestIndexDeletion
             {
                 tx.success();
             }
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }

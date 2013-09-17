@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,12 +26,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 import javax.transaction.TransactionManager;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -46,6 +42,10 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
@@ -80,7 +80,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
  //       assertTrue( node1.getProperty( key1 ).equals( 1 ) );
         Transaction tx = getTransaction();
         tx.success();
-        tx.finish();
+        tx.close();
         clearCache();
         tx = getGraphDb().beginTx();
 //        node1.getPropertyKeys().iterator().next();
@@ -280,7 +280,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         clearCache();
         nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
         int count = 0;
-        for ( Relationship relToB : nodeA.getRelationships( MyRelTypes.TEST ) )
+        for ( Relationship ignored : nodeA.getRelationships( MyRelTypes.TEST ) )
         {
             count++;
         }
@@ -298,7 +298,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         getTransaction().finish();
         newTransaction();
         count = 0;
-        for ( Relationship relToB : nodeA.getRelationships( MyRelTypes.TEST ) )
+        for ( Relationship ignored : nodeA.getRelationships( MyRelTypes.TEST ) )
         {
             count++;
         }
@@ -452,7 +452,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node2.createRelationshipTo( node1, MyRelTypes.TEST2 );
         node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );
         tx.success();
-        tx.finish();
+        tx.close();
         tx = graphDb.beginTx();
         Set<Relationship> rels = new HashSet<Relationship>();
         RelationshipType types[] = new RelationshipType[] { 
@@ -519,7 +519,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 2, rels.size() );
         
         tx.success();
-        tx.finish();
+        tx.close();
         graphDb.shutdown();
     }
 
@@ -577,7 +577,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             totalOneDirection++;
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         tx = graphDb.beginTx();
         Set<Relationship> rels = new HashSet<Relationship>();
@@ -659,7 +659,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         rels.clear();
 
         tx.success();
-        tx.finish();
+        tx.close();
         graphDb.shutdown();
     }
 }

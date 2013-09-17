@@ -52,7 +52,7 @@ public class PropertyCountSampleableTest
         Transaction tx = db.getGraph().beginTx();
         referenceNodeId = db.getGraph().createNode().getId();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -90,7 +90,7 @@ public class PropertyCountSampleableTest
         } );
 
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private void addPropertyToReferenceNode()
@@ -99,7 +99,7 @@ public class PropertyCountSampleableTest
         Node n = db.getGraph().getNodeById( referenceNodeId );
         n.setProperty( "monkey", "rock!" );
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @After

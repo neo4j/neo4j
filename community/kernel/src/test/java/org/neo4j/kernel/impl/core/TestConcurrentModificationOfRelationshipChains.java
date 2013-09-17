@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -136,7 +137,7 @@ public class TestConcurrentModificationOfRelationshipChains
         Transaction tx = db.beginTx();
         toDelete.delete();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private void deleteRelationshipInDifferentThread( final GraphDatabaseAPI db, final Relationship toDelete ) throws
@@ -167,7 +168,7 @@ public class TestConcurrentModificationOfRelationshipChains
             node1.createRelationshipTo( node2, relType );
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         Transaction transaction = db.beginTx();

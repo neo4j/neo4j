@@ -56,7 +56,7 @@ public class TestAutoIndexing
         if ( tx != null )
         {
             tx.success();
-            tx.finish();
+            tx.close();
         }
         tx = graphDb.beginTx();
     }
@@ -82,7 +82,7 @@ public class TestAutoIndexing
     {
         if ( tx != null )
         {
-            tx.finish();
+            tx.close();
         }
         if ( graphDb != null )
         {

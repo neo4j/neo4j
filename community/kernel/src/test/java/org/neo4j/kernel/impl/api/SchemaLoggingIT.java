@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
@@ -62,11 +63,11 @@ public class SchemaLoggingIT
         Transaction tx = db.beginTx();
         db.schema().indexFor( label( labelName ) ).on( property ).create();
         tx.success();
-        tx.finish();
+        tx.close();
         tx = db.beginTx();
         db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
 }

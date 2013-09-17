@@ -28,6 +28,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -97,7 +98,7 @@ public class IntroDocTest implements GraphHolder
         fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.result",
                 createQueryResultSnippet( engine.execute( query ).dumpToString() ) ) );
         fw.close();
-        tx.finish();
+        tx.close();
     }
 
     @BeforeClass

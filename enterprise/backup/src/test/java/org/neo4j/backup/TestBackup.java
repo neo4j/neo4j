@@ -335,7 +335,7 @@ public class TestBackup
         db.getReferenceNode().createRelationshipTo( node,
                 DynamicRelationshipType.withName( "LOVES" ) );
         tx.success();
-        tx.finish();
+        tx.close();
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;
@@ -361,7 +361,7 @@ public class TestBackup
         db.getReferenceNode().createRelationshipTo( node,
                 DynamicRelationshipType.withName( "KNOWS" ) );
         tx.success();
-        tx.finish();
+        tx.close();
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;
@@ -381,7 +381,7 @@ public class TestBackup
             Index<Node> index = db.index().forNodes( "yo" );
             index.add( db.createNode(), "justTo", "commitATx" );
             tx.success();
-            tx.finish();
+            tx.close();
 
             OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
@@ -393,7 +393,7 @@ public class TestBackup
                 Node node = db.createNode();
                 index.add( node, "key", "value" + i );
                 tx.success();
-                tx.finish();
+                tx.close();
                 backup.incremental( backupPath.getPath() );
                 assertEquals( lastCommittedTxForLucene + i + 1,
                         getLastCommittedTx( backupPath.getPath() ) );
