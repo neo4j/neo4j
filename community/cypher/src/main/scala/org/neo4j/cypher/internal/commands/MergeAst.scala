@@ -52,7 +52,10 @@ case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
 
         val labelActions = labelsNames.map(labelName => LabelAction(Identifier(name), LabelSetOp, Seq(labelName)))
         val propertyActions = props.map {
-          case (propertyKey, expression) => PropertySetAction(Property(Identifier(name), PropertyKey(propertyKey)), expression)
+          case (propertyKey, expression) => {
+            if (propertyKey == "*") throw new PatternException("MERGE does not support map parameters")
+            PropertySetAction(Property(Identifier(name), PropertyKey(propertyKey)), expression)
+          }
         }
 
         val actionsFromOnCreateClause = actionsMap.get((name, On.Create)).getOrElse(Set.empty)

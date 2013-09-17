@@ -576,7 +576,7 @@ foreach(x in [1,2,3] |
       start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId)).
       aggregation(CountStar()).
       orderBy(
-      SortItem(CountStar(), false),
+      SortItem(CountStar(), ascending = false),
       SortItem(Property(Identifier("n"), PropertyKey("division")), ascending = true)).
       returns(ReturnItem(Property(Identifier("n"), PropertyKey("division")), "n.division"), ReturnItem(CountStar(), "count(*)"))
 
@@ -2509,7 +2509,7 @@ RETURN x0.name
     val propertyKeys = Seq("name")
 
     // WHEN
-    parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
+    parseAndExecute(s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
     // THEN
     graph.inTx {
@@ -2525,10 +2525,10 @@ RETURN x0.name
     // GIVEN
     val labelName = "Person"
     val propertyKeys = Seq("name")
-    parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
+    parseAndExecute(s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
     // WHEN
-    val e = intercept[CypherExecutionException](parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})"""))
+    val e = intercept[CypherExecutionException](parseAndExecute(s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})"""))
     assert(e.getCause.isInstanceOf[AlreadyIndexedException])
   }
 
@@ -2806,7 +2806,7 @@ RETURN x0.name
     val nodeIds = s"node(${nodes.map(_.getId).mkString(",")})"
 
     // when
-    val result = parseAndExecute(s"START src=${nodeIds}, dst=${nodeIds} MATCH src-[r:EDGE]-dst RETURN r")
+    val result = parseAndExecute(s"START src=$nodeIds, dst=$nodeIds MATCH src-[r:EDGE]-dst RETURN r")
 
     // then
     val relationships: List[Relationship] = result.columnAs[Relationship]("r").toList
@@ -2846,5 +2846,25 @@ RETURN x0.name
 
     //THEN DOESN'T THROW EXCEPTION
     assert(result.toList === List())
+  }
+
+  @Test
+  def merge_should_support_single_parameter() {
+    //WHEN
+    val result = parseAndExecute("MERGE (n:User {foo: {single_param}})", ("single_param", 42))
+
+    //THEN DOESN'T THROW EXCEPTION
+    assert(result.toList === List())
+  }
+
+  @Test
+  def merge_should_not_support_map_parameters_for_defining_properties() {
+    try {
+      parseAndExecute("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test")))
+      fail()
+    } catch {
+      case x: PatternException => // expected
+      case _ => fail()
+    }
   }
 }
