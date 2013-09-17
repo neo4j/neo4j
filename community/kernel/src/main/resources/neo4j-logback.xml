@@ -49,6 +49,10 @@
     <appender-ref ref="FILE"/>
   </logger>
 
+  <logger name="org.jetty.netty.channel.DefaultChannelPipeline" level="ERROR" additivity="false">
+    <appender-ref ref="FILE"/>
+  </logger>
+
   <include resource="custom-logback.xml"/>
 
 </configuration>

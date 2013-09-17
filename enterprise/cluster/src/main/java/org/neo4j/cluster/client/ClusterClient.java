@@ -29,6 +29,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
@@ -40,6 +42,7 @@ import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
+import org.neo4j.cluster.logging.NettyLoggerFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
@@ -271,6 +274,8 @@ public class ClusterClient extends LifecycleAdapter
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 
+        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory(logging) );
+
         NetworkReceiver receiver = new NetworkReceiver( new NetworkReceiver.Configuration()
         {
             @Override
@@ -333,47 +338,7 @@ public class ClusterClient extends LifecycleAdapter
         life.add( receiver );
 
         // Timeout timer - triggers every 10 ms
-        life.add( new Lifecycle()
-        {
-            private ScheduledExecutorService scheduler;
-            private ScheduledFuture<?> tickFuture;
-
-            @Override
-            public void init() throws Throwable
-            {
-                server.getTimeouts().tick( System.currentTimeMillis() );
-            }
-
-            @Override
-            public void start() throws Throwable
-            {
-                scheduler = Executors.newSingleThreadScheduledExecutor(
-                        new DaemonThreadFactory( "timeout-clusterClient" ) );
-
-                tickFuture = scheduler.scheduleWithFixedDelay( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        long now = System.currentTimeMillis();
-
-                        server.getTimeouts().tick( now );
-                    }
-                }, 0, 10, TimeUnit.MILLISECONDS );
-            }
-
-            @Override
-            public void stop() throws Throwable
-            {
-                tickFuture.cancel( true );
-                scheduler.shutdownNow();
-            }
-
-            @Override
-            public void shutdown() throws Throwable
-            {
-            }
-        } );
+        life.add( new TimeoutTrigger() );
 
         life.add( new ClusterJoin( new ClusterJoin.Configuration()
         {
@@ -554,5 +519,47 @@ public class ClusterClient extends LifecycleAdapter
     public URI getClusterServer()
     {
         return server.boundAt();
+    }
+
+    public class TimeoutTrigger implements Lifecycle
+    {
+        private ScheduledExecutorService scheduler;
+        private ScheduledFuture<?> tickFuture;
+
+        @Override
+        public void init() throws Throwable
+        {
+            server.getTimeouts().tick( System.currentTimeMillis() );
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+            scheduler = Executors.newSingleThreadScheduledExecutor(
+                    new DaemonThreadFactory( "timeout-clusterClient" ) );
+
+            tickFuture = scheduler.scheduleWithFixedDelay( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    long now = System.currentTimeMillis();
+
+                    server.getTimeouts().tick( now );
+                }
+            }, 0, 10, TimeUnit.MILLISECONDS );
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+            tickFuture.cancel( true );
+            scheduler.shutdownNow();
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
     }
 }

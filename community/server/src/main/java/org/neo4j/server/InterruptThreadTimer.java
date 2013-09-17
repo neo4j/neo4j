@@ -25,7 +25,7 @@ import java.util.TimerTask;
 /**
  * Interrupts a thread after a given timeout, can be cancelled if needed.
  */
-public abstract class InterruptThreadTimer 
+public abstract class InterruptThreadTimer
 {
     public enum State
     {
@@ -42,14 +42,14 @@ public abstract class InterruptThreadTimer
 		{
 			this.threadToInterrupt = threadToInterrupt;
 		}
-		
+
 		@Override
 		public void run()
 		{
 			wasExecuted = true;
 			threadToInterrupt.interrupt();
 		}
-		
+
 		public boolean wasExecuted()
 		{
 			return this.wasExecuted;
@@ -65,27 +65,27 @@ public abstract class InterruptThreadTimer
 	{
 		return new NoOpInterruptThreadTimer();
 	}
-	
+
 	private static class ActualInterruptThreadTimer extends InterruptThreadTimer
 	{
 		private final Timer timer = new Timer();
 		private final InterruptThreadTask task;
 		private final long timeout;
         private State state = State.IDLE;
-		
+
 		public ActualInterruptThreadTimer(long timeoutMillis, Thread threadToInterrupt)
 		{
 			this.task = new InterruptThreadTask(threadToInterrupt);
 			this.timeout = timeoutMillis;
 		}
-	
+
 		@Override
 		public void startCountdown()
 		{
             state = State.COUNTING;
 			timer.schedule(task, timeout);
 		}
-		
+
 		@Override
 		public void stopCountdown()
 		{
@@ -112,7 +112,7 @@ public abstract class InterruptThreadTimer
                 return state;
             }
         }
-		
+
 		@Override
 		public boolean wasTriggered()
 		{
@@ -124,7 +124,7 @@ public abstract class InterruptThreadTimer
 			return timeout;
 		}
 	}
-	
+
 	private static class NoOpInterruptThreadTimer extends InterruptThreadTimer
 	{
 
@@ -133,13 +133,13 @@ public abstract class InterruptThreadTimer
         public NoOpInterruptThreadTimer()
 		{
 		}
-	
+
 		@Override
 		public void startCountdown()
 		{
             state = State.COUNTING;
 		}
-		
+
 		@Override
 		public void stopCountdown()
 		{
@@ -151,7 +151,7 @@ public abstract class InterruptThreadTimer
         {
             return state;
         }
-		
+
 		@Override
 		public boolean wasTriggered()
 		{
@@ -163,14 +163,14 @@ public abstract class InterruptThreadTimer
 			return 0;
 		}
 	}
-	
+
 	public abstract void startCountdown();
-	
+
 	public abstract void stopCountdown();
-	
+
 	public abstract boolean wasTriggered();
-	
+
     public abstract State getState();
-    
+
 	public abstract long getTimeoutMillis();
 }

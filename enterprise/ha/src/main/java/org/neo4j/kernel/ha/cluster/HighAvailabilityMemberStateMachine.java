@@ -45,7 +45,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private final ClusterMemberEvents events;
     private StringLogger logger;
     private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
-    private HighAvailabilityMemberState state;
+    private volatile HighAvailabilityMemberState state;
     private StateMachineClusterEventListener eventsListener;
     private final ClusterMembers members;
     private final Election election;
