@@ -29,14 +29,22 @@ trait Literals extends Parser
   def Expression : Rule1[ast.Expression]
 
   def Identifier : Rule1[ast.Identifier] = rule("an identifier") (
-      group((Letter | ch('_')) ~ zeroOrMore(IdentifierCharacter)) ~> t(ast.Identifier(_, _)) ~ !(IdentifierCharacter)
+      IdentifierString ~>> token ~~> ast.Identifier
     | EscapedIdentifier
   ) memoMismatches
 
-  def EscapedIdentifier : Rule1[ast.Identifier] = rule {
+  private def IdentifierString : Rule1[String] = rule("an identifier") {
+    group((Letter | ch('_')) ~ zeroOrMore(IdentifierCharacter)) ~> (_.toString) ~ !(IdentifierCharacter)
+  }
+
+  def EscapedIdentifier : Rule1[ast.Identifier] = rule("an identifier") {
+    EscapedIdentifierString ~>> token ~~> ast.Identifier
+  }
+
+  private def EscapedIdentifierString : Rule1[String] = rule("an identifier") {
     ((oneOrMore(
-        ch('`') ~ zeroOrMore(!ch('`') ~ ANY) ~> (_.toString) ~ ch('`')
-    ) memoMismatches) ~~> (_.reduce(_ + '`' + _))) ~>> token ~~> ast.Identifier
+      ch('`') ~ zeroOrMore(!ch('`') ~ ANY) ~> (_.toString) ~ ch('`')
+    ) memoMismatches) ~~> (_.reduce(_ + '`' + _)))
   }
 
   def Operator : Rule1[ast.Identifier] = rule {
@@ -50,10 +58,7 @@ trait Literals extends Parser
   }
 
   def Parameter : Rule1[ast.Parameter] = rule("a parameter") {
-    ((ch('{') ~~ (
-        oneOrMore(IdentifierCharacter)
-      | UnsignedInteger
-    ) ~> (_.toString) ~~ ch('}')) memoMismatches) ~>> token ~~> ast.Parameter
+    ((ch('{') ~~ (IdentifierString | EscapedIdentifierString | UnsignedInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~>> token ~~> ast.Parameter
   }
 
   def NumberLiteral : Rule1[ast.Number] = rule("a number") (

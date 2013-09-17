@@ -1262,6 +1262,17 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ReturnItem(Identifier("pA"), "pA")))
   }
 
+  @Test def testQuotedParams() {
+    test(
+      """start pA = node({`id`}) where pA.name =~ {`regex`} return pA skip {`ski``pper`} limit {`stop`}""",
+      Query.
+        start(NodeById("pA", ParameterExpression("id"))).
+        where(RegularExpression(Property(Identifier("pA"), PropertyKey("name")), ParameterExpression("regex")))
+        skip("ski`pper")
+        limit ("stop")
+        returns (ReturnItem(Identifier("pA"), "pA")))
+  }
+
   @Test def testParamForRegex() {
     test(
       """start pA = node(0) where pA.name =~ {regex} return pA""",
