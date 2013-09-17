@@ -269,9 +269,10 @@ public class NetworkSender
                 {
                     // Only print out failure message on first fail
                     if (!failedInstances.contains( to ))
+                    {
                         msgLog.warn( "Could not connect to:" + to, e );
-                    else
                         failedInstances.add(to);
+                    }
 
                     return;
                 }
