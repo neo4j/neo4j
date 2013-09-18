@@ -20,19 +20,21 @@
 package org.neo4j.server.rest.repr;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.cypher.javacompat.ProfilerStatistics;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -71,7 +73,8 @@ public class CypherResultRepresentationTest
         when( result.executionPlanDescription() ).thenReturn( plan );
 
         // When
-        Map<String, Object> serialized = serialize( new CypherResultRepresentation( result, /*includeStats=*/false, true ) );
+        Map<String, Object> serialized = serializeToStringThenParseAsToMap( new CypherResultRepresentation( result,
+                /*includeStats=*/false, true ) );
 
         // Then
         Map<String, Object> serializedPlan = (Map<String, Object>) serialized.get( "plan" );
@@ -96,10 +99,32 @@ public class CypherResultRepresentationTest
         when( result.columns() ).thenReturn( new ArrayList<String>() );
 
         // When
-        Map<String, Object> serialized = serialize( new CypherResultRepresentation( result, /*includeStats=*/false, false ) );
+        Map<String, Object> serialized = serializeToStringThenParseAsToMap( new CypherResultRepresentation( result,
+                /*includeStats=*/false, false ) );
 
         // Then
         assertFalse( "Didn't expect to see a plan here", serialized.containsKey( "plan" ) );
+    }
+
+    @Rule
+    public DatabaseRule database = new ImpermanentDatabaseRule();
+
+    @Test
+    public void shouldFormatMapsProperly() throws Exception
+    {
+        ExecutionEngine executionEngine = new ExecutionEngine( database.getGraphDatabaseService() );
+        ExecutionResult result = executionEngine.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
+        CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
+
+        // When
+        Map<String, Object> serialized = serializeToStringThenParseAsToMap( representation );
+
+        // Then
+        Map one = (Map) ((Map) ((List) ((List) serialized.get( "data" )).get( 0 )).get( 0 )).get( "one" );
+        List two = (List) one.get( "two" );
+        assertThat( (String) two.get( 0 ), is( "wait for it..." ) );
+        Map foo = (Map) two.get( 1 );
+        assertThat( (String) foo.get( "three" ), is( "GO!" ) );
     }
 
     private static ResourceIterator<Map<String, Object>> emptyIterator()
@@ -118,10 +143,9 @@ public class CypherResultRepresentationTest
         return plan;
     }
 
-    private Map<String, Object> serialize( CypherResultRepresentation repr ) throws URISyntaxException, JsonParseException
+    private Map<String, Object> serializeToStringThenParseAsToMap( CypherResultRepresentation repr ) throws Exception
     {
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
         return jsonToMap( format.assemble( repr ) );
     }
-
 }

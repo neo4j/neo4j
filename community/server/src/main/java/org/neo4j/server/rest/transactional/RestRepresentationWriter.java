@@ -71,20 +71,10 @@ class RestRepresentationWriter implements ResultDataContentWriter
             out.writeStartObject();
             try
             {
-                out.writeObjectFieldStart( "data" );
-                try
+                for ( Map.Entry<String, ?> entry : ((Map<String, ?>) value).entrySet() )
                 {
-                    @SuppressWarnings("unchecked")
-                    Map<String, ?> map = (Map<String, ?>) value;
-                    for ( Map.Entry<String, ?> entry : map.entrySet() )
-                    {
-                        out.writeFieldName( entry.getKey() );
-                        write( out, format, entry.getValue() );
-                    }
-                }
-                finally
-                {
-                    out.writeEndObject();
+                    out.writeFieldName( entry.getKey() );
+                    write( out, format, entry.getValue() );
                 }
             }
             finally
@@ -92,12 +82,16 @@ class RestRepresentationWriter implements ResultDataContentWriter
                 out.writeEndObject();
             }
         }
-        else if ( value instanceof List<?> )
+        else if ( value instanceof Path )
+        {
+            write( format, new PathRepresentation<>( (Path) value ) );
+        }
+        else if ( value instanceof Iterable<?> )
         {
             out.writeStartArray();
             try
             {
-                for ( Object item : (List<?>) value )
+                for ( Object item : (Iterable<?>) value )
                 {
                     write( out, format, item );
                 }
@@ -114,10 +108,6 @@ class RestRepresentationWriter implements ResultDataContentWriter
         else if ( value instanceof Relationship )
         {
             write( format, new RelationshipRepresentation( (Relationship) value ) );
-        }
-        else if ( value instanceof Path )
-        {
-            write( format, new PathRepresentation<>( (Path) value ) );
         }
         else
         {
