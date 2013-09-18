@@ -72,9 +72,9 @@ trait Literals extends Parser
 
   def RangeLiteral : Rule1[ast.Range] = rule (
       group(
-          (UnsignedIntegerLiteral ~~> (Some(_)) ~ WS | EMPTY ~ push(None)) ~
-          ".." ~
-          (WS ~ UnsignedIntegerLiteral ~~> (Some(_)) | EMPTY ~ push(None))
+        optional(UnsignedIntegerLiteral ~ WS) ~
+        ".." ~
+        optional(WS ~ UnsignedIntegerLiteral)
       ) ~>> token ~~> ast.Range
     | UnsignedIntegerLiteral ~~> (l => ast.Range(Some(l), Some(l), l.token))
   )
