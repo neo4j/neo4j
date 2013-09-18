@@ -208,7 +208,7 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
       case leftNode: NodePattern        => (Vector(), leftNode.toLegacyEndpoint)
       case leftChain: RelationshipChain =>
         val creates = leftChain.toLegacyCreates
-        (creates, creates.last.to)
+        (creates, leftChain.rightNode.toLegacyEndpoint)
     }
 
     creates :+ relationship.toLegacyCreates(leftEndpoint, rightNode.toLegacyEndpoint)
