@@ -111,7 +111,7 @@ trait Patterns extends Parser
   )
 
   private def MaybeIdentifier : Rule1[Option[ast.Identifier]] = rule("an identifier") {
-    (Identifier ~~> (Some(_)) | EMPTY ~ push(None))
+    optional(Identifier)
   }
 
   private def MaybeNodeLabels : Rule1[Seq[ast.Identifier]] = rule("node labels") {
@@ -119,9 +119,7 @@ trait Patterns extends Parser
   }
 
   private def MaybeProperties : Rule1[Option[ast.Expression]] = rule("a property map") (
-      MapLiteral ~~> (Some(_))
-    | Parameter ~~> (Some(_))
-    | EMPTY ~ push(None)
+    optional(MapLiteral | Parameter)
   )
 
   private def toNodePattern(

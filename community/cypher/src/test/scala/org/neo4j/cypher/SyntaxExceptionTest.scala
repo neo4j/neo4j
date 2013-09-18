@@ -132,7 +132,7 @@ class SyntaxExceptionTest extends JUnitSuite with Assertions {
 
   @Test def unclosedCurly() {
     test("start a=node({0) return a",
-      v2_0    -> "Invalid input ')': expected an identifier character, whitespace or '}' (line 1, column 16)"
+      v2_0    -> "Invalid input ')': expected whitespace or '}' (line 1, column 16)"
     )
   }
 
