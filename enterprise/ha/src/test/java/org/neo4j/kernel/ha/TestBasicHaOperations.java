@@ -19,22 +19,23 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 /**
  * TODO
@@ -104,40 +105,26 @@ public class TestBasicHaOperations
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+
         long nodeId = 0;
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        Transaction tx = null;
-        try
+        try ( Transaction tx = slave.beginTx() )
         {
-            tx = slave.beginTx();
-
             Node node = slave.createNode();
             node.setProperty( "Hello", "World" );
             nodeId = node.getId();
 
             tx.success();
         }
-        catch ( Throwable ex )
-        {
-            ex.printStackTrace();
-            fail();
-        }
-        finally
-        {
-            if ( tx != null ) tx.finish();
-        }
 
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        Transaction transaction = master.beginTx();
-        try
+        try ( Transaction tx = master.beginTx() )
         {
             String value = master.getNodeById( nodeId ).getProperty( "Hello" ).toString();
             logger.getLogger().info( "Hello=" + value );
             assertEquals( "World", value );
-        }
-        finally
-        {
-            transaction.finish();
+            tx.success();
         }
     }
 
@@ -150,56 +137,37 @@ public class TestBasicHaOperations
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+
         long nodeId = 0;
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        Transaction tx = null;
-        try
+        try ( Transaction tx = master.beginTx() )
         {
-            tx = master.beginTx();
-
             Node node = master.createNode();
             node.setProperty( "Hello", "World" );
             nodeId = node.getId();
 
             tx.success();
         }
-        catch ( Throwable ex )
-        {
-            ex.printStackTrace();
-            fail();
-        }
-        finally
-        {
-            if ( tx != null ) tx.finish();
-        }
 
         // No need to wait, the push factor is 2
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
-        Transaction transaction = slave1.beginTx();
         String value;
-        try
+        try ( Transaction tx = slave1.beginTx() )
         {
             value = slave1.getNodeById( nodeId ).getProperty( "Hello" ).toString();
             logger.getLogger().info( "Hello=" + value );
             assertEquals( "World", value );
+            tx.success();
         }
-        finally
-        {
-            transaction.finish();
-        }
-
 
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave(slave1);
-        transaction = slave2.beginTx();
-        try
+        try ( Transaction tx = slave2.beginTx() )
         {
             value = slave2.getNodeById( nodeId ).getProperty( "Hello" ).toString();
             logger.getLogger().info( "Hello=" + value );
             assertEquals( "World", value );
-        }
-        finally
-        {
-            transaction.finish();
+            tx.success();
         }
     }
 }
