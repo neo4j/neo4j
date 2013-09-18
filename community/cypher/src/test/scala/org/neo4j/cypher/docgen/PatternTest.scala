@@ -81,7 +81,7 @@ Paths can be of arbitrary length, and the same node may appear in multiple place
 expressions, and since these expressions are collections, they can also be used as predicates (where a non-empty
 collection signifies true).
 
-Node identifiers can be used without surrounding parenthesis as long as no labels are used on the node. The following
+Node identifiers that don't specify labels or properties may omit surrounding parenthesis. The following
 match is semantically identical to the one we saw above -- the difference is purely aesthetic.
 
 +`a-->b`+
