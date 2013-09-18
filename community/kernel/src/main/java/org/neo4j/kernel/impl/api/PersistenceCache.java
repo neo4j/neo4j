@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.cache.LockStripedCache;
+import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.Primitive;
@@ -68,13 +68,13 @@ public class PersistenceCache
             relationshipCache.updateSize( (RelationshipImpl) entity, size );
         }
     };
-    private final LockStripedCache<NodeImpl> nodeCache;
-    private final LockStripedCache<RelationshipImpl> relationshipCache;
+    private final AutoLoadingCache<NodeImpl> nodeCache;
+    private final AutoLoadingCache<RelationshipImpl> relationshipCache;
     private final Thunk<GraphPropertiesImpl> graphProperties;
 
     public PersistenceCache(
-            LockStripedCache<NodeImpl> nodeCache,
-            LockStripedCache<RelationshipImpl> relationshipCache,
+            AutoLoadingCache<NodeImpl> nodeCache,
+            AutoLoadingCache<RelationshipImpl> relationshipCache,
             Thunk<GraphPropertiesImpl> graphProperties )
     {
         this.nodeCache = nodeCache;

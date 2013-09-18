@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.cache.LockStripedCache;
+import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
@@ -366,8 +366,8 @@ public class TestXa
         NodeManager nodeManager = mock(NodeManager.class);
         @SuppressWarnings( "rawtypes" )
         List caches = Arrays.asList(
-                (Cache) mock( LockStripedCache.class ),
-                (Cache) mock( LockStripedCache.class ) );
+                (Cache) mock( AutoLoadingCache.class ),
+                (Cache) mock( AutoLoadingCache.class ) );
         when( nodeManager.caches() ).thenReturn( caches );
 
         NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf,
