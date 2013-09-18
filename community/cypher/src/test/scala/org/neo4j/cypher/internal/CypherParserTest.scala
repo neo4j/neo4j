@@ -3070,6 +3070,30 @@ class CypherParserTest extends JUnitSuite with Assertions {
         ReturnItem(LiteralMap(Map("key"->Literal("value"))), "{ key: 'value' }")))
   }
 
+  @Test def long_match_chain() {
+    test(vFrom2_0, "match (a)<-[r1:REL1]-(b)<-[r2:REL2]-(c) return a, b, c",
+      Query.
+        matches(
+        RelatedTo("b", "a", "r1", Seq("REL1"), Direction.OUTGOING),
+        RelatedTo("c", "b", "r2", Seq("REL2"), Direction.OUTGOING)).
+        returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(Identifier("c"), "c")))
+  }
+
+  @Test def long_create_chain() {
+    test(vFrom2_0, "create (a)<-[r1:REL1]-(b)<-[r2:REL2]-(c)",
+      Query.
+        start(
+        CreateRelationshipStartItem(CreateRelationship("r1",
+          RelationshipEndpoint(Identifier("b"), Map.empty, Seq.empty, true),
+          RelationshipEndpoint(Identifier("a"), Map.empty, Seq.empty, true),
+          "REL1", Map())),
+        CreateRelationshipStartItem(CreateRelationship("r2",
+          RelationshipEndpoint(Identifier("c"), Map.empty, Seq.empty, true),
+          RelationshipEndpoint(Identifier("b"), Map.empty, Seq.empty, true),
+          "REL2", Map()))).
+        returns())
+  }
+
   private def run(f: () => Unit) =
     new Runnable() {
       var error: Option[Throwable] = None
