@@ -391,7 +391,6 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
 		public Object beforeCommit( TransactionData data )
                 throws Exception
         {
-            // TODO Auto-generated method stub
             return null;
         }
     }
