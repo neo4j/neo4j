@@ -34,12 +34,12 @@ trait Query extends Parser
 
   def SingleQuery : Rule1[ast.SingleQuery] = rule {
     group(
-      (Start ~ WS ~~> (Some(_)) | EMPTY ~ push(None)) ~
-      (Match ~ WS ~~> (Some(_)) | EMPTY ~ push(None)) ~
+      optional(Start ~ WS) ~
+      optional(Match ~ WS) ~
       zeroOrMore(Hint ~ WS) ~
-      (Where ~ WS ~~> (Some(_)) | EMPTY ~ push(None)) ~
+      optional(Where ~ WS) ~
       zeroOrMore(Updates ~ WS) ~
-      ((Return | With) ~~> (Some(_)) | EMPTY ~ push(None))
+      optional(Return | With)
     ) ~>> token ~~> ast.SingleQuery ~~~? (!_.isEmpty)
   }
 
@@ -134,9 +134,9 @@ trait Query extends Parser
 
   private def ReturnBody = {
     ReturnItems ~~
-    (Order ~~> (Some(_)) | EMPTY ~ push(None)) ~~
-    (Skip ~~> (Some(_)) | EMPTY ~ push(None)) ~~
-    (Limit ~~> (Some(_)) | EMPTY ~ push(None))
+    optional(Order) ~~
+    optional(Skip) ~~
+    optional(Limit)
   }
 
   private def ReturnItems : Rule1[ast.ReturnItems] = rule("'*', an expression") (
