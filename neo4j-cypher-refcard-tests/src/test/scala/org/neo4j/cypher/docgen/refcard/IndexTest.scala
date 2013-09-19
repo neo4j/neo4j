@@ -30,10 +30,10 @@ class IndexTest extends RefcardTest with StatisticsChecker {
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "create-index" =>
-        //        assertStats(result, indexAdded = 1)
+        // assertStats(result, indexAdded = 1)
         assert(result.toList.size === 0)
       case "drop-index" =>
-        //        assertStats(result, indexDeleted = 1)
+        // assertStats(result, indexDeleted = 1)
         assert(result.toList.size === 0)
       case "match" =>
         assertStats(result, nodesCreated = 0)
@@ -41,9 +41,13 @@ class IndexTest extends RefcardTest with StatisticsChecker {
     }
   }
 
+  override val properties: Map[String, Map[String, Any]] = Map(
+    "A" -> Map("name" -> "Alice"),
+    "B" -> Map("name" -> "Tobias"))
+
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "aname" =>
+      case "parameters=aname" =>
         Map("value" -> "Alice")
       case _ =>
         Map()
@@ -70,9 +74,12 @@ Drop the index on the label `Person` and property `name`.
 //
 
 MATCH (n:Person) WHERE n.name = {value}
+
+RETURN n
 ###
 
-Index is used automatically for equality comparison of properties on indexed label.
-Only one index is used per query.
+An index can be automatically used for the equality comparison.
+Note that for example `lower(n.name) = {value}` will not use an index.
+
 """
 }

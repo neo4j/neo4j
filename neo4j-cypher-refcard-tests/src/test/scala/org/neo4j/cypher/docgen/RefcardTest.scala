@@ -41,7 +41,6 @@ Use this base class for refcard tests
 abstract class RefcardTest extends Assertions with DocumentationHelper with GraphIcing {
 
   var db: GraphDatabaseAPI = null
-  val parser: CypherParser = new CypherParser
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
@@ -94,47 +93,47 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   }
 
   def runQuery(query: String, possibleAssertion: Seq[String], parametersChoice: String): ExecutionResult = {
-    val result = executeQuery(query, parameters(parametersChoice))
-    possibleAssertion.foreach(name => {
-      try {
-        assert(name, result)
-      } catch {
-        case e: Exception => throw new RuntimeException("Test: %s\nQuery: %sParams: %s\n%s".format(name, query, parametersChoice, e.getMessage), e)
-      }
-    })
+    db.inTx {
+      val result = executeQuery(query, parameters(parametersChoice))
+      possibleAssertion.foreach(name => {
+        try {
+          assert(name, result)
+        } catch {
+          case e: Exception => throw new RuntimeException("Test: %s\nQuery: %sParams: %s\n%s".format(name, query, parametersChoice, e.getMessage), e)
+        }
+      })
 
-    result
+      result
+    }
   }
 
   @Test
   def produceDocumentation() {
-    db.inTx {
-      val writer: PrintWriter = createWriter(title, dir)
-      val queryText = includeQueries(text, dir)
-      val queryLines = queryText.split("\n\n")
-      writer.println("++++")
-      writer.println("<div class='col card" + css +
-        "\'><div class='blk'>")
-      writer.println("++++")
-      writer.println()
-      writer.println("[options=\"header\"]")
-      writer.println("|====")
-      writer.println("|" + title)
-      for (i <- 0 until queryLines.length by 2) {
-        writer.println("a|[\"source\",\"cypher\"]")
-        writer.println("----")
-        writer.println(queryLines(i).trim().replace("|", "\\|"))
-        writer.println("----")
-        writer.println(queryLines(i + 1).trim())
-      }
-      writer.println("|====")
-      writer.println()
-      writer.println("++++")
-      writer.println("</div></div>")
-      writer.println("++++")
-      writer.println()
-      writer.close()
+    val writer: PrintWriter = createWriter(title, dir)
+    val queryText = includeQueries(text, dir)
+    val queryLines = queryText.split("\n\n")
+    writer.println("++++")
+    writer.println("<div class='col card" + css +
+      "\'><div class='blk'>")
+    writer.println("++++")
+    writer.println()
+    writer.println("[options=\"header\"]")
+    writer.println("|====")
+    writer.println("|" + title)
+    for (i <- 0 until queryLines.length by 2) {
+      writer.println("a|[\"source\",\"cypher\"]")
+      writer.println("----")
+      writer.println(queryLines(i).trim().replace("|", "\\|"))
+      writer.println("----")
+      writer.println(queryLines(i + 1).trim())
     }
+    writer.println("|====")
+    writer.println()
+    writer.println("++++")
+    writer.println("</div></div>")
+    writer.println("++++")
+    writer.println()
+    writer.close()
   }
 
   private def includeGraphviz(startText: String, dir: File): String = {

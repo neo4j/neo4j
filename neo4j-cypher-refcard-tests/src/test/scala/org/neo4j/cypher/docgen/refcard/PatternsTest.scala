@@ -46,7 +46,7 @@ class PatternsTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("value" -> 10),
+    "A" -> Map("value" -> 10, "name" -> "Alice"),
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
@@ -97,7 +97,7 @@ MATCH
 
 RETURN n,m###
 
-A relationship from `n` to `m` or from `m` to `n` exists.
+A relationship in any direction between `n` and `m`.
 
 ###assertion=related
 START n=node(%A%), m=node(%B%)
@@ -138,6 +138,7 @@ MATCH
 RETURN r###
 
 Optional relationship.
+See the performance tips.
 
 ###assertion=related
 START n=node(%A%), m=node(%B%)
@@ -158,6 +159,7 @@ MATCH
 RETURN n,m###
 
 Any depth.
+See the performance tips.
 
 ###assertion=create parameters=aname
 START n=node(%A%)
@@ -167,7 +169,27 @@ CREATE UNIQUE
 
 RETURN m###
 
-Match or set properties in `CREATE` or `CREATE UNIQUE` clauses.
+Match or set properties in `CREATE`, `CREATE UNIQUE` or `MERGE` clauses.
+
+###assertion=related parameters=aname
+MATCH p =
+
+shortestPath((n1:Person)-[*..6]-(n2:Person))
+
+WHERE n1.name = "Alice"
+RETURN p###
+
+Find a single shortest path.
+
+###assertion=related parameters=aname
+MATCH p =
+
+allShortestPaths((n1:Person)-->(n2:Person))
+
+WHERE n1.name = "Alice"
+RETURN p###
+
+Find all shortest paths.
 
 """
 }

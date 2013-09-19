@@ -18,56 +18,62 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
-
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class PathsTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("A:Person KNOWS ROOT")
-  val title = "Paths"
-  val css = "general c2-2 c3-2 c5-2 c6-2"
+class CaseTest extends RefcardTest with StatisticsChecker {
+  def graphDescription = List(
+    "A KNOWS B")
+  val title = "CASE"
+  val css = "read c3-3 c4-3 c5-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
-      case "one" =>
+      case "simple" =>
         assertStats(result, nodesCreated = 0)
-        assert(result.toList.size === 1)
+        assert(!result.dumpToString.contains("3"))
+      case "generic" =>
+        assertStats(result, nodesCreated = 0)
+        assert(!result.dumpToString.contains("3"))
     }
   }
 
-  override def parameters(name: String): Map[String, Any] =
-    name match {
-      case "parameters=aname" =>
-        Map("value" -> "Alice")
-      case "parameters=bname" =>
-        Map("value" -> "Bob")
-      case "" =>
-        Map()
-    }
-
-  override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("name" -> "Alice"))
+  override val properties = Map(
+    "A" -> Map("name" -> "Alice", "age" -> 38, "eyes" -> "brown"),
+    "B" -> Map("name" -> "Beth", "age" -> 38, "eyes" -> "blue"))
 
   def text = """
-###assertion=one parameters=aname
-MATCH p =
+###assertion=simple
+MATCH n
+RETURN
 
-shortestPath((n1:Person)-[*..6]-(n2:Person))
+CASE n.eyes
+ WHEN 'blue' THEN 1
+ WHEN 'brown' THEN 2
+ ELSE 3
+END
 
-WHERE n1.name = "Alice"
-RETURN p###
+AS result
+###
 
-Find a single shortest path.
+Return `THEN` value from the matching `WHEN` value.
+The `ELSE` value is optional, and substituted for `NULL` if missing.
 
-###assertion=one parameters=aname
-MATCH p =
+###assertion=generic
+MATCH n
+RETURN
 
-allShortestPaths((n1:Person)-->(n2:Person))
+CASE
+ WHEN n.eyes = 'blue' THEN 1
+ WHEN n.age < 40 THEN 2
+ ELSE 3
+END
 
-WHERE n1.name = "Alice"
-RETURN p###
+AS result
+###
 
-Find all shortest paths.
+Return `THEN` value from the first `WHEN` predicate evaluating to `TRUE`.
+Predicates are evaluated in order.
 
 """
 }

@@ -30,6 +30,8 @@ Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameter
 RETURN [ORDER BY] [SKIP] [LIMIT]
 ----
 
+//include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/query-structure.asciidoc[]
+
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/match.asciidoc[]
@@ -39,6 +41,8 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/where.ascii
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/case.asciidoc[]
 
 .Write-Only Query Structure 
 ["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
@@ -51,7 +55,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciid
 .Read-Write Query Structure 
 ["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
 ----
-START
+[START]
 [MATCH]
 [WHERE]
 [WITH [ORDER BY] [SKIP] [LIMIT]]
@@ -73,7 +77,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asci
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.asciidoc[]
 
 ++++
-<div class="col cardgeneral c3-2"><div class="blk">
+<div class="col cardgeneral c3-2 c6-2"><div class="blk">
 ++++
 
 [options="header", cols=",m"]
@@ -81,11 +85,10 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.ascii
 2+| Operators
 | Mathematical       | `+`, `-`, `*`, `/`, `%`
 | Comparison         | `=`, `<>`, `<`, `>`, `<=`, `>=`
-| Boolean            | `AND`, `OR`, `NOT`
+| Boolean            | `AND`, `OR`, `XOR`, `NOT`
 | String             | `+`
 | Collection         | `+`, `IN`
 | Regular Expression | `=~`
-| Property           | `?`, `!`
 |===
 
 ++++
@@ -93,8 +96,6 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.ascii
 ++++
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/paths.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/labels.asciidoc[]
 
@@ -122,9 +123,10 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation
 | 
 * Use parameters instead of literals when possible.
   This allows Cypher to re-use your queries instead of having to parse and build new execution plans.
-* Avoid using optional relationships.
-  Cypher has to employ a much slower pattern matcher when you use optional relationships.
-* Always set an upper limit for your variable length relationships.
+* Try not to use optional relationships.
+  Above all, don't use them like this: `MATCH a-[r?:LOVES]->() WHERE r IS NULL` where you just make sure that they don't exist.
+  Instead do this like so: `MATCH a WHERE NOT (a)-[:LOVES]->()`.
+* Always set an upper limit for your variable length patterns.
   It's easy to have a query go wild and touch all nodes in a graph by mistake.
 * Return only the data you need.
   Avoid returning whole nodes and relationships -- instead, pick the data you need and return only that.

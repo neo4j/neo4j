@@ -23,9 +23,9 @@
 
 	function Brush()
 	{
-        var funcs   =   'avg max min sum count all any none single length type id nodes relationships collect extract shortestPath allShortestPaths filter tail head last coalesce abs round sqrt sign collect type length has range timestamp reduce str substring left right ltrim rtrim trim lower upper replace percentile_disc percentile_cont stdev stdevp startnode endnode labels acos asin atan cos cot degrees e exp floor log log10 pi radians rand sin tan';
+        var funcs   =   'abs acos all allShortestPaths any asin atan atan2 avg ceil coalesce collect cos cot count degrees e endnode exp extract filter floor has head id labels last left length log log10 lower ltrim max min node nodes none percentile_cont percentile_disc pi radians rand range reduce rel relationship relationships replace right round rtrim shortestPath sign sin single sqrt startnode stdev stdevp str substring sum tail tan timestamp trim type upper';
 
-        var keywords =  'node relationship rel start match where return skip limit order by descending desc ascending asc distinct true false in is null cypher create with set delete foreach unique as reduce merge case on when then else end constraint assert drop union using index remove';
+        var keywords =  'as asc ascending assert by case constraint create cypher delete desc descending distinct drop else end false foreach in index is limit match merge null on order remove return set skip start then true union unique using when where with';
 
         var operators = 'or and not xor';
 

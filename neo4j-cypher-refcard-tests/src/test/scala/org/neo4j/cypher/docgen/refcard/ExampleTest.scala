@@ -20,27 +20,29 @@
 package org.neo4j.cypher.docgen.refcard
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
+import org.junit.Ignore
 
-class WithTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT FRIEND A", "A FRIEND B", "B FRIEND C", "C FRIEND ROOT")
-  val title = "WITH"
-  val css = "read c2-2 c3-3 c4-3 c5-3 c6-2"
+@Ignore
+class ExamplesTest extends RefcardTest with StatisticsChecker {
+  val graphDescription = List("ROOT:Person FRIEND A:Person", "A:Person FRIEND B:Person", "B:Person FRIEND C:Person", "C:Person FRIEND ROOT:Person")
+  val title = "Query Structure"
+  val css = "general c2-2 c3-2 c4-2 c5-2"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "friends" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
-      case "with-limit" =>
-        assertStats(result, nodesCreated = 0)
-        assert(result.toList.size === 3)
+      case "create" =>
+        assertStats(result, nodesCreated = 1, nodesDeleted = 1, propertiesSet = 3, labelsAdded = 1)
+        assert(result.toList.size === 0)
     }
   }
 
   override def parameters(name: String): Map[String, Any] =
     name match {
       case "parameters=name" =>
-        Map("name" -> "Andreas")
+        Map("name" -> "Andreas", "city" -> "Malmö", "skip_number" -> 10)
       case _ => Map()
     }
 
@@ -53,27 +55,31 @@ class WithTest extends RefcardTest with StatisticsChecker {
 ###assertion=friends parameters=name
 //
 
-MATCH (user)-[:FRIEND]-(friend)
-WHERE user.name = {name}
-WITH user, count(friend) AS friends
-WHERE friends > 10
-RETURN user
+MATCH (user:Person)-[:FRIEND]-(friend)
+WHERE user.city = {city}
+WITH user, count(friend) as friendCount
+WHERE friendCount > 10
+RETURN user.name
+ORDER BY friendCount DESC
+SKIP {skip_number}
+LIMIT 10
 
 ###
 
-The `WITH` syntax is similar to `RETURN`.
-It separates query parts explicitly, allowing you to declare which identifiers to carry over to the next part.
+A query that only reads data.
+See the `WITH` section for additional options on its usage.
 
-###assertion=with-limit
-MATCH (user)-[:FRIEND]-(friend)
+###assertion=create parameters=name
+//
 
-WITH user, count(friend) AS friends
-ORDER BY friends DESC
-SKIP 1 LIMIT 3
-
-RETURN user
+CREATE (user:Person {name: {name}})
+SET user.city = {city}
+FOREACH (n IN [user] : SET n.marked = true)
+DELETE user
 ###
 
-You can also use `ORDER BY` and `SKIP` and `LIMIT` with `WITH`.
-             """
+Basic write query.
+Note that there can be multiple `CREATE`, `SET`, `FOREACH` or `DELETE` statements.
+
+"""
 }

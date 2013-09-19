@@ -81,7 +81,7 @@ Use comparison operators.
 START n=node(*)
 WHERE
 
-HAS(n.property)
+has(n.property)
 
 RETURN n###
 
@@ -92,7 +92,7 @@ START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
 WHERE
 
-HAS(n.property) AND n.property = {value}
+has(n.property) AND n.property = {value}
 
 RETURN n,m###
 
@@ -117,17 +117,17 @@ identifier IS NULL
 
 RETURN n,m###
 
-Check if something is `null`.
+Check if something is `NULL`.
 
 ###assertion=returns-one parameters=aname
 START n=node(*)
 WHERE
 
-NOT(HAS(n.property)) OR n.property = {value}
+NOT(has(n.property)) OR n.property = {value}
 
 RETURN n###
 
-Either property does not exist or predicate is true.
+Either property does not exist or predicate is +TRUE+.
 
 ###assertion=returns-none parameters=aname
 START n=node(*)
@@ -137,13 +137,13 @@ n.property = {value}
 
 RETURN n###
 
-Non-existing property returns `null`, which is only equal to `null`.
+Non-existing property returns `NULL`, which is only equal to `NULL`.
 
 ###assertion=returns-one parameters=regex
 START n=node(*)
 WHERE HAS(n.property) AND
 
-n.property =~ {regex}
+n.property =~ "Tob.*"
 
 RETURN n###
 
@@ -171,7 +171,7 @@ Exclude matches to `(n)-[:KNOWS]->(m)` from the result.
 
 ###assertion=returns-one parameters=names
 START n=node(*)
-WHERE HAS(n.property) AND
+WHERE has(n.property) AND
 
 n.property IN [{value1}, {value2}]
 

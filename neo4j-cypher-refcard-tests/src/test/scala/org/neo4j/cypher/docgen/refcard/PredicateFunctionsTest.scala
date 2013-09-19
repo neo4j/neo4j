@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class PredicateFunctionsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Predicate Functions"
-  val css = "general c3-3 c4-3 c5-2 c6-4"
+  val css = "general c3-3 c4-2 c5-2 c6-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -49,43 +49,43 @@ MATCH path=(n)-->(m)
 WITH nodes(path) as collection, n, m
 WHERE
 
-ALL(x IN collection WHERE HAS(x.property))
+all(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
-Returns `true` if the predicate is `true` for all elements of the collection.
+Returns `true` if the predicate is `TRUE` for all elements of the collection.
 
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
 MATCH collection=(n)-->(m)
 WHERE
 
-ANY(x IN collection WHERE HAS(x.property))
+any(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
-Returns `true` if the predicate is `true` for at least one element of the collection.
+Returns `true` if the predicate is `TRUE` for at least one element of the collection.
 
 ###assertion=returns-none
 START n=node(%A%), m=node(%B%)
 MATCH collection=(n)-->(m)
 WHERE
 
-NONE(x IN collection WHERE HAS(x.property))
+none(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
-Returns `true` if the predicate is `false` for all elements of the collection.
+Returns `TRUE` if the predicate is `FALSE` for all elements of the collection.
 
 ###assertion=returns-none
 START n=node(%A%), m=node(%B%)
 MATCH collection=(n)-->(m)
 WHERE
 
-SINGLE(x IN collection WHERE HAS(x.property))
+single(x IN collection WHERE has(x.property))
 
 RETURN n,m###
 
-Returns `true` if the predicate is `true` for exactly one element in the collection.
+Returns `TRUE` if the predicate is `TRUE` for exactly one element in the collection.
 """
 }
