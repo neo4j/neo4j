@@ -238,7 +238,7 @@ class ReadOnlyTransactionImpl implements Transaction
     }
 
     // TODO: figure out if this needs syncrhonization or make status volatile
-    public int getStatus() // throws SystemException
+    public int getStatus()
     {
         return status;
     }

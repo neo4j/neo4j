@@ -34,8 +34,6 @@ public interface WindowPool
      * @param operationType
      *            The type of operation (READ or WRITE)
      * @return A locked window encapsulating the position
-     * @throws java.io.IOException
-     *             If unable to acquire the window
      */
     PersistenceWindow acquire( long position, OperationType operationType );
 
@@ -45,8 +43,6 @@ public interface WindowPool
      *
      * @param window
      *            The window to be released
-     * @throws java.io.IOException
-     *             If unable to release window
      */
     void release( PersistenceWindow window );
 

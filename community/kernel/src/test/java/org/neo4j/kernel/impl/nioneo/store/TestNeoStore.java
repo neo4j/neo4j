@@ -146,7 +146,6 @@ public class TestNeoStore
 
         public static void add( MyPropertyKeyToken index )
         {
-            // TODO Auto-generated method stub
             stringToIndex.put( index.name(), index );
             intToIndex.put( index.id(), index );
         }
