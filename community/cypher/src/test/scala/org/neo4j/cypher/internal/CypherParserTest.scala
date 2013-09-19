@@ -3105,6 +3105,13 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns())
   }
 
+  @Test def test_literal_numbers() {
+    test(vFrom2_0, "RETURN 0.5, .5, 50",
+      Query.
+        matches().
+        returns(ReturnItem(Literal(0.5), "0.5"), ReturnItem(Literal(0.5), ".5"), ReturnItem(Literal(50), "50")))
+  }
+
   private def run(f: () => Unit) =
     new Runnable() {
       var error: Option[Throwable] = None

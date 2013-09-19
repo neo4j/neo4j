@@ -33,7 +33,7 @@ trait Base extends Parser {
 
   def WordCharacter = rule { (Letter | ch('_') | Digit) memoMismatches }
 
-  def Decimal = rule { (Integer ~ "." ~ Digits) memoMismatches }
+  def Decimal = rule { (optional(Integer) ~ "." ~ Digits) memoMismatches }
   def Integer = rule { (optional("-") ~ UnsignedInteger) memoMismatches }
   def UnsignedInteger = rule { (("1" - "9") ~ Digits | Digit) memoMismatches }
   def Digits = rule { oneOrMore(Digit) }
