@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.impl.cache.LockStripedCache;
+import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 
@@ -69,7 +69,7 @@ public class PersistenceCacheTest
     }
 
     private PersistenceCache persistenceCache;
-    private LockStripedCache<NodeImpl> nodeCache;
+    private AutoLoadingCache<NodeImpl> nodeCache;
     private final long nodeId = 1;
     private final KernelStatement state = mock( KernelStatement.class );
 
@@ -77,8 +77,8 @@ public class PersistenceCacheTest
     @Before
     public void init()
     {
-        nodeCache = mock( LockStripedCache.class );
-        LockStripedCache<RelationshipImpl> relCache = mock( LockStripedCache.class );
+        nodeCache = mock( AutoLoadingCache.class );
+        AutoLoadingCache<RelationshipImpl> relCache = mock( AutoLoadingCache.class );
         persistenceCache = new PersistenceCache( nodeCache, relCache, mock( Thunk.class ) );
     }
 }
