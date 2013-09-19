@@ -929,4 +929,16 @@ public class TestApps extends AbstractShellTest
             assertThat( e.getMessage(), containsString( "Not in a transaction" ) );
         }
     }
+
+    @Test
+    public void allowsArgumentsStartingWithSingleHyphensForCommandsThatDontTakeOptions() throws Exception
+    {
+        executeCommand( "CREATE (n { test : ' -0' });" );
+    }
+
+    @Test
+    public void allowsArgumentsStartingWithDoubldHyphensForCommandsThatDontTakeOptions() throws Exception
+    {
+        executeCommand( "MATCH () -- () RETURN 0;" );
+    }
 }
