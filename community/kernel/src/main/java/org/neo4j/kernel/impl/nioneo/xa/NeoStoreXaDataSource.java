@@ -60,7 +60,7 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.cache.AutoLoadingCache;
+import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -297,8 +297,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         final NodeManager nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
         Iterator<? extends Cache<?>> caches = nodeManager.caches().iterator();
         persistenceCache = new PersistenceCache(
-                (AutoLoadingCache<NodeImpl>)caches.next(),
-                (AutoLoadingCache<RelationshipImpl>)caches.next(), new Thunk<GraphPropertiesImpl>()
+                (LockStripedCache<NodeImpl>)caches.next(),
+                (LockStripedCache<RelationshipImpl>)caches.next(), new Thunk<GraphPropertiesImpl>()
         {
             @Override
             public GraphPropertiesImpl evaluate()

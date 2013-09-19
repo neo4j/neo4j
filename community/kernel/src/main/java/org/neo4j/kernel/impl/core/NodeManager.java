@@ -46,9 +46,9 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -76,8 +76,8 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     private final StringLogger logger;
     private final GraphDatabaseService graphDbService;
-    private final AutoLoadingCache<NodeImpl> nodeCache;
-    private final AutoLoadingCache<RelationshipImpl> relCache;
+    private final LockStripedCache<NodeImpl> nodeCache;
+    private final LockStripedCache<RelationshipImpl> relCache;
     private final CacheProvider cacheProvider;
     private final AbstractTransactionManager transactionManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -94,9 +94,10 @@ public class NodeManager implements Lifecycle, EntityFactory
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
 
+    private static final int LOCK_STRIPE_COUNT = 32;
     private GraphPropertiesImpl graphProperties;
 
-    private final AutoLoadingCache.Loader<NodeImpl> nodeLoader = new AutoLoadingCache.Loader<NodeImpl>()
+    private final LockStripedCache.Loader<NodeImpl> nodeLoader = new LockStripedCache.Loader<NodeImpl>()
     {
         @Override
         public NodeImpl loadById( long id )
@@ -110,7 +111,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         }
     };
 
-    private final AutoLoadingCache.Loader<RelationshipImpl> relLoader = new AutoLoadingCache.Loader<RelationshipImpl>()
+    private final LockStripedCache.Loader<RelationshipImpl> relLoader = new LockStripedCache.Loader<RelationshipImpl>()
     {
         @Override
         public RelationshipImpl loadById( long id )
@@ -149,8 +150,8 @@ public class NodeManager implements Lifecycle, EntityFactory
 
         this.cacheProvider = cacheProvider;
         this.statementCtxProvider = statementCtxProvider;
-        this.nodeCache = new AutoLoadingCache<>( nodeCache, nodeLoader );
-        this.relCache = new AutoLoadingCache<>( relCache, relLoader );
+        this.nodeCache = new LockStripedCache<>( nodeCache, LOCK_STRIPE_COUNT, nodeLoader );
+        this.relCache = new LockStripedCache<>( relCache, LOCK_STRIPE_COUNT, relLoader );
         this.xaDsm = xaDsm;
         nodePropertyTrackers = new LinkedList<>();
         relationshipPropertyTrackers = new LinkedList<>();

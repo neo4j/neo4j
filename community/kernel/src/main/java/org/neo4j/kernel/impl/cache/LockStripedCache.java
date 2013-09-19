@@ -20,14 +20,11 @@
 package org.neo4j.kernel.impl.cache;
 
 import java.util.Collection;
+import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Cache that know itself how to load entities into the cache when requested.
- *
- * @param <E> type of entity objects in the cache.
- */
-public class AutoLoadingCache<E extends EntityWithSizeObject> implements Cache<E>
+public class LockStripedCache<E extends EntityWithSizeObject> implements Cache<E>
 {
+    private final ReentrantLock locks[];
     private final Cache<E> actual;
     private final Loader<E> loader;
 
@@ -39,10 +36,15 @@ public class AutoLoadingCache<E extends EntityWithSizeObject> implements Cache<E
         E loadById( long id );
     }
 
-    public AutoLoadingCache( Cache<E> actual, Loader<E> loader )
+    public LockStripedCache( Cache<E> actual, int stripeCount, Loader<E> loader )
     {
         this.loader = loader;
+        this.locks = new ReentrantLock[stripeCount];
         this.actual = actual;
+        for ( int i = 0; i < locks.length; i++ )
+        {
+            locks[i] = new ReentrantLock();
+        }
     }
 
     @Override
@@ -72,36 +74,39 @@ public class AutoLoadingCache<E extends EntityWithSizeObject> implements Cache<E
             return result;
         }
 
-        /* MP/JS | A note about locking:
-         * Previously this block of code below was wrapped in a lock, striped on the key where there were
-         * an arbitrary number of stripes. The lock would prevent multiple threads to load the same entity
-         * at the same time, or more specifically prevent multiple threads to put two versions of the same entity
-         * into the cache at the same time.
-         *   So without the lock there can be thread T1 loading an entity into an entity object E1 at the same time
-         * as thread T2 loading the same entity into another entity object E2. E1 and E2 represent the same entity E.
-         * This race would have one of the threads win and have its version put in the cache last,
-         * the other overwritten. Consider the similarities of that race with cache eviction coming into play,
-         * where T1 loads E1 and puts it in cache and returns it. After that and before T2 comes in
-         * and wants that same entity there has been an eviction of E1. T2 would then load E2 and
-         * put into cache resulting in two "live" versions of E as well. It would seem that having the lock would
-         * reduce the chance for this happening, but not prevent it.
-         *   There doesn't seem to be any reason as to why having two versions of the same entity object would cause
-         * problems (keep in mind that there will only be one version in the cache). Also, the overhead of
-         * locking grows with the number of threads/cores to eventually become a bottle neck.
-         *
-         * Based on that the locking was removed. */
-        result = loader.loadById( key );
-        if ( result == null )
+        ReentrantLock lock = lockId( key );
+        try
         {
-            return null;
+            result = loader.loadById( key );
+            if ( result == null )
+            {
+                return null;
+            }
+            actual.put( result );
+            return result;
         }
-        actual.put( result );
-        return result;
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     public E getIfCached( long key )
     {
         return actual.get( key );
+    }
+
+    private ReentrantLock lockId( long id )
+    {
+        // TODO: Change stripe mod for new 4B+
+        int stripe = (int) (id / 32768) % locks.length;
+        if ( stripe < 0 )
+        {
+            stripe *= -1;
+        }
+        ReentrantLock lock = locks[stripe];
+        lock.lock();
+        return lock;
     }
 
     @Override
