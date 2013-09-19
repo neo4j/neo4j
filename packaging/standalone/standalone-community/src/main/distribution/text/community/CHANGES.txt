@@ -1,5 +1,16 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9.4 (2013-09-19)
+------------------
+Desktop:
+ o Introduction of Neo4j Desktop, a Windows installer and Neo4j Server Runtime
+   manager.
+
+Lucene index:
+o Fixed issue where querying an index for "*:*" while having removed entities
+  from it in the same transaction might result in exceptions.
+
+
 1.9.3 (2013-08-30)
 ------------------
 Logging in console is now consistent across modules and more informative
@@ -83,7 +94,7 @@ Lucene Index:
 o Lucene upgraded to 3.6.2
 
 Server:
-o Introduces new slash screen containing a guide to Neo4j. Several small aesthetic improvements
+o Introduces new splash screen containing a guide to Neo4j. Several small aesthetic improvements
 
 Cypher:
 o Fixed #578 - problem with profiling queries that use LIMIT
