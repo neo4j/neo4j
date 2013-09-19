@@ -28,14 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class WeakLruCache<E extends EntityWithSizeObject> extends ReferenceCache<E>
 {
-    private final ConcurrentHashMap<Long,WeakValue<Long,E>> cache =
-        new ConcurrentHashMap<Long,WeakValue<Long,E>>();
-
-    private final WeakReferenceQueue<Long,E> refQueue =
-        new WeakReferenceQueue<Long,E>();
-
+    private final ConcurrentHashMap<Long,WeakValue<Long,E>> cache = new ConcurrentHashMap<>();
+    private final WeakReferenceQueue<Long,E> refQueue = new WeakReferenceQueue<>();
     private final String name;
-
     private final HitCounter counter = new HitCounter();
 
     public WeakLruCache( String name )
@@ -43,29 +38,31 @@ public class WeakLruCache<E extends EntityWithSizeObject> extends ReferenceCache
         this.name = name;
     }
 
-    public void put( E value )
+    @Override
+    public E put( E value )
     {
         Long key = value.getId();
-        WeakValue<Long,E> ref =
-            new WeakValue<Long,E>( key, value, (ReferenceQueue) refQueue );
-        cache.put( key, ref );
+        WeakValue<Long,E> ref = new WeakValue<>( key, value, (ReferenceQueue) refQueue );
+        WeakValue<Long, E> previous = cache.putIfAbsent( key, ref );
         pollClearedValues();
+        return previous != null ? previous.get() : value;
     }
 
+    @Override
     public void putAll( Collection<E> entities )
     {
-        Map<Long,WeakValue<Long,E>> softMap = new HashMap<Long,WeakValue<Long,E>>( entities.size() * 2 );
+        Map<Long,WeakValue<Long,E>> softMap = new HashMap<>( entities.size() * 2 );
         for ( E entity : entities )
         {
             Long key = entity.getId();
-            WeakValue<Long,E> ref =
-                new WeakValue<Long,E>( key, entity, (ReferenceQueue) refQueue );
+            WeakValue<Long,E> ref = new WeakValue<>( key, entity, (ReferenceQueue) refQueue );
             softMap.put( key, ref );
         }
         cache.putAll( softMap );
         pollClearedValues();
     }
 
+    @Override
     public E get( long key )
     {
         WeakReference<E> ref = cache.get( key );
@@ -80,6 +77,7 @@ public class WeakLruCache<E extends EntityWithSizeObject> extends ReferenceCache
         return counter.<E>count( null );
     }
 
+    @Override
     public E remove( long key )
     {
         WeakReference<E> ref = cache.remove( key );
@@ -101,11 +99,13 @@ public class WeakLruCache<E extends EntityWithSizeObject> extends ReferenceCache
         }
     }
 
+    @Override
     public long size()
     {
         return cache.size();
     }
 
+    @Override
     public void clear()
     {
         cache.clear();
@@ -123,6 +123,7 @@ public class WeakLruCache<E extends EntityWithSizeObject> extends ReferenceCache
         return counter.getMissCount();
     }
 
+    @Override
     public String getName()
     {
         return name;

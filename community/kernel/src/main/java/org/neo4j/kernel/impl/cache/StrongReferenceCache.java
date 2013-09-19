@@ -25,27 +25,28 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cache<E>
 {
+    private final ConcurrentHashMap<Long,E> cache = new ConcurrentHashMap<>();
     private final String name;
-    private final ConcurrentHashMap<Long,E> cache = new ConcurrentHashMap<Long,E>();
-
     private final HitCounter counter = new HitCounter();
-
 
     public StrongReferenceCache( String name )
     {
         this.name = name;
     }
 
+    @Override
     public void clear()
     {
         cache.clear();
     }
 
+    @Override
     public E get( long key )
     {
         return counter.count( cache.get( key ) );
     }
 
+    @Override
     public String getName()
     {
         return name;
@@ -56,9 +57,11 @@ public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cac
         return Integer.MAX_VALUE;
     }
 
-    public void put( E value )
+    @Override
+    public E put( E value )
     {
-        cache.put( value.getId(), value );
+        E previous = cache.putIfAbsent( value.getId(), value );
+        return previous != null ? previous : value;
     }
 
     public void putAll( List<E> list )
@@ -69,6 +72,7 @@ public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cac
         }
     }
 
+    @Override
     public E remove( long key )
     {
         return cache.remove( key );
@@ -86,6 +90,7 @@ public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cac
         return counter.getMissCount();
     }
 
+    @Override
     public long size()
     {
         return cache.size();
@@ -105,7 +110,7 @@ public class StrongReferenceCache<E extends EntityWithSizeObject> implements Cac
     {
         // do nothing
     }
-    
+
     @Override
     public void printStatistics()
     {

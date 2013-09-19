@@ -19,75 +19,73 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import static org.junit.Assert.assertTrue;
 
-public class TestCacheTypes extends AbstractNeo4jTestCase
+public class TestCacheTypes
 {
-    private GraphDatabaseAPI newDb( String cacheType )
+    @Test
+    public void softCacheShouldHonorPutSemantics() throws Exception
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings.cache_type.name(), cacheType ).newGraphDatabase();
+        assertCacheHonorsPutsSemantics( new SoftLruCache<>( "test" ) );
     }
 
     @Test
-    public void testDefaultCache()
+    public void weakCacheShouldHonorPutSemantics() throws Exception
     {
-        GraphDatabaseAPI db = newDb( null );
-        assertEquals( SoftCacheProvider.NAME, db.getNodeManager().getCacheType().getName() );
-        db.shutdown();
+        assertCacheHonorsPutsSemantics( new WeakLruCache<>( "test" ) );
     }
 
     @Test
-    public void testWeakRefCache()
+    public void strongCacheShouldHonorPutSemantics() throws Exception
     {
-        GraphDatabaseAPI db = newDb( WeakCacheProvider.NAME );
-        assertEquals( WeakCacheProvider.NAME, db.getNodeManager().getCacheType().getName() );
-        db.shutdown();
+        assertCacheHonorsPutsSemantics( new StrongReferenceCache<>( "test" ) );
     }
 
-    @Test
-    public void testSoftRefCache()
+    private void assertCacheHonorsPutsSemantics( Cache<EntityWithSizeObject> cache )
     {
-        GraphDatabaseAPI db = newDb( SoftCacheProvider.NAME );
-        assertEquals( SoftCacheProvider.NAME, db.getNodeManager().getCacheType().getName() );
-        db.shutdown();
+        Entity version1 = new Entity( 10 );
+        assertTrue( version1 == cache.put( version1 ) );
+
+        // WHEN
+        Entity version2 = new Entity( 10 );
+
+        // THEN
+        assertTrue( version1 == cache.put( version2 ) );
     }
 
-    @Test
-    public void testNoCache()
+    private static class Entity implements EntityWithSizeObject
     {
-        GraphDatabaseAPI db = newDb( NoCacheProvider.NAME );
-        assertEquals( NoCacheProvider.NAME, db.getNodeManager().getCacheType().getName() );
-        db.shutdown();
-    }
+        private int registeredSize;
+        private final long id;
 
-    @Test
-    public void testStrongCache()
-    {
-        GraphDatabaseAPI db = newDb( StrongCacheProvider.NAME );
-        assertEquals( StrongCacheProvider.NAME, db.getNodeManager().getCacheType().getName() );
-        db.shutdown();
-    }
-    
-    @Test
-    public void testInvalidCache()
-    {
-        // invalid cache type should fail
-        GraphDatabaseAPI db = null;
-        try
+        Entity( long id )
         {
-            db = newDb( "whatever" );
-            fail( "Wrong cache type should not be allowed" );
+            this.id = id;
         }
-        catch( Exception e )
+
+        @Override
+        public int sizeOfObjectInBytesIncludingOverhead()
         {
-            // Ok
+            return 0;
+        }
+
+        @Override
+        public long getId()
+        {
+            return id;
+        }
+
+        @Override
+        public void setRegisteredSize( int size )
+        {
+            registeredSize = size;
+        }
+
+        @Override
+        public int getRegisteredSize()
+        {
+            return registeredSize;
         }
     }
 }
