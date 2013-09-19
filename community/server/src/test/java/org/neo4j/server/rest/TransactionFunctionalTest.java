@@ -355,11 +355,53 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 
         JsonNode jsonResponse = response.jsonContent();
         JsonNode data = jsonResponse.get( "results" ).get(0);
-        assertThat( data.get( "columns" ).get(0).asText(), equalTo("COLLECT(n)"));
+        assertThat( data.get( "columns" ).get( 0 ).asText(), equalTo( "COLLECT(n)" ) );
         assertThat( data.get( "data" ).get(0).get( "row" ).size(), equalTo(1));
-        assertThat( data.get( "data" ).get(0).get( "row" ).get(0).get(0).size(), equalTo(0));
+        assertThat( data.get( "data" ).get( 0 ).get( "row" ).get( 0 ).get( 0 ).size(), equalTo( 0 ) );
+
+        assertThat( jsonResponse.get( "errors" ).size(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldSerializeMapsCorrectlyInRowsFormat() throws Exception
+    {
+        Response response = http.POST( "/db/data/transaction/commit", quotedJson(
+                "{ 'statements': [ { 'statement': 'RETURN {one:{two:[true, {three: 42}]}}' } ] }" ) );
+
+        // then
+        assertThat( response.status(), equalTo( 200 ) );
+
+        JsonNode jsonResponse = response.jsonContent();
+        JsonNode data = jsonResponse.get( "results" ).get(0);
+        JsonNode row = data.get( "data" ).get( 0 ).get( "row" );
+        assertThat( row.size(), equalTo(1));
+        JsonNode firstCell = row.get( 0 );
+        assertThat( firstCell.get( "one" ).get( "two" ).size(), is( 2 ));
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ));
 
         assertThat(  jsonResponse.get( "errors" ).size(), equalTo(0));
+    }
+
+    @Test
+    public void shouldSerializeMapsCorrectlyInRestFormat() throws Exception
+    {
+        Response response = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
+                "'RETURN {one:{two:[true, {three: 42}]}}', 'resultDataContents':['rest'] } ] }" ) );
+
+        // then
+        assertThat( response.status(), equalTo( 200 ) );
+
+        JsonNode jsonResponse = response.jsonContent();
+        JsonNode data = jsonResponse.get( "results" ).get( 0 );
+        JsonNode rest = data.get( "data" ).get( 0 ).get( "rest" );
+        assertThat( rest.size(), equalTo( 1 ) );
+        JsonNode firstCell = rest.get( 0 );
+        assertThat( firstCell.get( "one" ).get( "two" ).size(), is( 2 ) );
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ) );
+
+        assertThat( jsonResponse.get( "errors" ).size(), equalTo( 0 ) );
     }
 
     private HTTP.RawPayload singleStatement( String statement )

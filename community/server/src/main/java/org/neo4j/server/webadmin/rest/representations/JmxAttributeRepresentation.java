@@ -27,6 +27,7 @@ import javax.management.ObjectName;
 
 import org.neo4j.server.rest.repr.ObjectRepresentation;
 import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationDispatcher;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
 public class JmxAttributeRepresentation extends ObjectRepresentation
@@ -35,6 +36,7 @@ public class JmxAttributeRepresentation extends ObjectRepresentation
     protected ObjectName objectName;
     protected MBeanAttributeInfo attrInfo;
     protected MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
+    private static final RepresentationDispatcher REPRESENTATION_DISPATCHER = new JmxAttributeRepresentationDispatcher();
 
     public JmxAttributeRepresentation( ObjectName objectName, MBeanAttributeInfo attrInfo )
     {
@@ -89,9 +91,8 @@ public class JmxAttributeRepresentation extends ObjectRepresentation
     {
         try
         {
-            JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
             Object value = jmxServer.getAttribute( objectName, attrInfo.getName() );
-            return representationDispatcher.dispatch( value, "" );
+            return REPRESENTATION_DISPATCHER.dispatch( value, "" );
         }
         catch ( Exception e )
         {
