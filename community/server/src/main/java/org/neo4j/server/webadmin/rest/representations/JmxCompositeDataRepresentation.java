@@ -26,11 +26,13 @@ import javax.management.openmbean.CompositeData;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.ObjectRepresentation;
 import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationDispatcher;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
 public class JmxCompositeDataRepresentation extends ObjectRepresentation
 {
     protected CompositeData data;
+    private static final RepresentationDispatcher REPRESENTATION_DISPATCHER = new JmxAttributeRepresentationDispatcher();
 
     public JmxCompositeDataRepresentation( CompositeData data )
     {
@@ -56,7 +58,6 @@ public class JmxCompositeDataRepresentation extends ObjectRepresentation
     public ListRepresentation getValue()
     {
 
-        JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
         ArrayList<Representation> values = new ArrayList<Representation>();
         for ( Object key : data.getCompositeType()
                 .keySet() )
@@ -65,7 +66,7 @@ public class JmxCompositeDataRepresentation extends ObjectRepresentation
             String description = data.getCompositeType()
                     .getDescription( name );
 
-            Representation value = representationDispatcher.dispatch( data.get( name ), "" );
+            Representation value = REPRESENTATION_DISPATCHER.dispatch( data.get( name ), "" );
 
             values.add( new NameDescriptionValueRepresentation( name, description, value ) );
         }

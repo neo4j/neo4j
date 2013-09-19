@@ -19,30 +19,30 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.neo4j.server.rest.repr.ObjectToRepresentationConverter.getMapRepresentation;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.cypher.javacompat.QueryStatistics;
 import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.cypher.javacompat.ProfilerStatistics;
+import org.neo4j.cypher.javacompat.QueryStatistics;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
+
+import static org.neo4j.server.rest.repr.ObjectToRepresentationConverter.getMapRepresentation;
 
 public class CypherResultRepresentation extends MappingRepresentation
 {
+    private static final RepresentationDispatcher REPRESENTATION_DISPATCHER = new CypherRepresentationDispatcher();
+
     private final ListRepresentation resultRepresentation;
     private final ListRepresentation columns;
     private final MappingRepresentation statsRepresentation;
     private final MappingRepresentation plan;
-
 
     public CypherResultRepresentation( final ExecutionResult result, boolean includeStats, boolean includePlan )
     {
@@ -182,8 +182,7 @@ public class CypherResultRepresentation extends MappingRepresentation
             return new RelationshipRepresentation( (Relationship) r );
         }
 
-        JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
-        return representationDispatcher.dispatch( r, "" );
+        return REPRESENTATION_DISPATCHER.dispatch( r, "" );
     }
 
     private Representation handleIterable( Iterable data ) {

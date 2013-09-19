@@ -33,7 +33,6 @@ import java.util.Set;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
-
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -41,22 +40,20 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.test.mocking.GraphMock;
 import org.neo4j.test.mocking.Link;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mocking.GraphMock.link;
 import static org.neo4j.test.mocking.GraphMock.node;
@@ -480,7 +477,7 @@ public class ExecutionResultSerializerTest
 
         // then
         String result = output.toString( "UTF-8" );
-        JsonNode json = JsonHelper.jsonNode( result );
+        JsonNode json = jsonNode( result );
         Map<String, Integer> columns = new HashMap<>();
         int col = 0;
         JsonNode results = json.get( "results" ).get( 0 );
@@ -498,8 +495,39 @@ public class ExecutionResultSerializerTest
         assertEquals( 2, jsonPath.get( "length" ).getNumberValue() );
         assertEquals( "http://base.uri/node/0", jsonPath.get( "start" ).getTextValue() );
         assertEquals( "http://base.uri/node/2", jsonPath.get( "end" ).getTextValue() );
-        assertEquals( "http://base.uri/node/1", jsonMap.get( "data" ).get( "n1" ).get( "self" ).getTextValue() );
-        assertEquals( "http://base.uri/relationship/1", jsonMap.get( "data" ).get( "r1" ).get( "self" ).getTextValue() );
+        assertEquals( "http://base.uri/node/1", jsonMap.get( "n1" ).get( "self" ).getTextValue() );
+        assertEquals( "http://base.uri/relationship/1", jsonMap.get( "r1" ).get( "self" ).getTextValue() );
+    }
+
+    @Test
+    public void shouldProduceResultStreamWithLegacyRestFormatAndNestedMaps() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer(
+                output, URI.create( "http://base.uri/" ), StringLogger.DEV_NULL );
+
+        // when
+        serializer.statementResult( mockExecutionResult(
+                // RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}
+                map( "map", map("one", map( "two", asList("wait for it...", map("three", "GO!") ) ) ) )
+        ), false, ResultDataContent.rest );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        JsonNode json = jsonNode( result );
+        Map<String, Integer> columns = new HashMap<>();
+        int col = 0;
+        JsonNode results = json.get( "results" ).get( 0 );
+        for ( JsonNode column : results.get( "columns" ) )
+        {
+            columns.put( column.getTextValue(), col++ );
+        }
+        JsonNode row = results.get( "data" ).get( 0 ).get( "rest" );
+        JsonNode jsonMap = row.get( columns.get( "map" ) );
+        assertEquals( "wait for it...", jsonMap.get( "one" ).get( "two" ).get( 0 ).asText() );
+        assertEquals( "GO!", jsonMap.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asText() );
     }
 
     @Test
