@@ -30,9 +30,7 @@
   </logger>
 
   <logger name="org.neo4j.cluster" level="debug">
-<!--
     <appender-ref ref="CONSOLE"/>
--->
   </logger>
 
   <logger name="org.neo4j.cluster.NetworkMock" level="warn">
@@ -42,9 +40,7 @@
   </logger>
 
   <root level="debug">
-<!--
     <appender-ref ref="CONSOLE"/>
--->
   </root>
 
   <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="warn">
