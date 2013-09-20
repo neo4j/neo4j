@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.junit.Before;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestGCResistantCache
 {
@@ -33,9 +33,9 @@ public class TestGCResistantCache
     @Before
     public void setup()
     {
-        cache = new GCResistantCache<Entity>( new AtomicReferenceArray<Entity>( 10 ) );
+        cache = new GCResistantCache<>( new AtomicReferenceArray<Entity>( 10 ) );
     }
-    
+
     @Test
     public void assertThatPutPutsSomething()
     {
@@ -44,7 +44,7 @@ public class TestGCResistantCache
         cache.put( entity );
         assertEquals( entity, cache.get( key ) );
     }
-    
+
     @Test
     public void assertThatRemoveRemovesSomething()
     {
@@ -55,12 +55,21 @@ public class TestGCResistantCache
         cache.remove( key );
         assertEquals( null, cache.get( key ) );
     }
-    
+
     @Test
     public void assertThatPutKeepsCorrectSize()
     {
+        cache = new GCResistantCache<Entity>( new AtomicReferenceArray<Entity>( 10 ) )
+        {
+            @Override
+            protected int getPosition( EntityWithSizeObject obj )
+            {
+                // For this test case return the same position every time.
+                return 1;
+            }
+        };
         final int size = 10;
-        SneakyEntity oldEntity = new SneakyEntity( 0l, size )
+        SneakyEntity oldEntity = new SneakyEntity( 0l, size ) // with ID 0
         {
             @Override
             void doThisBadStuffInSizeCall()
@@ -72,11 +81,11 @@ public class TestGCResistantCache
         };
         cache.put( oldEntity ); // will increase internal size to 11 and update cache
         oldEntity.updateSize( size ); // will reset entity size to 10
-        Entity newEntity = new Entity( 0l, 11 );
-        cache.put( newEntity ); // will increase oldEntity size + 1 when cache.put asks for it 
+        Entity newEntity = new Entity( 1l, 11 ); // with ID 1, but they get the same position due to the custom cache
+        cache.put( newEntity ); // will increase oldEntity size + 1 when cache.put asks for it
         assertEquals( 11, cache.size() );
     }
-    
+
     @Test
     public void assertThatRemoveKeepsCorrectSize()
     {
@@ -96,13 +105,13 @@ public class TestGCResistantCache
         cache.remove( entity.getId() );
         assertEquals( 0, cache.size() );
     }
-    
+
     @Test(expected = NullPointerException.class )
     public void assertNullPutTriggersNPE()
     {
         cache.put( null );
     }
-    
+
     @Test(expected = IndexOutOfBoundsException.class )
     public void assertPutCanHandleWrongId()
     {
@@ -115,25 +124,40 @@ public class TestGCResistantCache
     {
         cache.get( -1l );
     }
-    
+
     @Test(expected = IndexOutOfBoundsException.class )
     public void assertRemoveCanHandleWrongId()
     {
         cache.remove( -1l );
     }
-    
+
+    @Test
+    public void shouldReturnExistingObjectIfDifferentObjectButSameId() throws Exception
+    {
+        // GIVEN
+        int id = 10;
+        Entity version1 = new Entity( id, 0 );
+        assertTrue( version1 == cache.put( version1 ) );
+
+        // WHEN
+        Entity version2 = new Entity( id, 0 );
+
+        // THEN
+        assertTrue( version1 == cache.put( version2 ) );
+    }
+
     private static class Entity implements EntityWithSizeObject
     {
         private final long id;
         private int size;
         private int registeredSize;
-        
+
         Entity( long id, int size )
         {
             this.id = id;
             this.size = size;
         }
-        
+
         @Override
         public int sizeOfObjectInBytesIncludingOverhead()
         {
@@ -145,7 +169,7 @@ public class TestGCResistantCache
         {
             return id;
         }
-        
+
         public void updateSize( int newSize )
         {
             this.size = newSize;
@@ -163,14 +187,14 @@ public class TestGCResistantCache
             return registeredSize;
         }
     }
-    
+
     private static abstract class SneakyEntity extends Entity
     {
         SneakyEntity( long id, int size )
         {
             super( id, size );
         }
-        
+
         @Override
         public int sizeOfObjectInBytesIncludingOverhead()
         {
@@ -178,7 +202,7 @@ public class TestGCResistantCache
             doThisBadStuffInSizeCall();
             return size;
         }
-        
+
         abstract void doThisBadStuffInSizeCall();
     }
 }

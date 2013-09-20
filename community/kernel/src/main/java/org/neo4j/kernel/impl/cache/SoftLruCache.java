@@ -28,14 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SoftLruCache<E extends EntityWithSizeObject> extends ReferenceCache<E>
 {
-    private final ConcurrentHashMap<Long,SoftValue<Long,E>> cache =
-        new ConcurrentHashMap<Long,SoftValue<Long,E>>();
-
-    private final SoftReferenceQueue<Long,E> refQueue =
-        new SoftReferenceQueue<Long,E>();
-
+    private final ConcurrentHashMap<Long,SoftValue<Long,E>> cache = new ConcurrentHashMap<>();
+    private final SoftReferenceQueue<Long,E> refQueue = new SoftReferenceQueue<>();
     private final String name;
-
     private final HitCounter counter = new HitCounter();
 
     public SoftLruCache( String name )
@@ -43,29 +38,32 @@ public class SoftLruCache<E extends EntityWithSizeObject> extends ReferenceCache
         this.name = name;
     }
 
-    public void put( E value )
+    @Override
+    public E put( E value )
     {
         Long key = value.getId();
-        SoftValue<Long,E> ref =
-            new SoftValue<Long,E>( key, value, (ReferenceQueue) refQueue );
-        cache.put( key, ref );
+        SoftValue<Long,E> ref = new SoftValue<>( key, value, (ReferenceQueue) refQueue );
+        SoftValue<Long, E> previous = cache.putIfAbsent( key, ref );
         pollClearedValues();
+        return previous != null ? previous.get() : value;
     }
 
+    @Override
     public void putAll( Collection<E> list )
     {
-        Map<Long,SoftValue<Long,E>> softMap = new HashMap<Long,SoftValue<Long,E>>( list.size() * 2 );
+        Map<Long,SoftValue<Long,E>> softMap = new HashMap<>( list.size() * 2 );
         for ( E entry : list )
         {
             Long key = entry.getId();
             SoftValue<Long,E> ref =
-                new SoftValue<Long,E>( key, entry, (ReferenceQueue) refQueue );
+                new SoftValue<>( key, entry, (ReferenceQueue) refQueue );
             softMap.put( key, ref );
         }
         cache.putAll( softMap );
         pollClearedValues();
     }
 
+    @Override
     public E get( long key )
     {
         SoftReference<E> ref = cache.get( key );
@@ -80,6 +78,7 @@ public class SoftLruCache<E extends EntityWithSizeObject> extends ReferenceCache
         return counter.<E>count( null );
     }
 
+    @Override
     public E remove( long key )
     {
         SoftReference<E> ref = cache.remove( key );
@@ -101,16 +100,19 @@ public class SoftLruCache<E extends EntityWithSizeObject> extends ReferenceCache
         }
     }
 
+    @Override
     public long size()
     {
         return cache.size();
     }
 
+    @Override
     public void clear()
     {
         cache.clear();
     }
 
+    @Override
     public String getName()
     {
         return name;
