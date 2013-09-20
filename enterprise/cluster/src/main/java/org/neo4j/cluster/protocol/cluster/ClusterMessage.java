@@ -47,6 +47,8 @@ public enum ClusterMessage
 
     public static class ConfigurationRequestState implements Serializable, Comparable<ConfigurationRequestState>
     {
+        private static final long serialVersionUID = -221752558518247157L;
+
         private InstanceId joiningId;
         private URI joiningUri;
 

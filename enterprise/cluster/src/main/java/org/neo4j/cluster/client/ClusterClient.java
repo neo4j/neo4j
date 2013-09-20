@@ -298,6 +298,12 @@ public class ClusterClient extends LifecycleAdapter
             {
                 return 5001;
             }
+
+            @Override
+            public int port()
+            {
+                return config.getAddress().getPort();
+            }
         }, receiver, logging);
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
