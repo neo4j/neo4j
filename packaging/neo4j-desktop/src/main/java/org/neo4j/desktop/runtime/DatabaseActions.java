@@ -19,14 +19,17 @@
  */
 package org.neo4j.desktop.runtime;
 
-import java.util.ArrayList;
+import java.net.BindException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
 import org.neo4j.desktop.ui.UnableToStartServerException;
-import org.neo4j.server.Bootstrapper;
-
-import static org.neo4j.server.Bootstrapper.OK;
+import org.neo4j.kernel.StoreLockException;
+import org.neo4j.server.AbstractNeoServer;
+import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.ServerStartupException;
 
 /**
  * Lifecycle actions for the Neo4j server living inside this JVM. Typically reacts to button presses
@@ -35,7 +38,7 @@ import static org.neo4j.server.Bootstrapper.OK;
 public class DatabaseActions
 {
     private final DesktopModel model;
-    private Bootstrapper server;
+    private AbstractNeoServer server;
 
     public DatabaseActions( DesktopModel model )
     {
@@ -49,29 +52,47 @@ public class DatabaseActions
             throw new UnableToStartServerException( "Already started" );
         }
 
-        server = new DesktopBootstrapper(
-                model.getDatabaseDirectory(),
-                model.getDatabaseConfigurationFile(),
-                new ArrayList<String>() );
-
-        int startupCode = server.start();
-
-        if (startupCode == OK) return;
-
-        stop();
-
-        throw new UnableToStartServerException( "Unable to start Neo4j Server on port 7474. See logs for details." );
+        server = new CommunityNeoServer( new DesktopConfigurator( model ) );
+        try
+        {
+            server.start();
+        }
+        catch ( ServerStartupException e )
+        {
+            server = null;
+            Set<Class> causes = extractCauseTypes( e );
+            if ( causes.contains( StoreLockException.class ) )
+            {
+                throw new UnableToStartServerException(
+                        "Unable to lock store. Are you running another Neo4j process against this database?" );
+            }
+            if ( causes.contains( BindException.class ) )
+            {
+                throw new UnableToStartServerException(
+                        "Unable to bind to port. Are you running another Neo4j process on this computer?" );
+            }
+            throw new UnableToStartServerException( e.getMessage() );
+        }
     }
-    
+
+    private Set<Class> extractCauseTypes( Throwable e )
+    {
+        Set<Class> types = new HashSet<Class>();
+        types.add( e.getClass() );
+        if ( e.getCause() != null )
+        {
+            types.addAll( extractCauseTypes( e.getCause() ) );
+        }
+        return types;
+    }
+
     public void stop()
     {
-        if ( !isRunning() )
+        if ( isRunning() )
         {
-            throw new IllegalStateException( "Not started" );
+            server.stop();
+            server = null;
         }
-
-        server.stop();
-        server = null;
     }
     
     public void shutdown()
@@ -86,4 +107,5 @@ public class DatabaseActions
     {
         return server != null;
     }
+
 }

@@ -19,21 +19,14 @@
  */
 package org.neo4j.desktop;
 
-import java.io.File;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 
+import org.neo4j.desktop.config.DefaultDirectories;
 import org.neo4j.desktop.config.Environment;
-import org.neo4j.desktop.config.OperatingSystemFamily;
 import org.neo4j.desktop.runtime.DatabaseActions;
 import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
-
-import static java.lang.String.format;
-import static javax.swing.filechooser.FileSystemView.getFileSystemView;
+import org.neo4j.desktop.ui.PlatformUI;
 
 import static org.neo4j.desktop.ui.Components.alert;
 
@@ -49,7 +42,7 @@ public final class Neo4jDesktop
 
     private void start()
     {
-        selectPlatformUI();
+        PlatformUI.selectPlatformUI();
 
         Environment environment;
         try
@@ -63,98 +56,24 @@ public final class Neo4jDesktop
             return;
         }
 
-        DesktopModel model = new DesktopModel( environment, defaultDatabaseDirectory() );
+        DesktopModel model = new DesktopModel( environment, DefaultDirectories.defaultDatabaseDirectory() );
         DatabaseActions databaseActions = new DatabaseActions( model );
+        addShutdownHook( databaseActions );
 
         MainWindow window = new MainWindow( databaseActions, environment, model );
         window.display();
     }
 
-    private void selectPlatformUI()
+    protected void addShutdownHook( final DatabaseActions databaseActions )
     {
-        try
-        {
-            UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
-        }
-        catch ( ClassNotFoundException e)
-        {
-            // don't care
-            e.printStackTrace( System.out );
-        }
-        catch ( UnsupportedLookAndFeelException e )
-        {
-            // don't care
-            e.printStackTrace( System.out );
-        }
-        catch ( InstantiationException e )
-        {
-            // don't care
-            e.printStackTrace( System.out );
-        }
-        catch ( IllegalAccessException e )
-        {
-            // don't care
-            e.printStackTrace( System.out );
-        }
-    }
-
-    private File defaultDatabaseDirectory()
-    {
-        return ensureIsDirectory( "Neo4j database directory",
-            new File( defaultNeo4jDataDirectory(), "default.graphdb" ) );
-    }
-
-    private File defaultNeo4jDataDirectory()
-    {
-        ArrayList<File> locations = new ArrayList<File>(  );
-
-        switch ( OperatingSystemFamily.detect() )
-        {
-            case WINDOWS:
-                // cf. http://stackoverflow.com/questions/1503555/how-to-find-my-documents-folder
-                locations.add( getFileSystemView().getDefaultDirectory() );
-                break;
-            case MAC_OS:
-                // cf. http://stackoverflow.com/questions/567874/how-do-i-find-the-users-documents-folder-with-java-in-os-x
-                locations.add( new File( new File( System.getProperty( "user.home" ) ), "Documents" ) );
-                break;
-        }
-
-        locations.add( new File( System.getProperty( "user.home" ) ) );
-
-        File documents = selectFirstWritableDirectoryOrElse( locations, new File( System.getProperty( "user.dir" ) ) );
-        File neo4jData = new File( documents, "Neo4j" );
-
-        return ensureIsDirectory( "Neo4j data directory", neo4jData );
-    }
-
-    private File selectFirstWritableDirectoryOrElse( List<File> locations, File defaultFile )
-    {
-        File result = defaultFile.getAbsoluteFile();
-        for ( File file : locations )
-        {
-            File candidateFile = file.getAbsoluteFile();
-            if ( candidateFile.exists() && candidateFile.isDirectory() && candidateFile.canWrite() ) {
-                result = candidateFile;
-                break;
-            }
-        }
-        return result;
-    }
-
-    private File ensureIsDirectory( String description, File file )
-    {
-        if ( file.exists() )
-        {
-            if ( !file.isDirectory() )
-            {
-                alert( format( "%s already exists but is not a %s.", description, file.getAbsolutePath() ) );
-            }
-        }
-        else if ( !file.mkdir() )
-        {
-            alert( format( "Could not make %s %s", description, file.getAbsolutePath() ) );
-        }
-        return file;
+        Runtime.getRuntime()
+                .addShutdownHook( new Thread()
+                {
+                    @Override
+                    public void run()
+                    {
+                        databaseActions.stop();
+                    }
+                } );
     }
 }

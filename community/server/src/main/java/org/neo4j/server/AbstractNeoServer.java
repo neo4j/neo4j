@@ -163,38 +163,38 @@ public abstract class AbstractNeoServer implements NeoServer
 
             interruptStartupTimer.startCountdown();
 
-            database.start();
+            try
+            {
+                database.start();
 
-            databaseActions = createDatabaseActions();
+                databaseActions = createDatabaseActions();
 
-            cypherExecutor = new CypherExecutor( database, getLogging().getMessagesLog( CypherExecutor.class ) );
+                cypherExecutor = new CypherExecutor( database, getLogging().getMessagesLog( CypherExecutor.class ) );
 
-            configureWebServer();
+                configureWebServer();
 
-            cypherExecutor.start();
+                cypherExecutor.start();
 
-            DiagnosticsManager diagnosticsManager = database.getGraph().getDiagnosticsManager();
+                DiagnosticsManager diagnosticsManager = database.getGraph().getDiagnosticsManager();
 
-            StringLogger logger = diagnosticsManager.getTargetLog();
-            logger.logMessage( "--- SERVER STARTED START ---" );
+                StringLogger logger = diagnosticsManager.getTargetLog();
+                logger.logMessage( "--- SERVER STARTED START ---" );
 
-            diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
+                diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
 
-            startModules( logger );
+                startModules( logger );
 
-            boolean webServerStartupSuccessful = startWebServer( logger );
+                startWebServer( logger );
 
-            logger.logMessage( "--- SERVER STARTED END ---", true );
-
-            interruptStartupTimer.stopCountdown();
-
-            if (webServerStartupSuccessful) return;
+                logger.logMessage( "--- SERVER STARTED END ---", true );
+            }
+            finally
+            {
+                interruptStartupTimer.stopCountdown();
+            }
         }
         catch ( Throwable t )
         {
-            // Make sure this does not trigger interrupts outside of this method.
-            interruptStartupTimer.stopCountdown();
-
             // Guard against poor operating systems that don't clear interrupt flags
             // after having handled interrupts (looking at you, Bill).
             Thread.interrupted();
@@ -208,17 +208,8 @@ public abstract class AbstractNeoServer implements NeoServer
                         1 );
             }
 
-            if ( t instanceof RuntimeException )
-            {
-                throw (RuntimeException) t;
-            }
-            else
-            {
-                throw new ServerStartupException( "Starting neo server failed, see nested exception.", t );
-            }
+            throw new ServerStartupException( String.format( "Starting Neo4j Server failed: %s", t.getMessage() ), t );
         }
-
-        throw new ServerStartupException( "Starting neo server failed, see logs for details." );
     }
 
     public DependencyResolver getDependencyResolver()
@@ -339,7 +330,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 .availableProcessors();
     }
 
-    private boolean startWebServer( StringLogger logger )
+    private void startWebServer( StringLogger logger )
     {
         try
         {
@@ -364,16 +355,12 @@ public abstract class AbstractNeoServer implements NeoServer
                 logger.logMessage( "Server started on: " + baseUri() );
             }
             log.info( "Remote interface ready and available at [%s]", baseUri() );
-
-            return SUCCESS;
         }
-        catch ( Exception e )
+        catch ( RuntimeException e )
         {
-            e.printStackTrace();
             log.error( "Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage() );
+            throw e;
         }
-
-        return FAILURE;
     }
 
 
