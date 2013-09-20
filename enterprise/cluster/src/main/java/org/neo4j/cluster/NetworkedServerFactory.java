@@ -92,6 +92,12 @@ public class NetworkedServerFactory
             {
                 return 5001;
             }
+
+            @Override
+            public int port()
+            {
+                return config.get( ClusterSettings.cluster_server ).getPort();
+            }
         }, receiver, logging);
 
 /*
