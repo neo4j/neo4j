@@ -46,13 +46,13 @@ public class HeartbeatRefreshProcessor implements MessageProcessor
     @Override
     public boolean process( Message<? extends MessageType> message )
     {
-        if ( !message.isInternal() && !message.isBroadcast() &&
+        if ( !message.isInternal() &&
                 !message.getMessageType().equals( HeartbeatMessage.i_am_alive ) )
         {
             try
             {
                 String to = message.getHeader( Message.TO );
-                if (!to.equals( message.getHeader( Message.FROM ) ))
+//                if (!to.equals( message.getHeader( Message.FROM ) ))
                     outgoing.offer( Message.internal( HeartbeatMessage.reset_send_heartbeat,
                             clusterContext.getConfiguration().getServerId( new URI( to ) ) ) );
             }

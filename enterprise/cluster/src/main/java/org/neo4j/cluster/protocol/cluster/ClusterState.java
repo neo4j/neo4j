@@ -290,8 +290,10 @@ public enum ClusterState
                             // We're listening for existing clusters, but if all instances start up at the same time
                             // and look for each other, this allows us to pick that up
                             ClusterMessage.ConfigurationRequestState configurationRequested = message.getPayload();
+                            configurationRequested = new ClusterMessage.ConfigurationRequestState( configurationRequested.getJoiningId(), URI.create(message.getHeader( Message.FROM ) ));
+
                             if ( !discoveredInstances.contains( configurationRequested )
-                                    && !configurationRequested.getJoiningUri().equals( context.boundAt() ) )
+                                    && !configurationRequested.getJoiningId().equals( context.getMyId() ) ) // Ignore requests from ourselves
                             {
                                 for ( ClusterMessage.ConfigurationRequestState discoveredInstance :
                                         discoveredInstances )
@@ -316,7 +318,7 @@ public enum ClusterState
                                             new IllegalStateException( errorMessage.toString() ) ) );
                                     return start;
                                 }
-                                discoveredInstances.add( message.<ClusterMessage.ConfigurationRequestState>getPayload() );
+                                discoveredInstances.add( configurationRequested );
                             }
                             break;
                         }
@@ -430,8 +432,7 @@ public enum ClusterState
                             InstanceId joiningId = request.getJoiningId();
                             boolean isInCluster = context.configuration.getMembers().containsKey( joiningId );
                             boolean isCurrentlyAlive = !context.heartbeatContext.getFailed().contains( joiningId );
-                            boolean messageComesFromSameHost = URI.create( message.getHeader( Message.FROM ) ).equals(
-                                    context.getConfiguration().getUriForId( joiningId ) );
+                            boolean messageComesFromSameHost = request.getJoiningId().equals( context.getMyId() );
 
                             boolean somethingIsWrong =
                                     isInCluster && !messageComesFromSameHost && isCurrentlyAlive ;

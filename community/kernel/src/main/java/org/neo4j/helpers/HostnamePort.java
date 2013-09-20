@@ -193,6 +193,8 @@ public class HostnamePort
             return false;
         }
 
-        return result && host.equalsIgnoreCase( toMatch.getHost() );
+        // URI always contains IP, so make sure we convert ours too
+
+        return result && getHost(null).equalsIgnoreCase( toMatch.getHost() );
     }
 }

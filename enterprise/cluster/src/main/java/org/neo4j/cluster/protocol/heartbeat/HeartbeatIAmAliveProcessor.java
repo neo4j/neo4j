@@ -45,7 +45,7 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
     @Override
     public boolean process( Message<? extends MessageType> message )
     {
-        if (!message.isInternal() && !message.isBroadcast() &&
+        if (!message.isInternal() &&
                 !message.getMessageType().equals( HeartbeatMessage.i_am_alive ))
         {
             String from = message.getHeader( Message.FROM );

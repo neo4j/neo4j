@@ -430,14 +430,16 @@ public class ClusterManager
                 initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
             if ( member.isFullHaMember() )
             {
-                int haPort = new URI( "cluster://" + member.getHost() ).getPort() + 3000;
+                URI clusterUri = new URI( "cluster://" + member.getHost() );
+                int clusterPort = clusterUri.getPort();
+                int haPort = clusterUri.getPort() + 3000;
                 GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory()
                         .newHighlyAvailableDatabaseBuilder( new File( new File( root, name ),
                                 "server" + serverId ).getAbsolutePath() ).
                                 setConfig( ClusterSettings.cluster_name, name ).
                                 setConfig( ClusterSettings.initial_hosts, initialHosts.toString() ).
                                 setConfig( ClusterSettings.server_id, serverId + "" ).
-                                setConfig( ClusterSettings.cluster_server, member.getHost() ).
+                                setConfig( ClusterSettings.cluster_server, "0.0.0.0:"+clusterPort).
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
                                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                                 setConfig( commonConfig );

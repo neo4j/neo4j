@@ -28,6 +28,7 @@ import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
@@ -43,7 +44,6 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
-import org.jboss.netty.handler.logging.LoggingHandler;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
@@ -80,7 +80,7 @@ public class NetworkReceiver
         void channelClosed( URI to );
     }
 
-    public static final String URI_PROTOCOL = "cluster";
+    public static final String CLUSTER_SCHEME = "cluster";
 
     private ChannelGroup channels;
 
@@ -95,6 +95,8 @@ public class NetworkReceiver
 
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
+
+    volatile boolean bindingDetected = false;
 
     public NetworkReceiver( Configuration config, Logging logging )
     {
@@ -159,19 +161,18 @@ public class NetworkReceiver
             {
                 InetAddress host;
                 String address = config.clusterServer().getHost();
-                if ( address == null )
+                InetSocketAddress localAddress;
+                if ( address == null || address.equals( "0.0.0.0" ))
                 {
-                    host = InetAddress.getLocalHost();
+                    localAddress = new InetSocketAddress( checkPort );
                 }
                 else
                 {
                     host = InetAddress.getByName( address );
+                    localAddress = new InetSocketAddress( host, checkPort );
                 }
 
-                InetSocketAddress localAddress = new InetSocketAddress( host, checkPort );
-
                 Channel listenChannel = serverBootstrap.bind( localAddress );
-                listeningAt( (getURI( (InetSocketAddress) listenChannel.getLocalAddress() )) );
 
                 channels.add( listenChannel );
                 return;
@@ -212,7 +213,10 @@ public class NetworkReceiver
 
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
     {
-        return new URI( URI_PROTOCOL + ":/" + address ); // Socket.toString() already prepends a /
+        if (address.getAddress().getHostAddress().startsWith( "0" ))
+            return new URI( CLUSTER_SCHEME + "://0.0.0.0:"+address.getPort() ); // Socket.toString() already prepends a /
+        else
+            return new URI( CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress()+":"+address.getPort() ); // Socket.toString() already prepends a /
     }
 
     public void listeningAt( final URI me )
@@ -278,7 +282,7 @@ public class NetworkReceiver
         public ChannelPipeline getPipeline() throws Exception
         {
             ChannelPipeline pipeline = Channels.pipeline();
-            pipeline.addFirst( "log", new LoggingHandler() );
+//            pipeline.addFirst( "log", new LoggingHandler() );
             pipeline.addLast( "frameDecoder",new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
             pipeline.addLast( "serverHandler", new MessageReceiver() );
             return pipeline;
@@ -288,6 +292,11 @@ public class NetworkReceiver
     private class MessageReceiver
             extends SimpleChannelHandler
     {
+        private MessageReceiver()
+        {
+            System.out.println("CREATE RECEIVER");
+        }
+
         @Override
         public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
         {
@@ -299,7 +308,22 @@ public class NetworkReceiver
         @Override
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
         {
+            if (!bindingDetected)
+            {
+                InetSocketAddress local = ((InetSocketAddress)event.getChannel().getLocalAddress());
+                bindingDetected = true;
+                listeningAt( getURI( local ) );
+            }
+
             final Message message = (Message) event.getMessage();
+
+            // Fix FROM header since sender cannot know it's correct IP/hostname
+            InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
+            String remoteAddress = remote.getAddress().getHostAddress();
+            URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
+            fromHeader = URI.create(fromHeader.getScheme()+"://"+remoteAddress + ":" + fromHeader.getPort());
+            message.setHeader( Message.FROM, fromHeader.toASCIIString() );
+
             msgLog.debug( "Received:" + message );
             receive( message );
         }

@@ -123,6 +123,12 @@ public class NetworkSenderReceiverTest
                 {
                     return 5001;
                 }
+
+                @Override
+                public int port()
+                {
+                    return conf.get( ClusterSettings.cluster_server ).getPort();
+                }
             }, networkReceiver, new DevNullLoggingService()));
 
             life.add( new LifecycleAdapter()

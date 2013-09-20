@@ -53,6 +53,7 @@ import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
@@ -62,7 +63,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.cluster.com.NetworkReceiver.URI_PROTOCOL;
+import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
 
 /**
  * TCP version of sending messages. This handles sending messages from state machines to other instances
@@ -73,7 +74,8 @@ public class NetworkSender
 {
     public interface Configuration
     {
-        int defaultPort();
+        int defaultPort(); // This is the default port to try to connect to
+        int port(); // This is the port we are listening on
     }
 
     public interface NetworkChannelsListener
@@ -104,6 +106,7 @@ public class NetworkSender
         this.config = config;
         this.receiver = receiver;
         this.msgLog = logging.getMessagesLog( getClass() );
+        me = URI.create( CLUSTER_SCHEME+"://0.0.0.0:"+ config.port() );
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
             @Override
@@ -195,15 +198,13 @@ public class NetworkSender
         {
             String to = message.getHeader( Message.TO );
 
-            if ( to.equals( Message.BROADCAST ) )
-            {
-                broadcast( message );
-            }
-            else if ( to.equals( me.toString() ) )
+/*
+            if ( to.equals( me.toString() ) )
             {
                 receiver.receive( message );
             }
             else
+*/
             {
                 send( message );
             }
@@ -219,21 +220,7 @@ public class NetworkSender
 
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
     {
-        return new URI( URI_PROTOCOL + ":/" + address ); // Socket.toString() already prepends a /
-    }
-
-    private void broadcast( Message message )
-    {
-        for ( int i = 1234; i < 1234 + 2; i++ )
-        {
-            String to = URI_PROTOCOL + "://127.0.0.1:" + i;
-
-            if ( !to.equals( me.toString() ) )
-            {
-                message.setHeader( Message.TO, to );
-                send( message );
-            }
-        }
+        return new URI( CLUSTER_SCHEME + ":/" + address ); // Socket.toString() already prepends a /
     }
 
     private synchronized void send( final Message message )
@@ -279,7 +266,11 @@ public class NetworkSender
 
                 try
                 {
+                    // Set FROM header
+                    message.setHeader( Message.FROM, me.toASCIIString() );
+
                     msgLog.debug( "Sending to " + to + ": " + message );
+
                     ChannelFuture future = channel.write( message );
                     future.addListener( new ChannelFutureListener()
                     {
