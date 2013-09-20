@@ -55,36 +55,25 @@ public class ConstraintIndexCreator
             throws ConstraintVerificationFailedKernelException, TransactionalException,
                    CreateConstraintFailureException, DropIndexFailureException
     {
-        UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         IndexDescriptor descriptor = transactor.execute( createConstraintIndex( labelId, propertyKeyId ) );
-        long indexId;
+        UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
+
         try
         {
-            indexId = schema.indexGetCommittedId( state, descriptor );
+            long indexId = schema.indexGetCommittedId( state, descriptor );
+            awaitIndexPopulation( constraint, indexId );
+            return indexId;
         }
         catch ( SchemaRuleNotFoundException e )
         {
             throw new IllegalStateException(
                     String.format( "Index (%s) that we just created does not exist.", descriptor ) );
         }
-        boolean success = false;
-        try
+        catch ( InterruptedException e )
         {
-            awaitIndexPopulation( constraint, indexId );
-            success = true;
+            Thread.interrupted();
+            throw new CreateConstraintFailureException( constraint, e );
         }
-        catch ( InterruptedException exception )
-        {
-            throw new ConstraintVerificationFailedKernelException( constraint, exception );
-        }
-        finally
-        {
-            if ( !success )
-            {
-                dropUniquenessConstraintIndex( descriptor );
-            }
-        }
-        return indexId;
     }
 
     public void validateConstraintIndex( UniquenessConstraint constraint, long indexId )

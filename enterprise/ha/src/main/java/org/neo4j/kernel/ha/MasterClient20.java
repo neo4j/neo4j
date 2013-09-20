@@ -24,7 +24,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -123,7 +122,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
                 }, new Deserializer<IdAllocation>()
                 {
                     @Override
-                    public IdAllocation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+                    public IdAllocation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
                     {
                         return readIdAllocation( buffer );
                     }

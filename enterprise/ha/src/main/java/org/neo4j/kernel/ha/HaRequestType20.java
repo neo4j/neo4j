@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-
 import org.neo4j.com.BlockLogReader;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.RequestContext;

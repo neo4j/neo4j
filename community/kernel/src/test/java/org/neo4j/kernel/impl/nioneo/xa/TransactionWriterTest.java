@@ -67,7 +67,7 @@ public class TransactionWriterTest
         RelationshipRecord relationship = new RelationshipRecord( 0, 1, 1, 6 );
 
         // when
-        writer.start( 1, 1 );
+        writer.start( 1, 1, 0 );
         writer.create( node );
         writer.update( relationship );
         writer.delete( propertyRecordWithOneIntProperty( 3, 10, 45 ), new PropertyRecord( 3 ) );

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.junit.Test;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -74,7 +75,7 @@ public class TransactionStatementSequenceTest
             fail( "expected exception" );
         }
         // then
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             assertEquals( "Cannot perform schema updates in a transaction that has performed data updates.",
                           e.getMessage() );
@@ -96,7 +97,7 @@ public class TransactionStatementSequenceTest
             fail( "expected exception" );
         }
         // then
-        catch ( InvalidTransactionTypeException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             assertEquals( "Cannot perform data updates in a transaction that has performed schema updates.",
                           e.getMessage() );

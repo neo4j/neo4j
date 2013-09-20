@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
+import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -94,7 +95,7 @@ public interface IndexProxy
      */
     boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException;
 
-    void activate();
+    void activate() throws IndexActivationFailedKernelException;
 
     void validate() throws IndexPopulationFailedKernelException;
 

@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-
-public interface SchemaWriteGuard
+public class ReleaseLocksFailedKernelException extends KernelException
 {
-    void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException;
+    public ReleaseLocksFailedKernelException( String msg, Exception releaseException )
+    {
+        super(releaseException, msg);
+    }
 }

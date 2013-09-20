@@ -67,6 +67,23 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         {
             throw Exceptions.withCause( new XAException( XAException.XA_HEURCOM ), e );
         }
+        catch (RuntimeException e)
+        {
+            // If the original issue was caused by an XAException, wrap the whole thing in an XA exception with
+            // the same error code and message.
+            Throwable currentException = e.getCause();
+            while(currentException != null)
+            {
+                if( currentException instanceof XAException )
+                {
+                    throw Exceptions.withCause( new XAException( ((XAException) currentException).errorCode ), e );
+                }
+                currentException = currentException.getCause();
+            }
+
+            // If no XAException involved, just throw the runtime exception.
+            throw e;
+        }
     }
 
     @Override

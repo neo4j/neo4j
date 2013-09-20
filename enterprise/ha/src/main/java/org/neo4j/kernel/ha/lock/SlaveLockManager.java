@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.List;
+
 import javax.transaction.Transaction;
 
 import org.neo4j.com.Response;
@@ -181,7 +182,7 @@ public class SlaveLockManager implements LockManager
         }
         else
         {
-            return true;
+            throw new IllegalArgumentException("Don't know how to take lock on resource: '" + resource + "'.");
         }
         
         return receiveLockResponse( response );

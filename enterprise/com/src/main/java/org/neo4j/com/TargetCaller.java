@@ -23,5 +23,5 @@ import org.jboss.netty.buffer.ChannelBuffer;
 
 public interface TargetCaller<T, R>
 {
-    Response<R> call( T requestTarget, RequestContext context, ChannelBuffer input, ChannelBuffer target );
+    Response<R> call( T requestTarget, RequestContext context, ChannelBuffer input, ChannelBuffer target ) throws Exception;
 }

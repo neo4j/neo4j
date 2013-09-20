@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -489,9 +490,20 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    public void activateIndex( long indexId ) throws IndexNotFoundKernelException
+    public void activateIndex( long indexId ) throws
+            IndexNotFoundKernelException, IndexActivationFailedKernelException, IndexPopulationFailedKernelException
     {
-        getProxyForRule( indexId ).activate();
+        IndexProxy index = getProxyForRule( indexId );
+        try
+        {
+            index.awaitStoreScanCompleted();
+            index.activate();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new IndexActivationFailedKernelException( e, "Unable to activate index, thread was interrupted." );
+        }
     }
 
     public void validateIndex( long indexId ) throws IndexNotFoundKernelException, IndexPopulationFailedKernelException
