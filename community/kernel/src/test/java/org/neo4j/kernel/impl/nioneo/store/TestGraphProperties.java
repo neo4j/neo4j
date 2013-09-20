@@ -244,7 +244,7 @@ public class TestGraphProperties
         tx.finish();
         db.shutdown();
 
-        removeLastNeoStoreRecord( fileSystem, storeDir );
+        truncateNeoStoreTo5Records( fileSystem, storeDir );
 
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
         PropertyContainer properties = db.getNodeManager().getGraphProperties();
@@ -264,12 +264,12 @@ public class TestGraphProperties
         fileSystem.shutdown();
     }
 
-    private void removeLastNeoStoreRecord( FileSystemAbstraction fileSystem, String storeDir ) throws IOException
+    private void truncateNeoStoreTo5Records( FileSystemAbstraction fileSystem, String storeDir ) throws IOException
     {
         // Remove the last record, next startup will look like as if we're upgrading an old store
         File neoStoreFile = new File( storeDir, NeoStore.DEFAULT_NAME );
         FileChannel channel = fileSystem.open( neoStoreFile, "rw" );
-        channel.position( NeoStore.RECORD_SIZE * 6/*position of "next prop"*/ );
+        channel.position( NeoStore.RECORD_SIZE * 7/*position of "next prop"*/ );
         int trail = (int) (channel.size() - channel.position());
         ByteBuffer trailBuffer = null;
         if ( trail > 0 )

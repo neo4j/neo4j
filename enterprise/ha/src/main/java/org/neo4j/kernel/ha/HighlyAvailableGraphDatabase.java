@@ -51,7 +51,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.api.InvalidTransactionTypeException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
@@ -405,14 +405,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    public void assertSchemaWritesAllowed() throws InvalidTransactionTypeException
+    public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
     {
         if (!isMaster())
         {
-            throw new InvalidTransactionTypeException(
-                    "Creation or deletion of constraints is not possible while running in a HA cluster. " +
-                    "In order to do that, please restart in non-HA mode and propagate the database copy to " +
-                    "all slaves" );
+            throw new InvalidTransactionTypeKernelException(
+                    "Modifying the database schema can only be done on the master server, " +
+                    "this server is a slave. Please issue schema modification commands directly to the master." );
         }
     }
 

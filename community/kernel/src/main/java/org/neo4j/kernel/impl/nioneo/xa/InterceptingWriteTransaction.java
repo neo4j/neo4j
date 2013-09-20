@@ -33,12 +33,13 @@ public class InterceptingWriteTransaction extends WriteTransaction
 {
     private final TransactionInterceptor interceptor;
 
-    InterceptingWriteTransaction( int identifier, XaLogicalLog log,
+    InterceptingWriteTransaction( int identifier, long lastCommittedTxWhenTransactionStarted, XaLogicalLog log,
                                   NeoStore neoStore, TransactionState state, CacheAccessBackDoor cacheAccess,
                                   IndexingService indexingService, LabelScanStore labelScanStore,
-                                  TransactionInterceptor interceptor )
+                                  TransactionInterceptor interceptor, IntegrityValidator validator )
     {
-        super( identifier, log, state, neoStore, cacheAccess, indexingService, labelScanStore );
+        super( identifier, lastCommittedTxWhenTransactionStarted, log, state, neoStore, cacheAccess, indexingService,
+                labelScanStore, validator );
         this.interceptor = interceptor;
     }
 

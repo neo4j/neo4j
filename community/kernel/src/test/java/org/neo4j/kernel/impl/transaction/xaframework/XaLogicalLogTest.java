@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -42,7 +33,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -55,6 +45,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
 
+import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
 
@@ -114,7 +108,7 @@ public class XaLogicalLogTest
         // -- set the log up with 10 transactions (with no commands, just start and commit)
         for ( int txId = 1; txId <= 10; txId++ )
         {
-            int identifier = xaLogicalLog.start( new XidImpl( XidImpl.getNewGlobalId(), RESOURCE_ID ), -1, 0 );
+            int identifier = xaLogicalLog.start( new XidImpl( getNewGlobalId(), RESOURCE_ID ), -1, 0, 1337 );
             xaLogicalLog.writeStartEntry( identifier );
             xaLogicalLog.commitOnePhase( identifier, txId, ForceMode.forced );
             xaLogicalLog.done( identifier );
@@ -147,7 +141,7 @@ public class XaLogicalLogTest
         // WHEN
         for ( int i = 0; i < 10; i++ )
         {
-            int identifier = log.start( xid, -1, -1 );
+            int identifier = log.start( xid, -1, -1, 1337 );
             log.writeStartEntry( identifier );
             log.writeCommand( new FixedSizeXaCommand( 100 ), identifier );
             log.commitOnePhase( identifier, i+1, forced );
@@ -157,7 +151,7 @@ public class XaLogicalLogTest
         // THEN
         assertEquals( initialLogVersion+1, log.getHighestLogVersion() );
     }
-    
+
     private static class FixedSizeXaCommand extends XaCommand
     {
         private byte[] data;
@@ -220,7 +214,7 @@ public class XaLogicalLogTest
         private long currentVersion = 0;
         
         @Override
-        public XaTransaction create( int identifier, TransactionState state )
+        public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
             return mock( XaTransaction.class );
         }

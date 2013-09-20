@@ -17,11 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api.exceptions.index;
 
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 
-public interface SchemaWriteGuard
+public class IndexActivationFailedKernelException extends KernelException
 {
-    void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException;
+    public IndexActivationFailedKernelException( Throwable cause, String message )
+    {
+        super( cause, message );
+    }
 }

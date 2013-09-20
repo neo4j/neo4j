@@ -397,7 +397,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private class LuceneTransactionFactory extends XaTransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier, TransactionState state )
+        public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
             return createTransaction( identifier, this.getLogicalLog(), state );
         }

@@ -21,16 +21,15 @@ package org.neo4j.ha;
 
 import org.junit.Rule;
 import org.junit.Test;
-
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
-import static org.junit.Assert.fail;
-
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.*;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class ConstraintsInHAIT
@@ -52,9 +51,10 @@ public class ConstraintsInHAIT
             constraintCreator.create();
             fail( "should have thrown exception" );
         }
-        catch ( ConstraintViolationException e )
+        catch ( InvalidTransactionTypeException e )
         {
-            // expected
+            assertThat(e.getMessage(), equalTo("Modifying the database schema can only be done on the master server, " +
+                    "this server is a slave. Please issue schema modification commands directly to the master."));
         }
     }
 

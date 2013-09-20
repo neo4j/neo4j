@@ -211,8 +211,6 @@ public class IndexingServiceTest
                                                                     null ) );
         IndexProxy proxy = indexingService.getProxyForRule( 0 );
 
-        verify( populator, timeout( 1000 ) ).close( true );
-
         indexingService.activateIndex( 0 );
 
         // then

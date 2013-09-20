@@ -32,13 +32,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DependencyResolver.Adapter;
 import org.neo4j.graphdb.Node;
@@ -80,13 +80,8 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -378,9 +373,9 @@ public class TestXa
                         new TransactionInterceptorProviders(
                                 Collections.<TransactionInterceptorProvider>emptyList(), dependencyResolverForConfig( config ) ), null,
                                 new SingleLoggingService( DEV_NULL ),
-                                new KernelSchemaStateStore(), nodeManager,
-                                mock(TokenNameLookup.class),
-                                dependencyResolverForNoIndexProvider( nodeManager ) );
+                                new KernelSchemaStateStore(),
+                mock(TokenNameLookup.class),
+                dependencyResolverForNoIndexProvider( nodeManager ) );
         neoStoreXaDataSource.init();
         neoStoreXaDataSource.start();
         return neoStoreXaDataSource;
@@ -584,7 +579,6 @@ public class TestXa
         xaCon.clearAllTransactions();
         ds.stop();
         deleteLogicalLogIfExist();
-//        renameCopiedLogicalLog( path() );
     }
 
     private Object loadNodeProperty( WriteTransaction writeTransaction, long node, final long propertyKeyId )
@@ -698,7 +692,7 @@ public class TestXa
         xaRes.prepare( xid );
         xaCon.clearAllTransactions();
         copyClearRename();
-        truncateLogicalLog( 94 );
+        truncateLogicalLog( 102 );
         ds = newNeoStore();
         xaCon = ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -717,7 +711,7 @@ public class TestXa
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         copyClearRename();
-        truncateLogicalLog( 94 );
+        truncateLogicalLog( 102 );
         ds = newNeoStore();
         xaCon = ds.getXaConnection();
         xaRes = xaCon.getXaResource();

@@ -650,8 +650,8 @@ public class WriteTransactionTest
             RuntimeException> verifier )
     {
         log = new VerifyingXaLogicalLog( fs.get(), verifier );
-        WriteTransaction result = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE );
+        WriteTransaction result = new WriteTransaction( 0, 0l, log, transactionState, neoStore,
+                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator(neoStore));
         result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
         return result;
     }

@@ -204,7 +204,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     private static class DummyTransactionFactory extends XaTransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier, TransactionState state )
+        public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state )
         {
             return new DummyTransaction( identifier, getLogicalLog(), state );
         }

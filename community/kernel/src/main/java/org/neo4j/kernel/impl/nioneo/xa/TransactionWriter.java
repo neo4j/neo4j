@@ -59,15 +59,16 @@ public class TransactionWriter
 
     // Transaction coordination
 
-    public void start( int masterId, int myId ) throws IOException
+    public void start( int masterId, int myId, long latestCommittedTxWhenTxStarted ) throws IOException
     {
-        start( XidImpl.getNewGlobalId(), masterId, myId, System.currentTimeMillis() );
+        start( XidImpl.getNewGlobalId(), masterId, myId, System.currentTimeMillis(), latestCommittedTxWhenTxStarted );
     }
 
-    public void start( byte[] globalId, int masterId, int myId, long startTimestamp ) throws IOException
+    public void start( byte[] globalId, int masterId, int myId, long startTimestamp,
+                       long latestCommittedTxWhenTxStarted ) throws IOException
     {
         Xid xid = new XidImpl( globalId, NeoStoreXaDataSource.BRANCH_ID );
-        LogIoUtils.writeStart( buffer, this.localId, xid, masterId, myId, startTimestamp );
+        LogIoUtils.writeStart( buffer, this.localId, xid, masterId, myId, startTimestamp, latestCommittedTxWhenTxStarted );
     }
 
     public void prepare() throws IOException
@@ -199,7 +200,7 @@ public class TransactionWriter
 
     private void addSchema( Collection<DynamicRecord> records ) throws IOException
     {
-        write( new Command.SchemaRuleCommand( null, null, records, null ) );
+        write( new Command.SchemaRuleCommand( null, null, null, records, null, Long.MAX_VALUE ) );
     }
 
     public void add( NodeRecord before, NodeRecord after ) throws IOException
