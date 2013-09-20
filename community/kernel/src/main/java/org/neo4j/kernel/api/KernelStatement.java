@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.scan.LabelScanReader;
@@ -66,7 +67,7 @@ public class KernelStatement implements TxState.Holder, Statement
 
     @Override
     public DataWriteOperations dataWriteOperations()
-            throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
+            throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
     {
         transaction.upgradeToDataTransaction();
         return facade;
@@ -74,7 +75,7 @@ public class KernelStatement implements TxState.Holder, Statement
 
     @Override
     public SchemaWriteOperations schemaWriteOperations()
-        throws InvalidTransactionTypeException, ReadOnlyDatabaseKernelException
+        throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
     {
         transaction.upgradeToSchemaTransaction();
         return facade;

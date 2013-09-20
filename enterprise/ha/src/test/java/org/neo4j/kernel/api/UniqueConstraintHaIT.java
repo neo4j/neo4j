@@ -19,23 +19,34 @@
  */
 package org.neo4j.kernel.api;
 
+import javax.transaction.xa.XAException;
+
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
-import static org.junit.Assert.assertEquals;
-
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class UniqueConstraintHaIT
 {
+
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass(), clusterOfSize( 3 ) );
+
     @Test
     public void shouldCreateUniqueConstraintOnMaster() throws Exception
     {
@@ -50,16 +61,106 @@ public class UniqueConstraintHaIT
             tx.success();
         }
 
+        cluster.sync();
+
         // then
-        try ( Transaction tx = master.beginTx() )
+        for ( HighlyAvailableGraphDatabase clusterMember : cluster.getAllMembers() )
         {
-            UniquenessConstraintDefinition constraint = single( master.schema().getConstraints( label( "Label1" ) ) )
-                    .asUniquenessConstraint();
-            assertEquals( "key1", single( constraint.getPropertyKeys() ) );
+            try ( Transaction tx = clusterMember.beginTx() )
+            {
+                UniquenessConstraintDefinition constraint =
+                        single( clusterMember.schema().getConstraints( label( "Label1" ) ) )
+                        .asUniquenessConstraint();
+                assertEquals( "key1", single( constraint.getPropertyKeys() ) );
+                tx.success();
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateConstraintsDirectlyOnSlaves() throws Exception
+    {
+        // given
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
+        // when
+        try ( Transaction tx = slave.beginTx() )
+        {
+            slave.schema().constraintFor( label( "Label1" ) ).on( "key1" ).unique().create();
+            fail( "We expected to not be able to create a constraint on a slave in a cluster." );
+        }
+        catch ( Exception e )
+        {
+            assertThat(e, instanceOf(InvalidTransactionTypeException.class));
+        }
+    }
+
+    @Test
+    public void shouldNotAllowOldUncommittedTransactionsToResumeAndViolateConstraint() throws Exception
+    {
+        // Given
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster(stringMap(
+                HaSettings.read_timeout.name(), "4000s" ));
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+
+        TxManager txManager = slave.getDependencyResolver().resolveDependency( TxManager.class );
+
+        // And given there is a user named bob
+        createUser(master, "Bob");
+
+        // And given that I begin a transaction that will create another user named bob
+        slave.beginTx();
+        slave.createNode( label("User") ).setProperty( "name", "Bob" );
+        javax.transaction.Transaction slaveTx = txManager.suspend();
+
+        // When I create a constraint for unique user names
+        try(Transaction tx = master.beginTx())
+        {
+            master.schema().constraintFor( label("User") ).on( "name" ).unique().create();
+            tx.success();
+        }
+
+        // Then the transaction started on the slave should fail on commit, with an integrity error
+        txManager.resume( slaveTx );
+        try
+        {
+            slaveTx.commit();
+            fail( "Expected this commit to fail :(" );
+        }
+        catch( Exception e )
+        {
+            XAException cause = (XAException) e.getCause();
+            assertThat(cause.errorCode, equalTo(XAException.XA_RBINTEGRITY));
+        }
+
+        // And then both master and slave should keep working, accepting reads
+        assertOneBob( master );
+        cluster.sync();
+        assertOneBob( slave );
+
+        // And then I should be able to perform new write transactions, on both master and slave
+        createUser( slave, "Steven" );
+        createUser( master, "Caroline" );
+    }
+
+    private void createUser( HighlyAvailableGraphDatabase db, String name )
+    {
+        try(Transaction tx = db.beginTx())
+        {
+            db.createNode( label("User") ).setProperty( "name", name );
             tx.success();
         }
     }
 
-    @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass(), clusterOfSize( 3 ) );
+    private void assertOneBob( HighlyAvailableGraphDatabase db)
+    {
+        try(Transaction tx = db.beginTx())
+        {
+            assertThat( asList( db.findNodesByLabelAndProperty( label( "User" ), "name", "Bob" ) ).size(),
+                    equalTo(1));
+            tx.success();
+        }
+    }
 }

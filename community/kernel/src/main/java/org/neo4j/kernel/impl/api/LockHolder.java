@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
+
 public interface LockHolder
 {
     void acquireNodeReadLock( long nodeId );
@@ -47,5 +49,5 @@ public interface LockHolder
      */
     void acquireIndexEntryWriteLock( int labelId, int propertyKeyId, String propertyValue );
 
-    void releaseLocks();
+    void releaseLocks() throws ReleaseLocksFailedKernelException;
 }

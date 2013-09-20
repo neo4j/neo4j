@@ -35,6 +35,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
+import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.SchemaLock;
@@ -132,7 +133,7 @@ public class LockHolderImpl implements LockHolder
     }
 
     @Override
-    public void releaseLocks()
+    public void releaseLocks() throws ReleaseLocksFailedKernelException
     {
         Collection<LockReleaseCallback> releaseFailures = null;
         Exception releaseException = null;
@@ -155,7 +156,8 @@ public class LockHolderImpl implements LockHolder
 
         if ( releaseException != null )
         {
-            throw new RuntimeException( "Unable to release locks: " + releaseFailures + ".", releaseException );
+            throw new ReleaseLocksFailedKernelException( "Unable to release locks: " + releaseFailures + ".",
+                    releaseException );
         }
     }
 

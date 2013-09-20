@@ -17,11 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import javax.transaction.xa.XAException;
 
-public interface SchemaWriteGuard
+/**
+ * Allowed to validate and, if it likes, fail transactions that are injected into the logical log. Injection normally
+ * happens during recovery or in HA. Be careful with this.
+ */
+public interface InjectedTransactionValidator
 {
-    void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException;
+    // This is used by the lucene data source, and some tests for convenience.
+    InjectedTransactionValidator ALLOW_ALL = new InjectedTransactionValidator(){
+
+        @Override
+        public void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted ) throws XAException
+        {
+            // Always ok.
+        }
+    };
+
+    void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted ) throws XAException;
 }

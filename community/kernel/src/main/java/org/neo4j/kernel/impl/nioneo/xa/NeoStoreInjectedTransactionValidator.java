@@ -17,14 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.nioneo.xa;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
+import javax.transaction.xa.XAException;
 
-public class InvalidTransactionTypeException extends KernelException
+import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
+
+public class NeoStoreInjectedTransactionValidator implements InjectedTransactionValidator
 {
-    public InvalidTransactionTypeException( String message )
+    private final IntegrityValidator integrityValidator;
+
+    public NeoStoreInjectedTransactionValidator( IntegrityValidator integrityValidator )
     {
-        super( (Throwable) null, message );
+        this.integrityValidator = integrityValidator;
+    }
+
+    @Override
+    public void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted ) throws XAException
+    {
+        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
     }
 }

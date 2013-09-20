@@ -24,6 +24,7 @@ import javax.transaction.Transaction;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
+import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.SchemaLock;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -67,7 +68,7 @@ public class LockHolderTest
     }
 
     @Test
-    public void shouldReleaseSchemaReadLockOnRelease()
+    public void shouldReleaseSchemaReadLockOnRelease() throws ReleaseLocksFailedKernelException
     {
         // GIVEN
         LockManager mgr = mock( LockManager.class );
@@ -85,7 +86,7 @@ public class LockHolderTest
     }
 
     @Test
-    public void shouldReleaseSchemaWriteLockOnRelease()
+    public void shouldReleaseSchemaWriteLockOnRelease() throws ReleaseLocksFailedKernelException
     {
         // GIVEN
         LockManager mgr = mock( LockManager.class );

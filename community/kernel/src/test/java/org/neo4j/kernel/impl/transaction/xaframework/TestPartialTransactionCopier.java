@@ -19,18 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.onePhaseCommitEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
-import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -51,6 +39,18 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.nio.ByteBuffer.allocate;
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.onePhaseCommitEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 public class TestPartialTransactionCopier
 {
@@ -110,7 +110,7 @@ public class TestPartialTransactionCopier
     private ArrayMap<Integer, LogEntry.Start> createXidMapWithOneStartEntry( int masterId, Integer brokenTxId )
     {
         ArrayMap<Integer, LogEntry.Start> xidentMap = new ArrayMap<Integer, LogEntry.Start>();
-        xidentMap.put( brokenTxId, new LogEntry.Start( null, brokenTxId, masterId, 3, 4, 5 ) );
+        xidentMap.put( brokenTxId, new LogEntry.Start( null, brokenTxId, masterId, 3, 4, 5, 6 ) );
         return xidentMap;
     }
 
