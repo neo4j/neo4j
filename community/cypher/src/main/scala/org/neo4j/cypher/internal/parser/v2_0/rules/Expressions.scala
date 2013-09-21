@@ -27,6 +27,8 @@ trait Expressions extends Parser
   with Patterns
   with Base {
 
+  // Precedence loosely based on http://en.wikipedia.org/wiki/Operators_in_C_and_C%2B%2B#Operator_precedence
+
   def Expression = Expression12
 
   private def Expression12 : Rule1[ast.Expression] = rule("an expression") {
@@ -82,7 +84,11 @@ trait Expressions extends Parser
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression4 = Expression3
+  private def Expression4 = rule("an expression") (
+      Expression3
+    | operator("+") ~> identifier ~~ Expression ~~> (ast.FunctionInvocation(_: ast.Identifier, _))
+    | operator("-") ~> identifier ~~ Expression ~~> (ast.FunctionInvocation(_: ast.Identifier, _))
+  )
 
   private def Expression3 : Rule1[ast.Expression] = rule("an expression") {
     Expression2 ~ zeroOrMore(WS ~ (

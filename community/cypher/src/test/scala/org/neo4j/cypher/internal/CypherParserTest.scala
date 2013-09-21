@@ -3112,6 +3112,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Literal(0.5), "0.5"), ReturnItem(Literal(0.5), ".5"), ReturnItem(Literal(50), "50")))
   }
 
+  @Test def test_unary_plus_minus() {
+    test(vFrom2_0, "MATCH n RETURN -n.prop, +n.foo, 1 + -n.bar",
+      Query.
+        matches(SingleNode("n")).
+        returns(ReturnItem(Subtract(Literal(0), Property(Identifier("n"), PropertyKey("prop"))), "-n.prop"),
+                ReturnItem(Property(Identifier("n"), PropertyKey("foo")), "+n.foo"),
+                ReturnItem(Add(Literal(1), Subtract(Literal(0), Property(Identifier("n"), PropertyKey("bar")))), "1 + -n.bar")))
+  }
+
   private def run(f: () => Unit) =
     new Runnable() {
       var error: Option[Throwable] = None
