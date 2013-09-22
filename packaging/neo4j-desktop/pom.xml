@@ -172,8 +172,8 @@
               <target name="fix-license-line-endings">
                 <mkdir dir="${project.build.directory}/licenses" />
                 <fixcrlf file="${project.basedir}/../../community/LICENSE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
-                <fixcrlf file="${project.basedir}/LICENSES.txt" destDir="${project.build.directory}/licenses" eol="dos" />
-                <fixcrlf file="${project.basedir}/NOTICE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
+                <fixcrlf file="src/main/distribution/text/community/LICENSES.txt" destDir="${project.build.directory}/licenses" eol="dos" />
+                <fixcrlf file="src/main/distribution/text/community/NOTICE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
               </target>
             </configuration>
           </execution>

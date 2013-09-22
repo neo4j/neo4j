@@ -146,6 +146,9 @@ MIT License
 Mozilla Public License, Version 1.1
   Mozilla Rhino
 
+Oracle Binary Code License Agreement for Java SE Platform Products and JavaFX
+  Oracle Java Runtime Environment
+
 Public Domain - JSON2
   JSON2
 
