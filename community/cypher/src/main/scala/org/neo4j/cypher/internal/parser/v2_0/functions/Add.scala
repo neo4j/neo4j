@@ -27,13 +27,22 @@ case object Add extends Function {
   def name = "+"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
-    checkArgs(invocation, 2) then
-    invocation.arguments.constrainType(StringType(), NumberType(), CollectionType(AnyType())) then
-    invocation.specifyType(invocation.arguments.mergeDownTypes)
+    checkMinArgs(invocation, 1) then checkMaxArgs(invocation, 2) then
+    when(invocation.arguments.length == 1) {
+      invocation.arguments.constrainType(NumberType())
+      invocation.specifyType(NumberType())
+    } then when(invocation.arguments.length == 2) {
+      invocation.arguments.constrainType(StringType(), NumberType(), CollectionType(AnyType())) then
+      invocation.specifyType(invocation.arguments.mergeDownTypes)
+    }
 
   def toCommand(invocation: ast.FunctionInvocation) = {
-    val left = invocation.arguments(0)
-    val right = invocation.arguments(1)
-    commandexpressions.Add(left.toCommand, right.toCommand)
+    if (invocation.arguments.length == 1) {
+      invocation.arguments(0).toCommand
+    } else {
+      val left = invocation.arguments(0)
+      val right = invocation.arguments(1)
+      commandexpressions.Add(left.toCommand, right.toCommand)
+    }
   }
 }
