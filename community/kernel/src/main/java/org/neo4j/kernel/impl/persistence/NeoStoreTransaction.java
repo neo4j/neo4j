@@ -27,6 +27,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -274,7 +275,7 @@ public interface NeoStoreTransaction
 
     void createSchemaRule( SchemaRule schemaRule );
 
-    void dropSchemaRule( long id );
+    void dropSchemaRule( SchemaRule rule );
 
     void addLabelToNode( int labelId, long nodeId );
 
@@ -282,7 +283,7 @@ public interface NeoStoreTransaction
 
     PrimitiveLongIterator getLabelsForNode( long nodeId );
 
-    void setConstraintIndexOwner( long constraintIndexId, long constraintId );
+    void setConstraintIndexOwner( IndexRule constraintIndex, long constraintId );
 
     public interface PropertyReceiver
     {
