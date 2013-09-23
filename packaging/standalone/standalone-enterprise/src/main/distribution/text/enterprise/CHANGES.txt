@@ -2,10 +2,6 @@ For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
 1.9.4 (2013-09-19)
 ------------------
-Desktop:
- o Introduction of Neo4j Desktop, a Windows installer and Neo4j Server Runtime
-   manager.
-
 Backup:
 o Backup tool and command line utility now exit with status 1 in case the
   target store has mismatching store ID with the source.

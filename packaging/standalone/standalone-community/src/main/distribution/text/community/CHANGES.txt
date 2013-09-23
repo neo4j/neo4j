@@ -2,10 +2,6 @@ For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
 1.9.4 (2013-09-19)
 ------------------
-Desktop:
- o Introduction of Neo4j Desktop, a Windows installer and Neo4j Server Runtime
-   manager.
-
 Lucene index:
 o Fixed issue where querying an index for "*:*" while having removed entities
   from it in the same transaction might result in exceptions.
