@@ -152,6 +152,12 @@
         </dependency>
 
         <dependency>
+          <groupId>org.neo4j.app</groupId>
+          <artifactId>neo4j-browser</artifactId>
+          <version>0.1.17</version>
+        </dependency>
+
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
