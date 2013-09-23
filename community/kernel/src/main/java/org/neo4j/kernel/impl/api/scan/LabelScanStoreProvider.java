@@ -28,6 +28,7 @@ import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -36,6 +37,8 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.Integer.MAX_VALUE;
@@ -48,6 +51,12 @@ import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEn
  *
  * (Kernel extension loading mechanism)-[:FINDS]->(KernelExtensionFactory)-[:THAT_PRODUCES]->(LabelScanStoreProvider)-
  *     -[:THAT_PROVIDES_ACCESS_TO_AND_PRIORITIZES]->(LabelScanStore)
+ *
+ * Explicitly don't forward {@link Lifecycle} calls to the {@link LabelScanStore} itself since this provider
+ * participates in KernelExtensions' life cycle, but there are assumptions in and around LabelScanStores that
+ * require its life cycle to be managed by a data source, which has its own little sub-life cycle. I.e. it will
+ * get the {@link LabelScanStore} from this provider, stick it in an e.g. {@link LifeSupport} of its own.
+ * {@link LabelScanStoreProvider} implements {@link Lifecycle} to adhere to {@link KernelExtensionFactory} contract.
  */
 public class LabelScanStoreProvider extends LifecycleAdapter implements Comparable<LabelScanStoreProvider>
 {
