@@ -21,11 +21,8 @@ package org.neo4j.server.modules;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.RoundRobinJobScheduler;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.web.WebServer;
 
 import java.io.IOException;
@@ -41,8 +38,6 @@ public class Neo4jBrowserModule implements ServerModule
 	private final Configuration config;
 	private final WebServer webServer;
 	private final Database database;
-
-	private RrdDbWrapper rrdDb;
 
     public Neo4jBrowserModule(WebServer webServer, Configuration config, Database database)
     {
