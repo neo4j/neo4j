@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -308,14 +309,14 @@ public class PersistenceManager
         }
     }
 
-    public void dropSchemaRule( long ruleId )
+    public void dropSchemaRule( SchemaRule rule )
     {
-        getResource( true ).dropSchemaRule( ruleId );
+        getResource( true ).dropSchemaRule( rule );
     }
 
-    public void setConstraintIndexOwner( long constraintIndexId, long constraintId )
+    public void setConstraintIndexOwner( IndexRule constraintIndex, long constraintId )
     {
-        getResource( true ).setConstraintIndexOwner( constraintIndexId, constraintId );
+        getResource( true ).setConstraintIndexOwner( constraintIndex, constraintId );
     }
 
     private class TxCommitHook implements Synchronization

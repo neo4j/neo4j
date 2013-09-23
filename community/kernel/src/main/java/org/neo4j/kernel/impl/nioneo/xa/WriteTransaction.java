@@ -32,7 +32,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
@@ -43,7 +42,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -55,7 +53,6 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -96,7 +93,6 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.copyOf;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
@@ -134,6 +130,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 {
                     getNodeStore().ensureHeavy( record );
                 }
+
+                @Override
+                public NodeRecord clone(NodeRecord nodeRecord)
+                {
+                    return nodeRecord.clone();
+                }
             }, true );
     private final RecordChanges<Long, PropertyRecord, PrimitiveRecord> propertyRecords =
             new RecordChanges<>( new RecordChanges.Loader<Long, PropertyRecord, PrimitiveRecord>()
@@ -170,6 +172,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                         getPropertyStore().ensureHeavy( block );
                     }
                 }
+
+                @Override
+                public PropertyRecord clone(PropertyRecord propertyRecord)
+                {
+                    return propertyRecord.clone();
+                }
             }, true );
     private final RecordChanges<Long, RelationshipRecord, Void> relRecords =
             new RecordChanges<>( new RecordChanges.Loader<Long, RelationshipRecord, Void>()
@@ -190,8 +198,47 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 public void ensureHeavy( RelationshipRecord record )
                 {
                 }
+
+                @Override
+                public RelationshipRecord clone(RelationshipRecord relationshipRecord) {
+                    // Not needed because we don't manage before state for relationship records.
+                    throw new UnsupportedOperationException("Unexpected call to clone on a relationshipRecord");
+                }
             }, false );
-    private final Map<Long, Pair<Collection<DynamicRecord>, SchemaRule>> schemaRuleRecords = new HashMap<>();
+
+    private final RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges = new RecordChanges<>(new RecordChanges.Loader<Long, Collection<DynamicRecord>, SchemaRule>() {
+        @Override
+        public Collection<DynamicRecord> newUnused(Long key, SchemaRule additionalData)
+        {
+            return getSchemaStore().allocateFrom(additionalData);
+        }
+
+        @Override
+        public Collection<DynamicRecord> load(Long key, SchemaRule additionalData)
+        {
+            return getSchemaStore().getRecords( key );
+        }
+
+        @Override
+        public void ensureHeavy(Collection<DynamicRecord> dynamicRecords)
+        {
+            SchemaStore schemaStore = getSchemaStore();
+            for ( DynamicRecord record : dynamicRecords)
+            {
+                schemaStore.ensureHeavy(record);
+            }
+        }
+
+        @Override
+        public Collection<DynamicRecord> clone(Collection<DynamicRecord> dynamicRecords) {
+            Collection<DynamicRecord> list = new ArrayList<>( dynamicRecords.size() );
+            for ( DynamicRecord record : dynamicRecords)
+            {
+                list.add( record.clone() );
+            }
+            return list;
+        }
+    }, true);
     private Map<Integer, RelationshipTypeTokenRecord> relationshipTypeTokenRecords;
     private Map<Integer, LabelTokenRecord> labelTokenRecords;
     private Map<Integer, PropertyKeyTokenRecord> propertyKeyTokenRecords;
@@ -253,7 +300,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                    relCommands.size() == 0 && schemaRuleCommands.size() == 0 && relationshipTypeTokenCommands == null &&
                    labelTokenCommands == null && propertyKeyTokenCommands == null;
         }
-        return nodeRecords.changeSize() == 0 && relRecords.changeSize() == 0 && schemaRuleRecords.size() == 0 &&
+        return nodeRecords.changeSize() == 0 && relRecords.changeSize() == 0 && schemaRuleChanges.changeSize() == 0 &&
                propertyRecords.changeSize() == 0 && relationshipTypeTokenRecords == null && labelTokenRecords == null &&
                propertyKeyTokenRecords == null;
     }
@@ -277,7 +324,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         int noOfCommands = nodeRecords.changeSize() +
                            relRecords.changeSize() +
                            propertyRecords.changeSize() +
-                           schemaRuleRecords.size() +
+                           schemaRuleChanges.changeSize() +
                            (propertyKeyTokenRecords != null ? propertyKeyTokenRecords.size() : 0) +
                            (relationshipTypeTokenRecords != null ? relationshipTypeTokenRecords.size() : 0) +
                            (labelTokenRecords != null ? labelTokenRecords.size() : 0);
@@ -365,12 +412,17 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             propCommands.add( command );
             commands.add( command );
         }
-        for ( Pair<Collection<DynamicRecord>, SchemaRule> records : schemaRuleRecords.values() )
+        for ( RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change : schemaRuleChanges.changes() )
         {
-            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( neoStore, neoStore.getSchemaStore(),
-                                                                               indexes, records.first(),
-                                                                               records.other(), -1 );
-            integrityValidator.validateSchemaRule( records.other() );
+            integrityValidator.validateSchemaRule( change.getAdditionalData() );
+            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(
+                    neoStore,
+                    neoStore.getSchemaStore(),
+                    indexes,
+                    change.getBefore(),
+                    change.forChangingData(),
+                    change.getAdditionalData(),
+                    -1 );
             schemaRuleCommands.add( command );
             commands.add( command );
         }
@@ -379,12 +431,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                                                  + commands.size() + " instead";
         intercept( commands );
 
-        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
-
         for ( Command command : commands )
         {
             addCommand( command );
         }
+
+        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
     }
 
     protected void intercept( List<Command> commands )
@@ -570,10 +622,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                     }
                 }
             }
-            for ( Pair<Collection<DynamicRecord>, SchemaRule> records : schemaRuleRecords.values() )
+            for ( RecordChange<Long, Collection<DynamicRecord>, SchemaRule> records : schemaRuleChanges.changes() )
             {
                 long id = -1;
-                for ( DynamicRecord record : records.first() )
+                for ( DynamicRecord record : records.forChangingData() )
                 {
                     if ( id == -1 )
                     {
@@ -1013,7 +1065,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         nodeRecords.clear();
         propertyRecords.clear();
         relRecords.clear();
-        schemaRuleRecords.clear();
+        schemaRuleChanges.clear();
         relationshipTypeTokenRecords = null;
         propertyKeyTokenRecords = null;
         neoStoreRecord = null;
@@ -2030,6 +2082,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 public void ensureHeavy( NeoStoreRecord record )
                 {
                 }
+
+                @Override
+                public NeoStoreRecord clone(NeoStoreRecord neoStoreRecord) {
+                    // We do not expect to manage the before state, so this operation will not be called.
+                    throw new UnsupportedOperationException("Clone on NeoStoreRecord");
+                }
             }, false );
         }
         return neoStoreRecord.getOrLoad( 0L, null );
@@ -2074,43 +2132,23 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     @Override
     public void createSchemaRule( SchemaRule schemaRule )
     {
-        Collection<DynamicRecord> records = getSchemaStore().allocateFrom( schemaRule );
-        addSchemaRule( Pair.of( records, schemaRule ) );
+        for(DynamicRecord change : schemaRuleChanges.create( schemaRule.getId(), schemaRule ).forChangingData())
+        {
+            change.setInUse( true );
+            change.setCreated();
+        }
     }
 
     @Override
-    public void dropSchemaRule( long ruleId )
+    public void dropSchemaRule( SchemaRule rule )
     {
-        Pair<Collection<DynamicRecord>, SchemaRule> pair = schemaRuleRecords.get( ruleId );
-        if ( pair == null )
-        {
-            Collection<DynamicRecord> records = getSchemaStore().getRecords( ruleId );
-            pair = Pair.of( records, deserializeSchemaRule( ruleId, records ) );
-            addSchemaRule( pair );
-        }
-
-        for ( DynamicRecord record : pair.first() )
+        RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change =
+                schemaRuleChanges.getOrLoad(rule.getId(), rule);
+        Collection<DynamicRecord> records = change.forChangingData();
+        for ( DynamicRecord record : records )
         {
             record.setInUse( false );
         }
-    }
-
-    private SchemaRule deserializeSchemaRule( long ruleId, Collection<DynamicRecord> records )
-    {
-        try
-        {
-            return SchemaRule.Kind.deserialize( ruleId, AbstractDynamicStore.concatData( records, new byte[100] ) );
-        }
-        catch ( MalformedSchemaRuleException e )
-        {
-            // TODO This is bad
-            throw launderedException( e );
-        }
-    }
-
-    private void addSchemaRule( Pair<Collection<DynamicRecord>, SchemaRule> schemaRule )
-    {
-        schemaRuleRecords.put( schemaRule.other().getId(), schemaRule );
     }
 
     @Override
@@ -2136,14 +2174,15 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @Override
-    public void setConstraintIndexOwner( long constraintIndexId, long constraintId )
+    public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
     {
-        Pair<Collection<DynamicRecord>, SchemaRule> pair = schemaRuleRecords.get( constraintIndexId );
-        IndexRule indexRule = (IndexRule)
-                (pair != null ?
-                 pair.other() :
-                 deserializeSchemaRule( constraintIndexId, getSchemaStore().getRecords( constraintIndexId ) ));
+        RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change =
+                schemaRuleChanges.getOrLoad( indexRule.getId(), indexRule );
+        Collection<DynamicRecord> records = change.forChangingData();
+
         indexRule = indexRule.withOwningConstraint( constraintId );
-        addSchemaRule( Pair.of( getSchemaStore().allocateFrom( indexRule ), (SchemaRule) indexRule ) );
+
+        records.clear();
+        records.addAll( getSchemaStore().allocateFrom( indexRule ) );
     }
 }

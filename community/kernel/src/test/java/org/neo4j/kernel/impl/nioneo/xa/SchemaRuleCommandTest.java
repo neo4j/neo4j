@@ -49,14 +49,17 @@ public class SchemaRuleCommandTest
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> records = serialize( rule, id, true, true );
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule, txId );
+        Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
+        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
+
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes,
+                beforeRecords, afterRecords, rule, txId );
 
         // WHEN
         command.execute();
 
         // THEN
-        verify( store ).updateRecord( first( records ) );
+        verify( store ).updateRecord( first( afterRecords ) );
         verify( indexes ).createIndex( rule );
     }
 
@@ -64,15 +67,17 @@ public class SchemaRuleCommandTest
     public void shouldSetLatestConstraintRule() throws Exception
     {
         // Given
-        Collection<DynamicRecord> records = serialize( rule, id, true, false );
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records,
+        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
+        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, false);
+
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, beforeRecords, afterRecords,
                 uniquenessConstraintRule( id, labelId, propertyKey, 0 ), txId );
 
         // WHEN
         command.execute();
 
         // THEN
-        verify( store ).updateRecord( first( records ) );
+        verify( store ).updateRecord( first( afterRecords ) );
         verify( neoStore ).setLatestConstraintIntroducingTx( txId );
     }
 
@@ -80,14 +85,16 @@ public class SchemaRuleCommandTest
     public void shouldDropSchemaRuleFromStore() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> records = serialize( rule, id, false, true );
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule, txId );
+        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
+        Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
+
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, beforeRecords, afterRecords, rule, txId );
 
         // WHEN
         command.execute();
 
         // THEN
-        verify( store ).updateRecord( first( records ) );
+        verify( store ).updateRecord( first( afterRecords ) );
         verify( indexes ).dropIndex( rule );
     }
 
@@ -95,8 +102,33 @@ public class SchemaRuleCommandTest
     public void shouldWriteSchemaRuleToLog() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> records = serialize( rule, id, true, true );
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule, txId );
+        Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
+        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
+
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, beforeRecords, afterRecords, rule, txId );
+        InMemoryLogBuffer buffer = new InMemoryLogBuffer();
+
+        when( neoStore.getSchemaStore() ).thenReturn( store );
+
+        // WHEN
+        command.writeToFile( buffer );
+        Command readCommand = readCommand( neoStore, indexes, buffer, allocate( 1000 ) );
+
+        // THEN
+        assertThat( readCommand, instanceOf( SchemaRuleCommand.class ) );
+
+        SchemaRuleCommand readSchemaCommand = (SchemaRuleCommand)readCommand;
+        assertThat(readSchemaCommand.getTxId(), equalTo(txId));
+    }
+
+    @Test
+    public void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception
+    {
+        // GIVEN
+        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
+        Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
+
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, beforeRecords, afterRecords, rule, txId );
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
         when( neoStore.getSchemaStore() ).thenReturn( store );
 
@@ -109,6 +141,7 @@ public class SchemaRuleCommandTest
 
         SchemaRuleCommand readSchemaCommand = (SchemaRuleCommand)readCommand;
         assertThat(readSchemaCommand.getTxId(), equalTo(txId));
+        assertThat(readSchemaCommand.getSchemaRule(), equalTo((SchemaRule)rule));
     }
 
     private final NeoStore neoStore = mock( NeoStore.class );
