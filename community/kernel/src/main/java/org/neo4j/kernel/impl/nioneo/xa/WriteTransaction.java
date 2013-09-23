@@ -370,6 +370,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( neoStore, neoStore.getSchemaStore(),
                                                                                indexes, records.first(),
                                                                                records.other(), -1 );
+            integrityValidator.validateSchemaRule( records.other() );
             schemaRuleCommands.add( command );
             commands.add( command );
         }
@@ -378,12 +379,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                                                  + commands.size() + " instead";
         intercept( commands );
 
+        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
+
         for ( Command command : commands )
         {
             addCommand( command );
         }
-
-        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
     }
 
     protected void intercept( List<Command> commands )

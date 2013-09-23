@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
 public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
 {
@@ -85,7 +84,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public void validate() throws IndexPopulationFailedKernelException
+    public void validate() throws ConstraintVerificationFailedKernelException
     {
         Iterator<IndexEntryConflictException> iterator = failures.iterator();
         if ( iterator.hasNext() )
@@ -97,9 +96,8 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 evidence.add( new ConstraintVerificationFailedKernelException.Evidence( iterator.next() ) );
             } while ( iterator.hasNext() );
             IndexDescriptor descriptor = getDescriptor();
-            throw new IndexPopulationFailedKernelException( descriptor, null,
-                new ConstraintVerificationFailedKernelException(
-                    new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), evidence ) );
+            throw new ConstraintVerificationFailedKernelException(
+                    new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), evidence );
         }
     }
 

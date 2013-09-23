@@ -23,9 +23,15 @@ import javax.transaction.xa.XAException;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 /**
  * Validates data integrity during the prepare phase of {@link WriteTransaction}.
@@ -33,10 +39,12 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 public class IntegrityValidator
 {
     private final NeoStore neoStore;
+    private final IndexingService indexes;
 
-    public IntegrityValidator(NeoStore neoStore)
+    public IntegrityValidator( NeoStore neoStore, IndexingService indexes )
     {
         this.neoStore = neoStore;
+        this.indexes = indexes;
     }
 
     public void validateNodeRecord( NodeRecord record ) throws XAException
@@ -64,6 +72,28 @@ public class IntegrityValidator
                     new ConstraintViolationException(
                             "Database constraints have changed after this transaction started, which is not yet " +
                             "supported. Please retry your transaction to ensure all constraints are executed." ) );
+        }
+    }
+
+    public void validateSchemaRule( SchemaRule schemaRule ) throws XAException
+    {
+        if(schemaRule instanceof UniquenessConstraintRule )
+        {
+            try
+            {
+                indexes.validateIndex( ((UniquenessConstraintRule)schemaRule).getOwnedIndex() );
+            }
+            catch ( ConstraintVerificationFailedKernelException e )
+            {
+                throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ), e);
+            }
+            catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException e )
+            {
+                // We don't expect this to occur, and if they do, it is because we are in a very bad state - out of
+                // disk or index corruption, or similar. This will kill the database such that it can be shut down
+                // and have recovery performed. It's the safest bet to avoid loosing data.
+                throw Exceptions.withCause( new XAException( XAException.XAER_RMERR ), e);
+            }
         }
     }
 }

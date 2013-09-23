@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
@@ -97,7 +98,7 @@ public interface IndexProxy
 
     void activate() throws IndexActivationFailedKernelException;
 
-    void validate() throws IndexPopulationFailedKernelException;
+    void validate() throws ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException;
 
     class Adapter implements IndexProxy
     {

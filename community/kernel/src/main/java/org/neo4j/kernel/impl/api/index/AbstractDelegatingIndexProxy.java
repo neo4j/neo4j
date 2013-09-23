@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
 public abstract class AbstractDelegatingIndexProxy implements IndexProxy
 {
@@ -107,7 +108,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void validate() throws IndexPopulationFailedKernelException
+    public void validate() throws ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException
     {
         getDelegate().validate();
     }

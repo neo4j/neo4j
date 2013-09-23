@@ -294,8 +294,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
-        integrityValidator = new IntegrityValidator( neoStore );
-
         final NodeManager nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
         Iterator<? extends Cache<?>> caches = nodeManager.caches().iterator();
         persistenceCache = new PersistenceCache(
@@ -325,6 +323,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                             new NeoStoreIndexStoreView( neoStore ),
                             tokenNameLookup, updateableSchemaState,
                             logging ) );
+
+            integrityValidator = new IntegrityValidator( neoStore, indexingService );
 
             xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                     new CommandFactory( neoStore, indexingService ),

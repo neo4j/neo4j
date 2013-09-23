@@ -76,36 +76,6 @@ public class ConstraintIndexCreator
         }
     }
 
-    public void validateConstraintIndex( UniquenessConstraint constraint, long indexId )
-            throws CreateConstraintFailureException
-    {
-        try
-        {
-            indexingService.validateIndex( indexId );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new IllegalStateException(
-                    String.format( "Index (indexId=%d) that we just created does not exist.", indexId ) );
-        }
-        catch ( IndexPopulationFailedKernelException e )
-        {
-            Throwable failure = e.getCause();
-            if ( failure instanceof ConstraintVerificationFailedKernelException )
-            {
-                throw new CreateConstraintFailureException( constraint, failure );
-            }
-            if ( failure instanceof IndexEntryConflictException )
-            {
-                IndexEntryConflictException conflict = (IndexEntryConflictException) failure;
-                throw new CreateConstraintFailureException(
-                        constraint, new ConstraintVerificationFailedKernelException( constraint, singleton(
-                        new ConstraintVerificationFailedKernelException.Evidence( conflict ) ) ) );
-            }
-            throw new CreateConstraintFailureException( constraint, failure );
-        }
-    }
-
     /**
      * You MUST hold a schema write lock before you call this method.
      */

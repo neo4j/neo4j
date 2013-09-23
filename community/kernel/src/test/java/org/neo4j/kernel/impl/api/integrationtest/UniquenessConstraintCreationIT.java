@@ -23,29 +23,29 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.junit.Test;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.xa.XAException;
 
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.ConstraintCreationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
+public class UniquenessConstraintCreationIT extends KernelIntegrationTest
 {
+
     @Test
     public void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
     {
@@ -82,7 +82,7 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
             assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
             assertEquals( asSet( new ConstraintVerificationFailedKernelException.Evidence(
                     new PreexistingIndexEntryConflictException( "foo", node1, node2 ) ) ),
-                          ((ConstraintVerificationFailedKernelException) cause).evidence() );
+                    ((ConstraintVerificationFailedKernelException) cause).evidence() );
         }
     }
 
@@ -132,16 +132,16 @@ public class UniquenessConstraintVerificationIT extends KernelIntegrationTest
         // then
         catch ( TransactionFailureException ex )
         {
-            Throwable cause = ex.getCause();
-            assertThat( cause, instanceOf( ConstraintCreationException.class ) );
-            CreateConstraintFailureException creationException = (CreateConstraintFailureException) cause.getCause();
+            HeuristicRollbackException rollbackEx = (HeuristicRollbackException)ex.getCause();
 
-            assertEquals( new UniquenessConstraint( foo, name ), creationException.constraint() );
-            cause = creationException.getCause();
-            assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
+            XAException xaEx = (XAException)rollbackEx.getCause();
+            assertThat( xaEx.errorCode, equalTo( XAException.XA_RBINTEGRITY ));
+
+            ConstraintVerificationFailedKernelException verificationEx = (ConstraintVerificationFailedKernelException) xaEx.getCause();
+
             assertEquals( asSet( new ConstraintVerificationFailedKernelException.Evidence(
                     new PreexistingIndexEntryConflictException( "foo", node1, node2 ) ) ),
-                          ((ConstraintVerificationFailedKernelException) cause).evidence() );
+                    verificationEx.evidence() );
         }
     }
 }

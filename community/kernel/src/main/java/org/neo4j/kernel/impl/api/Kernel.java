@@ -31,8 +31,6 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.exceptions.*;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -41,7 +39,11 @@ import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionForcefullyRolledBackException;
+import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -523,15 +525,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     @Override
                     public void visitAddedConstraint( UniquenessConstraint element, long indexId )
                     {
-                        try
-                        {
-                            constraintIndexCreator.validateConstraintIndex( element, indexId );
-                        }
-                        catch ( CreateConstraintFailureException e )
-                        {
-                            // TODO: Revisit decision to rethrow as RuntimeException.
-                            throw new ConstraintCreationException( e );
-                        }
+//                        try
+//                        {
+//                            constraintIndexCreator.validateConstraintIndex( element, indexId );
+//                        }
+//                        catch ( CreateConstraintFailureException e )
+//                        {
+//                            // TODO: Revisit decision to rethrow as RuntimeException.
+//                            throw new ConstraintCreationException( e );
+//                        }
                         clearState.set( true );
                         long constraintId = schemaStorage.newRuleId();
                         persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(

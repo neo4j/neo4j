@@ -22,24 +22,54 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import javax.transaction.xa.XAException;
 
 import org.junit.Test;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 import static junit.framework.Assert.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.*;
+import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
 public class IntegrityValidatorTest
 {
 
     @Test
+    public void shouldValidateUniquenessIndexes() throws Exception
+    {
+        // Given
+        NeoStore store = mock( NeoStore.class );
+        IndexingService indexes = mock(IndexingService.class);
+        IntegrityValidator validator = new IntegrityValidator(store, indexes);
+
+        doThrow( new ConstraintVerificationFailedKernelException( null, new RuntimeException() ))
+         .when( indexes ).validateIndex( 2l );
+
+        UniquenessConstraintRule record = uniquenessConstraintRule( 1l, 1, 1, 2l );
+
+        // When
+        try
+        {
+            validator.validateSchemaRule( record );
+            fail("Should have thrown integrity error.");
+        }
+        catch(XAException e)
+        {
+            assertThat(e.errorCode, equalTo(XAException.XA_RBINTEGRITY));
+        }
+    }
+
+    @Test
     public void deletingNodeWithRelationshipsIsNotAllowed() throws Exception
     {
         // Given
         NeoStore store = mock( NeoStore.class );
-        IntegrityValidator validator = new IntegrityValidator(store);
+        IndexingService indexes = mock(IndexingService.class);
+        IntegrityValidator validator = new IntegrityValidator(store, indexes );
 
         NodeRecord record = new NodeRecord( 1l, 1l, -1l );
         record.setInUse( false );
@@ -61,8 +91,9 @@ public class IntegrityValidatorTest
     {
         // Given
         NeoStore store = mock( NeoStore.class );
+        IndexingService indexes = mock(IndexingService.class);
         when(store.getLatestConstraintIntroducingTx()).thenReturn( 10l );
-        IntegrityValidator validator = new IntegrityValidator( store );
+        IntegrityValidator validator = new IntegrityValidator( store, indexes );
 
         // When
         try

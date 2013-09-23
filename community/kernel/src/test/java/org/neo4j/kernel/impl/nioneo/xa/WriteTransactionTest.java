@@ -27,12 +27,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+
 import javax.transaction.xa.XAException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -67,16 +67,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -88,6 +81,8 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.test.AllItemsMatcher.matchesAll;
@@ -98,14 +93,32 @@ public class WriteTransactionTest
     public static final String LONG_STRING = "string value long enough not to be stored as a short string";
 
     @Test
+    public void shouldValidateConstraintIndexAsPartOfPrepare() throws Exception
+    {
+        // GIVEN
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
+
+        final long indexId = neoStore.getSchemaStore().nextId();
+        final long constraintId = neoStore.getSchemaStore().nextId();
+
+        writeTransaction.createSchemaRule( uniquenessConstraintRule( constraintId, 1, 1, indexId ) );
+
+        // WHEN
+        writeTransaction.prepare();
+
+        // THEN
+        verify( MOCK_INDEXING ).validateIndex( indexId );
+    }
+
+    @Test
     public void shouldAddSchemaRuleToCacheWhenApplyingTransactionThatCreatesOne() throws Exception
     {
         // GIVEN
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
 
         // WHEN
         final long ruleId = neoStore.getSchemaStore().nextId();
-        IndexRule schemaRule = IndexRule.indexRule( ruleId, 10, 8, PROVIDER_DESCRIPTOR );
+        IndexRule schemaRule = indexRule( ruleId, 10, 8, PROVIDER_DESCRIPTOR );
         writeTransaction.createSchemaRule( schemaRule );
         writeTransaction.prepare();
         writeTransaction.commit();
@@ -120,14 +133,14 @@ public class WriteTransactionTest
         // GIVEN
         SchemaStore schemaStore = neoStore.getSchemaStore();
         int labelId = 10, propertyKey = 10;
-        IndexRule rule = IndexRule.indexRule( schemaStore.nextId(), labelId, propertyKey, PROVIDER_DESCRIPTOR );
+        IndexRule rule = indexRule( schemaStore.nextId(), labelId, propertyKey, PROVIDER_DESCRIPTOR );
         Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : records )
         {
             schemaStore.updateRecord( record );
         }
         long ruleId = first( records ).getId();
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
 
         // WHEN
         writeTransaction.dropSchemaRule( ruleId );
@@ -142,11 +155,11 @@ public class WriteTransactionTest
     public void shouldRemoveSchemaRuleWhenRollingBackTransaction() throws Exception
     {
         // GIVEN
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
 
         // WHEN
         final long ruleId = neoStore.getSchemaStore().nextId();
-        writeTransaction.createSchemaRule( IndexRule.indexRule( ruleId, 10, 7, PROVIDER_DESCRIPTOR ) );
+        writeTransaction.createSchemaRule( indexRule( ruleId, 10, 7, PROVIDER_DESCRIPTOR ) );
         writeTransaction.prepare();
         writeTransaction.rollback();
 
@@ -178,7 +191,7 @@ public class WriteTransactionTest
         };
 
         // GIVEN
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING, verifier );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING, verifier );
         int nodeId = 1;
         writeTransaction.setCommitTxId( nodeId );
         writeTransaction.nodeCreate( nodeId );
@@ -222,7 +235,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         int nodeId = 1;
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
@@ -251,7 +264,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         int nodeId = 1;
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
@@ -279,7 +292,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         long nodeId = 1;
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
         int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
         long[] labelIds = new long[] {labelId};
         Object value1 = LONG_STRING, value2 = LONG_STRING.getBytes();
@@ -307,7 +320,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         long nodeId = 1;
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
         int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
@@ -336,7 +349,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         long nodeId = 1;
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
         int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
         long[] labelIds = new long[] {labelId};
         Object value1 = "first", value2 = 4;
@@ -365,7 +378,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         long nodeId = 1;
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
         int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
@@ -395,7 +408,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         long nodeId = 1;
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( MOCK_INDEXING );
         int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
@@ -424,7 +437,7 @@ public class WriteTransactionTest
     public void shouldUpdateHighIdsOnRecoveredTransaction() throws Exception
     {
         // GIVEN
-        WriteTransaction tx = newWriteTransaction( NO_INDEXING );
+        WriteTransaction tx = newWriteTransaction( MOCK_INDEXING );
         int nodeId = 5, relId = 10, relationshipType = 3, propertyKeyId = 4, ruleId = 8;
 
         // WHEN
@@ -440,7 +453,7 @@ public class WriteTransactionTest
         {
             tx.addLabelToNode( 10000 + i, nodeId );
         }
-        tx.createSchemaRule( IndexRule.indexRule( ruleId, 100, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        tx.createSchemaRule( indexRule( ruleId, 100, propertyKeyId, PROVIDER_DESCRIPTOR ) );
         prepareAndCommitRecovered( tx );
 
         // THEN
@@ -464,10 +477,10 @@ public class WriteTransactionTest
         Visitor<XaCommand, RuntimeException> verifier = heavySchemaRuleVerifier();
 
         // GIVEN
-        WriteTransaction tx = newWriteTransaction( NO_INDEXING, verifier );
+        WriteTransaction tx = newWriteTransaction( MOCK_INDEXING, verifier );
         long ruleId = 0;
         int labelId = 5, propertyKeyId = 7;
-        SchemaRule rule = IndexRule.indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        SchemaRule rule = indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
 
         // WHEN
         tx.createSchemaRule( rule );
@@ -493,7 +506,7 @@ public class WriteTransactionTest
          */
 
         // GIVEN
-        WriteTransaction tx = newWriteTransaction( NO_INDEXING );
+        WriteTransaction tx = newWriteTransaction( MOCK_INDEXING );
         int nodeId = 0;
         tx.nodeCreate( nodeId );
         int index = 0;
@@ -528,7 +541,7 @@ public class WriteTransactionTest
                 }
             }
         };
-        tx = newWriteTransaction( NO_INDEXING, verifier );
+        tx = newWriteTransaction( MOCK_INDEXING, verifier );
         int index2 = 1;
         tx.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
         prepareAndCommit( tx );
@@ -547,8 +560,8 @@ public class WriteTransactionTest
 
         // -- an index
         long ruleId = 0;
-        WriteTransaction tx = newWriteTransaction( NO_INDEXING );
-        SchemaRule rule = IndexRule.indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        WriteTransaction tx = newWriteTransaction( MOCK_INDEXING );
+        SchemaRule rule = indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
         tx.createSchemaRule( rule );
         prepareAndCommit( tx );
 
@@ -641,7 +654,7 @@ public class WriteTransactionTest
         }
     }
 
-    static IndexingService NO_INDEXING = mock( IndexingService.class );
+    static IndexingService MOCK_INDEXING = mock( IndexingService.class );
 
     private WriteTransaction newWriteTransaction( IndexingService indexing )
     {
@@ -653,7 +666,7 @@ public class WriteTransactionTest
     {
         log = new VerifyingXaLogicalLog( fs.get(), verifier );
         WriteTransaction result = new WriteTransaction( 0, 0l, log, transactionState, neoStore,
-                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator(neoStore));
+                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator(neoStore, indexing ));
         result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
         return result;
     }

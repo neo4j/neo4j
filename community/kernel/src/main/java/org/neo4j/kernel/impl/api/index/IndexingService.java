@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
@@ -506,7 +506,8 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    public void validateIndex( long indexId ) throws IndexNotFoundKernelException, IndexPopulationFailedKernelException
+    public void validateIndex( long indexId ) throws IndexNotFoundKernelException, ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException
+
     {
         getProxyForRule( indexId ).validate();
     }
