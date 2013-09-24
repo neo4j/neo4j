@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import java.io.File;
+
 import javax.transaction.xa.XAException;
 
 import org.junit.Rule;
@@ -26,6 +28,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
+import org.neo4j.kernel.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.transaction.TxManager;
@@ -37,8 +40,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class UniqueConstraintHaIT
@@ -97,6 +103,51 @@ public class UniqueConstraintHaIT
     }
 
     @Test
+    public void shouldRemoveConstraints() throws Exception
+    {
+        // given
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+
+        try ( Transaction tx = master.beginTx() )
+        {
+            master.schema().constraintFor( label( "User" ) ).on( "name" ).unique().create();
+            tx.success();
+        }
+        cluster.sync();
+
+        // and given I have some data for the constraint
+        createUser( cluster.getAnySlave(), "Bob" );
+
+        // when
+        try ( Transaction tx = master.beginTx() )
+        {
+            single( master.schema().getConstraints() ).drop();
+            tx.success();
+        }
+        cluster.sync();
+
+        // then the constraint should be gone, and not be enforced anymore
+        for ( HighlyAvailableGraphDatabase clusterMember : cluster.getAllMembers() )
+        {
+            System.out.println(clusterMember + " :" + clusterMember.role());
+            try ( Transaction tx = clusterMember.beginTx() )
+            {
+                assertEquals( count(clusterMember.schema().getConstraints()), 0);
+                System.out.println( asCollection(clusterMember.schema().getIndexes()) );
+                assertEquals( count(clusterMember.schema().getIndexes()), 0);
+//                createUser( clusterMember, "Bob" );
+                tx.success();
+            }
+            try ( Transaction tx = clusterMember.beginTx() )
+            {
+                createUser( clusterMember, "Bob" );
+                tx.success();
+            }
+        }
+    }
+
+    @Test
     public void shouldNotAllowOldUncommittedTransactionsToResumeAndViolateConstraint() throws Exception
     {
         // Given
@@ -143,6 +194,41 @@ public class UniqueConstraintHaIT
         // And then I should be able to perform new write transactions, on both master and slave
         createUser( slave, "Steven" );
         createUser( master, "Caroline" );
+    }
+
+    @Test
+    public void newSlaveJoiningClusterShouldNotAcceptOperationsUntilConstraintIsOnline() throws Throwable
+    {
+        // Given
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        File slaveStoreDirectory = cluster.getStoreDir( slave );
+
+        // Crash the slave
+        ClusterManager.RepairKit shutdownSlave = cluster.shutdown( slave );
+        deleteRecursively( slaveStoreDirectory );
+
+        try(Transaction tx = master.beginTx())
+        {
+            master.schema().constraintFor( label("User") ).on( "name" ).unique().create();
+            tx.success();
+        }
+
+        // When
+        slave = shutdownSlave.repair();
+
+        // Then
+        try( Transaction tx = slave.beginTx() )
+        {
+            assertThat(single( slave.schema().getConstraints() ), instanceOf(PropertyUniqueConstraintDefinition.class));
+            PropertyUniqueConstraintDefinition constraint =
+                    (PropertyUniqueConstraintDefinition)single(slave.schema().getConstraints());
+            assertThat(single(constraint.getPropertyKeys()), equalTo("name"));
+            assertThat(constraint.getLabel(), equalTo(label("User")));
+        }
     }
 
     private void createUser( HighlyAvailableGraphDatabase db, String name )

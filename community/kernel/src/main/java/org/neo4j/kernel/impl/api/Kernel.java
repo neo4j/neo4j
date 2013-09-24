@@ -525,15 +525,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     @Override
                     public void visitAddedConstraint( UniquenessConstraint element, long indexId )
                     {
-//                        try
-//                        {
-//                            constraintIndexCreator.validateConstraintIndex( element, indexId );
-//                        }
-//                        catch ( CreateConstraintFailureException e )
-//                        {
-//                            // TODO: Revisit decision to rethrow as RuntimeException.
-//                            throw new ConstraintCreationException( e );
-//                        }
                         clearState.set( true );
                         long constraintId = schemaStorage.newRuleId();
                         persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(

@@ -711,7 +711,7 @@ public class WriteTransactionTest
             @Override
             public boolean visit( XaCommand element )
             {
-                for ( DynamicRecord record : ((SchemaRuleCommand) element).getRecords() )
+                for ( DynamicRecord record : ((SchemaRuleCommand) element).getRecordsAfter() )
                 {
                     assertFalse( record + " should have been heavy", record.isLight() );
                 }
