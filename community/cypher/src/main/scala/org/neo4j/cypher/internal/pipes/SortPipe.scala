@@ -31,7 +31,7 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.toList.
-      sortWith((a, b) => compareBy(a, b, sortDescription)).iterator
+      sortWith((a, b) => compareBy(a, b, sortDescription)(state)).iterator
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     sortDescription.foreach {
@@ -45,7 +45,7 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
 }
 
 trait ExecutionContextComparer extends Comparer {
-  def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem]): Boolean = order match {
+  def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem])(implicit qtx: QueryState): Boolean = order match {
     case Nil => false
     case head :: tail => {
       val key = head.columnName
