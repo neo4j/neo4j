@@ -533,18 +533,7 @@
         <enabled>false</enabled>
       </releases>
     </repository>
-    <repository>
-      <id>cukes</id>
-      <url>http://cukes.info/maven</url>
-    </repository>
   </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>cukes</id>
-      <url>http://cukes.info/maven</url>
-    </pluginRepository>
-  </pluginRepositories>
 
   <distributionManagement>
     <site>

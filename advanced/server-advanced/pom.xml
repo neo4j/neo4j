@@ -469,13 +469,6 @@
     </repository>
   </repositories>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>cukes</id>
-      <url>http://cukes.info/maven</url>
-    </pluginRepository>
-  </pluginRepositories>
-
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
