@@ -27,13 +27,17 @@ case object Subtract extends Function {
   def name = "-"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
-    checkArgs(invocation, 2) then
+    checkMinArgs(invocation, 1) then checkMaxArgs(invocation, 2) then
     invocation.arguments.constrainType(NumberType()) then
     invocation.specifyType(NumberType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {
-    val left = invocation.arguments(0)
-    val right = invocation.arguments(1)
-    commandexpressions.Subtract(left.toCommand, right.toCommand)
+    if (invocation.arguments.length == 1) {
+      commandexpressions.Subtract(commandexpressions.Literal(0), invocation.arguments(0).toCommand)
+    } else {
+      val left = invocation.arguments(0)
+      val right = invocation.arguments(1)
+      commandexpressions.Subtract(left.toCommand, right.toCommand)
+    }
   }
 }
