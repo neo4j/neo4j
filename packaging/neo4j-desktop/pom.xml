@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.neo4j.assembly</groupId>
     <artifactId>neo4j-standalone</artifactId>
-    <version>1.9.4-SNAPSHOT</version>
+    <version>1.9.4</version>
     <relativePath>../standalone</relativePath>
   </parent>
 
@@ -13,7 +13,7 @@
 
   <groupId>org.neo4j.build</groupId>
   <artifactId>neo4j-desktop</artifactId>
-  <version>1.9.4-SNAPSHOT</version>
+  <version>1.9.4</version>
   <name>Neo4j Desktop</name>
   <description>Easy-to-use Neo4j database in an .exe</description>
 
@@ -211,7 +211,7 @@
                     <install4j projectfile="${project.basedir}/target/install4j/neo4j-desktop.install4j"
                                mediatypes="windows"
                                verbose="true"
-                               release="1.9.4-SNAPSHOT"
+                               release="1.9.4"
                                winKeystorePassword="${install4j.win.key.store.password}"
                                destination="${project.basedir}/target/install4j" />
                   </target>
