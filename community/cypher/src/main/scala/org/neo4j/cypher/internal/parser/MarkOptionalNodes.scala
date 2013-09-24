@@ -62,7 +62,7 @@ object MarkOptionalNodes {
    * are no start items in the first query part.
    */
   private def handleOptionalsForCypher2Temporary(boundNames: Set[String], query: Query): Seq[Pattern] = {
-    if (boundNames.isEmpty) query.matching
+    if (boundNames.isEmpty || !query.matching.exists(_.optional)) query.matching
     else query.matching.map(markOptionals(boundNames))
   }
 

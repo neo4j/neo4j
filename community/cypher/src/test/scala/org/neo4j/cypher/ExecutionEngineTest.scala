@@ -2852,4 +2852,24 @@ RETURN x0.name
       case _ => fail()
     }
   }
+
+  @Test
+  def should_handle_two_unconnected_patterns() {
+    // given a node with two related nodes
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(a,b)
+    relate(a,c)
+
+    // when asked for a cartesian product of the same match twice
+    val result = parseAndExecute("match a-->b with a,b match c-->d return a,b,c,d")
+
+    // then we should find 2 x 2 = 4 result matches
+    assert(result.toSet === Set(
+      Map("a" -> a, "b" -> b, "c" -> a, "d" -> b),
+      Map("a" -> a, "b" -> b, "c" -> a, "d" -> c),
+      Map("a" -> a, "b" -> c, "c" -> a, "d" -> b),
+      Map("a" -> a, "b" -> c, "c" -> a, "d" -> c)))
+  }
 }

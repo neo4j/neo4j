@@ -461,4 +461,24 @@ class MarkOptionalNodesTest extends Assertions {
     val newQ1 = q1.copy(matching = Seq(newRelationship))
     assert(result === q.copy(tail = Some(newQ1)))
   }
+
+  @Test def should_handle_two_disconnected_patterns_without_marking_optionals() {
+    // Given
+    // MATCH a-->b WITH a,b MATCH c-->d RETURN *
+
+    val secondPart = Query.
+      matches(RelatedTo("c", "d", "r2", Seq.empty, Direction.OUTGOING)).
+      returns(AllIdentifiers())
+
+    val q = Query.
+      matches(RelatedTo("a", "b", "r1", Seq.empty, Direction.OUTGOING)).
+      tail(secondPart).
+      returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
+
+    // When
+    val result: AbstractQuery = MarkOptionalNodes(q)
+
+    // Then
+    assert(result === q)
+  }
 }
