@@ -42,6 +42,7 @@ import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
@@ -129,10 +130,18 @@ public class UniqueConstraintHaIT
         // then the constraint should be gone, and not be enforced anymore
         for ( HighlyAvailableGraphDatabase clusterMember : cluster.getAllMembers() )
         {
+            System.out.println(clusterMember + " :" + clusterMember.role());
             try ( Transaction tx = clusterMember.beginTx() )
             {
-                assertEquals( count(clusterMember.schema().getConstraints()), equalTo(0));
-                createUser( cluster.getAnySlave(), "Bob" );
+                assertEquals( count(clusterMember.schema().getConstraints()), 0);
+                System.out.println( asCollection(clusterMember.schema().getIndexes()) );
+                assertEquals( count(clusterMember.schema().getIndexes()), 0);
+//                createUser( clusterMember, "Bob" );
+                tx.success();
+            }
+            try ( Transaction tx = clusterMember.beginTx() )
+            {
+                createUser( clusterMember, "Bob" );
                 tx.success();
             }
         }

@@ -143,7 +143,7 @@ public class TransactionWriter
         update( relationship );
     }
 
-    public void createSchema( Collection<DynamicRecord> records ) throws IOException
+    public void createSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> records ) throws IOException
     {
         for ( DynamicRecord record : records )
         {
