@@ -67,7 +67,7 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
     }
   }
 
-  override def toString() = "nullable([" + exp.mkString(",") +"],["  +inner.toString+"])"
+  override def toString = "nullable([" + exp.mkString(",") +"],["  +inner.toString+"])"
   def containsIsNull = inner.containsIsNull
 
   def rewrite(f: (Expression) => Expression) = NullablePredicate(inner.rewrite(f), exp.map {
@@ -94,7 +94,7 @@ object And {
 class And(val a: Predicate, val b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = a.isMatch(m) && b.isMatch(m)
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
-  override def toString(): String = "(" + a + " AND " + b + ")"
+  override def toString: String = "(" + a + " AND " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = And(a.rewrite(f), b.rewrite(f))
 
@@ -116,7 +116,7 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
 
 case class Or(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = a.isMatch(m) || b.isMatch(m)
-  override def toString(): String = "(" + a + " OR " + b + ")"
+  override def toString: String = "(" + a + " OR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = Or(a.rewrite(f), b.rewrite(f))
 
@@ -131,9 +131,9 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 }
 
 case class Not(a: Predicate) extends Predicate {
-  override def atoms: Seq[Predicate] = a.atoms.map(Not(_))
+  override def atoms: Seq[Predicate] = a.atoms.map(Not)
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = !a.isMatch(m)
-  override def toString(): String = "NOT(" + a + ")"
+  override def toString: String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
   def rewrite(f: (Expression) => Expression) = Not(a.rewrite(f))
   def children = Seq(a)
@@ -146,7 +146,7 @@ case class Not(a: Predicate) extends Predicate {
 
 case class Xor(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = (a.isMatch(m) && !b.isMatch(m)) || (!a.isMatch(m) && b.isMatch(m))
-  override def toString(): String = "(" + a + " XOR " + b + ")"
+  override def toString: String = "(" + a + " XOR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = Xor(a.rewrite(f), b.rewrite(f))
 
@@ -212,7 +212,7 @@ case class IsNull(expression: Expression) extends Predicate {
     case _            => false
   }
 
-  override def toString(): String = expression + " IS NULL"
+  override def toString: String = expression + " IS NULL"
   def containsIsNull = true
   def rewrite(f: (Expression) => Expression) = IsNull(expression.rewrite(f))
   def children = Seq(expression)
@@ -224,7 +224,7 @@ case class IsNull(expression: Expression) extends Predicate {
 
 case class True() extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = true
-  override def toString(): String = "true"
+  override def toString: String = "true"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = True()
   def children = Nil
@@ -258,8 +258,10 @@ case class Has(identifier: Expression, propertyKey: KeyToken) extends Predicate 
 case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
   lazy val pattern = regex.v.asInstanceOf[String].r.pattern
   
-  def isMatch(m: ExecutionContext)(implicit state: QueryState) =
-    pattern.matcher(a(m).asInstanceOf[String]).matches()
+  def isMatch(m: ExecutionContext)(implicit state: QueryState) = a(m) match {
+    case v:String => pattern.matcher(v).matches()
+    case _ => false
+  }
 
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
@@ -285,7 +287,7 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
     regularExp.r.pattern.matcher(value).matches()
   }
 
-  override def toString(): String = a.toString() + " ~= /" + regex.toString() + "/"
+  override def toString: String = a.toString() + " ~= /" + regex.toString() + "/"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
     case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)
@@ -310,7 +312,7 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
     }
   }
 
-  override def toString(): String = "nonEmpty(" + collection.toString() + ")"
+  override def toString: String = "nonEmpty(" + collection.toString() + ")"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = NonEmpty(collection.rewrite(f))
   def children = Seq(collection)
@@ -341,7 +343,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with 
       }
   }
 
-  override def toString = s"hasLabel(${entity}:${label})"
+  override def toString = s"hasLabel($entity:$label)"
 
   def rewrite(f: (Expression) => Expression) = HasLabel(entity.rewrite(f), label.typedRewrite[KeyToken](f))
 
