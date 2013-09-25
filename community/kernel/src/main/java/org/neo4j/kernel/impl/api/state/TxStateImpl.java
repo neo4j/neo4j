@@ -159,7 +159,7 @@ public final class TxStateImpl implements TxState
                 @Override
                 public void visitAdded( UniquenessConstraint element )
                 {
-                    visitor.visitAddedConstraint( element, createdConstraintIndexesByConstraint().get( element ) );
+                    visitor.visitAddedConstraint( element );
                 }
 
                 @Override

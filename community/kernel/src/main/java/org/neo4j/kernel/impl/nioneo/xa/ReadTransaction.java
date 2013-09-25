@@ -31,6 +31,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -373,7 +374,7 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public void dropSchemaRule( long id )
+    public void dropSchemaRule( SchemaRule rule )
     {
         throw readOnlyException();
     }
@@ -398,7 +399,7 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public void setConstraintIndexOwner( long constraintIndexId, long constraintId )
+    public void setConstraintIndexOwner( IndexRule constraintIndex, long constraintId )
     {
         throw readOnlyException();
     }

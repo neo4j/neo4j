@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,25 +28,49 @@ import java.util.concurrent.Executors;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.xa.XAException;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.impl.util.TestIndexProviderFactory;
+import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
+import static org.powermock.api.mockito.PowerMockito.mock;
 
 public class UniquenessConstraintCreationIT extends KernelIntegrationTest
 {
+
+    public @Rule
+    TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+
+    public @Rule
+    OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Test
     public void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
@@ -143,5 +169,52 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
                     new PreexistingIndexEntryConflictException( "foo", node1, node2 ) ) ),
                     verificationEx.evidence() );
         }
+    }
+
+    @Test
+    public void shouldNotBlockOtherWritersWhilePopulatingConstraintIndex()
+            throws Exception
+    {
+        // given
+        TestIndexProviderFactory.TestIndexProvider provider = spy(new TestIndexProviderFactory.TestIndexProvider());
+
+        Collection<KernelExtensionFactory<?>> extensions = new ArrayList<>();
+        extensions.add( new TestIndexProviderFactory(provider) );
+
+        final GraphDatabaseAPI gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .addKernelExtensions( extensions )
+                .newEmbeddedDatabase( testDir.absolutePath() );
+
+        IndexPopulator populator = mock(IndexPopulator.class);
+        doAnswer( triggerConcurrentNodeCreation( gdb ) ).when( populator ).create();
+
+        when(provider.getPopulator( anyLong(), any( IndexConfiguration.class) )).thenReturn( populator );
+
+        // when
+        try( Transaction tx = gdb.beginTx() )
+        {
+            gdb.schema().constraintFor( label("User") ).on( "name" ).unique().create();
+            tx.success();
+        }
+
+        // then both the node I created, and the constraint, should be online
+        try( Transaction tx = gdb.beginTx() )
+        {
+            assertThat( count( GlobalGraphOperations.at( gdb ).getAllNodes() ), equalTo(2l));
+            assertThat( count( gdb.schema().getConstraints() ), equalTo(1l));
+        }
+    }
+
+    private Answer triggerConcurrentNodeCreation( final GraphDatabaseAPI gdb )
+    {
+        return new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                otherThread.execute( createNode( gdb, "User", "name", "Bob" ) );
+                return null;
+            }
+        };
     }
 }
