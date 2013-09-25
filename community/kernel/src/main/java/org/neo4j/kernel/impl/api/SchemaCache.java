@@ -19,16 +19,21 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.NestingIterable;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 import static java.util.Collections.unmodifiableCollection;
+import static org.neo4j.helpers.collection.Iterables.filter;
 
 /**
  * A cache of {@link SchemaRule schema rules} as well as enforcement of schema consistency.
@@ -43,6 +48,8 @@ public class SchemaCache
 {
     private final Map<Integer, Map<Long,SchemaRule>> rulesByLabelMap = new HashMap<>();
     private final Map<Long, SchemaRule> ruleByIdMap = new HashMap<>();
+
+    private final Collection<UniquenessConstraint> constraints = new ArrayList<>();
 
     public SchemaCache( Iterable<SchemaRule> initialRules )
     {
@@ -68,7 +75,7 @@ public class SchemaCache
         return rulesForLabel;
     }
 
-    public Iterable<SchemaRule> getSchemaRules()
+    public Iterable<SchemaRule> schemaRules()
     {
         return new NestingIterable<SchemaRule, Map<Long,SchemaRule>>( rulesByLabelMap.values() )
         {
@@ -80,17 +87,53 @@ public class SchemaCache
         };
     }
 
-    public Collection<SchemaRule> getSchemaRulesForLabel( int label )
+    public Collection<SchemaRule> schemaRulesForLabel( int label )
     {
         Map<Long,SchemaRule> rulesForLabel = rulesByLabelMap.get( label );
         return rulesForLabel != null ? unmodifiableCollection( rulesForLabel.values() ) :
             Collections.<SchemaRule>emptyList();
     }
 
+    public Iterator<UniquenessConstraint> constraints()
+    {
+        return constraints.iterator();
+    }
+
+    public Iterator<UniquenessConstraint> constraintsForLabel( final int label )
+    {
+        return filter( new Predicate<UniquenessConstraint>()
+        {
+            @Override
+            public boolean accept( UniquenessConstraint item )
+            {
+                return item.label() == label;
+            }
+        }, constraints.iterator() );
+    }
+
+    public Iterator<UniquenessConstraint> constraintsForLabelAndProperty( final int label, final int property )
+    {
+        return filter( new Predicate<UniquenessConstraint>()
+        {
+            @Override
+            public boolean accept( UniquenessConstraint item )
+            {
+                return item.label() == label && item.propertyKeyId() == property;
+            }
+        }, constraints.iterator() );
+    }
+
     public void addSchemaRule( SchemaRule rule )
     {
         getOrCreateSchemaRulesMapForLabel( rule.getLabel() ).put( rule.getId(), rule );
         ruleByIdMap.put( rule.getId(), rule );
+
+        // Note: If you start adding more unmarshalling of other types of things here,
+        // make this into a more generic thing rather than adding more branch statement.
+        if( rule instanceof UniquenessConstraintRule )
+        {
+            constraints.add( ruleToConstraint( (UniquenessConstraintRule) rule ) );
+        }
     }
 
     public void removeSchemaRule( long id )
@@ -107,5 +150,15 @@ public class SchemaCache
         {
             rulesByLabelMap.remove( labelId );
         }
+
+        if( rule instanceof UniquenessConstraintRule )
+        {
+            constraints.remove( ruleToConstraint( (UniquenessConstraintRule)rule ) );
+        }
+    }
+
+    private UniquenessConstraint ruleToConstraint( UniquenessConstraintRule constraintRule )
+    {
+        return new UniquenessConstraint( constraintRule.getLabel(), constraintRule.getPropertyKey() );
     }
 }

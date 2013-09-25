@@ -499,12 +499,14 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord schema = new DynamicRecord( next.schema() );
+                DynamicRecord schemaBefore = schema.clone();
+
                 schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
                 IndexRule rule = IndexRule.indexRule( 1, 1, 1,
                         new SchemaIndexProvider.Descriptor( "in-memory", "1.0" ) );
                 schema.setData( new RecordSerializer().append( rule ).serialize() );
 
-                tx.createSchema( asList( schema ) );
+                tx.createSchema( asList(schemaBefore), asList( schema ) );
             }
         } );
 
@@ -532,6 +534,8 @@ public class FullCheckIntegrationTest
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );
                 DynamicRecord record2 = new DynamicRecord( ruleId2 );
+                DynamicRecord record1Before = record1.clone();
+                DynamicRecord record2Before = record2.clone();
 
                 SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
 
@@ -548,8 +552,8 @@ public class FullCheckIntegrationTest
                 tx.nodeLabel( labelId, "label" );
                 tx.propertyKey( propertyKeyId, "property" );
 
-                tx.createSchema( records1 );
-                tx.createSchema( records2 );
+                tx.createSchema( asList(record1Before), records1 );
+                tx.createSchema( asList(record2Before), records2 );
             }
         } );
 
@@ -577,6 +581,8 @@ public class FullCheckIntegrationTest
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );
                 DynamicRecord record2 = new DynamicRecord( ruleId2 );
+                DynamicRecord record1Before = record1.clone();
+                DynamicRecord record2Before = record2.clone();
 
                 SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
 
@@ -593,8 +599,8 @@ public class FullCheckIntegrationTest
                 tx.nodeLabel( labelId, "label" );
                 tx.propertyKey( propertyKeyId, "property" );
 
-                tx.createSchema( records1 );
-                tx.createSchema( records2 );
+                tx.createSchema( asList(record1Before), records1 );
+                tx.createSchema( asList(record2Before), records2 );
             }
         } );
 

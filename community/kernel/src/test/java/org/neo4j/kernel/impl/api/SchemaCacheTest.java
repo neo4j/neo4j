@@ -22,16 +22,15 @@ package org.neo4j.kernel.impl.api;
 import java.util.Collection;
 
 import org.junit.Test;
-
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
 
 public class SchemaCacheTest
 {
@@ -47,9 +46,9 @@ public class SchemaCacheTest
         SchemaCache cache = new SchemaCache( rules );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRulesForLabel( 0 ) ) );
-        assertEquals( asSet( witch ), asSet( cache.getSchemaRulesForLabel( 3 ) ) );
-        assertEquals( asSet( rules ), asSet( cache.getSchemaRules() ) );
+        assertEquals( asSet( hans, gretel ), asSet( cache.schemaRulesForLabel( 0 ) ) );
+        assertEquals( asSet( witch ), asSet( cache.schemaRulesForLabel( 3 ) ) );
+        assertEquals( asSet( rules ), asSet( cache.schemaRules() ) );
     }
 
     @Test
@@ -63,7 +62,7 @@ public class SchemaCacheTest
         cache.addSchemaRule( gretel );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRulesForLabel( 0 ) ) );
+        assertEquals( asSet( hans, gretel ), asSet( cache.schemaRulesForLabel( 0 ) ) );
     }
 
     @Test
@@ -78,7 +77,63 @@ public class SchemaCacheTest
         cache.addSchemaRule( gretel );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRules( ) ) );
+        assertEquals( asSet( hans, gretel ), asSet( cache.schemaRules() ) );
+    }
+
+    @Test
+    public void should_list_constraints()
+    {
+        // GIVEN
+        Collection<SchemaRule> rules = asList();
+        SchemaCache cache = new SchemaCache( rules );
+
+        // WHEN
+        cache.addSchemaRule( uniquenessConstraintRule( 0l, 1, 2, 133l ) );
+        cache.addSchemaRule( uniquenessConstraintRule( 1l, 3, 4, 133l ) );
+
+        // THEN
+        assertEquals(
+                asSet( new UniquenessConstraint( 1, 2 ), new UniquenessConstraint( 3, 4 ) ),
+                asSet( cache.constraints() ) );
+
+        assertEquals(
+                asSet( new UniquenessConstraint( 1, 2 ) ),
+                asSet( cache.constraintsForLabel( 1 ) ) );
+
+        assertEquals(
+                asSet( new UniquenessConstraint( 1, 2 ) ),
+                asSet( cache.constraintsForLabelAndProperty( 1, 2 ) ) );
+
+        assertEquals(
+                asSet( ),
+                asSet( cache.constraintsForLabelAndProperty( 1, 3 ) ) );
+    }
+
+    @Test
+    public void should_remove_constraints()
+    {
+        // GIVEN
+        Collection<SchemaRule> rules = asList();
+        SchemaCache cache = new SchemaCache( rules );
+
+        cache.addSchemaRule( uniquenessConstraintRule( 0l, 1, 2, 133l ) );
+        cache.addSchemaRule( uniquenessConstraintRule( 1l, 3, 4, 133l ) );
+
+        // WHEN
+        cache.removeSchemaRule( 0l );
+
+        // THEN
+        assertEquals(
+                asSet( new UniquenessConstraint( 3, 4 ) ),
+                asSet( cache.constraints() ) );
+
+        assertEquals(
+                asSet(  ),
+                asSet( cache.constraintsForLabel( 1 )) );
+
+        assertEquals(
+                asSet(  ),
+                asSet( cache.constraintsForLabelAndProperty( 1, 2 ) ) );
     }
 
     private IndexRule newIndexRule( long id, int label, int propertyKey )

@@ -143,22 +143,22 @@ public class TransactionWriter
         update( relationship );
     }
 
-    public void createSchema( Collection<DynamicRecord> records ) throws IOException
+    public void createSchema( Collection<DynamicRecord> beforeRecord, Collection<DynamicRecord> afterRecord ) throws IOException
     {
-        for ( DynamicRecord record : records )
+        for ( DynamicRecord record : afterRecord )
         {
             record.setCreated();
         }
-        updateSchema( records );
+        updateSchema( beforeRecord, afterRecord );
     }
 
-    public void updateSchema( Collection<DynamicRecord> records ) throws IOException
+    public void updateSchema(Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords) throws IOException
     {
-        for ( DynamicRecord record : records )
+        for ( DynamicRecord record : afterRecords )
         {
             record.setInUse( true );
         }
-        addSchema( records );
+        addSchema( beforeRecords, afterRecords );
     }
 
     public void update( RelationshipRecord relationship ) throws IOException
@@ -184,23 +184,23 @@ public class TransactionWriter
         update( before, property );
     }
 
-    public void update( PropertyRecord before, PropertyRecord property ) throws IOException
+    public void update( PropertyRecord before, PropertyRecord after ) throws IOException
     {
-        property.setInUse( true );
-        add( before, property );
+        after.setInUse(true);
+        add( before, after );
     }
 
-    public void delete( PropertyRecord before, PropertyRecord property ) throws IOException
+    public void delete( PropertyRecord before, PropertyRecord after ) throws IOException
     {
-        property.setInUse( false );
-        add( before, property );
+        after.setInUse(false);
+        add( before, after );
     }
 
     // Internals
 
-    private void addSchema( Collection<DynamicRecord> records ) throws IOException
+    private void addSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords ) throws IOException
     {
-        write( new Command.SchemaRuleCommand( null, null, null, records, null, Long.MAX_VALUE ) );
+        write( new Command.SchemaRuleCommand( null, null, null, beforeRecords, afterRecords, null, Long.MAX_VALUE ) );
     }
 
     public void add( NodeRecord before, NodeRecord after ) throws IOException

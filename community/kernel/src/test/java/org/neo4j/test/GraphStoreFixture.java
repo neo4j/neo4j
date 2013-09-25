@@ -155,11 +155,11 @@ public abstract class GraphStoreFixture implements TestRule
             this.writer = writer;
         }
 
-        public void createSchema( Collection<DynamicRecord> records )
+        public void createSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords )
         {
             try
             {
-                writer.createSchema( records );
+                writer.createSchema( beforeRecords, afterRecords );
             }
             catch ( IOException e )
             {

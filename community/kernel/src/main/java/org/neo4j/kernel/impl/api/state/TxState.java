@@ -114,7 +114,7 @@ public interface TxState
 
         void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex );
 
-        void visitAddedConstraint( UniquenessConstraint element, long indexId );
+        void visitAddedConstraint( UniquenessConstraint element );
 
         void visitRemovedConstraint( UniquenessConstraint element );
     }
