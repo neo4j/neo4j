@@ -23,26 +23,25 @@ import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap
 
 class LRUCache[K, V](cacheSize: Int) {
 
-  class LazyValue(f: => V) {
-    lazy val value = f
-  }
-
-  val inner = new ConcurrentLinkedHashMap.Builder[K, LazyValue]
+  val inner = new ConcurrentLinkedHashMap.Builder[K, V]
     .maximumWeightedCapacity(cacheSize)
     .build()
 
   def getOrElseUpdate(key: K, f: => V): V = {
-    val oldValue = inner.putIfAbsent(key, new LazyValue(f))
-    if (oldValue == null) {
-      f
+    val value = inner.get(key)
+
+    if(value==null) {
+      val createdValue = f
+      val oldValue = Option(inner.putIfAbsent(key, createdValue))
+      oldValue.getOrElse(createdValue)
     } else {
-      oldValue.value
+      value
     }
   }
 
-  def get(key: K): Option[V] = Option(inner.get(key).value)
+  def get(key: K): Option[V] = Option(inner.get(key))
 
-  def put(key: K, value: V) = inner.put(key, new LazyValue(value))
+  def put(key: K, value: V) = inner.put(key, value)
 
   def containsKey(key: K) = inner.containsKey(key)
 }
