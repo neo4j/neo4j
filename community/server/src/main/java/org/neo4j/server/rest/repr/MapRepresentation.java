@@ -57,6 +57,10 @@ public class MapRepresentation extends MappingRepresentation
                         val ) );
             }
             //default
+            else if (val == null)
+            {
+                serializer.putString( key.toString(), null );
+            }
             else
             {
                 serializer.putString( key.toString(), val.toString() );

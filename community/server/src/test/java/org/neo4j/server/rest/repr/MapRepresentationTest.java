@@ -19,26 +19,24 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.assertTrue;
-
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class MapRepresentationTest
 {
     @Test
     public void shouldHaveKeys() throws BadInputException, URISyntaxException
     {
-        Map map = MapUtil.map( "name","John","age",23 );
-        MapRepresentation rep = new MapRepresentation( map  );
+        MapRepresentation rep = new MapRepresentation( map( "name", "John", "age", 23, "hobby", null ) );
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
-        assertTrue(format.assemble( rep ).contains( "\"age\" : 23" ));
+        String assemble = format.assemble( rep );
+        assertTrue( assemble.contains( "\"age\" : 23" ) );
+        assertTrue( assemble.contains( "\"hobby\" : null" ) );
     }
-
-
 }
