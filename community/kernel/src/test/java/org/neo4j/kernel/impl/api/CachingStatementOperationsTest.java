@@ -19,41 +19,85 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import java.util.Set;
 
+import org.junit.Test;
 import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import static org.mockito.Mockito.*;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
 public class CachingStatementOperationsTest
 {
+    private final EntityReadOperations entityReadOperations = mock( EntityReadOperations.class );
+    private final SchemaReadOperations schemaReadOperations = mock( SchemaReadOperations.class );
+    private final PersistenceCache persistenceCache = mock( PersistenceCache.class );
+
+    private final SchemaCache schemaCache = mock( SchemaCache.class );
+
+    private final CachingStatementOperations context = new CachingStatementOperations(
+            entityReadOperations, schemaReadOperations, persistenceCache, schemaCache );
+
     @Test
     public void shouldGetCachedLabelsIfCached() throws EntityNotFoundException
     {
         // GIVEN
         long nodeId = 3;
         int[] labels = new int[] {1, 2, 3};
-        PersistenceCache cache = mock( PersistenceCache.class );
-        when( cache.nodeGetLabels( any( KernelStatement.class ), eq( nodeId ), any( CacheLoader.class ) ) ).thenReturn( labels );
-        EntityReadOperations entityReadOperations = mock( EntityReadOperations.class );
-        SchemaReadOperations schemaReadOperations = mock( SchemaReadOperations.class );
-        CachingStatementOperations context = new CachingStatementOperations(
-                entityReadOperations, schemaReadOperations, cache, null );
+        when( persistenceCache.nodeGetLabels( any( KernelStatement.class ), eq( nodeId ), any( CacheLoader.class ) ) )
+                .thenReturn( labels );
 
         // WHEN
         PrimitiveIntIterator receivedLabels = context.nodeGetLabels( mockedState(), nodeId );
 
         // THEN
         assertArrayEquals( labels, primitiveIntIteratorToIntArray( receivedLabels ) );
+    }
+
+    @Test
+    public void shouldLoadAllConstraintsFromCache() throws Exception
+    {
+        // Given
+        Set<UniquenessConstraint> constraints = asSet( new UniquenessConstraint( 0, 1 ) );
+        when(schemaCache.constraints()).thenReturn( constraints.iterator() );
+
+        // When & Then
+        assertThat( asSet( context.constraintsGetAll( mockedState() ) ), equalTo( constraints ) );
+    }
+
+    @Test
+    public void shouldLoadConstraintsByLabelFromCache() throws Exception
+    {
+        // Given
+        int labelId =  0;
+        Set<UniquenessConstraint> constraints = asSet( new UniquenessConstraint( labelId, 1 ) );
+        when(schemaCache.constraintsForLabel(labelId)).thenReturn( constraints.iterator() );
+
+        // When & Then
+        assertThat( asSet( context.constraintsGetForLabel( mockedState(), labelId ) ), equalTo( constraints ) );
+    }
+
+    @Test
+    public void shouldLoadConstraintsByLabelAndPropertyFromCache() throws Exception
+    {
+        // Given
+        int labelId = 0, propertyId = 1;
+        Set<UniquenessConstraint> constraints = asSet( new UniquenessConstraint( labelId, propertyId ) );
+        when(schemaCache.constraintsForLabelAndProperty(labelId, propertyId)).thenReturn( constraints.iterator() );
+
+        // When & Then
+        assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( mockedState(), labelId, propertyId ) ),
+                equalTo( constraints ) );
     }
 }

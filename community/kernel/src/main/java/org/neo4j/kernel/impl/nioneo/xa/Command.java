@@ -1158,19 +1158,22 @@ public abstract class Command extends XaCommand
         private final NeoStore neoStore;
         private final IndexingService indexes;
         private final SchemaStore store;
-        private final Collection<DynamicRecord> records;
+        private final Collection<DynamicRecord> recordsBefore;
+        private final Collection<DynamicRecord> recordsAfter;
         private final SchemaRule schemaRule;
 
         private long txId;
 
         SchemaRuleCommand( NeoStore neoStore, SchemaStore store, IndexingService indexes,
-                           Collection<DynamicRecord> records, SchemaRule schemaRule, long txId )
+                           Collection<DynamicRecord> recordsBefore, Collection<DynamicRecord> recordsAfter,
+                           SchemaRule schemaRule, long txId )
         {
-            super( first( records ).getId(), Mode.fromRecordState( first( records ) ) );
+            super( first( recordsAfter ).getId(), Mode.fromRecordState( first( recordsAfter ) ) );
             this.neoStore = neoStore;
             this.indexes = indexes;
             this.store = store;
-            this.records = records;
+            this.recordsBefore = recordsBefore;
+            this.recordsAfter = recordsAfter;
             this.schemaRule = schemaRule;
             this.txId = txId;
         }
@@ -1178,13 +1181,13 @@ public abstract class Command extends XaCommand
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
-            visitor.visitSchemaRule( records );
+            visitor.visitSchemaRule( recordsAfter );
         }
 
         @Override
         public String toString()
         {
-            return "SchemaRule" + records;
+            return "SchemaRule" + recordsAfter;
         }
 
         @Override
@@ -1193,15 +1196,15 @@ public abstract class Command extends XaCommand
             cacheAccess.removeSchemaRuleFromCache( getKey() );
         }
         
-        Collection<DynamicRecord> getRecords()
+        Collection<DynamicRecord> getRecordsAfter()
         {
-            return unmodifiableCollection( records );
+            return unmodifiableCollection( recordsAfter );
         }
 
         @Override
         public void execute()
         {
-            for ( DynamicRecord record : records )
+            for ( DynamicRecord record : recordsAfter )
                 store.updateRecord( record );
 
             if ( schemaRule instanceof IndexRule )
@@ -1255,8 +1258,9 @@ public abstract class Command extends XaCommand
         public void writeToFile( LogBuffer buffer ) throws IOException
         {
             buffer.put( SCHEMA_RULE_COMMAND );
-            writeDynamicRecords( buffer, records );
-            buffer.put( first( records ).isCreated() ? (byte) 1 : 0);
+            writeDynamicRecords( buffer, recordsBefore );
+            writeDynamicRecords( buffer, recordsAfter );
+            buffer.put( first( recordsAfter ).isCreated() ? (byte) 1 : 0);
             buffer.putLong( txId );
         }
         
@@ -1278,8 +1282,11 @@ public abstract class Command extends XaCommand
         static Command readFromFile( NeoStore neoStore, IndexingService indexes, ReadableByteChannel byteChannel,
                 ByteBuffer buffer ) throws IOException
         {
-            Collection<DynamicRecord> records = new ArrayList<>();
-            readDynamicRecords( byteChannel, buffer, records, COLLECTION_DYNAMIC_RECORD_ADDER );
+            Collection<DynamicRecord> recordsBefore = new ArrayList<>();
+            readDynamicRecords( byteChannel, buffer, recordsBefore, COLLECTION_DYNAMIC_RECORD_ADDER );
+
+            Collection<DynamicRecord> recordsAfter = new ArrayList<>();
+            readDynamicRecords( byteChannel, buffer, recordsAfter, COLLECTION_DYNAMIC_RECORD_ADDER );
 
             if ( !readAndFlip( byteChannel, buffer, 1 ) )
                 throw new IllegalStateException( "Missing SchemaRule.isCreated flag in deserialization" );
@@ -1287,7 +1294,7 @@ public abstract class Command extends XaCommand
             byte isCreated = buffer.get();
             if ( 1 == isCreated )
             {
-                for ( DynamicRecord record : records )
+                for ( DynamicRecord record : recordsAfter )
                 {
                     record.setCreated();
                 }
@@ -1298,23 +1305,30 @@ public abstract class Command extends XaCommand
 
             long txId = buffer.getLong();
 
-            SchemaRule rule = null;
-            if ( first( records ).inUse() )
-            {
-                ByteBuffer deserialized = AbstractDynamicStore.concatData( records, new byte[100] );
-                try
-                {
-                    rule = SchemaRule.Kind.deserialize( first( records ).getId(), deserialized );
-                }
-                catch ( MalformedSchemaRuleException e )
-                {
-                    // TODO This is bad. We should probably just shut down if that happens
-                    throw launderedException( e );
-                }
-            }
+            SchemaRule rule = first( recordsAfter ).inUse() ?
+                    readSchemaRule( recordsAfter ) :
+                    readSchemaRule( recordsBefore );
 
             return new SchemaRuleCommand( neoStore, neoStore != null ? neoStore.getSchemaStore() : null,
-                    indexes, records, rule, txId );
+                    indexes, recordsBefore, recordsAfter, rule, txId );
+        }
+
+        private static SchemaRule readSchemaRule( Collection<DynamicRecord> recordsBefore )
+        {
+            assert first(recordsBefore).inUse() : "Asked to deserialize schema records that were not in use.";
+
+            SchemaRule rule;
+            ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
+            try
+            {
+                rule = SchemaRule.Kind.deserialize( first( recordsBefore ).getId(), deserialized );
+            }
+            catch ( MalformedSchemaRuleException e )
+            {
+                // TODO This is bad. We should probably just shut down if that happens
+                throw launderedException( e );
+            }
+            return rule;
         }
     }
     

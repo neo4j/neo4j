@@ -511,7 +511,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                         {
                             IndexRule rule = schemaStorage
                                     .indexRule( element.getLabelId(), element.getPropertyKeyId() );
-                            persistenceManager.dropSchemaRule( rule.getId() );
+                            persistenceManager.dropSchemaRule( rule );
                         }
                         catch ( SchemaRuleNotFoundException e )
                         {
@@ -523,22 +523,24 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     }
 
                     @Override
-                    public void visitAddedConstraint( UniquenessConstraint element, long indexId )
+                    public void visitAddedConstraint( UniquenessConstraint element )
                     {
-//                        try
-//                        {
-//                            constraintIndexCreator.validateConstraintIndex( element, indexId );
-//                        }
-//                        catch ( CreateConstraintFailureException e )
-//                        {
-//                            // TODO: Revisit decision to rethrow as RuntimeException.
-//                            throw new ConstraintCreationException( e );
-//                        }
                         clearState.set( true );
                         long constraintId = schemaStorage.newRuleId();
+                        IndexRule indexRule;
+                        try
+                        {
+                            indexRule = schemaStorage.indexRule( element.label(), element.propertyKeyId() );
+                        }
+                        catch ( SchemaRuleNotFoundException e )
+                        {
+                            throw new ThisShouldNotHappenError(
+                                    "Jacob Hansson",
+                                    "Index is always created for the constraint before this point.");
+                        }
                         persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
-                                constraintId, element.label(), element.propertyKeyId(), indexId ) );
-                        persistenceManager.setConstraintIndexOwner( indexId, constraintId );
+                                constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
+                        persistenceManager.setConstraintIndexOwner( indexRule, constraintId );
                     }
 
                     @Override
@@ -549,7 +551,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                             clearState.set( true );
                             UniquenessConstraintRule rule = schemaStorage
                                     .uniquenessConstraint( element.label(), element.propertyKeyId() );
-                            persistenceManager.dropSchemaRule( rule.getId() );
+                            persistenceManager.dropSchemaRule( rule );
                         }
                         catch ( SchemaRuleNotFoundException e )
                         {

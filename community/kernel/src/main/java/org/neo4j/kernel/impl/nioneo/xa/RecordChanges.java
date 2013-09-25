@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 
 /**
  * Manages changes to records in a transaction. Before/after state is supported as well as
@@ -39,10 +38,9 @@ import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
  * @param <RECORD>
  * @param <ADDITIONAL>
  */
-public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
+public class RecordChanges<KEY,RECORD,ADDITIONAL>
 {
-    private final Map<KEY, RecordChange<KEY,RECORD,ADDITIONAL>> recordChanges =
-            new HashMap<KEY,RecordChange<KEY,RECORD,ADDITIONAL>>();
+    private final Map<KEY, RecordChange<KEY,RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
     private final Loader<KEY,RECORD,ADDITIONAL> loader;
     private final boolean manageBeforeState;
 
@@ -62,8 +60,8 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
         RecordChange<KEY,RECORD,ADDITIONAL> result = recordChanges.get( key );
         if ( result == null )
         {
-            result = new RecordChange<KEY,RECORD,ADDITIONAL>( recordChanges, key,
-                    loader.load( key, additionalData ), loader, manageBeforeState, false );
+            result = new RecordChange<>( recordChanges, key,
+                    loader.load( key, additionalData ), loader, manageBeforeState, false, additionalData );
         }
         return result;
     }
@@ -85,8 +83,8 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
             throw new IllegalStateException( key + " already exists" );
         
         RECORD record = loader.newUnused( key, additionalData );
-        RecordChange<KEY, RECORD, ADDITIONAL> change = new RecordChange<KEY,RECORD,ADDITIONAL>(
-                recordChanges, key, record, loader, manageBeforeState, true );
+        RecordChange<KEY, RECORD, ADDITIONAL> change = new RecordChange<>(
+                recordChanges, key, record, loader, manageBeforeState, true, additionalData);
         recordChanges.put( key, change );
         return change;
     }
@@ -103,9 +101,10 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
         }, recordChanges.values() );
     }
     
-    public static class RecordChange<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
+    public static class RecordChange<KEY,RECORD,ADDITIONAL>
     {
         private final Map<KEY, RecordChange<KEY, RECORD, ADDITIONAL>> allChanges;
+        private final ADDITIONAL additionalData;
         private RECORD before;
         private final RECORD record;
         private final Loader<KEY,RECORD,ADDITIONAL> loader;
@@ -114,8 +113,8 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
         private final KEY key;
         private final boolean manageBeforeState;
 
-        public RecordChange( Map<KEY, RecordChange<KEY,RECORD,ADDITIONAL>> allChanges, KEY key, RECORD record,
-                Loader<KEY,RECORD,ADDITIONAL> loader, boolean manageBeforeState, boolean created )
+        public RecordChange(Map<KEY, RecordChange<KEY, RECORD, ADDITIONAL>> allChanges, KEY key, RECORD record,
+                            Loader<KEY, RECORD, ADDITIONAL> loader, boolean manageBeforeState, boolean created, ADDITIONAL additionalData)
         {
             this.allChanges = allChanges;
             this.key = key;
@@ -123,6 +122,7 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
             this.loader = loader;
             this.manageBeforeState = manageBeforeState;
             this.created = created;
+            this.additionalData = additionalData;
         }
         
         KEY getKey()
@@ -191,7 +191,7 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
         {
             if ( manageBeforeState && this.before == null )
             {
-                this.before = (RECORD) record.clone();
+                this.before = loader.clone( record );
             }
         }
 
@@ -199,14 +199,20 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
         {
             return created;
         }
+
+        public ADDITIONAL getAdditionalData() {
+            return additionalData;
+        }
     }
     
-    public interface Loader<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
+    public interface Loader<KEY,RECORD,ADDITIONAL>
     {
         RECORD newUnused( KEY key, ADDITIONAL additionalData );
         
         RECORD load( KEY key, ADDITIONAL additionalData );
         
         void ensureHeavy( RECORD record );
+
+        RECORD clone( RECORD record );
     }
 }
