@@ -142,26 +142,26 @@ public class CachingStatementOperations implements
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
     {
-        return toIndexDescriptors( schemaCache.getSchemaRulesForLabel( labelId ), SchemaRule.Kind.INDEX_RULE );
+        return toIndexDescriptors( schemaCache.schemaRulesForLabel( labelId ), SchemaRule.Kind.INDEX_RULE );
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetAll( KernelStatement state )
     {
-        return toIndexDescriptors( schemaCache.getSchemaRules(), SchemaRule.Kind.INDEX_RULE );
+        return toIndexDescriptors( schemaCache.schemaRules(), SchemaRule.Kind.INDEX_RULE );
     }
 
     @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, int labelId )
     {
-        return toIndexDescriptors( schemaCache.getSchemaRulesForLabel( labelId ),
+        return toIndexDescriptors( schemaCache.schemaRulesForLabel( labelId ),
                 SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
     }
 
     @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetAll( KernelStatement state )
     {
-        return toIndexDescriptors( schemaCache.getSchemaRules(), SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
+        return toIndexDescriptors( schemaCache.schemaRules(), SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
     }
 
     private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<SchemaRule> rules,
@@ -203,7 +203,7 @@ public class CachingStatementOperations implements
 
     private IndexRule indexRule( IndexDescriptor index )
     {
-        for ( SchemaRule rule : schemaCache.getSchemaRulesForLabel( index.getLabelId() ) )
+        for ( SchemaRule rule : schemaCache.schemaRulesForLabel( index.getLabelId() ) )
         {
             if ( rule instanceof IndexRule )
             {
@@ -275,6 +275,25 @@ public class CachingStatementOperations implements
         return persistenceCache.graphGetProperties( state, graphPropertyLoader );
     }
 
+    @Override
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey(
+            KernelStatement state, int labelId, int propertyKeyId )
+    {
+        return schemaCache.constraintsForLabelAndProperty( labelId, propertyKeyId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
+    {
+        return schemaCache.constraintsForLabel( labelId );
+    }
+
+    @Override
+    public Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state )
+    {
+        return schemaCache.constraints();
+    }
+
     // === TODO Below is unnecessary delegation methods
 
     @Override
@@ -309,25 +328,6 @@ public class CachingStatementOperations implements
             throws IndexNotFoundKernelException
     {
         return schemaReadDelegate.indexGetState( state, descriptor );
-    }
-
-    @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey(
-            KernelStatement state, int labelId, int propertyKeyId )
-    {
-        return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
-    }
-
-    @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
-    {
-        return schemaReadDelegate.constraintsGetForLabel( state, labelId );
-    }
-
-    @Override
-    public Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state )
-    {
-        return schemaReadDelegate.constraintsGetAll( state );
     }
 
     // === TODO Below is unnecessary delegate methods

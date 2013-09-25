@@ -401,7 +401,7 @@ public class BatchInserterImpl implements BatchInserter
     private IndexRule[] getIndexesNeedingPopulation()
     {
         List<IndexRule> indexesNeedingPopulation = new ArrayList<>();
-        for ( SchemaRule rule : schemaCache.getSchemaRules() )
+        for ( SchemaRule rule : schemaCache.schemaRules() )
         {
             if ( rule.getKind().isIndex() )
             {
