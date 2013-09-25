@@ -127,12 +127,12 @@ public class AppCommandParser
         for ( int i = 0; i < parsed.length; i++ )
         {
             String string = parsed[i];
-            if ( isMultiCharOption( string ) )
+            if ( app.takesOptions() && isMultiCharOption( string ) )
             {
                 String name = string.substring( 2 );
                 i = fetchArguments( parsed, i, name );
             }
-            else if ( this.isSingleCharOption( string ) )
+            else if ( app.takesOptions() && isSingleCharOption( string ) )
             {
                 String options = string.substring( 1 );
                 for ( int o = 0; o < options.length(); o++ )

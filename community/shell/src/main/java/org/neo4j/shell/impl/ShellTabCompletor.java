@@ -29,6 +29,11 @@ import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.TabCompletion;
 
+@SuppressWarnings("UnusedDeclaration")
+/**
+ * This class is instantiated by reflection (in {@link JLineConsole#newConsoleOrNullIfNotFound}) in order to ensure
+ * that there is no hard dependency on jLine and the console can run in degraded form without it.
+ */
 class ShellTabCompletor implements Completor
 {
     private final ShellClient client;
@@ -54,6 +59,7 @@ class ShellTabCompletor implements Completor
             {
                 TabCompletion completion = client.getServer().tabComplete( client.getId(), buffer.trim() );
                 cursor = completion.getCursor();
+                //noinspection unchecked
                 candidates.addAll( completion.getCandidates() );
             }
             else
