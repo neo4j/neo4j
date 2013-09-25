@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,13 +55,13 @@ public class LabelScanStoreHaIT
         // It can be higher than 3 (number of cluster members) since some members may restart
         // some services to switch role.
         assertTrue( monitor.callsTo_init >= 3 );
-        
+
         // GIVEN
         // An HA cluster where the master started with initial data consisting
         // of a couple of nodes, each having one or more properties.
         // The cluster starting up should have the slaves copy their stores from the master
         // and get the label scan store with it.
-        
+
         // THEN
         assertEquals( "Expected noone to build their label scan store index.",
                 0, monitor.timesRebuiltWithData );
@@ -70,7 +71,7 @@ public class LabelScanStoreHaIT
             assertEquals( 2, numberOfNodesHavingLabel( db, Labels.First ) );
         }
     }
-    
+
     private int numberOfNodesHavingLabel( GraphDatabaseService db, Label label )
     {
         try ( Transaction tx = db.beginTx() )
@@ -98,13 +99,13 @@ public class LabelScanStoreHaIT
         First,
         Second;
     }
-    
+
     private final File rootDirectory = TargetDirectory.forTest( getClass() ).directory( "root", true );
     private ClusterManager clusterManager;
     private final LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;
     private final TestMonitor monitor = new TestMonitor();
-    
+
     @Before
     public void setup()
     {
@@ -141,26 +142,31 @@ public class LabelScanStoreHaIT
         cluster = clusterManager.getDefaultCluster();
         cluster.await( allSeesAllAsAvailable() );
     }
-    
+
     @After
     public void teardown()
     {
         life.shutdown();
     }
-    
+
     private static class TestMonitor implements LuceneLabelScanStore.Monitor
     {
         private volatile int callsTo_init;
         private volatile int timesRebuiltWithData;
-        
+
         @Override
         public void init()
         {
             callsTo_init++;
         }
-        
+
         @Override
         public void noIndex()
+        {
+        }
+
+        @Override
+        public void lockedIndex( LockObtainFailedException e )
         {
         }
 

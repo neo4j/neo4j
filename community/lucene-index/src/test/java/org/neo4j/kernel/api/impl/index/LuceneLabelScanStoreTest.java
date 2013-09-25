@@ -30,9 +30,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -43,9 +45,13 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
@@ -294,7 +300,7 @@ public class LuceneLabelScanStoreTest
 
     private static class TrackingMonitor implements LuceneLabelScanStore.Monitor
     {
-        boolean initCalled, rebuildingCalled, rebuiltCalled, noIndexCalled, corruptIndexCalled;
+        boolean initCalled, rebuildingCalled, rebuiltCalled, noIndexCalled;
 
         @Override
         public void noIndex()
@@ -303,9 +309,13 @@ public class LuceneLabelScanStoreTest
         }
 
         @Override
+        public void lockedIndex( LockObtainFailedException e )
+        {
+        }
+
+        @Override
         public void corruptIndex( IOException corruptionException )
         {
-            corruptIndexCalled = true;
         }
 
         @Override
