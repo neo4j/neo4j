@@ -197,7 +197,8 @@ The Neo4j Team""")
       new IndexLookupBuilder,
       new StartPointChoosingBuilder,
       new PredicateRewriter,
-      new KeyTokenResolver
+      new KeyTokenResolver,
+      new MergeStartPointBuilder
     )
   }
 

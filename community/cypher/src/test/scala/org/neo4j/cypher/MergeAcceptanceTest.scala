@@ -369,4 +369,15 @@ class MergeAcceptanceTest
     // then
     assert(2 === countNodes())
   }
+
+  @Test
+  def should_handle_running_merge_inside_a_foreach_loop() {
+    // given an empty database
+
+    // when
+    val result = parseAndExecute("foreach(x in [1,2,3] | merge ({property: x}))")
+
+    // then
+    assertStats(result, nodesCreated = 3, propertiesSet = 3)
+  }
 }
