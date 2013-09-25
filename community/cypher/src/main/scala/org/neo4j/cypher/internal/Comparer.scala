@@ -22,15 +22,17 @@ package org.neo4j.cypher.internal
 import java.math.BigDecimal
 import java.lang.Character
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.commands.expressions.StringHelper
+import org.neo4j.cypher.internal.pipes.QueryState
 
 /**
  * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
  */
-trait Comparer {
+trait Comparer extends StringHelper {
   private def compareValuesOfSameType(l: AnyRef, r: AnyRef): Int =
     l.asInstanceOf[Comparable[AnyRef]].compareTo(r)
 
-  private def compareValuesOfDifferentTypes(l: Any, r: Any): Int = (l, r) match {
+  private def compareValuesOfDifferentTypes(l: Any, r: Any)(implicit qtx: QueryState): Int = (l, r) match {
     case (left: Long, right: Number) => BigDecimal.valueOf(left).compareTo(BigDecimal.valueOf(right.doubleValue()))
     case (left: Number, right: Long) => BigDecimal.valueOf(left.doubleValue()).compareTo(BigDecimal.valueOf(right))
     case (left: Number, right: Number) => java.lang.Double.compare(left.doubleValue(), right.doubleValue())
@@ -40,18 +42,15 @@ trait Comparer {
     case (null, _) => 1
     case (_, null) => -1
     case (left, right) => {
-      throw new SyntaxException(s"Don't know how to compare that. Left: $left; Right: $right")
+      def txt(x: Any) = text(x, qtx.query) + " (" + x.getClass.getSimpleName + ")"
+      throw new SyntaxException("Don't know how to compare that. Left: " + txt(left) + "; Right: " + txt(right))
     }
   }
 
   private def areComparableOfSameType(l: AnyRef, r: AnyRef): Boolean =
     l.isInstanceOf[Comparable[_]] && l.getClass.isInstance(r)
 
-  def compare(left: Any, right: Any): Int = {
-    if (left == Nil || right == Nil) {
-      throw new RuntimeException("Can't compare against NULL")
-    }
-
+  def compare(left: Any, right: Any)(implicit qtx: QueryState): Int = {
     val l = left.asInstanceOf[AnyRef]
     val r = right.asInstanceOf[AnyRef]
 

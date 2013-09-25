@@ -32,7 +32,7 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
     val l: Any = left(m)
     val r: Any = right(m)
 
-    val comparisonResult: Int = compare(l, r)
+    val comparisonResult: Int = compare(l, r)(state)
 
     compare(comparisonResult)
   }
