@@ -113,9 +113,6 @@ case class SingleQuery(
       val firstUpdates = updateGroups.head
       val acceptableAtQueryStart = firstUpdates.head.isInstanceOf[Create] || firstUpdates.head.isInstanceOf[Merge]
 
-      if (top && !acceptableAtQueryStart) {
-        throw new SyntaxException(s"Invalid update clause at start of query (${firstUpdates.head.token.startPosition})")
-      }
       addUpdateGroupToBuilder(builder, updateGroups.head)
       updateGroups.tail
     }
