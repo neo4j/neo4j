@@ -96,4 +96,6 @@ public interface App
 	 * or if the implementing class chooses not to implement it properly.
 	 */
 	List<String> completionCandidates( String partOfLine, Session session ) throws ShellException;
+
+    boolean takesOptions();
 }
