@@ -66,10 +66,8 @@ public class BatchOperationResults
                     .append( COMMA );
         }
 
-        System.out.println("DONE:" + id);
         if ( location != null )
         {
-            System.out.println("Got Location:" + location);
             locations.put( id, location );
             results.append( "\"location\":" )
                     .append( JsonHelper.createJsonFrom( location ) )
