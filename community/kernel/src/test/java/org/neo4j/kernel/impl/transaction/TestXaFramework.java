@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
@@ -74,6 +74,7 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
@@ -266,7 +267,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                         };
                     }
                 };
-                
+
                 map.put( "store_dir", path().getPath() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
@@ -510,7 +511,10 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         boolean allDeleted = true;
         for ( File file : files )
         {
-            if ( !file.delete() ) allDeleted = false;
+            if ( !file.delete() )
+            {
+                allDeleted = false;
+            }
         }
         assertTrue( "delete all files starting with " + prefix, allDeleted );
     }

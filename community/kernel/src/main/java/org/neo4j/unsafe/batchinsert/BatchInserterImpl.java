@@ -110,6 +110,8 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SingleLoggingService;
 
 import static java.lang.Boolean.parseBoolean;
 
@@ -138,6 +140,7 @@ public class BatchInserterImpl implements BatchInserter
     private final LabelScanStore labelScanStore;
     // TODO use Logging instead
     private final StringLogger msgLog;
+    private final Logging logging;
     private final FileSystemAbstraction fileSystem;
     private final SchemaCache schemaCache;
     private final Config config;
@@ -164,6 +167,7 @@ public class BatchInserterImpl implements BatchInserter
 
         rejectAutoUpgrade( stringParams );
         msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
+        logging = new SingleLoggingService( msgLog );
         Map<String, String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), Settings.FALSE );
         params.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
@@ -177,7 +181,7 @@ public class BatchInserterImpl implements BatchInserter
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
         StoreFactory sf = new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem,
-                                            StringLogger.DEV_NULL, null );
+                                            msgLog, null );
 
         File store = fixPath( this.storeDir, sf );
 
@@ -209,8 +213,8 @@ public class BatchInserterImpl implements BatchInserter
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
         schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
-        labelScanStore = extensions.resolveDependency( LabelScanStoreProvider.class,
-                LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
+        labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
+                LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
         actions = new BatchSchemaActions();
     }
 
@@ -1367,6 +1371,10 @@ public class BatchInserterImpl implements BatchInserter
             if ( type.isInstance( config ) )
             {
                 return type.cast( config );
+            }
+            if ( type.isInstance( logging ) )
+            {
+                return type.cast( logging );
             }
             if ( NeoStoreProvider.class.isAssignableFrom( type ) )
             {

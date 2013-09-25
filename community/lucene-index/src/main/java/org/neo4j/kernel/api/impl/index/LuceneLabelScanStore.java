@@ -34,6 +34,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -85,6 +86,8 @@ public class LuceneLabelScanStore implements LabelScanStore
 
         void noIndex();
 
+        void lockedIndex( LockObtainFailedException e );
+
         void corruptIndex( IOException e );
 
         void rebuilding();
@@ -99,7 +102,7 @@ public class LuceneLabelScanStore implements LabelScanStore
         {
             @Override
             public void init()
-            {
+            {   // Don't log anything here
             }
 
             @Override
@@ -107,6 +110,12 @@ public class LuceneLabelScanStore implements LabelScanStore
             {
                 logger.info( "No lucene scan store index found, this might just be first use. " +
                         "Preparing to rebuild." );
+            }
+
+            @Override
+            public void lockedIndex( LockObtainFailedException e )
+            {
+                logger.warn( "Index is locked by another process or database", e );
             }
 
             @Override
@@ -297,6 +306,11 @@ public class LuceneLabelScanStore implements LabelScanStore
             monitor.noIndex();
             prepareRebuildOfIndex();
             writer = writerFactory.create( directory );
+        }
+        catch ( LockObtainFailedException e )
+        {
+            monitor.lockedIndex( e );
+            throw e;
         }
         catch( IOException e )
         {
