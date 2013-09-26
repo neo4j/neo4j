@@ -300,7 +300,8 @@ public class StoreStatementOperationsTest
                 neoStore,
                 resolver.resolveDependency( PersistenceManager.class ),
                 indexingService );
-        this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ), labelScanStore, null, null );
+        this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ), labelScanStore, null,
+                null, null, null );
     }
 
     @After

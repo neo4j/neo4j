@@ -25,13 +25,15 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.kernel.api.KernelTransactionFactory.*;
+
 public class TransactionStatementSequenceTest
 {
     @Test
     public void shouldAllowReadStatementAfterReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         tx.acquireStatement().readOperations();
 
         // when / then
@@ -42,7 +44,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowDataStatementAfterReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         tx.acquireStatement().readOperations();
 
         // when / then
@@ -53,7 +55,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowSchemaStatementAfterReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         tx.acquireStatement().readOperations();
 
         // when / then
@@ -64,7 +66,7 @@ public class TransactionStatementSequenceTest
     public void shouldRejectSchemaStatementAfterDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         tx.acquireStatement().dataWriteOperations();
 
         // when
@@ -86,7 +88,7 @@ public class TransactionStatementSequenceTest
     public void shouldRejectDataStatementAfterSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         tx.acquireStatement().schemaWriteOperations();
 
         // when
@@ -108,7 +110,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowDataStatementAfterDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         tx.acquireStatement().dataWriteOperations();
 
         // when / then
@@ -119,7 +121,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowSchemaStatementAfterSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         tx.acquireStatement().schemaWriteOperations();
 
         // when / then
@@ -130,7 +132,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowReadStatementAfterDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         tx.acquireStatement().dataWriteOperations();
 
         // when / then
@@ -141,11 +143,10 @@ public class TransactionStatementSequenceTest
     public void shouldAllowReadStatementAfterSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         tx.acquireStatement().schemaWriteOperations();
 
         // when / then
         tx.acquireStatement().readOperations();
     }
-
 }

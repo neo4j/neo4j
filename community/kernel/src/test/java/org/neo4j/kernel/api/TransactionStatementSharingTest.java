@@ -24,13 +24,15 @@ import org.junit.Test;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 
+import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
+
 public class TransactionStatementSharingTest
 {
     @Test
     public void shouldShareStatementStateForConcurrentReadStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
@@ -44,7 +46,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentReadStatementAndDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
@@ -58,7 +60,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentReadStatementAndSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
@@ -72,7 +74,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentDataStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         DataWriteOperations stmt1 = tx.acquireStatement().dataWriteOperations();
 
         // when
@@ -86,7 +88,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentDataStatementAndDataStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         DataWriteOperations stmt1 = tx.acquireStatement().dataWriteOperations();
 
         // when
@@ -100,7 +102,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentSchemaStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         SchemaWriteOperations stmt1 = tx.acquireStatement().schemaWriteOperations();
 
         // when
@@ -114,7 +116,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentSchemaStatementAndSchemaStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         SchemaWriteOperations stmt1 = tx.acquireStatement().schemaWriteOperations();
 
         // when
@@ -128,7 +130,7 @@ public class TransactionStatementSharingTest
     public void shouldNotShareStateForSequentialReadStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new StubKernelTransaction();
+        KernelTransaction tx = kernelTransaction();
         Statement statement = tx.acquireStatement();
         ReadOperations ops1 = statement.readOperations();
         statement.close();

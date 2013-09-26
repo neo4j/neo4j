@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.constraints;
 
 import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
@@ -119,14 +119,17 @@ public class ConstraintIndexCreator
         return new Transactor.Work<IndexDescriptor, CreateConstraintFailureException>()
         {
             @Override
-            public IndexDescriptor perform( StatementOperationParts statement, KernelStatement kernelStatement )
+            public IndexDescriptor perform( Statement kernelStatement )
             {
                 // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
                 // write lock. It is assumed that the transaction that invoked this "inner" transaction
                 // holds a schema write lock, and that it will wait for this inner transaction to do its
                 // work.
                 IndexDescriptor rule = new IndexDescriptor( labelId, propertyKeyId );
-                kernelStatement.txState().constraintIndexRuleDoAdd( rule );
+                // TODO (Ben+Jake): The Transactor is really part of the kernel internals, so it needs access to the
+                // internal implementation of Statement. However it is currently used by the external
+                // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
+                ((KernelStatement) kernelStatement).txState().constraintIndexRuleDoAdd( rule );
                 return rule;
             }
         };
@@ -138,13 +141,16 @@ public class ConstraintIndexCreator
         return new Transactor.Work<Void, DropIndexFailureException>()
         {
             @Override
-            public Void perform( StatementOperationParts statement, KernelStatement kernelStatement )
+            public Void perform( Statement kernelStatement )
             {
                 // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
                 // write lock. It is assumed that the transaction that invoked this "inner" transaction
                 // holds a schema write lock, and that it will wait for this inner transaction to do its
                 // work.
-                kernelStatement.txState().constraintIndexDoDrop( descriptor );
+                // TODO (Ben+Jake): The Transactor is really part of the kernel internals, so it needs access to the
+                // internal implementation of Statement. However it is currently used by the external
+                // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
+                ((KernelStatement) kernelStatement).txState().constraintIndexDoDrop( descriptor );
                 return null;
             }
         };

@@ -44,4 +44,10 @@ interface SchemaWrite
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException;
 
     void constraintDrop( UniquenessConstraint constraint ) throws DropConstraintFailureException;
+
+    /**
+     * This should not be used, it is exposed to allow an external job to clean up constraint indexes.
+     * That external job should become an internal job, at which point this operation should go away.
+     */
+    void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 }

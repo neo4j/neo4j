@@ -22,32 +22,18 @@ package org.neo4j.kernel.api;
 import org.mockito.Mockito;
 
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 import static org.mockito.Mockito.mock;
 
-public class StubKernelTransaction extends KernelTransactionImplementation
+public class KernelTransactionFactory
 {
-    public StubKernelTransaction()
+    static KernelTransaction kernelTransaction()
     {
-        super( Mockito.mock( StatementOperationParts.class ), Mockito.mock( LegacyKernelOperations.class ) );
-    }
-
-    @Override
-    protected void doCommit()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    protected void doRollback()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    protected KernelStatement newStatement()
-    {
-        return new KernelStatement(this, mock( IndexReaderFactory.class ), null, null, null);
+        return new KernelTransactionImplementation( Mockito.mock( StatementOperationParts.class ),
+                Mockito.mock( LegacyKernelOperations.class ) , false, mock( SchemaWriteGuard.class ), null, null, null,
+                mock( AbstractTransactionManager.class ), null, null, null, null, null, mock( NeoStore.class ));
     }
 }

@@ -73,4 +73,9 @@ interface SchemaRead
      * for the time being.
      */
     Iterator<UniquenessConstraint> constraintsGetAll();
+
+    /**
+     * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
+     */
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
 }
