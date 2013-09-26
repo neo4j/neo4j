@@ -17,23 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.helpers;
 
-import java.util.ArrayList;
-
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-
-// TODO: Replace uses of this class with pushing down of updates
-public abstract class CollectingIndexUpdater implements IndexUpdater
+/**
+ * Instances are operations that need two operands to execute
+ */
+public interface BiConsumer<T, U>
 {
-    protected final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
-
-    @Override
-    public void process( NodePropertyUpdate update )
-    {
-        if ( null != update )
-        {
-            updates.add( update );
-        }
-    }
+    void accept( T first, U second );
 }
