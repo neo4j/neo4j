@@ -20,7 +20,6 @@
 package org.neo4j.backup;
 
 import java.io.File;
-import java.net.InetAddress;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -60,17 +59,17 @@ public class IncrementalBackupTests
     public void shouldDoIncrementalBackup() throws Exception
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet2( serverPath );
-        ServerInterface server = startServer( serverPath );
+        ServerInterface server = startServer( serverPath, "127.0.0.1:6362" );
 
         // START SNIPPET: onlineBackup
-        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
         backup.full( backupPath.getPath() );
         // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = addMoreData2( serverPath );
-        server = startServer( serverPath );
+        server = startServer( serverPath, null );
         // START SNIPPET: onlineBackup
         backup.incremental( backupPath.getPath() );
         // END SNIPPET: onlineBackup
@@ -124,9 +123,9 @@ public class IncrementalBackupTests
                 newGraphDatabase();
     }
 
-    private ServerInterface startServer( File path ) throws Exception
+    private ServerInterface startServer( File path, String serverAddress ) throws Exception
     {
-        ServerInterface server = new EmbeddedServer( path.getPath() );
+        ServerInterface server = new EmbeddedServer( path.getPath(), serverAddress );
         server.awaitStarted();
         return server;
     }

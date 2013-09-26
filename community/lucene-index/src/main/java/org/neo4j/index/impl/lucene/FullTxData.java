@@ -19,10 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static java.util.Collections.emptyList;
-import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
-import static org.neo4j.index.impl.lucene.LuceneIndex.KEY_DOC_ID;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,6 +40,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -51,13 +48,38 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+
 import org.neo4j.index.lucene.QueryContext;
+
+import static java.util.Collections.emptyList;
+
+import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
+import static org.neo4j.index.impl.lucene.LuceneIndex.KEY_DOC_ID;
 
 class FullTxData extends TxData
 {
+    /*
+     * The concept of orphan exists to find entities when querying where the transaction state
+     * (i.e. a FullTxData object) has seen removed entities w/o key and potentially also w/o value.
+     * A TxData instance receiving "add" calls with null key/value is an instance used to track removals.
+     * A Lucene document storing state about e.g. {@code index.remove( myNode, "name" )}
+     * <pre>
+     * {
+     *     __all__: "name"
+     * }
+     * </pre>
+     *
+     * A Lucene document storing state about e.g. {@code index.remove( myNode )}
+     * <pre>
+     * {
+     *     __all__: "1"
+     * }
+     * where queries would (if there are any orphans at all stored) include the "all orphans" value ("1") as
+     * well as any specific key which is pulled out from the incoming query.
+     */
     private static final String ORPHANS_KEY = "__all__";
     private static final String ORPHANS_VALUE = "1";
-    
+
     private Directory directory;
     private IndexWriter writer;
     private boolean modified;
@@ -86,7 +108,7 @@ class FullTxData extends TxData
                 cachedDocuments.put( id, document );
                 add = true;
             }
-            
+
             if ( key == null && value == null )
             {
                 // Set a special "always hit" flag
@@ -103,7 +125,7 @@ class FullTxData extends TxData
             {
                 index.type.addToDocument( document, key, value );
             }
-            
+
             if ( add )
             {
                 writer.addDocument( document );
@@ -218,13 +240,13 @@ class FullTxData extends TxData
         {
             return query;
         }
-        
+
         BooleanQuery result = new BooleanQuery();
         result.add( injectOrphans( query ), Occur.SHOULD );
         result.add( new TermQuery( new Term( ORPHANS_KEY, ORPHANS_VALUE ) ), Occur.SHOULD );
         return result;
     }
-    
+
     private Query injectOrphans( Query query )
     {
         if ( query instanceof BooleanQuery )
@@ -237,13 +259,17 @@ class FullTxData extends TxData
             }
             return result;
         }
-        else
+
+        String orphanField = extractTermField( query );
+        if ( orphanField == null )
         {
-            BooleanQuery result = new BooleanQuery();
-            result.add( query, Occur.SHOULD );
-            result.add( new TermQuery( new Term( ORPHANS_KEY, extractTermField( query ) ) ), Occur.SHOULD );
-            return result;
+            return query;
         }
+
+        BooleanQuery result = new BooleanQuery();
+        result.add( query, Occur.SHOULD );
+        result.add( new TermQuery( new Term( ORPHANS_KEY, orphanField ) ), Occur.SHOULD );
+        return result;
     }
 
     private String extractTermField( Query query )
@@ -261,14 +287,18 @@ class FullTxData extends TxData
         {
             return ((PrefixQuery)query).getPrefix().field();
         }
-        
+        else if ( query instanceof MatchAllDocsQuery )
+        {
+            return null;
+        }
+
         // Try to extract terms and get it that way
         String field = getFieldFromExtractTerms( query );
         if ( field != null )
         {
             return field;
         }
-        
+
         // Last resort: since Query doesn't have a common interface for getting
         // the term/field of its query this is one option.
         return getFieldViaReflection( query );
@@ -396,7 +426,7 @@ class FullTxData extends TxData
             // Ok
         }
     }
-    
+
     @Override
     IndexSearcher asSearcher( TxDataHolder holder, QueryContext context )
     {

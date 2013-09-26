@@ -1,0 +1,4 @@
+1.9.4 (2013-09-19)
+------------------
+o Introduction of Neo4j Desktop, a Windows installer and Neo4j Server Runtime
+  manager.

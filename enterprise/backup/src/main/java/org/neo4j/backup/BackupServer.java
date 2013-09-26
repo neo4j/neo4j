@@ -38,7 +38,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
 {
     static final byte PROTOCOL_VERSION = 1;
     private final BackupRequestType[] contexts = BackupRequestType.values();
-    static int DEFAULT_PORT = DEFAULT_BACKUP_PORT;
+    static int DEFAULT_PORT = 6362;
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
     public BackupServer( TheBackupInterface requestTarget, final HostnamePort server , Logging logging ) throws IOException
