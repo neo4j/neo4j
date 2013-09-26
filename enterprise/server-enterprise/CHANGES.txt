@@ -1,3 +1,8 @@
+1.9.4 (2013-09-19)
+------------------
+o Properly return UNKNOWN from the HA REST API when the instance is neither
+  master or slave.
+
 1.9 (2013-05-13)
 ----------------
 o Arbiter instances now log into data/log/arbiter/messages.log

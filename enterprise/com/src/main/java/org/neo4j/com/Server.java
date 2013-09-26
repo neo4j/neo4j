@@ -105,7 +105,6 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
     }
 
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
-    public static final int DEFAULT_BACKUP_PORT = 6362;
 
     // It's ok if there are more transactions, since these worker threads doesn't
     // do any actual work themselves, but spawn off other worker threads doing the

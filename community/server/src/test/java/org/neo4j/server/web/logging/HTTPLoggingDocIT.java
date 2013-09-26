@@ -29,13 +29,13 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.HTTPLoggingPreparednessRuleTest;
-import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.TargetDirectory;
@@ -170,7 +170,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             server.start();
             fail( "should have thrown exception" );
         }
-        catch ( PreflightFailedException e )
+        catch ( ServerStartupException e )
         {
             // then
             assertThat( e.getMessage(),
