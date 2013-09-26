@@ -31,11 +31,9 @@ import org.neo4j.test.Mute;
 
 import static java.lang.String.format;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.AdditionalMatchers.or;
+import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.test.Mute.muteAll;
 
@@ -100,13 +98,16 @@ public class PropertyFileConfiguratorTest
 
         // Sometimes the wrong log provider may get onto the class path and then fail this test,
         // to avoid that we accept both variants
-        assertThat( appender.toString(), or(
-                containsString( format(
+        String actual = appender.toString();
+        assertTrue( "Expected log message to contain hint about missing tuning file being replaced with defaults",
+                actual.contains( format(
                         "INFO: No database tuning file explicitly set, defaulting to [%s]",
-                        tuningPropertiesFile.getAbsolutePath() ) ),
-                containsString( format(
-                        "Information: No database tuning file explicitly set, defaulting to [%s]",
-                        tuningPropertiesFile.getAbsolutePath() ) )
-                ) );
+                        tuningPropertiesFile.getAbsolutePath() ) ) ||
+                        actual.contains( format(
+                                "Information: No database tuning file explicitly set, defaulting to [%s]",
+                                tuningPropertiesFile.getAbsolutePath() ) )
+        );
     }
+
+
 }

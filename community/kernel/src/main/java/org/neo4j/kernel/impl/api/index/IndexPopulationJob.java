@@ -26,11 +26,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
@@ -42,7 +42,6 @@ import static java.lang.Thread.currentThread;
 
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 import static org.neo4j.helpers.ValueGetter.NO_VALUE;
-import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -217,16 +216,16 @@ public class IndexPopulationJob implements Runnable
     {
         if ( !queue.isEmpty() )
         {
-            Predicate<NodePropertyUpdate> hasBeenIndexed = new Predicate<NodePropertyUpdate>()
+            try ( IndexUpdater updater = populator.newPopulatingUpdater() )
             {
-                @Override
-                public boolean accept( NodePropertyUpdate item )
+                for ( NodePropertyUpdate update : queue )
                 {
-                    return item.getNodeId() <= highestIndexedNodeId;
+                    if ( update.getNodeId() <= highestIndexedNodeId )
+                    {
+                        updater.process( update );
+                    }
                 }
-            };
-
-            populator.update( filter( hasBeenIndexed, queue ) );
+            }
         }
     }
 
@@ -246,12 +245,9 @@ public class IndexPopulationJob implements Runnable
      * A transaction happened that produced the given updates. Let this job incorporate its data,
      * feeding it to the {@link IndexPopulator}.
      */
-    public void update( Iterable<NodePropertyUpdate> updates )
+    public void update( NodePropertyUpdate update )
     {
-        for ( NodePropertyUpdate update : updates )
-        {
-            queue.add( update );
-        }
+        queue.add( update );
     }
 
     @Override

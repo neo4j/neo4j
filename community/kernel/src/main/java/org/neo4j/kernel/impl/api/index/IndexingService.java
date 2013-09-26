@@ -36,7 +36,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -74,8 +76,6 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  */
 public class IndexingService extends LifecycleAdapter
 {
-    // TODO create hierarchy of filters for smarter update processing
-
     private final IndexMapReference indexMapReference = new IndexMapReference();
 
     private boolean serviceRunning = false;
@@ -182,7 +182,6 @@ public class IndexingService extends LifecycleAdapter
                         break;
                     case POPULATING:
                         // Remember for rebuilding
-                        rebuildingIndexes.add( indexProxy );
                         rebuildingDescriptors.put( indexId, getIndexProxyDescriptors( indexProxy ) );
                         break;
                     case FAILED:
@@ -194,7 +193,7 @@ public class IndexingService extends LifecycleAdapter
         } );
 
         // Drop placeholder proxies for indexes that need to be rebuilt
-        dropIndexes( rebuildingIndexes );
+        dropRecoveringIndexes( indexMap, rebuildingDescriptors );
 
         // Rebuild indexes by recreating and repopulating them
         for ( Map.Entry<Long, Pair<IndexDescriptor, SchemaIndexProvider.Descriptor>> entry :
@@ -291,6 +290,7 @@ public class IndexingService extends LifecycleAdapter
                             processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelAfter( i ) );
                         }
                         break;
+
                     case REMOVED:
                         for (int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++)
                         {
@@ -329,20 +329,24 @@ public class IndexingService extends LifecycleAdapter
                 }
             }
         }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to update indexes", e );
-        }
     }
 
     private void processUpdateIfIndexExists( IndexUpdaterMap updaterMap, NodePropertyUpdate update,
                                              int propertyKeyId, int labelId )
     {
         IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
-        IndexUpdater updater = updaterMap.getUpdater( descriptor );
-        if ( null != updater )
+        IndexUpdater updater;
+        try
         {
-            updater.process( update );
+            updater = updaterMap.getUpdater( descriptor );
+            if ( null != updater )
+            {
+                updater.process( update );
+            }
+        }
+        catch ( IOException | IndexEntryConflictException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 
@@ -499,11 +503,14 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    private void dropIndexes( Set<IndexProxy> recoveringIndexes ) throws Exception
+    private void dropRecoveringIndexes(
+        IndexMap indexMap, Map<Long, Pair<IndexDescriptor,SchemaIndexProvider.Descriptor>> recoveringIndexes )
+            throws Exception
     {
-        for ( IndexProxy indexProxy : recoveringIndexes )
+        for ( long indexId : recoveringIndexes.keySet() )
         {
-            indexProxy.drop().get();
+            IndexProxy indexProxy = indexMap.removeIndexProxy( indexId );
+            indexProxy.drop();
         }
     }
 

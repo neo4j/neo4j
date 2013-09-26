@@ -19,14 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.ArrayList;
+
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-public abstract class DelegatingIndexUpdater implements IndexUpdater
+public abstract class CollectingIndexUpdater implements IndexUpdater
 {
-    protected final IndexUpdater delegate;
+    protected final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
 
-    public DelegatingIndexUpdater( IndexUpdater delegate )
+    @Override
+    public void process( NodePropertyUpdate update )
     {
-        this.delegate = delegate;
+        if ( null != update )
+        {
+            updates.add( update );
+        }
     }
 }

@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.xa.XAException;
 
@@ -32,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -53,15 +53,20 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.mock;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
-import static org.powermock.api.mockito.PowerMockito.mock;
 
 public class UniquenessConstraintCreationIT extends KernelIntegrationTest
 {
@@ -131,6 +136,7 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
 
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
         statement.uniquenessConstraintCreate(  foo, name );
+
         ExecutorService executor = Executors.newSingleThreadExecutor();
         long node2 = executor.submit( new Callable<Long>()
         {
@@ -203,7 +209,7 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
             }
 
             // then both the node I created, and the constraint, should be online
-            try( Transaction tx = gdb.beginTx() )
+            try( Transaction ignored = gdb.beginTx() )
             {
                 assertThat( count( GlobalGraphOperations.at( gdb ).getAllNodes() ), equalTo(2l));
                 assertThat( count( gdb.schema().getConstraints() ), equalTo(1l));

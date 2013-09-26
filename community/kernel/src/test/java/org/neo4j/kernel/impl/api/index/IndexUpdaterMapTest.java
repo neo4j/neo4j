@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.kernel.api.index.IndexUpdater;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -44,7 +48,7 @@ public class IndexUpdaterMapTest
     private IndexUpdaterMap updaterMap;
 
     @Before
-    public void before()
+    public void before() throws IOException
     {
         indexMap = new IndexMap();
         

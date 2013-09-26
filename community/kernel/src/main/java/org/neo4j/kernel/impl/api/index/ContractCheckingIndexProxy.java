@@ -24,6 +24,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+
 /**
  * {@link IndexProxy} layer that enforces the dynamic contract of {@link IndexProxy} (cf. Test)
  *
@@ -85,7 +89,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
     {
         if ( IndexUpdateMode.ONLINE == mode )
         {
@@ -93,11 +97,17 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
             return new DelegatingIndexUpdater( super.newUpdater( mode ) )
             {
                 @Override
-                public void close() throws IOException
+                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                {
+                    delegate.process( update );
+                }
+
+                @Override
+                public void close() throws IOException, IndexEntryConflictException
                 {
                     try
                     {
-                        super.close();
+                        delegate.close();
                     }
                     finally
                     {
