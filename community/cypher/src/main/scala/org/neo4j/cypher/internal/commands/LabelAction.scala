@@ -44,7 +44,7 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToke
     LabelAction(entity.rewrite(f), labelOp, labels.map(_.typedRewrite[KeyToken](f)))
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    val node      = CastSupport.erasureCastOrFail[Node](entity(context)(state))
+    val node      = CastSupport.castOrFail[Node](entity(context)(state))
     val queryCtx  = state.query
     val labelIds  = labels.map(_.getOrCreateId(state.query))
 

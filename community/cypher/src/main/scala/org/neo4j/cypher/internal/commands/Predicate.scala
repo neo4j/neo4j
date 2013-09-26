@@ -259,14 +259,15 @@ case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predi
   lazy val pattern = regex.v.asInstanceOf[String].r.pattern
   
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = a(m) match {
-    case v:String => pattern.matcher(v).matches()
-    case _ => false
+    case null      => false
+    case x         => val v = CastSupport.castOrFail[String](x)
+      pattern.matcher(v).matches()
   }
 
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
-    case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)
-    case other => RegularExpression(a.rewrite(f), other)
+    case lit: Literal => LiteralRegularExpression(a.rewrite(f), lit)
+    case other        => RegularExpression(a.rewrite(f), other)
   }
 
   def children = Seq(a, regex)
@@ -280,11 +281,13 @@ case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predi
 }
 
 case class RegularExpression(a: Expression, regex: Expression) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
-    val value = a(m).asInstanceOf[String]
-    val regularExp = regex(m).asInstanceOf[String]
-
-    regularExp.r.pattern.matcher(value).matches()
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = (a(m), regex(m)) match {
+    case (null, _) => false
+    case (_, null) => false
+    case (a1, r1)  =>
+      val a2 = CastSupport.castOrFail[String](a1)
+      val r2 = CastSupport.castOrFail[String](r1)
+      r2.r.pattern.matcher(a2).matches()
   }
 
   override def toString: String = a.toString() + " ~= /" + regex.toString() + "/"
@@ -331,7 +334,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with 
       false
 
     case value =>
-      val node           = CastSupport.erasureCastOrFail[Node](value)
+      val node           = CastSupport.castOrFail[Node](value)
       val nodeId         = node.getId
       val queryCtx       = state.query
 

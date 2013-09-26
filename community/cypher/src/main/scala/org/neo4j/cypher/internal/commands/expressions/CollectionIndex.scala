@@ -32,7 +32,7 @@ with CollectionSupport {
   def children = Seq(collection, index)
 
   def compute(value:Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    var idx = CastSupport.erasureCastOrFail[Number](index(ctx)).intValue()
+    var idx = CastSupport.castOrFail[Number](index(ctx)).intValue()
     val collectionValue = makeTraversable(value).toList
 
     if (idx < 0) {

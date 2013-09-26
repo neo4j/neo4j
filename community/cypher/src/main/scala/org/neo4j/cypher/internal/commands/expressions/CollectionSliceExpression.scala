@@ -83,7 +83,7 @@ case class CollectionSliceExpression(collection: Expression, from: Option[Expres
 
 
   def asInt(e: Expression, ctx: ExecutionContext, state: QueryState): Int =
-    CastSupport.erasureCastOrFail[Number](e(ctx)(state)).intValue()
+    CastSupport.castOrFail[Number](e(ctx)(state)).intValue()
 
   def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val collectionValue: Iterable[Any] = makeTraversable(value)

@@ -54,11 +54,11 @@ class CastSupportTest extends Assertions {
 
   @Test def downcastAppMatchTest() {
     val given: Any = 1
-    assert(CastSupport.erasureCastOrFail[java.lang.Integer](given) == 1)
+    assert(CastSupport.castOrFail[java.lang.Integer](given) == 1)
   }
 
   @Test def downcastAppMismatchTest() {
     val given: Any = Seq(1)
-    intercept[CypherTypeException](CastSupport.erasureCastOrFail[Int](given))
+    intercept[CypherTypeException](CastSupport.castOrFail[Int](given))
   }
 }

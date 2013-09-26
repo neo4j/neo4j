@@ -37,7 +37,7 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = input.flatMap(ctx => {
     val result: Stream[Path] = expression(ctx)(state) match {
-      case in: Stream[_]      => CastSupport.erasureCastOrFail[Stream[Path]](in)
+      case in: Stream[_]      => CastSupport.castOrFail[Stream[Path]](in)
       case null               => Stream()
       case path:Path          => Stream(path)
     }

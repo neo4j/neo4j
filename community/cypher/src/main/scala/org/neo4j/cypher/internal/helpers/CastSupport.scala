@@ -42,7 +42,7 @@ object CastSupport {
    */
   def erasureCast[A : Manifest]: PartialFunction[Any, A] = { case value: A => value }
 
-  def erasureCastOrFail[A](value: Any)(implicit ev: Manifest[A]): A = value match {
+  def castOrFail[A](value: Any)(implicit ev: Manifest[A]): A = value match {
     case v: A => v
     case _    => throw new CypherTypeException(
       s"Expected ${value} to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")
