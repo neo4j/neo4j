@@ -141,7 +141,7 @@ public class IndexingService extends LifecycleAdapter
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                    indexProxy = createAndStartRecoveringIndexProxy( indexId, descriptor, providerDescriptor );
+                    indexProxy = createAndStartRecoveringIndexProxy( descriptor, providerDescriptor );
                     break;
                 case FAILED:
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId ) );
@@ -260,7 +260,7 @@ public class IndexingService extends LifecycleAdapter
         }
         else if ( index == null )
         {
-            index = createAndStartRecoveringIndexProxy( ruleId, descriptor, providerDescriptor );
+            index = createAndStartRecoveringIndexProxy( descriptor, providerDescriptor );
         }
 
         indexMap.putIndexProxy( rule.getId(), index );
@@ -277,22 +277,72 @@ public class IndexingService extends LifecycleAdapter
     public void updateIndexes( Iterable<NodePropertyUpdate> updates )
     {
         IndexUpdateMode mode = serviceRunning ? IndexUpdateMode.ONLINE : IndexUpdateMode.RECOVERY;
-        for ( IndexProxy index : indexMapReference.getAllIndexProxies() )
+
+        try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( mode ) )
         {
-            try
+            for ( NodePropertyUpdate update : updates )
             {
-                try ( IndexUpdater updater = index.newUpdater( mode) )
+                int propertyKeyId = update.getPropertyKeyId();
+                switch (update.getUpdateMode())
                 {
-                    for ( NodePropertyUpdate update : updates )
-                    {
-                        updater.process( update );
-                    }
+                    case ADDED:
+                        for (int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++)
+                        {
+                            processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelAfter( i ) );
+                        }
+                        break;
+                    case REMOVED:
+                        for (int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++)
+                        {
+                            processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelBefore( i ) );
+                        }
+                        break;
+
+                    case CHANGED:
+                        int lenBefore = update.getNumberOfLabelsBefore();
+                        int lenAfter = update.getNumberOfLabelsAfter();
+
+                        for(int i = 0, j = 0; i < lenBefore && j < lenAfter; i++, j++)
+                        {
+                            int labelBefore = update.getLabelBefore( i );
+                            int labelAfter = update.getLabelAfter( j );
+
+                            if ( labelBefore == labelAfter )
+                            {
+                                processUpdateIfIndexExists( updaterMap, update, propertyKeyId, labelAfter );
+                                i++;
+                                j++;
+                            }
+                            else
+                            {
+                                if ( labelBefore < labelAfter )
+                                {
+                                    i++;
+                                }
+                                else /* labelBefore > labelAfter */
+                                {
+                                    j++;
+                                }
+                            }
+                        }
+                        break;
                 }
             }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( "Unable to update " + index, e );
-            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to update indexes", e );
+        }
+    }
+
+    private void processUpdateIfIndexExists( IndexUpdaterMap updaterMap, NodePropertyUpdate update,
+                                             int propertyKeyId, int labelId )
+    {
+        IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
+        IndexUpdater updater = updaterMap.getUpdater( descriptor );
+        if ( null != updater )
+        {
+            updater.process( update );
         }
     }
 
@@ -363,7 +413,6 @@ public class IndexingService extends LifecycleAdapter
         } );
 
         IndexProxy result = contractCheckedProxy( flipper, false );
-        result = serviceDecoratedProxy( ruleId, result );
         result.start();
         return result;
     }
@@ -380,7 +429,7 @@ public class IndexingService extends LifecycleAdapter
                                                                           new IndexConfiguration( unique ) );
             IndexProxy result = new OnlineIndexProxy( descriptor, providerDescriptor, onlineAccessor );
             result = contractCheckedProxy( result, true );
-            return serviceDecoratedProxy( ruleId, result );
+            return result;
         }
         catch ( IOException e )
         {
@@ -401,16 +450,15 @@ public class IndexingService extends LifecycleAdapter
             new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
                                   indexPopulator, populationFailure );
         result = contractCheckedProxy( result, true );
-        return serviceDecoratedProxy( ruleId, result );
+        return result;
     }
 
-    private IndexProxy createAndStartRecoveringIndexProxy( long ruleId,
-                                                           IndexDescriptor descriptor,
+    private IndexProxy createAndStartRecoveringIndexProxy( IndexDescriptor descriptor,
                                                            SchemaIndexProvider.Descriptor providerDescriptor )
     {
         IndexProxy result = new RecoveringIndexProxy( descriptor, providerDescriptor );
         result = contractCheckedProxy( result, true );
-        return serviceDecoratedProxy( ruleId, result );
+        return result;
     }
 
     private IndexPopulator getPopulatorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, long ruleId,
@@ -430,14 +478,6 @@ public class IndexingService extends LifecycleAdapter
     private IndexProxy contractCheckedProxy( IndexProxy result, boolean started )
     {
         result = new ContractCheckingIndexProxy( result, started );
-        return result;
-    }
-
-    private IndexProxy serviceDecoratedProxy( long ruleId, IndexProxy result )
-    {
-        // TODO: Merge auto removing and rule updating?
-        result = new RuleUpdateFilterIndexProxy( result );
-        result = new ServiceStateUpdatingIndexProxy( ruleId, result );
         return result;
     }
 
@@ -487,25 +527,6 @@ public class IndexingService extends LifecycleAdapter
 
     {
         getProxyForRule( indexId ).validate();
-    }
-
-    class ServiceStateUpdatingIndexProxy extends DelegatingIndexProxy
-    {
-        private final long indexId;
-
-        ServiceStateUpdatingIndexProxy( long indexId, IndexProxy delegate )
-        {
-            super( delegate );
-            this.indexId = indexId;
-        }
-
-        @Override
-        public Future<Void> drop() throws IOException
-        {
-            indexMapReference.removeIndexProxy( indexId );
-            return super.drop();
-        }
-
     }
 
     public void flushAll()

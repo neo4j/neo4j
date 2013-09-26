@@ -27,15 +27,17 @@ import org.neo4j.helpers.BiConsumer;
 public final class IndexMap implements Cloneable
 {
     private final Map<Long, IndexProxy> indexesById;
+    private final Map<IndexDescriptor, IndexProxy> indexesByDescriptor;
 
     public IndexMap()
     {
-        this( new HashMap<Long, IndexProxy>() );
+        this( new HashMap<Long, IndexProxy>(), new HashMap<IndexDescriptor, IndexProxy>() );
     }
 
-    private IndexMap( Map<Long, IndexProxy> indexesById )
+    private IndexMap( Map<Long, IndexProxy> indexesById, Map<IndexDescriptor, IndexProxy> indexesByDescriptor )
     {
         this.indexesById = indexesById;
+        this.indexesByDescriptor = indexesByDescriptor;
     }
 
     public IndexProxy getIndexProxy( long indexId )
@@ -43,14 +45,25 @@ public final class IndexMap implements Cloneable
         return indexesById.get( indexId );
     }
 
-    public IndexProxy putIndexProxy( long indexId, IndexProxy indexProxy )
+    public IndexProxy getIndexProxy( IndexDescriptor descriptor )
     {
-        return indexesById.put( indexId, indexProxy );
+        return indexesByDescriptor.get( descriptor );
+    }
+
+    public void putIndexProxy( long indexId, IndexProxy indexProxy )
+    {
+        indexesById.put( indexId, indexProxy );
+        indexesByDescriptor.put( indexProxy.getDescriptor(), indexProxy );
     }
 
     public IndexProxy removeIndexProxy( long indexId )
     {
-        return indexesById.remove( indexId );
+        IndexProxy removedProxy = indexesById.remove( indexId );
+        if ( null != removedProxy )
+        {
+            indexesByDescriptor.remove( removedProxy.getDescriptor() );
+        }
+        return removedProxy;
     }
 
     public void foreachIndexProxy( BiConsumer<Long, IndexProxy> consumer )
@@ -69,7 +82,14 @@ public final class IndexMap implements Cloneable
     @Override
     public IndexMap clone()
     {
-        return new IndexMap( indexesById );
+        return new IndexMap( cloneMap( indexesById ), cloneMap( indexesByDescriptor ) );
+    }
+
+    private <K, V> Map<K, V> cloneMap( Map<K, V> map )
+    {
+        Map<K, V> shallowCopy = new HashMap<>( map.size() );
+        shallowCopy.putAll( map );
+        return shallowCopy;
     }
 
 }

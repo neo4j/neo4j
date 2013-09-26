@@ -25,13 +25,18 @@ import java.io.IOException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.Mute;
+
+import static java.lang.String.format;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.AdditionalMatchers.or;
+
 import static org.neo4j.test.Mute.muteAll;
 
 public class PropertyFileConfiguratorTest
@@ -93,8 +98,15 @@ public class PropertyFileConfiguratorTest
         InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
         new PropertyFileConfigurator( emptyPropertyFile );
 
-        assertThat( appender.toString(), containsString( String.format(
-                "INFO: No database tuning file explicitly set, defaulting to [%s]",
-                tuningPropertiesFile.getAbsolutePath() ) ) );
+        // Sometimes the wrong log provider may get onto the class path and then fail this test,
+        // to avoid that we accept both variants
+        assertThat( appender.toString(), or(
+                containsString( format(
+                        "INFO: No database tuning file explicitly set, defaulting to [%s]",
+                        tuningPropertiesFile.getAbsolutePath() ) ),
+                containsString( format(
+                        "Information: No database tuning file explicitly set, defaulting to [%s]",
+                        tuningPropertiesFile.getAbsolutePath() ) )
+                ) );
     }
 }

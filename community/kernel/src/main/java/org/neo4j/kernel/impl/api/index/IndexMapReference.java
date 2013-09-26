@@ -61,4 +61,8 @@ public class IndexMapReference
         return oldIndexMap.getAllIndexProxies();
     }
 
+    public IndexUpdaterMap getIndexUpdaterMap( IndexUpdateMode mode )
+    {
+        return new IndexUpdaterMap( mode, indexMap );
+    }
 }
