@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
@@ -37,7 +38,7 @@ public class IndexProxyAdapter implements IndexProxy
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return IndexUpdater.SwallowingIndexUpdater.INSTANCE;
+        return SwallowingIndexUpdater.INSTANCE;
     }
 
     @Override

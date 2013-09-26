@@ -20,15 +20,16 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.Pair;
-
-import static java.lang.String.format;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.nioneo.store.MultipleUnderlyingStorageExceptions;
+import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 
 /**
  * Holds currently open index updaters that are created dynamically when requested for any existing index in
@@ -52,7 +53,7 @@ public class IndexUpdaterMap implements AutoCloseable
         this.updaterMap = new HashMap<>();
     }
 
-    public IndexUpdater getUpdater( IndexDescriptor descriptor )
+    public IndexUpdater getUpdater( IndexDescriptor descriptor ) throws IOException
     {
         IndexUpdater updater = updaterMap.get( descriptor );
         if ( null == updater )
@@ -68,9 +69,9 @@ public class IndexUpdaterMap implements AutoCloseable
     }
 
     @Override
-    public void close() throws IOException
+    public void close() throws UnderlyingStorageException
     {
-        Set<Pair<IndexDescriptor, IOException>> exceptions = null;
+        Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions = null;
 
         for ( Map.Entry<IndexDescriptor, IndexUpdater> updaterEntry : updaterMap.entrySet() )
         {
@@ -79,13 +80,13 @@ public class IndexUpdaterMap implements AutoCloseable
             {
                 updater.close();
             }
-            catch (IOException e)
+            catch (IOException | IndexEntryConflictException e)
             {
                 if ( null == exceptions )
                 {
                     exceptions = new HashSet<>();
                 }
-                exceptions.add( Pair.of( updaterEntry.getKey(), e ) );
+                exceptions.add( Pair.of( updaterEntry.getKey(), new UnderlyingStorageException( e ) ) );
             }
         }
 
@@ -93,7 +94,7 @@ public class IndexUpdaterMap implements AutoCloseable
 
         if ( null != exceptions )
         {
-            throw new IndexUpdaterMapCloseException( exceptions );
+            throw new MultipleUnderlyingStorageExceptions( exceptions );
         }
     }
 
@@ -110,29 +111,5 @@ public class IndexUpdaterMap implements AutoCloseable
     public int size()
     {
         return updaterMap.size();
-    }
-
-    public class IndexUpdaterMapCloseException extends IOException
-    {
-        public final Set<Pair<IndexDescriptor, IOException>> exceptions;
-
-        public IndexUpdaterMapCloseException( Set<Pair<IndexDescriptor, IOException>> exceptions )
-        {
-            super( buildMessage( exceptions ) );
-            this.exceptions = Collections.unmodifiableSet( exceptions );
-        }
-    }
-
-    private static String buildMessage( Set<Pair<IndexDescriptor, IOException>> exceptions )
-    {
-        StringBuilder builder = new StringBuilder( );
-        builder.append("Errors when closing (flushing) index updaters:");
-
-        for ( Pair<IndexDescriptor, IOException> pair : exceptions )
-        {
-            builder.append( format( " (%s) %s", pair.first().toString(), pair.other().getMessage() ) );
-        }
-
-        return builder.toString();
     }
 }

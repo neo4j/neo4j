@@ -17,37 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-
 public interface IndexUpdater extends AutoCloseable
 {
-    void process( NodePropertyUpdate update );
+    void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException;
 
     @Override
-    void close() throws IOException;
+    void close() throws IOException, IndexEntryConflictException;
 
-    public final class SwallowingIndexUpdater implements IndexUpdater
-    {
-        public static final IndexUpdater INSTANCE = new SwallowingIndexUpdater();
-
-        private SwallowingIndexUpdater()
-        {
-        }
-
-        @Override
-        public void process( NodePropertyUpdate update )
-        {
-            // intentionally swallow this update
-        }
-
-        @Override
-        public void close()
-        {
-            // nothing to close
-        }
-    }
 }

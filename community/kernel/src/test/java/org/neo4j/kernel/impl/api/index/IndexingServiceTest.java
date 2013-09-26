@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -60,7 +61,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -89,7 +89,9 @@ public class IndexingServiceTest
         labelId = 7;
         propertyKeyId = 15;
         IndexPopulator populator = mock( IndexPopulator.class );
+        IndexUpdater mockedUpdater = mock( IndexUpdater.class );
         IndexAccessor accessor = mock( IndexAccessor.class );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( mockedUpdater );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -108,12 +110,12 @@ public class IndexingServiceTest
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
-        InOrder order = inOrder( populator, accessor );
+        InOrder order = inOrder( populator, accessor, mockedUpdater );
         order.verify( populator ).create();
         order.verify( populator ).close( true );
-        order.verify( accessor ).updateAndCommit( argThat( containsAll( withData(
-                add( 10, "foo" )
-        ) ) ) );
+        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE );
+        order.verify( mockedUpdater ).process( add( 10, "foo" ) );
+        order.verify( mockedUpdater ).close();
     }
 
     @Test
@@ -124,6 +126,8 @@ public class IndexingServiceTest
         propertyKeyId = 15;
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexAccessor accessor = mock( IndexAccessor.class );
+        IndexUpdater mockedUpdater = mock( IndexUpdater.class );
+        when( populator.newPopulatingUpdater() ).thenReturn( mockedUpdater );
 
         CountDownLatch latch = new CountDownLatch( 1 );
         doAnswer( afterAwaiting( latch ) ).when( populator ).add( anyLong(), any() );
@@ -143,10 +147,6 @@ public class IndexingServiceTest
         {
             updater.process( add( 2, "value2" ) );
         }
-        catch ( Throwable t )
-        {
-            t.printStackTrace(System.err);
-        }
 
         latch.countDown();
 
@@ -154,17 +154,21 @@ public class IndexingServiceTest
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
-        InOrder order = inOrder( populator, accessor );
+        InOrder order = inOrder( populator, accessor, mockedUpdater );
         order.verify( populator ).create();
         order.verify( populator ).add( 1, "value1" );
-        order.verify( populator ).update( argThat( containsAll( withData(
-                // this is invoked from indexAllNodes(),
-                // empty because the id we added (2) is bigger than the one we indexed (1)
-        ) ) ) );
-        order.verify( populator ).update( argThat( containsAll( withData(
-                add( 2, "value2" )
-        ) ) ) );
+
+        // this is invoked from indexAllNodes(),
+        // empty because the id we added (2) is bigger than the one we indexed (1)
+        order.verify( populator ).newPopulatingUpdater();
+        order.verify( mockedUpdater ).close();
+
+        order.verify( populator ).newPopulatingUpdater();
+        order.verify( mockedUpdater ).process( add( 2, "value2" ) );
+        order.verify( mockedUpdater ).close();
+
         order.verify( populator ).close( true );
+        verifyNoMoreInteractions( mockedUpdater );
         verifyNoMoreInteractions( populator );
         verifyZeroInteractions( accessor );
     }
@@ -176,7 +180,9 @@ public class IndexingServiceTest
         labelId = 7;
         propertyKeyId = 15;
         IndexPopulator populator = mock( IndexPopulator.class );
+        IndexUpdater mockedUpdater = mock( IndexUpdater.class );
         IndexAccessor accessor = mock( IndexAccessor.class );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( mockedUpdater );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -196,12 +202,12 @@ public class IndexingServiceTest
 
         // then
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
-        InOrder order = inOrder( populator, accessor );
+        InOrder order = inOrder( populator, accessor, mockedUpdater );
         order.verify( populator ).create();
         order.verify( populator ).close( true );
-        order.verify( accessor ).updateAndCommit( argThat( containsAll( withData(
-                add( 10, "foo" )
-        ) ) ) );
+        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE );
+        order.verify( mockedUpdater ).process( add( 10, "foo") );
+        order.verify( mockedUpdater ).close();
     }
 
     @Test

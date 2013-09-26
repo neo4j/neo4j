@@ -26,9 +26,12 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -68,15 +71,15 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        return new CollectingIndexUpdater()
+        return new IndexUpdater()
         {
             @Override
-            public void close() throws IOException
+            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
             {
                 switch( mode )
                 {
                     case ONLINE:
-                        job.update( updates );
+                        job.update( update );
                         break;
 
                     case RECOVERY:
@@ -85,6 +88,11 @@ public class PopulatingIndexProxy implements IndexProxy
                     default:
                         throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
                 }
+            }
+
+            @Override
+            public void close() throws IOException, IndexEntryConflictException
+            {
             }
         };
     }

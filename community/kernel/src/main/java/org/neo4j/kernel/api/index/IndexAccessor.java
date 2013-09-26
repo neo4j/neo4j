@@ -21,6 +21,9 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
+
 /**
  * Used for online operation of an index.
  */
@@ -35,19 +38,15 @@ public interface IndexAccessor
     void drop() throws IOException;
 
     /**
-     * Apply a set of changes to this index.
+     * Return an updater for applying a set of changes to this index.
      * Updates must be visible in {@link #newReader() readers} created after this update.
-     */
-    void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException;
-
-    /**
-     * Apply a set of changes to this index. This method will be called instead of
-     * {@link #updateAndCommit(Iterable)} during recovery of the database when starting up after
-     * a crash or similar. Updates given here may have already been applied to this index, so
+     *
+     * This is called with IndexUpdateMode.RECOVERY when starting up after
+     * a crash or similar. Updates given then may have already been applied to this index, so
      * additional checks must be in place so that data doesn't get duplicated, but is idempotent.
      */
-    void recover( Iterable<NodePropertyUpdate> updates ) throws IOException;
-    
+    IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException;
+
     /**
      * Forces this index to disk. Called at certain points from within Neo4j for example when
      * rotating the logical log. After completion of this call there cannot be any essential state that
@@ -79,14 +78,9 @@ public interface IndexAccessor
         }
 
         @Override
-        public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException,
-                IOException
+        public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
         {
-        }
-        
-        @Override
-        public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
-        {
+            return SwallowingIndexUpdater.INSTANCE;
         }
 
         @Override

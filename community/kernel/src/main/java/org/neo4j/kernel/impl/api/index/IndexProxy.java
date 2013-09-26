@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
@@ -54,7 +55,7 @@ public interface IndexProxy
 {
     void start() throws IOException;
 
-    IndexUpdater newUpdater( IndexUpdateMode mode );
+    IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException;
 
     /**
      * Initiates dropping this index context. The returned {@link Future} can be used to await

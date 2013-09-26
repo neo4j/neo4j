@@ -24,6 +24,12 @@ import java.util.Map;
 
 import org.neo4j.helpers.BiConsumer;
 
+/**
+ * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
+ *
+ * IndexingService is expected to either make a copy before making any changes or update this
+ * while being single threaded.
+ */
 public final class IndexMap implements Cloneable
 {
     private final Map<Long, IndexProxy> indexesById;

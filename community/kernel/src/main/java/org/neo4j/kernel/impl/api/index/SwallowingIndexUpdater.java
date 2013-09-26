@@ -19,21 +19,29 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.ArrayList;
+import java.io.IOException;
 
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-// TODO: Replace uses of this class with pushing down of updates straight from WriteTransaction to lucene
-public abstract class CollectingIndexUpdater implements IndexUpdater
+public final class SwallowingIndexUpdater implements IndexUpdater
 {
-    protected final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
+    public static final IndexUpdater INSTANCE = new org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater();
+
+    public SwallowingIndexUpdater()
+    {
+    }
 
     @Override
     public void process( NodePropertyUpdate update )
     {
-        if ( null != update )
-        {
-            updates.add( update );
-        }
+        // intentionally swallow this update
+    }
+
+    @Override
+    public void close() throws IOException, IndexEntryConflictException
+    {
+        // nothing to close
     }
 }

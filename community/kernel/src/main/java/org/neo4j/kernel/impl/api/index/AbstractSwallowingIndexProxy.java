@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
@@ -56,7 +57,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return IndexUpdater.SwallowingIndexUpdater.INSTANCE;
+        return SwallowingIndexUpdater.INSTANCE;
     }
 
     @Override

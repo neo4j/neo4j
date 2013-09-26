@@ -22,11 +22,10 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
@@ -52,35 +51,9 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode )
+    public IndexUpdater newUpdater( final IndexUpdateMode mode ) throws IOException
     {
-        return new CollectingIndexUpdater()
-        {
-            @Override
-            public void close() throws IOException
-            {
-                switch( mode )
-                {
-                    case ONLINE:
-                        try
-                        {
-                            accessor.updateAndCommit( updates );
-                        }
-                        catch ( IndexEntryConflictException e )
-                        {
-                            throw e.notAllowed( descriptor );
-                        }
-                        break;
-
-                    case RECOVERY:
-                        accessor.recover( updates );
-                        break;
-
-                    default:
-                        throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
-                }
-            }
-        };
+        return accessor.newUpdater( mode );
     }
 
 

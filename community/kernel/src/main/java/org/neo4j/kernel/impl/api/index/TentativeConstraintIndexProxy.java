@@ -31,7 +31,9 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
 public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
@@ -47,19 +49,32 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
     {
         switch( mode )
         {
             case ONLINE:
-                return new CollectingIndexUpdater()
+                return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )
                 {
                     @Override
-                    public void close() throws IOException
+                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
                     {
                         try
                         {
-                            target.accessor.updateAndCommit( updates );
+                            delegate.process( update );
+                        }
+                        catch ( IndexEntryConflictException conflict )
+                        {
+                            failures.add( conflict );
+                        }
+                    }
+
+                    @Override
+                    public void close() throws IOException, IndexEntryConflictException
+                    {
+                        try
+                        {
+                            delegate.close();
                         }
                         catch ( IndexEntryConflictException conflict )
                         {
@@ -107,8 +122,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         Iterator<IndexEntryConflictException> iterator = failures.iterator();
         if ( iterator.hasNext() )
         {
-            Set<ConstraintVerificationFailedKernelException.Evidence> evidence =
-                    new HashSet<ConstraintVerificationFailedKernelException.Evidence>();
+            Set<ConstraintVerificationFailedKernelException.Evidence> evidence = new HashSet<>();
             do
             {
                 evidence.add( new ConstraintVerificationFailedKernelException.Evidence( iterator.next() ) );

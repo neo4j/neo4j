@@ -31,8 +31,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
@@ -68,7 +71,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
     {
         // Making use of reentrant locks to ensure that the delegate's constructor is called under lock protection
         // while still retaining the lock until a call to close on the returned IndexUpdater
@@ -312,11 +315,17 @@ public class FlippableIndexProxy implements IndexProxy
         }
 
         @Override
-        public void close() throws IOException
+        public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+        {
+            delegate.process( update );
+        }
+
+        @Override
+        public void close() throws IOException, IndexEntryConflictException
         {
             try
             {
-                super.close();
+                delegate.close();
             }
             finally
             {
