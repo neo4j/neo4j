@@ -85,7 +85,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.ascii
 2+| Operators
 | Mathematical       | `+`, `-`, `*`, `/`, `%`
 | Comparison         | `=`, `<>`, `<`, `>`, `<=`, `>=`
-| Boolean            | `AND`, `OR`, `XOR`, `NOT`
+| Boolean            | `OR`, `AND`, `XOR`, `NOT`
 | String             | `+`
 | Collection         | `+`, `IN`
 | Regular Expression | `=~`
