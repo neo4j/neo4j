@@ -1798,7 +1798,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         // WHEN
         index.remove( node1, "name" );
-        Set<Node> nodes = asSet( index.query( "*:*" ) );
+        Set<Node> nodes = asSet( (Iterable<Node>) index.query( "*:*" ) );
 
         // THEN
         assertEquals( asSet(), nodes );
