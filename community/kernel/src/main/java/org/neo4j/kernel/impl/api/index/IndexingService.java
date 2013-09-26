@@ -52,6 +52,7 @@ import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
@@ -296,7 +297,13 @@ public class IndexingService extends LifecycleAdapter
             {
                 try
                 {
-                    index.update( updates );
+                    try (IndexUpdater updater = index.newUpdater( IndexUpdateMode.ONLINE ))
+                    {
+                        for ( NodePropertyUpdate update : updates )
+                        {
+                            updater.process( update );
+                        }
+                    }
                 }
                 catch ( IOException e )
                 {
@@ -310,7 +317,13 @@ public class IndexingService extends LifecycleAdapter
             {
                 try
                 {
-                    index.recover( updates );
+                    try (IndexUpdater updater = index.newUpdater( IndexUpdateMode.RECOVERY ))
+                    {
+                        for ( NodePropertyUpdate update : updates )
+                        {
+                            updater.process( update );
+                        }
+                    }
                 }
                 catch ( IOException e )
                 {

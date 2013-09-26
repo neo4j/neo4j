@@ -29,11 +29,8 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
-
-import static org.neo4j.helpers.FutureAdapter.VOID;
 
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
@@ -55,11 +52,9 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 public interface IndexProxy
 {
     void start() throws IOException;
-    
-    void update( Iterable<NodePropertyUpdate> updates ) throws IOException;
-    
-    void recover( Iterable<NodePropertyUpdate> updates ) throws IOException;
-    
+
+    IndexUpdater newUpdater( IndexUpdateMode mode );
+
     /**
      * Initiates dropping this index context. The returned {@link Future} can be used to await
      * its completion.
@@ -99,87 +94,4 @@ public interface IndexProxy
     void activate() throws IndexActivationFailedKernelException;
 
     void validate() throws ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException;
-
-    class Adapter implements IndexProxy
-    {
-        public static final Adapter EMPTY = new Adapter();
-
-        @Override
-        public void start()
-        {
-        }
-
-        @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
-        {
-        }
-        
-        @Override
-        public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
-        {
-        }
-
-        @Override
-        public Future<Void> drop()
-        {
-            return VOID;
-        }
-
-        @Override
-        public InternalIndexState getState()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void force()
-        {
-        }
-
-        @Override
-        public Future<Void> close()
-        {
-            return VOID;
-        }
-
-        @Override
-        public IndexDescriptor getDescriptor()
-        {
-            return null;
-        }
-
-        @Override
-        public SchemaIndexProvider.Descriptor getProviderDescriptor()
-        {
-            return null;
-        }
-
-        @Override
-        public IndexReader newReader()
-        {
-            return IndexReader.EMPTY;
-        }
-
-        @Override
-        public boolean awaitStoreScanCompleted()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void activate()
-        {
-        }
-
-        @Override
-        public void validate()
-        {
-        }
-
-        @Override
-        public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
-        {
-            throw new IllegalStateException( "This index isn't failed" );
-        }
-    }
 }

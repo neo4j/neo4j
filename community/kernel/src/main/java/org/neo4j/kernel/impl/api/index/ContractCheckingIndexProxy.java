@@ -24,8 +24,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-
 /**
  * {@link IndexProxy} layer that enforces the dynamic contract of {@link IndexProxy} (cf. Test)
  *
@@ -62,7 +60,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     public ContractCheckingIndexProxy( IndexProxy delegate, boolean started )
     {
         super( delegate );
-        this.state = new AtomicReference<State>( started ? State.STARTED : State.INIT );
+        this.state = new AtomicReference<>( started ? State.STARTED : State.INIT );
         this.openCalls = new AtomicInteger( 0 );
     }
 
@@ -87,16 +85,30 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        openCall( "update" );
-        try
+        if ( IndexUpdateMode.ONLINE == mode )
         {
-            super.update( updates );
+            openCall( "update" );
+            return new DelegatingIndexUpdater( super.newUpdater( mode ) )
+            {
+                @Override
+                public void close() throws IOException
+                {
+                    try
+                    {
+                        super.close();
+                    }
+                    finally
+                    {
+                        closeCall();
+                    }
+                }
+            };
         }
-        finally
+        else
         {
-            closeCall();
+            return super.newUpdater( mode );
         }
     }
 

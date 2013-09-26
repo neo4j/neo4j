@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
@@ -52,23 +52,37 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
+    public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        try
+        return new CollectingIndexUpdater()
         {
-            accessor.updateAndCommit( updates );
-        }
-        catch ( IndexEntryConflictException e )
-        {
-            throw e.notAllowed( descriptor );
-        }
+            @Override
+            public void close() throws IOException
+            {
+                switch( mode )
+                {
+                    case ONLINE:
+                        try
+                        {
+                            accessor.updateAndCommit( updates );
+                        }
+                        catch ( IndexEntryConflictException e )
+                        {
+                            throw e.notAllowed( descriptor );
+                        }
+                        break;
+
+                    case RECOVERY:
+                        accessor.recover( updates );
+                        break;
+
+                    default:
+                        throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
+                }
+            }
+        };
     }
-    
-    @Override
-    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
-    {
-        accessor.recover( updates );
-    }
+
 
     @Override
     public Future<Void> drop() throws IOException

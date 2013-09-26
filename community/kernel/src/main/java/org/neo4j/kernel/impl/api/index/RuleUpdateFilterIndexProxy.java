@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public class RuleUpdateFilterIndexProxy extends DelegatingIndexProxy
@@ -46,14 +43,22 @@ public class RuleUpdateFilterIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        super.update( new FilteringIterable<>( updates, ruleMatchingUpdates ) );
+        return new DelegatingIndexUpdater( super.newUpdater( mode ) )
+        {
+            private final IndexDescriptor descriptor = RuleUpdateFilterIndexProxy.this.getDescriptor();
+
+            @Override
+            public void process( NodePropertyUpdate update )
+            {
+                if ( update.getPropertyKeyId() == descriptor.getPropertyKeyId()
+                     && update.forLabel( descriptor.getLabelId() ) )
+                {
+                    super.process( update );
+                }
+            }
+        };
     }
 
-    @Override
-    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
-    {
-        super.recover( new FilteringIterable<>( updates, ruleMatchingUpdates ) );
-    }
 }
