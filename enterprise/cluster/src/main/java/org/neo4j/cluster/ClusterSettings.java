@@ -43,59 +43,78 @@ import static org.neo4j.helpers.Settings.setting;
  */
 public class ClusterSettings
 {
-    @Description( "Id for a cluster instance. Must be unique within the cluster" )
+    @Description( "Id for a cluster instance. Must be unique within the cluster." )
     public static final Setting<Integer> server_id = setting( "ha.server_id", INTEGER, MANDATORY );
 
-    @Description( "The name of a cluster" )
+    @Description( "The name of a cluster." )
     public static final Setting<String> cluster_name = setting( "ha.cluster_name", STRING, "neo4j.ha",
             illegalValueMessage( "Must be a valid cluster name" , matches( ANY ) ) );
 
-    @Description( "This is the list of potential cluster members" )
+    @Description( "A comma-separated list of other members of the cluster to join." )
     public static final Setting<List<HostnamePort>> initial_hosts = setting( "ha.initial_hosts",
             list( ",", HOSTNAME_PORT ), MANDATORY );
 
-    @Description( "Host name and port to use for the cluster server" )
+    @Description( "Host & port to bind the cluster management communication." )
     public static final Setting<HostnamePort> cluster_server = setting( "ha.cluster_server", HOSTNAME_PORT,
             ":5001-5099" );
 
-    @Description( "Whether to allow this instance to create a cluster if unable to join" )
+    @Description( "Whether to allow this instance to create a cluster if unable to join." )
     public static final Setting<Boolean> allow_init_cluster = setting( "ha.allow_init_cluster", BOOLEAN, TRUE );
 
     // Timeout settings
-    @Description( "Default timeout used for clustering timeouts. Override with specific timeouts if necessary" )
+
+    /*
+     * ha.heartbeat_interval
+     * ha.paxos_timeout
+     * ha.learn_timeout
+     */
+    @Description( "Default timeout used for clustering timeouts. Override  specific timeout settings with proper" +
+            " values if necessary. This value is the default value for settings ha.heartbeat_interval," +
+            " ha.paxos_timeout and ha.learn_timeout." )
     public static final Setting<Long> default_timeout = setting( "ha.default_timeout", DURATION, "5s" );
 
-    @Description( "Timeout for heartbeats between cluster members. Should be at least twice that of the interval" )
-    public static final Setting<Long> heartbeat_timeout = setting( "ha.heartbeat_timeout", DURATION, "11s" );
-
-    @Description( "How often heartbeat messages should be sent" )
+    @Description( "How often heartbeat messages should be sent. Defaults to ha.default_timeout." )
     public static final Setting<Long> heartbeat_interval = setting( "ha.heartbeat_interval", DURATION,
             default_timeout );
 
-    @Description( "Timeout for broadcasting values in cluster. Must consider end-to-end duration of Paxos algorithm" )
+    @Description( "Timeout for heartbeats between cluster members. Should be at least twice that of ha.heartbeat_interval." )
+    public static final Setting<Long> heartbeat_timeout = setting( "ha.heartbeat_timeout", DURATION, "11s" );
+
+    /*
+     * ha.join_timeout
+     * ha.leave_timeout
+     */
+    @Description( "Timeout for broadcasting values in cluster. Must consider end-to-end duration of Paxos algorithm." +
+            " This value is the default value for settings ha.join_timeout and ha.leave_timeout." )
     public static final Setting<Long> broadcast_timeout = setting( "ha.broadcast_timeout", DURATION, "30s" );
 
-    @Description( "Timeout for joining a cluster" )
+    @Description( "Timeout for joining a cluster. Defaults to ha.broadcast_timeout." )
     public static final Setting<Long> join_timeout = setting( "ha.join_timeout", DURATION, broadcast_timeout );
 
-    @Description( "Timeout for waiting for configuration from an existing cluster member" )
+    @Description( "Timeout for waiting for configuration from an existing cluster member during cluster join." )
     public static final Setting<Long> configuration_timeout = setting( "ha.configuration_timeout", DURATION, "1s" );
 
-    @Description( "Timeout for waiting for cluster leave to finish" )
+    @Description( "Timeout for waiting for cluster leave to finish. Defaults to ha.broadcast_timeout." )
     public static final Setting<Long> leave_timeout = setting( "ha.leave_timeout", DURATION, broadcast_timeout );
 
-    @Description( "Default timeout for all Paxos timeouts" )
+    /*
+     *  ha.phase1_timeout
+     *  ha.phase2_timeout
+     *  ha.election_timeout
+     */
+    @Description( "Default timeout for all Paxos timeouts. Defaults to ha.default_timeout. This value is the default" +
+            " value for settings ha.phase1_timeout, ha.phase2_timeout and ha.election_timeout." )
     public static final Setting<Long> paxos_timeout = setting( "ha.paxos_timeout", DURATION, default_timeout );
 
-    @Description( "Timeout for Paxos phase 1" )
+    @Description( "Timeout for Paxos phase 1. Defaults to ha.paxos_timeout." )
     public static final Setting<Long> phase1_timeout = setting( "ha.phase1_timeout", DURATION, paxos_timeout );
 
-    @Description( "Timeout for Paxos phase 2" )
+    @Description( "Timeout for Paxos phase 2. Defaults to ha.paxos_timeout." )
     public static final Setting<Long> phase2_timeout = setting( "ha.phase2_timeout", DURATION, paxos_timeout );
 
-    @Description( "Timeout for learning values" )
+    @Description( "Timeout for learning values. Defaults to ha.default_timeout." )
     public static final Setting<Long> learn_timeout = setting( "ha.learn_timeout", DURATION, default_timeout );
 
-    @Description( "Timeout for waiting for other members to finish a role election" )
+    @Description( "Timeout for waiting for other members to finish a role election. Defaults to ha.paxos_timeout." )
     public static final Setting<Long> election_timeout = setting( "ha.election_timeout", DURATION, paxos_timeout );
 }

@@ -22,6 +22,9 @@
 -->
 <licensing-requirements>
   <missing-artifacts>
+    <artifact id="Oracle JRE" name="Oracle Java Runtime Environment">
+        <license>Oracle Binary Code License Agreement for Java SE Platform Products and JavaFX</license>
+    </artifact>
     <artifact id="Neo4j Installer" name="Neo4j Installer">
       <license>Install4j redistributable files license</license>
     </artifact>

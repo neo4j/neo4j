@@ -19,26 +19,36 @@
  */
 package org.neo4j.cluster.com.message;
 
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
-
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-
-import static org.junit.Assert.assertTrue;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * TODO
@@ -88,6 +98,144 @@ public class NetworkSenderReceiverTest
         life.shutdown();
     }
 
+    @Test
+    public void senderThatStartsAfterReceiverShouldEventuallyConnectSuccessfully() throws Throwable
+    {
+        /*
+         * This test verifies that a closed channel from a sender to a receiver is removed from the connections
+         * mapping in the sender. It starts a sender, connects it to a receiver and sends a message
+         */
+        NetworkSender sender = null;
+        NetworkReceiver receiver = null;
+        try
+        {
+            Logging loggingMock = mock( Logging.class );
+            StringLogger loggerMock = mock( StringLogger.class );
+            when( loggingMock.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( loggerMock );
+
+            final Semaphore sem = new Semaphore( 0 );
+
+            doAnswer( new Answer<Object>()
+            {
+                @Override
+                public Object answer( InvocationOnMock invocation ) throws Throwable
+                {
+                    sem.release();
+                    return null;
+                }
+            } ).when( loggerMock ).warn( anyString(), any( Exception.class ) );
+
+            receiver = new NetworkReceiver( new NetworkReceiver.Configuration()
+            {
+                @Override
+                public HostnamePort clusterServer()
+                {
+                    return new HostnamePort( "127.0.0.1:1235" );
+                }
+
+                @Override
+                public int defaultPort()
+                {
+                    return 5001;
+                }
+            }, new DevNullLoggingService() )
+            {
+                @Override
+                public void stop() throws Throwable
+                {
+                    super.stop();
+                    sem.release();
+                }
+            };
+
+            sender = new NetworkSender( new NetworkSender.Configuration()
+            {
+                @Override
+                public int defaultPort()
+                {
+                    return 5001;
+                }
+            }, receiver, loggingMock );
+
+            sender.init();
+            sender.start();
+
+            receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
+            {
+                @Override
+                public void listeningAt( URI me )
+                {
+                    sem.release();
+                }
+
+                @Override
+                public void channelOpened( URI to )
+                {
+                }
+
+                @Override
+                public void channelClosed( URI to )
+                {
+                }
+            } );
+
+            final AtomicBoolean received = new AtomicBoolean( false );
+
+            receiver.addMessageProcessor( new MessageProcessor()
+            {
+                @Override
+                public boolean process( Message<? extends MessageType> message )
+                {
+                    received.set( true );
+                    sem.release();
+                    return true;
+                }
+            } );
+
+            receiver.init();
+            receiver.start();
+
+            sem.acquire(); // wait for start from listeningAt() in the NetworkChannelsListener
+
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "neo4j://127.0.0.1:1235" ), "Hello World" ) );
+
+            sem.acquire(); // wait for process from the MessageProcessor
+
+            receiver.stop();
+
+            sem.acquire(); // wait for overridden stop method in receiver
+
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "neo4j://127.0.0.1:1235" ), "Hello World2" ) );
+
+            sem.acquire(); // wait for the warn from the sender
+
+            receiver.start();
+
+            sem.acquire(); // wait for receiver.listeningAt()
+
+            received.set( false );
+
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "neo4j://127.0.0.1:1235" ), "Hello World3" ) );
+
+            sem.acquire(); // wait for receiver.process();
+
+            assertTrue( received.get() );
+        }
+        finally
+        {
+            if ( sender != null )
+            {
+                sender.stop();
+                sender.shutdown();
+            }
+            if ( receiver != null )
+            {
+                receiver.stop();
+                receiver.shutdown();
+            }
+        }
+    }
+
     private static class Server
             implements Lifecycle, MessageProcessor
     {
@@ -95,7 +243,7 @@ public class NetworkSenderReceiverTest
         private final NetworkSender networkSender;
 
         private final LifeSupport life = new LifeSupport();
-        private AtomicBoolean processedMessage = new AtomicBoolean(  );
+        private AtomicBoolean processedMessage = new AtomicBoolean();
 
         private Server( final CountDownLatch latch, final Map<String, String> config )
         {
@@ -135,7 +283,6 @@ public class NetworkSenderReceiverTest
                         public boolean process( Message<? extends MessageType> message )
                         {
                             // server receives a message
-                            System.out.println("#"+message);
                             processedMessage.set(true);
                             latch.countDown();
                             return true;

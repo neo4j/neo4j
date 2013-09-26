@@ -28,10 +28,11 @@ public class EmbeddedServer implements ServerInterface
 {
     private GraphDatabaseService db;
 
-    public EmbeddedServer( String storeDir )
+    public EmbeddedServer( String storeDir, String serverAddress )
     {
         GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         graphDatabaseBuilder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
+        graphDatabaseBuilder.setConfig( OnlineBackupSettings.online_backup_server, serverAddress );
         this.db = graphDatabaseBuilder.newGraphDatabase();
     }
     
