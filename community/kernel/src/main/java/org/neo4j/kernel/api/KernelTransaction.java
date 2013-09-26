@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
 /**
@@ -49,7 +48,4 @@ public interface KernelTransaction
 
     /** Roll back this transaction, undoing any changes that have been made. */
     void rollback() throws TransactionFailureException;
-
-    <RESULT, FAILURE extends KernelException> RESULT execute( MicroTransaction<RESULT, FAILURE> transaction )
-            throws FAILURE;
 }

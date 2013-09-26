@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
-
 public class InvalidTransactionTypeKernelException extends KernelException
 {
     public InvalidTransactionTypeKernelException(String message)

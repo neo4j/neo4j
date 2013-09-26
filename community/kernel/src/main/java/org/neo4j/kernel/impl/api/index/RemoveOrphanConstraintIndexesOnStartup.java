@@ -21,11 +21,10 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.api.StatementOperationParts;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.Transactor;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -50,26 +49,26 @@ public class RemoveOrphanConstraintIndexesOnStartup
     {
         try
         {
-            transactor.execute( new Transactor.Work<Void, SchemaKernelException>()
+            transactor.execute( new Transactor.Work<Void, KernelException>()
             {
                 @Override
-                public Void perform( StatementOperationParts context, KernelStatement state )
-                        throws SchemaKernelException
+                public Void perform( Statement state )
+                        throws KernelException
                 {
-                    for ( Iterator<IndexDescriptor> indexes = context.schemaReadOperations().uniqueIndexesGetAll( state );
+                    for ( Iterator<IndexDescriptor> indexes = state.readOperations().uniqueIndexesGetAll();
                           indexes.hasNext(); )
                     {
                         IndexDescriptor index = indexes.next();
-                        if ( context.schemaReadOperations().indexGetOwningUniquenessConstraintId( state, index ) == null )
+                        if ( state.readOperations().indexGetOwningUniquenessConstraintId( index ) == null )
                         {
-                            context.schemaWriteOperations().uniqueIndexDrop( state, index );
+                            state.schemaWriteOperations().uniqueIndexDrop( index );
                         }
                     }
                     return null;
                 }
             } );
         }
-        catch ( SchemaKernelException | TransactionalException e )
+        catch ( KernelException | TransactionalException e )
         {
             log.error( "Failed to execute orphan index checking transaction.", e );
         }
