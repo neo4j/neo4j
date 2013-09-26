@@ -103,8 +103,8 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     internalTestQuery(title, text, queryText, returns, Some(classTag), None)
   }
 
-  def prepareAndTestQuery(title: String, text: String, queryText: String, returns: String, prepare: (() => Any), assertions: (ExecutionResult => Unit)*) {
-    internalTestQuery(title, text, queryText, returns, None, Some(prepare), assertions: _*)
+  def prepareAndTestQuery(title: String, text: String, queryText: String, returns: String, prepare: => Any, assertions: (ExecutionResult => Unit)*) {
+    internalTestQuery(title, text, queryText, returns, None, Some(() => prepare), assertions: _*)
   }
 
   def internalTestQuery(title: String, text: String, queryText: String, returns: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {

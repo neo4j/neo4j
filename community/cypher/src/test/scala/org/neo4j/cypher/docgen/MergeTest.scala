@@ -165,4 +165,15 @@ return keanu""",
         "unique node with the role of 'Gordon Gekko' and merge fails to match."
     )
   }
+
+  @Test def using_map_parameters_with_merge() {
+    prepareAndTestQuery(
+      title = "Using map parameters with MERGE",
+      text = "By explicitly choosing the keys from the map, MERGE handles map params just fine.",
+      prepare = setParameters(Map("param" -> Map("name" -> "Keanu Reeves", "role" -> "Neo"))),
+      queryText = "merge (oliver:Person {name:{param}.name, role:{param}.role}) return oliver",
+      returns = "",
+      assertions = p => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
+    )
+  }
 }
