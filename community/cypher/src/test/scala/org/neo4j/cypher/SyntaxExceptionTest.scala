@@ -60,13 +60,7 @@ class SyntaxExceptionTest extends JUnitSuite with Assertions {
 
   @Test def shouldRaiseErrorWhenMissingReturn() {
     test("start s = node(0)",
-      v2_0    -> "Query must conclude with RETURN, WITH or an update clause (line 1, column 18)"
-    )
-  }
-
-  @Test def shouldWarnAboutMissingStart() {
-    test("where s.name = 'Name' and s.age = 10 return s",
-      v2_0    -> "Query must begin with START, MATCH or CREATE (line 1, column 1)"
+      v2_0    -> "Query cannot conclude with START (must be RETURN or an update clause) (line 1, column 1)"
     )
   }
 

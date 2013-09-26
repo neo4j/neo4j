@@ -20,234 +20,116 @@
 package org.neo4j.cypher.internal.parser.v2_0.ast
 
 import org.neo4j.cypher.internal.parser.v2_0._
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
 
 sealed trait Query extends Statement
 
-case class SingleQuery(
-    start: Option[Start],
-    matches: Option[Match],
-    hints: Seq[Hint],
-    where: Option[Where],
-    updates: Seq[UpdateClause],
-    close: Option[QueryClose],
-    token: InputToken) extends Query
-{
-  def isEmpty = (start, matches, hints, where, updates, close) match {
-    case (None, None, Seq(), None, Seq(), None) => true
-    case _ => false
-  }
-  
-  def semanticCheck : Seq[SemanticError] = checkUntilConsistent(semanticCheck)
-  
-  def semanticCheck(implicit d: DummyImplicit) : SemanticCheck = {
-    checkStart then
-    checkConclusion then
-    (start ++ matches ++ where ++ updates ++ close).semanticCheck
+case class SingleQuery(clauses: Seq[Clause], token: InputToken) extends Query {
+  def semanticCheck: SemanticCheck = checkOrder(clauses) then checkClauses
+
+  private def checkOrder(clauses: Seq[Clause]): SemanticCheck = clauses match {
+    case Seq() => Seq()
+    case _     => (clauses.take(2) match {
+      case Seq(clause: Return, _)                => Seq(SemanticError(s"${clause.name} can only be used at the end of the query", clause.token))
+      case Seq(_: UpdateClause, _: UpdateClause) => Seq()
+      case Seq(_: UpdateClause, _: With)         => Seq()
+      case Seq(_: UpdateClause, _: Return)       => Seq()
+      case Seq(update: UpdateClause, clause)     => Seq(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.token, update.token))
+      case Seq(_: UpdateClause)                  => Seq()
+      case Seq(_: Return)                        => Seq()
+      case Seq(clause)                           => Seq(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.token))
+      case _                                     => Seq()
+    }) then checkOrder(clauses.tail)
   }
 
-  private def checkStart : SemanticState => Option[SemanticError] = state => {
-    if (state.isClean && !where.isEmpty && (start.isEmpty && matches.isEmpty))
-      Some(SemanticError("Query must begin with START, MATCH or CREATE", token.startOnly))
-    else
-      None
-  }
-  private def checkConclusion : SemanticState => Option[SemanticError] = state => {
-    if (updates.isEmpty && close.isEmpty)
-      Some(SemanticError("Query must conclude with RETURN, WITH or an update clause", token.endOnly))
-    else
-      None
-  }
-
-  private def checkUntilConsistent(check: SemanticCheck) : Seq[SemanticError] = {
-    repeatUntil((SemanticCheckResult.success(SemanticState.clean), 10)) { case (previous, n) =>
-      val latest = check(previous.state)
-      if (!latest.errors.isEmpty || latest.state == previous.state)
-        ((latest, n-1), true)
-      else if (n == 0)
-        throw new ThisShouldNotHappenError("chris", "Too many semantic check passes")
-      else
-        ((latest, n-1), !latest.errors.isEmpty || latest.state == previous.state)
-    }._1.errors    
-  }
-
-  private def repeatUntil[A](seed: A)(f: A => (A, Boolean)): A = f(seed) match {
-    case (a, false) => repeatUntil(a)(f)
-    case (a, true)  => a
-  }
-
-  def toLegacyQuery = toLegacyQuery(true)
-  def toLegacyQuery(top: Boolean) = addToLegacyQuery(new commands.QueryBuilder(), top)
-  def addToLegacyQuery(builder: commands.QueryBuilder, top: Boolean) : commands.Query = {
-    val updateGroups = groupUpdates(updates)
-
-    val rest = if (start.isDefined || matches.isDefined || where.isDefined || updateGroups.isEmpty) {
-      val startItems = start match {
-        case Some(s) => s.items.map(_.toCommand)
-        case None    => Seq()
-      }
-
-      val (patterns, namedMatchPaths) = matches match {
-        case Some(Match(ps, _)) => (ps.flatMap(_.toLegacyPatterns), ps.flatMap(_.toLegacyNamedPath))
-        case None               => (Seq(), Seq())
-      }
-
-      val indexHints = hints.map(_.toLegacySchemaIndex)
-
-      val wherePredicate = where match {
-        case Some(Where(e, _)) => e.toCommand match {
-          case p: commands.Predicate => Some(p)
-          case _                     => throw new SyntaxException(s"WHERE clause expression must return a boolean (${e.token.startPosition})")
-        }
-        case None => None
-      }
-
-      val predicate = wherePredicate.getOrElse(commands.True())
-
-      builder.startItems(startItems:_*).matches(patterns:_*).namedPaths(namedMatchPaths:_*).using(indexHints:_*).where(predicate)
-      updateGroups
-    } else {
-      val firstUpdates = updateGroups.head
-      val acceptableAtQueryStart = firstUpdates.head.isInstanceOf[Create] || firstUpdates.head.isInstanceOf[Merge]
-
-      addUpdateGroupToBuilder(builder, updateGroups.head)
-      updateGroups.tail
+  private def checkClauses: SemanticCheck = s => {
+    def checkClause(clause: Clause, last: SemanticCheckResult) = {
+      val result = clause.semanticCheck(last.state)
+      SemanticCheckResult(result.state, last.errors ++ result.errors)
     }
 
-    val closeFunc = close match {
-      case Some(c) => c.addToLegacyQuery(_)
-      case None    => (b: commands.QueryBuilder) => b.returns()
+    clauses.foldLeft(SemanticCheckResult.success(s.clearSymbols))((last, clause) => clause match {
+      case c: With =>
+        val result = checkClause(clause, last)
+        val subState = c.returnItems.declareIdentifiers(result.state)(result.state.clearSymbols)
+        SemanticCheckResult(subState.state, result.errors ++ subState.errors)
+      case _       => checkClause(clause, last)
+    })
+  }
+
+  def toLegacyQuery =
+    groupClauses(clauses).foldRight(None: Option[commands.Query], (_: commands.QueryBuilder).returns()) {
+      case (group, (tail, defaultClose)) =>
+        val builder = tail.foldLeft(new commands.QueryBuilder())((b, t) => b.tail(t))
+
+        group.foldLeft(builder)((b, clause) => clause match {
+          case c: Start        => c.addToLegacyQuery(b)
+          case c: Match        => c.addToLegacyQuery(b)
+          case c: Merge        => c.addToLegacyQuery(b)
+          case c: Create       => c.addToLegacyQuery(b)
+          case c: CreateUnique => c.addToLegacyQuery(b)
+          case c: SetClause    => c.addToLegacyQuery(b)
+          case c: Delete       => c.addToLegacyQuery(b)
+          case c: Remove       => c.addToLegacyQuery(b)
+          case c: Foreach      => c.addToLegacyQuery(b)
+          case _: With         => b
+          case _: Return       => b
+          case _               => throw new ThisShouldNotHappenError("cleishm", "Unknown clause while grouping")
+        })
+
+        val query = Some(group.takeRight(2) match {
+          case Seq(w: With, r: Return)  => w.closeLegacyQueryBuilder(builder, r.closeLegacyQueryBuilder)
+          case Seq(_, c: ClosingClause) => c.closeLegacyQueryBuilder(builder)
+          case Seq(c: ClosingClause)    => c.closeLegacyQueryBuilder(builder)
+          case _                        => defaultClose(builder)
+        })
+
+        (query, (_: commands.QueryBuilder).returns(commands.AllIdentifiers()))
+    }._1.get
+
+  private def groupClauses(clauses: Seq[Clause]): IndexedSeq[IndexedSeq[Clause]] = {
+    def split = Vector(clauses.head) +: groupClauses(clauses.tail)
+
+    def group = {
+      val tailGroups = groupClauses(clauses.tail)
+      (clauses.head +: tailGroups.head) +: tailGroups.tail
     }
 
-    rest.foldRight(closeFunc)((group, closer) => {
-      val tail = closer(addUpdateGroupToBuilder(new commands.QueryBuilder, group))
-      queryBuilder => queryBuilder.tail(tail).returns(commands.AllIdentifiers())
-    })(builder)
-  }
-
-  private def groupUpdates(updates: Seq[UpdateClause]) : Seq[Seq[UpdateClause]] = updates match {
-    case Seq() => List()
-    case _ => {
-      val updateBlock = updates.head +: updates.tail.takeWhile(u => !(u.isInstanceOf[Create] || u.isInstanceOf[CreateUnique]))
-      val rest = updates.splitAt(updateBlock.length)._2
-      updateBlock +: groupUpdates(rest)
-    }
-  }
-
-  private def addUpdateGroupToBuilder(builder: commands.QueryBuilder, updates: Seq[UpdateClause]) = {
-    val (startItems, namedCreatePaths, updateItems) = updates.head match {
-      case c: Create       => (c.toLegacyStartItems, c.toLegacyNamedPaths, updates.tail.flatMap(_.toLegacyUpdateActions))
-      case c: CreateUnique => (c.toLegacyStartItems, c.toLegacyNamedPaths, updates.tail.flatMap(_.toLegacyUpdateActions))
-      case _               => (Seq(), Seq(), updates.flatMap(_.toLegacyUpdateActions))
-    }
-    builder.startItems(startItems:_*).namedPaths(namedCreatePaths:_*).updates(updateItems:_*)
-  }
-}
-
-sealed trait QueryClose extends AstNode with SemanticCheckable {
-  def returnItems: ReturnItems
-  def orderBy: Option[OrderBy]
-  def skip: Option[Skip]
-  def limit: Option[Limit]
-
-  def semanticCheck =
-    returnItems.semanticCheck then
-    checkSortItems then
-    checkSkipLimit
-
-  // use a scoped state containing the aliased return items for the sort expressions
-  private def checkSortItems : SemanticState => Seq[SemanticError] =
-      s => (returnItems.declareSubqueryIdentifiers(s) then orderBy.semanticCheck)(s.newScope).errors
-
-  // use an empty state when checking skip & limit, as these have isolated scope
-  private def checkSkipLimit : SemanticState => Seq[SemanticError] =
-      s => (skip ++ limit).semanticCheck(SemanticState.clean).errors
-
-  def addToLegacyQuery(builder: commands.QueryBuilder) = {
-    val returns = returnItems.toCommands
-    extractAggregationExpressions(returns).foreach { builder.aggregation(_:_*) }
-    skip.foreach { s => builder.skip(s.toCommand) }
-    limit.foreach { l => builder.limit(l.toCommand) }
-    orderBy.foreach { o => builder.orderBy(o.sortItems.map(_.toCommand):_*) }
-    builder.returns(returns:_*)
-  }
-
-  protected def extractAggregationExpressions(items: Seq[commands.ReturnColumn]) = {
-    val aggregationExpressions = items.collect {
-      case commands.ReturnItem(expression, _, _) => (expression.subExpressions :+ expression).collect {
-        case agg : commandexpressions.AggregationExpression => agg
-      }
-    }.flatten
-
-    aggregationExpressions match {
-      case Seq() => None
-      case _     => Some(aggregationExpressions)
+    clauses.take(2) match {
+      case Seq(clause)                           => Vector(Vector(clause))
+      case Seq(_: With, _: Return)               => group
+      case Seq(_: ClosingClause, _)              => split
+      case Seq(_, _: ClosingClause)              => group
+      case Seq(_: UpdateClause, _: Create)       => split
+      case Seq(_: UpdateClause, _: CreateUnique) => split
+      case Seq(_: UpdateClause, _: Merge)        => split
+      case Seq(_: UpdateClause, _: UpdateClause) => group
+      case Seq(_: UpdateClause, _)               => split
+      case Seq(_, _: UpdateClause)               => split
+      case Seq(_: Match, _)                      => split
+      case Seq(_, _)                             => group
     }
   }
 }
-
-trait DistinctQueryClose extends QueryClose {
-  abstract override def extractAggregationExpressions(items: Seq[commands.ReturnColumn]) = {
-    Some(super.extractAggregationExpressions(items).getOrElse(Seq()))
-  }
-}
-
-case class With(
-    returnItems: ReturnItems,
-    orderBy: Option[OrderBy],
-    skip: Option[Skip],
-    limit: Option[Limit],
-    token: InputToken,
-    query: SingleQuery) extends QueryClose
-{
-  override def semanticCheck =
-    super.semanticCheck then
-    checkAliasedReturnItems then
-    checkSubQuery
-
-  private def checkAliasedReturnItems : SemanticState => Seq[SemanticError] = state => {
-    returnItems match {
-      case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map { i =>
-        SemanticError("Expression in WITH must be aliased (use AS)", i.token)
-      }
-      case _ => Seq()
-    }
-  }
-
-  private def checkSubQuery : SemanticState => Seq[SemanticError] = state => {
-    // check the subquery with a clean state
-    ( returnItems.declareSubqueryIdentifiers(state) then query.semanticCheck )(SemanticState.clean).errors
-  }
-
-  override def addToLegacyQuery(builder: commands.QueryBuilder) = {
-    super.addToLegacyQuery(builder.tail(query.toLegacyQuery(top = false)))
-  }
-}
-
-case class Return(
-    returnItems: ReturnItems,
-    orderBy: Option[OrderBy],
-    skip: Option[Skip],
-    limit: Option[Limit],
-    token: InputToken) extends QueryClose
 
 trait Union extends Query {
   def statement: Query
   def query: SingleQuery
 
-  def semanticCheck = checkUnionAggregation.toSeq ++ statement.semanticCheck ++ query.semanticCheck
-  
-  private def checkUnionAggregation = (statement, this) match {
+  def semanticCheck: SemanticCheck =
+    checkUnionAggregation then
+      statement.semanticCheck then
+      query.semanticCheck
+
+  private def checkUnionAggregation: SemanticCheck = (statement, this) match {
     case (_: SingleQuery, _)                  => None
     case (_: UnionAll, _: UnionAll)           => None
     case (_: UnionDistinct, _: UnionDistinct) => None
     case _                                    => Some(SemanticError("Invalid combination of UNION and UNION ALL", token))
   }
 
-  protected def unionedQueries : Seq[SingleQuery] = statement match {
+  protected def unionedQueries: Seq[SingleQuery] = statement match {
     case q: SingleQuery => Seq(query, q)
     case u: Union       => query +: u.unionedQueries
   }

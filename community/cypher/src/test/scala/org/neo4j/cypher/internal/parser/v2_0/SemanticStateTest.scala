@@ -118,10 +118,57 @@ class SemanticStateTest extends Assertions {
     assertEquals(Set(NodeType()), s2.symbolTypes("foo"))
   }
 
+  @Test
+  def shouldReturnTypesOfIdentifier() {
+    val identifier = ast.Identifier("foo", DummyToken(0, 1))
+    val s1 = SemanticState.clean.declareIdentifier(identifier, NodeType()).right.get
+    assertEquals(Set(NodeType()), s1.expressionTypes(identifier))
+  }
+
+  @Test
+  def shouldReturnTypesOfIdentifierAtLaterExpression() {
+    val identifier1 = ast.Identifier("foo", DummyToken(0, 1))
+    val identifier2 = ast.Identifier("foo", DummyToken(3, 5))
+    val s1 = SemanticState.clean.declareIdentifier(identifier1, NodeType()).right.get
+    val s2 = s1.implicitIdentifier(identifier2, NodeType()).right.get
+    assertEquals(Set(NodeType()), s2.expressionTypes(identifier2))
+  }
+
+  @Test
+  def shouldReturnTypesOfIdentifierAfterClear() {
+    val identifier = ast.Identifier("foo", DummyToken(0, 1))
+    val s1 = SemanticState.clean.declareIdentifier(identifier, NodeType()).right.get
+    assertEquals(Set(NodeType()), s1.clearSymbols.expressionTypes(identifier))
+  }
+
+  @Test
+  def shouldReturnTypesOfLaterImplicitIdentifierAfterClear() {
+    val identifier1 = ast.Identifier("foo", DummyToken(0, 1))
+    val identifier2 = ast.Identifier("foo", DummyToken(3, 5))
+    val s1 = SemanticState.clean.declareIdentifier(identifier1, NodeType()).right.get
+    val s2 = s1.implicitIdentifier(identifier2, NodeType()).right.get
+    assertEquals(Set(NodeType()), s2.clearSymbols.expressionTypes(identifier2))
+  }
+
+  @Test
+  def shouldReturnTypesOfLaterEnsuredIdentifierAfterClear() {
+    val identifier1 = ast.Identifier("foo", DummyToken(0, 1))
+    val identifier2 = ast.Identifier("foo", DummyToken(3, 5))
+    val s1 = SemanticState.clean.declareIdentifier(identifier1, NodeType()).right.get
+    val s2 = s1.ensureIdentifierDefined(identifier2).right.get
+    assertEquals(Set(NodeType()), s2.clearSymbols.expressionTypes(identifier2))
+  }
+
+  @Test
+  def shouldNotReturnSymbolOfIdentifierAfterClear() {
+    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
+    assertEquals(Set(), s1.clearSymbols.symbolTypes("foo"))
+  }
+
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {
-    def then(next: SemanticState => Either[SemanticError, SemanticState]) : Either[SemanticError, SemanticState] = {
+    def then(next: SemanticState => Either[SemanticError, SemanticState]): Either[SemanticError, SemanticState] = {
       either match {
-        case Left(_) => either
+        case Left(_)      => either
         case Right(state) => next(state)
       }
     }

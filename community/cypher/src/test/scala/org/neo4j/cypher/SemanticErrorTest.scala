@@ -187,6 +187,12 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
+  @Test def shouldWarnIFUsingAnHintWithAnUnknownIdentifier() {
+    test("match (n:Person)-->() using index m:Person(name) where n.name = \"kabam\" return n",
+      v2_0 -> "m not defined (line 1, column 35)"
+    )
+  }
+
   private def test(query: String, variants: (CypherVersion, String)*) {
     for ((versions, message) <- variants) {
       test(versions, query, message)

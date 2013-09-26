@@ -55,15 +55,6 @@ class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with Gra
   }
 
   @Test
-  def failIfUsingAnHintWithAnUnknownIdentifier() {
-    // GIVEN: NO INDEX
-
-    // WHEN
-    intercept[IndexHintException](
-      parseAndExecute("match (n:Person)-->() using index m:Person(name) where n.name = \"kabam\" return n"))
-  }
-
-  @Test
   def failIfUsingHintsWithUnusableEqualityPredicate() {
     // GIVEN
     graph.createIndex("Person", "name")

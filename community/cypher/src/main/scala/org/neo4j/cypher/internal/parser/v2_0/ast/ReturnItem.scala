@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.commands
 
 sealed trait ReturnItems extends AstNode with SemanticCheckable {
   def toCommands : Seq[commands.ReturnColumn]
-  def declareSubqueryIdentifiers(currentState: SemanticState) : SemanticCheck
+  def declareIdentifiers(currentState: SemanticState) : SemanticCheck
 }
 
 case class ListedReturnItems(items: Seq[ReturnItem], token: InputToken) extends ReturnItems {
   def semanticCheck = items.semanticCheck
 
-  def declareSubqueryIdentifiers(currentState: SemanticState) = {
+  def declareIdentifiers(currentState: SemanticState) = {
     items.foldLeft(SemanticCheckResult.success)((sc, item) => item.alias match {
       case Some(identifier) => sc then identifier.declare(item.expression.types(currentState))
       case None => sc
@@ -43,7 +43,7 @@ case class ListedReturnItems(items: Seq[ReturnItem], token: InputToken) extends 
 case class ReturnAll(token: InputToken) extends ReturnItems {
   def semanticCheck = SemanticCheckResult.success
 
-  def declareSubqueryIdentifiers(currentState: SemanticState) = s => SemanticCheckResult.success(s.importSymbols(currentState.symbolTable))
+  def declareIdentifiers(currentState: SemanticState) = s => SemanticCheckResult.success(s.importSymbols(currentState.symbolTable))
 
   def toCommands = Seq(commands.AllIdentifiers())
 }
