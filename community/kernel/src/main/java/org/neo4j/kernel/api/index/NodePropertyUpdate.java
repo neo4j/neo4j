@@ -70,6 +70,26 @@ public class NodePropertyUpdate
         return valueAfter;
     }
 
+    public int getNumberOfLabelsBefore()
+    {
+        return labelsBefore.length;
+    }
+
+    public int getLabelBefore( int i )
+    {
+        return (int) labelsBefore[i];
+    }
+
+    public int getNumberOfLabelsAfter()
+    {
+        return labelsAfter.length;
+    }
+
+    public int getLabelAfter( int i )
+    {
+        return (int) labelsAfter[i];
+    }
+
     public UpdateMode getUpdateMode()
     {
         return updateMode;

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-// TODO: Replace uses of this class with pushing down of updates
+// TODO: Replace uses of this class with pushing down of updates straight from WriteTransaction to lucene
 public abstract class CollectingIndexUpdater implements IndexUpdater
 {
     protected final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
