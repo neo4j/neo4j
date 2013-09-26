@@ -43,7 +43,8 @@ import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelE
  *     <li>The context may not be closed twice</li>
  *     <li>Close or drop both close the context</li>
  *     <li>The index may not be dropped before it has been created</li>
- *     <li>Update and force may only be called after the index has been created and before it is closed</li>
+ *     <li>newUpdater and force may only be called after the index has been created and before it is closed</li>
+ *     <li>It is an error to not close an updater before doing any other call on an index</li>
  *     <li>It is an error to close or drop the index while there are still ongoing calls to update and force</li>
  * </ul>
  *
