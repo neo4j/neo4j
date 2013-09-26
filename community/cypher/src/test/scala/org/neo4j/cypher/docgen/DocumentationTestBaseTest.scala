@@ -76,10 +76,11 @@ class DocumentationTestBaseTest extends DocumentingTestBase with StatisticsCheck
 By providing Cypher an array of maps, it will create a node for each map.
 _When you do this, you can't create anything else in the same +CREATE+ statement_.
 """,
-      prepare = { () =>
-        setParameters(Map("props" -> List(Map("name" -> "Andres", "position" -> "Developer"),
+      prepare =
+        setParameters(
+          Map("props" -> List(Map("name" -> "Andres", "position" -> "Developer"),
           Map("name" -> "Michael", "position" -> "Developer"))))
-      },
+      ,
       queryText = "create ({props})",
       returns = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
