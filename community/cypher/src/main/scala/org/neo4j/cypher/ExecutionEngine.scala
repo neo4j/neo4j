@@ -92,7 +92,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def prepare[T](query: String, run: (ExecutionPlan, QueryContext) => T): T =  {
     // parse query
-    val cachedQuery: AbstractQuery = queryCache.getOrElseUpdate(query, () => {
+    val cachedQuery: AbstractQuery = queryCache.getOrElseUpdate(query, {
       val parsedQuery = parser.parse(query)
       verify(parsedQuery)
       parsedQuery
@@ -109,7 +109,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         val planCache = getOrCreateFromSchemaState(statement, new LRUCache[String, ExecutionPlan](getQueryCacheSize))
 
         // get plan or build it
-        planCache.getOrElseUpdate(query, () => {
+        planCache.getOrElseUpdate(query, {
           touched = true
           val planContext = new TransactionBoundPlanContext(statement, graph)
           planBuilder.build(planContext, cachedQuery)

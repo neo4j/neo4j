@@ -56,7 +56,7 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
             }
             catch ( ServerStartupException e )
             {
-                assertThat( e.getMessage(), containsString( "Starting neo server failed" ) );
+                assertThat( e.getMessage(), containsString( "Starting Neo4j Server failed" ) );
             }
 
             // Don't include the SEVERE string since it's
