@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
@@ -69,27 +68,14 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
+        // Making use of reentrant locks to ensure that the delegate's constructor is called under lock protection
+        // while still retaining the lock until a call to close on the returned IndexUpdater
         lock.readLock().lock();
         try
         {
-            delegate.update( updates );
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
-    }
-
-    @Override
-    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
-    {
-        // TODO Shouldn't need the lock
-        lock.readLock().lock();
-        try
-        {
-            delegate.recover( updates );
+            return new LockingIndexUpdater( delegate.newUpdater( mode ) );
         }
         finally
         {
@@ -314,6 +300,28 @@ public class FlippableIndexProxy implements IndexProxy
         if ( closed )
         {
             throw new IndexProxyAlreadyClosedKernelException( this.getClass() );
+        }
+    }
+
+    private class LockingIndexUpdater extends DelegatingIndexUpdater
+    {
+        private LockingIndexUpdater( IndexUpdater delegate )
+        {
+            super( delegate );
+            lock.readLock().lock();
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            try
+            {
+                super.close();
+            }
+            finally
+            {
+                lock.readLock().unlock();
+            }
         }
     }
 }

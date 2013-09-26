@@ -100,9 +100,11 @@ public class IndexingServiceTest
         IndexProxy proxy = indexingService.getProxyForRule( 0 );
 
         verify( populator, timeout( 1000 ) ).close( true );
-        proxy.update( withData(
-                add( 10, "foo" )
-        ) );
+
+        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ))
+        {
+            updater.process( add( 10, "foo" ) );
+        }
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
@@ -136,9 +138,16 @@ public class IndexingServiceTest
         indexingService.createIndex( IndexRule.indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
         IndexProxy proxy = indexingService.getProxyForRule( 0 );
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
-        proxy.update( withData(
-                add( 2, "value2" )
-        ) );
+
+        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ))
+        {
+            updater.process( add( 2, "value2" ) );
+        }
+        catch ( Throwable t )
+        {
+            t.printStackTrace(System.err);
+        }
+
         latch.countDown();
 
         verify( populator, timeout( 1000 ) ).close( true );
@@ -179,9 +188,11 @@ public class IndexingServiceTest
         IndexProxy proxy = indexingService.getProxyForRule( 0 );
 
         verify( populator, timeout( 1000 ) ).close( true );
-        proxy.update( withData(
-                add( 10, "foo" )
-        ) );
+
+        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ))
+        {
+            updater.process( add( 10, "foo" ) );
+        }
 
         // then
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
@@ -401,7 +412,7 @@ public class IndexingServiceTest
                 @Override
                 public void stop()
                 {
-                    throw new UnsupportedOperationException( "not implemented" );
+                    // throw new UnsupportedOperationException( "not implemented" );
                 }
             };
         }
