@@ -185,23 +185,30 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
                 .addKernelExtensions( extensions )
                 .newEmbeddedDatabase( testDir.absolutePath() );
 
-        IndexPopulator populator = mock(IndexPopulator.class);
-        doAnswer( triggerConcurrentNodeCreation( gdb ) ).when( populator ).create();
-
-        when(provider.getPopulator( anyLong(), any( IndexConfiguration.class) )).thenReturn( populator );
-
-        // when
-        try( Transaction tx = gdb.beginTx() )
+        try
         {
-            gdb.schema().constraintFor( label("User") ).on( "name" ).unique().create();
-            tx.success();
+            IndexPopulator populator = mock(IndexPopulator.class);
+            doAnswer( triggerConcurrentNodeCreation( gdb ) ).when( populator ).create();
+
+            when(provider.getPopulator( anyLong(), any( IndexConfiguration.class) )).thenReturn( populator );
+
+            // when
+            try( Transaction tx = gdb.beginTx() )
+            {
+                gdb.schema().constraintFor( label("User") ).on( "name" ).unique().create();
+                tx.success();
+            }
+
+            // then both the node I created, and the constraint, should be online
+            try( Transaction tx = gdb.beginTx() )
+            {
+                assertThat( count( GlobalGraphOperations.at( gdb ).getAllNodes() ), equalTo(2l));
+                assertThat( count( gdb.schema().getConstraints() ), equalTo(1l));
+            }
         }
-
-        // then both the node I created, and the constraint, should be online
-        try( Transaction tx = gdb.beginTx() )
+        finally
         {
-            assertThat( count( GlobalGraphOperations.at( gdb ).getAllNodes() ), equalTo(2l));
-            assertThat( count( gdb.schema().getConstraints() ), equalTo(1l));
+            gdb.shutdown();
         }
     }
 
