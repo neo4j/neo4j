@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.com;
 
+import static org.neo4j.cluster.com.NetworkReceiver.URI_PROTOCOL;
+
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -52,7 +54,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
-
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
@@ -61,8 +62,6 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.cluster.com.NetworkReceiver.URI_PROTOCOL;
 
 /**
  * TCP version of sending messages. This handles sending messages from state machines to other instances
@@ -316,13 +315,32 @@ public class NetworkSender
         } );
     }
 
-    protected void closedChannel( final URI uri )
+    protected void closedChannel( final Channel channelClosed )
     {
-        Channel channel = connections.remove( uri );
-        if ( channel != null && channel.isOpen())
+        /*
+         * Netty channels do not have the remote address set when closed (technically, when not connected). So
+         * we need to do a reverse lookup
+         */
+        URI to = null;
+        for ( Map.Entry<URI, Channel> uriChannelEntry : connections.entrySet() )
         {
-            channel.close();
+            if ( uriChannelEntry.getValue().equals( channelClosed ) )
+            {
+                to = uriChannelEntry.getKey();
+                break;
+            }
         }
+
+        if ( to == null )
+        {
+            msgLog.error( "Channel " + channelClosed + " had no URI associated with it." );
+            return;
+        }
+
+        connections.remove( to );
+
+        final URI uri = to;
+
 
         Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
         {
@@ -379,7 +397,6 @@ public class NetworkSender
         public ChannelPipeline getPipeline() throws Exception
         {
             ChannelPipeline pipeline = Channels.pipeline();
-//            pipeline.addFirst( "log", new LoggingHandler() );
             pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
             pipeline.addLast( "sender", new NetworkSender.MessageSender() );
             return pipeline;
@@ -390,7 +407,7 @@ public class NetworkSender
             extends SimpleChannelHandler
     {
         @Override
-        public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelConnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
         {
             Channel ctxChannel = ctx.getChannel();
             openedChannel( getURI( (InetSocketAddress) ctxChannel.getRemoteAddress() ), ctxChannel );
@@ -401,14 +418,14 @@ public class NetworkSender
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
         {
             final Message message = (Message) event.getMessage();
-            msgLog.debug( "Received:" + message );
+            msgLog.debug( "Received: " + message );
             receiver.receive( message );
         }
 
         @Override
         public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
         {
-            closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
+            closedChannel( ctx.getChannel() );
             channels.remove( ctx.getChannel() );
         }
 
