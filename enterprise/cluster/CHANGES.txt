@@ -1,3 +1,10 @@
+1.9.4 (2013-09-19)
+------------------
+o Suspicions on failed instances are now printed only once, no longer
+  spamming messages.log.
+o Fixed issue where a failing cluster instance might delay messages between
+  the rest of the instances.
+
 1.9.3 (2013-08-30)
 ------------------
 o Fixes issue which might lead to eternal elections

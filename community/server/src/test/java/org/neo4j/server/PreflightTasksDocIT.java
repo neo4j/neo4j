@@ -22,7 +22,6 @@ package org.neo4j.server;
 import org.junit.Test;
 
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class PreflightTasksDocIT extends ExclusiveServerTestBase
@@ -30,7 +29,7 @@ public class PreflightTasksDocIT extends ExclusiveServerTestBase
 
     private NeoServer server;
 
-    @Test(expected = PreflightFailedException.class)
+    @Test( expected = ServerStartupException.class )
     public void shouldExitWhenFailedStartupHealthCheck() throws Throwable
     {
         server = CommunityServerBuilder.server()
