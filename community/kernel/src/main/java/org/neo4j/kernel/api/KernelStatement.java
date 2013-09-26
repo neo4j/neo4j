@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
@@ -42,14 +43,15 @@ public class KernelStatement implements TxState.Holder, Statement
 
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
                             LabelScanStore labelScanStore,
-                            TxState.Holder txStateHolder, LockHolder lockHolder )
+                            TxState.Holder txStateHolder, LockHolder lockHolder, LegacyKernelOperations
+                            legacyKernelOperations, StatementOperationParts operations )
     {
         this.transaction = transaction;
         this.lockHolder = lockHolder;
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
-        this.facade = new OperationsFacade(transaction, this);
+        this.facade = new OperationsFacade( this, legacyKernelOperations, operations);
     }
 
     @Override

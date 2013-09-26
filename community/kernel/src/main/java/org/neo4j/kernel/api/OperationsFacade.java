@@ -58,54 +58,57 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterat
 
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
-    private final KernelTransactionImplementation transaction;
     final KernelStatement statement;
+    private final LegacyKernelOperations legacyKernelOperations;
+    private final StatementOperationParts operations;
 
-    OperationsFacade( KernelTransactionImplementation transaction, KernelStatement statement )
+    OperationsFacade( KernelStatement statement, LegacyKernelOperations legacyKernelOperations,
+                      StatementOperationParts operations )
     {
-        this.transaction = transaction;
         this.statement = statement;
+        this.legacyKernelOperations = legacyKernelOperations;
+        this.operations = operations;
     }
 
     // <DataRead>
     final KeyReadOperations tokenRead()
     {
-        return transaction.operations.keyReadOperations();
+        return operations.keyReadOperations();
     }
 
     final KeyWriteOperations tokenWrite()
     {
-        return transaction.operations.keyWriteOperations();
+        return operations.keyWriteOperations();
     }
 
     final EntityReadOperations dataRead()
     {
-        return transaction.operations.entityReadOperations();
+        return operations.entityReadOperations();
     }
 
     final EntityWriteOperations dataWrite()
     {
-        return transaction.operations.entityWriteOperations();
+        return operations.entityWriteOperations();
     }
 
     final SchemaReadOperations schemaRead()
     {
-        return transaction.operations.schemaReadOperations();
+        return operations.schemaReadOperations();
     }
 
     final org.neo4j.kernel.api.operations.SchemaWriteOperations schemaWrite()
     {
-        return transaction.operations.schemaWriteOperations();
+        return operations.schemaWriteOperations();
     }
 
     final SchemaStateOperations schemaState()
     {
-        return transaction.operations.schemaStateOperations();
+        return operations.schemaStateOperations();
     }
 
     final LegacyKernelOperations legacyOps()
     {
-        return transaction.legacyKernelOperations;
+        return legacyKernelOperations;
     }
 
     // <DataRead>
@@ -265,6 +268,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         return schemaRead().uniqueIndexesGetForLabel( statement, labelId );
+    }
+
+    @Override
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    {
+        statement.assertOpen();
+        return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );
     }
 
     @Override
@@ -518,6 +528,12 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         schemaWrite().constraintDrop( statement, constraint );
+    }
+
+    @Override
+    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
+    {
+        schemaWrite().uniqueIndexDrop( statement, descriptor );
     }
     // </SchemaWrite>
 }

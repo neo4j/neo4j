@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import java.util.Iterator;
-
 import org.junit.Test;
 
 import org.neo4j.kernel.api.KernelStatement;
@@ -32,8 +30,6 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-
-import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -60,7 +56,7 @@ public class ConstraintIndexCreatorTest
         KernelStatement state = mockedState();
 
         IndexingService indexingService = mock( IndexingService.class );
-        StubTransactor transactor = new StubTransactor( state, indexCreationContext );
+        StubTransactor transactor = new StubTransactor( state );
 
         when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor ) ).thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
@@ -91,7 +87,7 @@ public class ConstraintIndexCreatorTest
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
 
         IndexingService indexingService = mock( IndexingService.class );
-        StubTransactor transactor = new StubTransactor( state, indexCreationContext, indexDestructionContext );
+        StubTransactor transactor = new StubTransactor( state );
 
         when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor ) ).thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
@@ -125,9 +121,8 @@ public class ConstraintIndexCreatorTest
     public void shouldDropIndexInAnotherTransaction() throws Exception
     {
         // given
-        StatementOperationParts indexDestructionTransaction = mockedParts();
         KernelStatement state = mockedState();
-        StubTransactor transactor = new StubTransactor( state, indexDestructionTransaction );
+        StubTransactor transactor = new StubTransactor( state );
         IndexingService indexingService = mock( IndexingService.class );
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
@@ -139,26 +134,23 @@ public class ConstraintIndexCreatorTest
 
         // then
         verifyZeroInteractions( indexingService );
-        verifyNoMoreInteractions( indexDestructionTransaction.schemaWriteOperations() );
     }
 
     private static class StubTransactor extends Transactor
     {
-        private final Iterator<StatementOperationParts> mockContexts;
         private final KernelStatement state;
 
-        StubTransactor( KernelStatement state, StatementOperationParts... mockContexts )
+        StubTransactor( KernelStatement state )
         {
             super( null );
             this.state = state;
-            this.mockContexts = asList( mockContexts ).iterator();
         }
 
         @Override
         public <RESULT, FAILURE extends KernelException> RESULT execute(
                 Work<RESULT, FAILURE> work ) throws FAILURE
         {
-            return work.perform( mockContexts.next(), state );
+            return work.perform( state );
         }
     }
 }

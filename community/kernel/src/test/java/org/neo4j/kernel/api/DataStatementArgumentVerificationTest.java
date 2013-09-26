@@ -99,6 +99,6 @@ public class DataStatementArgumentVerificationTest
 
     private OperationsFacade stubStatement()
     {
-        return new OperationsFacade( mock( KernelTransactionImplementation.class ), mock( KernelStatement.class ) );
+        return new OperationsFacade( mock( KernelStatement.class ), null, null );
     }
 }

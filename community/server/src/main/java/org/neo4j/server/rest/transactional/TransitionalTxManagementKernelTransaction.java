@@ -23,9 +23,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.MicroTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.TxManager;
 
@@ -58,13 +56,6 @@ class TransitionalTxManagementKernelTransaction implements KernelTransaction
     public void rollback() throws TransactionFailureException
     {
         ctx.rollback();
-    }
-
-    @Override
-    public <RESULT, FAILURE extends KernelException> RESULT execute( MicroTransaction<RESULT, FAILURE> transaction )
-            throws FAILURE
-    {
-        return ctx.execute( transaction );
     }
 
     public void suspendSinceTransactionsAreStillThreadBound()

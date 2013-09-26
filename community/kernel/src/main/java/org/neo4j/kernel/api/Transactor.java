@@ -35,7 +35,7 @@ public class Transactor
 {
     public interface Work<RESULT, FAILURE extends KernelException>
     {
-        RESULT perform( StatementOperationParts statementContext, KernelStatement statement ) throws FAILURE;
+        RESULT perform( Statement statement ) throws FAILURE;
     }
 
     private final AbstractTransactionManager txManager;
@@ -57,7 +57,11 @@ public class Transactor
             boolean success = false;
             try
             {
-                RESULT result = tx.execute( new MicroTransaction<>( work ) );
+                RESULT result;
+                try ( Statement statement = tx.acquireStatement() )
+                {
+                    result = work.perform( statement );
+                }
                 success = true;
                 return result;
             }

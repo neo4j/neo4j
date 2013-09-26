@@ -115,6 +115,27 @@ class TransactionImpl implements Transaction
     /**
      * This implementation assumes this call hierarchy:
      * {@link TransactionImpl#commit()} --> {@link KernelTransaction#commit()} --> {@link TransactionManager#commit()}
+     *
+     *
+     * TransactionImpl#commit -> TransactionManaager#commit -> KernelTransaction#commit
+     *
+     * Now:
+     *   Kernel does:
+     *     #commit()
+     *       -> Prepare commands for commit
+     *       -> call txmanager#commit()
+     *       -> roll back if failure
+     *       -> in any case, release locks
+     *
+     * TxManager does:
+     *   KernelTx#prepare()
+     *     -> prepare commands
+     *   We commit
+     *   or Kernel -> rollback
+     *     -> drop created indexes
+     *     -> release locks
+     *   or Kernel -> commit
+     *     -> release locks
      */
     @Override
     public synchronized void commit() throws RollbackException,

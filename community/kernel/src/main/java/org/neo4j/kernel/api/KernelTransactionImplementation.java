@@ -19,27 +19,108 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionForcefullyRolledBackException;
+import org.neo4j.kernel.api.exceptions.TransactionalException;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
+import org.neo4j.kernel.api.scan.LabelScanStore;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.api.LockHolder;
+import org.neo4j.kernel.impl.api.LockHolderImpl;
+import org.neo4j.kernel.impl.api.PersistenceCache;
+import org.neo4j.kernel.impl.api.SchemaStorage;
+import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
+import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
+import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.state.TxStateImpl;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.LockManager;
 
 /**
  * This class should replace the {@link KernelTransaction} interface, and take its name, as soon as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public abstract class KernelTransactionImplementation implements KernelTransaction
+public class KernelTransactionImplementation implements KernelTransaction, TxState.Holder
 {
-    private TransactionType transactionType = TransactionType.ANY;
-    final StatementOperationParts operations;
-    private boolean closing, closed;
-    final LegacyKernelOperations legacyKernelOperations;
+    private final boolean readOnly;
+    private final SchemaWriteGuard schemaWriteGuard;
+    private final IndexingService indexService;
+    private final LockHolder lockHolder;
+    private final LabelScanStore labelScanStore;
+    private final AbstractTransactionManager transactionManager;
+    private final SchemaStorage schemaStorage;
+    private final ConstraintIndexCreator constraintIndexCreator;
+    private final PersistenceCache persistenceCache;
+    private final PersistenceManager persistenceManager;
+    private final SchemaIndexProviderMap providerMap;
+    private final UpdateableSchemaState schemaState;
+    private final OldTxStateBridge legacyStateBridge;
+    private final LegacyKernelOperations legacyKernelOperations;
+    private final StatementOperationParts operations;
 
-    protected KernelTransactionImplementation( StatementOperationParts operations,
-                                               LegacyKernelOperations legacyKernelOperations )
+    private TransactionType transactionType = TransactionType.ANY;
+    private boolean closing, closed;
+    private TxStateImpl txState;
+
+    public KernelTransactionImplementation( StatementOperationParts operations,
+                                            LegacyKernelOperations legacyKernelOperations, boolean readOnly,
+                                            SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
+                                            IndexingService indexService, LockManager lockManager,
+                                            AbstractTransactionManager transactionManager, NodeManager nodeManager,
+                                            PersistenceCache persistenceCache, UpdateableSchemaState schemaState,
+                                            PersistenceManager persistenceManager,
+                                            SchemaIndexProviderMap providerMap, NeoStore neoStore )
     {
         this.operations = operations;
         this.legacyKernelOperations = legacyKernelOperations;
+        this.readOnly = readOnly;
+        this.schemaWriteGuard = schemaWriteGuard;
+        this.labelScanStore = labelScanStore;
+        this.indexService = indexService;
+        this.transactionManager = transactionManager;
+        this.providerMap = providerMap;
+        this.persistenceCache = persistenceCache;
+        this.schemaState = schemaState;
+        this.persistenceManager = persistenceManager;
+        try
+        {
+            // TODO Not happy about the NodeManager dependency. It's needed a.t.m. for making
+            // equality comparison between GraphProperties instances. It should change.
+            lockHolder = new LockHolderImpl( lockManager, transactionManager.getTransaction(), nodeManager );
+        }
+        catch ( SystemException e )
+        {
+            throw new org.neo4j.graphdb.TransactionFailureException( "Unable to get transaction", e );
+        }
+        constraintIndexCreator = new ConstraintIndexCreator( new Transactor( transactionManager ), this.indexService );
+        schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
+        legacyStateBridge = new OldTxStateBridgeImpl( nodeManager, transactionManager.getTransactionState() );
     }
 
     public void commit() throws TransactionFailureException
@@ -47,7 +128,70 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         beginClose();
         try
         {
-            doCommit();
+            try
+            {
+                boolean success = false;
+                try
+                {
+                    try
+                    {
+                        // All operations taking place before the call to transactionManager.commit/rollback
+                        // must be within this try clause and its catch block must be broad enough to catch
+                        // any exceptions thrown.
+                        createTransactionCommands();
+                    }
+                    catch ( RuntimeException e )
+                    {
+                        // Some pre-commit operation failed. Roll back the transaction and
+                        // throw exception stating that fact.
+                        transactionManager.rollback();
+                        throw new TransactionForcefullyRolledBackException( e );
+                    }
+
+                    // Pre-commit operations completed, move on to the actual commit.
+                    transactionManager.commit();
+                    success = true;
+                }
+                finally
+                {
+                    if ( !success )
+                    {
+                        dropCreatedConstraintIndexes();
+                    }
+                }
+                // TODO: This should be done by log application, not by this level of the stack.
+                if ( hasTxStateWithChanges() )
+                {
+                    persistenceCache.apply( this.txState() );
+                }
+            }
+            catch ( HeuristicMixedException e )
+            {
+                throw new TransactionFailureException( e );
+            }
+            catch ( HeuristicRollbackException e )
+            {
+                throw new TransactionFailureException( e );
+            }
+            catch ( RollbackException e )
+            {
+                throw new TransactionFailureException( e );
+            }
+            catch ( SystemException e )
+            {
+                throw new TransactionFailureException( e );
+            }
+            finally
+            {
+                try
+                {
+                    lockHolder.releaseLocks();
+                }
+                catch ( ReleaseLocksFailedKernelException e )
+                {
+                    throw new TransactionFailureException( new RuntimeException(e.getMessage(), e) );
+                }
+            }
             close();
         }
         finally
@@ -61,7 +205,45 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         beginClose();
         try
         {
-            doRollback();
+            try
+            {
+                try
+                {
+                    dropCreatedConstraintIndexes();
+                }
+                finally
+                {
+
+                    if ( transactionManager.getTransaction() != null )
+                    {
+                        transactionManager.rollback();
+                    }
+                }
+            }
+            catch ( IllegalStateException e )
+            {
+                throw new TransactionFailureException( e );
+            }
+            catch ( SecurityException e )
+            {
+                throw new TransactionFailureException( e );
+            }
+            catch ( SystemException e )
+            {
+                throw new TransactionFailureException( e );
+            }
+            finally
+            {
+                try
+                {
+                    lockHolder.releaseLocks();
+                }
+                catch ( ReleaseLocksFailedKernelException e )
+                {
+                    throw new TransactionFailureException(
+                            Exceptions.withCause( new RollbackException( e.getMessage() ), e ) );
+                }
+            }
             close();
         }
         finally
@@ -69,22 +251,6 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
             closing = false;
         }
     }
-
-    @Override
-    public <RESULT, FAILURE extends KernelException> RESULT execute( MicroTransaction<RESULT, FAILURE> transaction )
-            throws FAILURE
-    {
-        try ( KernelStatement statement = acquireStatement() )
-        {
-            return transaction.work.perform( operations, statement );
-        }
-    }
-
-    protected abstract void doCommit() throws TransactionFailureException;
-
-    protected abstract void doRollback() throws TransactionFailureException;
-
-    protected abstract KernelStatement newStatement();
 
     /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
     private KernelStatement currentStatement;
@@ -95,16 +261,101 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         assertOpen();
         if ( currentStatement == null )
         {
-            currentStatement = newStatement();
+            currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),labelScanStore,
+                    this, lockHolder, legacyKernelOperations, operations );
         }
         currentStatement.acquire();
         return currentStatement;
     }
 
-    void releaseStatement( Statement statement )
+    public void releaseStatement( Statement statement )
     {
         assert currentStatement == statement;
         currentStatement = null;
+    }
+
+    public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+    {
+        assertDatabaseWritable();
+        transactionType = transactionType.upgradeToDataTransaction();
+    }
+
+    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+    {
+        doUpgradeToSchemaTransaction();
+        transactionType = transactionType.upgradeToSchemaTransaction();
+    }
+
+    public void doUpgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+    {
+        assertDatabaseWritable();
+        schemaWriteGuard.assertSchemaWritesAllowed();
+    }
+
+    private void assertDatabaseWritable() throws ReadOnlyDatabaseKernelException
+    {
+        if ( readOnly )
+        {
+            throw new ReadOnlyDatabaseKernelException();
+        }
+    }
+
+    public void assertTokenWriteAllowed() throws ReadOnlyDatabaseKernelException
+    {
+        assertDatabaseWritable();
+    }
+
+    private void dropCreatedConstraintIndexes() throws TransactionFailureException
+    {
+        if ( hasTxStateWithChanges() )
+        {
+            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            {
+                try
+                {
+                    // TODO logically, which statement should this operation be performed on?
+                    constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
+                }
+                catch ( DropIndexFailureException e )
+                {
+                    throw new IllegalStateException( "Constraint index that was created in a transaction should " +
+                            "be " +
+                            "possible to drop during rollback of that transaction.", e );
+                }
+                catch ( TransactionFailureException e )
+                {
+                    throw e;
+                }
+                catch ( TransactionalException e )
+                {
+                    throw new IllegalStateException( "The transaction manager could not fulfill the transaction " +
+                            "for " +
+                            "dropping the constraint.", e );
+                }
+            }
+        }
+    }
+
+    @Override
+    public TxState txState()
+    {
+        if ( !hasTxState() )
+        {
+            txState = new TxStateImpl( legacyStateBridge, persistenceManager, null );
+        }
+        return txState;
+    }
+
+    @Override
+    public boolean hasTxState()
+    {
+        return null != txState;
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges()
+    {
+        return legacyStateBridge.hasChanges() || (hasTxState() && txState.hasChanges());
     }
 
     private void close()
@@ -115,14 +366,6 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         {
             currentStatement.forceClose();
             currentStatement = null;
-        }
-    }
-
-    private void assertOpen()
-    {
-        if ( closed )
-        {
-            throw new IllegalStateException( "This transaction has already been completed." );
         }
     }
 
@@ -141,18 +384,112 @@ public abstract class KernelTransactionImplementation implements KernelTransacti
         closing = true;
     }
 
-    public void assertTokenWriteAllowed() throws ReadOnlyDatabaseKernelException
+    private void createTransactionCommands()
     {
+        if ( hasTxStateWithChanges() )
+        {
+            final AtomicBoolean clearState = new AtomicBoolean( false );
+            txState().accept( new TxState.Visitor()
+            {
+                @Override
+                public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+                {
+                    // TODO: move store level changes here.
+                }
+
+                @Override
+                public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
+                {
+                    SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
+                            .getProviderDescriptor();
+                    IndexRule rule;
+                    if ( isConstraintIndex )
+                    {
+                        rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
+                                element.getPropertyKeyId(), providerDescriptor,
+                                null );
+                    }
+                    else
+                    {
+                        rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
+                                element.getPropertyKeyId(), providerDescriptor );
+                    }
+                    persistenceManager.createSchemaRule( rule );
+                }
+
+                @Override
+                public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
+                {
+                    try
+                    {
+                        IndexRule rule = schemaStorage
+                                .indexRule( element.getLabelId(), element.getPropertyKeyId() );
+                        persistenceManager.dropSchemaRule( rule );
+                    }
+                    catch ( SchemaRuleNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError(
+                                "Tobias Lindaaker",
+                                "Index to be removed should exist, since its existence should have " +
+                                        "been validated earlier and the schema should have been locked." );
+                    }
+                }
+
+                @Override
+                public void visitAddedConstraint( UniquenessConstraint element )
+                {
+                    clearState.set( true );
+                    long constraintId = schemaStorage.newRuleId();
+                    IndexRule indexRule;
+                    try
+                    {
+                        indexRule = schemaStorage.indexRule( element.label(), element.propertyKeyId() );
+                    }
+                    catch ( SchemaRuleNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError(
+                                "Jacob Hansson",
+                                "Index is always created for the constraint before this point.");
+                    }
+                    persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
+                            constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
+                    persistenceManager.setConstraintIndexOwner( indexRule, constraintId );
+                }
+
+                @Override
+                public void visitRemovedConstraint( UniquenessConstraint element )
+                {
+                    try
+                    {
+                        clearState.set( true );
+                        UniquenessConstraintRule rule = schemaStorage
+                                .uniquenessConstraint( element.label(), element.propertyKeyId() );
+                        persistenceManager.dropSchemaRule( rule );
+                    }
+                    catch ( SchemaRuleNotFoundException e )
+                    {
+                        throw new ThisShouldNotHappenError(
+                                "Tobias Lindaaker",
+                                "Constraint to be removed should exist, since its existence should " +
+                                        "have been validated earlier and the schema should have been locked." );
+                    }
+                    // Remove the index for the constraint as well
+                    visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
+                }
+            } );
+            if ( clearState.get() )
+            {
+                schemaState.clear();
+            }
+        }
     }
 
-    public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+    private void assertOpen()
     {
-        transactionType = transactionType.upgradeToDataTransaction();
-    }
-
-    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
-    {
-        transactionType = transactionType.upgradeToSchemaTransaction();
+        if ( closed )
+        {
+            throw new IllegalStateException( "This transaction has already been completed." );
+        }
     }
 
     private enum TransactionType
