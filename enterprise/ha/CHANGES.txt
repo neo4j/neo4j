@@ -1,3 +1,7 @@
+2.0.0.M06
+---------
+o Constraints can now be created in a running HA cluster
+
 1.9.3
 -----
 o Fix for wrong snapshot processing on cluster join, leading to failure to switch to Slave

@@ -1,7 +1,12 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
-2.0.0-XX
+2.0.0-M06
 ---------
+o Windows desktop GUI added
+
+HA:
+  o Constraints can now be created in a running HA cluster
+
 Cypher:
   o Parenthesis around nodes are now mandatory if a label is used on the node
 
