@@ -32,19 +32,8 @@ import java.util.Iterator;
  */
 public class ExceptionHandlingIterable<T> implements Iterable<T> {
     private final Iterable<T> source;
-    private static final Unsafe unsafe = getUnsafe();
     public ExceptionHandlingIterable(Iterable<T> source) {
         this.source = source;
-    }
-
-    public static Unsafe getUnsafe() {
-        try {
-            Field field = Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            return (Unsafe) field.get(null);
-        } catch (Exception e) {
-            throw new RuntimeException("Error retrieving Unsafe ", e);
-        }
     }
 
     @Override
@@ -84,8 +73,17 @@ public class ExceptionHandlingIterable<T> implements Iterable<T> {
         }
     }
 
-    protected void rethrow(Throwable t) {
-        unsafe.throwException(t);
+    protected void rethrow(Throwable t)
+    {
+        // TODO it's pretty bad that we have to do this. We should refactor our exception hierarchy
+        // to eliminate the need for this hack.
+        ExceptionHandlingIterable.<RuntimeException>sneakyThrow(t);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> void sneakyThrow(Throwable throwable) throws T
+    {
+        throw (T) throwable;
     }
 
     protected boolean exceptionOnHasNext(Throwable t) {

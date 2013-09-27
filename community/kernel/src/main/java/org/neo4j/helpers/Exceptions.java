@@ -132,7 +132,7 @@ public class Exceptions
         // no instances
     }
 
-    public static final Throwable rootCause( Throwable caughtException )
+    public static Throwable rootCause( Throwable caughtException )
     {
         if ( null == caughtException )
         {
