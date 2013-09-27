@@ -53,6 +53,9 @@ public class LockHolderImpl implements LockHolder
     public LockHolderImpl( LockManager lockManager, Transaction tx, NodeManager nodeManager )
     {
         this.lockManager = lockManager;
+
+        // Once we have moved all locking into the kernel, we should refactor the locking to not use the CoreAPI
+        // transaction to track who is locking stuff.
         this.tx = tx;
 
         // TODO Not happy about the NodeManager dependency. It's needed a.t.m. for making

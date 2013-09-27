@@ -272,7 +272,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         };
         xaContainer = xaFactory.newXaContainer( this, new File( this.baseStorePath, "lucene.log"), cf,
                 InjectedTransactionValidator.ALLOW_ALL, tf, TransactionStateFactory.noStateFactory( null ),
-                new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ) );
+                new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ), false );
         closed = false;
         if ( !isReadOnly )
         {

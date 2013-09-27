@@ -37,117 +37,46 @@ import static org.neo4j.helpers.Exceptions.withCause;
  */
 public class TransactionFailureException extends TransactionalException
 {
-    private final Rethrow rethrow;
+    private static final int NO_CODE = 0;
+    private final int errorCode;
 
     public TransactionFailureException( HeuristicMixedException cause )
     {
         super( cause );
-        rethrow = Rethrow.HEURISTIC_MIXED;
+        errorCode = XAException.XA_HEURMIX;
     }
 
     public TransactionFailureException( HeuristicRollbackException cause )
     {
         super( cause );
-        rethrow = Rethrow.HEURISTIC_ROLLBACK;
+        errorCode = XAException.XA_HEURRB;
     }
 
     public TransactionFailureException( RollbackException cause )
     {
         super( cause );
-        rethrow = Rethrow.ROLLBACK;
+        errorCode = XAException.XA_RBROLLBACK;
     }
 
     public TransactionFailureException( SystemException cause )
     {
         super( cause );
-        rethrow = Rethrow.SYSTEM;
+        errorCode = XAException.XAER_RMERR;
     }
 
-    public TransactionFailureException( RuntimeException cause )
+    public TransactionFailureException( Exception e )
     {
-        super( cause );
-        rethrow = Rethrow.RUNTIME;
+        super(e);
+        errorCode = NO_CODE;
     }
 
-    public RuntimeException unBoxedForCommit()
-            throws RollbackException, HeuristicMixedException, HeuristicRollbackException, SystemException
+    public RuntimeException unBoxedForCommit() throws XAException
     {
-        return rethrow.exception( this.getCause() );
-    }
-
-    public RuntimeException unBoxedForRollback() throws SystemException
-    {
-        return rethrow.exceptionForRollback( this.getCause() );
-    }
-
-    private enum Rethrow
-    {
-        HEURISTIC_MIXED( XAException.XA_HEURMIX )
+        Throwable cause = getCause();
+        if ( errorCode == NO_CODE)
         {
-            @Override
-            RuntimeException exception( Throwable exception ) throws HeuristicMixedException
-            {
-                throw (HeuristicMixedException) exception;
-            }
-        },
-        HEURISTIC_ROLLBACK( XAException.XA_HEURRB )
-        {
-            @Override
-            RuntimeException exception( Throwable exception ) throws HeuristicRollbackException
-            {
-                throw (HeuristicRollbackException) exception;
-            }
-        },
-        ROLLBACK( XAException.XA_RBROLLBACK )
-        {
-            @Override
-            RuntimeException exception( Throwable exception ) throws RollbackException
-            {
-                throw (RollbackException) exception;
-            }
-        },
-        SYSTEM( 0 )
-        {
-            @Override
-            RuntimeException exception( Throwable exception ) throws SystemException
-            {
-                throw (SystemException) exception;
-            }
-
-            @Override
-            RuntimeException exceptionForRollback( Throwable exception ) throws SystemException
-            {
-                throw (SystemException) exception;
-            }
-        },
-        RUNTIME( 0 )
-        {
-            @Override
-            RuntimeException exception( Throwable exception )
-            {
-                return (RuntimeException) exception;
-            }
-
-            @Override
-            RuntimeException exceptionForRollback( Throwable exception ) throws SystemException
-            {
-                return (RuntimeException) exception;
-            }
-        };
-
-        int errorCodeOnRollback;
-
-        private Rethrow( int errorCodeOnRollback )
-        {
-            this.errorCodeOnRollback = errorCodeOnRollback;
+            return (cause instanceof RuntimeException)? (RuntimeException) cause : new RuntimeException( cause );
         }
-
-        abstract RuntimeException exception( Throwable exception )
-                throws HeuristicMixedException, HeuristicRollbackException, RollbackException, SystemException;
-
-        RuntimeException exceptionForRollback( Throwable exception ) throws SystemException
-        {
-            throw withCause( new SystemException( errorCodeOnRollback ), exception );
-        }
+        throw withCause( new XAException( errorCode ), cause );
     }
 }

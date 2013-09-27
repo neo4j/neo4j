@@ -44,7 +44,7 @@ public class ConcurrentTransactionAccessTest
         // given
         TransactionRegistry registry =
                 new TransactionHandleRegistry( mock( Clock.class), 0, StringLogger.DEV_NULL );
-        KernelAPI kernel = mock( KernelAPI.class );
+        TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
         when(kernel.newTransaction()).thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
         TransactionFacade actions = new TransactionFacade( kernel, null, registry, null, null );
 

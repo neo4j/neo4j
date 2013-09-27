@@ -50,22 +50,29 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.BridgingCacheAccess;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.operations.TokenNameLookup;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.PersistenceCache;
 import org.neo4j.kernel.impl.api.SchemaCache;
+import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
+import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -78,6 +85,9 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
@@ -118,22 +128,30 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     public static abstract class Configuration
         extends LogBackedXaDataSource.Configuration
     {
+
         public static final Setting<Boolean> read_only= GraphDatabaseSettings.read_only;
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
         public static final Setting<File> logical_log = InternalAbstractGraphDatabase.Configuration.logical_log;
     }
-
     public static final byte BRANCH_ID[] = UTF8.encode( "414141" );
+
     public static final String LOGICAL_LOG_DEFAULT_NAME = "nioneo_logical.log";
-
     private final StringLogger msgLog;
-    private final Logging logging;
-    private final DependencyResolver dependencyResolver;
 
+    private final Logging logging;
+    private final AbstractTransactionManager txManager;
+    private final DependencyResolver dependencyResolver;
     private final TransactionStateFactory stateFactory;
+
     private final TransactionInterceptorProviders providers;
     private final TokenNameLookup tokenNameLookup;
+    private final PropertyKeyTokenHolder propertyKeyTokens;
+    private final LabelTokenHolder labelTokens;
+    private final RelationshipTypeTokenHolder relationshipTypeTokens;
+    private final PersistenceManager persistenceManager;
+    private final LockManager lockManager;
+    private final SchemaWriteGuard schemaWriteGuard;
     private final StoreFactory storeFactory;
     private final XaFactory xaFactory;
     private final JobScheduler scheduler;
@@ -141,6 +159,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private final Config config;
 
     private LifeSupport life;
+
+    private KernelAPI kernel;
 
     private NeoStore neoStore;
     private IndexingService indexingService;
@@ -238,6 +258,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
      * <CODE>IOException</CODE> is thrown. If any problem is found with that
      * configuration file or Neo4j store can't be loaded an <CODE>IOException is
      * thrown</CODE>.
+     *
+     * Note that the tremendous number of dependencies for this class, clearly, is an architecture smell. It is part
+     * of the ongoing work on introducing the Kernel API, where components that were previously spread throughout the
+     * core API are now slowly accumulating in the Kernel implementation. Over time, these components should be
+     * refactored into bigger components that wrap the very granular things we depend on here.
      */
     public NeoStoreXaDataSource( Config config, StoreFactory sf,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
@@ -245,7 +270,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  JobScheduler scheduler, Logging logging,
                                  UpdateableSchemaState updateableSchemaState,
                                  TokenNameLookup tokenNameLookup,
-                                 DependencyResolver dependencyResolver )
+                                 DependencyResolver dependencyResolver, AbstractTransactionManager txManager,
+                                 PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
+                                 RelationshipTypeTokenHolder relationshipTypeTokens,
+                                 PersistenceManager persistenceManager, LockManager lockManager,
+                                 NodeManager nodeManager, SchemaWriteGuard schemaWriteGuard )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -255,6 +284,13 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.providers = providers;
         this.scheduler = scheduler;
         this.logging = logging;
+        this.txManager = txManager;
+        this.propertyKeyTokens = propertyKeyTokens;
+        this.labelTokens = labelTokens;
+        this.relationshipTypeTokens = relationshipTypeTokens;
+        this.persistenceManager = persistenceManager;
+        this.lockManager = lockManager;
+        this.schemaWriteGuard = schemaWriteGuard;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -329,13 +365,19 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                     new CommandFactory( neoStore, indexingService ),
                     new NeoStoreInjectedTransactionValidator(integrityValidator), tf,
-                    stateFactory, providers  );
+                    stateFactory, providers, readOnly  );
 
             labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
 
+            kernel = life.add( new Kernel( txManager, propertyKeyTokens, labelTokens, relationshipTypeTokens,
+                    persistenceManager, lockManager, updateableSchemaState, schemaWriteGuard,
+                    indexingService, nodeManager, neoStore, persistenceCache, schemaCache, providerMap, labelScanStore,
+                    readOnly ));
+
             life.init();
 
+            // TODO: Why isn't this done in the init() method of the indexing service?
             if ( !readOnly )
             {
                 neoStore.setRecoveredStatus( true );
@@ -397,16 +439,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     public LabelScanStore getLabelScanStore()
     {
         return labelScanStore;
-    }
-
-    public DefaultSchemaIndexProviderMap getProviderMap()
-    {
-        return providerMap;
-    }
-
-    public SchemaCache getSchemaCache()
-    {
-        return schemaCache;
     }
 
     @Override
@@ -480,7 +512,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         {
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
             return new InterceptingWriteTransaction( identifier, lastCommittedTxWhenTransactionStarted, getLogicalLog(),
-                    neoStore, state, cacheAccess, indexingService, labelScanStore, first, integrityValidator );
+                    neoStore, state, cacheAccess, indexingService, labelScanStore, first, integrityValidator,
+                    (KernelTransactionImplementation)kernel.newTransaction() );
         }
     }
 
@@ -490,7 +523,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
             return new WriteTransaction( identifier, lastCommittedTxWhenTransactionStarted, getLogicalLog(), state,
-                neoStore, cacheAccess, indexingService, labelScanStore, integrityValidator );
+                neoStore, cacheAccess, indexingService, labelScanStore, integrityValidator,
+                (KernelTransactionImplementation)kernel.newTransaction() );
         }
 
         @Override
@@ -750,11 +784,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                 return item.getKind().isIndex();
             }
         }, neoStore.getSchemaStore().loadAllSchemaRules() ) );
-    }
-
-    public PersistenceCache getPersistenceCache()
-    {
-        return persistenceCache;
     }
 
     @Override

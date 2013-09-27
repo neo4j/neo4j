@@ -33,14 +33,11 @@ import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -55,11 +52,11 @@ class TransactionImpl implements Transaction
     private static final int RS_READONLY = 3; // set in prepare
 
     private final byte globalId[];
+    private boolean globalStartRecordWritten = false;
+    private final LinkedList<ResourceElement> resourceList = new LinkedList<>();
+
     private int status = Status.STATUS_ACTIVE;
     private volatile boolean active = true;
-    private boolean globalStartRecordWritten = false;
-
-    private final LinkedList<ResourceElement> resourceList = new LinkedList<>();
     private List<Synchronization> syncHooks = new ArrayList<>();
 
     private final int eventIdentifier;
@@ -70,7 +67,6 @@ class TransactionImpl implements Transaction
     private Thread owner;
 
     private final TransactionState state;
-    private KernelTransaction kernelTransaction;
 
     TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory,
                      StringLogger logger )
@@ -112,44 +108,12 @@ class TransactionImpl implements Transaction
                 eventIdentifier, owner.getName(), txManager.getTxStatusAsString( status ), resourceList.size() );
     }
 
-    /**
-     * This implementation assumes this call hierarchy:
-     * {@link TransactionImpl#commit()} --> {@link KernelTransaction#commit()} --> {@link TransactionManager#commit()}
-     *
-     *
-     * TransactionImpl#commit -> TransactionManaager#commit -> KernelTransaction#commit
-     *
-     * Now:
-     *   Kernel does:
-     *     #commit()
-     *       -> Prepare commands for commit
-     *       -> call txmanager#commit()
-     *       -> roll back if failure
-     *       -> in any case, release locks
-     *
-     * TxManager does:
-     *   KernelTx#prepare()
-     *     -> prepare commands
-     *   We commit
-     *   or Kernel -> rollback
-     *     -> drop created indexes
-     *     -> release locks
-     *   or Kernel -> commit
-     *     -> release locks
-     */
     @Override
     public synchronized void commit() throws RollbackException,
             HeuristicMixedException, HeuristicRollbackException,
             IllegalStateException, SystemException
     {
-        try
-        {
-            kernelTransaction.commit();
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw e.unBoxedForCommit();
-        }
+        txManager.commit();
     }
 
     boolean isGlobalStartRecordWritten()
@@ -161,14 +125,7 @@ class TransactionImpl implements Transaction
     public synchronized void rollback() throws IllegalStateException,
             SystemException
     {
-        try
-        {
-            kernelTransaction.rollback();
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw e.unBoxedForRollback();
-        }
+        txManager.rollback();
     }
 
     @Override
@@ -613,22 +570,6 @@ class TransactionImpl implements Transaction
         status = Status.STATUS_ROLLEDBACK;
     }
 
-    /*
-     * There is a circular dependency between creating the transaction context and this
-     * transactionimpl. As we move forward with introducing the KernelAPI, having TransactionImpl
-     * and TxManager handle TransactionContext like this should be refactored and moved to a point
-     * where the Neo4j transaction handling lives cleanly under the Kernel API, and is not tied to
-     * threads. The thread-bound, JTA-based, transaction management should probably live outside
-     * the kernel API entirely.
-     *
-     * However, in the spirit of baby steps, we hook into the current tx infrastructure at a few
-     * points to not have to do the full move in one step.
-     */
-    public void setKernelTransaction( KernelTransaction kernelTransaction )
-    {
-        this.kernelTransaction = kernelTransaction;
-    }
-
     private static class ResourceElement
     {
         private Xid xid = null;
@@ -752,10 +693,5 @@ class TransactionImpl implements Transaction
     public void finish( boolean successful )
     {
         getState().getTxHook().finishTransaction( getEventIdentifier(), successful );
-    }
-
-    public KernelTransaction getTransactionContext()
-    {
-        return kernelTransaction;
     }
 }

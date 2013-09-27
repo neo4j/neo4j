@@ -39,6 +39,8 @@ import org.neo4j.kernel.impl.util.RelIdArray;
  * </ul>
  * @author Mattias
  *
+ * This is slowly being replaced / merged with the new KernelTransaction transaction state,
+ * {@link org.neo4j.kernel.impl.api.state.TxState}, please avoid adding more functionality to this class.
  */
 public interface TransactionState
 {
