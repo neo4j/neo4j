@@ -24,6 +24,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.Token;
@@ -197,10 +198,6 @@ public interface NeoStoreTransaction
      */
     void graphLoadProperties( boolean light, PropertyReceiver receiver );
 
-    Token[] loadAllPropertyKeyTokens();
-
-    Token[] loadAllLabelTokens();
-
     /**
      * Loads the complete property chain for the given node and returns it as a
      * map from property index id to property data.
@@ -229,8 +226,6 @@ public interface NeoStoreTransaction
      * @return The light RelationshipRecord if it was found, null otherwise.
      */
     RelationshipRecord relLoadLight( long id );
-
-    Token[] loadRelationshipTypes();
 
     /**
      * Creates a property index entry out of the given id and string.
@@ -284,6 +279,14 @@ public interface NeoStoreTransaction
     PrimitiveLongIterator getLabelsForNode( long nodeId );
 
     void setConstraintIndexOwner( IndexRule constraintIndex, long constraintId );
+
+    /**
+     * This is a smell, a result of the kernel refactorings. Right now, both NeoStoreTransaction and KernelTransaction
+     * are "publicly" consumable, and one owns the other. In the future, they should be merged such that
+     * KernelTransaction rules supreme, and has internal components to manage the responsibilities currently handled by
+     * WriteTransaction and ReadTransaction.
+     */
+    KernelTransaction kernelTransaction();
 
     public interface PropertyReceiver
     {

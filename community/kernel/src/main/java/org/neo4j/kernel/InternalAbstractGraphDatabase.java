@@ -32,6 +32,7 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -61,7 +62,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -81,7 +81,6 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
-import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -239,7 +238,6 @@ public abstract class InternalAbstractGraphDatabase
     protected KernelData extensions;
     protected Caches caches;
     protected TransactionStateFactory stateFactory;
-    protected KernelAPI kernelAPI;
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
     protected JobScheduler jobScheduler;
@@ -359,7 +357,6 @@ public abstract class InternalAbstractGraphDatabase
             return;
         }
 
-        kernelAPI.bootstrapAfterRecovery();
         if ( txManager instanceof TxManager )
         {
             @SuppressWarnings("deprecation")
@@ -368,7 +365,8 @@ public abstract class InternalAbstractGraphDatabase
             KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this, neoStoreDataSource );
             if ( isMaster )
             {
-                new RemoveOrphanConstraintIndexesOnStartup( new Transactor( txManager ), logging ).perform();
+                new RemoveOrphanConstraintIndexesOnStartup( new Transactor( txManager, persistenceManager ), logging )
+                        .perform();
             }
         }
     }
@@ -495,15 +493,7 @@ public abstract class InternalAbstractGraphDatabase
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
-        kernelAPI = life.add( new Kernel(
-                txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, persistenceManager,
-                xaDataSourceManager, lockManager, updateableSchemaState, dependencyResolver,
-                readOnly, this ) );
-
-        // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
-        txManager.setKernel(kernelAPI);
-
-        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager ) );
+        statementContextProvider = life.add( new ThreadToStatementContextBridge( persistenceManager ) );
 
         nodeManager = guard != null ?
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
@@ -779,7 +769,7 @@ public abstract class InternalAbstractGraphDatabase
             @Override
             public RelationshipImpl lookupRelationship( long relationshipId )
             {
-                // TODO: add CAS check here for requests not in tx to guard against shutdown
+                assertDatabaseRunning();
                 return nodeManager.getRelationshipForProxy( relationshipId, null );
             }
 
@@ -811,13 +801,14 @@ public abstract class InternalAbstractGraphDatabase
             @Override
             public NodeImpl lookup( long nodeId )
             {
-                // TODO: add CAS check here for requests not in tx to guard against shutdown
+                assertDatabaseRunning();
                 return nodeManager.getNodeForProxy( nodeId, null );
             }
 
             @Override
             public NodeImpl lookup( long nodeId, LockType lock )
             {
+                assertDatabaseRunning();
                 return nodeManager.getNodeForProxy( nodeId, lock );
             }
 
@@ -839,6 +830,15 @@ public abstract class InternalAbstractGraphDatabase
                 return nodeManager;
             }
         };
+    }
+
+    // This is here until we've moved all operations into the kernel, which handles this check on it's own.
+    private void assertDatabaseRunning()
+    {
+        if(life.getStatus() == LifecycleStatus.SHUTDOWN)
+        {
+            throw new DatabaseShutdownException();
+        }
     }
 
     protected TxHook createTxHook()
@@ -872,9 +872,9 @@ public abstract class InternalAbstractGraphDatabase
         neoDataSource = new NeoStoreXaDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
-                updateableSchemaState,
-                new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
-                dependencyResolver );
+                updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
+                dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
+                persistenceManager, lockManager, nodeManager, this );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
@@ -1372,10 +1372,6 @@ public abstract class InternalAbstractGraphDatabase
             else if ( PersistenceManager.class.isAssignableFrom( type ) && type.isInstance( persistenceManager ) )
             {
                 return type.cast( persistenceManager );
-            }
-            else if ( KernelAPI.class.equals( type ) )
-            {
-                return type.cast( kernelAPI );
             }
             else if ( ThreadToStatementContextBridge.class.isAssignableFrom( type )
                     && type.isInstance( statementContextProvider ) )

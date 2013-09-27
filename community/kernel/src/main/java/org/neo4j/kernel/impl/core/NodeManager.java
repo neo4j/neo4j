@@ -49,8 +49,10 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -67,7 +69,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.cast;
 
 public class NodeManager implements Lifecycle, EntityFactory
@@ -179,10 +180,15 @@ public class NodeManager implements Lifecycle, EntityFactory
         {
             if ( ds.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
             {
-                // Load and cache all keys from persistence manager
-                addRawRelationshipTypes( persistenceManager.loadAllRelationshipTypeTokens() );
-                addPropertyKeyTokens( persistenceManager.loadAllPropertyKeyTokens() );
-                addLabelTokens( persistenceManager.loadAllLabelTokens() );
+                NeoStore neoStore = ((NeoStoreXaDataSource) ds).getNeoStore();
+
+                TokenStore<?> propTokens = neoStore.getPropertyStore().getPropertyKeyTokenStore();
+                TokenStore<?> labelTokens = neoStore.getLabelTokenStore();
+                TokenStore<?> relTokens = neoStore.getRelationshipTypeStore();
+
+                addRawRelationshipTypes( relTokens.getTokens( Integer.MAX_VALUE ) );
+                addPropertyKeyTokens( propTokens.getTokens( Integer.MAX_VALUE ) );
+                addLabelTokens( labelTokens.getTokens( Integer.MAX_VALUE ) );
             }
         }
     }

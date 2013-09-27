@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-
 /**
  * Represents a transaction of changes to the underlying graph.
  * Actual changes are made in the {@linkplain #acquireStatement() statements} acquired from this transaction.
@@ -33,19 +31,23 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  * Clearly separating between the concept of a transaction and the concept of a statement allows us to cater to this
  * type of isolation requirements.
  *
- * TODO currently a {@link KernelTransaction} is used both for building the statement logic (once per db), as well as
- * being a transaction.
+ * This class has a 1-1 relationship with{@link org.neo4j.kernel.impl.nioneo.xa.WriteTransaction}, please see its'
+ * javadoc for details.
  */
 public interface KernelTransaction
 {
     Statement acquireStatement();
 
-    /**
-     * Commit this transaction, this will make the changes in this context visible to other
-     * transactions.
-     */
-    void commit() throws TransactionFailureException;
-
-    /** Roll back this transaction, undoing any changes that have been made. */
-    void rollback() throws TransactionFailureException;
+    // Made unavailable for now, should be re-instated once the WriteTransaction/KernelTransaction structure is
+    // sorted out.
+//    void prepare();
+//
+//    /**
+//     * Commit this transaction, this will make the changes in this context visible to other
+//     * transactions.
+//     */
+//    void commit() throws TransactionFailureException;
+//
+//    /** Roll back this transaction, undoing any changes that have been made. */
+//    void rollback() throws TransactionFailureException;
 }

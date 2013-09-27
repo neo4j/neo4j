@@ -52,6 +52,7 @@ public class LogIoUtils
     {
         buffer.clear();
         buffer.limit( LOG_HEADER_SIZE );
+
         if ( channel.read( buffer ) != LOG_HEADER_SIZE )
         {
             if ( strict )

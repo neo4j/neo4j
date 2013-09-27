@@ -286,7 +286,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                                         Settings.FALSE
                                 ) ) );
                             }
-                        } ) );
+                        } ), false );
                 xaContainer.openLogicalLog();
             }
             catch ( IOException e )

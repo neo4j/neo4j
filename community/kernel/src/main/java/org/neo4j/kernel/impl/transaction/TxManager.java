@@ -43,8 +43,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -90,8 +88,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
-
-    private KernelAPI kernel;
 
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
@@ -242,7 +238,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         fc.write( buf );
         fc.force( true );
         fc.close();
-//        log.logMessage( "Active txlog set to " + newFileName, true );
     }
 
     synchronized void setTmNotOk( Throwable cause )
@@ -283,8 +278,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         startedTxCount.incrementAndGet();
         // start record written on resource enlistment
-
-        tx.setKernelTransaction( kernel.newTransaction() );
     }
 
     private void assertTmOk() throws SystemException
@@ -379,7 +372,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                     catch(RuntimeException e)
                     {
                         log.error( "Failed to commit transaction, and was then subsequently unable to " +
-                                   "finish the failed tx.", e );
+                                "finish the failed tx.", e );
                     }
                 }
             }
@@ -672,7 +665,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     @Override
-	public Transaction getTransaction() throws SystemException
+    public Transaction getTransaction() throws SystemException
     {
         assertTmOk();
         return txThreadMap.get();
@@ -962,28 +955,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         return tx != null ? ((TransactionImpl)tx).getState() : TransactionState.NO_STATE;
     }
 
-    @Override
-    public void setKernel(KernelAPI kernel)
-    {
-        this.kernel = kernel;
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public KernelTransaction getKernelTransaction()
-    {
-        Transaction tx;
-        try
-        {
-            tx = getTransaction();
-        }
-        catch ( SystemException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return tx != null ? ((TransactionImpl)tx).getTransactionContext() : null;
-    }
-
     private class TxManagerDataSourceRegistrationListener implements DataSourceRegistrationListener
     {
         @Override
@@ -997,7 +968,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             }
             if ( everythingRegistered )
             {
-//                    openLog();
                 doRecovery();
             }
         }

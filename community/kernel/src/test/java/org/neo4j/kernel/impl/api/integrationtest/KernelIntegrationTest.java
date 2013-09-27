@@ -21,13 +21,11 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.After;
 import org.junit.Before;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -43,7 +41,6 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 public abstract class KernelIntegrationTest
 {
     protected GraphDatabaseAPI db;
-    protected KernelAPI kernel;
     protected ThreadToStatementContextBridge statementContextProvider;
 
     private Transaction beansTx;
@@ -114,7 +111,6 @@ public abstract class KernelIntegrationTest
         db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,"none").newGraphDatabase();
         statementContextProvider = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
-        kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
     }
 
     protected void stopDb()

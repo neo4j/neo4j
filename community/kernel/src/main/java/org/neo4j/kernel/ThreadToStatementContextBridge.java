@@ -21,11 +21,10 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -34,14 +33,12 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class ThreadToStatementContextBridge extends LifecycleAdapter
 {
-    protected final KernelAPI kernelAPI;
-    private final AbstractTransactionManager txManager;
+    private final PersistenceManager persistenceManager;
     private boolean isShutdown = false;
 
-    public ThreadToStatementContextBridge( KernelAPI kernelAPI, AbstractTransactionManager txManager )
+    public ThreadToStatementContextBridge( PersistenceManager persistenceManager )
     {
-        this.kernelAPI = kernelAPI;
-        this.txManager = txManager;
+        this.persistenceManager = persistenceManager;
     }
 
     public Statement statement()
@@ -52,7 +49,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
     private KernelTransaction transaction()
     {
         checkIfShutdown();
-        KernelTransaction transaction = txManager.getKernelTransaction();
+        KernelTransaction transaction = persistenceManager.currentKernelTransaction();
         if ( transaction == null )
         {
             throw new NotInTransactionException();
@@ -76,6 +73,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
 
     public void assertInTransaction()
     {
-        txManager.assertInTransaction();
+        // Contract: Persistence manager throws NotInTransactionException if we are not in a transaction.
+        persistenceManager.currentKernelTransaction();
     }
 }

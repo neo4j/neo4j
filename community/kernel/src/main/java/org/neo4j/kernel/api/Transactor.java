@@ -19,17 +19,21 @@
  */
 package org.neo4j.kernel.api;
 
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
+import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 public class Transactor
 {
@@ -38,11 +42,13 @@ public class Transactor
         RESULT perform( Statement statement ) throws FAILURE;
     }
 
-    private final AbstractTransactionManager txManager;
+    private final TransactionManager txManager;
+    private final PersistenceManager persistenceManager;
 
-    public Transactor( AbstractTransactionManager txManager )
+    public Transactor( TransactionManager txManager, PersistenceManager persistenceManager )
     {
         this.txManager = txManager;
+        this.persistenceManager = persistenceManager;
     }
 
     public <RESULT, FAILURE extends KernelException> RESULT execute( Work<RESULT, FAILURE> work )
@@ -53,7 +59,7 @@ public class Transactor
         {
             beginTransaction();
             @SuppressWarnings("deprecation")
-            KernelTransaction tx = txManager.getKernelTransaction();
+            KernelTransaction tx = persistenceManager.currentKernelTransaction();
             boolean success = false;
             try
             {
@@ -69,18 +75,19 @@ public class Transactor
             {
                 if ( success )
                 {
-                    tx.commit();
+                    txManager.commit();
                 }
                 else
                 {
-                    tx.rollback();
+                    txManager.rollback();
                 }
             }
         }
-        catch ( TransactionalException failure )
+        catch(HeuristicMixedException | RollbackException | HeuristicRollbackException | SystemException |
+               TransactionalException failure )
         {
             previousTransaction = null; // the transaction manager threw an exception, don't resume previous.
-            throw failure;
+            throw new TransactionFailureException(failure);
         }
         finally
         {

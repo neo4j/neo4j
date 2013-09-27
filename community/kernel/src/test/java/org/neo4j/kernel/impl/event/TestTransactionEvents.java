@@ -239,16 +239,11 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
     {
         commit();
 
-        List<TransactionEventHandler<Object>> handlers =
-                new ArrayList<TransactionEventHandler<Object>>();
-        handlers.add( new FailingEventHandler<Object>(
-                new DummyTransactionEventHandler<Object>( null ), false ) );
-        handlers.add( new FailingEventHandler<Object>(
-                new DummyTransactionEventHandler<Object>( null ), false ) );
-        handlers.add( new FailingEventHandler<Object>(
-                new DummyTransactionEventHandler<Object>( null ), true ) );
-        handlers.add( new FailingEventHandler<Object>(
-                new DummyTransactionEventHandler<Object>( null ), false ) );
+        List<TransactionEventHandler<Object>> handlers = new ArrayList<>();
+        handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), false ) );
+        handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), false ) );
+        handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), true ) );
+        handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), false ) );
         for ( TransactionEventHandler<Object> handler : handlers )
         {
             getGraphDb().registerTransactionEventHandler( handler );

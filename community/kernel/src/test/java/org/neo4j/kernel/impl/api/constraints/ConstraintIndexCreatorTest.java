@@ -142,7 +142,7 @@ public class ConstraintIndexCreatorTest
 
         StubTransactor( KernelStatement state )
         {
-            super( null );
+            super( null, null );
             this.state = state;
         }
 
