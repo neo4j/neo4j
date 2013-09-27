@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha;
 
 import java.net.URI;
 
-import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
