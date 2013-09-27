@@ -175,6 +175,9 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
     public void shouldNotBlockOtherWritersWhilePopulatingConstraintIndex()
             throws Exception
     {
+        // This tests that when background population is started for a constraint index, a separate thread can still
+        // perform writes to the database. This test would deadlock if this were not the case.
+
         // given
         TestIndexProviderFactory.TestIndexProvider provider = spy(new TestIndexProviderFactory.TestIndexProvider());
 
@@ -219,7 +222,7 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
             @Override
             public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
-                otherThread.execute( createNode( gdb, "User", "name", "Bob" ) );
+                otherThread.execute( createNode( gdb, "User", "name", "Bob" ) ).get();
                 return null;
             }
         };
