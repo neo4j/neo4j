@@ -2872,4 +2872,12 @@ RETURN x0.name
       Map("a" -> a, "b" -> c, "c" -> a, "d" -> b),
       Map("a" -> a, "b" -> c, "c" -> a, "d" -> c)))
   }
+
+  @Test
+  def should_allow_distinct_followed_by_order_by() {
+    // given any database
+
+    // then shouldn't throw
+    val result = parseAndExecute("START x=node(0) RETURN DISTINCT x as otherName ORDER BY x.name ")
+  }
 }
