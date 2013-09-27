@@ -19,8 +19,6 @@
  */
 package org.neo4j.management;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -32,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
@@ -47,8 +44,11 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
+import org.neo4j.jmx.StoreFile;
 import org.neo4j.jmx.impl.ConfigurationBean;
 import org.neo4j.management.impl.KernelProxy;
+
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 public final class Neo4jManager extends KernelProxy implements Kernel
 {
