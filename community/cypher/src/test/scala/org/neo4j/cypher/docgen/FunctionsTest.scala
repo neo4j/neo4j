@@ -419,6 +419,18 @@ class FunctionsTest extends DocumentingTestBase {
     )
   }
 
+  @Test def haversin() {
+    testThis(
+      title = "HAVERSIN",
+      syntax = "HAVERSIN( expression )",
+      arguments = List("expression" -> "A numeric expression."),
+      text = "`HAVERSIN` returns the half versine of the expression.",
+      queryText = """start a=node(%A%) return haversin(0.5)""",
+      returns = "The haversine of 0.5 is returned.",
+      assertions = (p) => assertEquals(0.061208719054813, p.toList.head("haversin(0.5)").asInstanceOf[Double], 0.000001)
+    )
+  }
+
   @Test def log() {
     testThis(
       title = "LOG",

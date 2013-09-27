@@ -122,6 +122,8 @@ include::exp.asciidoc[]
 
 include::floor.asciidoc[]
 
+include::haversin.asciidoc[]
+
 include::log.asciidoc[]
 
 include::log10.asciidoc[]
