@@ -188,6 +188,15 @@ case class SinFunction(argument: Expression) extends MathFunction(argument) {
   override def calculateType(symbols: SymbolTable) = DoubleType()
 }
 
+case class HaversinFunction(argument: Expression) extends MathFunction(argument) {
+
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = ( 1.0d - math.cos(asDouble(argument(ctx))) ) / 2
+
+  def rewrite(f: (Expression) => Expression) = f(HaversinFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = DoubleType()
+}
+
 case class TanFunction(argument: Expression) extends MathFunction(argument) {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.tan(asDouble(argument(ctx)))
 
