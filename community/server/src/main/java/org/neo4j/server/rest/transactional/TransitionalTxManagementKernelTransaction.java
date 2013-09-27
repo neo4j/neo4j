@@ -19,43 +19,23 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.TxManager;
 
-class TransitionalTxManagementKernelTransaction implements KernelTransaction
+class TransitionalTxManagementKernelTransaction
 {
-    private final KernelTransaction ctx;
     private final TxManager txManager;
 
     private Transaction suspendedTransaction;
 
-    public TransitionalTxManagementKernelTransaction( KernelTransaction ctx, TxManager txManager )
+    public TransitionalTxManagementKernelTransaction( TxManager txManager )
     {
-        this.ctx = ctx;
         this.txManager = txManager;
-    }
-
-    @Override
-    public Statement acquireStatement()
-    {
-        return ctx.acquireStatement();
-    }
-
-    @Override
-    public void commit() throws TransactionFailureException
-    {
-        ctx.commit();
-    }
-
-    @Override
-    public void rollback() throws TransactionFailureException
-    {
-        ctx.rollback();
     }
 
     public void suspendSinceTransactionsAreStillThreadBound()
@@ -78,6 +58,42 @@ class TransitionalTxManagementKernelTransaction implements KernelTransaction
             assert suspendedTransaction != null : "Can't suspend the transaction if it has not first been suspended.";
             txManager.resume( suspendedTransaction );
             suspendedTransaction = null;
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    public void rollback()
+    {
+        try
+        {
+            txManager.rollback();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    public void commit()
+    {
+        try
+        {
+            txManager.commit();
+        }
+        catch ( RollbackException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( HeuristicMixedException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( HeuristicRollbackException e )
+        {
+            throw new RuntimeException( e );
         }
         catch ( SystemException e )
         {

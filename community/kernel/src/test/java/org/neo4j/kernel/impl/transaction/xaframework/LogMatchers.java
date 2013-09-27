@@ -60,6 +60,7 @@ public class LogMatchers
             LogEntry entry;
             while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, cmdFactory )) != null )
             {
+                System.out.println(entry);
                 entries.add( entry );
             }
 

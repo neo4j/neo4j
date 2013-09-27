@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
-
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,6 +38,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 public class TestInjectMultipleStartEntries
 {
@@ -75,7 +74,7 @@ public class TestInjectMultipleStartEntries
     
     private static class VerificationLogHook extends LogHookAdapter<LogEntry>
     {
-        private final Set<Xid> startXids = new HashSet<Xid>();
+        private final Set<Xid> startXids = new HashSet<>();
         
         @Override
         public boolean accept( LogEntry item )

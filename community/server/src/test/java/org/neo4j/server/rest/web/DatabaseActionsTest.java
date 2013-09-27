@@ -637,7 +637,7 @@ public class DatabaseActionsTest
     public void shouldBeAbleToSetRelationshipProperties() throws Exception
     {
         long relationshipId = graphdbHelper.createRelationship( "KNOWS" );
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 10 );
         actions.setAllRelationshipProperties( relationshipId, properties );

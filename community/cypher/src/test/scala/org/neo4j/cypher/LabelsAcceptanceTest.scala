@@ -172,9 +172,9 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
           }
         }
       }
-
-      insertNewCleanDatabase()
     }
+
+    insertNewCleanDatabase()
   }
 
 

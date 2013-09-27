@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionImplementation;
@@ -38,73 +40,69 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.kernel.impl.transaction.XaDataSourceManager.neoStoreListener;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
  * consumption by both the Core API, Cypher, and any other components that want to interface with the
  * underlying database.
- * <p/>
+ *
  * This is currently in an intermediate phase, with many features still unavailable unless the Core API is also
  * present. We are in the process of moving Core API features into the kernel.
- * <p/>
+ *
  * <h1>Structure</h1>
- * <p/>
+ *
  * The Kernel itself has a simple API - it lets you start transactions. The transactions, in turn, allow you to
  * create statements, which, in turn, operate against the database. The reason for the separation between statements
  * and transactions is database isolation. Please refer to the {@link KernelTransaction} javadoc for details.
- * <p/>
+ *
  * The architecture of the kernel is based around a layered design, where one layer performs some task, and potentially
  * delegates down to a lower layer. For instance, writing to the database will pass through
  * {@link LockingStatementOperations}, which will grab locks and delegate to {@link StateHandlingStatementOperations}
- * which
- * will store the change in the transaction state, to be applied later if the transaction is committed.
- * <p/>
+ * which will store the change in the transaction state, to be applied later if the transaction is committed.
+ *
  * A read will, similarly, pass through {@link LockingStatementOperations}, which should (but does not currently) grab
  * read locks. It then reaches {@link StateHandlingStatementOperations}, which includes any changes that exist in the
  * current transaction, and then finally {@link StoreStatementOperations} will read the current committed state from
- * the
- * stores or caches.
- * <p/>
+ * the stores or caches.
+ *
+ * <h1>A story of JTA</h1>
+ *
+ * We have, for a long time, supported full X.Open two-phase commits, which is handled by our TxManager implementation
+ * of the JTA interfaces. However, two phase commit is slow and complex. Ideally we don't want every day use of neo4j
+ * to require JTA anymore, but rather have it be a bonus feature that can be enabled when the user wants two-phase
+ * commit support. As such, we are working to keep the Kernel compatible with a JTA system built on top of it, but
+ * at the same time it should remain independent and runnable without a transaction manager.
+ *
+ * The heart of this work is in the relationship between {@link KernelTransaction},
+ * {@link org.neo4j.kernel.impl.nioneo.xa.WriteTransaction} and
+ * {@link org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager}. The latter should become a wrapper around
+ * KernelTransactions, exposing them as JTA-capable transactions. The Write transaction should be hidden from the outside,
+ * an implementation detail living inside the kernel.
+ *
  * <h1>Refactoring</h1>
- * <p/>
- * There are several sources of pain around the current state, which we hope to refactor away down the line. A major
- * source of pain is the interaction between this class and {@link NeoStoreXaDataSource}. We should discuss the role
- * of these two classes. Either one should create the other, or they should be combined into one class.
- * <p/>
- * Another pain is transaction state, where lots of legacy code still rules supreme. Please refer to {@link TxState}
+ *
+ * There are several sources of pain around the current state, which we hope to refactor away down the line.
+ *
+ * One pain is transaction state, where lots of legacy code still rules supreme. Please refer to {@link TxState}
  * for details about the work in this area.
- * <p/>
+ *
  * Cache invalidation is similarly problematic, where cache invalidation really should be done when changes are applied
  * to the store, through the logical log. However, this is mostly not the case, cache invalidation is done as we work
  * through the Core API. Only in HA mode is cache invalidation done through log application, and then only through
  * evicting whole entities from the cache whenever they change, leading to large performance hits on writes. This area
  * is still open for investigation, but an approach where the logical log simply tells a store write API to apply some
  * change, and the implementation of that API is responsible for keeping caches in sync.
- * <p/>
+ *
  * Please expand and update this as you learn things or find errors in the text above.
- * <p/>
- * The current interaction with the TransactionManager looks like this:
- * <p/>
- * <ol>
- * <li>
- * tx.close() --> TransactionImpl.commit() --> *KernelTransaction.commit()* --> TxManager.commit()
- * </li>
- * <li>
- * TxManager.commit() --> TransactionImpl.doCommit() --> dataSource.commit()
- * </li>
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {
@@ -113,85 +111,62 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final PersistenceManager persistenceManager;
-    private final XaDataSourceManager dataSourceManager;
     private final LockManager lockManager;
-    private final DependencyResolver dependencyResolver;
     private final UpdateableSchemaState schemaState;
-    private final boolean readOnly;
     private final SchemaWriteGuard schemaWriteGuard;
+    private final IndexingService indexService;
+    private final NeoStore neoStore;
+    private final PersistenceCache persistenceCache;
+    private final SchemaCache schemaCache;
+    private final SchemaIndexProviderMap providerMap;
+    private final LabelScanStore labelScanStore;
+    private final NodeManager nodeManager;
+    private final LegacyKernelOperations legacyKernelOperations;
+
+    private final boolean readOnly;
+
+    private boolean isShutdown = false;
 
     // These non-final components are all circular dependencies in various configurations.
     // As we work towards refactoring the old kernel, we should work to remove these.
-    private IndexingService indexService;
-    private NeoStore neoStore;
-    private NodeManager nodeManager;
-    private PersistenceCache persistenceCache;
     private StatementOperationParts statementOperations;
-    private SchemaCache schemaCache;
-    private SchemaIndexProviderMap providerMap = null;
-    private LegacyKernelOperations legacyKernelOperations;
-    private LabelScanStore labelScanStore;
-    private boolean isShutdown = false;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyKeyTokenHolder propertyKeyTokenHolder,
                    LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-                   PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager,
-                   LockManager lockManager, UpdateableSchemaState schemaState, DependencyResolver dependencyResolver,
-                   boolean readOnly, SchemaWriteGuard schemaWriteGuard )
+                   PersistenceManager persistenceManager, LockManager lockManager, UpdateableSchemaState schemaState,
+                   SchemaWriteGuard schemaWriteGuard,
+                   IndexingService indexService, NodeManager nodeManager, NeoStore neoStore, PersistenceCache persistenceCache,
+                   SchemaCache schemaCache, SchemaIndexProviderMap providerMap, LabelScanStore labelScanStore, boolean readOnly )
     {
         this.transactionManager = transactionManager;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.persistenceManager = persistenceManager;
-        this.dataSourceManager = dataSourceManager;
         this.lockManager = lockManager;
-        this.dependencyResolver = dependencyResolver;
         this.schemaState = schemaState;
+        this.providerMap = providerMap;
         this.readOnly = readOnly;
         this.schemaWriteGuard = schemaWriteGuard;
+        this.indexService = indexService;
+        this.neoStore = neoStore;
+        this.persistenceCache = persistenceCache;
+        this.schemaCache = schemaCache;
+        this.labelScanStore = labelScanStore;
+        this.nodeManager = nodeManager;
+
+        this.legacyKernelOperations = new DefaultLegacyKernelOperations( nodeManager );
+
+        this.statementOperations = buildStatementOperations();
     }
 
     @Override
     public void start()
     {
-        // TODO: This is a huge smell. See the refactoring section in the javadoc of this class for thoughts about
-        // the interplay between Kernel and NeoStoreXaDataSource
-
-        nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
-
-        dataSourceManager.addDataSourceRegistrationListener( neoStoreListener( new DataSourceRegistrationListener()
+        for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
         {
-            @Override
-            public void registeredDataSource( XaDataSource ds )
-            {
-                NeoStoreXaDataSource neoDataSource = (NeoStoreXaDataSource) ds;
-                neoStore = neoDataSource.getNeoStore();
-                indexService = neoDataSource.getIndexService();
-                labelScanStore = neoDataSource.getLabelScanStore();
-                providerMap = neoDataSource.getProviderMap();
-                persistenceCache = neoDataSource.getPersistenceCache();
-                schemaCache = neoDataSource.getSchemaCache();
-
-                for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
-                {
-                    schemaCache.addSchemaRule( schemaRule );
-                }
-            }
-
-            @Override
-            public void unregisteredDataSource( XaDataSource ds )
-            {
-                neoStore = null;
-            }
-        } ) );
-    }
-
-    @Override
-    public void bootstrapAfterRecovery()
-    {
-        this.statementOperations = buildStatementOperations();
-        this.legacyKernelOperations = new DefaultLegacyKernelOperations( nodeManager );
+            schemaCache.addSchemaRule( schemaRule );
+        }
     }
 
     @Override
@@ -205,8 +180,48 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         checkIfShutdown();
         return new KernelTransactionImplementation( statementOperations, legacyKernelOperations, readOnly,
-                schemaWriteGuard, labelScanStore, indexService, lockManager, transactionManager, nodeManager,
-                persistenceCache, schemaState, persistenceManager, providerMap, neoStore );
+                schemaWriteGuard, labelScanStore, indexService, transactionManager, nodeManager, persistenceCache,
+                schemaState, new LockHolderImpl( lockManager, getJTATransaction(), nodeManager ),
+                persistenceManager, providerMap, neoStore, getLegacyTxState() );
+    }
+
+    // We temporarily need this until all transaction state has moved into the kernel
+    private TransactionState getLegacyTxState()
+    {
+        try
+        {
+            TransactionState legacyState = transactionManager.getTransactionState();
+            return legacyState != null ? legacyState : TransactionState.NO_STATE;
+        }
+        catch ( RuntimeException e )
+        {
+            // If the transaction manager is in a bad state, we use an empty transaction state. It's not
+            // a great thing, but without this we can't create kernel transactions during recovery.
+            // Accepting that this is terrible for now, since the plan is to remove this dependency on the JTA
+            // transaction entirely.
+            // This should be safe to do, since we only use the JTA tx for locking, and we don't do any locking during
+            // recovery.
+            return TransactionState.NO_STATE;
+        }
+    }
+
+    // We temporarily depend on this to satisfy locking. This should go away once all locks are handled in the kernel.
+    private Transaction getJTATransaction()
+    {
+        try
+        {
+            return transactionManager.getTransaction();
+        }
+        catch ( SystemException e )
+        {
+            // If the transaction manager is in a bad state, we return a placebo transaction. It's not
+            // a great thing, but without this we can't create kernel transactions during recovery.
+            // Accepting that this is terrible for now, since the plan is to remove this dependency on the JTA
+            // transaction entirely.
+            // This should be safe to do, since we only use the JTA tx for locking, and we don't do any locking during
+            // recovery.
+            return new NoOpJTATransaction();
+        }
     }
 
     private void checkIfShutdown()
@@ -247,7 +262,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 parts.entityReadOperations(),
                 parts.schemaReadOperations(),
                 auxStoreOperations,
-                new ConstraintIndexCreator( new Transactor( transactionManager ), indexService ) );
+                new ConstraintIndexCreator( new Transactor( transactionManager, persistenceManager ), indexService ) );
 
         parts = parts.override(
                 null, null, stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,

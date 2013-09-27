@@ -122,7 +122,6 @@ public class GlobalGraphOperations
     public Iterable<RelationshipType> getAllRelationshipTypes()
     {
         assertInTransaction();
-        statementCtxProvider.assertInTransaction();
         return nodeManager.getRelationshipTypes();
     }
 

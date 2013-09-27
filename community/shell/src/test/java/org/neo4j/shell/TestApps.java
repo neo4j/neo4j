@@ -916,7 +916,7 @@ public class TestApps extends AbstractShellTest
         }
         catch ( ShellException e )
         {
-            assertThat( e.getMessage(), containsString( "The transaction is marked for rollback" ) );
+            assertThat( e.getMessage(), containsString( "rolled back" ) );
         }
         // and also a rollback following it should fail
         try

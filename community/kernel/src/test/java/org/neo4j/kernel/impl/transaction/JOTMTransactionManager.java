@@ -24,6 +24,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.naming.NamingException;
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
@@ -36,17 +37,14 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
-import org.objectweb.jotm.Current;
-import org.objectweb.jotm.Jotm;
-import org.objectweb.jotm.TransactionResourceManager;
-
-import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.objectweb.jotm.Current;
+import org.objectweb.jotm.Jotm;
+import org.objectweb.jotm.TransactionResourceManager;
 
 public class JOTMTransactionManager extends AbstractTransactionManager
 {
@@ -79,9 +77,7 @@ public class JOTMTransactionManager extends AbstractTransactionManager
     private final Jotm jotm;
     private final XaDataSourceManager xaDataSourceManager;
     private final Map<Transaction, TransactionState> states = new HashMap<>();
-    private final Map<Transaction, KernelTransaction> kernelTransactions = new HashMap<>();
     private final TransactionStateFactory stateFactory;
-    private KernelAPI kernel;
 
     private JOTMTransactionManager( XaDataSourceManager xaDataSourceManager, TransactionStateFactory stateFactory )
     {
@@ -137,7 +133,6 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         current.begin();
         Transaction tx = getTransaction();
         states.put( tx, stateFactory.create( tx ) );
-        kernelTransactions.put( tx, kernel.newTransaction() );
     }
 
     @Override
@@ -162,21 +157,6 @@ public class JOTMTransactionManager extends AbstractTransactionManager
             return null;
         }
         return current.getTransaction();
-    }
-
-    @Override
-    public KernelTransaction getKernelTransaction()
-    {
-        Transaction transaction;
-        try
-        {
-            transaction = getTransaction();
-        }
-        catch ( SystemException e )
-        {
-            return null;
-        }
-        return kernelTransactions.get( transaction );
     }
 
     @Override
@@ -274,11 +254,5 @@ public class JOTMTransactionManager extends AbstractTransactionManager
             throw new RuntimeException( e );
         }
     }
-    
-    @Override
-    @Deprecated
-    public void setKernel( KernelAPI kernel )
-    {
-        this.kernel = kernel;
-    }
+
 }

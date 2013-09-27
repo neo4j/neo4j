@@ -28,8 +28,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.transaction.xa.XAException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,6 +35,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.scan.LabelScanReader;
@@ -654,6 +653,7 @@ public class WriteTransactionTest
     }
 
     private final IndexingService mockIndexing = mock( IndexingService.class );
+    private final KernelTransactionImplementation kernelTransaction = mock( KernelTransactionImplementation.class );
 
     private WriteTransaction newWriteTransaction( IndexingService indexing )
     {
@@ -665,7 +665,8 @@ public class WriteTransactionTest
     {
         log = new VerifyingXaLogicalLog( fs.get(), verifier );
         WriteTransaction result = new WriteTransaction( 0, 0l, log, transactionState, neoStore,
-                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator(neoStore, indexing ));
+                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator(neoStore, indexing ),
+                kernelTransaction );
         result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
         return result;
     }
@@ -719,13 +720,13 @@ public class WriteTransactionTest
         };
     }
 
-    private void prepareAndCommitRecovered( WriteTransaction tx ) throws XAException
+    private void prepareAndCommitRecovered( WriteTransaction tx ) throws Exception
     {
         tx.setRecovered();
         prepareAndCommit( tx );
     }
 
-    private void prepareAndCommit( WriteTransaction tx ) throws XAException
+    private void prepareAndCommit( WriteTransaction tx ) throws Exception
     {
         tx.doPrepare();
         tx.doCommit();

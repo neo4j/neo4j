@@ -29,9 +29,6 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -47,7 +44,6 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
 
     private XaDataSourceManager xaDsManager = null;
     private final StringLogger logger;
-    private KernelAPI kernel;
 
     public ReadOnlyTxManager( XaDataSourceManager xaDsManagerToUse, StringLogger logger )
     {
@@ -92,7 +88,6 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         }
         ReadOnlyTransactionImpl tx = new ReadOnlyTransactionImpl( this, logger );
         txThreadMap.set( tx );
-        tx.setKernelTransaction( kernel.newTransaction() );
     }
 
     @Override
@@ -131,10 +126,6 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         if ( tx.getResourceCount() == 0 )
         {
             tx.setStatus( Status.STATUS_COMMITTED );
-        }
-        else
-        {
-            throw new ReadOnlyDbException();
         }
         tx.doAfterCompletion();
         txThreadMap.remove();
@@ -317,21 +308,6 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             return tx.getEventIdentifier();
         }
         return -1;
-    }
-
-    @Override
-    public void setKernel( KernelAPI kernel )
-    {
-        this.kernel = kernel;
-    }
-
-    @Override
-    @Deprecated
-    @SuppressWarnings("deprecation")
-    public KernelTransaction getKernelTransaction()
-    {
-        Transaction tx = getTransaction();
-        return tx != null ? ((ReadOnlyTransactionImpl)tx).getKernelTransaction() : null;
     }
 
     @Override

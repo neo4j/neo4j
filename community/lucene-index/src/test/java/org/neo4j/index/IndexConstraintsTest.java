@@ -29,14 +29,13 @@ import java.util.concurrent.Executors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class IndexConstraintsTest
 {
@@ -59,7 +58,7 @@ public class IndexConstraintsTest
     {
         final int numThreads = 25;
         final String uuid = UUID.randomUUID().toString();
-        ExecutorCompletionService<Node> ecs = new ExecutorCompletionService<Node>(
+        ExecutorCompletionService<Node> ecs = new ExecutorCompletionService<>(
                 Executors.newFixedThreadPool( numThreads ) );
         for ( int i = 0; i < numThreads; i++ )
         {
@@ -71,9 +70,8 @@ public class IndexConstraintsTest
                     try
                     {
                         final Node node = graphDb.createNode();
-                        // Acquire write lock on common node
-                        graphDb.getReferenceNode().removeProperty(
-                                "NOT_EXISTING" );
+                        // Acquire lock
+                        tx.acquireWriteLock( graphDb.getReferenceNode() );
                         Index<Node> index = graphDb.index().forNodes( "uuids" );
                         final Node existing = index.get( "uuid", uuid ).getSingle();
                         if ( existing != null )
