@@ -29,6 +29,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;
 
@@ -56,8 +57,8 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     public void shouldAddUniqueEntries() throws Exception
     {
         // when
-        accessor.updateAndCommit( asList( add( 1l, "value1" ), add( 2l, "value2" ) ) );
-        accessor.updateAndCommit( asList( add( 3l, "value3" ) ) );
+        updateAndCommit( asList( add( 1l, "value1" ), add( 2l, "value2" ) ) );
+        updateAndCommit( asList( add( 3l, "value3" ) ) );
 
         // then
         assertEquals( asList( 1l ), getAllNodes( "value1" ) );
@@ -67,8 +68,8 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     public void shouldUpdateUniqueEntries() throws Exception
     {
         // when
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
+        updateAndCommit( asList( add( 1l, "value1" ) ) );
+        updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
 
         // then
         assertEquals( asList( 1l ), getAllNodes( "value2" ) );
@@ -79,15 +80,15 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     public void shouldRemoveAndAddEntries() throws Exception
     {
         // when
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( add( 2l, "value2" ) ) );
-        accessor.updateAndCommit( asList( add( 3l, "value3" ) ) );
-        accessor.updateAndCommit( asList( add( 4l, "value4" ) ) );
-        accessor.updateAndCommit( asList( remove( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( remove( 2l, "value2" ) ) );
-        accessor.updateAndCommit( asList( remove( 3l, "value3" ) ) );
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( add( 3l, "value3b" ) ) );
+        updateAndCommit( asList( add( 1l, "value1" ) ) );
+        updateAndCommit( asList( add( 2l, "value2" ) ) );
+        updateAndCommit( asList( add( 3l, "value3" ) ) );
+        updateAndCommit( asList( add( 4l, "value4" ) ) );
+        updateAndCommit( asList( remove( 1l, "value1" ) ) );
+        updateAndCommit( asList( remove( 2l, "value2" ) ) );
+        updateAndCommit( asList( remove( 3l, "value3" ) ) );
+        updateAndCommit( asList( add( 1l, "value1" ) ) );
+        updateAndCommit( asList( add( 3l, "value3b" ) ) );
 
         // then
         assertEquals( asList( 1l ), getAllNodes( "value1" ) );
@@ -101,9 +102,9 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     public void shouldConsiderWholeTransactionForValidatingUniqueness() throws Exception
     {
         // when
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( add( 2l, "value2" ) ) );
-        accessor.updateAndCommit( asList( change( 1l, "value1", "value2" ), change( 2l, "value2", "value1" ) ) );
+        updateAndCommit( asList( add( 1l, "value1" ) ) );
+        updateAndCommit( asList( add( 2l, "value2" ) ) );
+        updateAndCommit( asList( change( 1l, "value1", "value2" ), change( 2l, "value2", "value1" ) ) );
 
         // then
         assertEquals( asList( 2l ), getAllNodes( "value1" ) );
@@ -113,13 +114,13 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     @Test
     public void shouldRejectChangingEntryToAlreadyIndexedValue() throws Exception
     {
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( add( 2l, "value2" ) ) );
+        updateAndCommit( asList( add( 1l, "value1" ) ) );
+        updateAndCommit( asList( add( 2l, "value2" ) ) );
 
         // when
         try
         {
-            accessor.updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
+            updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
 
             fail( "expected exception" );
         }
@@ -134,13 +135,13 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     public void shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange() throws Exception
     {
         // given
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
+        updateAndCommit( asList( add( 1l, "value1" ) ) );
+        updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
 
         // when
         try
         {
-            accessor.updateAndCommit( asList( add( 2l, "value2" ) ) );
+            updateAndCommit( asList( add( 2l, "value2" ) ) );
 
             fail( "expected exception" );
         }
@@ -155,12 +156,12 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     public void shouldRejectEntryWithAlreadyIndexedValue() throws Exception
     {
         // given
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
+        updateAndCommit( asList( add( 1l, "value1" ) ) );
 
         // when
         try
         {
-            accessor.updateAndCommit( asList( add( 2l, "value1" ) ) );
+            updateAndCommit( asList( add( 2l, "value1" ) ) );
 
             fail( "expected exception" );
         }
@@ -177,7 +178,7 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
         // when
         try
         {
-            accessor.updateAndCommit( asList( add( 1l, "value1" ),
+            updateAndCommit( asList( add( 1l, "value1" ),
                     add( 2l, "value1" ) ) );
 
             fail( "expected exception" );
@@ -251,5 +252,16 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     {
         assertEquals( propertyValue, conflict.getPropertyValue() );
         assertEquals( asSet( nodes ), conflict.getConflictingNodeIds() );
+    }
+
+    private void updateAndCommit( List<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
+    {
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+        {
+            for ( NodePropertyUpdate update : updates )
+            {
+                updater.process( update );
+            }
+        }
     }
 }

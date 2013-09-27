@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
@@ -49,18 +51,27 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
+    public IndexUpdater newPopulatingUpdater() throws IOException
     {
-        for ( NodePropertyUpdate update : updates )
+        return new IndexUpdater()
         {
-            this.updates.add( update );
-        }
+            @Override
+            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+            {
+                updates.add( update );
+            }
 
-        if ( this.updates.size() > queueThreshold )
-        {
-            flush();
-            this.updates.clear();
-        }
+            @Override
+            public void close() throws IOException, IndexEntryConflictException
+            {
+                if ( updates.size() > queueThreshold )
+                {
+                    flush();
+                    updates.clear();
+                }
+
+            }
+        };
     }
 
     @Override
@@ -71,7 +82,8 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             long nodeId = update.getNodeId();
             switch ( update.getUpdateMode() )
             {
-            case ADDED: case CHANGED:
+            case ADDED:
+            case CHANGED:
                 // We don't look at the "before" value, so adding and changing idempotently is done the same way.
                 writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
                                        documentStructure.newDocumentRepresentingProperty( nodeId,

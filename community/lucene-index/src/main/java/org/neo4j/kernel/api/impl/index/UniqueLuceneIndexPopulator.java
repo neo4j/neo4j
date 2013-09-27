@@ -31,6 +31,7 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.util.FailureStorage;
@@ -115,18 +116,27 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         }
     }
 
+    @Override
+    public IndexUpdater newPopulatingUpdater() throws IOException
+    {
+        return new IndexUpdater() {
+
+            @Override
+            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+            {
+                add( update.getNodeId(), update.getValueAfter() );
+            }
+
+            @Override
+            public void close() throws IOException, IndexEntryConflictException
+            {
+            }
+        };
+    }
+
     private void startNewBatch() throws IOException
     {
         searcherManager.maybeRefresh();
         currentBatch = newBatchMap();
-    }
-
-    @Override
-    public void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
-    {
-        for ( NodePropertyUpdate update : updates )
-        {
-            add( update.getNodeId(), update.getValueAfter() );
-        }
     }
 }

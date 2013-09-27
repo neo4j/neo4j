@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.index.DuplicateIndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.DiffSets;
@@ -32,41 +34,50 @@ import org.neo4j.kernel.impl.api.DiffSets;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class PropertyUpdateUniquenessValidator
+public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 {
-    private PropertyUpdateUniquenessValidator()
-    {
-    }
-
     public interface Lookup
     {
         Long currentlyIndexedNode( Object value ) throws IOException;
     }
 
-    public static void validateUniqueness( Iterable<NodePropertyUpdate> updates, Lookup lookup )
-            throws IndexEntryConflictException, IOException
-    {
-        Map<Object, DiffSets<Long>> referenceCount = new HashMap<>();
+    private final Lookup lookup;
+    private final Map<Object, DiffSets<Long>> referenceCount = new HashMap<>();
+    private final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
 
-        for ( NodePropertyUpdate update : updates )
+    public UniquePropertyIndexUpdater( Lookup lookup )
+    {
+        this.lookup = lookup;
+    }
+
+    @Override
+    public void process( NodePropertyUpdate update )
+    {
+        // build uniqueness verification state
+        switch ( update.getUpdateMode() )
         {
-            switch ( update.getUpdateMode() )
-            {
-                case ADDED:
-                    propertyValueDiffSet( referenceCount, update.getValueAfter() ).add( update.getNodeId() );
-                    break;
-                case CHANGED:
-                    propertyValueDiffSet( referenceCount, update.getValueBefore() ).remove( update.getNodeId() );
-                    propertyValueDiffSet( referenceCount, update.getValueAfter() ).add( update.getNodeId() );
-                    break;
-                case REMOVED:
-                    propertyValueDiffSet( referenceCount, update.getValueBefore() ).remove( update.getNodeId() );
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
-            }
+            case ADDED:
+                propertyValueDiffSet( referenceCount, update.getValueAfter() ).add( update.getNodeId() );
+                break;
+            case CHANGED:
+                propertyValueDiffSet( referenceCount, update.getValueBefore() ).remove( update.getNodeId() );
+                propertyValueDiffSet( referenceCount, update.getValueAfter() ).add( update.getNodeId() );
+                break;
+            case REMOVED:
+                propertyValueDiffSet( referenceCount, update.getValueBefore() ).remove( update.getNodeId() );
+                break;
+            default:
+                throw new UnsupportedOperationException();
         }
 
+        // do not flush update before close
+        updates.add( update );
+    }
+
+    @Override
+    public void close() throws IOException, IndexEntryConflictException
+    {
+        // verify uniqueness
         for ( Map.Entry<Object, DiffSets<Long>> entry : referenceCount.entrySet() )
         {
             Object value = entry.getKey();
@@ -87,7 +98,13 @@ public class PropertyUpdateUniquenessValidator
                 }
             }
         }
+
+        // flush updates
+        flushUpdates( updates );
     }
+
+    protected abstract void flushUpdates( Iterable<NodePropertyUpdate> updates )
+            throws IOException, IndexEntryConflictException;
 
     private static DiffSets<Long> propertyValueDiffSet( Map<Object, DiffSets<Long>> referenceCount, Object value )
     {

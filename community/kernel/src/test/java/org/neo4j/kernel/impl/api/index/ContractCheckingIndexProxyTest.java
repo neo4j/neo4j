@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
-
 import java.io.IOException;
 
 import org.junit.Test;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.DoubleLatch;
+
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 public class ContractCheckingIndexProxyTest
 {
@@ -109,18 +111,21 @@ public class ContractCheckingIndexProxyTest
 
 
     @Test(expected = IllegalStateException.class)
-    public void shouldNotUpdateBeforeCreate() throws IOException
+    public void shouldNotUpdateBeforeCreate() throws IOException, IndexEntryConflictException
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.update( null );
+        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+        {
+            updater.process( null );
+        }
     }
 
     @Test(expected = IllegalStateException.class)
-    public void shouldNotUpdateAfterClose() throws IOException
+    public void shouldNotUpdateAfterClose() throws IOException, IndexEntryConflictException
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
@@ -129,7 +134,10 @@ public class ContractCheckingIndexProxyTest
         // WHEN
         outer.start();
         outer.close();
-        outer.update( null );
+        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+        {
+            updater.process( null );
+        }
     }
 
     @Test(expected = IllegalStateException.class)
@@ -161,7 +169,7 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch();
-        final IndexProxy inner = new IndexProxy.Adapter()
+        final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
             public void start()
@@ -197,7 +205,7 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch();
-        final IndexProxy inner = new IndexProxy.Adapter()
+        final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
             public void start()
@@ -234,12 +242,12 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch();
-        final IndexProxy inner = new IndexProxy.Adapter()
+        final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
-            public void update(Iterable<NodePropertyUpdate> updates)
+            public IndexUpdater newUpdater( IndexUpdateMode mode )
             {
-                latch.startAndAwaitFinish();
+                return super.newUpdater( mode );
             }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
@@ -251,7 +259,15 @@ public class ContractCheckingIndexProxyTest
             @Override
             public void run() throws IOException
             {
-                outer.update( null );
+                try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+                {
+                    updater.process( null );
+                    latch.startAndAwaitFinish();
+                }
+                catch ( IndexEntryConflictException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         } );
 
@@ -271,7 +287,7 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch();
-        final IndexProxy inner = new IndexProxy.Adapter()
+        final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
             public void force()

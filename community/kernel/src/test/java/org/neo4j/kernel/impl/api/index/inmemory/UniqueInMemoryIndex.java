@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.api.index.PropertyUpdateUniquenessValidator;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 
-class UniqueInMemoryIndex extends InMemoryIndex implements PropertyUpdateUniquenessValidator.Lookup
+class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUpdater.Lookup
 {
     @Override
     protected void add( long nodeId, Object propertyValue, boolean applyIdempotently )
@@ -42,28 +44,34 @@ class UniqueInMemoryIndex extends InMemoryIndex implements PropertyUpdateUniquen
     }
 
     @Override
-    protected void update( Iterable<NodePropertyUpdate> updates, boolean applyIdempotently )
-            throws IndexEntryConflictException, IOException
+    protected IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        PropertyUpdateUniquenessValidator.validateUniqueness( updates, UniqueInMemoryIndex.this );
-        for ( NodePropertyUpdate update : updates )
-        {
-            switch ( update.getUpdateMode() )
+        return new UniquePropertyIndexUpdater( UniqueInMemoryIndex.this ) {
+
+            @Override
+            protected void flushUpdates( Iterable<NodePropertyUpdate> updates )
+                    throws IOException, IndexEntryConflictException
             {
-            case CHANGED:
-            case REMOVED:
-                remove( update.getNodeId(), update.getValueBefore() );
+                for ( NodePropertyUpdate update : updates )
+                {
+                    switch ( update.getUpdateMode() )
+                    {
+                        case CHANGED:
+                        case REMOVED:
+                            remove( update.getNodeId(), update.getValueBefore() );
+                    }
+                }
+                for ( NodePropertyUpdate update : updates )
+                {
+                    switch ( update.getUpdateMode() )
+                    {
+                        case ADDED:
+                        case CHANGED:
+                            add( update.getNodeId(), update.getValueAfter(), IndexUpdateMode.ONLINE == mode );
+                    }
+                }
             }
-        }
-        for ( NodePropertyUpdate update : updates )
-        {
-            switch ( update.getUpdateMode() )
-            {
-            case ADDED:
-            case CHANGED:
-                add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
-            }
-        }
+        };
     }
 
     @Override

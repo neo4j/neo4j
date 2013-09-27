@@ -26,10 +26,12 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
@@ -38,7 +40,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
 {
     private final FlippableIndexProxy flipper;
     private final OnlineIndexProxy target;
-    private final Collection<IndexEntryConflictException> failures = new CopyOnWriteArrayList<IndexEntryConflictException>();
+    private final Collection<IndexEntryConflictException> failures = new CopyOnWriteArrayList<>();
 
     public TentativeConstraintIndexProxy( FlippableIndexProxy flipper, OnlineIndexProxy target )
     {
@@ -47,17 +49,48 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
     {
-        try
+        switch( mode )
         {
-            target.accessor.updateAndCommit( updates );
+            case ONLINE:
+                return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )
+                {
+                    @Override
+                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    {
+                        try
+                        {
+                            delegate.process( update );
+                        }
+                        catch ( IndexEntryConflictException conflict )
+                        {
+                            failures.add( conflict );
+                        }
+                    }
+
+                    @Override
+                    public void close() throws IOException, IndexEntryConflictException
+                    {
+                        try
+                        {
+                            delegate.close();
+                        }
+                        catch ( IndexEntryConflictException conflict )
+                        {
+                            failures.add( conflict );
+                        }
+                    }
+                };
+
+            case RECOVERY:
+                return super.newUpdater( mode );
+
+            default:
+                throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
+
         }
-        catch ( IndexEntryConflictException conflict )
-        {
-            failures.add( conflict );
-        }
-    }
+    };
 
     @Override
     public InternalIndexState getState()
@@ -89,8 +122,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         Iterator<IndexEntryConflictException> iterator = failures.iterator();
         if ( iterator.hasNext() )
         {
-            Set<ConstraintVerificationFailedKernelException.Evidence> evidence =
-                    new HashSet<ConstraintVerificationFailedKernelException.Evidence>();
+            Set<ConstraintVerificationFailedKernelException.Evidence> evidence = new HashSet<>();
             do
             {
                 evidence.add( new ConstraintVerificationFailedKernelException.Evidence( iterator.next() ) );
