@@ -455,26 +455,6 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     assert(plan.query.start.toList === Seq(Unsolved(AllNodes(otherIdentifier))))
   }
 
-  @Test
-  def should_solved_merge_node_start_points() {
-    // Given MERGE (x:Label)
-    val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
-    val query = q(
-      updates = Seq(MergeNodeAction("x", Map.empty, Seq(Label("Label")), Seq(HasLabel(Identifier("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None))
-    )
-    when(context.getOptLabelId("Label")).thenReturn(Some(42))
-
-    // When
-    val plan = assertAccepts(pipe, query)
-
-    // Then
-    plan.query.updates match {
-      case Seq(Unsolved(MergeNodeAction("x", _, _, Seq(), Seq(), Seq(), _))) =>
-      case _                                                                 =>
-        fail("Expected something else, but got this: " + plan.query.start)
-    }
-  }
-
   private def q(start: Seq[StartItem] = Seq(),
                 where: Seq[Predicate] = Seq(),
                 updates: Seq[UpdateAction] = Seq(),

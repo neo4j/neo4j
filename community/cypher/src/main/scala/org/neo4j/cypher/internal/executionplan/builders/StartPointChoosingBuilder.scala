@@ -22,18 +22,8 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{MatchPattern, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.mutation._
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Property}
-import org.neo4j.cypher.internal.commands.values.KeyToken
-import org.neo4j.cypher.internal.mutation.UniqueMergeNodeProducers
-import org.neo4j.cypher.internal.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.commands.SchemaIndex
-import org.neo4j.cypher.internal.mutation.PlainMergeNodeProducer
-import org.neo4j.cypher.internal.commands.HasLabel
-import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.ShortestPath
-import org.neo4j.cypher.internal.commands.expressions.Nullable
 
 /*
 This builder is concerned with finding queries without start items and without index hints, and
@@ -64,52 +54,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
     // Find disconnected patterns, and make sure we have start points for all of them
     val disconnectedStarItems: Seq[QueryToken[StartItem]] = findStartItemsForDisconnectedPatterns(plan, ctx).map(Unsolved(_))
 
-    // Find merge points that do not have a node producer, and produce one for them
-    val updatesWithSolvedMergePoints = plan.query.updates.map(solveUnsolvedMergePoints(ctx))
-
-    plan.copy(query = q.copy(start = disconnectedStarItems ++ q.start, updates = updatesWithSolvedMergePoints))
-  }
-
-  private def solveUnsolvedMergePoints(ctx: PlanContext): (QueryToken[UpdateAction] => QueryToken[UpdateAction]) = {
-    case Unsolved(mergeNodeAction@MergeNodeAction(identifier, props, labels, where, _, _, None)) =>
-
-      val newMergeNodeAction: MergeNodeAction = NodeFetchStrategy.findUniqueIndexes(props, labels, ctx) match {
-        case indexes if indexes.isEmpty =>
-          val startItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx)
-
-          val nodeProducer = PlainMergeNodeProducer(entityProducerFactory.nodeStartItems((ctx, startItem.s)))
-          val solvedPredicates = startItem.solvedPredicates
-          val predicatesLeft = where.toSet -- solvedPredicates
-
-          mergeNodeAction.copy( maybeNodeProducer = Some(nodeProducer), expectations = predicatesLeft.toSeq)
-
-        case indexes =>
-          val startItems: Seq[(KeyToken, KeyToken, RatedStartItem)] = indexes.map {
-            case ((label, key)) =>
-              val equalsPredicates = Seq(
-                Equals(Nullable(Property(Identifier(identifier), key)), props(key)),
-                Equals(props(key), Nullable(Property(Identifier(identifier), key)))
-              )
-              val hasLabelPredicates = labels.map { HasLabel(Identifier(identifier), _) }
-              val predicates = equalsPredicates ++ hasLabelPredicates
-              ( label, key, RatedStartItem(SchemaIndex(identifier, label.name, key.name, UniqueIndex, Some(props(key))), NodeFetchStrategy.IndexEquality, predicates) )
-          }
-
-          val nodeProducer = UniqueMergeNodeProducers( startItems.map {
-            case (label: KeyToken, propertyKey: KeyToken, item: RatedStartItem) => IndexNodeProducer(label, propertyKey, entityProducerFactory.nodeStartItems((ctx, item.s)))
-          } )
-          val solvedPredicates = startItems.flatMap {
-            case (_, _, item: RatedStartItem) => item.solvedPredicates
-          }
-          val predicatesLeft = where.toSet -- solvedPredicates
-
-          mergeNodeAction.copy( maybeNodeProducer = Some(nodeProducer), expectations = predicatesLeft.toSeq)
-      }
-
-      Unsolved(newMergeNodeAction)
-    case x =>
-      x
-
+    plan.copy(query = q.copy(start = disconnectedStarItems ++ q.start))
   }
 
   private def findStartItemsForDisconnectedPatterns(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[StartItem] = {
@@ -148,7 +93,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
     disconnectedPatterns.flatMap(
       (pattern: MatchPattern) => {
-        val startPointsAlreadyInPattern = (startPointNames intersect pattern.nodes)
+        val startPointsAlreadyInPattern = startPointNames intersect pattern.nodes
 
         if (startPointsAlreadyInPattern.isEmpty)
           findStartItemFor(pattern)
