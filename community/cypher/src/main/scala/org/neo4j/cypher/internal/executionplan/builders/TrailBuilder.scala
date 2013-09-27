@@ -102,7 +102,9 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
     val uniqueResults = result.distinct
     val uniqueInput = doneSeq.distinct
 
-    if (uniqueResults == uniqueInput)
+    if (uniqueResults == uniqueInput ||
+      uniqueResults.size > Math.pow(patterns.size, 3)) // This number is rather arbitrary - it just makes sure we don't
+                                                       // loop forever trying to find a trail
       result
     else
       internalFindLongestPath(uniqueResults)
