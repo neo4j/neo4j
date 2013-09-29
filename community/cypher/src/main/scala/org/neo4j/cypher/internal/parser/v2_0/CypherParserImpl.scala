@@ -42,7 +42,7 @@ class CypherParserImpl extends CypherParser
     val parsingResult = ReportingParseRunner(SingleStatement).run(text)
     parsingResult.result match {
       case Some(statement : ast.Statement) => {
-        statement.semanticCheck.map { error =>
+        statement.semanticCheck(SemanticState.clean).errors.map { error =>
           throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", text, error.token.startPosition.offset)
         }
         val resultQuery: AbstractQuery = ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(text))

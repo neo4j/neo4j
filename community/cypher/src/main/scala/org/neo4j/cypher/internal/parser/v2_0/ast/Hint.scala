@@ -21,16 +21,20 @@ package org.neo4j.cypher.internal.parser.v2_0.ast
 
 import org.neo4j.cypher.internal.parser.v2_0._
 import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues, AnyIndex}
+import org.neo4j.cypher.internal.symbols._
 
-sealed trait Hint extends AstNode {
+sealed trait Hint extends AstNode with SemanticCheckable {
   def toLegacySchemaIndex : commands.StartItem with commands.Hint
 }
 
-case class UsingIndexHint(node: Identifier, label: Identifier, property: Identifier, token: InputToken) extends Hint {
-  def toLegacySchemaIndex = commands.SchemaIndex(node.name, label.name, property.name, AnyIndex, None)
+case class UsingIndexHint(identifier: Identifier, label: Identifier, property: Identifier, token: InputToken) extends Hint {
+  def semanticCheck = identifier.ensureDefined then identifier.constrainType(NodeType())
+
+  def toLegacySchemaIndex = commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None)
 }
 
-case class UsingScanHint(node: Identifier, label: Identifier, token: InputToken) extends Hint {
-  def toLegacySchemaIndex = commands.NodeByLabel(node.name, label.name)
+case class UsingScanHint(identifier: Identifier, label: Identifier, token: InputToken) extends Hint {
+  def semanticCheck = identifier.ensureDefined then identifier.constrainType(NodeType())
+
+  def toLegacySchemaIndex = commands.NodeByLabel(identifier.name, label.name)
 }

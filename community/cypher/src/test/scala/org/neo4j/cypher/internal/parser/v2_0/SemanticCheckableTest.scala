@@ -217,7 +217,7 @@ class SemanticCheckableTest extends Assertions with SemanticChecking {
     val chain : SemanticCheck = withScopedState { func1 then func2 }
     val state = SemanticState.clean
     val result = chain(state)
-    assertEquals(state, result.state)
+    assertEquals(Map(), result.state.symbolTable)
     assertEquals(Seq(error2), result.errors)
   }
 }
