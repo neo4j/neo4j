@@ -17,38 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0.rules
+package org.neo4j.cypher.internal.parser.v2_0.ast
 
-import org.neo4j.cypher.internal.parser.v2_0.ast
-import org.parboiled.scala._
+import org.neo4j.cypher.internal.parser.v2_0._
+import org.neo4j.cypher.internal.commands
+import org.neo4j.cypher.internal.symbols.AnyType
+import org.neo4j.cypher.SyntaxException
 
-trait Query extends Parser
-  with Clauses
-  with Base {
+case class Where(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
+  def semanticCheck =
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
+      expression.constrainType(AnyType()) // TODO: should constrain to boolean, when coercion is possible
 
-  def Query : Rule1[ast.Query] = rule {
-    SingleQuery ~~ zeroOrMore(Union)
+  def toLegacyPredicate = {
+    expression.toCommand match {
+      case p: commands.Predicate => p
+      case _                     => throw new SyntaxException(s"WHERE clause expression must return a boolean (${expression.token.startPosition})")
+    }
   }
-
-  def SingleQuery : Rule1[ast.SingleQuery] = rule {
-    oneOrMore(Clause, separator = WS) ~>> token ~~> ast.SingleQuery
-  }
-
-  def Clause : Rule1[ast.Clause] = (
-      Start
-    | Match
-    | Merge
-    | Create
-    | SetClause
-    | Delete
-    | Remove
-    | Foreach
-    | With
-    | Return
-  )
-
-  def Union : ReductionRule1[ast.Query, ast.Query] = rule("UNION") (
-      keyword("UNION", "ALL") ~>> token ~~ SingleQuery ~~> ast.UnionAll
-    | keyword("UNION") ~>> token ~~ SingleQuery ~~> ast.UnionDistinct
-  )
 }

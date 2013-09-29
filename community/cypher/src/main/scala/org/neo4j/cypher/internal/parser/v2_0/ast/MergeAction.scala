@@ -20,10 +20,24 @@
 package org.neo4j.cypher.internal.parser.v2_0.ast
 
 import org.neo4j.cypher.internal.parser.v2_0._
-import org.neo4j.cypher.internal.commands
+import org.neo4j.cypher.internal.{commands, mutation}
+import org.neo4j.cypher.internal.parser.{AbstractPattern, Action, On, OnAction}
+import org.neo4j.cypher.internal.commands.{CreateUniqueAst, MergeAst}
+import org.neo4j.cypher.internal.mutation.{UpdateAction, ForeachAction}
+import org.neo4j.cypher.internal.symbols._
 
-trait Statement extends AstNode {
-  def semanticCheck : SemanticCheck
+abstract class MergeAction(identifier: Identifier, action: SetClause, token: InputToken) extends AstNode {
+  def children = Seq(identifier, action)
+  def verb: Action
+  def toAction = OnAction(verb, identifier.name, action.legacyUpdateActions)
+}
 
-  def toLegacyQuery : commands.AbstractQuery
+case class OnCreate(identifier: Identifier, action: SetClause, token: InputToken)
+  extends MergeAction(identifier, action, token) {
+  def verb: Action = On.Create
+}
+
+case class OnMatch(identifier: Identifier, action: SetClause, token: InputToken)
+  extends MergeAction(identifier, action, token) {
+  def verb: Action = On.Match
 }

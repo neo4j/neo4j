@@ -2849,7 +2849,7 @@ RETURN x0.name
       fail()
     } catch {
       case x: PatternException => // expected
-      case _ => fail()
+      case _: Throwable => fail()
     }
   }
 
