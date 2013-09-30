@@ -152,9 +152,9 @@
         </dependency>
 
         <dependency>
-          <groupId>org.neo4j.app</groupId>
-          <artifactId>neo4j-browser</artifactId>
-          <version>0.1.17</version>
+            <groupId>org.neo4j.browser</groupId>
+            <artifactId>neo4j-browser</artifactId>
+            <version>0.1.18</version>
         </dependency>
 
         <dependency>
