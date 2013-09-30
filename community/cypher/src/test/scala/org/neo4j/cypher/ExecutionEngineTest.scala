@@ -2880,4 +2880,19 @@ RETURN x0.name
     // then shouldn't throw
     val result = parseAndExecute("START x=node(0) RETURN DISTINCT x as otherName ORDER BY x.name ")
   }
+
+  def should_not_hang() {
+    // given
+    createNode()
+    createNode()
+
+    // when
+    timeOutIn(2, TimeUnit.SECONDS) {
+      parseAndExecute("START a=node(0), b=node(1) " +
+        "MATCH x-->a, x-->b " +
+        "WHERE x.foo > 2 AND x.prop IN ['val'] " +
+        "RETURN x")
+    }
+    // then
+  }
 }
