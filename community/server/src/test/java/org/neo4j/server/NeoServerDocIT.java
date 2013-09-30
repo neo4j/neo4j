@@ -57,10 +57,10 @@ public class NeoServerDocIT extends AbstractRestFunctionalTestBase
     {
         assertFalse( server().baseUri()
                 .toString()
-                .contains( "webadmin" ) );
+                .contains( "browser" ) );
         JaxRsResponse response = RestRequest.req().get( server().baseUri().toString(), MediaType.TEXT_HTML_TYPE );
         assertThat( response.getStatus(), is( 200 ) );
-        assertThat( response.getEntity(), containsString( "webadmin" ) );
+        assertThat( response.getEntity(), containsString( "Neo4j" ) );
     }
 
     @Test
