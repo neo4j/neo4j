@@ -178,7 +178,7 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
-  @Test def shouldWarnOfOldIterableSeparator() {
+  @Test def shouldFailIfOldIterableSeparator() {
     test(
       "start a=node(0) return filter(x in a.collection : x.prop = 1)",
       "filter(...) requires a WHERE predicate (line 1, column 24)"
@@ -215,10 +215,21 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
-  @Test def shouldWarnIFUsingAnHintWithAnUnknownIdentifier() {
+  @Test def shouldFailIfUsingAnHintWithAnUnknownIdentifier() {
     test(
       "match (n:Person)-->() using index m:Person(name) where n.name = \"kabam\" return n",
       "m not defined (line 1, column 35)"
+    )
+  }
+
+  @Test def shouldFailIfNoParensAroundNode() {
+    test(
+      "match n:Person return n",
+      "Parenthesis are required to identify nodes in patterns (line 1, column 7)"
+    )
+    test(
+      "match n {foo: 'bar'} return n",
+      "Parenthesis are required to identify nodes in patterns (line 1, column 7)"
     )
   }
 
