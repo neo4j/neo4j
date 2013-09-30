@@ -107,7 +107,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def badMatch5() {
     expectSyntaxError(
       "start p=node(2) match p[:likes]->dude return dude.name",
-      "Invalid input '[': expected an identifier character, whitespace, '=', a relationship pattern, ',', USING, WHERE, START, MATCH, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 24)",
+      "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, a relationship pattern, ',', USING, WHERE, START, MATCH, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 24)",
       23
     )
   }

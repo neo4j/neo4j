@@ -85,7 +85,7 @@ trait Patterns extends Parser
         "[" ~~
           MaybeIdentifier ~~
           ("?" ~ push(true) | EMPTY ~ push(false)) ~~
-          RelationshipTypes ~~ MaybeVariableLength ~~
+          RelationshipTypes ~~ MaybeVariableLength ~
           MaybeProperties ~~
         "]"
       | EMPTY ~ push(None) ~ push(false) ~ push(Seq()) ~ push(None) ~ push(None)
@@ -106,8 +106,8 @@ trait Patterns extends Parser
   )
 
   private def NodePattern : Rule1[ast.NodePattern] = rule("a node pattern") (
-      group("(" ~~ MaybeIdentifier ~~ MaybeNodeLabels ~~ MaybeProperties ~~ ")") ~~> t(toNodePattern _)
-    | Identifier ~~> t(ast.NamedNodePattern(_, Seq(), None, _))
+      group("(" ~~ MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~ ")" ~ push(false)) ~>> token ~~> (toNodePattern _)
+    | group(MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~~? ((i, l, p) => !(i.isEmpty && l.isEmpty && p.isEmpty)) ~ push(true)) ~>> token ~~> (toNodePattern _)
   )
 
   private def MaybeIdentifier : Rule1[Option[ast.Identifier]] = rule("an identifier") {
@@ -115,20 +115,21 @@ trait Patterns extends Parser
   }
 
   private def MaybeNodeLabels : Rule1[Seq[ast.Identifier]] = rule("node labels") {
-    (NodeLabels | EMPTY ~ push(Seq()))
+    (WS ~ NodeLabels | EMPTY ~ push(Seq()))
   }
 
   private def MaybeProperties : Rule1[Option[ast.Expression]] = rule("a property map") (
-    optional(MapLiteral | Parameter)
+    optional(WS ~ (MapLiteral | Parameter))
   )
 
   private def toNodePattern(
       name: Option[ast.Identifier],
       labels: Seq[ast.Identifier],
       params: Option[ast.Expression],
+      naked: Boolean,
       token: InputToken) = name match {
-    case Some(i) => ast.NamedNodePattern(i, labels, params, token)
-    case None => ast.AnonymousNodePattern(labels, params, token)
+    case Some(i) => ast.NamedNodePattern(i, labels, params, naked, token)
+    case None => ast.AnonymousNodePattern(labels, params, naked, token)
   }
 
   private def toRelationshipPattern(

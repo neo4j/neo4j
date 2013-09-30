@@ -254,16 +254,22 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 }
 
 
-sealed abstract class NodePattern extends PatternElement {
+sealed abstract class NodePattern extends PatternElement with SemanticChecking {
   val labels: Seq[Identifier]
   val properties: Option[Expression]
+  val naked: Boolean
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    when (naked && (!labels.isEmpty || properties.isDefined)) {
+      SemanticError("Parenthesis are required to identify nodes in patterns", token)
+    } then checkProperties(ctx)
+
+  def checkProperties(ctx: SemanticContext): SemanticCheck =
     if (properties.isDefined && ctx != SemanticContext.Update) {
       SemanticError("Node properties cannot be specified in this context", properties.get.token)
     } else {
       properties.semanticCheck(Expression.SemanticContext.Simple) then
-      properties.constrainType(MapType())
+        properties.constrainType(MapType())
     }
 
   def legacyName: String
@@ -301,7 +307,7 @@ sealed abstract class NodePattern extends PatternElement {
   }
 }
 
-case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], properties: Option[Expression], token: InputToken) extends NodePattern {
+case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], properties: Option[Expression], naked: Boolean, token: InputToken) extends NodePattern {
   override def semanticCheck(context: SemanticContext) =
     identifier.implicitDeclaration(NodeType()) then
     super.semanticCheck(context)
@@ -309,7 +315,7 @@ case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], pro
   val legacyName = identifier.name
 }
 
-case class AnonymousNodePattern(labels: Seq[Identifier], properties: Option[Expression], token: InputToken) extends NodePattern {
+case class AnonymousNodePattern(labels: Seq[Identifier], properties: Option[Expression], naked: Boolean, token: InputToken) extends NodePattern {
   val legacyName = "  UNNAMED" + (token.startPosition.offset + 1)
 }
 
