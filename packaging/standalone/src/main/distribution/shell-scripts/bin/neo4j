@@ -241,7 +241,7 @@ startit() {
 	      fi
 
 	      echo " OK."
-        echo "Go to http://localhost:$NEO4J_SERVER_PORT/webadmin/ for administration interface."
+        echo "http://localhost:$NEO4J_SERVER_PORT/ is ready."
 	      exit 0
 	    fi
 
