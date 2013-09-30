@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -29,8 +30,13 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.graphdb.mockfs.BreakableFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.FileSystemGuard;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestDirectMappedLogBuffer
 {
@@ -185,5 +191,49 @@ public class TestDirectMappedLogBuffer
         writeBuffer.writeOut();
 
         // Then expect an IOException
+    }
+
+    @Test
+    @Ignore("This test demonstrates a way in which DirectMappedLogBuffer can fail. In particular, using DMLB after an" +
+            "IOException can cause corruption in the underlying file channel. However, it is wrong to use DMLB after" +
+            "such an error anyway, so this not something requiring fixing.")
+    public void logBufferWritesContentsTwiceOnFailure() throws Exception
+    {
+        /*
+         * The guard will throw an exception before writing the fifth byte. We will catch that and try to continue
+         * writing. If that operation leads to writing to position 0 again then this is obviously an error (as we
+         * will be overwriting the stuff we wrote before the exception) and so we must fail.
+         */
+        final AtomicBoolean broken = new AtomicBoolean( false );
+        FileSystemGuard guard = new FileSystemGuard()
+        {
+            @Override
+            public void checkOperation( OperationType operationType, File onFile, int bytesWrittenTotal,
+                                        int bytesWrittenThisCall, long channelPosition ) throws IOException
+            {
+                if ( !broken.get() && bytesWrittenTotal == 4 )
+                {
+                    broken.set( true );
+                    throw new IOException( "IOException after which this buffer should not be used" );
+                }
+                if ( broken.get() && channelPosition == 0 )
+                {
+                    throw new IOException( "This exception should never happen" );
+                }
+            }
+        };
+
+        BreakableFileSystemAbstraction fs = new BreakableFileSystemAbstraction( new EphemeralFileSystemAbstraction(), guard );
+        DirectMappedLogBuffer buffer = new DirectMappedLogBuffer( fs.create( new File( "log" ) ) );
+        buffer.putInt( 1 ).putInt( 2 ).putInt( 3 );
+        try
+        {
+            buffer.writeOut();
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
+        buffer.writeOut();
     }
 }
