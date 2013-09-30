@@ -70,6 +70,7 @@ trait Base extends Parser {
   def t[V, A](inner: ((V, InputToken) => A)) = withContext((v: V, ctx: Context[Any]) => inner(v, ContextToken(ctx)))
   def t[V1, V2, A](inner: ((V1, V2, InputToken) => A)) = withContext((v1: V1, v2: V2, ctx: Context[Any]) => inner(v1, v2, ContextToken(ctx)))
   def t[V1, V2, V3, A](inner: ((V1, V2, V3, InputToken) => A)) = withContext((v1: V1, v2: V2, v3: V3, ctx: Context[Any]) => inner(v1, v2, v3, ContextToken(ctx)))
+  def t[V1, V2, V3, V4, A](inner: ((V1, V2, V3, V4, InputToken) => A)) = withContext((v1: V1, v2: V2, v3: V3, v4: V4, ctx: Context[Any]) => inner(v1, v2, v3, v4, ContextToken(ctx)))
   def t(inner: Rule0) : Rule1[InputToken] = inner ~>> token
   def t[V](inner: Rule1[V]) : Rule2[V, InputToken] = inner ~>> token
   def t[V1, V2](inner: Rule2[V1, V2]) : Rule3[V1, V2, InputToken] = inner ~>> token
