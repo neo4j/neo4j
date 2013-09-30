@@ -103,17 +103,17 @@ case class Start(items: Seq[StartItem], where: Option[Where], token: InputToken)
   }
 }
 
-case class Match(patterns: Seq[Pattern], hints: Seq[Hint], where: Option[Where], token: InputToken) extends Clause {
+case class Match(pattern: Pattern, hints: Seq[Hint], where: Option[Where], token: InputToken) extends Clause {
   def name = "MATCH"
 
   def semanticCheck =
-    patterns.semanticCheck(Pattern.SemanticContext.Match) then
+    pattern.semanticCheck(Pattern.SemanticContext.Match) then
       hints.semanticCheck then
       where.semanticCheck
 
   def addToLegacyQuery(builder: commands.QueryBuilder) = {
-    val matches = builder.matching ++ patterns.flatMap(_.toLegacyPatterns)
-    val namedPaths = builder.namedPaths ++ patterns.flatMap(_.toLegacyNamedPath)
+    val matches = builder.matching ++ pattern.toLegacyPatterns
+    val namedPaths = builder.namedPaths ++ pattern.toLegacyNamedPaths
     val indexHints = builder.using ++ hints.map(_.toLegacySchemaIndex)
     val wherePredicate = (builder.where, where) match {
       case (p, None)                  => p
@@ -125,7 +125,7 @@ case class Match(patterns: Seq[Pattern], hints: Seq[Hint], where: Option[Where],
   }
 }
 
-case class Merge(patterns: Seq[Pattern], actions: Seq[MergeAction], token: InputToken) extends UpdateClause {
+case class Merge(patterns: Seq[PatternPart], actions: Seq[MergeAction], token: InputToken) extends UpdateClause {
   def name = "MERGE"
 
   def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
@@ -139,31 +139,28 @@ case class Merge(patterns: Seq[Pattern], actions: Seq[MergeAction], token: Input
   }
 }
 
-case class Create(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
+case class Create(pattern: Pattern, token: InputToken) extends UpdateClause {
   def name = "CREATE"
 
-  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
+  def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Update)
 
-  lazy val legacyUpdateActions = patterns.flatMap(_.toLegacyCreates)
+  lazy val legacyUpdateActions = pattern.toLegacyCreates
 
   def addToLegacyQuery(builder: commands.QueryBuilder) = {
     val startItems = builder.startItems ++ legacyUpdateActions.map {
       case createNode: mutation.CreateNode                 => commands.CreateNodeStartItem(createNode)
       case createRelationship: mutation.CreateRelationship => commands.CreateRelationshipStartItem(createRelationship)
     }
-    val namedPaths = builder.namedPaths ++ patterns.flatMap {
-      case n: NamedPattern => n.toLegacyNamedPath
-      case _               => None
-    }
+    val namedPaths = builder.namedPaths ++ pattern.toLegacyNamedPaths
 
     builder.startItems(startItems: _*).namedPaths(namedPaths: _*)
   }
 }
 
-case class CreateUnique(patterns: Seq[Pattern], token: InputToken) extends UpdateClause {
+case class CreateUnique(pattern: Pattern, token: InputToken) extends UpdateClause {
   def name = "CREATE UNIQUE"
 
-  def semanticCheck = patterns.semanticCheck(Pattern.SemanticContext.Update)
+  def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Update)
 
   def legacyUpdateActions = toCommand.nextStep()._1.map(_.inner)
 
@@ -175,7 +172,7 @@ case class CreateUnique(patterns: Seq[Pattern], token: InputToken) extends Updat
   }
 
   private lazy val toCommand = {
-    val abstractPatterns: Seq[AbstractPattern] = patterns.flatMap(_.toAbstractPatterns).map(_.makeOutgoing)
+    val abstractPatterns: Seq[AbstractPattern] = pattern.toAbstractPatterns.map(_.makeOutgoing)
     commands.CreateUniqueAst(abstractPatterns)
   }
 }

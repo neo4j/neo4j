@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.commands.{Pattern => LegacyPattern}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.parser.v2_0.ast
 
-class PatternTest extends ParserTest[ast.Pattern, Seq[LegacyPattern]] with Patterns with Expressions {
-  implicit val parserToTest = Pattern ~ EOI
+class PatternPartTest extends ParserTest[ast.PatternPart, Seq[LegacyPattern]] with Patterns with Expressions {
+  implicit val parserToTest = PatternPart ~ EOI
 
-  def convert(astNode: ast.Pattern) = astNode.toLegacyPatterns
+  def convert(astNode: ast.PatternPart) = astNode.toLegacyPatterns
 
   @Test def label_literal_list_parsing() {
     parsing("(a)-[r:FOO|BAR]->(b)") or
