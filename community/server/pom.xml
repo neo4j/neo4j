@@ -882,6 +882,17 @@
                 </repository>
             </repositories>
         </profile>
+
+        <profile>
+            <id>neo4j-browser</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.neo4j.app</groupId>
+                    <artifactId>neo4j-browser</artifactId>
+                    <version>0.1.5</version>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <repositories>
