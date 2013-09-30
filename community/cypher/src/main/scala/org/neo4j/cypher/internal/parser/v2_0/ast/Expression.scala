@@ -167,7 +167,7 @@ object LegacyProperty {
     }
 }
 
-case class PatternExpression(pattern: Pattern) extends Expression with SimpleTypedExpression {
+case class PatternExpression(pattern: RelationshipsPattern) extends Expression with SimpleTypedExpression {
   def token = pattern.token
   protected def possibleTypes = Set(CollectionType(PathType()))
 
