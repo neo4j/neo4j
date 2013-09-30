@@ -105,6 +105,8 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
     b.throwIfSymbolsMissing(symbols)
   }
 
+  override def hashCode() = a.hashCode + 37 * b.hashCode
+
   override def equals(p1: Any) = p1 match {
     case null       => false
     case other: And => a == other.a && b == other.b
