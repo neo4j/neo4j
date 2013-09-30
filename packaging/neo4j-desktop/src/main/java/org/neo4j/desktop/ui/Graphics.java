@@ -29,8 +29,8 @@ import static java.lang.String.format;
 
 public final class Graphics
 {
-    public static final String LOGO_PATTERN = "/neo4j-cherries-%d.png";
-    public static final String LOGO_32 = "/neo4j-cherries-32.png";
+    public static final String LOGO_PATTERN = "/neo4j-icon-%d.png";
+    public static final String LOGO_32 = "/neo4j-icon-32.png";
 
     public static final String SYSTEM_TRAY_ICON = "/neo4j-systray-16.png";
     public static final int MIN_SIZE = 16;
