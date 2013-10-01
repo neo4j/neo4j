@@ -1536,8 +1536,9 @@ public abstract class InternalAbstractGraphDatabase
     {
         Statement statement = statementContextProvider.statement();
 
-        int propertyId = statement.readOperations().propertyKeyGetForName( key );
-        int labelId = statement.readOperations().labelGetForName( myLabel.name() );
+        ReadOperations readOps = statement.readOperations();
+        int propertyId = readOps.propertyKeyGetForName( key );
+        int labelId = readOps.labelGetForName( myLabel.name() );
 
         if ( propertyId == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
         {
@@ -1545,30 +1546,80 @@ public abstract class InternalAbstractGraphDatabase
             return IteratorUtil.emptyIterator();
         }
 
+        IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
+
         try
         {
-            IndexDescriptor indexRule = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId,
-                    propertyId );
-            if ( statement.readOperations().indexGetState( indexRule ) == InternalIndexState.ONLINE )
+            if ( null != descriptor )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( statement.readOperations().nodesGetFromIndexLookup( indexRule, value ),
-                        statement );
+                return map2nodes( readOps.nodesGetFromIndexLookup( descriptor, value ), statement );
+            }
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            // weird at this point but ignore and fallback to a label scan
+        }
+
+        return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
+    }
+
+    private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
+    {
+        IndexDescriptor descriptor = findUniqueIndexByLabelAndProperty( readOps, labelId, propertyId );
+
+        if ( null == descriptor )
+        {
+            descriptor = findRegularIndexByLabelAndProperty( readOps, labelId, propertyId );
+        }
+        return descriptor;
+    }
+
+    private IndexDescriptor findUniqueIndexByLabelAndProperty( ReadOperations readOps, int labelId, int propertyId )
+    {
+        try
+        {
+            IndexDescriptor descriptor = readOps.indexesGetForLabelAndPropertyKey( labelId, propertyId );
+
+            if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
+            {
+                // Ha! We found an index - let's use it to find matching nodes
+                return descriptor;
             }
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
             // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
         }
+        return null;
+    }
 
-        return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
+    private IndexDescriptor findRegularIndexByLabelAndProperty( ReadOperations readOps, int labelId, int propertyId )
+    {
+        try
+        {
+            IndexDescriptor descriptor = readOps.indexesGetForLabelAndPropertyKey( labelId, propertyId );
+
+            if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
+            {
+                // Ha! We found an index - let's use it to find matching nodes
+                return descriptor;
+            }
+        }
+        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
+        {
+            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
+        }
+        return null;
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Object value,
             Statement statement, int labelId )
     {
-        return map2nodes( new PropertyValueFilteringNodeIdIterator(
-                statement.readOperations().nodesGetForLabel( labelId ), statement.readOperations(), propertyId, value ), statement );
+        return map2nodes(
+            new PropertyValueFilteringNodeIdIterator(
+                    statement.readOperations().nodesGetForLabel( labelId ),
+                    statement.readOperations(), propertyId, value ), statement );
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )
