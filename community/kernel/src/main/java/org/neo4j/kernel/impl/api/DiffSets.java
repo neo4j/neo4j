@@ -25,11 +25,10 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.Iterables.concat;
-import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 /**
@@ -168,7 +167,7 @@ public class DiffSets<T>
              ( addedElements != null && !addedElements.isEmpty() ) )
         {
             ensureFilterHasBeenCreated();
-            result = filter( filter, result );
+            result = Iterables.filter( filter, result );
         }
         if ( addedElements != null && !addedElements.isEmpty() )
         {
@@ -189,9 +188,16 @@ public class DiffSets<T>
 
     public DiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
-        Iterable<T> newAdded = filter( addedFilter, added( false ) );
-        Set<T> newRemoved = removed( false );
-        return new DiffSets<>( asSet( newAdded ), asSet( newRemoved ) );
+        return new DiffSets<>(
+                asSet( Iterables.filter( addedFilter, added( false ) ) ),
+                asSet( removed( false ) ) );
+    }
+
+    public DiffSets<T> filter( Predicate<T> filter )
+    {
+        return new DiffSets<>(
+                asSet( Iterables.filter( filter, added( false ) ) ),
+                asSet( Iterables.filter( filter, removed( false ) ) ) );
     }
 
     private Set<T> added( boolean create )

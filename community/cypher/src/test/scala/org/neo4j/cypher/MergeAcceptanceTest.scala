@@ -380,4 +380,16 @@ class MergeAcceptanceTest
     // then
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
+
+  @Test
+  def unrelated_nodes_with_same_property_should_not_clash() {
+    // given
+    graph.createConstraint("Person", "id")
+    parseAndExecute("MERGE (a:Item {id:1}) MERGE (b:Person {id:1})")
+
+    // when
+    val result = parseAndExecute("MERGE (a:Item {id:2}) MERGE (b:Person {id:1})")
+
+    // then does not throw
+  }
 }

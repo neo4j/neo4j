@@ -25,9 +25,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -183,24 +185,88 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         rollback();
     }
 
+    @Test
+    public void unrelatedNodesWithSamePropertyShouldNotInterfereWithUniquenessCheck() throws Exception
+    {
+        // given
+        createConstraint( "Person", "id" );
+
+        Node ourNode;
+        {
+            dataWriteOperationsInNewTransaction();
+
+            ourNode = db.createNode( label( "Person" ) );
+            ourNode.setProperty( "id", 1 );
+            db.createNode( label( "Item" ) ).setProperty( "id", 2 );
+
+            commit();
+        }
+
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        IndexDescriptor idx = statement.uniqueIndexGetForLabelAndPropertyKey( statement
+                .labelGetForName( "Person" ), statement.propertyKeyGetForName( "id" ) );
+
+        // when
+        db.createNode( label( "Item" ) ).setProperty( "id", 2 );
+
+        // then I should find the original node
+        assertThat( statement.nodeGetUniqueFromIndexLookup( idx, 1 ), equalTo( ourNode.getId() ));
+    }
+
+    @Test
+    public void addingUniqueNodeWithUnrelatedValueShouldNotAffectLookup() throws Exception
+    {
+        // given
+        createConstraint( "Person", "id" );
+
+        Node ourNode;
+        {
+            dataWriteOperationsInNewTransaction();
+
+            ourNode = db.createNode( label( "Person" ) );
+            ourNode.setProperty( "id", 1 );
+            commit();
+        }
+
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        IndexDescriptor idx = statement.uniqueIndexGetForLabelAndPropertyKey( statement
+                .labelGetForName( "Person" ), statement.propertyKeyGetForName( "id" ) );
+
+        // when
+        db.createNode( label( "Person" ) ).setProperty( "id", 2 );
+
+        // then I should find the original node
+        assertThat( statement.nodeGetUniqueFromIndexLookup( idx, 1 ), equalTo( ourNode.getId() ));
+    }
+
     private Node constrainedNode( String labelName, String propertyKey, Object propertyValue )
             throws KernelException
     {
         Node node;
+        {
+            dataWriteOperationsInNewTransaction();
+            node = db.createNode( label( labelName ) );
+            node.setProperty( propertyKey, propertyValue );
+            commit();
+        }
+        createConstraint( labelName, propertyKey );
+        return node;
+    }
+
+    private void createConstraint( String label, String propertyKey ) throws KernelException
+    {
         int labelId, propertyKeyId;
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            node = db.createNode( label( labelName ) );
-            node.setProperty( propertyKey, propertyValue );
-            labelId = statement.labelGetForName( labelName );
-            propertyKeyId = statement.propertyKeyGetForName( propertyKey );
+            labelId = statement.labelGetOrCreateForName( label );
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( propertyKey );
             commit();
         }
+
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.uniquenessConstraintCreate( labelId, propertyKeyId );
             commit();
         }
-        return node;
     }
 }
