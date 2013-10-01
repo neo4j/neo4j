@@ -103,13 +103,19 @@ case class Start(items: Seq[StartItem], where: Option[Where], token: InputToken)
   }
 }
 
-case class Match(pattern: Pattern, hints: Seq[Hint], where: Option[Where], token: InputToken) extends Clause {
+case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: Option[Where], token: InputToken) extends Clause with SemanticChecking {
   def name = "MATCH"
 
   def semanticCheck =
-    pattern.semanticCheck(Pattern.SemanticContext.Match) then
+    checkOptionalMatch then
+      pattern.semanticCheck(Pattern.SemanticContext.Match) then
       hints.semanticCheck then
       where.semanticCheck
+
+  private def checkOptionalMatch =
+    when(optional) {
+      SemanticError("OPTIONAL MATCH is not currently supported", token)
+    }
 
   def addToLegacyQuery(builder: commands.QueryBuilder) = {
     val matches = builder.matching ++ pattern.toLegacyPatterns
