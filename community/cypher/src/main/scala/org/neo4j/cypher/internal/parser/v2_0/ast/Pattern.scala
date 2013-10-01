@@ -41,16 +41,28 @@ object Pattern {
     case object Update extends SemanticContext
     case object Expression extends SemanticContext
   }
+}
+import Pattern._
 
-  implicit class SemanticCheckablePatternTraversable(patterns: TraversableOnce[Pattern]) {
+object PatternPart {
+  implicit class SemanticCheckablePatternTraversable(patterns: TraversableOnce[PatternPart]) {
     def semanticCheck(context: SemanticContext): SemanticCheck =
       patterns.foldLeft(SemanticCheckResult.success) { (f, p) => f then p.semanticCheck(context) }
   }
 }
-import Pattern._
 
 
-sealed abstract class Pattern extends AstNode {
+case class Pattern(patternParts: Seq[PatternPart], token: InputToken) extends AstNode {
+  def semanticCheck(context: SemanticContext): SemanticCheck = patternParts.semanticCheck(context)
+
+  def toLegacyPatterns: Seq[commands.Pattern] = patternParts.flatMap(_.toLegacyPatterns)
+  def toLegacyNamedPaths: Seq[commands.NamedPath] = patternParts.flatMap(_.toLegacyNamedPath)
+  def toLegacyCreates: Seq[mutation.UpdateAction] = patternParts.flatMap(_.toLegacyCreates)
+  def toAbstractPatterns: Seq[AbstractPattern] = patternParts.flatMap(_.toAbstractPatterns)
+}
+
+
+sealed abstract class PatternPart extends AstNode {
   def semanticCheck(context: SemanticContext): SemanticCheck
 
   def toLegacyPatterns: Seq[commands.Pattern]
@@ -59,27 +71,28 @@ sealed abstract class Pattern extends AstNode {
   def toAbstractPatterns: Seq[AbstractPattern]
 }
 
-case class AnonymousPattern(path: PathPattern) extends Pattern {
-  def token = path.token
+case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart, token: InputToken) extends PatternPart {
+  def semanticCheck(context: SemanticContext) = patternPart.semanticCheck(context) then identifier.declare(PathType())
 
-  def semanticCheck(context: SemanticContext) = path.semanticCheck(context)
-
-  lazy val toLegacyPatterns = path.toLegacyPatterns(None)
-  val toLegacyNamedPath = None
-  lazy val toLegacyCreates = path.toLegacyCreates(None)
-  lazy val toAbstractPatterns = path.toAbstractPatterns(None)
+  lazy val toLegacyPatterns = patternPart.toLegacyPatterns(Some(identifier.name))
+  lazy val toLegacyNamedPath = patternPart.toLegacyNamedPath(identifier.name)
+  lazy val toLegacyCreates = patternPart.toLegacyCreates(Some(identifier.name))
+  lazy val toAbstractPatterns = patternPart.toAbstractPatterns(Some(identifier.name))
 }
 
-case class NamedPattern(identifier: Identifier, path: PathPattern, token: InputToken) extends Pattern {
-  def semanticCheck(context: SemanticContext) = path.semanticCheck(context) then identifier.declare(PathType())
+sealed trait AnonymousPatternPart extends PatternPart {
+  lazy val toLegacyPatterns: Seq[commands.Pattern] = toLegacyPatterns(None)
+  val toLegacyNamedPath: Option[commands.NamedPath] = None
+  lazy val toLegacyCreates: Seq[mutation.UpdateAction] = toLegacyCreates(None)
+  lazy val toAbstractPatterns: Seq[AbstractPattern] = toAbstractPatterns(None)
 
-  lazy val toLegacyPatterns = path.toLegacyPatterns(Some(identifier.name))
-  lazy val toLegacyNamedPath = path.toLegacyNamedPath(identifier.name)
-  lazy val toLegacyCreates = path.toLegacyCreates(Some(identifier.name))
-  lazy val toAbstractPatterns = path.toAbstractPatterns(Some(identifier.name))
+  def toLegacyPatterns(pathName: Option[String]): Seq[commands.Pattern]
+  def toLegacyNamedPath(pathName: String): Option[commands.NamedPath]
+  def toLegacyCreates(pathName: Option[String]): Seq[mutation.UpdateAction]
+  def toAbstractPatterns(pathName: Option[String]): Seq[AbstractPattern]
 }
 
-case class RelationshipsPattern(element: PatternElement, token: InputToken) extends Pattern {
+case class RelationshipsPattern(element: RelationshipChain, token: InputToken) extends PatternPart {
   def semanticCheck(context: SemanticContext) = element.semanticCheck(context)
 
   lazy val toLegacyPatterns = element.toLegacyPatterns(true)
@@ -89,16 +102,7 @@ case class RelationshipsPattern(element: PatternElement, token: InputToken) exte
 }
 
 
-sealed abstract class PathPattern extends AstNode {
-  def semanticCheck(context: SemanticContext): SemanticCheck
-
-  def toLegacyPatterns(pathName: Option[String]) : Seq[commands.Pattern]
-  def toLegacyNamedPath(pathName: String) : Option[commands.NamedPath]
-  def toLegacyCreates(pathName: Option[String]) : Seq[mutation.UpdateAction]
-  def toAbstractPatterns(pathName: Option[String]) : Seq[AbstractPattern]
-}
-
-case class EveryPath(element: PatternElement) extends PathPattern {
+case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
   def token = element.token
 
   def semanticCheck(ctx: SemanticContext) = (element, ctx) match {
@@ -118,7 +122,7 @@ case class EveryPath(element: PatternElement) extends PathPattern {
   }
 }
 
-abstract class ShortestPath(element: PatternElement, token: InputToken) extends PathPattern {
+abstract class ShortestPath(element: PatternElement, token: InputToken) extends AnonymousPatternPart {
   val name: String
   val single: Boolean
 

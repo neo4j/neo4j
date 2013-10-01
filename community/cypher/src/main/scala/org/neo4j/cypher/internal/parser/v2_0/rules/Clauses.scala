@@ -38,19 +38,19 @@ trait Clauses extends Parser
 
   def Match : Rule1[ast.Match] = rule("MATCH") {
     group(
-      keyword("MATCH") ~~ oneOrMore(Pattern, separator = CommaSep) ~~ zeroOrMore(Hint, separator = WS) ~~ optional(Where)
+      keyword("MATCH") ~~ Pattern ~~ zeroOrMore(Hint, separator = WS) ~~ optional(Where)
     ) ~>> token ~~> ast.Match
   }
 
   def Merge : Rule1[ast.Merge] = rule("MERGE") {
     group(
-      oneOrMore(keyword("MERGE") ~~ Pattern, separator = WS) ~~ zeroOrMore(MergeAction, separator = WS)
+      oneOrMore(keyword("MERGE") ~~ PatternPart, separator = WS) ~~ zeroOrMore(MergeAction, separator = WS)
     ) ~>> token ~~> ast.Merge
   }
 
   def Create : Rule1[ast.Clause] = rule("CREATE") (
-      group(keyword("CREATE", "UNIQUE") ~~ oneOrMore(Pattern, separator = CommaSep)) ~>> token ~~> ast.CreateUnique
-    | group(keyword("CREATE") ~~ oneOrMore(Pattern, separator = CommaSep)) ~>> token ~~> ast.Create
+      group(keyword("CREATE", "UNIQUE") ~~ Pattern) ~>> token ~~> ast.CreateUnique
+    | group(keyword("CREATE") ~~ Pattern) ~>> token ~~> ast.Create
   )
 
   def SetClause : Rule1[ast.SetClause] = rule("SET") {

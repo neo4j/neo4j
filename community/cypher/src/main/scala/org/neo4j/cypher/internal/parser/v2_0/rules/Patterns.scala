@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.parser.v2_0.rules
 
 /*
- *|                                                 Pattern                                                |
- *|Identifier|                                         PathPattern                                         |
+ *|                                             NamedPatternPart                                            |
+ *|Identifier|                                     AnonymousPatternPart                                     |
  *                           |                                 PatternElement                              |
  *                           |               PatternElement               |        RelationshipChain       |
  *                           |NodePattern |        RelationshipChain      ||RelationshipPattern|NodePattern|
@@ -38,12 +38,16 @@ trait Patterns extends Parser
   with Literals
   with Base {
 
-  def Pattern : Rule1[ast.Pattern] = rule("a pattern") (
-      group(Identifier ~~ operator("=") ~~ PathPattern) ~>> token ~~> ast.NamedPattern
-    | PathPattern ~~> ast.AnonymousPattern
+  def Pattern : Rule1[ast.Pattern] = rule("a pattern") {
+    oneOrMore(PatternPart, separator = CommaSep) ~>> token ~~> (ast.Pattern(_, _))
+  }
+
+  def PatternPart : Rule1[ast.PatternPart] = rule("a pattern") (
+      group(Identifier ~~ operator("=") ~~ AnonymousPatternPart) ~>> token ~~> ast.NamedPatternPart
+    | AnonymousPatternPart
   )
 
-  private def PathPattern : Rule1[ast.PathPattern] = rule (
+  private def AnonymousPatternPart : Rule1[ast.AnonymousPatternPart] = rule (
       ShortestPathPattern
     | PatternElement ~~> ast.EveryPath
   )
@@ -51,18 +55,18 @@ trait Patterns extends Parser
   def ShortestPathPattern : Rule1[ast.ShortestPath] = rule (
       (group(keyword("shortestPath") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~>> token ~~> ast.SingleShortestPath
     | (group(keyword("allShortestPaths") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~>> token ~~> ast.AllShortestPaths
-  ) memoMismatches
+  ).memoMismatches
 
   def RelationshipsPattern : Rule1[ast.RelationshipsPattern] = rule {
     group(NodePattern ~ oneOrMore(WS ~ PatternElementChain)) ~>> token ~~> ast.RelationshipsPattern
-  } memoMismatches
+  }.memoMismatches
 
   private def PatternElement : Rule1[ast.PatternElement] = rule (
       NodePattern ~ zeroOrMore(WS ~ PatternElementChain)
     | "(" ~~ PatternElement ~~ ")"
   )
 
-  private def PatternElementChain : ReductionRule1[ast.PatternElement, ast.PatternElement] = rule("a relationship pattern") {
+  private def PatternElementChain : ReductionRule1[ast.PatternElement, ast.RelationshipChain] = rule("a relationship pattern") {
     group(RelationshipPattern ~~ NodePattern) ~>> token ~~> ast.RelationshipChain
   }
 
@@ -72,7 +76,7 @@ trait Patterns extends Parser
       | "<" ~~ "-" ~~ RelationshipDetail ~~ "-" ~ push(Direction.INCOMING)
       | "-" ~~ RelationshipDetail ~~ "-" ~~ ">" ~ push(Direction.OUTGOING)
       | "-" ~~ RelationshipDetail ~~ "-" ~ push(Direction.BOTH)
-    ) ~>> token ~~> toRelationshipPattern
+    ) ~>> token ~~> toRelationshipPattern _
   }
 
   private def RelationshipDetail : Rule5[
@@ -106,8 +110,8 @@ trait Patterns extends Parser
   )
 
   private def NodePattern : Rule1[ast.NodePattern] = rule("a node pattern") (
-      group("(" ~~ MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~ ")" ~ push(false)) ~>> token ~~> (toNodePattern _)
-    | group(MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~~? ((i, l, p) => !(i.isEmpty && l.isEmpty && p.isEmpty)) ~ push(true)) ~>> token ~~> (toNodePattern _)
+      group("(" ~~ MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~ ")" ~ push(false)) ~>> token ~~> toNodePattern _
+    | group(MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~~? ((i, l, p) => !(i.isEmpty && l.isEmpty && p.isEmpty)) ~ push(true)) ~>> token ~~> toNodePattern _
   )
 
   private def MaybeIdentifier : Rule1[Option[ast.Identifier]] = rule("an identifier") {
