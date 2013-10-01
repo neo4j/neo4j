@@ -18,6 +18,8 @@ include::create-a-node-with-multiple-properties.asciidoc[]
 
 include::create-mutiple-nodes-with-properties.asciidoc[]
 
+include::set-all-properties-on-a-node-using-cypher.asciidoc[]
+
 include::send-a-query.asciidoc[]
 
 include::return-paths.asciidoc[]

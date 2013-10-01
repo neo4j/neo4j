@@ -81,7 +81,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     }
 
     /**
-     * By passing in an additional GET header when you execute Cypher queries, metadata about the query will
+     * By passing in an additional GET parameter when you execute Cypher queries, metadata about the query will
      * be returned, such as how many labels were added or removed by the query.
      */
     @Test
@@ -239,6 +239,26 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "name" ) );
         assertTrue( response.contains( "Michael" ) );
         assertTrue( response.contains( "Andres" ) );
+    }
+
+    /**
+     * Set all properties on a node.
+     */
+    @Test
+    @Documented
+    @Title( "Set all properties on a node using Cypher" )
+    @Graph
+    public void setAllPropertiesUsingMap() throws Exception
+    {
+        data.get();
+        String script = "CREATE (n:Person { name: 'this property is to be deleted' } ) SET n = { props } RETURN n";
+        String params = "\"props\" : { \"position\" : \"Developer\", \"firstName\" : \"Michael\", \"awesome\" : true, \"children\" : 3 }";
+        String response = cypherRestCall( script, Status.OK, params );
+
+        assertTrue( response.contains( "firstName" ) );
+        assertTrue( response.contains( "Michael" ) );
+        assertTrue( !response.contains( "name" ) );
+        assertTrue( !response.contains( "deleted" ) );
     }
 
     @Test
