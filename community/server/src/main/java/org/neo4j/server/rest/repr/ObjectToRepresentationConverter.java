@@ -56,9 +56,10 @@ public class ObjectToRepresentationConverter
         return new MapRepresentation( data );
     }
 
+    @SuppressWarnings("unchecked")
     static Representation getIteratorRepresentation( Iterator data )
     {
-        final FirstItemIterable<Representation> results = new FirstItemIterable<Representation>(new IteratorWrapper<Representation, Object>(data) {
+        final FirstItemIterable<Representation> results = new FirstItemIterable<>(new IteratorWrapper<Representation, Object>(data) {
             @Override
             protected Representation underlyingObjectToObject(Object value) {
                 if ( value instanceof Iterable )
@@ -79,9 +80,10 @@ public class ObjectToRepresentationConverter
         return new ServerListRepresentation( getType( results ), results );
     }
 
+    @SuppressWarnings("unchecked")
     static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data )
     {
-        return new FirstItemIterable<Representation>(new IterableWrapper<Representation,Object>(data) {
+        return new FirstItemIterable<>(new IterableWrapper<Representation,Object>(data) {
             @Override
             protected Representation underlyingObjectToObject(Object value) {
                return convert(value);
@@ -98,7 +100,10 @@ public class ObjectToRepresentationConverter
 
     static Representation getSingleRepresentation( Object result )
     {
-        if ( result == null ) return ValueRepresentation.string( "null" );
+        if ( result == null )
+        {
+            return ValueRepresentation.ofNull();
+        }
         else if ( result instanceof GraphDatabaseService )
         {
             return new DatabaseRepresentation( ( (GraphDatabaseService) result ) );
@@ -122,6 +127,10 @@ public class ObjectToRepresentationConverter
         else if ( result instanceof Integer )
         {
             return ValueRepresentation.number( ( (Integer) result ).intValue() );
+        }
+        else if ( result instanceof Boolean )
+        {
+            return ValueRepresentation.bool( ( (Boolean) result ).booleanValue()  );
         }
         else
         {

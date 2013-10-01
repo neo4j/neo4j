@@ -42,6 +42,10 @@ public class MapRepresentation extends MappingRepresentation
             {
                 serializer.putNumber( key.toString(), (Number) val );
             }
+            else if ( val instanceof Boolean )
+            {
+                serializer.putBoolean( key.toString(), (Boolean) val );
+            }
             else if ( val instanceof String )
             {
                 serializer.putString( key.toString(), (String) val );
