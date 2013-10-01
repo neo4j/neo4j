@@ -23,13 +23,11 @@ import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
@@ -317,6 +315,7 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, MY_LABEL, property, new double[]{12.} );
 
     }
+
 
     private void assertCanCreateAndFind( GraphDatabaseService db, Label label, String propertyKey, Object value )
     {
