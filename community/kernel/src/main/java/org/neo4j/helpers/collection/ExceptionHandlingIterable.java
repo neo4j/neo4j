@@ -19,9 +19,6 @@
  */
 package org.neo4j.helpers.collection;
 
-import sun.misc.Unsafe;
-
-import java.lang.reflect.Field;
 import java.util.Iterator;
 
 /**

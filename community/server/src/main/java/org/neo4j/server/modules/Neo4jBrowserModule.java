@@ -25,8 +25,6 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.web.WebServer;
 
-import java.io.IOException;
-
 public class Neo4jBrowserModule implements ServerModule
 {
     private static final Logger log = Logger.getLogger( Neo4jBrowserModule.class );
