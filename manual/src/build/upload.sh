@@ -22,8 +22,8 @@ else
 		SYMLINKVERSION=stable
 	fi
 fi
-DOCS_SERVER='neo@static.neo4j.org'
-ROOTPATHDOCS='/var/www/docs.neo4j.org'
+DOCS_SERVER='neo@docs.neo4j.org'
+ROOTPATHDOCS='/data/www/doc/docs.neo4j.org'
 hostname=$(uname -n)
 
 # If you're not a Jenkins node, don't deploy the docs
