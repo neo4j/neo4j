@@ -32,7 +32,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 
 public final class RepresentationType
 {
-    private static final Map<Class<?>, Class<?>> boxed = new HashMap<Class<?>, Class<?>>();
+    private static final Map<Class<?>, Class<?>> boxed = new HashMap<>();
 
     static
     {
@@ -46,8 +46,8 @@ public final class RepresentationType
         boxed.put( boolean.class, Boolean.class );
     }
 
-    private static final Map<String, RepresentationType> types = new HashMap<String, RepresentationType>();
-    private static final Map<Class<?>, RepresentationType> extended = new HashMap<Class<?>, RepresentationType>();
+    private static final Map<String, RepresentationType> types = new HashMap<>();
+    private static final Map<Class<?>, RepresentationType> extended = new HashMap<>();
     // Graph database types
     public static final RepresentationType
             GRAPHDB = new RepresentationType( "graphdb", null, GraphDatabaseService.class ),
@@ -83,7 +83,8 @@ public final class RepresentationType
             NOTHING = new RepresentationType( "void", null ),
             // System
             EXCEPTION = new RepresentationType( "exception" ),
-            MAP = new RepresentationType( "map", "maps", Map.class );
+            MAP = new RepresentationType( "map", "maps", Map.class ),
+            NULL = new RepresentationType( "null", "nulls", Object.class );
 
 
     final String valueName;

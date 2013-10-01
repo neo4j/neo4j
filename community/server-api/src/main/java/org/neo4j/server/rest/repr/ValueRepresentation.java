@@ -55,6 +55,11 @@ public class ValueRepresentation extends Representation
         serializer.writer.writeValue( type, key, value );
     }
 
+    public static ValueRepresentation ofNull()
+    {
+        return new ValueRepresentation( RepresentationType.NULL, null );
+    }
+
     public static ValueRepresentation string( String value )
     {
         return new ValueRepresentation( RepresentationType.STRING, value );
