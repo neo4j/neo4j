@@ -88,6 +88,10 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
       "start n=node(0) match p=shortestPath(n) return p",
       "shortestPath(...) requires a pattern containing a single relationship (line 1, column 25)"
     )
+    test(
+      "start n=node(0) match p=allShortestPaths(n) return p",
+      "allShortestPaths(...) requires a pattern containing a single relationship (line 1, column 25)"
+    )
   }
 
   @Test def shouldComplainIfShortestPathHasMultipleRelationships() {
@@ -95,12 +99,20 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
       "start a=node(0), b=node(1) match p=shortestPath(a--()--b) return p",
       "shortestPath(...) requires a pattern containing a single relationship (line 1, column 36)"
     )
+    test(
+      "start a=node(0), b=node(1) match p=allShortestPaths(a--()--b) return p",
+      "allShortestPaths(...) requires a pattern containing a single relationship (line 1, column 36)"
+    )
   }
 
   @Test def shouldComplainIfShortestPathHasAMinimalLength() {
     test(
       "start a=node(0), b=node(1) match p=shortestPath(a-[*1..2]->b) return p",
       "shortestPath(...) does not support a minimal length (line 1, column 36)"
+    )
+    test(
+      "start a=node(0), b=node(1) match p=allShortestPaths(a-[*1..2]->b) return p",
+      "allShortestPaths(...) does not support a minimal length (line 1, column 36)"
     )
   }
 
@@ -156,14 +168,22 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
   @Test def shouldFailWhenTryingToCreateShortestPaths() {
     test(
       "match a, b create shortestPath((a)-[:T]->(b))",
-      "shortestPath cannot be used to CREATE (line 1, column 19)"
+      "shortestPath(...) cannot be used to CREATE (line 1, column 19)"
+    )
+    test(
+      "match a, b create allShortestPaths((a)-[:T]->(b))",
+      "allShortestPaths(...) cannot be used to CREATE (line 1, column 19)"
     )
   }
 
   @Test def shouldFailWhenTryingToUniquelyCreateShortestPaths() {
     test(
       "match a, b create unique shortestPath((a)-[:T]->(b))",
-      "shortestPath cannot be used to CREATE (line 1, column 26)"
+      "shortestPath(...) cannot be used to CREATE (line 1, column 26)"
+    )
+    test(
+      "match a, b create unique allShortestPaths((a)-[:T]->(b))",
+      "allShortestPaths(...) cannot be used to CREATE (line 1, column 26)"
     )
   }
 
