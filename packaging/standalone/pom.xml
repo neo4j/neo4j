@@ -176,6 +176,7 @@ terms of the relevant Commercial Agreement.
               <licensingRequirementFiles>
                 <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-oss.xml</licensingRequirementFile>
               </licensingRequirementFiles>
               <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-oss.txt</thirdPartyLicensingFilename>
@@ -191,6 +192,7 @@ terms of the relevant Commercial Agreement.
               <licensingRequirementFiles>
                 <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-oss.xml</licensingRequirementFile>
               </licensingRequirementFiles>
@@ -211,6 +213,7 @@ terms of the relevant Commercial Agreement.
               <licensingRequirementFiles>
                 <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
               </licensingRequirementFiles>
               <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-NOTICE.txt</thirdPartyLicensingFilename>
               <listPrependText>list-prefix.txt</listPrependText>
@@ -227,6 +230,7 @@ terms of the relevant Commercial Agreement.
               <licensingRequirementFiles>
                 <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-com.xml</licensingRequirementFile>
               </licensingRequirementFiles>
               <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}.txt</thirdPartyLicensingFilename>
@@ -242,6 +246,7 @@ terms of the relevant Commercial Agreement.
               <licensingRequirementFiles>
                 <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-com.xml</licensingRequirementFile>
               </licensingRequirementFiles>

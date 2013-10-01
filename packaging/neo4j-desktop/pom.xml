@@ -68,6 +68,7 @@
               <licensingRequirementFiles>
                 <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
                 <licensingRequirementFile>licensing-requirements-installer.xml</licensingRequirementFile>
               </licensingRequirementFiles>
