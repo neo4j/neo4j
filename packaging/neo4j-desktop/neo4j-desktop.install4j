@@ -53,7 +53,7 @@
   </files>
   <launchers>
     <launcher name="neo4j-community" id="24" customizedId="" external="false" excludeFromMenu="false" unixMode="755" menuName="Neo4j Community" icnsFile="" customMacBundleIdentifier="false" macBundleIdentifier="" swtApp="false" fileset="" macBundleBinary="JavaApplicationStub" addMacEntitlements="false" macEntitlementsFile="">
-      <executable name="neo4j-community" type="1" iconSet="true" iconFile="./src/main/resources/neo4j-cherries.ico" executableDir="bin" redirectStderr="true" stderrFile="${installer:sys.appdataDir}/${compiler:sys.fullName}/logs/console.log" stderrMode="overwrite" redirectStdout="true" stdoutFile="${installer:sys.appdataDir}/${compiler:sys.fullName}/logs/console.log" stdoutMode="overwrite" failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="true" serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" checkConsoleParameter="false" globalSingleInstance="false">
+      <executable name="neo4j-community" type="1" iconSet="true" iconFile="./src/main/resources/neo4j.ico" executableDir="bin" redirectStderr="true" stderrFile="${installer:sys.appdataDir}/${compiler:sys.fullName}/logs/console.log" stderrMode="overwrite" redirectStdout="true" stdoutFile="${installer:sys.appdataDir}/${compiler:sys.fullName}/logs/console.log" stdoutMode="overwrite" failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="true" serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" checkConsoleParameter="false" globalSingleInstance="false">
         <versionInfo include="false" fileVersion="" fileDescription="" legalCopyright="" internalName="" productName="" />
       </executable>
       <splashScreen show="false" autoOff="true" alwaysOnTop="true" width="0" height="0" bitmapFile="" java6SplashScreen="false">
@@ -80,7 +80,7 @@
         <content />
       </infoPlist>
       <iconImageFiles>
-        <file path="./src/main/resources/neo4j-cherries-256.png" />
+        <file path="./src/main/resources/neo4j-icon_256x256.png" />
       </iconImageFiles>
     </launcher>
   </launchers>
@@ -91,19 +91,19 @@
       <customAttributes />
     </autoUpdate>
     <applications>
-      <application name="" id="installer" customizedId="" beanClass="com.install4j.runtime.beans.applications.InstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="./src/main/resources/neo4j-cherries.ico" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
+      <application name="" id="installer" customizedId="" beanClass="com.install4j.runtime.beans.applications.InstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="./src/main/resources/neo4j.ico" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
         <serializedBean>
           <java class="java.beans.XMLDecoder">
             <object class="com.install4j.runtime.beans.applications.InstallerApplication">
               <void property="customHeaderImage">
                 <object class="com.install4j.api.beans.ExternalFile">
-                  <string>./src/main/resources/neo4j-cherries-128.png</string>
+                  <string>./src/main/resources/neo4j-icon_128x128.png</string>
                 </object>
               </void>
               <void property="customIconImageFiles">
                 <void method="add">
                   <object class="com.install4j.api.beans.ExternalFile">
-                    <string>./src/main/resources/neo4j-cherries-128.png</string>
+                    <string>./src/main/resources/neo4j-icon_128x128.png</string>
                   </object>
                 </void>
               </void>
@@ -170,7 +170,7 @@
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./src/main/resources/neo4j-cherries-256.png</string>
+                      <string>./src/main/resources/neo4j-icon_256x256.png</string>
                     </object>
                   </void>
                 </object>
@@ -369,7 +369,7 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./src/main/resources/neo4j-cherries-256.png</string>
+                      <string>./src/main/resources/neo4j-icon_256x256.png</string>
                     </object>
                   </void>
                 </object>
@@ -417,14 +417,14 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
           </screen>
         </screens>
       </application>
-      <application name="" id="uninstaller" customizedId="" beanClass="com.install4j.runtime.beans.applications.UninstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="./src/main/resources/neo4j-cherries.ico" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
+      <application name="" id="uninstaller" customizedId="" beanClass="com.install4j.runtime.beans.applications.UninstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="./src/main/resources/neo4j.ico" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
         <serializedBean>
           <java class="java.beans.XMLDecoder">
             <object class="com.install4j.runtime.beans.applications.UninstallerApplication">
               <void property="customIconImageFiles">
                 <void method="add">
                   <object class="com.install4j.api.beans.ExternalFile">
-                    <string>./src/main/resources/neo4j-cherries-256.png</string>
+                    <string>./src/main/resources/neo4j-icon_256x256.png</string>
                   </object>
                 </void>
               </void>
@@ -481,7 +481,7 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./src/main/resources/neo4j-cherries-256.png</string>
+                      <string>./src/main/resources/neo4j-icon_256x256.png</string>
                     </object>
                   </void>
                 </object>
@@ -538,7 +538,7 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./src/main/resources/neo4j-cherries-256.png</string>
+                      <string>./src/main/resources/neo4j-icon_256x256.png</string>
                     </object>
                   </void>
                 </object>
