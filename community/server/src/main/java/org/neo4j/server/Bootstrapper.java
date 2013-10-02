@@ -42,6 +42,7 @@ public abstract class Bootstrapper
 
     protected NeoServer server;
 	private Configurator configurator;
+    private Thread shutdownHook;
 
     public static void main( String[] args )
     {
@@ -138,6 +139,9 @@ public abstract class Bootstrapper
             log.info( "Successfully shutdown Neo Server on port [%d], database [%s]",
             		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT),
                     location );
+
+            removeShutdownHook();
+
             return 0;
         }
         catch ( Exception e )
@@ -148,6 +152,17 @@ public abstract class Bootstrapper
         }
     }
 
+    protected void removeShutdownHook()
+    {
+        if ( shutdownHook != null )
+        {
+            if ( !Runtime.getRuntime().removeShutdownHook( shutdownHook ) )
+            {
+                log.warn( "Unable to remove shutdown hook" );
+            }
+        }
+    }
+
     public NeoServer getServer()
     {
         return server;
@@ -155,19 +170,20 @@ public abstract class Bootstrapper
 
     protected void addShutdownHook()
     {
-        Runtime.getRuntime()
-                .addShutdownHook( new Thread()
+        shutdownHook = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                log.info( "Neo4j Server shutdown initiated by request" );
+                if ( server != null )
                 {
-                    @Override
-                    public void run()
-                    {
-                        log.info( "Neo4j Server shutdown initiated by request" );
-                        if ( server != null )
-                        {
-                            server.stop();
-                        }
-                    }
-                } );
+                    server.stop();
+                }
+            }
+        };
+        Runtime.getRuntime()
+                .addShutdownHook( shutdownHook );
     }
 
     protected Configurator createConfigurator()
