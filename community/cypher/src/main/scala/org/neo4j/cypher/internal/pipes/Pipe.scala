@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.{NullPlanDescription, PlanDescription}
+import org.neo4j.cypher.internal.{NullPlanDescription, PlanDescription}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 /**

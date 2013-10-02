@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.PlanDescription
 import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex, IndexOperation}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols.SymbolTable

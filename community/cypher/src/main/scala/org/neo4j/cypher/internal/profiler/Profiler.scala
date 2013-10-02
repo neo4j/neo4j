@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.profiler
 
 import org.neo4j.cypher.internal.pipes.{QueryState, Pipe, PipeDecorator}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.PlanDescription
 import org.neo4j.cypher.internal.spi.{DelegatingOperations, Operations, QueryContext, DelegatingQueryContext}
 import collection.mutable
-import org.neo4j.cypher.{ProfilerStatisticsNotReadyException, PlanDescription}
+import org.neo4j.cypher.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.{PropertyContainer, Direction, Relationship, Node}
 import org.neo4j.cypher.internal.data.PrimVal
 
