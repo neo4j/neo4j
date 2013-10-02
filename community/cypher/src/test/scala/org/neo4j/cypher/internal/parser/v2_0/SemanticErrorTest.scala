@@ -23,7 +23,6 @@ import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import org.neo4j.cypher.CypherVersion._
 import org.neo4j.cypher.{CypherException, ExecutionEngineHelper}
 
 class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
@@ -230,6 +229,42 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     test(
       "match n {foo: 'bar'} return n",
       "Parenthesis are required to identify nodes in patterns (line 1, column 7)"
+    )
+  }
+
+  @Test def shouldFailIfUnknownIdentifierInMergeActions() {
+    test(
+      "MERGE (n:Person) ON CREATE x SET x.foo = 1",
+      "x not defined (line 1, column 28)"
+    )
+    test(
+      "MERGE (n:Person) ON MATCH x SET x.foo = 1",
+      "x not defined (line 1, column 27)"
+    )
+  }
+
+  @Test def shouldFailIfMergeActionIdentifierNotIntroducedInMerge() {
+    test(
+      "MATCH (n) MERGE (m) ON CREATE n SET n.foo = 1",
+      "Invalid use of n for ON CREATE: already defined prior to MERGE (line 1, column 31)"
+    )
+  }
+
+  @Test def shouldFailIfMergeActionUsesPathIdentifier() {
+    test(
+      "MERGE p=(n:Person) ON CREATE p SET n.foo = 1",
+      "Type mismatch: p already defined with conflicting type Collection<Map> (expected Node or Relationship) (line 1, column 30)"
+    )
+  }
+
+  @Test def shouldFailIfUnknownIdentifierInMergeActionSetClause() {
+    test(
+      "MERGE (n:Person) ON CREATE n SET x.foo = 1",
+      "x not defined (line 1, column 34)"
+    )
+    test(
+      "MERGE (n:Person) ON MATCH n SET x.foo = 1",
+      "x not defined (line 1, column 33)"
     )
   }
 
