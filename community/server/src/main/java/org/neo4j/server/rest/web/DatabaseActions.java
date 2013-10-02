@@ -347,7 +347,7 @@ public class DatabaseActions
         try
         {
             // Remove current labels
-            for ( Label label : node.getLabels() )
+            for ( Label label : asSet(node.getLabels()) )
             {
                 node.removeLabel( label );
             }

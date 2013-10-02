@@ -22,26 +22,26 @@ package org.neo4j.server.rest;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import org.json.JSONException;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.server.HTTP;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.test.server.HTTP.POST;
 
 public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 {
@@ -223,10 +223,6 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
 
         assertEquals(4, results.size());
-
-//        String rels = gen.get()
-//                .expectedStatus( 200 ).get( getRelationshipIndexUri( "my_rels", "since", "2010")).entity();
-//        assertEquals(1, JsonHelper.jsonToList(  rels ).size());
     }
 
     private String batchUri()
@@ -477,7 +473,6 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 
         assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
-
     }
 
     @Test
@@ -670,9 +665,25 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         assertEquals(body1.get("start"), body2.get("self"));
     }
 
+
+    @Test
+    public void shouldAllowPutLabelsOnNodeCreatedInSameBatch() throws ClientHandlerException,
+            UniformInterfaceException, JSONException
+    {
+        // When
+        HTTP.Response response = POST( batchUri(),
+                asList(
+                        map( "body", map( "name", "Alice" ), "to", "node", "id", 0, "method", "POST" ),
+                        map( "body", asList( "expert", "coder" ), "to", "{0}/labels", "id", 1, "method", "POST" ),
+                        map( "body", asList( "novice", "chef" ), "to", "{0}/labels", "id", 2, "method", "PUT" ) ) );
+
+        // Then
+        assertEquals(200, response.status());
+    }
+
     private int countNodes()
     {
-        try ( Transaction tx = graphdb().beginTx() )
+        try ( Transaction ignore = graphdb().beginTx() )
         {
             int count = 0;
             for(Node node : GlobalGraphOperations.at(graphdb()).getAllNodes())
