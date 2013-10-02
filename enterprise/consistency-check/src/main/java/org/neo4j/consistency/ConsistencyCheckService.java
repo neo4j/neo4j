@@ -42,7 +42,7 @@ public class ConsistencyCheckService
 {
     private final Date timestamp = new Date();
 
-    public void runFullConsistencyCheck( String storeDir,
+    public Result runFullConsistencyCheck( String storeDir,
                                          Config tuningConfiguration,
                                          ProgressMonitorFactory progressFactory,
                                          StringLogger logger ) throws ConsistencyCheckIncompleteException
@@ -78,6 +78,11 @@ public class ConsistencyCheckService
         if ( !summary.isConsistent() )
         {
             logger.logMessage( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
+            return Result.FAILURE;
+        }
+        else
+        {
+            return Result.SUCCESS;
         }
     }
 
@@ -103,5 +108,10 @@ public class ConsistencyCheckService
     {
         return String.format( "inconsistencies-%s.report",
                 new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( timestamp ) );
+    }
+
+    public enum Result
+    {
+        FAILURE, SUCCESS
     }
 }
