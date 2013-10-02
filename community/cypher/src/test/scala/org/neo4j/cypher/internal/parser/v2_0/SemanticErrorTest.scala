@@ -82,6 +82,13 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
+  @Test def shouldComplainIfVarLengthRelInCreate() {
+    test(
+      "create (a)-[:FOO*2]->(b)",
+      "Variable length relationships cannot be specified in this context (line 1, column 11)"
+    )
+  }
+
   @Test def shouldComplainIfShortestPathHasNoRelationship() {
     test(
       "start n=node(0) match p=shortestPath(n) return p",
