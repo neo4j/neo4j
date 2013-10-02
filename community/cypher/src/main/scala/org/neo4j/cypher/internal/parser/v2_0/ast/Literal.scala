@@ -48,4 +48,6 @@ case class StringLiteral(value: String, token: InputToken) extends Expression wi
   def toCommand = commandexpressions.Literal(value)
 }
 
-case class Range(lower: Option[UnsignedInteger], upper: Option[UnsignedInteger], token: InputToken) extends AstNode
+case class Range(lower: Option[UnsignedInteger], upper: Option[UnsignedInteger], token: InputToken) extends AstNode {
+  def isSingleLength = lower.isDefined && upper.isDefined && lower.get.value == 1 && upper.get.value == 1
+}

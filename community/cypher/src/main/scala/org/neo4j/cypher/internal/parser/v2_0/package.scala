@@ -29,6 +29,8 @@ package object v2_0 {
   implicit def chainableSemanticCheck(check: SemanticCheck) = ChainableSemanticCheck(check)
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Either[SemanticError, SemanticState]) func
   implicit def chainableSemanticEitherFunc(func: SemanticState => Either[SemanticError, SemanticState]) = ChainableSemanticCheck(func)
+  // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Seq[SemanticError]) func
+  implicit def chainableSemanticErrorsFunc(func: SemanticState => Seq[SemanticError]) = ChainableSemanticCheck(func)
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Option[SemanticError]) func
   implicit def chainableSemanticOptionFunc(func: SemanticState => Option[SemanticError]) = ChainableSemanticCheck(func)
 
