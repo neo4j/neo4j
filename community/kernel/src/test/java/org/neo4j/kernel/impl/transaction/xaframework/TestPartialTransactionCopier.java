@@ -55,7 +55,7 @@ import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 public class TestPartialTransactionCopier
 {
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    
+
     @SuppressWarnings( "unchecked" )
     @Test
     public void testIt() throws Exception
@@ -91,17 +91,21 @@ public class TestPartialTransactionCopier
                 containsExactly(
                         startEntry( brokenTxIdentifier, masterId, meId ),
                         nodeCommandEntry( brokenTxIdentifier, /*nodeId=*/2 ),
-                        onePhaseCommitEntry( brokenTxIdentifier, /*txid=*/brokenTxIdentifier ),
 
-                        startEntry( 4, masterId, meId ),
-                        nodeCommandEntry( 4, /*nodeId=*/3),
-                        onePhaseCommitEntry( 4, /*txid=*/4 ),
-                        doneEntry( 4 ),
+                        // Note that identifier is not the same as tx id here. This is because
+                        // there is one read transaction ran, which increments the identifier,
+                        // but does not increment the tx id.
+                        onePhaseCommitEntry( brokenTxIdentifier, /*txid=*/3 ),
 
                         startEntry( 5, masterId, meId ),
-                        nodeCommandEntry( 5, /*nodeId=*/4 ),
-                        onePhaseCommitEntry( 5, /*txid=*/5 ),
-                        doneEntry( 5 )
+                        nodeCommandEntry( 5, /*nodeId=*/3),
+                        onePhaseCommitEntry( 5, /*txid=*/4 ),
+                        doneEntry( 5 ),
+
+                        startEntry( 6, masterId, meId ),
+                        nodeCommandEntry( 6, /*nodeId=*/4 ),
+                        onePhaseCommitEntry( 6, /*txid=*/5 ),
+                        doneEntry( 6 )
                 ));
     }
 

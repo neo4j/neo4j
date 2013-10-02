@@ -63,63 +63,57 @@ public class TransactionFailureException extends TransactionalException
         rethrow = Rethrow.SYSTEM;
     }
 
+    public TransactionFailureException( Exception e )
+    {
+        super(e);
+        if( e instanceof HeuristicMixedException )
+        {
+            rethrow = Rethrow.HEURISTIC_MIXED;
+        }
+        else if( e instanceof HeuristicRollbackException )
+        {
+            rethrow = Rethrow.HEURISTIC_ROLLBACK;
+        }
+        else if( e instanceof  RollbackException )
+        {
+            rethrow = Rethrow.ROLLBACK;
+        }
+        else if( e instanceof  SystemException )
+        {
+            rethrow = Rethrow.SYSTEM;
+        }
+        else if( e instanceof RuntimeException )
+        {
+            rethrow = Rethrow.RUNTIME;
+        }
+        else
+        {
+            rethrow = Rethrow.RUNTIME_WRAPPED;
+        }
+    }
+
     public TransactionFailureException( RuntimeException cause )
     {
         super( cause );
         rethrow = Rethrow.RUNTIME;
     }
 
-    public RuntimeException unBoxedForCommit()
-            throws RollbackException, HeuristicMixedException, HeuristicRollbackException, SystemException
+    public RuntimeException unBoxedForCommit() throws XAException
     {
         return rethrow.exception( this.getCause() );
     }
 
-    public RuntimeException unBoxedForRollback() throws SystemException
+    public RuntimeException unBoxedForRollback() throws XAException
     {
         return rethrow.exceptionForRollback( this.getCause() );
     }
 
     private enum Rethrow
     {
-        HEURISTIC_MIXED( XAException.XA_HEURMIX )
-        {
-            @Override
-            RuntimeException exception( Throwable exception ) throws HeuristicMixedException
-            {
-                throw (HeuristicMixedException) exception;
-            }
-        },
-        HEURISTIC_ROLLBACK( XAException.XA_HEURRB )
-        {
-            @Override
-            RuntimeException exception( Throwable exception ) throws HeuristicRollbackException
-            {
-                throw (HeuristicRollbackException) exception;
-            }
-        },
-        ROLLBACK( XAException.XA_RBROLLBACK )
-        {
-            @Override
-            RuntimeException exception( Throwable exception ) throws RollbackException
-            {
-                throw (RollbackException) exception;
-            }
-        },
-        SYSTEM( 0 )
-        {
-            @Override
-            RuntimeException exception( Throwable exception ) throws SystemException
-            {
-                throw (SystemException) exception;
-            }
-
-            @Override
-            RuntimeException exceptionForRollback( Throwable exception ) throws SystemException
-            {
-                throw (SystemException) exception;
-            }
-        },
+        HEURISTIC_MIXED( XAException.XA_HEURMIX ),
+        HEURISTIC_ROLLBACK( XAException.XA_HEURRB ),
+        ROLLBACK( XAException.XA_RBROLLBACK ),
+        SYSTEM( 0 ),
         RUNTIME( 0 )
         {
             @Override
@@ -129,9 +123,23 @@ public class TransactionFailureException extends TransactionalException
             }
 
             @Override
-            RuntimeException exceptionForRollback( Throwable exception ) throws SystemException
+            RuntimeException exceptionForRollback( Throwable exception )
             {
                 return (RuntimeException) exception;
+            }
+        },
+        RUNTIME_WRAPPED( 0 )
+        {
+            @Override
+            RuntimeException exception( Throwable exception )
+            {
+                return new RuntimeException(exception);
+            }
+
+            @Override
+            RuntimeException exceptionForRollback( Throwable exception )
+            {
+                return new RuntimeException(exception);
             }
         };
 
@@ -142,12 +150,14 @@ public class TransactionFailureException extends TransactionalException
             this.errorCodeOnRollback = errorCodeOnRollback;
         }
 
-        abstract RuntimeException exception( Throwable exception )
-                throws HeuristicMixedException, HeuristicRollbackException, RollbackException, SystemException;
-
-        RuntimeException exceptionForRollback( Throwable exception ) throws SystemException
+        RuntimeException exception( Throwable exception ) throws XAException
         {
-            throw withCause( new SystemException( errorCodeOnRollback ), exception );
+            throw withCause( new XAException( errorCodeOnRollback ), exception );
+        }
+
+        RuntimeException exceptionForRollback( Throwable exception ) throws XAException
+        {
+            throw withCause( new XAException( errorCodeOnRollback ), exception );
         }
     }
 }

@@ -28,7 +28,6 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -43,7 +42,8 @@ public class ShutdownXaDataSource extends NeoStoreXaDataSource
 {
     public ShutdownXaDataSource()
     {
-        super( new Config(), null, null, null, null, null, null, null, null, null, null );
+        super( new Config(), null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null );
     }
 
     @Override
@@ -89,19 +89,7 @@ public class ShutdownXaDataSource extends NeoStoreXaDataSource
     }
 
     @Override
-    public DefaultSchemaIndexProviderMap getProviderMap()
-    {
-        throw databaseIsShutdownError();
-    }
-
-    @Override
     public long getRandomIdentifier()
-    {
-        throw databaseIsShutdownError();
-    }
-
-    @Override
-    public SchemaCache getSchemaCache()
     {
         throw databaseIsShutdownError();
     }

@@ -20,17 +20,14 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class KernelTest
 {
@@ -38,10 +35,10 @@ public class KernelTest
     public void shouldNotAllowCreationOfConstraintsWhenInHA() throws Exception
     {
         GraphDatabaseAPI db = new FakeHaDatabase();
-        KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        ThreadToStatementContextBridge stmtBridge =
+                db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         db.beginTx();
-        KernelTransaction tx = kernelAPI.newTransaction();
-        Statement statement = tx.acquireStatement();
+        Statement statement = stmtBridge.statement();
 
         try
         {

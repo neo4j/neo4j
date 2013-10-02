@@ -21,10 +21,8 @@ package org.neo4j.kernel.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
+
 import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -32,7 +30,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.TransactionForcefullyRolledBackException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -41,7 +38,6 @@ import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.LockHolder;
-import org.neo4j.kernel.impl.api.LockHolderImpl;
 import org.neo4j.kernel.impl.api.PersistenceCache;
 import org.neo4j.kernel.impl.api.SchemaStorage;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -55,12 +51,12 @@ import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 
 /**
  * This class should replace the {@link KernelTransaction} interface, and take its name, as soon as
@@ -68,12 +64,10 @@ import org.neo4j.kernel.impl.transaction.LockManager;
  */
 public class KernelTransactionImplementation implements KernelTransaction, TxState.Holder
 {
-    private final boolean readOnly;
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
     private final LockHolder lockHolder;
     private final LabelScanStore labelScanStore;
-    private final AbstractTransactionManager transactionManager;
     private final SchemaStorage schemaStorage;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final PersistenceCache persistenceCache;
@@ -83,6 +77,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final OldTxStateBridge legacyStateBridge;
     private final LegacyKernelOperations legacyKernelOperations;
     private final StatementOperationParts operations;
+    private final boolean readOnly;
 
     private TransactionType transactionType = TransactionType.ANY;
     private boolean closing, closed;
@@ -91,11 +86,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             LegacyKernelOperations legacyKernelOperations, boolean readOnly,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
-                                            IndexingService indexService, LockManager lockManager,
+                                            IndexingService indexService,
                                             AbstractTransactionManager transactionManager, NodeManager nodeManager,
                                             PersistenceCache persistenceCache, UpdateableSchemaState schemaState,
-                                            PersistenceManager persistenceManager,
-                                            SchemaIndexProviderMap providerMap, NeoStore neoStore )
+                                            LockHolder lockHolder, PersistenceManager persistenceManager,
+                                            SchemaIndexProviderMap providerMap, NeoStore neoStore,
+                                            TransactionState legacyTxState )
     {
         this.operations = operations;
         this.legacyKernelOperations = legacyKernelOperations;
@@ -103,83 +99,42 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.schemaWriteGuard = schemaWriteGuard;
         this.labelScanStore = labelScanStore;
         this.indexService = indexService;
-        this.transactionManager = transactionManager;
         this.providerMap = providerMap;
         this.persistenceCache = persistenceCache;
         this.schemaState = schemaState;
         this.persistenceManager = persistenceManager;
-        try
-        {
-            // TODO Not happy about the NodeManager dependency. It's needed a.t.m. for making
-            // equality comparison between GraphProperties instances. It should change.
-            lockHolder = new LockHolderImpl( lockManager, transactionManager.getTransaction(), nodeManager );
-        }
-        catch ( SystemException e )
-        {
-            throw new org.neo4j.graphdb.TransactionFailureException( "Unable to get transaction", e );
-        }
-        constraintIndexCreator = new ConstraintIndexCreator( new Transactor( transactionManager ), this.indexService );
+        this.lockHolder = lockHolder;
+
+        constraintIndexCreator = new ConstraintIndexCreator( new Transactor( transactionManager, persistenceManager ),
+                this.indexService );
         schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
-        legacyStateBridge = new OldTxStateBridgeImpl( nodeManager, transactionManager.getTransactionState() );
+        legacyStateBridge = new OldTxStateBridgeImpl( nodeManager, legacyTxState );
     }
 
-    public void commit() throws TransactionFailureException
+    public void prepare()
     {
         beginClose();
         try
         {
+            createTransactionCommands();
+        }
+        finally
+        {
+            closing = false;
+        }
+    }
+
+    public void commit() throws TransactionFailureException
+    {
+        try
+        {
             try
             {
-                boolean success = false;
-                try
-                {
-                    try
-                    {
-                        // All operations taking place before the call to transactionManager.commit/rollback
-                        // must be within this try clause and its catch block must be broad enough to catch
-                        // any exceptions thrown.
-                        createTransactionCommands();
-                    }
-                    catch ( RuntimeException e )
-                    {
-                        // Some pre-commit operation failed. Roll back the transaction and
-                        // throw exception stating that fact.
-                        transactionManager.rollback();
-                        throw new TransactionForcefullyRolledBackException( e );
-                    }
-
-                    // Pre-commit operations completed, move on to the actual commit.
-                    transactionManager.commit();
-                    success = true;
-                }
-                finally
-                {
-                    if ( !success )
-                    {
-                        dropCreatedConstraintIndexes();
-                    }
-                }
                 // TODO: This should be done by log application, not by this level of the stack.
                 if ( hasTxStateWithChanges() )
                 {
                     persistenceCache.apply( this.txState() );
                 }
-            }
-            catch ( HeuristicMixedException e )
-            {
-                throw new TransactionFailureException( e );
-            }
-            catch ( HeuristicRollbackException e )
-            {
-                throw new TransactionFailureException( e );
-            }
-            catch ( RollbackException e )
-            {
-                throw new TransactionFailureException( e );
-            }
-            catch ( SystemException e )
-            {
-                throw new TransactionFailureException( e );
             }
             finally
             {
@@ -207,28 +162,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             try
             {
-                try
-                {
-                    dropCreatedConstraintIndexes();
-                }
-                finally
-                {
-
-                    if ( transactionManager.getTransaction() != null )
-                    {
-                        transactionManager.rollback();
-                    }
-                }
+                dropCreatedConstraintIndexes();
             }
             catch ( IllegalStateException e )
             {
                 throw new TransactionFailureException( e );
             }
             catch ( SecurityException e )
-            {
-                throw new TransactionFailureException( e );
-            }
-            catch ( SystemException e )
             {
                 throw new TransactionFailureException( e );
             }
@@ -490,6 +430,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             throw new IllegalStateException( "This transaction has already been completed." );
         }
+    }
+
+    public boolean isReadOnly()
+    {
+        return !hasTxState() || !txState.hasChanges();
     }
 
     private enum TransactionType

@@ -27,25 +27,14 @@ package org.neo4j.kernel.api;
  * Changes to the graph (i.e. write operations) are performed via a
  * {@link #newTransaction() transaction context} where changes done
  * inside the transaction are visible in read operations for {@link StatementOperations statements}
- * executed within that transaction context. Once {@link KernelTransaction#commit()}  committed}
- * those changes are applied to the graph storage and made visible to all other transactions.
- * 
- * Read operations not associated with any particular transaction can be performed via
- * read-only statements.
+ * executed within that transaction context.
  */
 public interface KernelAPI
 {
-    /**
-     * Hook for actions to take place when the database is fully functional and any recovery has completed.
-     */
-    void bootstrapAfterRecovery();
-    
+
     /**
      * Creates and returns a new {@link KernelTransaction} capable of modifying the
-     * underlying graph. Changes made in it are visible within the transaction and can
-     * be committed or rolled back.
-     * 
-     * @return a new {@link KernelTransaction} for modifying the underlying graph.
+     * underlying graph.
      */
     KernelTransaction newTransaction();
 }

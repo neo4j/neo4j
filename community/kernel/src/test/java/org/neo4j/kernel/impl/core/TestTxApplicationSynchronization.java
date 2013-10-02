@@ -24,6 +24,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
@@ -57,10 +58,10 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
  * are executed before node commands.
  */
 @ForeignBreakpoints({@ForeignBreakpoints.BreakpointDef(type = "org.neo4j.kernel.impl.nioneo.xa.Command$NodeCommand",
-                                                       method = "execute", on = BreakPoint.Event.ENTRY),
-                     @ForeignBreakpoints.BreakpointDef(type = "org.neo4j.kernel.impl.nioneo.xa.WriteTransaction",
-                                                       method = "applyCommit", on = BreakPoint.Event.ENTRY)})
-@RunWith(SubProcessTestRunner.class)
+        method = "execute", on = BreakPoint.Event.ENTRY),
+        @ForeignBreakpoints.BreakpointDef(type = "org.neo4j.kernel.impl.nioneo.xa.WriteTransaction",
+                method = "applyCommit", on = BreakPoint.Event.ENTRY)})
+@RunWith(SubProcessTestRunner.class) @Ignore
 public class TestTxApplicationSynchronization
 {
     private GraphDatabaseAPI baseDb;
@@ -125,8 +126,9 @@ public class TestTxApplicationSynchronization
                     localLatch.countDown();
                     targetNeoDatasource.applyCommittedTransaction( lastTx.first(), lastTx.other() );
                 }
-                catch ( Exception e )
+                catch ( Throwable e )
                 {
+                    e.printStackTrace();
                     throw new RuntimeException( e );
                 }
             }
@@ -136,15 +138,11 @@ public class TestTxApplicationSynchronization
         Thread.sleep( 100 ); // I don't know why this is necessary
         localLatch.await(); // Wait for tx apply to start
         waitForSuspend(); // Wait for tx apply breakpoint to trigger
-        Transaction tx2 = targetDb.beginTx();
-        try
+
+        try(Transaction tx2 = targetDb.beginTx())
         {
             targetDb.getNodeById( nodeId ).getProperty( "propName" ); // Get the exception
             tx2.success();
-        }
-        finally
-        {
-            tx2.finish();
         }
         resumeAll(); // Restart all threads
         updatePuller.join(); // Join so we don't leave stuff hanging

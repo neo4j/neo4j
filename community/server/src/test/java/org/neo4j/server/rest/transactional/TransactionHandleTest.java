@@ -63,7 +63,7 @@ public class TransactionHandleTest
     public void shouldExecuteStatements() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
 
         ExecutionEngine executionEngine = mock( ExecutionEngine.class );
         ExecutionResult executionResult = mock( ExecutionResult.class );
@@ -93,7 +93,7 @@ public class TransactionHandleTest
     public void shouldSuspendTransactionAndReleaseForOtherRequestsAfterExecutingStatements() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         TransitionalTxManagementKernelTransaction transactionContext =
                 (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
@@ -128,7 +128,7 @@ public class TransactionHandleTest
     public void shouldResumeTransactionWhenExecutingStatementsOnSecondRequest() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         TransitionalTxManagementKernelTransaction transactionContext =
                 (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
@@ -169,7 +169,7 @@ public class TransactionHandleTest
     public void shouldCommitTransactionAndTellRegistryToForgetItsHandle() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         TransitionalTxManagementKernelTransaction transactionContext =
                 (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
@@ -202,7 +202,7 @@ public class TransactionHandleTest
     public void shouldRollbackTransactionAndTellRegistryToForgetItsHandle() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         TransitionalTxManagementKernelTransaction transactionContext =
                 (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
@@ -231,7 +231,7 @@ public class TransactionHandleTest
     public void shouldCreateTransactionContextOnlyWhenFirstNeeded() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -265,7 +265,7 @@ public class TransactionHandleTest
     public void shouldRollbackTransactionIfDeserializationErrorOccurs() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         TransitionalTxManagementKernelTransaction transactionContext =
                 (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
@@ -295,7 +295,7 @@ public class TransactionHandleTest
     public void shouldRollbackTransactionIfExecutionErrorOccurs() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         TransitionalTxManagementKernelTransaction transactionContext =
                 (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
 
@@ -327,7 +327,7 @@ public class TransactionHandleTest
     public void shouldLogMessageIfCommitErrorOccurs() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         TransitionalTxManagementKernelTransaction transactionContext =
                 (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
         doThrow( new NullPointerException() ).when( transactionContext ).commit();
@@ -361,7 +361,7 @@ public class TransactionHandleTest
     public void shouldLogMessageIfCypherSyntaxErrorOccurs() throws Exception
     {
         // given
-        KernelAPI kernel = mockKernel();
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
 
         ExecutionEngine executionEngine = mock( ExecutionEngine.class );
         when( executionEngine.execute( "matsch (n) return n", map() ) ).thenThrow( new SyntaxException( "did you mean MATCH?" ) );
@@ -401,10 +401,10 @@ public class TransactionHandleTest
         }
     };
 
-    private KernelAPI mockKernel()
+    private TransitionalPeriodTransactionMessContainer mockKernel()
     {
         TransitionalTxManagementKernelTransaction context = mock( TransitionalTxManagementKernelTransaction.class );
-        KernelAPI kernel = mock( KernelAPI.class );
+        TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
         when( kernel.newTransaction() ).thenReturn( context );
         return kernel;
     }

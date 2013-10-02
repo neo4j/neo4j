@@ -219,12 +219,19 @@ public class TestSizeOf
 
     private int sizeOfNode( Node node )
     {
-        return db.getNodeManager().getNodeForProxy( node.getId(), null ).sizeOfObjectInBytesIncludingOverhead();
+        try(Transaction ignore = db.beginTx())
+        {
+            return db.getNodeManager().getNodeForProxy( node.getId(), null ).sizeOfObjectInBytesIncludingOverhead();
+        }
     }
 
     private int sizeOfRelationship( Relationship relationship )
     {
-        return db.getNodeManager().getRelationshipForProxy( relationship.getId(), null ).sizeOfObjectInBytesIncludingOverhead();
+        try(Transaction ignore = db.beginTx())
+        {
+            return db.getNodeManager().getRelationshipForProxy( relationship.getId(), null )
+                    .sizeOfObjectInBytesIncludingOverhead();
+        }
     }
 
     private int withNodeOverhead( int size )

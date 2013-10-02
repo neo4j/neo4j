@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
@@ -33,7 +34,6 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 class ReadOnlyTransactionImpl implements Transaction
@@ -56,7 +56,6 @@ class ReadOnlyTransactionImpl implements Transaction
 
     private final ReadOnlyTxManager txManager;
     private StringLogger logger;
-    private KernelTransaction kernelTransaction;
 
     ReadOnlyTransactionImpl( ReadOnlyTxManager txManager, StringLogger logger )
     {
@@ -64,16 +63,6 @@ class ReadOnlyTransactionImpl implements Transaction
         this.logger = logger;
         globalId = XidImpl.getNewGlobalId();
         eventIdentifier = txManager.getNextEventIdentifier();
-    }
-
-    void setKernelTransaction( KernelTransaction kernelTransaction )
-    {
-        this.kernelTransaction = kernelTransaction;
-    }
-
-    KernelTransaction getKernelTransaction()
-    {
-        return kernelTransaction;
     }
 
     @Override
