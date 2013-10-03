@@ -324,7 +324,7 @@ case class AnonymousNodePattern(labels: Seq[Identifier], properties: Option[Expr
 }
 
 
-sealed abstract class RelationshipPattern extends AstNode {
+sealed abstract class RelationshipPattern extends AstNode with SemanticChecking {
   val direction : Direction
   val types : Seq[Identifier]
   val length : Option[Option[Range]]
@@ -332,14 +332,29 @@ sealed abstract class RelationshipPattern extends AstNode {
   val properties : Option[Expression]
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    if (properties.isDefined && ctx != SemanticContext.Update) {
+    checkPropertiesOnlyWhenUpdating(ctx) then
+    checkNoOptionalRelsForAnExpression(ctx) then
+    checkNoVarLengthWhenUpdating(ctx) then
+    properties.semanticCheck(Expression.SemanticContext.Simple) then
+    properties.constrainType(MapType())
+
+  private def checkPropertiesOnlyWhenUpdating(ctx: SemanticContext) =
+    when (ctx != SemanticContext.Update && properties.isDefined) {
       SemanticError("Relationship properties cannot be specified in this context", properties.get.token)
-    } else if (optional && ctx == SemanticContext.Expression) {
-      SemanticError("Optional relationships cannot be specified in this context", token)
-    } else {
-      properties.semanticCheck(Expression.SemanticContext.Simple) then
-      properties.constrainType(MapType())
     }
+
+  private def checkNoOptionalRelsForAnExpression(ctx: SemanticContext) =
+    when (ctx == SemanticContext.Expression && optional) {
+      SemanticError("Optional relationships cannot be specified in this context", token)
+    }
+
+  private def checkNoVarLengthWhenUpdating(ctx: SemanticContext) =
+    when (ctx == SemanticContext.Update && !isSingleLength) {
+      SemanticError("Variable length relationships cannot be specified in this context", token)
+    }
+
+
+  def isSingleLength = length.fold(true)(_.fold(false)(_.isSingleLength))
 
   def legacyName : String
 
