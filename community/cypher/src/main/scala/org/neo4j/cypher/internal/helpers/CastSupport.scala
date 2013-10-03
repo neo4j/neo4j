@@ -27,24 +27,75 @@ object CastSupport {
 
   /**
    * Filter sequence by type
-   *
-   * @param seq Input elements to filter
-   * @tparam A Required super type of type erasure of remaining elements
-   * @return seq without any element whose type erasure does not conform to A
    */
   def sift[A : Manifest](seq: Seq[Any]): Seq[A] = seq.collect(erasureCast)
 
   /**
    * Casts input to A if possible according to type erasure, discards input otherwise
-   *
-   * @tparam A the required super type to which arguments should be cast
-   * @return PartialFunction that is the identity function on all instances of the type erasure of A
    */
   def erasureCast[A : Manifest]: PartialFunction[Any, A] = { case value: A => value }
 
   def castOrFail[A](value: Any)(implicit ev: Manifest[A]): A = value match {
     case v: A => v
     case _    => throw new CypherTypeException(
-      s"Expected ${value} to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")
+      s"Expected $value to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")
+  }
+
+  /*
+  This method takes two values and finds the type both values could be represented in.
+
+  The produced value is strictly meant to be used as a type carrier
+   */
+  def merge(a: Any, b: Any): Any = {
+    (a, b) match {
+      case (_: String, _: String)   => a
+      case (_: Char, _: Char)       => a
+      case (_: Boolean, _: Boolean) => a
+
+      case (_: Byte, _: Byte)   => a
+      case (_: Byte, _: Short)  => b
+      case (_: Byte, _: Int)    => b
+      case (_: Byte, _: Long)   => b
+      case (_: Byte, _: Float)  => b
+      case (_: Byte, _: Double) => b
+
+      case (_: Short, _: Int)    => b
+      case (_: Short, _: Long)   => b
+      case (_: Short, _: Float)  => b
+      case (_: Short, _: Double) => b
+      case (_: Short, _: Number) => a
+
+      case (_: Int, _: Long)   => b
+      case (_: Int, _: Float)  => b
+      case (_: Int, _: Double) => b
+      case (_: Int, _: Number) => a
+
+      case (_: Long, _: Float)  => b
+      case (_: Long, _: Double) => b
+      case (_: Long, _: Number) => a
+
+      case (_: Float, _: Double) => b
+      case (_: Float, _: Number) => a
+
+      case (_: Double, _: Number) => a
+
+      case _ => throw new CypherTypeException("Collections containing mixed types can not be stored in properties.")
+    }
+  }
+
+  /*Instances of this class can be gotten from @CastSupport.getConverter*/
+  sealed case class Converter(valueConverter: Any => Any, arrayConverter: Seq[Any] => Array[_])
+
+  /*Returns a converter given a type value*/
+  def getConverter(x: Any): Converter = x match {
+    case _: String  => Converter(x => x.asInstanceOf[String], x => x.asInstanceOf[Seq[String]].toArray[String])
+    case _: Char    => Converter(x => x.asInstanceOf[Char], x => x.asInstanceOf[Seq[Char]].toArray[Char])
+    case _: Boolean => Converter(x => x.asInstanceOf[Boolean], x => x.asInstanceOf[Seq[Boolean]].toArray[Boolean])
+    case _: Byte    => Converter(x => x.asInstanceOf[Number].byteValue(), x => x.asInstanceOf[Seq[Byte]].toArray[Byte])
+    case _: Short   => Converter(x => x.asInstanceOf[Number].shortValue(), x => x.asInstanceOf[Seq[Short]].toArray[Short])
+    case _: Int     => Converter(x => x.asInstanceOf[Number].intValue(), x => x.asInstanceOf[Seq[Int]].toArray[Int])
+    case _: Long    => Converter(x => x.asInstanceOf[Number].longValue(), x => x.asInstanceOf[Seq[Long]].toArray[Long])
+    case _: Float   => Converter(x => x.asInstanceOf[Number].floatValue(), x => x.asInstanceOf[Seq[Float]].toArray[Float])
+    case _: Double  => Converter(x => x.asInstanceOf[Number].doubleValue(), x => x.asInstanceOf[Seq[Double]].toArray[Double])
   }
 }
