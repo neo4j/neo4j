@@ -127,7 +127,7 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
   val single: Boolean
 
   def semanticCheck(ctx: SemanticContext) = ctx match {
-    case Update => SemanticError("shortestPath cannot be used to CREATE", token, element.token)
+    case Update => SemanticError(s"${name}(...) cannot be used to CREATE", token, element.token)
     case _      => checkContainsSingle(ctx) then checkNoMinimalLength
   }
 
@@ -136,15 +136,15 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
       element.semanticCheck(ctx)
     }
     case RelationshipChain(l: NodePattern, _, _, _)                        =>
-      SemanticError(s"shortestPath(...) requires named nodes", token, l.token)
+      SemanticError(s"${name}(...) requires named nodes", token, l.token)
     case _                                                                 =>
-      SemanticError(s"shortestPath(...) requires a pattern containing a single relationship", token, element.token)
+      SemanticError(s"${name}(...) requires a pattern containing a single relationship", token, element.token)
   }
 
   private def checkNoMinimalLength: SemanticCheck = element match {
     case RelationshipChain(_, rel, _, _) => rel.length match {
       case Some(Some(Range(Some(_), _, _))) =>
-        SemanticError(s"shortestPath(...) does not support a minimal length", token, element.token)
+        SemanticError(s"${name}(...) does not support a minimal length", token, element.token)
       case _                                =>
         SemanticCheckResult.success
     }
@@ -179,7 +179,7 @@ case class SingleShortestPath(element: PatternElement, token: InputToken) extend
 }
 
 case class AllShortestPaths(element: PatternElement, token: InputToken) extends ShortestPath(element, token) {
-  val name: String = "allShortestPath"
+  val name: String = "allShortestPaths"
   val single: Boolean = false
 }
 
