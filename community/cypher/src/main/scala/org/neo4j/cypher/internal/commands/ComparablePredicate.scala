@@ -32,13 +32,19 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
     val l: Any = left(m)
     val r: Any = right(m)
 
+    if (l == null && r == null)
+      return compare(0)
+    
+    if(l == null || r == null)
+      return false
+
     val comparisonResult: Int = compare(l, r)(state)
 
     compare(comparisonResult)
   }
 
   def sign: String
-  override def toString() = left.toString() + " " + sign + " " + right.toString()
+  override def toString = left.toString() + " " + sign + " " + right.toString()
   def containsIsNull = false
 
   def children = Seq(left, right)
@@ -69,7 +75,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
     result
   }
 
-  override def toString() = a.toString() + " == " + b.toString()
+  override def toString = a.toString() + " == " + b.toString()
 
   def containsIsNull = (a, b) match {
     case (Identifier(_), Literal(null)) => true
