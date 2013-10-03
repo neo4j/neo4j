@@ -1,4 +1,3 @@
-
 @import url(jquery.ui.css);
 @import url(jquery.notify.css);
 @import url(buttons.css);
@@ -60,7 +59,7 @@ body {
 /* CONTENTS */
 
 #contents { 
-  bottom: 20px;
+  bottom: 24px;
   left: 0;
   position: absolute;
   right: 0;
@@ -138,6 +137,7 @@ body {
 /* FOOTER */
 
 #footer {
+  height:24px; /* must be equal to #contents "bottom" */
   background: none repeat scroll 0 0 #fff;
   border-top: 1px solid #CCC;
   bottom: 0;
