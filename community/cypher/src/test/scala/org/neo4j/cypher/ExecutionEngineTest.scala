@@ -2895,4 +2895,15 @@ RETURN x0.name
     }
     // then
   }
+
+  @Test
+  def should_return_false_on_all_comparisons_against_null() {
+    // given
+
+    // when
+    val result = parseAndExecute("return 1 > null as A, 1 < null as B, 1 <= null as C, 1 >= null as D, null <= null as E, null >= null as F")
+
+    // then
+    assert(result.toList === List(Map("A" -> false, "B" -> false, "C" -> false, "D" -> false, "E" -> true, "F" -> true)))
+  }
 }
