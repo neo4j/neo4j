@@ -1111,6 +1111,16 @@ public abstract class IteratorUtil
         };
     }
 
+    public static List<Long> primitivesList( PrimitiveLongIterator iterator )
+    {
+        ArrayList<Long> result = new ArrayList<>();
+        while ( iterator.hasNext() )
+        {
+            result.add( iterator.next() );
+        }
+        return result;
+    }
+
     public static Set<Long> asSet( PrimitiveLongIterator iterator )
     {
         return internalAsSet( iterator, false );
@@ -1203,6 +1213,38 @@ public abstract class IteratorUtil
                     throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
                 }
                 return nextValue;
+            }
+        };
+    }
+
+    public static PrimitiveLongIterator flatten( final Iterator<PrimitiveLongIterator> source )
+    {
+        return new PrimitiveLongIterator()
+        {
+            private PrimitiveLongIterator current;
+
+            @Override
+            public boolean hasNext()
+            {
+                while ( current == null || !current.hasNext() )
+                {
+                    if ( !source.hasNext() )
+                    {
+                        return false;
+                    }
+                    current = source.next();
+                }
+                return true;
+            }
+
+            @Override
+            public long next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                return current.next();
             }
         };
     }

@@ -217,8 +217,10 @@ public class LuceneLabelScanStoreTest
     {
         life = new LifeSupport();
         monitor = new TrackingMonitor();
-        store = life.add( new LuceneLabelScanStore( new LuceneDocumentStructure(), directoryFactory, dir,
-                new DefaultFileSystemAbstraction(), standard(), asStream( existingData ), monitor ) );
+        store = life.add( new LuceneLabelScanStore(
+                new NodeRangeDocumentLabelScanStorageStrategy(),
+                directoryFactory, dir, new DefaultFileSystemAbstraction(), standard(), asStream( existingData ),
+                monitor ) );
         life.start();
         assertTrue( monitor.initCalled );
     }
