@@ -28,6 +28,7 @@ case object Not extends Function with LegacyPredicate {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
+    invocation.arguments.constrainType(BooleanType()) then
     invocation.specifyType(BooleanType())
 
   def toCommand(invocation: ast.FunctionInvocation) =

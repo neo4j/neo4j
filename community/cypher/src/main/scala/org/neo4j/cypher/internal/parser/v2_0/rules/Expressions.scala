@@ -29,25 +29,32 @@ trait Expressions extends Parser
 
   // Precedence loosely based on http://en.wikipedia.org/wiki/Operators_in_C_and_C%2B%2B#Operator_precedence
 
-  def Expression = Expression12
+  def Expression = Expression14
+
+  private def Expression14 : Rule1[ast.Expression] = rule("an expression") {
+    Expression13 ~ zeroOrMore(WS ~ (
+      keyword("OR") ~> identifier ~~ Expression13 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+    ) : ReductionRule1[ast.Expression, ast.Expression])
+  }
+
+  private def Expression13 : Rule1[ast.Expression] = rule("an expression") {
+    Expression12 ~ zeroOrMore(WS ~ (
+        keyword("XOR") ~> identifier ~~ Expression12 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+    ) : ReductionRule1[ast.Expression, ast.Expression])
+  }
 
   private def Expression12 : Rule1[ast.Expression] = rule("an expression") {
     Expression11 ~ zeroOrMore(WS ~ (
-      keyword("OR") ~> identifier ~~ Expression11 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        keyword("AND") ~> identifier ~~ Expression11 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression11 : Rule1[ast.Expression] = rule("an expression") {
-    Expression10 ~ zeroOrMore(WS ~ (
-        keyword("XOR") ~> identifier ~~ Expression10 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
-  }
+  private def Expression11 = Expression10
 
-  private def Expression10 : Rule1[ast.Expression] = rule("an expression") {
-    Expression9 ~ zeroOrMore(WS ~ (
-        keyword("AND") ~> identifier ~~ Expression9 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
-  }
+  private def Expression10 : Rule1[ast.Expression] = rule("an expression") (
+      group(keyword("NOT") ~> identifier ~~ Expression9) ~>> token ~~> (ast.FunctionInvocation(_, _, _))
+    | Expression9
+  )
 
   private def Expression9 : Rule1[ast.Expression] = rule("an expression") {
     Expression8 ~ zeroOrMore(WS ~ (
@@ -109,7 +116,6 @@ trait Expressions extends Parser
     | Parameter
     | keyword("TRUE") ~>> token ~~> ast.True
     | keyword("FALSE") ~>> token ~~> ast.False
-    | group(keyword("NOT") ~> identifier ~~ Expression2) ~>> token ~~> (ast.FunctionInvocation(_, _, _))
     | keyword("NULL") ~>> token ~~> ast.Null
     | CaseExpression
     | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~>> token ~~> ast.CountStar

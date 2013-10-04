@@ -2109,12 +2109,19 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def not_without_parenthesis() {
+  @Test def precedence_of_not_without_parenthesis() {
     test(
       "start a = node(1) where not true or false return a",
       Query.
         start(NodeById("a", 1)).
         where(Or(Not(True()), Not(True()))).
+        returns(ReturnItem(Identifier("a"), "a"))
+    )
+    test(
+      "start a = node(1) where not 1 < 2 return a",
+      Query.
+        start(NodeById("a", 1)).
+        where(Not(LessThan(Literal(1), Literal(2)))).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }

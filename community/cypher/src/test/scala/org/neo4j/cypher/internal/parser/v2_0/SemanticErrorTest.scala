@@ -75,6 +75,13 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
+  @Test def shouldComplainAboutUsingNotWithANonBoolean() {
+    test(
+      "RETURN NOT 'foo'",
+      "Type mismatch: expected Boolean but was String (line 1, column 12)"
+    )
+  }
+
   @Test def shouldComplainAboutUnknownIdentifier() {
     test(
       "start s = node(1) where s.name = Name and s.age = 10 return s",
