@@ -34,12 +34,18 @@ import static org.apache.lucene.search.NumericRangeQuery.newLongRange;
 
 public class BitmapDocumentFormat
 {
-    public static final String RANGE = "range";
+    static final String RANGE = "range";
     private final BitmapFormat format;
 
-    protected BitmapDocumentFormat( BitmapFormat format )
+    public BitmapDocumentFormat( BitmapFormat format )
     {
         this.format = format;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "%s{%s bit}", getClass().getSimpleName(), format );
     }
 
     public BitmapFormat bitmapFormat()
@@ -50,12 +56,6 @@ public class BitmapDocumentFormat
     public long rangeOf( Document doc )
     {
         return Long.parseLong( doc.get( RANGE ) );
-        //Fieldable range = doc.getFieldable( RANGE );
-        //if ( range instanceof NumericField )
-        //{
-        //    return  ((NumericField) range).getNumericValue().longValue();
-        //}
-        //throw new IllegalArgumentException( "Document does not have a numeric '" + RANGE + "' field." );
     }
 
     public long mapOf( Document doc, long labelId )
@@ -73,7 +73,6 @@ public class BitmapDocumentFormat
     {
         // TODO: figure out what flags to set on the field
         Field field = new Field( "range", Long.toString( range ), Field.Store.YES, Field.Index.NOT_ANALYZED );
-        //NumericField field = new NumericField( RANGE, Field.Store.YES, true ).setLongValue( range );
         field.setOmitNorms( true );
         field.setIndexOptions( FieldInfo.IndexOptions.DOCS_ONLY );
         return field;
@@ -88,12 +87,17 @@ public class BitmapDocumentFormat
         return field;
     }
 
+    public void addLabelField( Document document, long label, Bitmap bitmap )
+    {
+        document.add( labelField( label, bitmap ) );
+    }
+
     public Fieldable labelField( long key, Bitmap value )
     {
         return labelField( key, value.bitmap() );
     }
 
-    private String label( long key )
+    String label( long key )
     {
         return Long.toString( key );
     }

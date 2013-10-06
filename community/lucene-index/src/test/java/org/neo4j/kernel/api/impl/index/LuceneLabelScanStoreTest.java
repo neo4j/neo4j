@@ -34,8 +34,11 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
@@ -58,6 +61,7 @@ import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.scan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
+@RunWith(Parameterized.class)
 public class LuceneLabelScanStoreTest
 {
     private static final long[] NO_LABELS = new long[0];
@@ -174,6 +178,32 @@ public class LuceneLabelScanStoreTest
         }
     }
 
+    private final LabelScanStorageStrategy strategy;
+
+    public LuceneLabelScanStoreTest( LabelScanStorageStrategy strategy )
+    {
+        this.strategy = strategy;
+    }
+
+    @Parameterized.Parameters(name = "{0}")
+    public static List<Object[]> parameterizedWithStrategies()
+    {
+        return asList(
+                new Object[]{
+                        new NodeRangeDocumentLabelScanStorageStrategy(
+                                new BitmapDocumentFormat( BitmapFormat._32 ) )},
+                new Object[]{
+                        new NodeRangeDocumentLabelScanStorageStrategy(
+                                new BitmapDocumentFormat( BitmapFormat._64 ) )},
+                new Object[]{
+                        new NodeRangeDocumentLabelScanStorageStrategy(
+                                new SearchAcceleratedBitmapDocumentFormat( BitmapFormat._32 ) )},
+                new Object[]{
+                        new NodeRangeDocumentLabelScanStorageStrategy(
+                                new SearchAcceleratedBitmapDocumentFormat( BitmapFormat._64 ) )}
+        );
+    }
+
     private void assertNodesForLabel( int labelId, long... expectedNodeIds )
     {
         Set<Long> nodeSet = new HashSet<>();
@@ -218,7 +248,7 @@ public class LuceneLabelScanStoreTest
         life = new LifeSupport();
         monitor = new TrackingMonitor();
         store = life.add( new LuceneLabelScanStore(
-                new NodeRangeDocumentLabelScanStorageStrategy(),
+                strategy,
                 directoryFactory, dir, new DefaultFileSystemAbstraction(), standard(), asStream( existingData ),
                 monitor ) );
         life.start();

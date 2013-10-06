@@ -50,18 +50,16 @@ import static org.neo4j.helpers.collection.IteratorUtil.flatten;
  * range: 0
  * 4: [0000 0001][0000 0001][0000 0001][0000 0001] -- Node#0, Node#8, Node16, and Node#24 have Label#4
  * 7: [1000 0000][1000 0000][1000 0000][1000 0000] -- Node#7, Node#15, Node#23, and Node#31 have Label#7
- * 9: [1000 0000][0000 0000][0000 0000][0000 0001] -- Node#7, and Node#24 have Label#9
+ * 9: [0000 0001][0000 0000][0000 0000][1000 0000] -- Node#7, and Node#24 have Label#9
  * }
  * { // document for nodes 32-63
  * range: 1
- * 3: [0000 0000][0001 0000][0000 0000][0000 0000] -- Node#45 has Label#3
+ * 3: [0000 0000][0001 0000][0000 0000][0000 0000] -- Node#52 has Label#3
  * }
  *
  * i.e. each document represents a range of nodes, and in each document there is a field for each label that is present
  * on any of the nodes in the range. The value of that field is a bitmap with a bit set for each node in the range that
  * has that particular label.
- *
- * You can also see from this example that the byte arrays store LSB (Least Significant Byte) first (index[0]).
  */
 public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStorageStrategy
 {
@@ -77,6 +75,12 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     NodeRangeDocumentLabelScanStorageStrategy( BitmapDocumentFormat format )
     {
         this.format = format;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "%s{%s}", getClass().getSimpleName(), format );
     }
 
     @Override
@@ -161,7 +165,7 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
                     Bitmap value = field.getValue();
                     if ( value.hasContent() )
                     {
-                        document.add( format.labelField( field.getKey(), value ) );
+                        format.addLabelField( document, field.getKey(), value );
                     }
                 }
                 updatedDocuments.add( document );
