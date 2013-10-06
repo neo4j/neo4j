@@ -190,6 +190,9 @@ public class LuceneLabelScanStoreTest
     {
         return asList(
                 new Object[]{
+                        new SingleNodeDocumentLabelScanStorageStrategy(
+                                new LuceneDocumentStructure() )},
+                new Object[]{
                         new NodeRangeDocumentLabelScanStorageStrategy(
                                 new BitmapDocumentFormat( BitmapFormat._32 ) )},
                 new Object[]{

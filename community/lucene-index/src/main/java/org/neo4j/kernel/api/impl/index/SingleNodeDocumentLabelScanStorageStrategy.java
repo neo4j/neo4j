@@ -57,6 +57,12 @@ public class SingleNodeDocumentLabelScanStorageStrategy implements LabelScanStor
     }
 
     @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
+    }
+
+    @Override
     public void applyUpdates( StorageService storage, Iterator<NodeLabelUpdate> updates ) throws IOException
     {
         while ( updates.hasNext() )
