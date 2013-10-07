@@ -123,7 +123,7 @@ Check if something is `NULL`.
 START n=node(*)
 WHERE
 
-NOT(has(n.property)) OR n.property = {value}
+NOT has(n.property) OR n.property = {value}
 
 RETURN n###
 
@@ -163,7 +163,7 @@ Make sure the pattern has at least one match.
 START n=node(%A%), m=node(%B%)
 WHERE
 
-NOT((n)-[:KNOWS]->(m))
+NOT (n)-[:KNOWS]->(m)
 
 RETURN n###
 
