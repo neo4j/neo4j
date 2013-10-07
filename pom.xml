@@ -16,14 +16,14 @@
   <packaging>pom</packaging>
 
   <properties>
-    <neo4j.version>2.0.0-M04</neo4j.version>
+    <neo4j.version>2.0.0-M05</neo4j.version>
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <docs.upstream>${project.build.directory}</docs.upstream>
     <docs.importdir>${docs.upstream}/docs</docs.importdir>
     <docs-plugin.skip>true</docs-plugin.skip>
     <doctools.version>12</doctools.version>
-    <docs.server>neo@static.neo4j.org</docs.server>
-    <docs.rootpath>/var/www/docs.neo4j.org</docs.rootpath>
+    <docs.server>neo@docs.neo4j.org</docs.server>
+    <docs.rootpath>/data/www/doc/docs.neo4j.org</docs.rootpath>
     <refcard.version>2.0</refcard.version>
   </properties>
 
