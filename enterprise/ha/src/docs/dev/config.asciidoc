@@ -62,11 +62,3 @@ A database instance can join a cluster by supplying +ha.initial_hosts+ a comma-s
 It's called initial hosts since it's only for joining the cluster. After an instance joins it gets aware of all the members of the cluster.
 It will take turn contacting each one in the list until it gets a response, where it will await a decision by the existing cluster members to have it join.
 If it cannot contact any of the members in the URL list it will create a new cluster with itself as master.
-This option requires +ha.discovery.enabled+ be set to +false+.
-
-=== Discovery ===
-
-A database instance can point to URL acting as a live list of members in a cluster, by setting +ha.discovery.url+ to a valid and accessible URL.
-If the resource pointed out by that URL exists it will take turn contacting each member in that list until it gets a response, where it will await a decision by the existing cluster members to have it join.
-If the resource pointed out by the discovery URL doesn't exist it will create it and with it a cluster having itself as initial master.
-This option requires +ha.discovery.enabled+ be set to +true+.
