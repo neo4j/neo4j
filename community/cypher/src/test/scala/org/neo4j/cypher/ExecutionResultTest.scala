@@ -33,7 +33,7 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
     val q="start one=node(1), two=node(2), three=node(3), four=node(4), five=node(5), six=node(6), seven=node(7), eight=node(8), nine=node(9), ten=node(10) " +
       "return one, two, three, four, five, six, seven, eight, nine, ten"
 
-    val result = parseAndExecute(q)
+    val result = execute(q)
 
     assert( result.columns === columns )
     val regex = "one.*two.*three.*four.*five.*six.*seven.*eight.*nine.*ten"
@@ -43,7 +43,7 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
   }
 
   @Test def correctLabelStatisticsForCreate() {
-    val result = parseAndExecute("create (n:foo:bar)")
+    val result = execute("create (n:foo:bar)")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)
@@ -52,7 +52,7 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
 
   @Test def correctLabelStatisticsForAdd() {
     val n      = createNode()
-    val result = parseAndExecute(s"start n=node(${n.getId}) set n:foo:bar")
+    val result = execute(s"start n=node(${n.getId}) set n:foo:bar")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)
@@ -61,8 +61,8 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
 
   @Test def correctLabelStatisticsForRemove() {
     val n      = createNode()
-    parseAndExecute(s"start n=node(${n.getId}) set n:foo:bar")
-    val result = parseAndExecute(s"start n=node(${n.getId}) remove n:foo:bar")
+    execute(s"start n=node(${n.getId}) set n:foo:bar")
+    val result = execute(s"start n=node(${n.getId}) remove n:foo:bar")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)
@@ -71,7 +71,7 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
 
   @Test def correctLabelStatisticsForAddAndRemove() {
     val n      = createLabeledNode("foo", "bar")
-    val result = parseAndExecute(s"start n=node(${n.getId}) set n:baz remove n:foo:bar")
+    val result = execute(s"start n=node(${n.getId}) set n:baz remove n:foo:bar")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
@@ -81,7 +81,7 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
 
   @Test def correctLabelStatisticsForLabelAddedTwice() {
     val n      = createLabeledNode("foo", "bar")
-    val result = parseAndExecute(s"start n=node(${n.getId}) set n:bar:baz")
+    val result = execute(s"start n=node(${n.getId}) set n:bar:baz")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
@@ -90,7 +90,7 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
 
   @Test def correctLabelStatisticsForRemovalOfUnsetLabel() {
     val n      = createLabeledNode("foo", "bar")
-    val result = parseAndExecute(s"start n=node(${n.getId}) remove n:baz:foo")
+    val result = execute(s"start n=node(${n.getId}) remove n:baz:foo")
     val stats  = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)

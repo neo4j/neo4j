@@ -32,7 +32,7 @@ class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with Gra
 
     // WHEN & THEN
     intercept[SyntaxException](
-      parseAndExecute("start n=node(*) using index n:Person(name) where n:Person and n.name = \"kabam\" return n"))
+      execute("start n=node(*) using index n:Person(name) where n:Person and n.name = \"kabam\" return n"))
   }
 
   @Test
@@ -42,7 +42,7 @@ class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with Gra
 
     // WHEN
     intercept[IndexHintException](
-      parseAndExecute("match n-->() using index n:Person(name) where n.name = \"kabam\" return n"))
+      execute("match n-->() using index n:Person(name) where n.name = \"kabam\" return n"))
   }
 
   @Test
@@ -51,7 +51,7 @@ class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with Gra
 
     // WHEN
     intercept[IndexHintException](
-      parseAndExecute("match (n:Person)-->() using index n:Person(name) where n.name = \"kabam\" return n"))
+      execute("match (n:Person)-->() using index n:Person(name) where n.name = \"kabam\" return n"))
   }
 
   @Test
@@ -61,7 +61,7 @@ class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with Gra
 
     // WHEN
     intercept[IndexHintException](
-      parseAndExecute("match (n:Person)-->() using index n:Person(name) where n.name <> \"kabam\" return n"))
+      execute("match (n:Person)-->() using index n:Person(name) where n.name <> \"kabam\" return n"))
   }
 
   @Test
@@ -72,6 +72,6 @@ class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with Gra
 
     // WHEN
     intercept[IndexHintException](
-      parseAndExecute("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
+      execute("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
   }
 }

@@ -304,7 +304,7 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
 
   def test(query: String, message: String) {
     try {
-      val result = parseAndExecute(query)
+      val result = execute(query)
       result.toList
       fail(s"Did not get the expected syntax error, expected: ${message}")
     } catch {

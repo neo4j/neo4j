@@ -151,7 +151,7 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
 */
 
   private def assertThat(q: String, expectedLabels: List[String]) {
-    val result = parseAndExecute(q)
+    val result = execute(q)
 
     graph.inTx {
 

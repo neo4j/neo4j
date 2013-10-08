@@ -45,10 +45,6 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
   def execute(q: String, params: (String, Any)*): ExecutionResult =
     engine.execute(q, params.toMap)
 
-  @Deprecated
-  def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult =
-    engine.execute(q, params.toMap)
-
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
     ExpectedException(intercept[T](execute(q)))
 

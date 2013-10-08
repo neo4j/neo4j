@@ -28,7 +28,7 @@ class UnionAcceptanceTest extends ExecutionEngineHelper with Assertions {
   def should_be_able_to_create_text_output_from_union_queries() {
 
     // When
-    val result = parseAndExecute("merge (a) return a union merge (a) return a")
+    val result = execute("merge (a) return a union merge (a) return a")
 
     // Then
     assert(result.columns.nonEmpty, "Union queries must have columns")

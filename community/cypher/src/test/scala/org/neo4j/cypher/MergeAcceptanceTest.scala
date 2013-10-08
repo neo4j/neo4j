@@ -29,7 +29,7 @@ class MergeAcceptanceTest
   @Test
   def merge_node_when_no_nodes_exist() {
     // When
-    val result = parseAndExecute("merge (a) return a")
+    val result = execute("merge (a) return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -41,7 +41,7 @@ class MergeAcceptanceTest
   @Test
   def merge_node_with_label() {
     // When
-    val result = parseAndExecute("merge (a:Label) return a")
+    val result = execute("merge (a:Label) return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -59,7 +59,7 @@ class MergeAcceptanceTest
   @Test
   def merge_node_with_label_add_label_on_create() {
     // When
-    val result = parseAndExecute("merge (a:Label) on create a set a:Foo return a")
+    val result = execute("merge (a:Label) on create a set a:Foo return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -77,7 +77,7 @@ class MergeAcceptanceTest
   @Test
   def merge_node_with_label_add_property_on_update() {
     // When
-    val result = parseAndExecute("merge (a:Label) on create a set a.prop = 42 return a")
+    val result = execute("merge (a:Label) on create a set a.prop = 42 return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -98,7 +98,7 @@ class MergeAcceptanceTest
     val existingNode = createLabeledNode("Label")
 
     // When
-    val result = parseAndExecute("merge (a:Label) return a")
+    val result = execute("merge (a:Label) return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -113,7 +113,7 @@ class MergeAcceptanceTest
     val existingNode = createLabeledNode("Label")
 
     // When
-    val result = parseAndExecute("merge (a:Label) on match a set a:Foo return a")
+    val result = execute("merge (a:Label) on match a set a:Foo return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -128,7 +128,7 @@ class MergeAcceptanceTest
     val existingNode = createLabeledNode("Label")
 
     // When
-    val result = parseAndExecute("merge (a:Label) on create a set a.prop = 42 return a")
+    val result = execute("merge (a:Label) on create a set a.prop = 42 return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -142,7 +142,7 @@ class MergeAcceptanceTest
     val existingNode = createLabeledNode("Label")
 
     // When
-    parseAndExecute("merge (a:Label) on match a set a.prop = 42 return a")
+    execute("merge (a:Label) on match a set a.prop = 42 return a")
 
     // Then
     assertInTx(existingNode.getProperty("prop") === 42)
@@ -154,7 +154,7 @@ class MergeAcceptanceTest
     val existingNode = createLabeledNode(Map("prop" -> 42), "Label")
 
     // When
-    val result = parseAndExecute("merge (a:Label {prop:42}) return a")
+    val result = execute("merge (a:Label {prop:42}) return a")
 
     // Then
     assertStats(result, nodesCreated = 0)
@@ -167,7 +167,7 @@ class MergeAcceptanceTest
     val other = createLabeledNode(Map("prop" -> 666), "Label")
 
     // When
-    val result = parseAndExecute("merge (a:Label {prop:42}) return a")
+    val result = execute("merge (a:Label {prop:42}) return a")
 
     // Then
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
@@ -375,7 +375,7 @@ class MergeAcceptanceTest
     // given an empty database
 
     // when
-    val result = parseAndExecute("foreach(x in [1,2,3] | merge ({property: x}))")
+    val result = execute("foreach(x in [1,2,3] | merge ({property: x}))")
 
     // then
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
@@ -385,10 +385,10 @@ class MergeAcceptanceTest
   def unrelated_nodes_with_same_property_should_not_clash() {
     // given
     graph.createConstraint("Person", "id")
-    parseAndExecute("MERGE (a:Item {id:1}) MERGE (b:Person {id:1})")
+    execute("MERGE (a:Item {id:1}) MERGE (b:Person {id:1})")
 
     // when
-    val result = parseAndExecute("MERGE (a:Item {id:2}) MERGE (b:Person {id:1})")
+    val result = execute("MERGE (a:Item {id:2}) MERGE (b:Person {id:1})")
 
     // then does not throw
   }
