@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
 import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.internal.executionplan.builders.prepare.KeyTokenResolver
+import org.neo4j.cypher.internal.pipes.optional.NullInsertingPipe
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
@@ -79,10 +80,14 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     var continue = true
     var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)
 
-   while (continue) {
-      phases.foreach { phase =>
-        planInProgress = phase(planInProgress, context)
-      }
+    while (continue) {
+      if (planInProgress.query.optional) {
+        planInProgress = planOptionalQuery(planInProgress, context)
+      } else
+        phases.foreach {
+          phase =>
+            planInProgress = phase(planInProgress, context)
+        }
 
       if (!planInProgress.query.isSolved) {
         produceAndThrowException(planInProgress)
@@ -102,6 +107,28 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
 
     (planInProgress.pipe, planInProgress.isUpdating)
+  }
+
+  private def planOptionalQuery(inputQuery: ExecutionPlanInProgress, context: PlanContext): ExecutionPlanInProgress = {
+    // Prepare the query
+    var planInProgress = prepare(inputQuery, context)
+
+    // Match using NullInsertingPipe
+    def builder(in: Pipe): Pipe = {
+      planInProgress = planInProgress.copy(pipe = in)
+      planInProgress = matching(planInProgress, context)
+      planInProgress.pipe
+    }
+
+    val nullingPipe = new NullInsertingPipe(planInProgress.pipe, builder)
+    planInProgress = planInProgress.copy(pipe = nullingPipe)
+
+    // Do the phases after match
+    postMatchingPhases.foreach {
+      phase =>
+        planInProgress = phase(planInProgress, context)
+    }
+    planInProgress
   }
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
@@ -151,7 +178,10 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       val state = new QueryState(graph, queryContext, params, decorator)
       val results: Iterator[collection.Map[String, Any]] = pipe.createResults(state)
       val closingIterator = new ClosingIterator(results, queryContext)
-      val descriptor = () => decorator.decorate(pipe.executionPlanDescription, closingIterator.isEmpty)
+      val descriptor = { () =>
+        val result = decorator.decorate(pipe.executionPlanDescription, closingIterator.isEmpty)
+        result
+      }
       (state, closingIterator, descriptor)
     }
     catch {
@@ -189,6 +219,8 @@ The Neo4j Team""")
     extract,  /* Handles RETURN and WITH expression */
     finish    /* Prepares the return set so it looks like the user specified */
   )
+
+  val postMatchingPhases = Seq(updates, extract, finish)
 
   lazy val builders = phases.flatMap(_.myBuilders).distinct
 

@@ -301,10 +301,24 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
       "x not defined (line 1, column 33)")
   }
 
-  @Test def shouldFailIfUsingOptionalMatch() {
+  @Test def shouldFailIfUsingLegacyOptionalsMatch() {
     test(
-      "optional match (n:Person) return n",
-      "OPTIONAL MATCH is not currently supported (line 1, column 1)"
+      "start n = node(0) match (n)-[?]->(m) return n",
+      "Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead. (line 1, column 28)"
+    )
+  }
+
+  @Test def shouldFailIfUsingLegacyOptionalsMatch2() {
+    test(
+      "start n = node(0) match (n)-[?*]->(m) return n",
+      "Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead. (line 1, column 28)"
+    )
+  }
+
+  @Test def shouldFailIfUsingLegacyOptionalsMatch3() {
+    test(
+      "start n = node(0) match shortestPath((n)-[?*]->(m)) return n",
+      "Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead. (line 1, column 41)"
     )
   }
 
@@ -312,10 +326,10 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     try {
       val result = execute(query)
       result.toList
-      fail(s"Did not get the expected syntax error, expected: ${message}")
+      fail(s"Did not get the expected syntax error, expected: $message")
     } catch {
       case x: CypherException => {
-        val actual = x.getMessage.lines.next.trim
+        val actual = x.getMessage.lines.next().trim
         assertThat(actual, equalTo(message))
       }
     }

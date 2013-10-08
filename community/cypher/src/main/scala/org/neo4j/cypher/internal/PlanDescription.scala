@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher
-import org.neo4j.cypher.internal._
 import data.{MapVal, SimpleVal}
 import helpers.StringRenderingSupport
 import pipes.{NullPipe, Pipe}
@@ -47,6 +46,8 @@ trait PlanDescription extends cypher.PlanDescription {
    */
   def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*): PlanDescription
 
+  def andThenWrap(pipe: Pipe, name: String, inner: PlanDescription, args: (String, SimpleVal)*): PlanDescription
+
   def mapArgs(f: (PlanDescription => Seq[(String, SimpleVal)])): PlanDescription
 
   def find(name: String): Option[PlanDescription]
@@ -64,6 +65,10 @@ class PlanDescriptionImpl(val pipe: Pipe,
 
   def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*): PlanDescription =
     new PlanDescriptionImpl(pipe, name, Seq(this), args)
+
+  def andThenWrap(pipe: Pipe, name: String,
+                  inner: PlanDescription, args: (String, SimpleVal)*): PlanDescription =
+    new PlanDescriptionImpl(pipe, name, Seq(inner), args)
 
   def withChildren(kids: PlanDescription*) =
     new PlanDescriptionImpl(pipe, name, kids, args)
@@ -196,4 +201,8 @@ object NullPlanDescription extends PlanDescription {
   def render(builder: StringBuilder) {}
 
   def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
+
+  def andThen(inner: PlanDescription): PlanDescription = inner
+
+  def andThenWrap(pipe: Pipe, name: String, inner: PlanDescription, args: (String, SimpleVal)*): PlanDescription = ???
 }

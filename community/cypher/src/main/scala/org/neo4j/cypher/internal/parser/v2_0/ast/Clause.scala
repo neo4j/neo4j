@@ -107,15 +107,9 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
   def name = "MATCH"
 
   def semanticCheck =
-    checkOptionalMatch then
       pattern.semanticCheck(Pattern.SemanticContext.Match) then
       hints.semanticCheck then
       where.semanticCheck
-
-  private def checkOptionalMatch =
-    when(optional) {
-      SemanticError("OPTIONAL MATCH is not currently supported", token)
-    }
 
   def addToLegacyQuery(builder: commands.QueryBuilder) = {
     val matches = builder.matching ++ pattern.toLegacyPatterns
@@ -127,7 +121,12 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
       case (p, Some(w))               => commands.And(p, w.toLegacyPredicate)
     }
 
-    builder.matches(matches: _*).namedPaths(namedPaths: _*).using(indexHints: _*).where(wherePredicate)
+    builder.
+      matches(matches: _*).
+      namedPaths(namedPaths: _*).
+      using(indexHints: _*).
+      where(wherePredicate).
+      isOptional(optional)
   }
 }
 

@@ -2,8 +2,12 @@
 Where
 =====
 
-If you need filtering apart from the pattern of the data that you are looking
-for, you can add clauses in the `WHERE` part of the query.
++WHERE+ is not a clause in it's own right - rather, it's part of +MATCH+, +OPTIONAL+ +MATCH+, +START+ and +WITH+.
+
+In the case of +WITH+ and +START+, +WHERE+ simply filters the results.
+
+For +MATCH+ and +OPTIONAL+ +MATCH+ on the other hand, +WHERE+ adds constraints to the patterns described. It should
+not be seen as a filter after the matching is finished.
 
 .Graph
 include::includes/cypher-where-graph.asciidoc[]

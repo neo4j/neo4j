@@ -39,10 +39,11 @@ create
       text =
 """
 Here, the example shows how to add a new status update into the existing data for a user.""",
-      queryText = """START me=node:node_auto_index(name='Bob')
-MATCH me-[r?:STATUS]-secondlatestupdate
+      queryText = """
+MATCH (me)
 WHERE me.name='Bob'
-CREATE me-[:STATUS]->(latest_update{text:'Status',date:123})
+OPTIONAL MATCH (me)-[r:STATUS]-(secondlatestupdate)
+CREATE me-[:STATUS]->(latest_update {text:'Status',date:123})
 DELETE r
 WITH latest_update, collect(secondlatestupdate) as seconds
 FOREACH(x in seconds | CREATE latest_update-[:NEXT]->x)
