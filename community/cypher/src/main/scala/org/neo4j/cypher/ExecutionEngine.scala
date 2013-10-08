@@ -71,21 +71,6 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     })
   }
 
-  def execute(query: AbstractQuery, params: Map[String, Any]): ExecutionResult = {
-    val tx = graph.beginTx()
-    try {
-      verify(query)
-      val plan = executeStatement(stmt => planBuilder.build(new TransactionBoundPlanContext(stmt, graph), query))
-        plan.execute(executionContext(tx), params)
-    }
-    catch {
-      case (t: Throwable) =>
-        tx.failure()
-        tx.close()
-        throw t
-    }
-  }
-
   @throws(classOf[SyntaxException])
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
@@ -144,15 +129,6 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   private def executionContext(tx: Transaction) =
     new ExceptionTranslatingQueryContext(new TransactionBoundExecutionContext(graph.asInstanceOf[GraphDatabaseAPI], tx, txBridge.statement()))
-
-  private def executeStatement[T](callback: (Statement) => T): T = {
-    val stmt = txBridge.statement()
-    try {
-      callback( stmt )
-    } finally {
-      stmt.close()
-    }
-  }
 
   private def txBridge = graph.asInstanceOf[GraphDatabaseAPI]
     .getDependencyResolver

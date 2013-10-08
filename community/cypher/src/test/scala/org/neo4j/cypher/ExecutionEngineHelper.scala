@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.AbstractQuery
 import internal.helpers.GraphIcing
 import org.junit.Before
 import java.util.concurrent.TimeUnit
@@ -43,14 +42,15 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
     engine = new ExecutionEngine(graph)
   }
 
-  def execute(query: AbstractQuery, params:(String,Any)*) =
-    engine.execute(query, params.toMap)
+  def execute(q: String, params: (String, Any)*): ExecutionResult =
+    engine.execute(q, params.toMap)
 
+  @Deprecated
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult =
     engine.execute(q, params.toMap)
 
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
-    ExpectedException(intercept[T](parseAndExecute(q)))
+    ExpectedException(intercept[T](execute(q)))
 
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
     case List(m) => if (m.size!=1)
