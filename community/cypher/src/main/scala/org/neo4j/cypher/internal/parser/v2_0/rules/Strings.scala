@@ -25,17 +25,18 @@ import org.parboiled.Context
 trait Strings extends Base {
 
   protected def StringCharacters(c: Char): Rule1[String] = {
-    push(new StringBuilder) ~ zeroOrMore(EscapedChar(c) | NormalChar(c)) ~~> (_.toString())
+    push(new StringBuilder) ~ zeroOrMore(EscapedChar | NormalChar(c)) ~~> (_.toString())
   }
 
   protected def NormalChar(c: Char) = {
     !(ch('\\') | ch(c)) ~ ANY ~:% withContext(appendToStringBuffer(_)(_))
   }
 
-  protected def EscapedChar(c: Char) = {
+  protected def EscapedChar = {
     "\\" ~ (
       ch('\\') ~:% withContext(appendToStringBuffer(_)(_))
-        | ch(c) ~:% withContext(appendToStringBuffer(_)(_))
+        | ch('\'') ~:% withContext(appendToStringBuffer(_)(_))
+        | ch('"') ~:% withContext(appendToStringBuffer(_)(_))
         | ch('b') ~ appendToStringBuffer('\b')
         | ch('f') ~ appendToStringBuffer('\f')
         | ch('n') ~ appendToStringBuffer('\n')
