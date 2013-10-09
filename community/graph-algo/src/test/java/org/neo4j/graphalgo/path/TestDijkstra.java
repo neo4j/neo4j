@@ -19,16 +19,12 @@
  */
 package org.neo4j.graphalgo.path;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphalgo.GraphAlgoFactory.dijkstra;
-import static org.neo4j.helpers.collection.MapUtil.map;
-
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
@@ -45,14 +41,19 @@ import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphalgo.GraphAlgoFactory.dijkstra;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class TestDijkstra extends Neo4jAlgoTestCase
 {
     private Relationship createGraph( boolean includeOnes )
     {
         /* Layout:
-         *                       (y)    
-         *                        ^     
+         *                       (y)
+         *                        ^
          *                        [2]  _____[1]___
          *                          \ v           |
          * (start)--[1]->(a)--[9]-->(x)<-        (e)--[2]->(f)
@@ -61,9 +62,9 @@ public class TestDijkstra extends Neo4jAlgoTestCase
          *                v  /       | /      \  /
          *               (b)--[1]-->(c)--[1]->(d)
          */
-        
+
         Map<String, Object> propertiesForOnes = includeOnes ? map( "cost", (double) 1 ) : map();
-        
+
         graph.makeEdge( "start", "a", "cost", (double) 1 );
         graph.makeEdge( "a", "x", "cost", (double) 9 );
         graph.makeEdge( "a", "b", propertiesForOnes );
@@ -79,18 +80,18 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         graph.makeEdge( "x", "y", "cost", (double) 2 );
         return shortCTOXRelationship;
     }
-    
+
     @Test
     public void testSmallGraph()
     {
         Relationship shortCTOXRelationship = createGraph( true );
-        
+
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
                 Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ), "cost" );
         PathFinder<WeightedPath> finder2 = GraphAlgoFactory.dijkstra(
                 Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ),
                 CommonEvaluators.doubleCostEvaluator( "cost" ) );
-        
+
         // Assert that there are two matching paths
         Node startNode = graph.getNode( "start" );
         Node endNode = graph.getNode( "x" );
@@ -98,7 +99,7 @@ public class TestDijkstra extends Neo4jAlgoTestCase
                 "start,a,b,c,x", "start,a,b,c,d,e,x" );
         assertPaths( finder2.findAllPaths( startNode, endNode ),
                 "start,a,b,c,x", "start,a,b,c,d,e,x" );
-        
+
         // Assert that for the shorter one it picked the correct relationship
         // of the two from (c) --> (x)
         for ( WeightedPath path : finder.findAllPaths( startNode, endNode ) )
@@ -114,17 +115,17 @@ public class TestDijkstra extends Neo4jAlgoTestCase
     public void testSmallGraphWithDefaults()
     {
         Relationship shortCTOXRelationship = createGraph( true );
-        
+
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
                 Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ),
                 CommonEvaluators.doubleCostEvaluator( "cost", 1.0d ) );
-        
+
         // Assert that there are two matching paths
         Node startNode = graph.getNode( "start" );
         Node endNode = graph.getNode( "x" );
         assertPaths( finder.findAllPaths( startNode, endNode ),
                 "start,a,b,c,x", "start,a,b,c,d,e,x" );
-        
+
         // Assert that for the shorter one it picked the correct relationship
         // of the two from (c) --> (x)
         for ( WeightedPath path : finder.findAllPaths( startNode, endNode ) )
@@ -135,7 +136,7 @@ public class TestDijkstra extends Neo4jAlgoTestCase
             }
         }
     }
-    
+
     private void assertContainsRelationship( WeightedPath path,
             Relationship relationship )
     {
@@ -148,7 +149,7 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         }
         fail( path + " should've contained " + relationship );
     }
-    
+
     @Ignore( "See issue #627" )
     @Test
     public void determineLongestPath() throws Exception
@@ -164,18 +165,18 @@ public class TestDijkstra extends Neo4jAlgoTestCase
          *     |       \             |
          *     v        --v          |
          *    (4)<-[-0.1]-(3)<-[-1.0]-
-         *    
+         *
          *    Shortest path: 0->1->2->3->4
          */
-        
+
         RelationshipType type = DynamicRelationshipType.withName( "EDGE" );
         graph.setCurrentRelType( type );
-        
+
         graph.makeEdgeChain( "0,1,2,3,4" );
         graph.makeEdge( "0", "2" );
         graph.makeEdge( "0", "3" );
         graph.makeEdge( "0", "4" );
-        
+
         setWeight( "0", "1", -0.1 );
         setWeight( "1", "2", -0.1 );
         setWeight( "2", "3", -1.0 );
@@ -183,7 +184,7 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         setWeight( "0", "2", -0.1 );
         setWeight( "0", "3", -1.0 );
         setWeight( "0", "4", -0.1 );
-        
+
         Node node0 = graph.getNode( "0" );
         Node node1 = graph.getNode( "1" );
         Node node2 = graph.getNode( "2" );
@@ -196,20 +197,20 @@ public class TestDijkstra extends Neo4jAlgoTestCase
 
         assertPath( wPath, node0, node1, node2, node3, node4 );
     }
-    
+
     @Test
     public void withState() throws Exception
     {
         /* Graph
-         * 
+         *
          * (a)-[1]->(b)-[2]->(c)-[5]->(d)
          */
-        
+
         graph.makeEdgeChain( "a,b,c,d" );
         setWeight( "a", "b", 1 );
         setWeight( "b", "c", 2 );
         setWeight( "c", "d", 5 );
-        
+
         InitialBranchState<Integer> state = new InitialBranchState.State<Integer>( 0, 0 );
         final Map<Node, Integer> encounteredState = new HashMap<Node, Integer>();
         PathExpander<Integer> expander = new PathExpander<Integer>()
@@ -232,7 +233,7 @@ public class TestDijkstra extends Neo4jAlgoTestCase
                 return this;
             }
         };
-        
+
         assertPaths( dijkstra( expander, state, "weight" ).findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ),
                 "a,b,c,d" );
         assertEquals( 1, encounteredState.get( graph.getNode( "b" ) ).intValue() );

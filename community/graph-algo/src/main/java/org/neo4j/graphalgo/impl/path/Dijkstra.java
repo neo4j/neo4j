@@ -19,10 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
-import static org.neo4j.kernel.Traversal.traversal;
-
 import java.util.Iterator;
 
 import org.neo4j.graphalgo.CostEvaluator;
@@ -41,6 +37,10 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
+
+import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
+import static org.neo4j.kernel.Traversal.traversal;
 
 /**
  * @author Tobias Ivarsson
@@ -67,49 +67,52 @@ public class Dijkstra implements PathFinder<WeightedPath>
         this.costEvaluator = costEvaluator;
         this.stateFactory = stateFactory;
     }
-    
+
     public Dijkstra( RelationshipExpander expander, CostEvaluator<Double> costEvaluator )
     {
         this( toPathExpander( expander ), costEvaluator );
     }
-    
+
+    @Override
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
-        lastTraverser = TRAVERSAL.expand( expander, stateFactory ).order( new SelectorFactory( costEvaluator ) )
-                .evaluator( Evaluators.includeWhereEndNodeIs( end ) ).traverse( start );
-        
-        // Here's how the bidirectional equivalent would look
-//        lastTraverser = Traversal.bidirectionalTraversal()
-//                .mirroredSides( TRAVERSAL.expand( expander ).order( new SelectorFactory( costEvaluator ) ) )
-//                .traverse( start, end );
-        
+        final Traverser traverser = traverser( start, end, true );
         return new Iterable<WeightedPath>()
         {
+            @Override
             public Iterator<WeightedPath> iterator()
             {
-                return new StopAfterWeightIterator( lastTraverser.iterator(),
-                        costEvaluator );
+                return new StopAfterWeightIterator( traverser.iterator(), costEvaluator );
             }
         };
     }
 
+    private Traverser traverser( Node start, final Node end, boolean forMultiplePaths )
+    {
+        return (lastTraverser = TRAVERSAL.expand( expander, stateFactory )
+                .order( new SelectorFactory( forMultiplePaths, costEvaluator ) )
+                .evaluator( Evaluators.includeWhereEndNodeIs( end ) ).traverse( start ) );
+    }
+
+    @Override
     public WeightedPath findSinglePath( Node start, Node end )
     {
-        return firstOrNull( findAllPaths( start, end ) );
+        return firstOrNull( new StopAfterWeightIterator( traverser( start, end, false ).iterator(), costEvaluator ) );
     }
-    
+
     @Override
     public TraversalMetadata metadata()
     {
         return lastTraverser.metadata();
     }
-    
+
     private static class SelectorFactory extends BestFirstSelectorFactory<Double, Double>
     {
         private final CostEvaluator<Double> evaluator;
 
-        SelectorFactory( CostEvaluator<Double> evaluator )
+        SelectorFactory( boolean forMultiplePaths, CostEvaluator<Double> evaluator )
         {
+            super( forMultiplePaths );
             this.evaluator = evaluator;
         }
 
