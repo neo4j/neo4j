@@ -24,9 +24,9 @@ include::filtering-on-relationship-type.asciidoc[]
 
 include::property-exists.asciidoc[]
 
-include::default-true-if-property-is-missing.asciidoc[]
+include::default-to-true-if-property-is-missing.asciidoc[]
 
-include::default-false-if-property-is-missing.asciidoc[]
+include::default-to-false-if-property-is-missing.asciidoc[]
 
 include::filter-on-null-values.asciidoc[]
 
