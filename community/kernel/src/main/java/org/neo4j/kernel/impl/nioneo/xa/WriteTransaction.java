@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
@@ -1151,7 +1153,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                                              "] since it has already been deleted." );
         }
         nodeRecord.setInUse( false );
-        nodeRecord.setLabelField( 0 );
+        nodeRecord.setLabelField( 0, Collections.<DynamicRecord>emptyList() );
         return getAndDeletePropertyChain( nodeRecord );
     }
 
