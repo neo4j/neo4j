@@ -101,7 +101,7 @@ public class InlineNodeLabels implements NodeLabels
         }
 
         byte bitsPerLabel = (byte) (ids.length > 0 ? (LABEL_BITS / ids.length) : LABEL_BITS);
-        long limit = 1 << bitsPerLabel;
+        long limit = 1L << bitsPerLabel;
         Bits bits = bits( 5 );
         for ( long id : ids )
         {
@@ -139,7 +139,8 @@ public class InlineNodeLabels implements NodeLabels
 
     private static long combineLabelCountAndLabelStorage( byte labelCount, long labelBits )
     {
-        return (((long) labelCount << 36) | labelBits);
+        long labelCountAsLong = labelCount;
+        return ((labelCountAsLong << 36) | labelBits);
     }
 
     private static byte labelCount( long labelField )

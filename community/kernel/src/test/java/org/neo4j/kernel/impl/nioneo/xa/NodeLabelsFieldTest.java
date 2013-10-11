@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -71,6 +72,21 @@ public class NodeLabelsFieldTest
     {
         // GIVEN
         long labelId = 10;
+        NodeRecord node = nodeRecordWithInlinedLabels();
+        NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
+
+        // WHEN
+        nodeLabels.add( labelId, null );
+
+        // THEN
+        assertEquals( inlinedLabelsLongRepresentation( labelId ), node.getLabelField() );
+    }
+
+    @Test
+    public void shouldInlineOneLabelWithHighId() throws Exception
+    {
+        // GIVEN
+        long labelId = 10000;
         NodeRecord node = nodeRecordWithInlinedLabels();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -452,7 +468,7 @@ public class NodeLabelsFieldTest
         NodeRecord node = new NodeRecord( 0, 0, 0 );
         if ( labels.length > 0 )
         {
-            node.setLabelField( inlinedLabelsLongRepresentation( labels ) );
+            node.setLabelField( inlinedLabelsLongRepresentation( labels ), Collections.<DynamicRecord>emptyList() );
         }
         return node;
     }
