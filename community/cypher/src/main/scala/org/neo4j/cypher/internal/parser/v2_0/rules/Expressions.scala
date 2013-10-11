@@ -91,7 +91,7 @@ trait Expressions extends Parser
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression4 = rule("an expression") (
+  private def Expression4 : Rule1[ast.Expression] = rule("an expression") (
       Expression3
     | operator("+") ~> identifier ~~ Expression ~~> (ast.FunctionInvocation(_: ast.Identifier, _))
     | operator("-") ~> identifier ~~ Expression ~~> (ast.FunctionInvocation(_: ast.Identifier, _))
@@ -99,10 +99,8 @@ trait Expressions extends Parser
 
   private def Expression3 : Rule1[ast.Expression] = rule("an expression") {
     Expression2 ~ zeroOrMore(WS ~ (
-        PropertyLookup
-      | "[" ~~ Expression ~~ "]" ~>> token ~~> ast.CollectionIndex
+        "[" ~~ Expression ~~ "]" ~>> token ~~> ast.CollectionIndex
       | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~>> token ~~> ast.CollectionSlice
-      | NodeLabels ~>> token ~~> ast.HasLabels
       | operator("=~") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keyword("IN") ~> identifier ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keyword("IS", "NULL") ~> identifier ~~> (ast.FunctionInvocation(_: ast.Expression, _))
@@ -110,7 +108,14 @@ trait Expressions extends Parser
     ) : ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression2 : Rule1[ast.Expression] = rule("an expression") (
+  private def Expression2 : Rule1[ast.Expression] = rule("an expression") {
+    Expression1 ~ zeroOrMore(WS ~ (
+        PropertyLookup
+      | NodeLabels ~>> token ~~> ast.HasLabels
+    ))
+  }
+
+  private def Expression1 : Rule1[ast.Expression] = rule("an expression") (
       NumberLiteral
     | StringLiteral
     | Parameter
@@ -133,19 +138,18 @@ trait Expressions extends Parser
     | RelationshipsPattern ~~> ast.PatternExpression
     | "(" ~~ Expression ~~ ")"
     | FunctionInvocation
-    | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.HasLabels
     | Identifier
   )
 
   def PropertyExpression : Rule1[ast.Property] = rule {
-    Expression2 ~ oneOrMore(WS ~ PropertyLookup : ReductionRule1[ast.Expression, ast.Property])
+    Expression1 ~ oneOrMore(WS ~ PropertyLookup)
   }
 
   private def PropertyLookup : ReductionRule1[ast.Expression, ast.Property] = rule("'.'") {
     operator(".") ~~ (
-      (group(Identifier ~~ LegacyPropertyOperator ~> ((s:String) => s)) ~>> token ~~> ast.LegacyProperty.make)
-        | (Identifier ~>> token ~~> ast.Property)
-      )
+        (group(Identifier ~~ LegacyPropertyOperator ~> ((s:String) => s)) ~>> token ~~> ast.LegacyProperty.make)
+      | (Identifier ~>> token ~~> ast.Property)
+    )
   }
 
   private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =

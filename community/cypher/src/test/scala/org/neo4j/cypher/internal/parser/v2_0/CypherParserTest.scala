@@ -1403,6 +1403,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def in_with_collection_prop() {
+    test(
+      "start x = NODE(1) where x.prop in x.props return x",
+      Query.
+        start(NodeById("x", 1)).
+        where(AnyInCollection(Property(Identifier("x"), PropertyKey("props")), "-_-INNER-_-", Equals(Property(Identifier("x"), PropertyKey("prop")), Identifier("-_-INNER-_-")))).
+        returns(ReturnItem(Identifier("x"), "x"))
+    )
+  }
+
   @Test def multiple_relationship_type_in_match() {
     test(
       "start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x",
