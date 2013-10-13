@@ -84,7 +84,7 @@ trait Patterns extends Parser
       Boolean,
       Seq[ast.Identifier],
       Option[Option[ast.Range]],
-      Option[ast.Expression]] = rule {
+      Option[ast.Expression]] = rule("[") {
     (
         "[" ~~
           MaybeIdentifier ~~
