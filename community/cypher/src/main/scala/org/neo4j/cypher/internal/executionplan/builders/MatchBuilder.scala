@@ -21,11 +21,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.{MatchPipe, Pipe}
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.executionplan.PlanBuilder
-import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
-import org.neo4j.cypher.internal.pipes.matching.{PatternRelationship, PatternNode, PatternGraph}
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.commands.ShortestPath
 
 class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
@@ -49,8 +45,10 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
     val newPipe = graph.doubleOptionalPatterns().
       foldLeft(mandatoryPipe)((lastPipe, patternGraph) => new MatchPipe(lastPipe, predicates, patternGraph))
 
+    val donePatterns = graph.patternsContained.map(Unsolved.apply)
+
     plan.copy(
-      query = q.copy(patterns = q.patterns.filterNot(items.contains) ++ items.map(_.solve)),
+      query = q.copy(patterns = q.patterns.filterNot(donePatterns.contains) ++ donePatterns.map(_.solve)),
       pipe = newPipe
     )
   }
@@ -79,36 +77,4 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
   }
 
   def priority = PlanBuilder.Match
-}
-
-trait PatternGraphBuilder {
-  def buildPatternGraph(symbols: SymbolTable, patterns: Seq[Pattern]): PatternGraph = {
-    val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
-    val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
-
-    symbols.identifiers.
-      filter(_._2 == NodeType()). //Find all bound nodes...
-      foreach(id => patternNodeMap(id._1) = new PatternNode(id._1)) //...and create patternNodes for them
-
-    patterns.foreach(_ match {
-      case RelatedTo(left, right, rel, relType, dir, optional, predicate) => {
-        val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
-        val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
-
-        if (patternRelMap.contains(rel)) {
-          throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(rel))
-        }
-
-        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional, predicate)
-      }
-      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, relsCollection, optional, predicate) => {
-        val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
-        val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
-        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, relsCollection, optional, predicate)
-      }
-      case _ =>
-    })
-
-    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, symbols.keys)
-  }
 }

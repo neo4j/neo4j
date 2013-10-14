@@ -35,7 +35,7 @@ class SemanticErrorTest extends ExecutionEngineHelper {
 
   @Test def defineNodeAndTreatItAsARelationship() {
     expectedError("start r=node(0) match a-[r]->b return r",
-      "Some identifiers are used as both relationships and nodes: r")
+      "Expected `r` to be a Relationship but it was a Node")
   }
 
   @Test def redefineSymbolInMatch() {
