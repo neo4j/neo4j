@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.exceptions.schema.{NoSuchIndexException, DropIndexFa
 class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions {
   @Test def createIndex() {
     // WHEN
-    parseAndExecute("CREATE INDEX ON :Person(name)")
+    execute("CREATE INDEX ON :Person(name)")
 
     // THEN
     assertInTx(List(List("name")) === graph.indexPropsForLabel("Person"))
@@ -34,10 +34,10 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
 
   @Test def dropIndex() {
     // GIVEN
-    parseAndExecute("CREATE INDEX ON :Person(name)")
+    execute("CREATE INDEX ON :Person(name)")
 
     // WHEN
-    parseAndExecute("DROP INDEX ON :Person(name)")
+    execute("DROP INDEX ON :Person(name)")
 
     // THEN
     assertInTx(List.empty[List[String]] === graph.indexPropsForLabel("Person"))
@@ -45,7 +45,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
 
   @Test def drop_index_that_does_not_exist() {
     // WHEN
-    val e = intercept[CypherExecutionException](parseAndExecute("DROP INDEX ON :Person(name)"))
+    val e = intercept[CypherExecutionException](execute("DROP INDEX ON :Person(name)"))
     assert(e.getCause.isInstanceOf[DropIndexFailureException])
     assert(e.getCause.getCause.isInstanceOf[NoSuchIndexException])
   }

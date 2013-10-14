@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.PlanDescription
 import org.neo4j.cypher.internal.commands.{DropUniqueConstraint, CreateUniqueConstraint, UniqueConstraintOperation}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext

@@ -34,7 +34,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val b = createNode()
     relate(a, b, "X")
 
-    val result = parseAndExecute("start a = node(1) create unique a-[r:X]->(b:FOO) return b")
+    val result = execute("start a = node(1) create unique a-[r:X]->(b:FOO) return b")
     val createdNode = result.columnAs[Node]("b").toList.head
 
     assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)
@@ -47,7 +47,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val b = createNode()
     relate(a, b, "X")
 
-    val result = parseAndExecute("start b = node(1) create unique (a:FOO)-[r:X]->b return a")
+    val result = execute("start b = node(1) create unique (a:FOO)-[r:X]->b return a")
     val createdNode = result.columnAs[Node]("a").toList.head
 
     assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)
@@ -58,7 +58,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
   def create_new_node_with_labels_everywhere() {
     val a = createNode()
 
-    val result = parseAndExecute("start a = node(1) create unique a-[:X]->(b:FOO)-[:X]->(c:BAR)-[:X]->(d:BAZ) RETURN d")
+    val result = execute("start a = node(1) create unique a-[:X]->(b:FOO)-[:X]->(c:BAR)-[:X]->(d:BAZ) RETURN d")
     val createdNode = result.columnAs[Node]("d").toList.head
 
     assertStats(result, relationshipsCreated = 3, nodesCreated = 3, labelsAdded = 3)
@@ -71,7 +71,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val b = createNode()
     relate(a, b, "X")
 
-    val result = parseAndExecute(s"start b = node(${b.getId}) create unique (a:FOO {name: 'Andres'})-[r:X]->b return a, b")
+    val result = execute(s"start b = node(${b.getId}) create unique (a:FOO {name: 'Andres'})-[r:X]->b return a, b")
 
     val row: Map[String, Any] = result.toList.head
     val resultA = row("a").asInstanceOf[Node]
@@ -87,7 +87,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val a = createNode()
     val b = createNode()
 
-    val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[r:X]->b return r")
+    val result = execute("start a = node(1), b=node(2) create unique a-[r:X]->b return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertStats(result, relationshipsCreated = 1)
@@ -105,7 +105,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
 
     val nodeProps = Map("name"->"Lasse")
 
-    val result = parseAndExecute("start a = node(1) create unique a-[r:X]->({p}) return r", "p" -> nodeProps)
+    val result = execute("start a = node(1) create unique a-[r:X]->({p}) return r", "p" -> nodeProps)
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
@@ -121,7 +121,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
   def should_be_able_to_handle_a_param_as_map_in_a_path() {
     val nodeProps = Map("name"->"Lasse")
 
-    val result = parseAndExecute("start a = node(0) create unique path=a-[:X]->({p}) return last(path)", "p" -> nodeProps)
+    val result = execute("start a = node(0) create unique path=a-[:X]->({p}) return last(path)", "p" -> nodeProps)
     val endNode = result.columnAs[Node]("last(path)").toList.head
 
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
@@ -134,7 +134,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val props1 = Map("name"->"Andres", "position"->"Developer")
     val props2 = Map("name"->"Lasse", "awesome"->true)
 
-    val result = parseAndExecute("start n=node(0) create unique n-[:REL]->(a {props1})-[:LER]->(b {props2}) return a,b", "props1"->props1, "props2"->props2)
+    val result = execute("start n=node(0) create unique n-[:REL]->(a {props1})-[:LER]->(b {props2}) return a,b", "props1"->props1, "props2"->props2)
 
     assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesSet = 4)
     val resultMap = result.toList.head
@@ -152,7 +152,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val props1 = Map("name"->"Andres", "position"->"Developer")
     val props2 = Map("name"->"Lasse", "awesome"->true)
 
-    val result = parseAndExecute("start n=node(0) create unique p=n-[:REL]->({props1})-[:LER]->({props2}) return p", "props1"->props1, "props2"->props2)
+    val result = execute("start n=node(0) create unique p=n-[:REL]->({props1})-[:LER]->({props2}) return p", "props1"->props1, "props2"->props2)
 
     assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesSet = 4)
     val path = result.toList.head("p").asInstanceOf[Path]
@@ -171,7 +171,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
   @Test
   def should_be_able_to_handle_a_param_as_node() {
     val n = createNode()
-    intercept[CypherTypeException](parseAndExecute("start a = node(1) create unique a-[r:X]->({param}) return r", "param" -> n))
+    intercept[CypherTypeException](execute("start a = node(1) create unique a-[r:X]->({param}) return r", "param" -> n))
   }
 
   @Test
@@ -179,7 +179,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val a = createNode()
     val b = createNode()
     val r = relate(a, b, "X")
-    val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[r:X]->b return r")
+    val result = execute("start a = node(1), b=node(2) create unique a-[r:X]->b return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertInTx(a.getRelationships.asScala.size === 1)
@@ -191,7 +191,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val a = createNode()
     val b = createNode()
     val r = relate(a, b, "BAR")
-    val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[r:FOO]->b return r")
+    val result = execute("start a = node(1), b=node(2) create unique a-[r:FOO]->b return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertStats(result, relationshipsCreated = 1)
@@ -207,7 +207,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val c = createNode()
     val d = createNode()
 
-    val result = parseAndExecute("start a = node(1,2), b=node(3), c=node(4) create unique a-[:X]->b-[:X]->c")
+    val result = execute("start a = node(1,2), b=node(3), c=node(4) create unique a-[:X]->b-[:X]->c")
 
     assertStats(result, relationshipsCreated = 3)
 
@@ -221,7 +221,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
   def creates_minimal_amount_of_nodes_reverse() {
     val a = createNode()
 
-    val result = parseAndExecute("start a = node(1) create unique c-[:X]->b-[:X]->a")
+    val result = execute("start a = node(1) create unique c-[:X]->b-[:X]->a")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2)
 
@@ -235,7 +235,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
   def creates_node_if_it_is_missing() {
     val a = createNode()
 
-    val result = parseAndExecute("start a = node(1) create unique a-[:X]->root return root")
+    val result = execute("start a = node(1) create unique a-[:X]->root return root")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
 
@@ -246,7 +246,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
   def creates_node_if_it_is_missing_pattern_reversed() {
     val a = createNode()
 
-    val result = parseAndExecute("start a = node(1) create unique root-[:X]->a return root")
+    val result = execute("start a = node(1) create unique root-[:X]->a return root")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
 
@@ -298,7 +298,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     val a = createNode()
     val b = createNode()
 
-    val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[:X]->root<-[:X]-b return root")
+    val result = execute("start a = node(1), b=node(2) create unique a-[:X]->root<-[:X]-b return root")
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
 
     val aRels = graph.inTx(a.getRelationships.asScala.toList)
@@ -339,7 +339,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     relate(tagRoot, a, "tag")
     relate(tagRoot, c, "tag")
 
-    val result = parseAndExecute("""
+    val result = execute("""
 START root = node(1)
 CREATE book
 FOREACH(name in ['a','b','c'] |
@@ -373,7 +373,7 @@ return book
     relate(tagRoot, a, "tag")
     relate(tagRoot, c, "tag")
 
-    val result = parseAndExecute("""
+    val result = execute("""
 START root = node(1)
 FOREACH(name in ['a','b','c'] |
   CREATE UNIQUE root-[:tag]->(tag {name:name})
@@ -394,7 +394,7 @@ FOREACH(name in ['a','b','c'] |
     val wrongX = createNode("foo" -> "absolutely not bar")
     relate(b, wrongX, "X")
 
-    val result = parseAndExecute("""
+    val result = execute("""
 START a = node(1), b = node(2)
 CREATE UNIQUE
   a-[:X]->()-[:X]->(x {foo:'bar'}),
@@ -408,7 +408,7 @@ RETURN x""")
     val a = createNode()
     val b = createNode()
 
-    val result = parseAndExecute("""
+    val result = execute("""
 START a = node(1), b = node(2)
 CREATE UNIQUE
   a-[:X]->()-[:X]->()-[:X]->b""")
@@ -422,7 +422,7 @@ CREATE UNIQUE
     val wrongX = createNode("foo" -> "absolutely not bar")
     relate(b, wrongX, "X")
 
-    val result = parseAndExecute("""
+    val result = execute("""
 START a = node(1), b = node(2)
 CREATE UNIQUE
   a-[:X]->z-[:X]->(x {foo:'bar'}),
@@ -437,7 +437,7 @@ RETURN x""")
     createNode()
     createNode()
 
-    val result = parseAndExecute("""
+    val result = execute("""
 START a = node(*)
 WITH collect(a) as nodes
 FOREACH( x in nodes |
@@ -461,13 +461,13 @@ FOREACH( x in nodes |
     relate(a,b1,"X")
     relate(a,b2,"X")
 
-    intercept[UniquePathNotUniqueException](parseAndExecute("""START a = node(1) CREATE UNIQUE a-[:X]->b-[:X]->d"""))
+    intercept[UniquePathNotUniqueException](execute("""START a = node(1) CREATE UNIQUE a-[:X]->b-[:X]->d"""))
   }
   @Test
   def tree_structure() {
     val a = createNode()
 
-    val result = parseAndExecute("""START root=node(1)
+    val result = execute("""START root=node(1)
 CREATE (value {year:2012, month:5, day:11})
 WITH root,value
 CREATE UNIQUE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value
@@ -487,7 +487,7 @@ RETURN value;""")
 
     assertStats(result, nodesCreated = 4, relationshipsCreated = 4, propertiesSet = 6)
 
-    val result2 = parseAndExecute("""START root=node(1)
+    val result2 = execute("""START root=node(1)
 CREATE (value { year:2012, month:5, day:12 })
 WITH root,value
 CREATE UNIQUE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value

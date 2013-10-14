@@ -19,11 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.CypherParser
-
 sealed abstract class CypherVersion(versionName: String) {
   val name = CypherVersionName.asCanonicalName(versionName)
-  def parser: CypherParser
 }
 
 object CypherVersionName {
@@ -32,22 +29,15 @@ object CypherVersionName {
 
 object CypherVersion {
 
-  case object v1_9 extends CypherVersion("1.9") {
-    val parser = new internal.parser.v1_9.CypherParserImpl
-  }
-
-  case object v2_0 extends CypherVersion("2.0") {
-    val parser = new internal.parser.v2_0.CypherParserImpl
-  }
+  case object v1_9 extends CypherVersion("1.9")
+  case object v2_0 extends CypherVersion("2.0")
 
   def apply(versionName: String) = findVersionByExactName(CypherVersionName.asCanonicalName(versionName)).getOrElse {
-    throw new SyntaxException(s"Supported versions are: $allVersionNames")
+    throw new SyntaxException(s"Supported versions are: ${allVersions.map(_.name).mkString(", ")}")
   }
 
   def findVersionByExactName(versionName: String) = allVersions.find( _.name == versionName )
 
   val vDefault = v2_0
-
   val allVersions = Seq(v1_9, v2_0)
-  val allVersionNames = CypherVersion.allVersions.map(_.name).mkString(", ")
 }

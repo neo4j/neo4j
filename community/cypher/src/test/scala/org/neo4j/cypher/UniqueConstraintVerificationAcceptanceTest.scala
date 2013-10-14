@@ -35,7 +35,7 @@ class UniqueConstraintVerificationAcceptanceTest
     //GIVEN
 
     //WHEN
-    parseAndExecute("create constraint on (node:Label) assert node.propertyKey is unique")
+    execute("create constraint on (node:Label) assert node.propertyKey is unique")
 
     //THEN
     graph.inTx {
@@ -52,10 +52,10 @@ class UniqueConstraintVerificationAcceptanceTest
   @Test
   def should_add_constraint_when_existing_data_is_unique() {
     // GIVEN
-    parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
+    execute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
 
     // WHEN
-    parseAndExecute("create constraint on (n:Person) assert n.name is unique")
+    execute("create constraint on (n:Person) assert n.name is unique")
 
     // THEN
     graph.inTx {
@@ -72,12 +72,12 @@ class UniqueConstraintVerificationAcceptanceTest
   @Test
   def should_add_constraint_using_recreated_unique_data() {
     // GIVEN
-    parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
-    parseAndExecute("match (n:Person) delete n")
-    parseAndExecute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
+    execute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
+    execute("match (n:Person) delete n")
+    execute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
 
     // WHEN
-    parseAndExecute("create constraint on (n:Person) assert n.name is unique")
+    execute("create constraint on (n:Person) assert n.name is unique")
 
     // THEN
     graph.inTx {
@@ -94,10 +94,10 @@ class UniqueConstraintVerificationAcceptanceTest
   @Test
   def should_drop_constraint() {
     //GIVEN
-    parseAndExecute("create constraint on (node:Label) assert node.propertyKey is unique")
+    execute("create constraint on (node:Label) assert node.propertyKey is unique")
 
     //WHEN
-    parseAndExecute("drop constraint on (node:Label) assert node.propertyKey is unique")
+    execute("drop constraint on (node:Label) assert node.propertyKey is unique")
 
     //THEN
     graph.inTx {
@@ -114,12 +114,12 @@ class UniqueConstraintVerificationAcceptanceTest
   @Test
   def should_fail_to_add_constraint_when_existing_data_conflicts() {
     // GIVEN
-    parseAndExecute("create (a:Person{id:1}), (b:Person{id:1})")
+    execute("create (a:Person{id:1}), (b:Person{id:1})")
 
     // WHEN
     try
     {
-      parseAndExecute("create constraint on (n:Person) assert n.id is unique")
+      execute("create constraint on (n:Person) assert n.id is unique")
 
       fail("expected exception")
     }

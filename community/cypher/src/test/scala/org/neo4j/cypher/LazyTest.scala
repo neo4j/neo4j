@@ -37,11 +37,13 @@ import collection.JavaConverters._
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.mockito.Matchers._
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.impl.core.NodeManager
 import scala.Some
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.{Statement, OperationsFacade, ReadOperations}
+import org.neo4j.cypher.internal.LRUCache
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -186,6 +188,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     when(bridge.statement()).thenReturn(fakeStatement)
     when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
     when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)
+    when(fakeReadStatement.schemaStateGetOrCreate[ExecutionEngine,LRUCache[String, ExecutionPlan]](anyObject(), anyObject())).thenReturn(new LRUCache[String, ExecutionPlan](1))
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
@@ -196,7 +199,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     //When:
     graph.inTx {
       counter.source = GlobalGraphOperations.at(graph).getAllNodes.iterator()
-      engine.execute(engine.parser.parse("start n=node(*) return n limit 5"), Map.empty[String,Any]).toList
+      engine.execute("start n=node(*) return n limit 5", Map.empty[String,Any]).toList
     }
 
     //Then:

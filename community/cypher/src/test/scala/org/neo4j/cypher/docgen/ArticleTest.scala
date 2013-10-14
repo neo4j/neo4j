@@ -32,7 +32,6 @@ import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, Graph
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.cypher.internal.CypherParser
 import org.neo4j.cypher.internal.prettifier.Prettifier
 import org.neo4j.tooling.GlobalGraphOperations
 
@@ -42,7 +41,6 @@ Use this base class for tests that are more flowing text with queries intersecte
 abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   var db: GraphDatabaseAPI = null
-  val parser: CypherParser = CypherParser()
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
