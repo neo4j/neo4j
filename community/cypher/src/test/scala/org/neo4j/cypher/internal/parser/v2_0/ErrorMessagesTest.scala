@@ -112,6 +112,14 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
+  @Test def invalidLabel() {
+    expectSyntaxError(
+      "start p=node(2) match (p:super-man) return p.name",
+      "Invalid input 'm': expected whitespace, [ or '-' (line 1, column 32)",
+      31
+    )
+  }
+
   @Test def noEqualsSignInStart() {
     expectSyntaxError(
       "start r:relationship:rels() return r",
