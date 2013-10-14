@@ -61,11 +61,11 @@ where parts of the pattern are not reachable from any starting point will be rej
 
 [options="header", cols=">s,^,^,^,^,^,^", width="100%"]
 |===================
-|Clause|Optional|Multiple rel. types|Varlength|Paths|Maps|Label OR syntax
-|Match|Yes|Yes|Yes|Yes|-|Yes
-|Create|-|-|-|Yes|Yes|-
-|Create Unique|-|-|-|Yes|Yes|-
-|Expressions|-|Yes|Yes|-|-|Yes
+|Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
+|Match|Yes|Yes|Yes|Yes|-
+|Create|-|-|-|Yes|Yes
+|Create Unique|-|-|-|Yes|Yes
+|Expressions|-|Yes|Yes|-|-
 |===================
 
 == Patterns for related nodes ==
