@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9
 
+import parser.CypherParser
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import commands.AbstractQuery
 import executionplan.ExecutionPlanBuilder
 import executionplan.verifiers.{OptionalPatternWithoutStartVerifier, HintVerifier}
-import parser.v1_9.CypherParserImpl
 import spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.graphdb.GraphDatabaseService
 
@@ -32,7 +32,7 @@ case class CypherCompiler(
   graph: GraphDatabaseService,
   queryCache: (String, => Object) => Object) extends internal.CypherCompiler
 {
-  val parser = new CypherParserImpl()
+  val parser = new CypherParser()
   val verifiers = Seq(HintVerifier, OptionalPatternWithoutStartVerifier)
 
   @throws(classOf[SyntaxException])

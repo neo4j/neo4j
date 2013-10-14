@@ -17,19 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_9
+package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.junit.Assert._
+import org.neo4j.cypher.internal._
+import commands._
+import commands.expressions._
+import commands.values.TokenType.PropertyKey
+import mutation._
+import parser._
 import org.neo4j.graphdb.Direction
-import org.scalatest.junit.JUnitSuite
+import org.hamcrest.CoreMatchers.equalTo
+import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
-import org.hamcrest.CoreMatchers.equalTo
-import org.neo4j.cypher.internal.parser.{ParsedEntity, ParsedRelation}
-import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.commands.expressions._
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.mutation._
+import org.scalatest.junit.JUnitSuite
 
 class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
@@ -2138,7 +2139,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   private def test(query: String, expectedQuery: AbstractQuery) {
-    val parser = new CypherParserImpl()
+    val parser = new CypherParser()
 
     val ast = parser.parse(query)
     try {

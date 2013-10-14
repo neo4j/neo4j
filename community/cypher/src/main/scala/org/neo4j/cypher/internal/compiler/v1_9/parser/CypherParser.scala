@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_9
+package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.{SyntaxException}
-import org.neo4j.cypher.internal.commands._
-import expressions.AggregationExpression
-import org.neo4j.cypher.internal.ReattachAliasedExpressions
-import org.neo4j.cypher.internal.mutation.UpdateAction
+import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal._
+import commands._
+import commands.expressions.AggregationExpression
+import mutation.UpdateAction
 
-class CypherParserImpl extends Base
+class CypherParser extends Base
 with StartClause
 with MatchClause
 with WhereClause
