@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{ShortestPath, NodeById, True, RelatedTo}
+import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-
+import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.ShortestPath
 
 class MatchBuilderTest extends BuilderTest {
 
@@ -82,17 +83,20 @@ class MatchBuilderTest extends BuilderTest {
 
   @Test
   def should_solve_multiple_patterns_at_once_if_possible() {
+    val r1 = RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, false, True())
+    val r2 = RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, false, True())
     val inQ = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 1))),
-      patterns = Seq(Unsolved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false, True())),
-        Unsolved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false, True()))))
+
+      patterns = Seq(
+        Unsolved(r1),
+        Unsolved(r2)))
 
     val inP = createPipe(nodes = Seq("a", "b"))
 
     val q = builder(plan(inP, inQ)).query
 
-    assert(q.patterns.toSet === Set(Solved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false, True())),
-      Solved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false, True()))))
+    assert(q.patterns.toSet === Set(Solved(r1), Solved(r2)))
   }
 
   @Test
