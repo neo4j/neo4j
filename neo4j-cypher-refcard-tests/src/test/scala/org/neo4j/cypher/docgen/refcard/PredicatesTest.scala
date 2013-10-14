@@ -61,7 +61,7 @@ class PredicatesTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("property" -> "Andrés"),
+    "A" -> Map("property" -> "Andrés", "number" -> 5),
     "B" -> Map("property" -> "Tobias"),
     "C" -> Map("property" -> "Chris"))
 
@@ -87,12 +87,12 @@ RETURN n###
 
 Use functions.
 
-###assertion=returns-one parameters=anothername
+###assertion=returns-one
 START n=node(%A%), m=node(%B%)
 MATCH (n)-->(m)
 WHERE
 
-has(n.property) AND n.property = {value}
+n.number >= 1 AND n.number <= 10
 
 RETURN n,m###
 
