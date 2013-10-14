@@ -55,10 +55,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def should_return_string_literal_with_escaped_sequence_in() {
     test(
-      "start s = node(1) return \"a\\tp\\\"a\"",
+      "start s = node(1) return \"a\\tp\\\"a\\\'b\"",
       Query.
         start(NodeById("s", 1)).
-        returns(ReturnItem(Literal("a\tp\"a"), "\"a\\tp\\\"a\"")))
+        returns(ReturnItem(Literal("a\tp\"a\'b"), "\"a\\tp\\\"a\\\'b\"")))
+
+    test(
+      "start s = node(1) return \'a\\tp\\\'a\\\"b\'",
+      Query.
+        start(NodeById("s", 1)).
+        returns(ReturnItem(Literal("a\tp\'a\"b"), "\'a\\tp\\\'a\\\"b\'")))
   }
 
   @Test def allTheNodes() {
