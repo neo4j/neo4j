@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.helpers.{Materialized, GraphIcing}
 import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
 import org.neo4j.helpers.Settings
 import org.neo4j.cypher.internal.prettifier.Prettifier
-import org.neo4j.cypher.internal.CypherParser
 import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
 import org.neo4j.tooling.GlobalGraphOperations
 import scala.reflect.ClassTag
@@ -184,7 +183,6 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
 
 
   var db: GraphDatabaseAPI = null
-  val parser: CypherParser = CypherParser()
   var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null

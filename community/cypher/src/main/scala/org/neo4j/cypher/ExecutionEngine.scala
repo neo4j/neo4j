@@ -19,31 +19,23 @@
  */
 package org.neo4j.cypher
 
-import internal.commands._
-import internal.executionplan.ExecutionPlanBuilder
-import internal.executionplan.verifiers.{OptionalPatternWithoutStartVerifier, HintVerifier, Verifier}
-import org.neo4j.cypher.internal.{CypherParser, LRUCache}
-import org.neo4j.cypher.internal.spi.gdsimpl.{TransactionBoundExecutionContext, TransactionBoundPlanContext}
-import org.neo4j.cypher.internal.spi.{ExceptionTranslatingQueryContext, QueryContext}
-import scala.collection.JavaConverters._
-import java.util.{Map => JavaMap}
+import internal.{CypherCompiler, LRUCache}
+import internal.prettifier.Prettifier
+import internal.spi.gdsimpl.{TransactionBoundExecutionContext, TransactionBoundPlanContext}
+import internal.spi.{ExceptionTranslatingQueryContext, QueryContext}
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.cypher.internal.prettifier.Prettifier
 import org.neo4j.kernel.api.Statement
+import scala.collection.JavaConverters._
+import java.util.{Map => JavaMap}
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
 
   require(graph != null, "Can't work with a null graph database")
 
-  val parser = createCorrectParser()
-  val planBuilder = new ExecutionPlanBuilder(graph)
-  val verifiers:Seq[Verifier] = Seq(HintVerifier, OptionalPatternWithoutStartVerifier)
-
-  private val queryCache = new LRUCache[String, AbstractQuery](getQueryCacheSize)
-
+  val compiler = createCorrectCompiler()
 
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
@@ -76,12 +68,6 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   def prepare[T](query: String, run: (ExecutionPlan, QueryContext) => T): T =  {
-    // parse query
-    val cachedQuery: AbstractQuery = queryCache.getOrElseUpdate(query, {
-      val parsedQuery = parser.parse(query)
-      verify(parsedQuery)
-      parsedQuery
-    })
 
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
@@ -91,13 +77,13 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       val statement = txBridge.statement()
       val plan = try {
         // fetch plan cache
-        val planCache = getOrCreateFromSchemaState(statement, new LRUCache[String, ExecutionPlan](getQueryCacheSize))
+        val planCache = getOrCreateFromSchemaState(statement, new LRUCache[String, ExecutionPlan](getPlanCacheSize))
 
         // get plan or build it
         planCache.getOrElseUpdate(query, {
           touched = true
           val planContext = new TransactionBoundPlanContext(statement, graph)
-          planBuilder.build(planContext, cachedQuery)
+          compiler.prepare(query, planContext)
         })
       }
       catch {
@@ -141,31 +127,26 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     statement.readOperations().schemaStateGetOrCreate(this, javaCreator)
   }
 
-  def verify(query: AbstractQuery) {
-    for ( verifier <- verifiers )
-      verifier.verify(query)
-  }
-
   def prettify(query:String): String = Prettifier(query)
 
-  private def createCorrectParser() =
+  private def createCorrectCompiler() =
     optGraphAs[InternalAbstractGraphDatabase]
       .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_parser_version))
       .andThen({
-      case v:String => CypherParser(v)
-      case _        => CypherParser()
+      case v:String => CypherCompiler(graph, v)
+      case _        => CypherCompiler(graph)
     })
-      .applyOrElse(graph, (_: GraphDatabaseService) => CypherParser() )
+      .applyOrElse(graph, (_: GraphDatabaseService) => CypherCompiler(graph) )
 
 
-  private def getQueryCacheSize : Int =
+  private def getPlanCacheSize : Int =
     optGraphAs[InternalAbstractGraphDatabase]
       .andThen(_.getConfig.get(GraphDatabaseSettings.query_cache_size))
       .andThen({
       case v: java.lang.Integer => v.intValue()
-      case _                    => ExecutionEngine.DEFAULT_QUERY_CACHE_SIZE
+      case _                    => ExecutionEngine.DEFAULT_PLAN_CACHE_SIZE
     })
-      .applyOrElse(graph, (_: GraphDatabaseService) => ExecutionEngine.DEFAULT_QUERY_CACHE_SIZE)
+      .applyOrElse(graph, (_: GraphDatabaseService) => ExecutionEngine.DEFAULT_PLAN_CACHE_SIZE)
 
   private def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
     case (db: T) => db
@@ -173,6 +154,6 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 }
 
 object ExecutionEngine {
-  val DEFAULT_QUERY_CACHE_SIZE: Int = 100
+  val DEFAULT_PLAN_CACHE_SIZE: Int = 100
   val PLAN_BUILDING_TRIES: Int = 20
 }

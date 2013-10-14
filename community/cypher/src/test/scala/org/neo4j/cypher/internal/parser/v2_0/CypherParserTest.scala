@@ -27,7 +27,7 @@ import org.junit.Ignore
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
 import org.neo4j.cypher._
-import org.neo4j.cypher.CypherVersion._
+import org.neo4j.cypher.internal.compiler.v2_0.CypherCompiler
 import org.neo4j.cypher.internal.parser.{ParsedVarLengthRelation, ParsedEntity, ParsedRelation}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions._
@@ -2787,10 +2787,32 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  private def test(query: String, expectedQuery: AbstractQuery) {
-    val parser = new CypherParserImpl()
+  @Test
+  def compileQueryIntegrationTest() {
+    val q:Query = parser.parseToQuery("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)").asInstanceOf[Query]
+    assert(q.tail.nonEmpty, "wasn't compacted enough")
+    val compacted = q.compact
 
-    val ast = parser.parse(query)
+    assert(compacted.tail.isEmpty, "wasn't compacted enough")
+    assert(compacted.start.size === 7, "lost create commands")
+  }
+
+  @Test
+  def compileQueryIntegrationTest2() {
+    val q = parser.parseToQuery("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4").asInstanceOf[Query]
+    val compacted = q.compact
+    var lastQ = compacted
+
+    while (lastQ.tail.nonEmpty)
+      lastQ = lastQ.tail.get
+
+    assert(lastQ.returns.columns === List("a1", "a4"), "Lost the tail while compacting")
+  }
+
+  val parser = CypherParser()
+
+  private def test(query: String, expectedQuery: AbstractQuery) {
+    val ast = parser.parseToQuery(query)
     try {
       assertThat(ast, equalTo(expectedQuery))
     } catch {

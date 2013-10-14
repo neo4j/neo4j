@@ -23,7 +23,6 @@ import org.junit.Test
 import org.neo4j.cypher.internal.commands.{AllIdentifiers, CreateNodeStartItem, Query}
 import org.neo4j.cypher.internal.mutation.CreateNode
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.CypherParser
 
 class QueryTest extends Assertions {
   @Test
@@ -46,29 +45,5 @@ class QueryTest extends Assertions {
       returns()
 
     assert(expected === compacted)
-  }
-
-  @Test
-  def integrationTest() {
-    val parser = CypherParser()
-    val q:Query = parser.parse("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)").asInstanceOf[Query]
-    assert(q.tail.nonEmpty, "wasn't compacted enough")
-    val compacted = q.compact
-
-    assert(compacted.tail.isEmpty, "wasn't compacted enough")
-    assert(compacted.start.size === 7, "lost create commands")
-  }
-
-  @Test
-  def integrationTest2() {
-    val parser = CypherParser()
-    val q = parser.parse("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4").asInstanceOf[Query]
-    val compacted = q.compact
-    var lastQ = compacted
-
-    while (lastQ.tail.nonEmpty)
-      lastQ = lastQ.tail.get
-
-    assert(lastQ.returns.columns === List("a1", "a4"), "Lost the tail while compacting")
   }
 }

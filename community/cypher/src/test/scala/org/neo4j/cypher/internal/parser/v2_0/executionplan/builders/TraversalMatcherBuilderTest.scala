@@ -17,20 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.executionplan.builders
+package org.neo4j.cypher.internal.parser.v2_0.executionplan.builders
 
+import org.neo4j.cypher.internal.executionplan.builders._
+import org.neo4j.cypher.internal._
+import commands._
+import commands.expressions._
+import executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
+import parser.v2_0.CypherParser
+import pipes.NullPipe
+import spi.PlanContext
+import spi.gdsimpl.TransactionBoundPlanContext
 import org.junit.{After, Before, Test}
-import org.neo4j.cypher.internal.commands._
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.pipes.NullPipe
-import org.neo4j.cypher.internal.spi.PlanContext
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.graphdb.Transaction
-import org.neo4j.cypher.internal.CypherParser
 
 class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
   var builder: TraversalMatcherBuilder = null
@@ -114,5 +116,5 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
 
   val parser = CypherParser()
 
-  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text).asInstanceOf[Query])
+  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parseToQuery(text).asInstanceOf[Query])
 }
