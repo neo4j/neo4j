@@ -30,7 +30,7 @@ class ReferenceNodeAcceptanceTest extends ExecutionEngineHelper with Assertions 
     // Given common database with reference node
 
     // When
-    val result = parseAndExecute("merge (a) return a")
+    val result = execute("merge (a) return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList

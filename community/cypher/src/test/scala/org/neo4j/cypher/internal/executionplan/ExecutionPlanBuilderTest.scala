@@ -25,8 +25,9 @@ import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.{NodeById, Query}
 import org.neo4j.graphdb.{DynamicLabel, GraphDatabaseService}
 import org.scalatest.Assertions
-import org.neo4j.cypher.{PlanDescription, GraphDatabaseTestBase, InternalException}
+import org.neo4j.cypher.{GraphDatabaseTestBase, InternalException}
 import java.util.concurrent._
+import org.neo4j.cypher.internal.PlanDescription
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher.internal.commands.expressions.Identifier

@@ -31,12 +31,12 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_enforce_uniqueness_constraint_on_create_node_with_label_and_property() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
-    parseAndExecute("create ( node:Label1 { key1:'value1' } )")
+    execute("create constraint on (node:Label1) assert node.key1 is unique")
+    execute("create ( node:Label1 { key1:'value1' } )")
 
     // WHEN
     try {
-      parseAndExecute("create ( node:Label1 { key1:'value1' } )")
+      execute("create ( node:Label1 { key1:'value1' } )")
 
       fail("should have thrown exception")
     }
@@ -50,12 +50,12 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_enforce_uniqueness_constraint_on_set_property() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
-    parseAndExecute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2:Label1 { seq: 2 } )")
+    execute("create constraint on (node:Label1) assert node.key1 is unique")
+    execute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2:Label1 { seq: 2 } )")
 
     // WHEN
     try {
-      parseAndExecute("match (node2:Label1) where node2.seq = 2 set node2.key1 = 'value1'")
+      execute("match (node2:Label1) where node2.seq = 2 set node2.key1 = 'value1'")
 
       fail("should have thrown exception")
     }
@@ -69,12 +69,12 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_enforce_uniqueness_constraint_on_add_label() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
-    parseAndExecute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2 { seq: 2, key1:'value1' } )")
+    execute("create constraint on (node:Label1) assert node.key1 is unique")
+    execute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2 { seq: 2, key1:'value1' } )")
 
     // WHEN
     try {
-      parseAndExecute("match node2 where node2.seq = 2 set node2:Label1")
+      execute("match node2 where node2.seq = 2 set node2:Label1")
 
       fail("should have thrown exception")
     }
@@ -88,11 +88,11 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_enforce_uniqueness_constraint_on_conflicting_data_in_same_statement() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
+    execute("create constraint on (node:Label1) assert node.key1 is unique")
 
     // WHEN
     try {
-      parseAndExecute("create ( node1:Label1 { key1:'value1' } ), ( node2:Label1 { key1:'value1' } )")
+      execute("create ( node1:Label1 { key1:'value1' } ), ( node2:Label1 { key1:'value1' } )")
 
       fail("should have thrown exception")
     }
@@ -106,21 +106,21 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_allow_remove_and_add_conflicting_data_in_one_statement() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
-    parseAndExecute("create ( node:Label1 { seq:1, key1:'value1' } )")
+    execute("create constraint on (node:Label1) assert node.key1 is unique")
+    execute("create ( node:Label1 { seq:1, key1:'value1' } )")
 
     var seq = 2
     for (resolve <- List("delete toRemove", "remove toRemove.key1", "remove toRemove:Label1", "set toRemove.key1 = 'value2'"))
     {
       // WHEN
-      parseAndExecute(
+      execute(
         "match (toRemove:Label1) where toRemove.key1 = 'value1' " +
           resolve +
           " create ( toAdd:Label1 { seq: {seq}, key1: 'value1' } )",
         "seq" -> seq)
 
       // THEN
-      val result: ExecutionResult = parseAndExecute("match (n:Label1) where n.key1 = 'value1' return n.seq as seq")
+      val result: ExecutionResult = execute("match (n:Label1) where n.key1 = 'value1' return n.seq as seq")
       assertEquals(List(seq), result.columnAs[Int]("seq").toList)
       seq += 1
     }
@@ -129,17 +129,17 @@ class UniqueConstraintValidationAcceptanceTest
   @Test
   def should_allow_creation_of_non_conflicting_data() {
     // GIVEN
-    parseAndExecute("create constraint on (node:Label1) assert node.key1 is unique")
-    parseAndExecute("create ( node:Label1 { key1:'value1' } )")
+    execute("create constraint on (node:Label1) assert node.key1 is unique")
+    execute("create ( node:Label1 { key1:'value1' } )")
 
     // WHEN
-    parseAndExecute("create ( node { key1:'value1' } )")
-    parseAndExecute("create ( node:Label2 { key1:'value1' } )")
-    parseAndExecute("create ( node:Label1 { key1:'value2' } )")
-    parseAndExecute("create ( node:Label1 { key2:'value1' } )")
+    execute("create ( node { key1:'value1' } )")
+    execute("create ( node:Label2 { key1:'value1' } )")
+    execute("create ( node:Label1 { key1:'value2' } )")
+    execute("create ( node:Label1 { key2:'value1' } )")
 
     // THEN
-    val result: ExecutionResult = parseAndExecute("match (n) where id(n) <> 0 return count(*) as nodeCount")
+    val result: ExecutionResult = execute("match (n) where id(n) <> 0 return count(*) as nodeCount")
     assertEquals(List(5), result.columnAs[Int]("nodeCount").toList)
   }
 }

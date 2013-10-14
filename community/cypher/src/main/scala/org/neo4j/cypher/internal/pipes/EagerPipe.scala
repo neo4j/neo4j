@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.PlanDescription
 
 case class EagerPipe(src: Pipe) extends PipeWithSource(src) {
   def symbols: SymbolTable = src.symbols

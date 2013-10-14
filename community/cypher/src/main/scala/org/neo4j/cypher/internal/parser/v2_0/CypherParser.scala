@@ -19,37 +19,28 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
+import rules._
+import org.neo4j.cypher._
 import org.parboiled.scala._
 import org.parboiled.errors.InvalidInputError
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher._
-import org.neo4j.cypher.internal.parser.v2_0.rules._
 import org.neo4j.cypher.internal.commands.AbstractQuery
-import org.neo4j.cypher.internal.{CypherParser, ReattachAliasedExpressions}
 import org.neo4j.cypher.internal.parser.MarkOptionalNodes
+import org.neo4j.cypher.internal.ReattachAliasedExpressions
 
-class CypherParserImpl extends CypherParser
-  with Parser
+case class CypherParser() extends Parser
   with Statement
   with Expressions {
 
-  val SingleStatement : Rule1[ast.Statement] = rule {
+  def SingleStatement : Rule1[ast.Statement] = rule {
     WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
   }
 
   @throws(classOf[SyntaxException])
-  def parse(text: String): AbstractQuery = {
+  def parse(text: String): ast.Statement = {
     val parsingResult = ReportingParseRunner(SingleStatement).run(text)
     parsingResult.result match {
-      case Some(statement : ast.Statement) => {
-        statement.semanticCheck(SemanticState.clean).errors.map { error =>
-          throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", text, error.token.startPosition.offset)
-        }
-        val resultQuery: AbstractQuery = ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(text))
-
-        // This should be removed once the parser understand explicit optional nodes
-        MarkOptionalNodes(resultQuery)
-      }
+      case Some(statement : ast.Statement) => statement
       case _ => {
         parsingResult.parseErrors.map { error =>
           val message = if (error.getErrorMessage != null) {
@@ -64,7 +55,16 @@ class CypherParserImpl extends CypherParser
           throw new SyntaxException(s"${message} (${position})", text, error.getStartIndex)
         }
       }
-      throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
+        throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
     }
+  }
+
+  @throws(classOf[SyntaxException])
+  def parseToQuery(query: String): AbstractQuery = {
+    val statement = parse(query)
+    statement.semanticCheck(SemanticState.clean).errors.map { error =>
+      throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", query, error.token.startPosition.offset)
+    }
+    MarkOptionalNodes(ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(query)))
   }
 }

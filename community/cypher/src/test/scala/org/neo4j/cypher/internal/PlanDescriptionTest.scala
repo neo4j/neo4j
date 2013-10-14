@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import data.{SeqVal, PrimVal, MapVal, StrVal}
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.{ProfilerStatisticsNotReadyException, PlanDescription}
+import org.neo4j.cypher.ProfilerStatisticsNotReadyException
 
 class PlanDescriptionTest extends Assertions {
 

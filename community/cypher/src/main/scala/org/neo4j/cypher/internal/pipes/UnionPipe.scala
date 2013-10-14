@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.PlanDescription
 
 class UnionPipe(in: Seq[Pipe], columns:List[String]) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(in, state)

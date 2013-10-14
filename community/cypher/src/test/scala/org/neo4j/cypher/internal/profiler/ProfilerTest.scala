@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.profiler
 import org.neo4j.cypher.internal.pipes.{NullPipe, QueryState, Pipe, PipeWithSource}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.PlanDescription
 import org.junit.Test
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.Assertions

@@ -299,7 +299,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   }
 
   @Test def trying_to_add_a_constraint_that_already_exists() {
-    parseAndExecute("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE")
+    execute("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE")
 
     expectError(
       "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
@@ -361,6 +361,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   }
 
   def executeQuery(query: String) {
-    engine.execute(query).toList
+    execute(query).toList
   }
 }

@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
-import org.scalatest.junit.JUnitSuite
 import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import org.neo4j.cypher.CypherVersion._
-import org.neo4j.cypher.internal.CypherParser
-import org.neo4j.cypher.CypherException
+import org.neo4j.cypher.{ExecutionEngineHelper, CypherException}
 
-class SyntaxExceptionTest extends JUnitSuite with Assertions {
+class SyntaxExceptionTest extends ExecutionEngineHelper with Assertions {
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
     test(
       "start s = node:index(key=) return s",
@@ -207,10 +204,8 @@ class SyntaxExceptionTest extends JUnitSuite with Assertions {
   }
 
   def test(query: String, message: String) {
-    val parser = new CypherParserImpl()
-
     try {
-      parser.parse(query)
+      execute(query)
       fail(s"Did not get the expected syntax error, expected: ${message}")
     } catch {
       case x: CypherException => {

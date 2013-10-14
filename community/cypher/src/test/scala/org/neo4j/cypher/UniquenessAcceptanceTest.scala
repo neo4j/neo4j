@@ -27,7 +27,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineHelper {
     relate(createNode("Me"), createNode("Bob"))
 
     // When
-    val result = parseAndExecute("MATCH a-->()-->b WHERE a.name = 'Me' RETURN b.name")
+    val result = execute("MATCH a-->()-->b WHERE a.name = 'Me' RETURN b.name")
 
     // Then
     assert(List() === result.toList)
@@ -41,7 +41,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineHelper {
     relate(n2, n2)
 
     // When
-    val result = parseAndExecute("match a--b-->c--d where a.name = 'start' return d")
+    val result = execute("match a--b-->c--d where a.name = 'start' return d")
 
     // Then
     assert(List() === result.toList)
@@ -58,7 +58,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineHelper {
     relate(leaf2, parent)
 
     // When
-    val result = parseAndExecute("MATCH x-->parent WHERE x.name = 'leaf1' WITH parent MATCH leaf-->parent RETURN leaf")
+    val result = execute("MATCH x-->parent WHERE x.name = 'leaf1' WITH parent MATCH leaf-->parent RETURN leaf")
 
     // Then
     assert(2 === result.size)
@@ -75,7 +75,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineHelper {
     relate(leaf2, parent)
 
     // When
-    val result = parseAndExecute("MATCH x-[r]->parent WHERE x.name = 'leaf1' WITH r, parent MATCH leaf-->parent RETURN r, leaf")
+    val result = execute("MATCH x-[r]->parent WHERE x.name = 'leaf1' WITH r, parent MATCH leaf-->parent RETURN r, leaf")
 
     // Then
     assert(2 === result.size)
