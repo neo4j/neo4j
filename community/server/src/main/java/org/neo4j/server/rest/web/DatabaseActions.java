@@ -1576,7 +1576,7 @@ public class DatabaseActions
         else
         {
             throw new IllegalArgumentException(
-                    String.format( "Constraint with label %s for properties %s does not exists", labelName,
+                    String.format( "Constraint with label %s for properties %s does not exist", labelName,
                             propertyKeys ) );
         }
     }
