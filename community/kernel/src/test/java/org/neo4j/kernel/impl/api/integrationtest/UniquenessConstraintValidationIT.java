@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -30,7 +31,10 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 
@@ -160,6 +164,34 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         {
             assertThat( e.getMessage(), containsString( "\"key1\"=[value2]" ) );
         }
+    }
+
+    @Test
+    public void shouldAllowNoopPropertyUpdate() throws KernelException
+    {
+        // given
+        Node node = constrainedNode( "Label1", "key1", "value1" );
+
+        dataWriteOperationsInNewTransaction();
+
+        // when
+        node.setProperty( "key1", "value1" );
+
+        // then should not throw exception
+    }
+
+    @Test
+    public void shouldAllowNoopLabelUpdate() throws KernelException
+    {
+        // given
+        Node node = constrainedNode( "Label1", "key1", "value1" );
+
+        dataWriteOperationsInNewTransaction();
+
+        // when
+        node.addLabel( label( "Label1" ) );
+
+        // then should not throw exception
     }
 
     @Test
