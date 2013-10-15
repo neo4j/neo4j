@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.net.URI;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 import org.neo4j.server.rest.web.TransactionUriScheme;
@@ -51,13 +50,13 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
  */
 public class TransactionFacade
 {
-    private final KernelAPI kernel;
+    private final TransitionalPeriodTransactionMessContainer kernel;
     private final ExecutionEngine engine;
     private final TransactionRegistry registry;
     private final StringLogger log;
     private final URI baseUri;
 
-    public TransactionFacade( KernelAPI kernel, ExecutionEngine engine,
+    public TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, ExecutionEngine engine,
                               TransactionRegistry registry, URI baseUri, StringLogger log )
     {
         this.kernel = kernel;

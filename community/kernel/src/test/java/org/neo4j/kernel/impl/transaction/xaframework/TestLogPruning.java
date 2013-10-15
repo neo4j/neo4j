@@ -58,18 +58,23 @@ public class TestLogPruning
     @Test
     public void pruneByFileSize() throws Exception
     {
+        // Given
         int size = 1000;
         newDb( size + " size" );
-        
+
         doTransaction();
         rotate();
         long sizeOfOneLog = fs.getFileSize( db.getXaDataSourceManager().getNeoStoreDataSource()
                 .getXaContainer().getLogicalLog().getFileName( 0 ) );
         int filesToExceedSize = (int) Math.round( (double)size/(double)sizeOfOneLog );
+
+        // When
         for ( int i = 1; i < filesToExceedSize*2; i++ )
         {
             doTransaction();
             rotate();
+
+            // Then
             assertEquals( Math.min( i+1, filesToExceedSize ), logCount() );
         }
     }

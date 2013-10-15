@@ -231,7 +231,7 @@ public class XaLogicalLog implements LogLoader
             }
             if ( logVersionChanged )
                 xaTf.setVersion( logVersion );
-            
+
             long lastTxId = xaTf.getLastCommittedTx();
             LogIoUtils.writeLogHeader( sharedBuffer, logVersion, lastTxId );
             previousLogLastCommittedTx = lastTxId;
@@ -340,24 +340,9 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    // [TX_1P_COMMIT][identifier]
-    public synchronized void commitOnePhase( int identifier, long txId, ForceMode forceMode )
-            throws XAException
+    public void forget( int identifier )
     {
-        LogEntry.Start startEntry = xidIdentMap.get( identifier );
-        assert startEntry != null;
-        assert txId != -1;
-        try
-        {
-            positionCache.cacheStartPosition( txId, startEntry, logVersion );
-            LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, System.currentTimeMillis() );
-            forceMode.force( writeBuffer );
-        }
-        catch ( IOException e )
-        {
-            throw Exceptions.withCause(
-                    new XAException( "Logical log unable to mark 1P-commit [" + identifier + "] " ), e );
-        }
+        xidIdentMap.remove( identifier );
     }
 
     // [DONE][identifier]
@@ -392,9 +377,26 @@ public class XaLogicalLog implements LogLoader
         }
 
         xidIdentMap.remove( identifier );
-        // force to make sure done record is there if 2PC tx and global log
-        // marks tx as committed
-//        fileChannel.force( false );
+    }
+
+    // [TX_1P_COMMIT][identifier]
+    public synchronized void commitOnePhase( int identifier, long txId, ForceMode forceMode )
+            throws XAException
+    {
+        LogEntry.Start startEntry = xidIdentMap.get( identifier );
+        assert startEntry != null;
+        assert txId != -1;
+        try
+        {
+            positionCache.cacheStartPosition( txId, startEntry, logVersion );
+            LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, System.currentTimeMillis() );
+            forceMode.force( writeBuffer );
+        }
+        catch ( IOException e )
+        {
+            throw Exceptions.withCause(
+                    new XAException( "Logical log unable to mark 1P-commit [" + identifier + "] " ), e );
+        }
     }
 
     // [TX_2P_COMMIT][identifier]
@@ -468,7 +470,7 @@ public class XaLogicalLog implements LogLoader
         Xid xid = entry.getXid();
         xidIdentMap.put( identifier, entry );
         XaTransaction xaTx = xaTf.create( identifier, entry.getLastCommittedTxWhenTransactionStarted(),
-                                          stateFactory.create( null ) );
+                stateFactory.create( null ) );
         xaTx.setRecovered();
         recoveredTxMap.put( identifier, xaTx );
         xaRm.injectStart( xid, xaTx );
@@ -767,7 +769,7 @@ public class XaLogicalLog implements LogLoader
          * renamed and then the version is updated. If a crash occurs in between those
          * two we need to detect and repair it the next startup */
         xaTf.setVersion( logVersion );
-        
+
         long lastCommittedTx = header[1];
         previousLogLastCommittedTx = lastCommittedTx;
         positionCache.putHeader( logVersion, previousLogLastCommittedTx );
@@ -1005,7 +1007,7 @@ public class XaLogicalLog implements LogLoader
      * @throws IOException If an IO error occurs when reading the log file
      */
     @Override
-	public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
+    public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
             throws IOException
     {
         synchronized ( this )
@@ -1527,7 +1529,7 @@ public class XaLogicalLog implements LogLoader
     }
 
     @Override
-	public File getFileName( long version )
+    public File getFileName( long version )
     {
         return new File( fileName.getPath() + ".v" + version);
     }
@@ -1579,7 +1581,7 @@ public class XaLogicalLog implements LogLoader
     }
 
     @Override
-	public long getHighestLogVersion()
+    public long getHighestLogVersion()
     {
         return logVersion;
     }

@@ -20,39 +20,27 @@
 package org.neo4j.kernel.api;
 
 import org.junit.Test;
-
-import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.api.LockHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class KernelTransactionImplementationTest
 {
+
+    private AbstractTransactionManager txm = mock( AbstractTransactionManager.class );
+
     @Test
-    public void shouldBeAbleToRollbackTransactionThatFailsToCommit() throws Exception
+    public void shouldBeAbleToRollbackPreparedTransaction() throws Exception
     {
         // given
-        AbstractTransactionManager transactionManager = mock( AbstractTransactionManager.class );
-        when( transactionManager.getTransactionState()).thenReturn( mock( TransactionState.class ) );
-        doThrow( new TransactionFailureException( "asd" ) ).when( transactionManager ).commit();
-
-        KernelTransactionImplementation tx = new KernelTransactionImplementation( null, null, false, null, null, null,
-                null, transactionManager, null, null, null, null, null, mock( NeoStore.class ));
+        KernelTransactionImplementation tx = new KernelTransactionImplementation( null, null, false, null, null,
+                null, txm, null, null, null, mock(LockHolder.class), null, null, mock( NeoStore.class ),
+                mock(TransactionState.class) );
         // when
-        try
-        {
-            tx.commit();
-            fail( "expected exception" );
-        }
-        catch ( TransactionFailureException e )
-        {
-            // ok
-        }
+        tx.prepare();
 
         // then (no exception)
         tx.rollback();

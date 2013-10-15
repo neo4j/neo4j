@@ -24,13 +24,9 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static java.lang.String.format;
 
 /**
  * This interface extends the TransactionManager, with the rationale that it
@@ -77,26 +73,6 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
     public Throwable getRecoveryError()
     {
         return null;
-    }
-    
-    /**
-     * Temporarily here during transition to Kernel API
-     */
-    @Deprecated
-    public abstract void setKernel( KernelAPI kernel );
-
-    /**
-     * Temporarily here during transition to Kernel API.
-     *
-     * @return the current transaction, {@code null} if no transaction is open.
-     */
-    @Deprecated
-    public KernelTransaction getKernelTransaction()
-    {
-        throw new UnsupportedOperationException( format(
-                "The current transaction manager implementation [%s] does not support the new TransactionContext " +
-                "interface. This is an intermediary problem during transition to a new internal API.",
-                getClass().getName() ) );
     }
 
     public void assertInTransaction()

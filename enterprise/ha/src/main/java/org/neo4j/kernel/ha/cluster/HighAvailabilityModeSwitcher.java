@@ -59,15 +59,20 @@ import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
+import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -475,7 +480,15 @@ public class
                     new NonTransactionalTokenNameLookup(
                             resolver.resolveDependency( LabelTokenHolder.class ),
                             resolver.resolveDependency( PropertyKeyTokenHolder.class ) ),
-                    resolver );
+                    resolver,
+                    resolver.resolveDependency( AbstractTransactionManager.class ),
+                    resolver.resolveDependency( PropertyKeyTokenHolder.class ),
+                    resolver.resolveDependency( LabelTokenHolder.class ),
+                    resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
+                    resolver.resolveDependency( PersistenceManager.class ),
+                    resolver.resolveDependency( LockManager.class ),
+                    resolver.resolveDependency( NodeManager.class ),
+                    (SchemaWriteGuard)graphDb);
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential
