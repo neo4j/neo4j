@@ -624,7 +624,7 @@ public class BatchInserterImpl implements BatchInserter
             }
             primitive.setNextProp( thatFits.getId() );
         }
-        thatFits.addPropertyBlock( block );
+        thatFits.setPropertyBlock( block );
         getPropertyStore().updateRecord( thatFits );
         return result;
     }
