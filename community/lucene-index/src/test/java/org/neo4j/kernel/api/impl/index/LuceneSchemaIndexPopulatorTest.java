@@ -32,6 +32,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -42,9 +43,11 @@ import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.api.index.IndexUpdaterSupport.updatePopulator;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -93,7 +96,7 @@ public class LuceneSchemaIndexPopulatorTest
         index.add( 1, "value" );
         index.add( 2, "value" );
         index.add( 3, "value" );
-        index.update( asList( remove( 2, "value" ) ) );
+        updatePopulator( index, asList( remove( 2, "value" ) ) );
 
         // THEN
         assertIndexedValues(
@@ -106,7 +109,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         index.add( 1, "1" );
         index.add( 2, "2" );
-        index.update( asList( change( 1, "1", "1a" ) ) );
+        updatePopulator( index, asList( change( 1, "1", "1a" ) ) );
         index.add( 3, "3" );
 
         // THEN
@@ -123,7 +126,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         index.add( 1, "1" );
         index.add( 2, "2" );
-        index.update( asList( remove( 1, "1" ), add( 1, "1a" ) ) );
+        updatePopulator( index,  asList( remove( 1, "1" ), add( 1, "1a" ) ) );
         index.add( 3, "3" );
 
         // THEN
@@ -140,7 +143,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         index.add( 1, "1" );
         index.add( 2, "2" );
-        index.update( asList( remove( 2, "2" ) ) );
+        updatePopulator( index,  asList( remove( 2, "2" ) ) );
         index.add( 3, "3" );
 
         // THEN
@@ -156,10 +159,10 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         index.add( 1, "1" );
         index.add( 2, "2" );
-        index.update( asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ) );
+        updatePopulator( index,  asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ) );
         index.add( 3, "3" );
         index.add( 4, "4" );
-        index.update( asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ) );
+        updatePopulator( index,  asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ) );
 
         // THEN
         assertIndexedValues(
@@ -251,7 +254,7 @@ public class LuceneSchemaIndexPopulatorTest
         {
             TopDocs hits = searcher.search( documentLogic.newQuery( hit.value ), 10 );
             assertEquals( "Unexpected number of index results from " + hit.value, hit.nodeIds.length, hits.totalHits );
-            Set<Long> foundNodeIds = new HashSet<Long>();
+            Set<Long> foundNodeIds = new HashSet<>();
             for ( int i = 0; i < hits.totalHits; i++ )
             {
                 Document document = searcher.doc( hits.scoreDocs[i].doc );

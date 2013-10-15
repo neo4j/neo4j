@@ -31,6 +31,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.impl.api.index.IndexUpdaterSupport.updatePopulator;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -118,7 +119,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         // this update (using add())...
         populator.add( nodeId, propertyValue );
         // ...is the same as this update (using update())
-        populator.update( asList( add( nodeId, propertyKeyId, propertyValue, new long[] {labelId} ) ) );
+        updatePopulator( populator, asList( add( nodeId, propertyKeyId, propertyValue, new long[]{labelId} ) ) );
 
         populator.close( true );
 

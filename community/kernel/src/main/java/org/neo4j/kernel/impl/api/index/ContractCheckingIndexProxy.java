@@ -24,6 +24,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 /**
@@ -62,7 +64,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     public ContractCheckingIndexProxy( IndexProxy delegate, boolean started )
     {
         super( delegate );
-        this.state = new AtomicReference<State>( started ? State.STARTED : State.INIT );
+        this.state = new AtomicReference<>( started ? State.STARTED : State.INIT );
         this.openCalls = new AtomicInteger( 0 );
     }
 
@@ -87,16 +89,36 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
     {
-        openCall( "update" );
-        try
+        if ( IndexUpdateMode.ONLINE == mode )
         {
-            super.update( updates );
+            openCall( "update" );
+            return new DelegatingIndexUpdater( super.newUpdater( mode ) )
+            {
+                @Override
+                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                {
+                    delegate.process( update );
+                }
+
+                @Override
+                public void close() throws IOException, IndexEntryConflictException
+                {
+                    try
+                    {
+                        delegate.close();
+                    }
+                    finally
+                    {
+                        closeCall();
+                    }
+                }
+            };
         }
-        finally
+        else
         {
-            closeCall();
+            return super.newUpdater( mode );
         }
     }
 

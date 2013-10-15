@@ -27,10 +27,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.api.index.PropertyUpdateUniquenessValidator;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 
-class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements PropertyUpdateUniquenessValidator.Lookup
+class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePropertyIndexUpdater.Lookup
 {
     public UniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
                                       LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
@@ -40,11 +42,23 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements PropertyU
     }
 
     @Override
-    public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
+    public IndexUpdater newUpdater( final IndexUpdateMode mode ) throws IOException
     {
-        PropertyUpdateUniquenessValidator.validateUniqueness( updates, this );
+        return new UniquePropertyIndexUpdater( this ) {
 
-        super.updateAndCommit( updates );
+            final IndexUpdater delegate = UniqueLuceneIndexAccessor.super.newUpdater( mode );
+
+            @Override
+            protected void flushUpdates( Iterable<NodePropertyUpdate> updates )
+                    throws IOException, IndexEntryConflictException
+            {
+                for ( NodePropertyUpdate update : updates )
+                {
+                    delegate.process( update );
+                    delegate.close();
+                }
+            }
+        };
     }
 
     public Long currentlyIndexedNode( Object value ) throws IOException
