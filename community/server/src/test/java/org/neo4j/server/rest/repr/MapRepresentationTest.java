@@ -27,6 +27,8 @@ import org.junit.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -52,7 +54,28 @@ public class MapRepresentationTest
     }
 
     @Test
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
+    public void shouldSerializeMapWithArrayTypes() throws Exception
+    {
+        MapRepresentation rep = new MapRepresentation( map(
+                "strings", new String[]{"a string", "another string"},
+                "numbers", new int[]{42, 87},
+                "booleans", new boolean[]{true, false},
+                "Booleans", new Boolean[]{TRUE, FALSE}
+        ) );
+        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
+
+        String serializedMap = format.assemble( rep );
+
+        Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
+        assertThat( (List<String>) map.get( "strings" ), is( asList( "a string", "another string" ) ) );
+        assertThat( (List<Integer>) map.get( "numbers" ), is( asList( 42, 87 ) ) );
+        assertThat( (List<Boolean>) map.get( "booleans" ), is( asList( true, false ) ) );
+        assertThat( (List<Boolean>) map.get( "Booleans" ), is( asList( true, false ) ) );
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     public void shouldSerializeMapWithListsOfSimpleTypes() throws Exception
     {
         MapRepresentation rep = new MapRepresentation( map( "lists of nulls", asList( null, null ),
@@ -81,14 +104,14 @@ public class MapRepresentationTest
         String serializedMap = format.assemble( rep );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
-        assertThat( ((Map) map.get( "maps with nulls" )).get("nulls"), is( nullValue() ) );
+        assertThat( ((Map) map.get( "maps with nulls" )).get( "nulls" ), is( nullValue() ) );
         assertThat( (String) ((Map) map.get( "maps with strings" )).get( "strings" ), is( "a string" ) );
         assertThat( (Integer) ((Map) map.get( "maps with numbers" )).get( "numbers" ), is( 42 ) );
         assertThat( (Boolean) ((Map) map.get( "maps with booleans" )).get( "booleans" ), is( true ) );
     }
 
     @Test
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     public void shouldSerializeArbitrarilyNestedMapsAndLists() throws Exception
     {
         MapRepresentation rep = new MapRepresentation(
@@ -102,8 +125,10 @@ public class MapRepresentationTest
         String serializedMap = format.assemble( rep );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
-        assertThat( (List<Integer>) ((Map) map.get( "a map with a list in it" )).get("a list"), is( asList( 42, 87 ) ) );
+        assertThat( (List<Integer>) ((Map) map.get( "a map with a list in it" )).get( "a list" ), is( asList( 42,
+                87 ) ) );
         assertThat( (String) ((Map) ((List) map.get( "a list with a map in it" )).get( 0 )).get( "foo" ), is( "bar" ) );
-        assertThat( (Boolean) ((Map) ((List) map.get( "a list with a map in it" )).get( 0 )).get( "baz" ), is( false ) );
+        assertThat( (Boolean) ((Map) ((List) map.get( "a list with a map in it" )).get( 0 )).get( "baz" ),
+                is( false ) );
     }
 }
