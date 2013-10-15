@@ -81,8 +81,10 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
         ops.setProperty(target, k, makeValueNeoSafe(v))
     }
 
+    val properties = ops.propertyKeyIds(target).filterNot(map.contains).toSet
+
     /*Remove all other properties from the property container*/
-    for ( propertyKeyId <- ops.propertyKeyIds(target) if !map.contains(propertyKeyId) ) {
+    for ( propertyKeyId <- properties ) {
       ops.removeProperty(target, propertyKeyId)
     }
   }

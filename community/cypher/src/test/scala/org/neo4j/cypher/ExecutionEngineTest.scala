@@ -2754,4 +2754,19 @@ RETURN x0.name
     // then
     assert(result.toList === List(Map("A" -> false, "B" -> false, "C" -> false, "D" -> false, "E" -> true, "F" -> true)))
   }
+
+  @Test
+  def should_be_able_to_set_properties_with_a_literal_map_twice_in_the_same_transaction() {
+    val node = createLabeledNode("FOO")
+
+    graph.inTx {
+      execute("MATCH (n:FOO) SET n = { first: 'value' }")
+      execute("MATCH (n:FOO) SET n = { second: 'value' }")
+    }
+
+    graph.inTx {
+      assert(node.getProperty("first", null) === null)
+      assert(node.getProperty("second") === "value")
+    }
+  }
 }
