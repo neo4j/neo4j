@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-class PriorityMap<E, K, P>
+public class PriorityMap<E, K, P>
 {
     public interface Converter<T, S>
     {
@@ -61,6 +61,7 @@ class PriorityMap<E, K, P>
     @SuppressWarnings( "unchecked" )
     private static final Converter SELF_KEY = new Converter()
     {
+        @Override
         public Object convert( Object source )
         {
             return source;
@@ -83,6 +84,7 @@ class PriorityMap<E, K, P>
             this.reversed = reversed;
         }
 
+        @Override
         public int compare( P o1, P o2 )
         {
             if ( reversed )
@@ -167,7 +169,7 @@ class PriorityMap<E, K, P>
         }
         return result;
     }
-    
+
     private void put( E entity, P priority, K key )
     {
         Node<E, P> node = new Node<E, P>( entity, priority );
@@ -184,7 +186,10 @@ class PriorityMap<E, K, P>
     public P get( K key )
     {
         Node<E, P> node = map.get( key );
-        if ( node == null ) return null;
+        if ( node == null )
+        {
+            return null;
+        }
         return node.priority;
     }
 
@@ -214,7 +219,7 @@ class PriorityMap<E, K, P>
         }
         return result;
     }
-    
+
     public Entry<E, P> peek()
     {
         Node<E, P> node = queue.peek();
@@ -231,6 +236,7 @@ class PriorityMap<E, K, P>
     private final PriorityQueue<Node<E, P>> queue = new PriorityQueue<Node<E, P>>(
             11, new Comparator<Node<E, P>>()
             {
+                @Override
                 public int compare( Node<E, P> o1, Node<E, P> o2 )
                 {
                     return order.compare( o1.priority, o2.priority );
