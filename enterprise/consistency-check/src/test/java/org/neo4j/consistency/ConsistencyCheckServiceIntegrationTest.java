@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -44,32 +45,36 @@ import org.neo4j.test.TargetDirectory;
 public class ConsistencyCheckServiceIntegrationTest
 {
     @Test
-    public void shouldProduceNoLogFileIfStoreIsConsistent() throws Exception
+    public void shouldSucceedIfStoreIsConsistent() throws Exception
     {
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(),
-                new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
+                new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ),
+                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
+        assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
         File reportFile = new File( fixture.directory(), service.defaultLogFileName() );
         assertFalse( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
 
     @Test
-    public void shouldWriteInconsistenciesToLogFileInStoreDirectory() throws Exception
+    public void shouldFailIfTheStoreInNotConsistent() throws Exception
     {
         // given
         breakNodeStore();
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(),
-                new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
+                new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ),
+                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
+        assertEquals( ConsistencyCheckService.Result.FAILURE, result );
         File reportFile = new File(fixture.directory(), service.defaultLogFileName());
         assertTrue( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
