@@ -63,7 +63,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             Property property = entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
             if ( property.isDefined() )
             {
-                validateNoExistingNodeWithLabelAndProperty( state, labelId, (DefinedProperty) property );
+                validateNoExistingNodeWithLabelAndProperty( state, labelId, (DefinedProperty) property, nodeId );
             }
         }
         return entityWriteOperations.nodeAddLabel( state, nodeId, labelId );
@@ -82,13 +82,14 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
                     schemaReadOperations.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
             if ( constraintIterator.hasNext() )
             {
-                validateNoExistingNodeWithLabelAndProperty( state, labelId, property );
+                validateNoExistingNodeWithLabelAndProperty( state, labelId, property, nodeId );
             }
         }
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
-    private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state, int labelId, DefinedProperty property )
+    private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state, int labelId,
+                                                             DefinedProperty property, long modifiedNode )
             throws ConstraintValidationKernelException
     {
         try
@@ -99,11 +100,14 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             state.locks().acquireIndexEntryWriteLock( labelId, property.propertyKeyId(), property.valueAsString() );
             PrimitiveLongIterator existingNodes = entityReadOperations.nodesGetFromIndexLookup(
                     state, indexDescriptor, value );
-            if ( existingNodes.hasNext() )
+            while ( existingNodes.hasNext() )
             {
-
-                throw new UniqueConstraintViolationKernelException( labelId, property.propertyKeyId(), value,
-                        existingNodes.next() );
+                long existingNode = existingNodes.next();
+                if ( existingNode != modifiedNode )
+                {
+                    throw new UniqueConstraintViolationKernelException( labelId, property.propertyKeyId(), value,
+                            existingNode );
+                }
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
