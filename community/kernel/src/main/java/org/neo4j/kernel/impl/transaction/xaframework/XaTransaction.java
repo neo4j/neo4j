@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.core.TransactionState;
+import java.io.IOException;
 
 import javax.transaction.xa.XAException;
-import java.io.IOException;
+
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.core.TransactionState;
 
 /**
  * <CODE>XaTransaction</CODE> holds all the commands that participate in the

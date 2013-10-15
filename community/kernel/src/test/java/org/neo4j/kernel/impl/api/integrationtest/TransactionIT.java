@@ -17,33 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
-import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.transaction.TxManager;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
-public class ThreadToStatementContextBridgeTest
+public class TransactionIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldThrowNotInTransactionExceptionWhenNotInTransaction() throws Exception
+    public void shouldBeAbleToCommitThroughTransactionManager() throws Exception
     {
         // Given
-        PersistenceManager persistenceManager = mock( PersistenceManager.class );
-        when( persistenceManager.currentKernelTransaction() ).thenReturn( null );
-        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( persistenceManager );
+        TxManager txManager = db.getDependencyResolver().resolveDependency( TxManager.class );
+
+        db.beginTx();
+        Node node = db.createNode();
+        node.setProperty( "name", "Bob" );
 
         // When
-        try
+        txManager.commit();
+
+        // Then write locks should have been released, so I can write to the node from a new tx
+        try( Transaction tx = db.beginTx() )
         {
-            bridge.statement();
-            fail( "Should throw" );
-        }
-        catch ( NotInTransactionException e )
-        {   // Good
+            node.setProperty( "name", "Other" );
+            tx.success();
         }
     }
 }

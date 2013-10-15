@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
@@ -47,10 +46,6 @@ public class NioNeoDbPersistenceSource extends LifecycleAdapter implements Persi
     @Override
     public NeoStoreTransaction createTransaction( XaConnection connection )
     {
-        if (  xaDataSourceManager.getNeoStoreDataSource().isReadOnly() )
-        {
-            throw new ReadOnlyDbException();
-        }
         NeoStoreTransaction result = ((NeoStoreXaConnection) connection).getWriteTransaction();
         
         // This is not a very good solution. The XaConnection is only used when
@@ -58,11 +53,6 @@ public class NioNeoDbPersistenceSource extends LifecycleAdapter implements Persi
         // outside the ResourceConnection interface?
         result.setXaConnection( connection );
         return result;
-    }
-
-    public NeoStoreTransaction createReadOnlyResourceConnection()
-    {
-        return new ReadTransaction( xaDataSourceManager.getNeoStoreDataSource().getNeoStore() );
     }
 
     @Override

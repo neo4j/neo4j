@@ -19,15 +19,6 @@
  */
 package org.neo4j.shell;
 
-import static java.lang.Integer.parseInt;
-import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
-import static org.neo4j.shell.ShellLobby.remoteLocation;
-
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collections;
@@ -43,13 +34,21 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.Integer.parseInt;
+import static java.util.regex.Pattern.compile;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
+import static org.neo4j.shell.ShellLobby.remoteLocation;
 
 public abstract class AbstractShellTest
 {
@@ -364,7 +363,9 @@ public abstract class AbstractShellTest
         Transaction transaction = db.beginTx();
         try
         {
-            return this.db.getNodeById( parseInt( current.toString().substring( 1 ) ) );
+            Node nodeById = this.db.getNodeById( parseInt( current.toString().substring( 1 ) ) );
+            transaction.success();
+            return nodeById;
         }
         finally {
             transaction.finish();

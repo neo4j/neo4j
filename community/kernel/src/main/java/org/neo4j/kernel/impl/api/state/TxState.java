@@ -29,11 +29,11 @@ import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 /**
- * Kernel transaction state
+ * Kernel transaction state, please see {@link TxStateImpl} for details.
  *
  * The naming of methods in this class roughly follows the naming of {@link org.neo4j.kernel.api.StatementOperations}
  * with one exception: All transaction state mutators must include the particle "Do" in their name, e.g.
- * nodeDoAdd.  This helps deciding where to set "hasChanges" in the main implementation class {@link TxStateImpl}.
+ * nodeDoAdd. This helps deciding where to set "hasChanges" in the main implementation class {@link TxStateImpl}.
  */
 public interface TxState
 {
@@ -138,14 +138,10 @@ public interface TxState
 
     public abstract DiffSets<DefinedProperty> graphPropertyDiffSets();
 
-    /**
-     * Returns all nodes that, in this tx, have had labelId added.
-     */
+    /** Returns all nodes that, in this tx, have had labelId added. */
     public abstract Set<Long> nodesWithLabelAdded( int labelId );
 
-    /**
-     * Returns all nodes that, in this tx, have had labelId removed.
-     */
+    /** Returns all nodes that, in this tx, have had labelId removed.  */
     public abstract DiffSets<Long> nodesWithLabelChanged( int labelId );
 
     // Temporary: Should become DiffSets<Long> of all node changes, not just deletions
