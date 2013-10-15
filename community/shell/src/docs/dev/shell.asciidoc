@@ -3,13 +3,9 @@
 Neo4j Shell
 ===========
 
-// If you're just looking for an example try the <<shell-example>>, otherwise read on.
-
-Neo4j shell is a command-line shell for browsing the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
-It consists of two parts:
-
-* a lightweight client that sends commands via RMI and
-* a server that processes those commands and sends the result back to the client.
+Neo4j shell is a command-line shell for running Cypher queries.
+There's also commands to get information about the database.
+In addition, you can browse the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
 
 It's a nice tool for development and debugging.
 This guide will show you how to get it going!
@@ -17,7 +13,7 @@ This guide will show you how to get it going!
 [[shell-starting]]
 == Starting the shell ==
 
-When used together with Neo4j started as a server, simply issue the following at the command line:
+When used together with a Neo4j server, simply issue the following at the command line:
 
 [source,shell]
 ----
@@ -330,6 +326,7 @@ include::shell/simple-cypher-result-dump.asciidoc[]
 
 include::shell/database-dump.asciidoc[]
 
+////
 [[shell-extending]]
 == Extending the shell: Adding your own commands ==
 
@@ -365,6 +362,8 @@ And you could now use it in the shell by typing +lsreltypes+ (its name is based 
 If you'd like it to display some nice help information when using the +help+ (or +man+) app, override the +getDescription+ method for a general description and use +addValueType+ method to add descriptions about (and logic to) the options you can supply when using your app.
 
 Know that the apps reside server-side so if you have a running server and starts a remote client to it from another JVM you can't add your apps on the client.
+
+////
 
 [[shell-sample-session]]
 == An example shell session ==
