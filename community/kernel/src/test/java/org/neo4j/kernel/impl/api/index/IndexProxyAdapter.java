@@ -23,35 +23,16 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
-public abstract class AbstractSwallowingIndexProxy implements IndexProxy
+public class IndexProxyAdapter implements IndexProxy
 {
-    private final IndexDescriptor descriptor;
-    private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private final IndexPopulationFailure populationFailure;
-
-    public AbstractSwallowingIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-            IndexPopulationFailure populationFailure )
-    {
-        this.descriptor = descriptor;
-        this.providerDescriptor = providerDescriptor;
-        this.populationFailure = populationFailure;
-    }
-
-    @Override
-    public IndexPopulationFailure getPopulationFailure()
-    {
-        return populationFailure;
-    }
-
     @Override
     public void start()
     {
-        String message = "Unable to start index, it is in a " + getState().name() + " state.";
-        throw new UnsupportedOperationException( message + ", caused by: " + getPopulationFailure() );
     }
 
     @Override
@@ -61,20 +42,20 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
+    public Future<Void> drop()
+    {
+        return VOID;
+    }
+
+    @Override
+    public InternalIndexState getState()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void force()
     {
-    }
-
-    @Override
-    public IndexDescriptor getDescriptor()
-    {
-        return descriptor;
-    }
-
-    @Override
-    public SchemaIndexProvider.Descriptor getProviderDescriptor()
-    {
-        return providerDescriptor;
     }
 
     @Override
@@ -82,10 +63,44 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     {
         return VOID;
     }
-    
+
+    @Override
+    public IndexDescriptor getDescriptor()
+    {
+        return null;
+    }
+
+    @Override
+    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    {
+        return null;
+    }
+
     @Override
     public IndexReader newReader()
     {
+        return IndexReader.EMPTY;
+    }
+
+    @Override
+    public boolean awaitStoreScanCompleted()
+    {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void activate()
+    {
+    }
+
+    @Override
+    public void validate()
+    {
+    }
+
+    @Override
+    public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
+    {
+        throw new IllegalStateException( "This index isn't failed" );
     }
 }

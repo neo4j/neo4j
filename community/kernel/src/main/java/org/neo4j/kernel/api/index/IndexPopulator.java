@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.api.UpdateMode;
+import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 
 /**
  * Used for initial population of an index.
@@ -49,9 +50,11 @@ public interface IndexPopulator
     void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException;
 
     /**
-     * Apply a set of changes to this index, generally this will be a set of changes from a transaction.
-     * In index population goes through the existing data in the graph and feeds relevant data to this populator.
-     * Simultaneously as population progresses there might be {@link #update(Iterable) incoming updates}
+     * Return an updater for applying a set of changes to this index, generally this will be a set of changes from a
+     * transaction.
+     *
+     * Index population goes through the existing data in the graph and feeds relevant data to this populator.
+     * Simultaneously as population progresses there might be incoming updates
      * from committing transactions, which needs to be applied as well. This populator will only receive updates
      * for nodes that it already has seen. Updates coming in here must be applied idempotently as the same data
      * may have been {@link #add(long, Object) added previously}.
@@ -67,7 +70,9 @@ public interface IndexPopulator
      *   applied idempotently.</li>
      * </ol>
      */
-    void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException;
+    IndexUpdater newPopulatingUpdater() throws IOException;
+
+    // void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException;
 
     // TODO instead of this flag, we should store if population fails and mark indexes as failed internally
     // Rationale: Users should be required to explicitly drop failed indexes
@@ -108,8 +113,9 @@ public interface IndexPopulator
         }
 
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException
+        public IndexUpdater newPopulatingUpdater()
         {
+            return SwallowingIndexUpdater.INSTANCE;
         }
 
         @Override

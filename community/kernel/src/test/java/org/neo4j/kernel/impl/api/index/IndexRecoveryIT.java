@@ -43,7 +43,9 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -69,7 +71,6 @@ import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
 import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
 import static org.neo4j.graphdb.Neo4jMatchers.haveState;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 public class IndexRecoveryIT
@@ -145,8 +146,10 @@ public class IndexRecoveryIT
 
         when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) )
                 .thenReturn( mock( IndexPopulator.class ) );
+        IndexAccessor mockedAccessor = mock( IndexAccessor.class );
+        when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
         when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) )
-                .thenReturn( mock( IndexAccessor.class ) );
+                .thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
         Set<NodePropertyUpdate> expectedUpdates = createSomeBananas( myLabel );
 
@@ -314,21 +317,34 @@ public class IndexRecoveryIT
         }
     }
 
-    private static class GatheringIndexWriter extends IndexAccessor.Adapter
+    public static class GatheringIndexWriter extends IndexAccessor.Adapter
     {
-        private final Set<NodePropertyUpdate> updates = new HashSet<>();
+        private final Set<NodePropertyUpdate> regularUpdates = new HashSet<>();
         private final Set<NodePropertyUpdate> recoveredUpdates = new HashSet<>();
 
         @Override
-        public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
+        public IndexUpdater newUpdater( final IndexUpdateMode mode ) throws IOException
         {
-            this.updates.addAll( asCollection( updates ) );
-        }
+            return new CollectingIndexUpdater()
+            {
+                @Override
+                public void close() throws IOException, IndexEntryConflictException
+                {
+                    switch (mode)
+                    {
+                        case ONLINE:
+                            regularUpdates.addAll( updates );
+                            break;
 
-        @Override
-        public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
-        {
-            this.recoveredUpdates.addAll( asCollection( updates ) );
+                        case RECOVERY:
+                            recoveredUpdates.addAll( updates );
+                            break;
+
+                        default:
+                            throw new UnsupportedOperationException(  );
+                    }
+                }
+            };
         }
     }
 

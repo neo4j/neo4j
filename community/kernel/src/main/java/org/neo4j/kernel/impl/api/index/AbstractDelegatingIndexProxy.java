@@ -26,8 +26,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
 
@@ -40,17 +40,11 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     {
         getDelegate().start();
     }
-    
+
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
     {
-        getDelegate().update( updates );
-    }
-    
-    @Override
-    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
-    {
-        getDelegate().recover( updates );
+        return getDelegate().newUpdater( mode );
     }
 
     @Override

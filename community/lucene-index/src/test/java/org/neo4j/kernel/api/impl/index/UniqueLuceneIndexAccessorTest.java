@@ -26,8 +26,12 @@ import java.util.List;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.DuplicateIndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;
 
@@ -50,8 +54,8 @@ public class UniqueLuceneIndexAccessorTest
         UniqueLuceneIndexAccessor accessor = createAccessor();
 
         // when
-        accessor.updateAndCommit( asList( add( 1l, "value1" ), add( 2l, "value2" ) ) );
-        accessor.updateAndCommit( asList( add( 3l, "value3" ) ) );
+        updateAndCommit( accessor,  asList( add( 1l, "value1" ), add( 2l, "value2" ) ) );
+        updateAndCommit( accessor,  asList( add( 3l, "value3" ) ) );
         accessor.close();
 
         // then
@@ -65,8 +69,8 @@ public class UniqueLuceneIndexAccessorTest
         UniqueLuceneIndexAccessor accessor = createAccessor();
 
         // when
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
+        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor,  asList( change( 1l, "value1", "value2" ) ) );
         accessor.close();
 
         // then
@@ -81,15 +85,15 @@ public class UniqueLuceneIndexAccessorTest
         UniqueLuceneIndexAccessor accessor = createAccessor();
 
         // when
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( add( 2l, "value2" ) ) );
-        accessor.updateAndCommit( asList( add( 3l, "value3" ) ) );
-        accessor.updateAndCommit( asList( add( 4l, "value4" ) ) );
-        accessor.updateAndCommit( asList( remove( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( remove( 2l, "value2" ) ) );
-        accessor.updateAndCommit( asList( remove( 3l, "value3" ) ) );
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( add( 3l, "value3b" ) ) );
+        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor,  asList( add( 2l, "value2" ) ) );
+        updateAndCommit( accessor,  asList( add( 3l, "value3" ) ) );
+        updateAndCommit( accessor,  asList( add( 4l, "value4" ) ) );
+        updateAndCommit( accessor,  asList( remove( 1l, "value1" ) ) );
+        updateAndCommit( accessor,  asList( remove( 2l, "value2" ) ) );
+        updateAndCommit( accessor,  asList( remove( 3l, "value3" ) ) );
+        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor,  asList( add( 3l, "value3b" ) ) );
         accessor.close();
 
         // then
@@ -107,9 +111,9 @@ public class UniqueLuceneIndexAccessorTest
         UniqueLuceneIndexAccessor accessor = createAccessor();
 
         // when
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( add( 2l, "value2" ) ) );
-        accessor.updateAndCommit( asList( change( 1l, "value1", "value2" ), change( 2l, "value2", "value1" ) ) );
+        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor,  asList( add( 2l, "value2" ) ) );
+        updateAndCommit( accessor,  asList( change( 1l, "value1", "value2" ), change( 2l, "value2", "value1" ) ) );
         accessor.close();
 
         // then
@@ -123,13 +127,13 @@ public class UniqueLuceneIndexAccessorTest
         // given
         UniqueLuceneIndexAccessor accessor = createAccessor();
 
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( add( 2l, "value2" ) ) );
+        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor,  asList( add( 2l, "value2" ) ) );
 
         // when
         try
         {
-            accessor.updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
+            updateAndCommit( accessor,  asList( change( 1l, "value1", "value2" ) ) );
 
             fail( "expected exception" );
         }
@@ -146,13 +150,13 @@ public class UniqueLuceneIndexAccessorTest
         // given
         UniqueLuceneIndexAccessor accessor = createAccessor();
 
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
-        accessor.updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
+        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor,  asList( change( 1l, "value1", "value2" ) ) );
 
         // when
         try
         {
-            accessor.updateAndCommit( asList( add( 2l, "value2" ) ) );
+            updateAndCommit( accessor,  asList( add( 2l, "value2" ) ) );
 
             fail( "expected exception" );
         }
@@ -169,12 +173,12 @@ public class UniqueLuceneIndexAccessorTest
         // given
         UniqueLuceneIndexAccessor accessor = createAccessor();
 
-        accessor.updateAndCommit( asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
 
         // when
         try
         {
-            accessor.updateAndCommit( asList( add( 2l, "value1" ) ) );
+            updateAndCommit( accessor,  asList( add( 2l, "value1" ) ) );
 
             fail( "expected exception" );
         }
@@ -194,7 +198,7 @@ public class UniqueLuceneIndexAccessorTest
         // when
         try
         {
-            accessor.updateAndCommit( asList( add( 1l, "value1" ),
+            updateAndCommit( accessor,  asList( add( 1l, "value1" ),
                     add( 2l, "value1" ) ) );
 
             fail( "expected exception" );
@@ -245,4 +249,18 @@ public class UniqueLuceneIndexAccessorTest
         assertEquals( propertyValue, conflict.getPropertyValue() );
         assertEquals( asSet( nodes ), conflict.getConflictingNodeIds() );
     }
+    
+    private void updateAndCommit( IndexAccessor accessor, Iterable<NodePropertyUpdate> updates )
+            throws IOException, IndexEntryConflictException
+    {
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+        {
+            for ( NodePropertyUpdate update : updates )
+            {
+                updater.process( update );
+            }
+        }
+    }
+
+
 }

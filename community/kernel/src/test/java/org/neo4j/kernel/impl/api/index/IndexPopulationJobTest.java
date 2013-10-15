@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -41,7 +42,9 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
@@ -56,7 +59,6 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -73,6 +75,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -373,27 +377,36 @@ public class IndexPopulationJobTest
             if ( nodeId == 2 )
             {
                 long[] labels = new long[]{label};
-                job.update( asList( NodePropertyUpdate.change( nodeToChange, propertyKeyId, previousValue, labels,
-                        newValue, labels ) ) );
+                job.update( change( nodeToChange, propertyKeyId, previousValue, labels, newValue, labels ) );
             }
             added.add( Pair.of( nodeId, propertyValue ) );
         }
 
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
+        public IndexUpdater newPopulatingUpdater()
         {
-            for ( NodePropertyUpdate update : updates )
+            return new IndexUpdater()
             {
-                switch ( update.getUpdateMode() )
+                @Override
+                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
                 {
-                case ADDED: case CHANGED:
-                    added.add( Pair.of( update.getNodeId(), update.getValueAfter() ) );
-                    break;
-                default:
-                    throw new IllegalArgumentException( update.getUpdateMode().name() );
+                    switch ( update.getUpdateMode() )
+                    {
+                        case ADDED:
+                        case CHANGED:
+                            added.add( Pair.of( update.getNodeId(), update.getValueAfter() ) );
+                            break;
+                        default:
+                            throw new IllegalArgumentException( update.getUpdateMode().name() );
+                    }
                 }
-            }
 
+
+                @Override
+                public void close() throws IOException, IndexEntryConflictException
+                {
+                }
+            };
         }
 
         public void setJob( IndexPopulationJob job )
@@ -430,30 +443,38 @@ public class IndexPopulationJobTest
         {
             if ( nodeId == 3 )
             {
-                job.update( asList( NodePropertyUpdate.remove( nodeToDelete, propertyKeyId, valueToDelete,
-                        new long[]{label} ) ) );
+                job.update( remove( nodeToDelete, propertyKeyId, valueToDelete, new long[] { label } ) );
             }
             added.put( nodeId, propertyValue );
         }
 
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
+        public IndexUpdater newPopulatingUpdater()
         {
-            for ( NodePropertyUpdate update : updates )
+            return new IndexUpdater()
             {
-                switch ( update.getUpdateMode() )
+                @Override
+                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
                 {
-                case ADDED: case CHANGED:
-                    added.put( update.getNodeId(), update.getValueAfter() );
-                    break;
-                case REMOVED:
-                    removed.put( update.getNodeId(), update.getValueBefore() );
-                    break;
-                default:
-                    throw new IllegalArgumentException( update.getUpdateMode().name() );
+                    switch ( update.getUpdateMode() )
+                    {
+                        case ADDED:
+                        case CHANGED:
+                            added.put( update.getNodeId(), update.getValueAfter() );
+                        break;
+                        case REMOVED:
+                            removed.put( update.getNodeId(), update.getValueBefore() );
+                            break;
+                        default:
+                            throw new IllegalArgumentException( update.getUpdateMode().name() );
+                    }
                 }
-            }
 
+                @Override
+                public void close() throws IOException, IndexEntryConflictException
+                {
+                }
+            };
         }
     }
 

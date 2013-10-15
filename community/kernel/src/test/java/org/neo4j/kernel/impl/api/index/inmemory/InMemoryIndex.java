@@ -25,9 +25,11 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.lang.Boolean.getBoolean;
 
@@ -76,29 +78,6 @@ class InMemoryIndex
         indexData.remove( nodeId, propertyValue );
     }
 
-    protected void update( Iterable<NodePropertyUpdate> updates, boolean applyIdempotently )
-            throws IndexEntryConflictException, IOException
-    {
-        for ( NodePropertyUpdate update : updates )
-        {
-            switch ( update.getUpdateMode() )
-            {
-            case ADDED:
-                add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
-                break;
-            case CHANGED:
-                remove( update.getNodeId(), update.getValueBefore() );
-                add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
-                break;
-            case REMOVED:
-                remove( update.getNodeId(), update.getValueBefore() );
-                break;
-            default:
-                throw new UnsupportedOperationException();
-            }
-        }
-    }
-
     InternalIndexState getState()
     {
         return state;
@@ -119,9 +98,9 @@ class InMemoryIndex
         }
 
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+        public IndexUpdater newPopulatingUpdater() throws IOException
         {
-            InMemoryIndex.this.update( updates, true );
+            return InMemoryIndex.this.newUpdater( IndexUpdateMode.ONLINE );
         }
 
         @Override
@@ -150,26 +129,6 @@ class InMemoryIndex
     private class OnlineAccessor implements IndexAccessor
     {
         @Override
-        public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
-        {
-            try
-            {
-                update( updates, true );
-            }
-            catch ( IndexEntryConflictException e )
-            {
-                throw new IllegalStateException( "Should not report index entry conflicts during recovery!", e );
-            }
-        }
-
-        @Override
-        public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
-                throws IOException, IndexEntryConflictException
-        {
-            InMemoryIndex.this.update( updates, false );
-        }
-
-        @Override
         public void force() throws IOException
         {
         }
@@ -181,6 +140,12 @@ class InMemoryIndex
         }
 
         @Override
+        public IndexUpdater newUpdater( final IndexUpdateMode mode ) throws IOException
+        {
+            return InMemoryIndex.this.newUpdater( mode );
+        }
+
+        @Override
         public void close() throws IOException
         {
         }
@@ -189,6 +154,47 @@ class InMemoryIndex
         public IndexReader newReader()
         {
             return indexData;
+        }
+    }
+
+    protected IndexUpdater newUpdater( IndexUpdateMode mode )
+    {
+        return new InMemoryIndexUpdater( mode );
+    }
+
+    private class InMemoryIndexUpdater implements IndexUpdater
+    {
+
+        private final boolean applyIdempotently;
+
+        private InMemoryIndexUpdater( IndexUpdateMode mode )
+        {
+            this.applyIdempotently = IndexUpdateMode.ONLINE == mode;
+        }
+
+        @Override
+        public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+        {
+            switch ( update.getUpdateMode() )
+            {
+                case ADDED:
+                    add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
+                    break;
+                case CHANGED:
+                    remove( update.getNodeId(), update.getValueBefore() );
+                    add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
+                    break;
+                case REMOVED:
+                    remove( update.getNodeId(), update.getValueBefore() );
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+        }
+
+        @Override
+        public void close() throws IOException, IndexEntryConflictException
+        {
         }
     }
 }
