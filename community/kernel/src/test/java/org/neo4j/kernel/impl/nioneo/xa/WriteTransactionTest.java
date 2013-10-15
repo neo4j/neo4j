@@ -28,15 +28,15 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.transaction.xa.XAException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.scan.LabelScanReader;
@@ -67,9 +67,16 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -337,8 +344,8 @@ public class WriteTransactionTest
         // THEN
         assertEquals( asSet(
                 add( nodeId, propertyKey1, value1, new long[] {labelId2} ),
-                add( nodeId, propertyKey2, value2, new long[] {labelId2} ),
-                add( nodeId, propertyKey2, value2, new long[] {labelId1, labelId2} ) ),
+                add( nodeId, propertyKey2, value2, new long[]{labelId2} ),
+                add( nodeId, propertyKey2, value2, new long[]{labelId1, labelId2} ) ),
 
                 indexingService.updates );
     }
@@ -425,9 +432,9 @@ public class WriteTransactionTest
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, propertyKey2, value2, new long[] {labelId1} ),
-                remove( nodeId, propertyKey1, value1, new long[] {labelId2} ),
-                remove( nodeId, propertyKey2, value2, new long[] {labelId2} ) ),
+                add( nodeId, propertyKey2, value2, new long[]{labelId1} ),
+                remove( nodeId, propertyKey1, value1, new long[]{labelId2} ),
+                remove( nodeId, propertyKey2, value2, new long[]{labelId2} ) ),
 
                 indexingService.updates );
     }
@@ -495,7 +502,7 @@ public class WriteTransactionTest
          *
          *   ()-->[0:block{size:1}]
          *
-         * WHEN adding a new property record in front of if, not chaning any data in that record i.e:
+         * WHEN adding a new property record in front of if, not changing any data in that record i.e:
          *
          *   ()-->[1:block{size:4}]-->[0:block{size:1}]
          *
@@ -595,12 +602,10 @@ public class WriteTransactionTest
     }
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private VerifyingXaLogicalLog log;
     private TransactionState transactionState;
     private final Config config = new Config( stringMap() );
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
     private final DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
-    private StoreFactory storeFactory;
     private NeoStore neoStore;
     private CacheAccessBackDoor cacheAccessBackDoor;
 
@@ -608,7 +613,7 @@ public class WriteTransactionTest
     public void before() throws Exception
     {
         transactionState = TransactionState.NO_STATE;
-        storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
+        StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
                 fs.get(), DEV_NULL, new DefaultTxHook() );
         neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
@@ -654,6 +659,7 @@ public class WriteTransactionTest
     }
 
     private final IndexingService mockIndexing = mock( IndexingService.class );
+    private final KernelTransactionImplementation kernelTransaction = mock( KernelTransactionImplementation.class );
 
     private WriteTransaction newWriteTransaction( IndexingService indexing )
     {
@@ -663,9 +669,10 @@ public class WriteTransactionTest
     private WriteTransaction newWriteTransaction( IndexingService indexing, Visitor<XaCommand,
             RuntimeException> verifier )
     {
-        log = new VerifyingXaLogicalLog( fs.get(), verifier );
+        VerifyingXaLogicalLog log = new VerifyingXaLogicalLog( fs.get(), verifier );
         WriteTransaction result = new WriteTransaction( 0, 0l, log, transactionState, neoStore,
-                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator(neoStore, indexing ));
+                cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator(neoStore, indexing ),
+                kernelTransaction );
         result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
         return result;
     }
@@ -719,13 +726,13 @@ public class WriteTransactionTest
         };
     }
 
-    private void prepareAndCommitRecovered( WriteTransaction tx ) throws XAException
+    private void prepareAndCommitRecovered( WriteTransaction tx ) throws Exception
     {
         tx.setRecovered();
         prepareAndCommit( tx );
     }
 
-    private void prepareAndCommit( WriteTransaction tx ) throws XAException
+    private void prepareAndCommit( WriteTransaction tx ) throws Exception
     {
         tx.doPrepare();
         tx.doCommit();

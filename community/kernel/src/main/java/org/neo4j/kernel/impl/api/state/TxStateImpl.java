@@ -42,11 +42,12 @@ import static org.neo4j.helpers.collection.Iterables.map;
  *
  *  * TxState - this class itself, containing HashMaps and DiffSets for changes
  *  * TransactionState - The legacy transaction state, to be refactored into this class.
- *  * WriteTransaction - More legacy transaction state, accessed through PersistenceManager.
+ *  * WriteTransaction - Maintains changed records and commands for logical log.
+ *                       To be refactored into a sub-component of this class.
  *
  * TransactionState is used to change the view of the data within a transaction, eg. see your own writes.
  *
- * WriteTransaction contains the changes that will actually be applied to the store, eg. records.
+ * WriteTransaction contains the changes that will actually be applied to the store, eg. records and commands.
  *
  * TxState should be a common interface for *updating* both kinds of state, and for *reading* the first kind.
  *

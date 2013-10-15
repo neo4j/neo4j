@@ -28,7 +28,6 @@ import java.util.List;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
@@ -57,7 +56,7 @@ public class TransactionHandle
 {
     private static final CypherExceptionMapping EXCEPTION_MAPPING = new CypherExceptionMapping();
 
-    private final KernelAPI kernel;
+    private final TransitionalPeriodTransactionMessContainer txManagerFacade;
     private final ExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
@@ -65,10 +64,10 @@ public class TransactionHandle
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
 
-    public TransactionHandle( KernelAPI kernel, ExecutionEngine engine, TransactionRegistry registry,
-                              TransactionUriScheme uriScheme, StringLogger log )
+    public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, ExecutionEngine engine,
+                              TransactionRegistry registry, TransactionUriScheme uriScheme, StringLogger log )
     {
-        this.kernel = kernel;
+        this.txManagerFacade = txManagerFacade;
         this.engine = engine;
         this.registry = registry;
         this.uriScheme = uriScheme;
@@ -151,7 +150,7 @@ public class TransactionHandle
         {
             try
             {
-                context = (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
+                context = txManagerFacade.newTransaction();
             }
             catch ( RuntimeException e )
             {
