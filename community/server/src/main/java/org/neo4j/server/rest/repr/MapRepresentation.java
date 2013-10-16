@@ -21,6 +21,10 @@ package org.neo4j.server.rest.repr;
 
 import java.util.Map;
 
+import static java.lang.reflect.Array.get;
+import static java.lang.reflect.Array.getLength;
+import static java.util.Arrays.asList;
+
 public class MapRepresentation extends MappingRepresentation
 {
 
@@ -60,16 +64,34 @@ public class MapRepresentation extends MappingRepresentation
                 serializer.putMapping( key.toString(), ObjectToRepresentationConverter.getMapRepresentation( (Map)
                         val ) );
             }
-            //default
             else if (val == null)
             {
                 serializer.putString( key.toString(), null );
             }
+            else if (val.getClass().isArray())
+            {
+                Object[] objects = toArray( val );
+
+                serializer.putList( key.toString(), ObjectToRepresentationConverter.getListRepresentation( asList(objects) ) );
+            }
             else
             {
-                serializer.putString( key.toString(), val.toString() );
+                throw new IllegalArgumentException( "Unsupported value type: " + val.getClass() );
             }
         }
 
+    }
+
+    private Object[] toArray( Object val )
+    {
+        int length = getLength( val );
+
+        Object[] objects = new Object[length];
+
+        for (int i=0; i<length; i++) {
+            objects[i] = get( val, i );
+        }
+
+        return objects;
     }
 }
