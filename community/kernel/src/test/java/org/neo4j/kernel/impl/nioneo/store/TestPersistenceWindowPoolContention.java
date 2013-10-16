@@ -69,7 +69,7 @@ public class TestPersistenceWindowPoolContention
         assertTrue( "delete " + file, file.delete() );
         channel = new RandomAccessFile( file, "rw" ).getChannel();
         write( channel, fileSize );
-        pool = new PersistenceWindowPool( new File("contention test"), recordSize, channel, mappingSize, true, false, StringLogger.DEV_NULL );
+        pool = new PersistenceWindowPool( new File("contention test"), recordSize, channel, mappingSize, true, false, new ConcurrentHashMap<Long, PersistenceRow>(), StringLogger.DEV_NULL );
     }
 
     private void write( FileChannel channel, long bytes ) throws IOException

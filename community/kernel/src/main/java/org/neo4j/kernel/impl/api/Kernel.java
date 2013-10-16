@@ -230,6 +230,16 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     private StatementOperationParts buildStatementOperations()
     {
+        // Note: There is a smell here, where the storage layer throws unsupportedoperation for half of its methods,
+        // and the caching layer needs special access methods into the storage layer. We should consider redesigning
+        // this. Perhaps, from the point of view of this stack, the caching and storage should be conflated. Or,
+        // perhaps each layer needs it's own interface, rather than all layers sharing the same interface.
+        // Specifically, the bottom three layers (Storage, Cache, Tx State) have very different capabilities.
+        // No writes should go past the Tx state layer, for instance, and the cache layer should be able to partially
+        // solve commands with things from the cache, and delegate to the storage to solve other parts. We probably
+        // want the the bottom two, caching and storage, to implement some other interface than the operations interface
+        // to allow addressing these characteristics.
+
         // Start off with the store layer.
         StoreStatementOperations context = new StoreStatementOperations(
                 propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
