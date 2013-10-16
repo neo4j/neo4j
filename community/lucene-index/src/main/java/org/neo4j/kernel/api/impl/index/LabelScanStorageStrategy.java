@@ -44,5 +44,7 @@ public interface LabelScanStorageStrategy
         IndexSearcher acquireSearcher();
 
         void releaseSearcher( IndexSearcher searcher ) throws IOException;
+
+        void refreshSearcher() throws IOException;
     }
 }

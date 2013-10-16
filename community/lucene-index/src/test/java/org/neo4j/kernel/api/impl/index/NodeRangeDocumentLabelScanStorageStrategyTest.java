@@ -110,6 +110,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         verify( storage ).updateDocument( eq( format.rangeTerm( 1 ) ),
                                           match( document( format.rangeField( 1 ),
                                                            format.labelField( 7, 0x1 ) ) ) );
+        verify( storage ).refreshSearcher();
         verifyNoMoreInteractions( storage );
     }
 

@@ -66,20 +66,21 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
         {
             TopDocs docs = searcher.searchAfter( lastDoc, query, rangesPerPage );
             lastDoc = null;
-            if ( docs == null || docs.totalHits == 0 )
+            int docCount = docs != null ? docs.scoreDocs.length : 0;
+            if ( docCount == 0 )
             {
                 searcher = null; // avoid searching again
                 return null;
             }
-            lastDoc = docs.scoreDocs[docs.totalHits - 1];
-            long[] rangeMap = new long[docs.totalHits * 2];
-            for ( int i = 0; i < docs.totalHits; i++ )
+            lastDoc = docs.scoreDocs[docCount - 1];
+            long[] rangeMap = new long[docCount * 2];
+            for ( int i = 0; i < docCount; i++ )
             {
                 Document doc = searcher.doc( docs.scoreDocs[i].doc );
                 rangeMap[i * 2] = format.rangeOf( doc );
                 rangeMap[i * 2 + 1] = labeledBitmap( doc );
             }
-            if ( docs.totalHits < rangesPerPage ) // not a full page => this is the last page
+            if ( docCount < rangesPerPage ) // not a full page => this is the last page (optimization)
             {
                 searcher = null; // avoid searching again
             }

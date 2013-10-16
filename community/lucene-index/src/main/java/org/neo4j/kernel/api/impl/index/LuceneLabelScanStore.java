@@ -135,21 +135,31 @@ public class LuceneLabelScanStore implements LabelScanStore, LabelScanStorageStr
         this.monitor = monitor;
     }
 
+    @Override
     public void deleteDocuments( Term documentTerm ) throws IOException
     {
         writer.deleteDocuments( documentTerm );
     }
 
+    @Override
     public void updateDocument( Term documentTerm, Document document ) throws IOException
     {
         writer.updateDocument( documentTerm, document );
     }
 
+    @Override
     public IndexSearcher acquireSearcher()
     {
         return searcherManager.acquire();
     }
 
+    @Override
+    public void refreshSearcher() throws IOException
+    {
+        searcherManager.maybeRefresh();
+    }
+
+    @Override
     public void releaseSearcher( IndexSearcher searcher ) throws IOException
     {
         searcherManager.release( searcher );

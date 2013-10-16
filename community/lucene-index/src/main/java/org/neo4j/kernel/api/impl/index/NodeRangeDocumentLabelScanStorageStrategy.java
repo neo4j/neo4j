@@ -131,6 +131,7 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
                 storage.updateDocument( format.rangeTerm( document ), document );
             }
         }
+        storage.refreshSearcher();
     }
 
     private boolean isEmpty( Document document )
