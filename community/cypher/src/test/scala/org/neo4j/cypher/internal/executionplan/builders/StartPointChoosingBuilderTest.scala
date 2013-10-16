@@ -35,9 +35,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.cypher.internal.commands.values.TokenType._
-import org.neo4j.cypher.internal.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.parser.v1_9.DefaultFalse
 
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
@@ -355,7 +353,42 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     // When
     val plan = assertAccepts(query)
 
-    assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(identifier, nodeId))))
+    assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(identifier, Literal(nodeId)))))
+  }
+
+  @Test
+  def should_identify_start_points_with_id_from_expression_over_bound_identifier() {
+    // Given ... WITH n MATCH p WHERE id(p) = n.otherId
+
+    val propertyLookup: Property = Property(Identifier(identifier), PropertyKey("otherId"))
+    val equalityPredicate: Equals = Equals(IdFunction(Identifier(otherIdentifier)), propertyLookup)
+    val query = q(
+      where = Seq(equalityPredicate),
+      patterns = Seq(SingleNode(otherIdentifier))
+    )
+
+    val pipe = new FakePipe(Seq.empty, identifier -> NodeType())
+    val plan = assertAccepts(pipe, query)
+
+    assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
+    // assert(plan.query.where === Seq(Solved(equalityPredicate)))
+  }
+
+  @Test
+  def should_identify_start_points_with_id_from_collection_expression_over_bound_identifier() {
+    // Given ... WITH n MATCH p WHERE id(p) IN n.collection
+
+    val propertyLookup: Property = Property(Identifier(identifier), PropertyKey("collection"))
+    val equalityPredicate: Equals = Equals(IdFunction(Identifier(otherIdentifier)), propertyLookup)
+    val query = q(
+      where = Seq(AnyInCollection(propertyLookup, "-_-INNER-_-", equalityPredicate)),
+      patterns = Seq(SingleNode(otherIdentifier))
+    )
+
+    val pipe = new FakePipe(Seq.empty, identifier -> NodeType())
+    val plan = assertAccepts(pipe, query)
+
+    assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
   }
 
   @Test

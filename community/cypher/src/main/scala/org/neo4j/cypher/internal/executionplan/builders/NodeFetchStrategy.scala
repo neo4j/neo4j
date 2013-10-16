@@ -34,8 +34,8 @@ object NodeFetchStrategy {
 
   val nodeStrategies: Seq[NodeStrategy] = Seq(NodeByIdStrategy, IndexSeekStrategy, LabelScanStrategy, GlobalStrategy)
 
-  def findStartStrategy(node: String, where: Seq[Predicate], ctx: PlanContext): RatedStartItem = {
-    val ratedItems = nodeStrategies.flatMap(_.findRatedStartItems(node, where, ctx))
+  def findStartStrategy(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): RatedStartItem = {
+    val ratedItems = nodeStrategies.flatMap(_.findRatedStartItems(node, boundIdentifiers, where, ctx))
     ratedItems.sortBy(_.rating).head
   }
 
@@ -78,46 +78,56 @@ trait NodeStrategy {
   type IdentifierName = String
   type PropertyKey = String
 
-  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem]
+  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem]
 
   protected def findLabelsForNode(node: String, where: Seq[Predicate]): Seq[SolvedPredicate[LabelName]] =
     where.collect {
       case predicate @ HasLabel(Identifier(identifier), label) if identifier == node => SolvedPredicate(label.name, predicate)
     }
 
-  case class SolvedPredicate[T](solution: T, predicate: Predicate)
+  case class SolvedPredicate[+T](solution: T, predicate: Predicate)
 }
 
 object NodeByIdStrategy extends NodeStrategy {
 
+  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
+    val solvedPredicates: Seq[SolvedPredicate[Expression]] = findEqualityPredicatesForBoundIdentifiers(node, boundIdentifiers, where)
+    val solutions: Seq[Expression] = solvedPredicates.map(_.solution)
+    val predicates: Seq[Predicate] = solvedPredicates.map(_.predicate)
 
-  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
-    val idPredicates: Seq[SolvedPredicate[Long]] = findEqualityPredicatesUsingNodeId(node, where)
-    val ids: Seq[Long] = idPredicates.map(_.solution)
-    val predicates: Seq[Predicate] = idPredicates.map(_.predicate)
-    if (ids.nonEmpty)
-      Seq(RatedStartItem(NodeByIdOrEmpty(node, ids.head), Single, predicates))
-    else
-      Seq.empty
+    solutions match {
+      case Seq()        => Seq()
+      case head :: tail => Seq(RatedStartItem(NodeByIdOrEmpty(node, head), Single, predicates))
+    }
   }
 
-  private def findEqualityPredicatesUsingNodeId(identifier: IdentifierName, where: Seq[Predicate]): Seq[SolvedPredicate[Long]] =
-    where.collect {
-      case predicate @ Equals(IdFunction(Identifier(id)), Literal(idValue)) if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(idValue.asInstanceOf[Number].longValue(), predicate)
-      case predicate @ Equals(Literal(idValue), IdFunction(Identifier(id))) if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(idValue.asInstanceOf[Number].longValue(), predicate)
+  private def findEqualityPredicatesForBoundIdentifiers(identifier: IdentifierName, boundIdentifiers: Set[String], where: Seq[Predicate]): Seq[SolvedPredicate[Expression]] = {
+    def computable(expression: Expression): Boolean = ! expression.exists {
+      case Identifier(name) => !boundIdentifiers(name)
+      case _                => false
     }
+    
+    where.collect {
+      case predicate @ Equals(IdFunction(Identifier(id)), Literal(idValue)) if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(Literal(idValue.asInstanceOf[Number].longValue()), predicate)
+      case predicate @ Equals(Literal(idValue), IdFunction(Identifier(id))) if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(Literal(idValue.asInstanceOf[Number].longValue()), predicate)
+        
+      case predicate @ Equals(IdFunction(Identifier(id)), expression) if id == identifier && computable(expression) => SolvedPredicate(expression, predicate)
+      case predicate @ Equals(expression, IdFunction(Identifier(id))) if id == identifier && computable(expression) => SolvedPredicate(expression, predicate)
 
+      case predicate @ AnyInCollection(collectionExpression, _, Equals(IdFunction(Identifier(id)), _)) if id == identifier && computable(collectionExpression) => SolvedPredicate(collectionExpression, predicate)
+    }
+  }
 }
 
 object IndexSeekStrategy extends NodeStrategy {
 
-  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
+  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
     val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
     val propertyPredicates: Seq[SolvedPredicate[PropertyKey]] = findEqualityPredicatesOnProperty(node, where)
 
     for (
       labelPredicate <- labelPredicates;
-      propertyPredicate <- propertyPredicates if (ctx.getIndexRule(labelPredicate.solution, propertyPredicate.solution).nonEmpty)
+      propertyPredicate <- propertyPredicates if ctx.getIndexRule(labelPredicate.solution, propertyPredicate.solution).nonEmpty
     ) yield {
       val schemaIndex = SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, AnyIndex, None)
       val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, propertyPredicate.solution)
@@ -137,12 +147,12 @@ object IndexSeekStrategy extends NodeStrategy {
 }
 
 object GlobalStrategy extends NodeStrategy {
-  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] =
+  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] =
     Seq(RatedStartItem(AllNodes(node), Global, Seq.empty))
 }
 
 object LabelScanStrategy extends NodeStrategy {
-  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
+  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
     val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
 
     labelPredicates.map {

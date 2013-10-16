@@ -191,4 +191,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
   def containsUpdates = start.exists(_.token.mutating) || updates.nonEmpty
 }
 
-case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean=false)
+case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean = false) {
+  def boundIdentifiers: Set[String] = pipe.symbols.keys.toSet
+  // val starts: Set[String] = query.start.filter(_.solved).map(_.token.identifierName).toSet
+}
