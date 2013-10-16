@@ -299,6 +299,11 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     test(
       "MERGE (n:Person) ON MATCH n SET x.foo = 1",
       "x not defined (line 1, column 33)"
+
+  @Test def shouldFailIfUsingOptionalMatch() {
+    test(
+      "optional match (n:Person) return n",
+      "OPTIONAL MATCH is not currently supported (line 1, column 1)"
     )
   }
 

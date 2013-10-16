@@ -37,9 +37,10 @@ trait Clauses extends Parser
   }
 
   def Match : Rule1[ast.Match] = rule("MATCH") {
-    group(
-      keyword("MATCH") ~~ Pattern ~~ zeroOrMore(Hint, separator = WS) ~~ optional(Where)
-    ) ~>> token ~~> ast.Match
+    group((
+        keyword("OPTIONAL", "MATCH") ~ push(true)
+      | keyword("MATCH") ~ push(false)
+    ) ~~ Pattern ~~ zeroOrMore(Hint, separator = WS) ~~ optional(Where)) ~>> token ~~> ast.Match
   }
 
   def Merge : Rule1[ast.Merge] = rule("MERGE") {
