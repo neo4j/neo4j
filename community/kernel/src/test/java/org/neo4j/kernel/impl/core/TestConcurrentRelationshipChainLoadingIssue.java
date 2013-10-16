@@ -19,27 +19,34 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.lang.Runtime.getRuntime;
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.Executors.newCachedThreadPool;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_grab_size;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.util.MultipleCauseException;
 import org.neo4j.test.ImpermanentDatabaseRule;
+
+import static java.lang.Runtime.getRuntime;
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_grab_size;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 /**
  * This isn't a deterministic test, but instead tries to trigger a race condition
@@ -62,11 +69,26 @@ public class TestConcurrentRelationshipChainLoadingIssue
     public void tryToTriggerRelationshipLoadingStoppingMidWay() throws Throwable
     {
         GraphDatabaseAPI db = graphDb.getGraphDatabaseAPI();
-        final Node node = createNodeWithRelationships( db );
-        
+        Node node = createNodeWithRelationships( db );
+        checkStateToHelpDiagnoseFlakeyTest( db, node );
         long end = currentTimeMillis()+SECONDS.toMillis( 5 );
+        int iterations = 0;
         while ( currentTimeMillis() < end )
-            tryOnce( db, node );
+            tryOnce( db, node, iterations++ );
+    }
+
+    private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
+    {
+        loadNode( db, node );
+        db.getNodeManager().clearCache();
+        loadNode( db, node );
+    }
+
+    private void loadNode( GraphDatabaseAPI db, Node node )
+    {
+        try (Transaction ignored = db.beginTx()) {
+            count( node.getRelationships() );
+        }
     }
 
     private void awaitStartSignalAndRandomTimeLonger( final CountDownLatch startSignal )
@@ -82,13 +104,13 @@ public class TestConcurrentRelationshipChainLoadingIssue
         }
     }
     
-    private void tryOnce( final GraphDatabaseAPI db, final Node node ) throws Throwable
+    private void tryOnce( final GraphDatabaseAPI db, final Node node, int iterations ) throws Throwable
     {
         db.getNodeManager().clearCache();
         ExecutorService executor = newCachedThreadPool();
         final CountDownLatch startSignal = new CountDownLatch( 1 );
         int threads = getRuntime().availableProcessors();
-        final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
+        final List<Throwable> errors = Collections.synchronizedList( new ArrayList<Throwable>() );
         for ( int i = 0; i < threads; i++ )
         {
             executor.submit( new Runnable()
@@ -104,7 +126,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
                     }
                     catch ( Throwable e )
                     {
-                        error.set( e );
+                        errors.add( e );
                     }
                     finally {
                         transaction.finish();
@@ -116,8 +138,9 @@ public class TestConcurrentRelationshipChainLoadingIssue
         executor.shutdown();
         executor.awaitTermination( 10, SECONDS );
         
-        if ( error.get() != null )
-            throw error.get();
+        if ( !errors.isEmpty() )
+            throw new MultipleCauseException( format("Exceptions from threads after %s iterations", iterations),
+                    errors );
     }
     
     private static int idleLoop( int l )
