@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Settings;
@@ -41,7 +42,8 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
         return new PersistenceWindowPool( storageFileName, recordSize, fileChannel,
                 calculateMappedMemory( configuration, storageFileName ),
                 configuration.get( CommonAbstractStore.Configuration.use_memory_mapped_buffers ),
-                isReadOnly( configuration ) && !isBackupSlave( configuration ), log );
+                isReadOnly( configuration ) && !isBackupSlave( configuration ),
+                new ConcurrentHashMap<Long, PersistenceRow>(), log );
     }
 
     private boolean isBackupSlave( Config configuration )
