@@ -42,7 +42,7 @@ public class MultipleCauseException extends Exception
         super( message, causes.get( 0 ) );
         for (Throwable cause : causes)
         {
-            causes.add( cause );
+            addCause( cause );
         }
     }
 
