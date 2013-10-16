@@ -31,15 +31,15 @@ object MatchPattern {
   def apply (patterns:Seq[Pattern]) : MatchPattern = if(patterns.isEmpty) {
       MatchPattern(Seq(), Seq())
     } else {
-      def tuple(from: String, to: String): TUPLE = {
-        Seq(from, to) -> Seq(MatchRelationship(from, to))
+      def tuple(name:Option[String], from: String, to: String): TUPLE = {
+        Seq(from, to) -> Seq(MatchRelationship(name, from, to))
       }
 
       val theThings: Seq[TUPLE] = patterns.map {
         case SingleNode(n, _, _)                               => Seq(n) -> Seq()
-        case RelatedTo(from, to, r, _, _, _)                   => tuple(from.name, to.name)
-        case ShortestPath(_, from, to, _, _, _, _, _)          => tuple(from.name, to.name)
-        case VarLengthRelatedTo(_, from, to, _, _, _, _, _, _) => tuple(from.name, to.name)
+        case RelatedTo(from, to, r, _, _, _)                   => tuple(Some(r), from.name, to.name)
+        case ShortestPath(_, from, to, _, _, _, _, _)          => tuple(None, from.name, to.name)
+        case VarLengthRelatedTo(_, from, to, _, _, _, _, _, _) => tuple(None, from.name, to.name)
       }
 
       val (nodes, rels) = theThings.reduce( (a,b) => {
@@ -51,7 +51,7 @@ object MatchPattern {
     }
 }
 
-case class MatchRelationship(from:String, to:String) {
+case class MatchRelationship(name:Option[String], from:String, to:String) {
   def contains(node: String):Boolean = from == node || to == node
 }
 

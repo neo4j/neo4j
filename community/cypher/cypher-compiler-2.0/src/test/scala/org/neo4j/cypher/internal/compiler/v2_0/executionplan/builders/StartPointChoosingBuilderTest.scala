@@ -489,6 +489,18 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     assert(plan.query.start.toList === Seq(Unsolved(AllNodes(otherIdentifier))))
   }
 
+  @Test
+  def should_not_introduce_start_points_if_relationship_is_bound() {
+    // Given
+    val query = q(
+      start = Seq(RelationshipById("r", 123)),
+      patterns = Seq(RelatedTo(identifier, otherIdentifier, "r", "KNOWS", Direction.BOTH))
+    )
+
+    // When + Then
+    assertRejects(query)
+  }
+
   private def q(start: Seq[StartItem] = Seq(),
                 where: Seq[Predicate] = Seq(),
                 updates: Seq[UpdateAction] = Seq(),

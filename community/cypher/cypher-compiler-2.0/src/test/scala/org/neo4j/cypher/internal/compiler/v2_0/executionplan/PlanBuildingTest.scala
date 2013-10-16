@@ -19,23 +19,37 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan
 
-import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_0.parser.CypherParser
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.DistinctPipe
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.{Pipe, TraversalMatchPipe, DistinctPipe}
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Mockito._
 
-class PlanBuildingTest extends Assertions {
+class PlanBuildingTest extends MockitoSugar {
   val gds: GraphDatabaseService = null
-  val planContext: PlanContext = null
+  val planContext: PlanContext = mock[PlanContext]
   val parser = CypherParser()
   val planBuilder = new ExecutionPlanBuilder(gds)
 
   @Test def should_use_distinct_pipe_for_distinct() {
-    val abstractQuery = parser.parseToQuery("MATCH n RETURN DISTINCT n")
-    val (pipe, _) = planBuilder.buildPipes(planContext, abstractQuery)
+    val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")
 
     assert(pipe.exists(_.isInstanceOf[DistinctPipe]), "Expected a DistinctPipe but didn't find any")
+  }
+
+  @Test def should_use_traversal_matcher_when_possible() {
+
+    when(planContext.getOptLabelId("Foo")).thenReturn(Some(1))
+
+    val pipe = buildExecutionPipe("match (n:Foo)-->(x) return x")
+
+    assert(pipe.exists(_.isInstanceOf[TraversalMatchPipe]), "Expected a DistinctPipe but didn't find any")
+  }
+
+  private def buildExecutionPipe(q: String): Pipe = {
+    val abstractQuery = parser.parseToQuery(q)
+    planBuilder.buildPipes(planContext, abstractQuery)._1
   }
 }

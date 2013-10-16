@@ -99,7 +99,9 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
     disconnectedPatterns.flatMap(
       (pattern: MatchPattern) => {
-        val startPointsAlreadyInPattern = startPointNames intersect pattern.nodes
+        val patternElements = pattern.nodes ++ pattern.relationships.flatMap(_.name)
+
+        val startPointsAlreadyInPattern = startPointNames intersect patternElements
 
         if (startPointsAlreadyInPattern.isEmpty)
           findStartItemFor(pattern)

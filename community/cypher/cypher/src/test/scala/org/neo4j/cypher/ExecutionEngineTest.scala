@@ -2578,6 +2578,7 @@ RETURN x0.name""")
   }
 
   @Test
+<<<<<<< HEAD:community/cypher/cypher/src/test/scala/org/neo4j/cypher/ExecutionEngineTest.scala
   def non_optional_patterns_should_not_contain_nulls() {
     // given
     val h = createNode()

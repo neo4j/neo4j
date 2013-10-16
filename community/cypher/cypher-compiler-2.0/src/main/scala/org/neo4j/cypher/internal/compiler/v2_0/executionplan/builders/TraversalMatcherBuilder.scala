@@ -121,27 +121,21 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     (startItemQueryToken, mapNodeStartCreator()(ctx, startItemQueryToken.token))
   }
 
-  private def mapNodeStartCreator(): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    val entityFactory = new EntityProducerFactory
+  val entityFactory = new EntityProducerFactory
 
-    entityFactory.nodeById orElse
-    entityFactory.nodeByIndex orElse
-    entityFactory.nodeByIndexQuery orElse
-    entityFactory.nodeByIndexHint
-  }
+  private def mapNodeStartCreator(): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
+    entityFactory.nodeStartItems
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
-    val steps = extractExpanderStepsFromQuery(plan)
-    steps.nonEmpty && plan.pipe == NullPipe
+      plan.pipe == NullPipe &&
+      !plan.query.optional &&
+      extractExpanderStepsFromQuery(plan).nonEmpty
   }
 
   private def extractExpanderStepsFromQuery(plan: ExecutionPlanInProgress): Option[LongestTrail] = {
     val startPoints = plan.query.start.flatMap {
-      case Unsolved(NodeByIndexQuery(id, _, _)) => Some(id)
-      case Unsolved(NodeByIndex(id, _, _, _))   => Some(id)
-      case Unsolved(NodeById(id, _))            => Some(id)
-      case Unsolved(NodeByIdOrEmpty(id, _))     => Some(id)
-      case _                                    => None
+      case Unsolved(x: NodeStartItemIdentifiers) => Some(x.identifierName)
+      case _            => None
     }
 
     val pattern = plan.query.patterns.flatMap {

@@ -46,7 +46,7 @@ class MatchPatternTest extends Assertions {
   @Test
   def should_find_single_graph_for_simple_rel() {
     // Given
-    val pattern = new MatchPattern(Seq("A", "B"), Seq(MatchRelationship("A", "B")))
+    val pattern = new MatchPattern(Seq("A", "B"), Seq(MatchRelationship(None, "A", "B")))
 
     // When and then
     assert( pattern.disconnectedPatterns === Seq(pattern))
@@ -57,11 +57,11 @@ class MatchPatternTest extends Assertions {
   def should_find_deeply_nested_disjoint_graphs() {
     // Given
     val pattern = new MatchPattern(Seq("A", "B", "C", "D"),
-        Seq(MatchRelationship("A", "B"), MatchRelationship("B", "D")))
+        Seq(MatchRelationship(None, "A", "B"), MatchRelationship(None, "B", "D")))
 
     // When and then
     assert( pattern.disconnectedPatterns === Seq(
-      new MatchPattern(Seq("A", "B", "D"), Seq(MatchRelationship("A", "B"), MatchRelationship("B", "D"))),
+      new MatchPattern(Seq("A", "B", "D"), Seq(MatchRelationship(None, "A", "B"), MatchRelationship(None, "B", "D"))),
       new MatchPattern(Seq("C"), Seq())))
 
   }
@@ -69,7 +69,7 @@ class MatchPatternTest extends Assertions {
   @Test
   def should_list_subgraphs_without_specified_points() {
     // Given
-    val pattern = new MatchPattern(Seq("A", "B", "C"), Seq(MatchRelationship("A", "B")))
+    val pattern = new MatchPattern(Seq("A", "B", "C"), Seq(MatchRelationship(None, "A", "B")))
 
     // When and then
     assert( pattern.disconnectedPatternsWithout(Seq("B")) === Seq(
