@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 
 import static java.util.Arrays.asList;
@@ -64,7 +63,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
     public static List<Object[]> formats()
     {
         ArrayList<Object[]> parameters = new ArrayList<>();
-        for ( BitmapFormat format : BitmapFormat.values() )
+        for ( BitmapDocumentFormat format : BitmapDocumentFormat.values() )
         {
             parameters.add( new Object[]{format} );
         }
@@ -73,9 +72,9 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 
     private final BitmapDocumentFormat format;
 
-    public NodeRangeDocumentLabelScanStorageStrategyTest( BitmapFormat format )
+    public NodeRangeDocumentLabelScanStorageStrategyTest( BitmapDocumentFormat format )
     {
-        this.format = new BitmapDocumentFormat( format );
+        this.format = format;
     }
 
     @Test
@@ -106,10 +105,12 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                                           match( document( format.rangeField( 0 ),
                                                            format.labelField( 6, 0x3 ),
                                                            format.labelField( 7, 0x1 ),
-                                                           format.labelField( 8, 0x2 ) ) ) );
+                                                           format.labelField( 8, 0x2 ),
+                                                           format.labelSearchField( 8 ) ) ) );
         verify( storage ).updateDocument( eq( format.rangeTerm( 1 ) ),
                                           match( document( format.rangeField( 1 ),
-                                                           format.labelField( 7, 0x1 ) ) ) );
+                                                           format.labelField( 7, 0x1 ),
+                                                           format.labelSearchField( 7 ) ) ) );
         verify( storage ).refreshSearcher();
         verifyNoMoreInteractions( storage );
     }
@@ -135,7 +136,8 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
                                           match( document( format.rangeField( 0 ),
                                                            format.labelField( 7, 0x71 ),
-                                                           format.labelField( 8, 0x01 ) ) ) );
+                                                           format.labelField( 8, 0x01 ),
+                                                           format.labelSearchField( 8 ) ) ) );
     }
 
     @Test
@@ -158,7 +160,8 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         // then
         verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
                                           match( document( format.rangeField( 0 ),
-                                                           format.labelField( 8, 0x01 ) ) ) );
+                                                           format.labelField( 8, 0x01 ),
+                                                           format.labelSearchField( 8 ) ) ) );
     }
 
     @Test
@@ -202,7 +205,9 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
                                           match( document( format.rangeField( 0 ),
                                                            format.labelField( 7, 0x01 ),
-                                                           format.labelField( 8, 0x01 ) ) ) );
+                                                           format.labelField( 8, 0x01 ),
+                                                           format.labelSearchField( 7 ),
+                                                           format.labelSearchField( 8 ) ) ) );
     }
 
     @Test
@@ -223,7 +228,8 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
             // then
             verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
                                               match( document( format.rangeField( 0 ),
-                                                               format.labelField( 7, 1L << i ) ) ) );
+                                                               format.labelField( 7, 1L << i ),
+                                                               format.labelSearchField( 7 ) ) ) );
         }
     }
 

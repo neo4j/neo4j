@@ -69,7 +69,7 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
 
     public NodeRangeDocumentLabelScanStorageStrategy()
     {
-        this( new BitmapDocumentFormat( BitmapFormat._32 ) );
+        this( BitmapDocumentFormat._32 );
     }
 
     NodeRangeDocumentLabelScanStorageStrategy( BitmapDocumentFormat format )

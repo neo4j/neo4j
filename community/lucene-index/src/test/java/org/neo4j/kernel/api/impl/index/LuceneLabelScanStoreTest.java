@@ -40,7 +40,6 @@ import org.junit.runners.Parameterized;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
 import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -244,16 +243,10 @@ public class LuceneLabelScanStoreTest
                                 new LuceneDocumentStructure() )},
                 new Object[]{
                         new NodeRangeDocumentLabelScanStorageStrategy(
-                                new BitmapDocumentFormat( BitmapFormat._32 ) )},
+                                BitmapDocumentFormat._32 )},
                 new Object[]{
                         new NodeRangeDocumentLabelScanStorageStrategy(
-                                new BitmapDocumentFormat( BitmapFormat._64 ) )},
-                new Object[]{
-                        new NodeRangeDocumentLabelScanStorageStrategy(
-                                new SearchAcceleratedBitmapDocumentFormat( BitmapFormat._32 ) )},
-                new Object[]{
-                        new NodeRangeDocumentLabelScanStorageStrategy(
-                                new SearchAcceleratedBitmapDocumentFormat( BitmapFormat._64 ) )}
+                                BitmapDocumentFormat._64 )}
         );
     }
 

@@ -33,7 +33,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.ArgumentCaptor;
 
-import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
@@ -64,7 +63,7 @@ public class PageOfRangesIteratorTest
     public static List<Object[]> formats()
     {
         ArrayList<Object[]> parameters = new ArrayList<>();
-        for ( BitmapFormat format : BitmapFormat.values() )
+        for ( BitmapDocumentFormat format : BitmapDocumentFormat.values() )
         {
             parameters.add( new Object[]{format} );
         }
@@ -73,9 +72,9 @@ public class PageOfRangesIteratorTest
 
     private final BitmapDocumentFormat format;
 
-    public PageOfRangesIteratorTest( BitmapFormat format )
+    public PageOfRangesIteratorTest( BitmapDocumentFormat format )
     {
-        this.format = new BitmapDocumentFormat( format );
+        this.format = format;
     }
 
     @Test
