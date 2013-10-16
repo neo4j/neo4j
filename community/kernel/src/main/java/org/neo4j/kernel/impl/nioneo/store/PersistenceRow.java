@@ -29,7 +29,7 @@ import java.nio.channels.FileChannel;
  * required record/block and it would be non efficient to create a large new
  * window to perform the required operation.
  */
-class PersistenceRow extends LockableWindow
+public class PersistenceRow extends LockableWindow
 {
     private State bufferState = State.EMPTY;
     private int recordSize = -1;

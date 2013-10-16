@@ -23,10 +23,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.text.MessageFormat;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
+import org.neo4j.kernel.impl.nioneo.store.PersistenceRow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -50,7 +52,7 @@ public class LegacyPropertyStoreReader
         fileChannel = fs.open( fileName, "r" );
         windowPool = new PersistenceWindowPool( fileName,
                 RECORD_LENGTH, fileChannel, 0,
-                true, true, log );
+                true, true, new ConcurrentHashMap<Long, PersistenceRow>(), log );
     }
 
     public LegacyPropertyRecord readPropertyRecord( long id ) throws IOException

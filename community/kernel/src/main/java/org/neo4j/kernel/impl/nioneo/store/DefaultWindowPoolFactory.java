@@ -21,16 +21,18 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap;
 import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.use_memory_mapped_buffers;
 
 public class DefaultWindowPoolFactory implements WindowPoolFactory
 {
@@ -41,9 +43,9 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
 
         return new PersistenceWindowPool( storageFileName, recordSize, fileChannel,
                 calculateMappedMemory( configuration, storageFileName ),
-                GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap( configuration.get( CommonAbstractStore
-                        .Configuration.use_memory_mapped_buffers )),
-                        isReadOnly( configuration ) && !isBackupSlave( configuration ), log );
+                shouldMemoryMap( configuration.get( use_memory_mapped_buffers ) ),
+                isReadOnly( configuration ) && !isBackupSlave( configuration ),
+                new ConcurrentHashMap<Long, PersistenceRow>(), log );
     }
 
     private boolean isBackupSlave( Config configuration )

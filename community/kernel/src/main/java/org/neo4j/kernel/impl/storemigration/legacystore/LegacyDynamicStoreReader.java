@@ -25,12 +25,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
+import org.neo4j.kernel.impl.nioneo.store.PersistenceRow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -66,7 +68,7 @@ public class LegacyDynamicStoreReader
 
         windowPool = new PersistenceWindowPool( fileName,
                 blockSize, fileChannel, 0,
-                true, true, log );
+                true, true, new ConcurrentHashMap<Long, PersistenceRow>(), log );
     }
 
     public List<LegacyDynamicRecord> getPropertyChain( long startBlockId )
