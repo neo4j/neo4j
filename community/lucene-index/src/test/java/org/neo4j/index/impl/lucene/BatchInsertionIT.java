@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -100,6 +101,59 @@ public class BatchInsertionIT
             db.shutdown();
         }
 
+    }
+
+    @Test
+    public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
+    {
+        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
+        long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
+
+        final Object finalValue = 87;
+        inserter.setNodeProperty( nodeId, "a", "some property value" );
+        inserter.setNodeProperty( nodeId, "a", 42 );
+        inserter.setNodeProperty( nodeId, "a", 3.14 );
+        inserter.setNodeProperty( nodeId, "a", true );
+        inserter.setNodeProperty( nodeId, "a", finalValue );
+        inserter.shutdown();
+
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
+        try(Transaction ignored = db.beginTx())
+        {
+            assertThat( db.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
+    {
+        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
+        long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
+
+        final Object finalValue1 = 87;
+        final Object finalValue2 = 3.14;
+        inserter.setNodeProperty( nodeId, "a", "some property value" );
+        inserter.setNodeProperty( nodeId, "a", 42 );
+        inserter.setNodeProperty( nodeId, "b", finalValue2 );
+        inserter.setNodeProperty( nodeId, "a", finalValue2 );
+        inserter.setNodeProperty( nodeId, "a", true );
+        inserter.setNodeProperty( nodeId, "a", finalValue1 );
+        inserter.shutdown();
+
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
+        try(Transaction ignored = db.beginTx())
+        {
+            assertThat( db.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue1 ) );
+            assertThat( db.getNodeById( nodeId ).getProperty( "b" ), equalTo( finalValue2 ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
     
     @Ignore
