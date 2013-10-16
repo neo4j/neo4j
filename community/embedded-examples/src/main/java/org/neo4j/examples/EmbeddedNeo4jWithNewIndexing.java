@@ -120,6 +120,7 @@ public class EmbeddedNeo4jWithNewIndexing
                 {
                     firstUserNode = users.next();
                 }
+                users.close();
             }
             // END SNIPPET: resourceIterator
         }
