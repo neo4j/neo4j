@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.symbols
 
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap}
 
 trait CypherType {
   def isAssignableFrom(other: CypherType): Boolean = this.getClass.isAssignableFrom(other.getClass)
@@ -43,21 +42,6 @@ trait CypherType {
 
   def rewrite(f: CypherType => CypherType) = f(this)
 }
-
-
-object CypherType {
-  def fromJava(obj: Any): CypherType = obj match {
-    case _: String                          => StringType()
-    case _: Char                            => StringType()
-    case _: Number                          => NumberType()
-    case _: Boolean                         => BooleanType()
-    case IsMap(_)                           => MapType()
-    case IsCollection(coll) if coll.isEmpty => CollectionType(AnyType())
-    case IsCollection(coll)                 => CollectionType(coll.map(fromJava).reduce(_ mergeDown _))
-    case _                                  => AnyType()
-  }
-}
-
 
 /*
 TypeSafe is everything that needs to check it's types

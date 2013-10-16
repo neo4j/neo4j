@@ -125,7 +125,7 @@ foreach(x in [1,2,3] |
     relate(start, a2, "x")
 
     val result = execute(
-      s"start start=node(${start.getId}) MATCH (start)-[rel:x]-(a) WHERE a.name = '${name}' return a"
+      s"start start=node(${start.getId}) MATCH (start)-[rel:x]-(a) WHERE a.name = '$name' return a"
     )
     assertEquals(List(a2), result.columnAs[Node]("a").toList)
   }
@@ -190,14 +190,11 @@ foreach(x in [1,2,3] |
     val result = execute(
       s"start node=node(${n1.getId}) match (node)-[rel:KNOWS]->(x) return x, node"
     )
-
-    val textOutput = result.dumpToString()
+    result.dumpToString()
   }
 
   @Test def doesNotFailOnVisualizingEmptyOutput() {
-    val result = execute(
-      s"start node=node(${refNode.getId}) where 1 = 0 return node"
-    )
+    execute(s"start node=node(${refNode.getId}) where 1 = 0 return node")
   }
 
   @Test def shouldGetRelatedToRelatedTo() {
@@ -219,7 +216,7 @@ foreach(x in [1,2,3] |
     val value = "andres"
     indexNode(n, idxName, key, value)
 
-    val query = s"start n=node:${idxName}(${key} = '${value}') return n"
+    val query = s"start n=node:$idxName($key = '$value') return n"
 
     assertInTx(List(Map("n" -> n)) === execute(query).toList)
   }
@@ -231,7 +228,7 @@ foreach(x in [1,2,3] |
     val value = "andres"
     indexNode(n, idxName, key, value)
 
-    val query = s"start n=node:${idxName}('${key}: ${value}') return n"
+    val query = s"start n=node:$idxName('$key: $value') return n"
 
     assertInTx(List(Map("n" -> n)) === execute(query).toList)
   }
@@ -242,7 +239,7 @@ foreach(x in [1,2,3] |
     val key = "key"
     indexNode(n, idxName, key, "Andres")
 
-    val query = s"start n=node:${idxName}(key = {value}) return n"
+    val query = s"start n=node:$idxName(key = {value}) return n"
 
     assertInTx(List(Map("n" -> n)) === execute(query, "value" -> "Andres").toList)
   }
@@ -254,7 +251,7 @@ foreach(x in [1,2,3] |
     val value = "andres"
     indexNode(n, idxName, key, value)
 
-    val query = s"start n=node:${idxName}('${key}:andr*') return n"
+    val query = s"start n=node:$idxName('$key:andr*') return n"
 
     assertInTx(List(Map("n" -> n)) === execute(query).toList)
   }
@@ -263,7 +260,7 @@ foreach(x in [1,2,3] |
     val n1 = createNode(Map("name" -> "boy"))
     val n2 = createNode(Map("name" -> "girl"))
 
-    val query = Query.
+    Query.
       start(NodeById("n", n1.getId, n2.getId)).
       where(Or(
       Equals(Property(Identifier("n"), PropertyKey("name")), Literal("boy")),
@@ -368,7 +365,7 @@ foreach(x in [1,2,3] |
     relate(refNode, a, "A")
     relate(refNode, b, "A")
 
-    val query = Query.
+    Query.
       start(NodeById("a", refNode.getId)).
       matches(RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING)).
       aggregation(CountStar()).
@@ -768,8 +765,7 @@ foreach(x in [1,2,3] |
     relate("A" -> "KNOWS" -> "B")
 
     //Checking that we don't get an exception
-    val result = execute("start a = node(1), b = node(2) match p = shortestPath(a-[*]-b) return p").
-      toList
+    execute("start a = node(1), b = node(2) match p = shortestPath(a-[*]-b) return p").toList
   }
 
   @Test def shouldBeAbleToTakeParamsInDifferentTypes() {
@@ -1024,7 +1020,7 @@ return x, p""").toList
   @Test def shouldHandleOptionalPathsFromACombo() {
     val a = createNode("A")
     val b = createNode("B")
-    val r = relate(a, b, "X")
+    relate(a, b, "X")
 
     val result = execute( """
 start a  = node(1)
@@ -1073,7 +1069,7 @@ return a""")
   }
 
   @Test def shouldSupportColumnRenamingForAggregatesAsWell() {
-    val a = createNode(Map("name" -> "Andreas"))
+    createNode(Map("name" -> "Andreas"))
 
     val result = execute( """
 start a  = node(1)
@@ -1765,7 +1761,7 @@ RETURN x0.name
     relate(peter, bread, "ATE", Map("times"->7))
     relate(peter, meat, "ATE", Map("times"->4))
 
-    val result = execute(
+    execute(
       """    start me=node(1)
     match me-[r1:ATE]->food<-[r2:ATE]-you
 
@@ -1845,7 +1841,7 @@ RETURN x0.name
   def var_length_predicate() {
     val a = createNode()
     val b = createNode()
-    val r = relate(a, b)
+    relate(a, b)
 
     val resultPath = execute("START a=node(1), b=node(2) RETURN a-[*]->b as path")
       .toList.head("path")
@@ -1873,7 +1869,7 @@ RETURN x0.name
     relate(a,b)
     relate(a,c)
 
-    val result = execute("CYPHER 1.9 START a=node(1) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").dumpToString()
+    execute("CYPHER 1.9 START a=node(1) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").dumpToString()
   }
 
   @Test
@@ -2172,7 +2168,7 @@ RETURN x0.name
 
   @Test
   def extract_string_from_node_collection() {
-    val a = createNode("name"->"a")
+    createNode("name"->"a")
 
     val result = execute("""START n=node(1) with collect(n) as nodes return head(extract(x in nodes | x.name)) + "test" as test """)
 
@@ -2266,7 +2262,7 @@ RETURN x0.name
     // GIVEN
     val a = createLabeledNode("foo")
     val b = createLabeledNode("foo", "bar")
-    val c = createNode()
+    createNode()
 
     // WHEN
     val result = execute("""START n=node(1, 2, 3) WHERE n:foo RETURN n""")
@@ -2277,8 +2273,8 @@ RETURN x0.name
 
   @Test def should_filter_nodes_by_single_negated_label() {
     // GIVEN
-    val a = createLabeledNode("foo")
-    val b = createLabeledNode("foo", "bar")
+    createLabeledNode("foo")
+    createLabeledNode("foo", "bar")
     val c = createNode()
 
     // WHEN
@@ -2290,9 +2286,9 @@ RETURN x0.name
 
   @Test def should_filter_nodes_by_multiple_labels() {
     // GIVEN
-    val a = createLabeledNode("foo")
+    createLabeledNode("foo")
     val b = createLabeledNode("foo", "bar")
-    val c = createNode()
+    createNode()
 
     // WHEN
     val result = execute("""START n=node(1, 2, 3) WHERE n:foo:bar RETURN n""")
@@ -2726,7 +2722,7 @@ RETURN x0.name
     // given any database
 
     // then shouldn't throw
-    val result = execute("START x=node(0) RETURN DISTINCT x as otherName ORDER BY x.name ")
+    execute("START x=node(0) RETURN DISTINCT x as otherName ORDER BY x.name ")
   }
 
   def should_not_hang() {
@@ -2768,5 +2764,11 @@ RETURN x0.name
       assert(node.getProperty("first", null) === null)
       assert(node.getProperty("second") === "value")
     }
+  }
+
+  @Test
+  def should_be_able_to_index_into_nested_literal_lists() {
+    execute("RETURN [[1]][0][0]")
+    // shoud not throw an exception
   }
 }

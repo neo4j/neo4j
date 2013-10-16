@@ -34,14 +34,9 @@ case class Collection(children: Expression*) extends Expression {
 
   def calculateType(symbols: SymbolTable): CypherType = {
     children.map(_.getType(symbols)) match {
-
       case Seq() => CollectionType(AnyType())
-
-      case types =>
-        val innerType = types.foldLeft(AnyType().asInstanceOf[CypherType])(_ mergeDown _)
-        CollectionType( innerType )
+      case types => CollectionType(types.reduce(_ mergeDown _))
     }
-
   }
 
   def symbolTableDependencies = children.flatMap(_.symbolTableDependencies).toSet
