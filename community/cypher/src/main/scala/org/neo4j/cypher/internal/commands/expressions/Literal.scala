@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
+import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap}
+import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.symbols.AnyType
 
 case class Literal(v: Any) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = v
@@ -30,9 +33,20 @@ case class Literal(v: Any) extends Expression {
 
   def children = Nil
 
-  def calculateType(symbols: SymbolTable): CypherType = CypherType.fromJava(v)
+  def calculateType(symbols: SymbolTable): CypherType = deriveType(v)
 
   def symbolTableDependencies = Set()
 
-  override def toString() = "Literal(" + v + ")"
+  override def toString = "Literal(" + v + ")"
+
+  private def deriveType(obj: Any): CypherType = obj match {
+    case _: String                          => StringType()
+    case _: Char                            => StringType()
+    case _: Number                          => NumberType()
+    case _: Boolean                         => BooleanType()
+    case IsMap(_)                           => MapType()
+    case IsCollection(coll) if coll.isEmpty => CollectionType(AnyType())
+    case IsCollection(coll)                 => CollectionType(coll.map(deriveType).reduce(_ mergeDown _))
+    case _                                  => AnyType()
+  }
 }
