@@ -25,7 +25,7 @@ import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphalgo.GraphAlgoFactory
-import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, Expander}
+import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, PathExpander, PathExpanders, PathExpanderBuilder}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.Traversal
 import collection.Map
@@ -64,12 +64,12 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
 
   def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(ast.rewrite(f)))
 
-  private lazy val expander: Expander = if (ast.relTypes.isEmpty) {
-    Traversal.expanderForAllTypes(ast.dir)
+  private lazy val expander: PathExpander[Any] = if (ast.relTypes.isEmpty) {
+    PathExpanders.forDirection(ast.dir)
   } else {
-    ast.relTypes.foldLeft(Traversal.emptyExpander()) {
+    ast.relTypes.foldLeft(PathExpanderBuilder.empty()) {
       case (e, t) => e.add(DynamicRelationshipType.withName(t), ast.dir)
-    }
+    }.build()
   }
 
   val shortestPathStrategy = if (ast.single)
@@ -87,7 +87,7 @@ trait ShortestPathStrategy {
   def typ: CypherType
 }
 
-class SingleShortestPathStrategy(expander: Expander, depth: Int) extends ShortestPathStrategy {
+class SingleShortestPathStrategy(expander: PathExpander[Any], depth: Int) extends ShortestPathStrategy {
   private val finder = GraphAlgoFactory.shortestPath(expander, depth)
 
   def findResult(start: Node, end: Node): Path = finder.findSinglePath(start, end)
@@ -95,7 +95,7 @@ class SingleShortestPathStrategy(expander: Expander, depth: Int) extends Shortes
   def typ = PathType()
 }
 
-class AllShortestPathsStrategy(expander: Expander, depth: Int) extends ShortestPathStrategy {
+class AllShortestPathsStrategy(expander: PathExpander[Any], depth: Int) extends ShortestPathStrategy {
   private val finder = GraphAlgoFactory.shortestPath(expander, depth)
 
   def findResult(start: Node, end: Node): Stream[Path] = {

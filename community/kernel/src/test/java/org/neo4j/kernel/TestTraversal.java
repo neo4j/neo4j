@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel;
 
+import org.junit.Test;
+
+import org.neo4j.graphdb.PathExpanders;
+import org.neo4j.graphdb.RelationshipType;
+
 import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
-import org.junit.Test;
-import org.neo4j.graphdb.RelationshipType;
 
 public class TestTraversal
 {
@@ -36,7 +39,6 @@ public class TestTraversal
     @Test
     public void canCreateExpanderWithMultipleTypesAndDirections()
     {
-        assertNotNull( Traversal.expanderForTypes( T1, INCOMING, T2,
-                OUTGOING, T3, BOTH ) );
+        assertNotNull( PathExpanders.forTypesAndDirections( T1, INCOMING, T2, OUTGOING, T3, BOTH ) );
     }
 }

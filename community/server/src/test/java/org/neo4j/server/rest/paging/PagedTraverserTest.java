@@ -25,19 +25,21 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.EphemeralDatabase;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.PathExpanders.forTypeAndDirection;
+import static org.neo4j.graphdb.traversal.Uniqueness.NODE_GLOBAL;
 
 public class PagedTraverserTest
 {
@@ -126,10 +128,10 @@ public class PagedTraverserTest
 
     private Traverser simpleListTraverser()
     {
-        return Traversal.description()
-                .expand( Traversal.expanderForTypes( DynamicRelationshipType.withName( "NEXT" ), Direction.OUTGOING ) )
+        return database.getGraph().traversalDescription()
+                .expand( forTypeAndDirection( withName( "NEXT" ), OUTGOING ) )
                 .depthFirst()
-                .uniqueness( Uniqueness.NODE_GLOBAL )
+                .uniqueness( NODE_GLOBAL )
                 .traverse( startNode );
     }
 }

@@ -30,19 +30,17 @@ import org.neo4j.graphalgo.impl.util.StopAfterWeightIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
-import static org.neo4j.kernel.Traversal.traversal;
+import static org.neo4j.kernel.Traversal.description;
 
 /**
  * Implementation of A* algorithm, see {@link AStar}, but using the traversal
@@ -71,14 +69,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     {
         this.costEvaluator = costEvaluator;
         this.estimateEvaluator = estimateEvaluator;
-        this.traversalDescription = traversal().uniqueness( Uniqueness.NONE ).expand( expander, initialState );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public TraversalAStar( RelationshipExpander expander, CostEvaluator<Double> costEvaluator,
-            EstimateEvaluator<Double> estimateEvaluator )
-    {
-        this( toPathExpander( expander ), costEvaluator, estimateEvaluator );
+        this.traversalDescription = description().uniqueness( Uniqueness.NONE ).expand( expander, initialState );
     }
 
     @Override

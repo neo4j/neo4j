@@ -33,6 +33,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.Traversal;
 
+import static org.neo4j.graphdb.PathExpanders.forTypeAndDirection;
+
 public class CalculateShortestPath
 {
     private static final String DB_PATH = "neo4j-shortest-path";
@@ -70,8 +72,7 @@ public class CalculateShortestPath
         Node neo = getOrCreateNode( "Neo" );
         Node agentSmith = getOrCreateNode( "Agent Smith" );
         // START SNIPPET: shortestPathUsage
-        PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                Traversal.expanderForTypes( KNOWS, Direction.BOTH ), 4 );
+        PathFinder<Path> finder = GraphAlgoFactory.shortestPath( forTypeAndDirection( KNOWS, Direction.BOTH ), 4 );
         Path foundPath = finder.findSinglePath( neo, agentSmith );
         System.out.println( "Path from Neo to Agent Smith: "
                             + Traversal.simplePathToString( foundPath, NAME_KEY ) );

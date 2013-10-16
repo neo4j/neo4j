@@ -29,7 +29,6 @@ import org.neo4j.graphalgo.impl.util.StopAfterWeightIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
@@ -39,7 +38,6 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
 
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 import static org.neo4j.kernel.Traversal.traversal;
 
 /**
@@ -66,11 +64,6 @@ public class Dijkstra implements PathFinder<WeightedPath>
         this.expander = expander;
         this.costEvaluator = costEvaluator;
         this.stateFactory = stateFactory;
-    }
-
-    public Dijkstra( RelationshipExpander expander, CostEvaluator<Double> costEvaluator )
-    {
-        this( toPathExpander( expander ), costEvaluator );
     }
 
     @Override

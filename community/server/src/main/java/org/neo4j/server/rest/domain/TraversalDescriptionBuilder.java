@@ -24,14 +24,14 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.OrderedByTypeExpander;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
@@ -128,45 +128,45 @@ public class TraversalDescriptionBuilder
                 pairDescriptions = Arrays.asList( relationshipsDescription );
             }
 
-            Expander expander = createExpander( description );
-
-            for ( Object pairDescription : pairDescriptions )
+            PathExpander expander = createSpecificExpander( description );
+            if ( expander == null )
             {
-                Map map = (Map) pairDescription;
-                String name = (String) map.get( "type" );
-                RelationshipType type = DynamicRelationshipType.withName( name );
-                String directionName = (String) map.get( "direction" );
-                expander = directionName == null ? expander.add( type ) :
-                        expander.add( type, stringToEnum( directionName,
-                                RelationshipDirection.class, true ).internal );
+                PathExpanderBuilder builder = PathExpanderBuilder.empty();
+                for ( Object pairDescription : pairDescriptions )
+                {
+                    Map map = (Map) pairDescription;
+                    String name = (String) map.get( "type" );
+                    RelationshipType type = DynamicRelationshipType.withName( name );
+                    String directionName = (String) map.get( "direction" );
+                    builder = directionName == null ? builder.add( type ) :
+                            builder.add( type, stringToEnum( directionName,
+                                    RelationshipDirection.class, true ).internal );
+                }
+                expander = builder.build();
             }
             result = result.expand( expander );
         }
         return result;
     }
 
-    private Expander createExpander( Map<String, Object> description )
+    private PathExpander createSpecificExpander( Map<String, Object> description )
     {
-        if(description.containsKey( "expander" ))
+        if ( description.containsKey( "expander" ) )
         {
             Object expanderDesc = description.get( "expander" );
-            if(! (expanderDesc instanceof String))
+            if ( !(expanderDesc instanceof String) )
             {
-                throw new IllegalArgumentException( "Invalid expander type '"+expanderDesc+"', expected a string name." );
-
+                throw new IllegalArgumentException( "Invalid expander type '" + expanderDesc
+                        + "', expected a string name." );
             }
-
             String expanderName = (String) expanderDesc;
-            if(expanderName.equalsIgnoreCase( "order_by_type" ))
+            if ( expanderName.equalsIgnoreCase( "order_by_type" ) )
             {
                 return new OrderedByTypeExpander();
             }
-
-            throw new IllegalArgumentException( "Unknown expander type: '"+expanderName+"'" );
+            throw new IllegalArgumentException( "Unknown expander type: '" + expanderName + "'" );
         }
-
-        // Default expander
-        return Traversal.emptyExpander();
+        return null;
     }
 
     private TraversalDescription describeUniqueness( TraversalDescription result, Map<String, Object> description )

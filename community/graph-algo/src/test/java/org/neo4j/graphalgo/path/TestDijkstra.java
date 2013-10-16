@@ -38,13 +38,13 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.InitialBranchState;
-import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.graphalgo.GraphAlgoFactory.dijkstra;
+import static org.neo4j.graphdb.PathExpanders.forTypeAndDirection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class TestDijkstra extends Neo4jAlgoTestCase
@@ -87,9 +87,9 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         Relationship shortCTOXRelationship = createGraph( true );
 
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
-                Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ), "cost" );
+                forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING ), "cost" );
         PathFinder<WeightedPath> finder2 = GraphAlgoFactory.dijkstra(
-                Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ),
+                forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING ),
                 CommonEvaluators.doubleCostEvaluator( "cost" ) );
 
         // Assert that there are two matching paths
@@ -117,7 +117,7 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         Relationship shortCTOXRelationship = createGraph( true );
 
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
-                Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ),
+                forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING ),
                 CommonEvaluators.doubleCostEvaluator( "cost", 1.0d ) );
 
         // Assert that there are two matching paths
@@ -192,7 +192,7 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         Node node4 = graph.getNode( "4" );
 
         PathFinder<WeightedPath> pathFinder = GraphAlgoFactory.dijkstra(
-                Traversal.expanderForTypes( type, Direction.OUTGOING ), "weight" );
+                forTypeAndDirection( type, Direction.OUTGOING ), "weight" );
         WeightedPath wPath = pathFinder.findSinglePath( node0, node4 );
 
         assertPath( wPath, node0, node1, node2, node3, node4 );

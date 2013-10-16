@@ -19,14 +19,6 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.ext.udc.UdcConstants.ID;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -42,8 +34,17 @@ import org.apache.http.localserver.LocalTestServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.ext.udc.UdcConstants;
-import org.neo4j.helpers.HostnamePort;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.ext.udc.UdcConstants.ID;
 
 /**
  * Unit tests for the UDC statistics pinger.

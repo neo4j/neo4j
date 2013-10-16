@@ -124,14 +124,14 @@ class VariableLengthPatternRelationship(pathName: String,
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 
     val traversalDescription = if (relType.isEmpty) {
-      baseTraversalDescription.expand(Traversal.expanderForAllTypes(getDirection(node)))
+      baseTraversalDescription.expand(PathExpanders.forDirection(getDirection(node)))
     } else {
-      val emptyExpander = Traversal.emptyExpander()
+      val emptyExpander = PathExpanderBuilder.empty()
       val dir = getDirection(node)
       val expander = relType.foldLeft(emptyExpander) {
         case (e, t) => e.add(DynamicRelationshipType.withName(t), dir)
       }
-      baseTraversalDescription.expand(expander)
+      baseTraversalDescription.expand(expander.build())
     }
 
     traversalDescription.traverse(realNode).asScala.toStream.map(p => VariableLengthGraphRelationship(p))

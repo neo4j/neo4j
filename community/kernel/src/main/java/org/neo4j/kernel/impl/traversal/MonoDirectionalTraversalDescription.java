@@ -24,13 +24,13 @@ import java.util.Collection;
 import java.util.Comparator;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.traversal.BranchOrderingPolicies;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
@@ -39,12 +39,11 @@ import org.neo4j.graphdb.traversal.InitialStateFactory;
 import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Provider;
-import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
 
 public final class MonoDirectionalTraversalDescription implements TraversalDescription
 {
@@ -57,6 +56,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         }
     };
 
+    final PathExpanderBuilder expanderBuilder;
     final PathExpander expander;
     final InitialBranchState initialState;
     final Provider<? extends Resource> statementFactory;
@@ -79,18 +79,20 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
 
     public MonoDirectionalTraversalDescription( Provider<? extends Resource> statementProvider )
     {
-        this( Traversal.emptyPathExpander(), Uniqueness.NODE_GLOBAL, null,
+        this( PathExpanderBuilder.empty(), null, Uniqueness.NODE_GLOBAL, null,
                 Evaluators.all(), InitialBranchState.NO_STATE, Traversal.preorderDepthFirst(), null, null,
                 statementProvider );
     }
 
-    private MonoDirectionalTraversalDescription( PathExpander expander,
+    private MonoDirectionalTraversalDescription( PathExpanderBuilder expanderBuilder,
+                                                 PathExpander expander,
                                                  UniquenessFactory uniqueness, Object uniquenessParameter,
                                                  PathEvaluator evaluator, InitialBranchState initialState,
                                                  BranchOrderingPolicy branchOrdering,
                                                  Comparator<? super Path> sorting, Collection<Node> endNodes,
                                                  Provider<? extends Resource> statementFactory )
     {
+        this.expanderBuilder = expanderBuilder;
         this.expander = expander;
         this.uniqueness = uniqueness;
         this.uniquenessParameter = uniquenessParameter;
@@ -101,12 +103,14 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         this.initialState = initialState;
         this.statementFactory = statementFactory;
     }
-    
+
+    @Override
     public Traverser traverse( Node startNode )
     {
         return traverse( new Node[]{startNode} );
     }
 
+    @Override
     public Traverser traverse( Node... startNodes )
     {
         final Iterable<Node> iterableStartNodes = Arrays.asList( startNodes );
@@ -125,18 +129,14 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         });
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#uniqueness(org.neo4j.graphdb.traversal.Uniqueness)
-     */
+    @Override
     public TraversalDescription uniqueness( UniquenessFactory uniqueness )
     {
-        return new MonoDirectionalTraversalDescription( expander, uniqueness, null,
+        return new MonoDirectionalTraversalDescription( expanderBuilder, expander, uniqueness, null,
                 evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#uniqueness(org.neo4j.graphdb.traversal.Uniqueness, java.lang.Object)
-     */
+    @Override
     public TraversalDescription uniqueness( UniquenessFactory uniqueness,
             Object parameter )
     {
@@ -146,15 +146,17 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
             return this;
         }
 
-        return new MonoDirectionalTraversalDescription( expander, uniqueness, parameter,
+        return new MonoDirectionalTraversalDescription( expanderBuilder, expander, uniqueness, parameter,
                 evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
-    
+
+    @Override
     public TraversalDescription evaluator( Evaluator evaluator )
     {
         return evaluator( new Evaluator.AsPathEvaluator( evaluator) );
     }
-    
+
+    @Override
     public TraversalDescription evaluator( PathEvaluator evaluator )
     {
         if ( this.evaluator == evaluator )
@@ -162,11 +164,11 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
             return this;
         }
         nullCheck( evaluator, Evaluator.class, "RETURN_ALL" );
-        return new MonoDirectionalTraversalDescription( expander, uniqueness, uniquenessParameter,
+        return new MonoDirectionalTraversalDescription( expanderBuilder, expander, uniqueness, uniquenessParameter,
                 addEvaluator( this.evaluator, evaluator ), initialState, branchOrdering, sorting, endNodes,
                 statementFactory );
     }
-    
+
     protected static PathEvaluator addEvaluator( PathEvaluator existing, PathEvaluator toAdd )
     {
         if ( existing instanceof MultiEvaluator )
@@ -179,7 +181,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
                 new MultiEvaluator( new PathEvaluator[] { existing, toAdd } );
         }
     }
-    
+
     protected static <T> void nullCheck( T parameter, Class<T> parameterType, String defaultName )
     {
         if ( parameter == null )
@@ -192,87 +194,85 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#order(org.neo4j.graphdb.traversal.Order)
-     */
+    @Override
     public TraversalDescription order( BranchOrderingPolicy order )
     {
         if ( this.branchOrdering == order )
         {
             return this;
         }
-        return new MonoDirectionalTraversalDescription( expander, uniqueness, uniquenessParameter,
+        return new MonoDirectionalTraversalDescription( expanderBuilder, expander, uniqueness, uniquenessParameter,
                 evaluator, initialState, order, sorting, endNodes, statementFactory );
     }
 
+    @Override
     public TraversalDescription depthFirst()
     {
-        return order( Traversal.preorderDepthFirst() );
+        return order( BranchOrderingPolicies.PREORDER_DEPTH_FIRST );
     }
 
+    @Override
     public TraversalDescription breadthFirst()
     {
-        return order( Traversal.preorderBreadthFirst() );
+        return order( BranchOrderingPolicies.PREORDER_BREADTH_FIRST );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#relationships(org.neo4j.graphdb.RelationshipType)
-     */
+    @Override
     public TraversalDescription relationships( RelationshipType type )
     {
         return relationships( type, Direction.BOTH );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#relationships(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction)
-     */
-    public TraversalDescription relationships( RelationshipType type,
-            Direction direction )
+    @Override
+    public TraversalDescription relationships( RelationshipType type, Direction direction )
     {
-        if ( expander instanceof Expander )
-            return expand( ((Expander)expander).add( type, direction ) );
-        throw new IllegalStateException( "The current expander cannot be added to" );
-    }
-    
-    public TraversalDescription expand( RelationshipExpander expander )
-    {
-        return expand( StandardExpander.toPathExpander( expander ) );
+        if ( expander != null )
+        {
+            throw new IllegalStateException( "The current expander cannot be added to" );
+        }
+
+        return new MonoDirectionalTraversalDescription( expanderBuilder.add( type, direction ), expander, uniqueness,
+                uniquenessParameter, evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
 
+    @Override
     public TraversalDescription expand( PathExpander<?> expander )
     {
         if ( expander.equals( this.expander ) )
         {
             return this;
         }
-        return new MonoDirectionalTraversalDescription( expander, uniqueness,
+        return new MonoDirectionalTraversalDescription( expanderBuilder, expander, uniqueness,
                 uniquenessParameter, evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
-    
+
+    @Override
     public <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialBranchState<STATE> initialState )
     {
-        return new MonoDirectionalTraversalDescription( expander, uniqueness,
+        return new MonoDirectionalTraversalDescription( expanderBuilder, expander, uniqueness,
                 uniquenessParameter, evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
-    
+
+    @Override
     public <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialStateFactory<STATE> initialState )
     {
-        return new MonoDirectionalTraversalDescription( expander, uniqueness,
+        return new MonoDirectionalTraversalDescription( expanderBuilder, expander, uniqueness,
                 uniquenessParameter, evaluator, new InitialStateFactory.AsInitialBranchState<>( initialState ),
                 branchOrdering, sorting, endNodes, statementFactory );
     }
-    
+
     @Override
     public TraversalDescription sort( Comparator<? super Path> sorting )
     {
-        return new MonoDirectionalTraversalDescription( expander, uniqueness, uniquenessParameter, evaluator,
-                initialState, branchOrdering, sorting, endNodes, statementFactory );
+        return new MonoDirectionalTraversalDescription( expanderBuilder, expander, uniqueness, uniquenessParameter,
+                evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
-    
+
     @Override
     public TraversalDescription reverse()
     {
-        return new MonoDirectionalTraversalDescription( expander.reverse(), uniqueness, uniquenessParameter,
-                evaluator, initialState.reverse(), branchOrdering, sorting, endNodes, statementFactory );
+        return new MonoDirectionalTraversalDescription( expanderBuilder, expander.reverse(), uniqueness,
+                uniquenessParameter, evaluator, initialState.reverse(), branchOrdering, sorting, endNodes,
+                statementFactory );
     }
 }
