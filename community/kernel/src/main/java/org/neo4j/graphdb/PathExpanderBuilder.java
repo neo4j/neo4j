@@ -28,16 +28,16 @@ import static org.neo4j.graphdb.Direction.BOTH;
  * <p/>
  * See {@link PathExpanders} for a catalogue of common expanders.
  */
-public class PathExpanderBuilder<STATE>
+public class PathExpanderBuilder
 {
     /**
      * A {@link PathExpanderBuilder} that follows no relationships. You start with this and use
      * {@link #add(RelationshipType, Direction)} to form a restrictive PathExpander with just a few expansion rules
      * in it.
      */
-    public static <STATE> PathExpanderBuilder<STATE> empty()
+    public static PathExpanderBuilder empty()
     {
-        return new PathExpanderBuilder<>( StandardExpander.EMPTY );
+        return new PathExpanderBuilder( StandardExpander.EMPTY );
     }
 
     /**
@@ -45,9 +45,9 @@ public class PathExpanderBuilder<STATE>
      * directions}. You start with this and {@link #remove(RelationshipType) remove types} to form a permissive
      * {@link PathExpander} with just a few exceptions in it.
      */
-    public static <STATE> PathExpanderBuilder<STATE> allTypesAndDirections()
+    public static <STATE> PathExpanderBuilder allTypesAndDirections()
     {
-        return new PathExpanderBuilder<>( StandardExpander.DEFAULT );
+        return new PathExpanderBuilder( StandardExpander.DEFAULT );
     }
 
     /**
@@ -57,15 +57,15 @@ public class PathExpanderBuilder<STATE>
      *
      * @param direction The direction you want to restrict expansions to
      */
-    public static <STATE> PathExpanderBuilder<STATE> allTypes( Direction direction )
+    public static PathExpanderBuilder allTypes( Direction direction )
     {
-        return new PathExpanderBuilder<>( StandardExpander.create( direction ) );
+        return new PathExpanderBuilder( StandardExpander.create( direction ) );
     }
 
     /**
      * Add a pair of {@code type} and {@link Direction#BOTH} to the PathExpander configuration.
      */
-    public PathExpanderBuilder<STATE> add( RelationshipType type )
+    public PathExpanderBuilder add( RelationshipType type )
     {
         return add( type, BOTH );
     }
@@ -73,9 +73,9 @@ public class PathExpanderBuilder<STATE>
     /**
      * Add a pair of {@code type} and {@code direction} to the PathExpander configuration.
      */
-    public PathExpanderBuilder<STATE> add( RelationshipType type, Direction direction )
+    public PathExpanderBuilder add( RelationshipType type, Direction direction )
     {
-        return new PathExpanderBuilder<>( expander.add( type, direction ) );
+        return new PathExpanderBuilder( expander.add( type, direction ) );
     }
 
     /**
@@ -85,16 +85,16 @@ public class PathExpanderBuilder<STATE>
      * would restrict the {@link PathExpander} to only follow {@code Direction.INCOMING} relationships for {@code
      * type} while following any other relationship type in either direction.
      */
-    public PathExpanderBuilder<STATE> remove( RelationshipType type )
+    public PathExpanderBuilder remove( RelationshipType type )
     {
-        return new PathExpanderBuilder<>( expander.remove( type ) );
+        return new PathExpanderBuilder( expander.remove( type ) );
     }
 
     /**
      * Produce a PathExpander from the configuration you have built up.
      */
     @SuppressWarnings("unchecked")
-    public PathExpander<STATE> build()
+    public <STATE> PathExpander<STATE> build()
     {
         return expander;
     }
