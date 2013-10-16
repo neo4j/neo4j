@@ -23,9 +23,12 @@ import org.junit.Test
 import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
 import collection.mutable.{Map=>MutableMap}
-import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.neo4j.cypher.internal.commands.expressions.{Add, Literal, RandFunction, Identifier}
 import org.neo4j.cypher.internal.symbols.{NumberType, StringType, ScalarType}
 import org.neo4j.cypher.internal.commands.SortItem
+import org.neo4j.cypher.internal.ExecutionContext
+import scala.util.Random
+import org.neo4j.cypher.PatternException
 
 class SortPipeTest extends JUnitSuite {
   @Test def emptyInIsEmptyOut() {
@@ -88,5 +91,34 @@ class SortPipeTest extends JUnitSuite {
       MutableMap("y" -> 1),
       MutableMap("y" -> 2),
       MutableMap("y" -> null)), sortPipe.createResults(QueryStateHelper.empty).toList)
+  }
+
+  @Test def shouldHandleSortingWithComputedValues() {
+    val list:Seq[MutableMap[String, Any]] = List(
+      MutableMap("x" -> 3),
+      MutableMap("x" -> 1),
+      MutableMap("x" -> 2))
+
+    val source = new FakePipe(list, "x" -> NumberType())
+
+    val sortPipe = new SortPipe(source, List(SortItem(Add(Identifier("x"), Literal(1)), true)))
+
+    val actualResult = sortPipe.createResults(QueryStateHelper.empty).toList
+    val expectedResult =  List(
+      MutableMap("x" -> 1),
+      MutableMap("x" -> 2),
+      MutableMap("x" -> 3))
+    assertEquals(expectedResult, actualResult)
+  }
+
+  @Test(expected = classOf[PatternException]) def shouldNotAllowSortingWithRandomValues() {
+    val list:Seq[MutableMap[String, Any]] = Random.shuffle(
+      for (v <- 1 to 1000) yield MutableMap("x" -> (v: Any)))
+
+    val source = new FakePipe(list, "x" -> NumberType())
+
+    val sortPipe = new SortPipe(source, List(SortItem(Add(Add(Literal(1), RandFunction()), Literal(1)), true)))
+
+    sortPipe.createResults(QueryStateHelper.empty)
   }
 }

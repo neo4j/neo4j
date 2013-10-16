@@ -45,12 +45,11 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
 }
 
 trait ExecutionContextComparer extends Comparer {
-  def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem])(implicit qtx: QueryState): Boolean = order match {
+  def compareBy(a: ExecutionContext, b: ExecutionContext, order: Seq[SortItem])(implicit qtx: QueryState): Boolean = order match {
     case Nil => false
     case head :: tail => {
-      val key = head.columnName
-      val aVal = a(key)
-      val bVal = b(key)
+      val aVal = head(a)
+      val bVal = head(b)
       signum(compare(aVal, bVal)) match {
         case 1 => !head.ascending
         case -1 => head.ascending
