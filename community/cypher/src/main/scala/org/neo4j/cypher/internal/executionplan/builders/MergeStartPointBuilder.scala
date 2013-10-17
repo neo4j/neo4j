@@ -47,18 +47,18 @@ class MergeStartPointBuilder extends PlanBuilder {
     val q: PartiallySolvedQuery = plan.query
 
     // Find merge points that do not have a node producer, and produce one for them
-    val updatesWithSolvedMergePoints = plan.query.updates.map(update => update.map(solveUnsolvedMergePoints(ctx)))
+    val updatesWithSolvedMergePoints = plan.query.updates.map(update => update.map(solveUnsolvedMergePoints(plan.boundIdentifiers, ctx)))
 
     plan.copy(query = q.copy(updates = updatesWithSolvedMergePoints))
   }
 
-  private def solveUnsolvedMergePoints(ctx: PlanContext): (UpdateAction => UpdateAction) = {
-    case merge: MergeNodeAction if merge.maybeNodeProducer.isEmpty => findNodeProducer(merge, ctx)
-    case foreach: ForeachAction                                    => foreach.copy(actions = foreach.actions.map(solveUnsolvedMergePoints(ctx)))
+  private def solveUnsolvedMergePoints(boundIdentifiers: Set[String], ctx: PlanContext): (UpdateAction => UpdateAction) = {
+    case merge: MergeNodeAction if merge.maybeNodeProducer.isEmpty => findNodeProducer(merge, boundIdentifiers, ctx)
+    case foreach: ForeachAction                                    => foreach.copy(actions = foreach.actions.map(solveUnsolvedMergePoints(boundIdentifiers, ctx)))
     case x                                                         => x
   }
 
-  private def findNodeProducer(mergeNodeAction: MergeNodeAction, ctx: PlanContext): MergeNodeAction = {
+  private def findNodeProducer(mergeNodeAction: MergeNodeAction, boundIdentifiers: Set[String], ctx: PlanContext): MergeNodeAction = {
     val identifier = mergeNodeAction.identifier
     val props = mergeNodeAction.props
     val labels = mergeNodeAction.labels
@@ -66,7 +66,7 @@ class MergeStartPointBuilder extends PlanBuilder {
 
     val newMergeNodeAction: MergeNodeAction = NodeFetchStrategy.findUniqueIndexes(props, labels, ctx) match {
       case indexes if indexes.isEmpty =>
-        val startItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx)
+        val startItem = NodeFetchStrategy.findStartStrategy(identifier, boundIdentifiers, where, ctx)
 
         val nodeProducer = PlainMergeNodeProducer(entityProducerFactory.nodeStartItems((ctx, startItem.s)))
         val solvedPredicates = startItem.solvedPredicates

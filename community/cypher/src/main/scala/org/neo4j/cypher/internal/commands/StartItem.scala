@@ -88,8 +88,8 @@ case class NodeById(varName: String, expression: Expression)
   extends StartItem(varName, Map("name" -> expression.toString()))
   with ReadOnlyStartItem with NodeStartItemIdentifiers
 
-case class NodeByIdOrEmpty(varName: String, id:Long)
-  extends StartItem(varName, Map("name" -> id.toString))
+case class NodeByIdOrEmpty(varName: String, expression: Expression)
+  extends StartItem(varName, Map("name" -> expression.toString()))
   with ReadOnlyStartItem with NodeStartItemIdentifiers
 
 case class NodeByLabel(varName: String, label: String)

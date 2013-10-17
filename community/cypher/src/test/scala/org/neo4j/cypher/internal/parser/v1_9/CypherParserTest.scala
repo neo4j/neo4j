@@ -23,17 +23,12 @@ import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import org.junit.Ignore
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import org.neo4j.cypher._
-import org.neo4j.cypher.CypherVersion._
-import org.neo4j.cypher.internal.parser.{ParsedVarLengthRelation, ParsedEntity, ParsedRelation}
+import org.neo4j.cypher.internal.parser.{ParsedEntity, ParsedRelation}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions._
-import org.neo4j.cypher.internal.commands.values.{UnresolvedLabel, TokenType, KeyToken}
 import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.helpers.LabelSupport
 import org.neo4j.cypher.internal.mutation._
 
 class CypherParserTest extends JUnitSuite with Assertions {
@@ -1354,6 +1349,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def in_with_collection_literal() {
+    // we internally use -_-INNER-_- as symbol name for these comprehensions
     test(
       "start x = NODE(1) where x.prop in ['a','b'] return x",
       Query.

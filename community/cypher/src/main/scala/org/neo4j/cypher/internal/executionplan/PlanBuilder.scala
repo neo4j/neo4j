@@ -42,6 +42,11 @@ trait PlanBuilder {
   def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = Seq()
 
   def priority: Int
+
+
+  implicit class SeqWithReplace[A](inSeq: Seq[A]) {
+    def replace(remove: A, replaceWith: A) = inSeq.filterNot(_ == remove) :+ replaceWith
+  }
 }
 
 // The priorities are all here, to make it easy to change and compare
