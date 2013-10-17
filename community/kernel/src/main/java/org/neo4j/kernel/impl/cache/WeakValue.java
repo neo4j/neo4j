@@ -22,19 +22,34 @@ package org.neo4j.kernel.impl.cache;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
-public class WeakValue<K,V> extends WeakReference<V> 
+public class WeakValue<K,V> extends WeakReference<V> implements ReferenceWithKey<K,V>
 {
     public final K key;
-    
-    public WeakValue( K key, V value, ReferenceQueue<? super V> queue )
+
+    public static Factory WEAK_VALUE_FACTORY = new Factory()
+    {
+        @Override
+        public <FK, FV> WeakValue<FK, FV> newReference( FK key, FV value, ReferenceQueue<? super FV> queue )
+        {
+            return new WeakValue<>( key, value, queue );
+        }
+    };
+
+    private WeakValue( K key, V value, ReferenceQueue<? super V> queue )
     {
         super( value, queue );
         this.key = key;
     }
 
-    public WeakValue( K key, V value )
+    private WeakValue( K key, V value )
     {
         super( value );
         this.key = key;
+    }
+
+    @Override
+    public K key()
+    {
+        return key;
     }
 }

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -71,11 +72,15 @@ public class TestConcurrentRelationshipChainLoadingIssue
     {
         GraphDatabaseAPI db = graphDb.getGraphDatabaseAPI();
         Node node = createNodeWithRelationships( db );
+
         checkStateToHelpDiagnoseFlakeyTest( db, node );
+
         long end = currentTimeMillis()+SECONDS.toMillis( 5 );
         int iterations = 0;
         while ( currentTimeMillis() < end )
             tryOnce( db, node, iterations++ );
+
+        System.out.println(iterations   );
     }
 
     private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
@@ -147,10 +152,11 @@ public class TestConcurrentRelationshipChainLoadingIssue
 
     private static int idleLoop( int l )
     {
-        int i = 0;
+        // Use atomic integer to disable the JVM from rewriting this loop to simple addition.
+        AtomicInteger i = new AtomicInteger( 0 );
         for ( int j = 0; j < l; j++ )
-            i++;
-        return i;
+            i.incrementAndGet();
+        return i.get();
     }
 
     private Node createNodeWithRelationships( GraphDatabaseAPI db )

@@ -54,7 +54,7 @@ public class TestCacheTypes
         assertTrue( version1 == cache.put( version2 ) );
     }
 
-    private static class Entity implements EntityWithSizeObject
+    public static class Entity implements EntityWithSizeObject
     {
         private int registeredSize;
         private final long id;
