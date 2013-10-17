@@ -787,7 +787,7 @@ foreach(x in [1,2,3] |
     assertEquals(1, result.toList.size)
   }
 
-  @Test(expected = classOf[ParameterWrongTypeException]) def parameterTypeErrorShouldBeNicelyExplained() {
+  @Test(expected = classOf[CypherTypeException]) def parameterTypeErrorShouldBeNicelyExplained() {
     createNodes("A")
 
     val query = "start pA=node({a}) return pA"

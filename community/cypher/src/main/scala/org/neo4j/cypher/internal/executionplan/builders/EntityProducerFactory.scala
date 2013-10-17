@@ -79,12 +79,13 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         GetGraphElements.getElements[Node](ids(m)(state), varName, (id) =>
           state.query.nodeOps.getById(id))
       }
-    case (planContext, startItem@NodeByIdOrEmpty(varName, id)) =>
+    case (planContext, startItem@NodeByIdOrEmpty(varName, ids)) =>
       asProducer[Node](startItem) {
         (m: ExecutionContext, state: QueryState) =>
           try {
-            val node = state.query.nodeOps.getById(id)
-            Iterator(node)
+            val idsVal: Any = ids(m)(state)
+            GetGraphElements.getElements[Node](idsVal, varName, (id) =>
+              state.query.nodeOps.getById(id))
           } catch {
             case _: EntityNotFoundException => Iterator.empty
           }
