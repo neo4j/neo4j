@@ -35,12 +35,6 @@ class EntityNotFoundException(message: String, cause: Throwable = null) extends 
 
 class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause)
 
-class IterableRequiredException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  def this(message: String) = this(message, null)
-
-  def this(expression: Expression) = this("Expected " + expression + " to be a collection, but it is not.", null)
-}
-
 class ParameterNotFoundException(message: String, cause: Throwable) extends CypherException(message, cause) {
   def this(message: String) = this(message, null)
 }
@@ -56,8 +50,6 @@ class InternalException(message: String, inner: Exception = null) extends Cypher
 class MissingIndexException(indexName: String) extends CypherException("Index `" + indexName + "` does not exist")
 
 class MissingConstraintException() extends CypherException("Constraint not found")
-
-class InvalidAggregateException(message: String) extends CypherException(message)
 
 class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable)
   extends CypherException("Node with id " + nodeId + " still has relationships, and cannot be deleted.")

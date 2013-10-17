@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.{CachedExpression, Identifier, Expression}
-import java.lang.String
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.PatternException
 
 case class SortItem(expression: Expression, ascending: Boolean) {
-  def columnName : String = expression match {
-    case Identifier(x) => x
-    case CachedExpression(x, _) => x
-    case x => throw new ThisShouldNotHappenError("Andres", "ORDER BY should only work already computed values " + x.getClass)
-  }
+  def apply(ctx: ExecutionContext)(implicit qtx: QueryState) =
+    if (!expression.isDeterministic)
+      throw new PatternException("ORDER BY expressions must be deterministic. " +
+        "For instance, you cannot use the rand() function in the expression")
+    else
+      expression.apply(ctx)
 }
