@@ -38,12 +38,12 @@ public class WeakCacheProvider extends CacheProvider
     @Override
     public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config )
     {
-        return new WeakLruCache<NodeImpl>( NODE_CACHE_NAME );
+        return new WeakLruCache<>( NODE_CACHE_NAME );
     }
 
     @Override
     public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config )
     {
-        return new WeakLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+        return new WeakLruCache<>( RELATIONSHIP_CACHE_NAME );
     }
 }
