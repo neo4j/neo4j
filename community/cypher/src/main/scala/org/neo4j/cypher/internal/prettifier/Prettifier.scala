@@ -75,6 +75,7 @@ class PrettifierParser extends Parser with Base with Strings {
     ( group( keyword("ON") ~~ keyword("CREATE") ) ~> BreakingKeywords ) |
     ( group( keyword("ON") ~~ keyword("MATCH") ) ~> BreakingKeywords ) |
     ( group( keyword("ORDER") ~~ keyword("BY") ) ~> BreakingKeywords ) |
+    ( group( keyword("OPTIONAL") ~~ keyword("MATCH") ) ~> BreakingKeywords ) |
     ( group( oneOrMore(nonBreakingKeyword, WS) ) ~> NonBreakingKeywords ) |
     ( group( oneOrMore(reservedKeyword, WS) ) ~> BreakingKeywords )
   }

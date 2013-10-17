@@ -102,6 +102,14 @@ class PrettifierTest extends Assertions {
   }
 
   @Test
+  def shouldNotBreakAfterOptional() {
+    assertIsPrettified(
+      "OPTIONAL MATCH (n)-->(x)%nRETURN n, x",
+      "optional MATCH (n)-->(x) return n, x")
+  }
+
+
+  @Test
   def shouldPrettifyWithCorrectStringQuotes() {
     assertIsPrettified(
       "MATCH a%nWHERE a.name='A'%nRETURN a.age > 30, \"I'm a literal\", a-->()",
