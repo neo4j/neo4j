@@ -44,7 +44,6 @@ import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
-import static org.neo4j.graphalgo.impl.util.PriorityMap.withSelfKeyNaturalOrder;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
@@ -152,7 +151,8 @@ public class AStar implements PathFinder<WeightedPath>
         private final Node start;
         private final Node end;
         private Node lastNode;
-        private final PriorityMap<Node, Node, Double> nextPrioritizedNodes = withSelfKeyNaturalOrder();
+        private final PriorityMap<Node, Node, Double> nextPrioritizedNodes =
+                PriorityMap.<Node, Double>withSelfKeyNaturalOrder();
         private final Map<Long, Visit> visitData = new HashMap<Long, Visit>();
 
         AStarIterator( Node start, Node end )
