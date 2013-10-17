@@ -22,10 +22,12 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
+import org.neo4j.kernel.impl.nioneo.store.PersistenceRow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -42,7 +44,7 @@ public class LegacyNeoStoreReader
         fileChannel = fs.open( fileName, "r" );
         windowPool = new PersistenceWindowPool( fileName,
                 RECORD_LENGTH, fileChannel, 0,
-                true, true, log );
+                true, true, new ConcurrentHashMap<Long, PersistenceRow>(), log );
     }
 
     private long getRecord( long id )
