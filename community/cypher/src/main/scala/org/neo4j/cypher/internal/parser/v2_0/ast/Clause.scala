@@ -103,11 +103,11 @@ case class Start(items: Seq[StartItem], where: Option[Where], token: InputToken)
   }
 }
 
-case class Match(pattern: Pattern, hints: Seq[Hint], where: Option[Where], token: InputToken) extends Clause {
+case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: Option[Where], token: InputToken) extends Clause with SemanticChecking {
   def name = "MATCH"
 
   def semanticCheck =
-    pattern.semanticCheck(Pattern.SemanticContext.Match) then
+      pattern.semanticCheck(Pattern.SemanticContext.Match) then
       hints.semanticCheck then
       where.semanticCheck
 
@@ -121,7 +121,12 @@ case class Match(pattern: Pattern, hints: Seq[Hint], where: Option[Where], token
       case (p, Some(w))               => commands.And(p, w.toLegacyPredicate)
     }
 
-    builder.matches(matches: _*).namedPaths(namedPaths: _*).using(indexHints: _*).where(wherePredicate)
+    builder.
+      matches(matches: _*).
+      namedPaths(namedPaths: _*).
+      using(indexHints: _*).
+      where(wherePredicate).
+      isOptional(optional)
   }
 }
 

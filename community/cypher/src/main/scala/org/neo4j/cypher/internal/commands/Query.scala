@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.commands
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
   def matches(patterns:Pattern*) = new QueryBuilder(Seq.empty).matches(patterns:_*)
+  def optionalMatches(patterns:Pattern*) = new QueryBuilder(Seq.empty).matches(patterns:_*).makeOptional()
   def updates(cmds:UpdateAction*) = new QueryBuilder(Seq()).updates(cmds:_*)
   def unique(cmds:UniqueLink*) = new QueryBuilder(Seq(CreateUniqueStartItem(CreateUniqueAction(cmds:_*))))
 
@@ -33,6 +34,7 @@ object Query {
     start = Seq.empty,
     updatedCommands = Seq.empty,
     matching = Seq.empty,
+    optional = false,
     hints = Seq.empty,
     sort = Seq.empty,
     namedPaths = Seq.empty,
@@ -54,6 +56,7 @@ case class Query(returns: Return,
                  start: Seq[StartItem],
                  updatedCommands:Seq[UpdateAction],
                  matching: Seq[Pattern],
+                 optional: Boolean,
                  hints:Seq[StartItem with Hint],
                  where: Predicate,
                  aggregation: Option[Seq[AggregationExpression]],
@@ -92,6 +95,7 @@ case class Query(returns: Return,
         returns = tailQ.returns,
         updatedCommands = updatedCommands ++ tailQ.updatedCommands,
         matching = Seq(),
+        optional = false,
         where = True(),
         aggregation = None,
         sort = Seq(),
@@ -110,7 +114,7 @@ case class Query(returns: Return,
   override def toString: String =  "\n" +
     includeIfNotEmpty("start  : ", start) +
       includeIfNotEmpty("updates: ", updatedCommands) +
-      includeIfNotEmpty("match  : ", matching) +
+      includeIfNotEmpty((if(optional) "optional " else "") + "match  : ", matching) +
       includeIfNotEmpty("paths  : ", namedPaths) +
       includeIfNotEmpty("hints  : ", hints) +
       (if (where == True()) "" else where.toString) +

@@ -26,6 +26,7 @@ class QueryBuilder(var startItems: Seq[StartItem] = Seq()) {
   var updates = Seq[UpdateAction]()
   var matching: Seq[Pattern] = Seq()
   var where: Predicate = True()
+  var optional: Boolean = false
   var aggregation: Option[Seq[AggregationExpression]] = None
   var orderBy: Seq[SortItem] = Seq()
   var skip: Option[Expression] = None
@@ -41,6 +42,14 @@ class QueryBuilder(var startItems: Seq[StartItem] = Seq()) {
 
   def matches(patterns: Pattern*): QueryBuilder = store {
     matching = patterns
+  }
+
+  def makeOptional() = store {
+    optional = true
+  }
+
+  def isOptional(opt:Boolean) = store {
+    optional = opt
   }
 
   def updates(cmds: UpdateAction*): QueryBuilder = store {
@@ -109,6 +118,27 @@ class QueryBuilder(var startItems: Seq[StartItem] = Seq()) {
     this
   }
 
-  def returns(returnItems: ReturnColumn*): Query =
-    Query(Return(columns(returnItems), returnItems: _*), startItems, updates, matching, using, where, aggregation, orderBy, slice, namedPaths, tail)
+  def returns(returnItems: ReturnColumn*): Query = if (optional && startItems.nonEmpty) {
+    /*
+    A Query is either all optional, or all mandatory.
+
+    Given a query: START n=node(0) OPTIONAL MATCH n-->x RETURN x
+
+    The Query object representation needs to have the START items in one Query, and the OPTIONAL
+    MATCH patterns in another, so the START doesn't become optional.
+
+    TODO: Kill the commands.Query class
+     */
+    val allIdentifierss = Seq[ReturnColumn](AllIdentifiers())
+
+    val secondPart = Query(Return(columns(returnItems), returnItems: _*), Seq.empty, updates, matching, optional,
+      using, where, aggregation, orderBy, slice, namedPaths, tail)
+
+    Query.empty.copy(
+      returns = Return(columns(allIdentifierss), allIdentifierss:_*),
+      start = startItems,
+      tail = Some(secondPart))
+  } else
+    Query(Return(columns(returnItems), returnItems: _*), startItems, updates, matching, optional,
+      using, where, aggregation, orderBy, slice, namedPaths, tail)
 }

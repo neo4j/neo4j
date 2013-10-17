@@ -335,8 +335,14 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
     checkPropertiesOnlyWhenUpdating(ctx) then
     checkNoOptionalRelsForAnExpression(ctx) then
     checkNoVarLengthWhenUpdating(ctx) then
+    checkNoLegacyOptionals(ctx) then
     properties.semanticCheck(Expression.SemanticContext.Simple) then
     properties.constrainType(MapType())
+
+  private def checkNoLegacyOptionals(ctx: SemanticContext) =
+    when (optional) {
+      SemanticError("Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead.", token)
+    }
 
   private def checkPropertiesOnlyWhenUpdating(ctx: SemanticContext) =
     when (ctx != SemanticContext.Update && properties.isDefined) {

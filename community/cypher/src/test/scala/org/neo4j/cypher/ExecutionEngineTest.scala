@@ -401,8 +401,7 @@ foreach(x in [1,2,3] |
     relate(a, b, "rel", "r")
     relate(b, c, "rel", "r2")
 
-    val result = execute("start r=rel(0) match a-[r]-b-[?]-c return a,b,c")
-
+    val result = execute("start r=rel(0) match (a)-[r]-(b) optional match (b)-[r2]-(c) where r<>r2 return a,b,c")
     assertEquals(List(Map("a" -> a, "b" -> b, "c" -> c), Map("a" -> b, "b" -> a, "c" -> null)), result.toList)
   }
 
@@ -907,34 +906,6 @@ return x""", "A" -> 1, "B" -> 2, "C" -> 3)
     assert(List(d, e) === result.columnAs[Node]("x").toList)
   }
 
-  @Test def shouldHandleCollaborativeFiltering() {
-    val a = createNode("A")
-    val b = createNode("B")
-    val c = createNode("C")
-    val d = createNode("D")
-    val e = createNode("E")
-    val f = createNode("F")
-
-    relate(a, b, "knows", "rAB")
-    relate(a, c, "knows", "rAC")
-    relate(a, f, "knows", "rAF")
-
-    relate(b, c, "knows", "rBC")
-    relate(b, d, "knows", "rBD")
-    relate(b, e, "knows", "rBE")
-
-    relate(c, e, "knows", "rCE")
-
-    val result = execute( """
-start a  = node(1)
-match a-[r1:knows]->friend-[r2:knows]->foaf, a-[foafR?:knows]->foaf
-where foafR is null
-return foaf, count(*)
-order by count(*)""")
-
-    assert(Set(Map("foaf" -> d, "count(*)" -> 1), Map("foaf" -> e, "count(*)" -> 2)) === result.toSet)
-  }
-
   @Test def shouldSplitOptionalMandatoryCleverly() {
     val a = createNode("A")
     val b = createNode("B")
@@ -945,7 +916,7 @@ order by count(*)""")
 
     val result = execute( """
 start a  = node(1)
-match a-[r1?:knows]->friend-[r2:knows]->foaf
+optional match (a)-[r1:knows]->(friend)-[r2:knows]->(foaf)
 return foaf""")
 
     assert(List(Map("foaf" -> c)) === result.toList)
@@ -991,7 +962,7 @@ return b, avg(length(p))""")
 
     val result = execute( """
 start a  = node(1), x = node(2,3)
-match p = a -[?]-> x
+optional match p = a --> x
 return x, p""")
 
     assert(List(
@@ -1008,7 +979,7 @@ return x, p""")
 
     val result = execute( """
 start a  = node(1), x = node(2,3)
-match p = shortestPath(a -[?*]-> x)
+optional match p = shortestPath(a -[*]-> x)
 return x, p""").toList
 
     assertInTx(List(
@@ -1024,7 +995,7 @@ return x, p""").toList
 
     val result = execute( """
 start a  = node(1)
-match p = a-->b-[?*]->c
+optional match p = a-->b-[*]->c
 return p""")
 
     assert(List(
@@ -1040,7 +1011,7 @@ return p""")
 
     val result = execute( """
 start a  = node(1), x = node(2,3)
-match p = a -[?*]-> x
+optional match p = (a)-[*]->(x)
 return x, p""")
 
     assert(List(
@@ -1248,30 +1219,14 @@ order by a.COL1
 
   @Test def shouldNotThrowExceptionWhenStuffIsMissing() {
     val a = createNode()
-    val b = createNode()
+    val b = createNode("Mark")
     relate(a, b)
-    val result = execute( """START n=node(1)
-MATCH n-->x0-[?]->x1
-WHERE has(x1.type) AND x1.type="http://dbpedia.org/ontology/Film" AND has(x1.`label`) AND x1.`label`="Reservoir Dogs"
-RETURN x0.name
-                                  """)
-    assert(List() === result.toList)
-  }
-
-  @Test def shouldBeAbleToHandleMultipleOptionalRelationshipsAndMultipleStartPoints() {
-    val a = createNode("A")
-    val b = createNode("B")
-    val z = createNode("Z")
-    val x = createNode("X")
-    val y = createNode("Y")
-
-    relate(a, z, "X", "rAZ")
-    relate(a, x, "X", "rAX")
-    relate(b, x, "X", "rBX")
-    relate(b, y, "X", "rBY")
-
-    val result = execute( """START a=node(1), b=node(2) match a-[r1?]->x<-[r2?]-b return x""")
-    assert(List(x, y, z) === result.columnAs[Node]("x").toList)
+    val result = execute("""START n=node(1)
+MATCH n-->x0
+OPTIONAL MATCH x0-->x1
+WHERE x1.foo = 'bar'
+RETURN x0.name""")
+    assert(List(Map("x0.name"->"Mark")) === result.toList)
   }
 
   private def createTriangle(number: Int): (Node, Node, Node) = {
@@ -1282,33 +1237,6 @@ RETURN x0.name
     relate(x, y, "X", "ZY")
     relate(y, z, "X", "YZ")
     (z, x, y)
-  }
-
-  @Ignore
-  @Test def shouldHandleReallyWeirdOptionalPatterns() {
-    val a = createNode("A")
-    val b = createNode("B")
-    val c = createNode("C")
-
-    val (z1, x1, y1) = createTriangle(1)
-    val (z2, x2, y2) = createTriangle(2)
-    val (z3, x3, y3) = createTriangle(3)
-    val (z4, x4, y4) = createTriangle(4)
-
-    relate(a, x1, "X", "AX")
-    relate(b, z1, "X", "AZ")
-
-    relate(a, x2, "X", "AX")
-    relate(c, y2, "X", "CY")
-
-    relate(b, z3, "X", "BZ")
-
-    relate(a, x4, "X", "AX")
-    relate(b, z4, "X", "BZ")
-    relate(c, y4, "X", "CY")
-
-    val result = execute( """START a=node(1), b=node(2), c=node(3) match a-[?]-x-->y-[?]-c, b-[?]-z<--y, z-->x return x""")
-    assert(List(x1, x2, x3, x4) === result.columnAs[Node]("x").toList)
   }
 
   @Test def shouldFindNodesBothDirections() {
@@ -1451,7 +1379,7 @@ RETURN x0.name
   @Test def shouldBeAbleToDoDistinctOnUnboundNode() {
     createNode()
 
-    val result = execute("start a=node(1) match a-[?]->b return count(distinct b)")
+    val result = execute("start a=node(1) optional match a-->b return count(distinct b)")
     assert(List(Map("count(distinct b)" -> 0)) === result.toList)
   }
 
@@ -1494,7 +1422,7 @@ RETURN x0.name
   @Test def functions_should_return_null_if_they_get_path_containing_unbound() {
     createNode()
 
-    val result = execute("start a=node(1) match p=a-[r?]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
+    val result = execute("start a=node(1) optional match p=a-[r]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
 
     assert(List(Map("length(p)" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
   }
@@ -1502,7 +1430,7 @@ RETURN x0.name
   @Test def functions_should_return_null_if_they_get_path_containing_null() {
     createNode()
 
-    val result = execute("start a=node(1) match p=a-[r?]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
+    val result = execute("start a=node(1) optional match p=a-[r]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
 
     assert(List(Map("length(p)" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
   }
@@ -1579,7 +1507,7 @@ RETURN x0.name
     createNode()
     val b = createNode()
 
-    val result = execute("start a=node(1), b=node(2) match a-[r?*]-b where r is null and a <> b return b").toList
+    val result = execute("start a=node(1), b=node(2) optional match a-[r*]-b where r is null and a <> b return b").toList
 
     assert(List(Map("b" -> b)) === result)
   }
@@ -1701,15 +1629,15 @@ RETURN x0.name
   @Test def issue_479() {
     createNode()
 
-    val q = "start n=node(1) match n-[?]->x where x-->() return x"
+    val q = "start n=node(1) optional match (n)-->(x) where x-->() return x"
 
-    assert(execute(q).toList === List())
+    assert(execute(q).toList === List(Map("x" -> null)))
   }
 
   @Test def issue_479_has_relationship_to_specific_node() {
     createNode()
 
-    val q = "start n=node(1) match n-[?:FRIEND]->x where not n-[:BLOCK]->x return x"
+    val q = "start n=node(1) optional match (n)-[:FRIEND]->(x) where not n-[:BLOCK]->x return x"
 
     assert(execute(q).toList === List(Map("x" -> null)))
   }
@@ -1723,8 +1651,7 @@ RETURN x0.name
   }
 
   @Test def length_on_filter() {
-    // https://github.com/neo4j/community/issues/526
-    val q = "start n=node(*) match n-[r?]->m return length(filter(x in collect(r) WHERE x <> null)) as cn"
+    val q = "start n=node(*) optional match (n)-[r]->(m) return length(filter(x in collect(r) WHERE x <> null)) as cn"
 
     assert(executeScalar[Long](q) === 0)
   }
@@ -1873,65 +1800,6 @@ RETURN x0.name
   }
 
   @Test
-  def double_optional_with_no_matches() {
-    createNode()
-    createNode()
-
-    val result = execute("START a=node(1),b=node(2) MATCH a-[r1?]->X<-[r2?]-b return X").toList
-    assert(result === List(Map("X"->null)))
-  }
-
-  @Test
-  def two_double_optional_with_one_full_and_two_halfs() {
-    val a = createNode()
-    val b = createNode()
-    val X = createNode()
-    val Z1 = createNode()
-    val Z2 = createNode()
-    val r1 = relate(a, X)
-    val r2 = relate(b, X)
-    val r3 = relate(Z1, a)
-    val r4 = relate(Z2, b)
-
-    val result = execute("START a=node(1), b=node(2) MATCH a-[r1?]->X<-[r2?]-b, a<-[r3?]-Z-[r4?]->b return r1,r2,r3,r4").toSet
-    assert(result === Set(
-      Map("r1" -> r1, "r2" -> r2, "r3" -> r3, "r4" -> null),
-      Map("r1" -> r1, "r2" -> r2, "r3" -> null, "r4" -> r4)))
-  }
-
-  @Test
-  def two_double_optional_with_no_matches() {
-    createNode()
-    createNode()
-
-    val result = execute("START a=node(1), b=node(2) MATCH a-[r1?]->X<-[r2?]-b, a<-[r3?]-Z-[r4?]->b return r1,r2,r3,r4").toSet
-    assert(result === Set(Map("r1" -> null, "r2" -> null, "r3" -> null, "r4" -> null)))
-  }
-
-  @Test
-  def two_double_optional_with_four_halfs() {
-    val a = createNode()
-    val b = createNode()
-    val X1 = createNode()
-    val X2 = createNode()
-    val Z1 = createNode()
-    val Z2 = createNode()
-    val r1 = relate(a, X1)
-    val r2 = relate(b, X2)
-    val r3 = relate(Z1, a)
-    val r4 = relate(Z2, b)
-
-    val result = () => execute("START a=node(1), b=node(2) MATCH a-[r1?]->X<-[r2?]-b, a<-[r3?]-Z-[r4?]->b return r1,r2,r3,r4 order by id(r1),id(r2),id(r3),id(r4)")
-
-    assertEquals(Set(
-      Map("r1" -> r1, "r2" -> null, "r3" -> r3, "r4" -> null),
-      Map("r1" -> r1, "r2" -> null, "r3" -> null, "r4" -> r4),
-      Map("r1" -> null, "r2" -> r2, "r3" -> r3, "r4" -> null),
-      Map("r1" -> null, "r2" -> r2, "r3" -> null, "r4" -> r4)), result().toSet)
-    assert(result().toList.size === 4)
-  }
-
-  @Test
   def with_should_not_forget_original_type() {
     val result = execute("create (a{x:8}) with a.x as foo return sum(foo)")
 
@@ -1957,57 +1825,6 @@ RETURN x0.name
 
     assert(result.size === 1)
     assertInTx(result(0)("n").asInstanceOf[Node].getProperty("foo") === id)
-  }
-
-  @Ignore("This pattern is currently not supported. Revisit when we do support it.")
-  @Test
-  def two_double_optional_paths_with_shared_relationships() {
-    /* Given this pattern, with a, b and c bound
-                         a
-                         |
-                         ?
-                         |
-                         x
-                        / \
-                       ?   ?
-                       |   |
-                       b   x
-    */
-
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-
-    val x1 = createNode()
-    val x2 = createNode()
-    val x3 = createNode()
-    val x4 = createNode()
-    val x5 = createNode()
-    val x6 = createNode()
-    val x7 = createNode()
-
-    relate(a, x1, "X", "r1")
-
-    relate(b, x2, "X", "r2")
-
-    relate(c, x3, "X", "r3")
-
-    relate(a, x4, "X", "r4")
-    relate(b, x4, "X", "r5")
-
-    relate(b, x5, "X", "r6")
-    relate(c, x5, "X", "r7")
-
-    relate(a, x6, "X", "r8")
-    relate(c, x6, "X", "r9")
-
-    relate(a, x7, "X", "r10")
-    relate(b, x7, "X", "r10")
-    relate(c, x7, "X", "r10")
-
-    val result = execute("START a=node(1), b=node(2),c=node(3) MATCH a-[r1?]->X<-[r2?]-b, c-[r3?]->X return r1.name?,r2.name?,r3.name? order by id(r1),id(r2),id(r3)")
-
-    println(result.dumpToString())
   }
 
   @Test
@@ -2073,7 +1890,7 @@ RETURN x0.name
 
   @Test
   def empty_collect_should_not_contain_null() {
-    val result = execute("START n=node(0) MATCH n-[?:NOT_EXIST]->x RETURN n, collect(x)")
+    val result = execute("START n=node(0) OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, collect(x)")
 
     assert(result.toList === List(Map("n" -> refNode, "collect(x)" -> List())))
   }
@@ -2307,7 +2124,7 @@ RETURN x0.name
     relate(a, b2)
 
     // WHEN
-    val result = execute(s"START a=node(${nodeId(a)}) MATCH a-[?]->(b:foo) RETURN b")
+    val result = execute(s"START a=node(${nodeId(a)}) OPTIONAL MATCH a-->(b:foo) RETURN b")
 
     // THEN
     assert(result.toList === List(Map("b" -> b1)))
@@ -2461,9 +2278,8 @@ RETURN x0.name
     //WHEN
     val result = execute(
       """START a=node(1), b=node(2)
-         MATCH a-[old?:FOO]->b
-         WHERE old = null
-         CREATE a-[new:FOO]->b
+         WHERE not (a)-[:FOO]->(b)
+         CREATE (a)-[new:FOO]->(b)
          RETURN new""")
 
     //THEN

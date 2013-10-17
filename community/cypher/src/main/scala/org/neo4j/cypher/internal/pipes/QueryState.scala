@@ -19,29 +19,44 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.spi.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.cypher.ParameterNotFoundException
+import org.neo4j.cypher.{InternalException, ParameterNotFoundException}
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.optional.Listener
+
+class ListenerDelegate(var delegate: Option[Listener[ExecutionContext]] = None)
 
 case class QueryState(db: GraphDatabaseService,
-                      inner: QueryContext,
-                      params: Map[String, Any],
-                      decorator: PipeDecorator,
-                      var transaction: Option[Transaction] = None,
-                      timeReader: TimeReader = new TimeReader) {
-  def readTimeStamp(): Long = timeReader.getTime
+                 inner: QueryContext,
+                 params: Map[String, Any],
+                 decorator: PipeDecorator,
+                 timeReader: TimeReader = new TimeReader,
+                 listenerDelegate: ListenerDelegate = new ListenerDelegate()) {
 
+  def listener_=(newListener: Listener[ExecutionContext]) {
+    assert(listenerDelegate.delegate.isEmpty, "Should not set a listener when one already exists")
+    listenerDelegate.delegate = Some(newListener)
+  }
+
+  def listener = {
+    val currentListener = listenerDelegate.delegate.getOrElse(
+      throw new InternalException("Tried to get a listener when no listener exists"))
+    listenerDelegate.delegate = None
+    currentListener
+  }
+
+  def readTimeStamp(): Long = timeReader.getTime
 
   private val updateTrackingQryCtx: UpdateCountingQueryContext = new UpdateCountingQueryContext(inner)
   val query: QueryContext = updateTrackingQryCtx
 
-
-  def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
-    db.asInstanceOf[GraphDatabaseAPI]
-  else
-    throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
+  def graphDatabaseAPI: GraphDatabaseAPI = db match {
+    case i: GraphDatabaseAPI => i
+    case _                   => throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
+  }
 
   def getParam(key: String): Any =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))

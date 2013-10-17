@@ -345,7 +345,7 @@ return distinct center""")
     val b = createNode()
     relate(a,b)
 
-    execute("""start n=node(*) match n-[r?]-() delete n,r""")
+    execute("""start n=node(*) optional match n-[r]-() delete n,r""")
     assertInTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size === 0)
   }
 

@@ -19,43 +19,26 @@
  */
 package org.neo4j.shell;
 
-import java.io.Serializable;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.junit.Test;
-
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
-import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
+import java.io.Serializable;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
+import static org.neo4j.graphdb.Neo4jMatchers.*;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 public class TestApps extends AbstractShellTest
@@ -378,7 +361,7 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         beginTx();
-        executeCommand( "START n = node(" + node.getId() + ") match p=n-[r?*]-m RETURN p;", "\\d+ ms" );
+        executeCommand( "START n = node(" + node.getId() + ") optional match p=n-[r*]-m RETURN p;", "\\d+ ms" );
     }
 
     @Test
