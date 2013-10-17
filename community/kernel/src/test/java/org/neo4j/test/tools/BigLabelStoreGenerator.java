@@ -30,8 +30,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 import static java.lang.String.format;
 
-// Builds a store in the path given as first argument of of -DnumNodes nodes, where each node has at most -DnumLabels
-// randomly selected labels
+// Builds a store in the path given as first argument of of $NUM_NODES nodes, where each node has at most
+// $NUM_LABELS randomly selected labels
 public class BigLabelStoreGenerator
 {
     private static Random random = new Random();
@@ -40,8 +40,8 @@ public class BigLabelStoreGenerator
     {
         long batchSize = 1000;
 
-        long numNodes = Long.parseLong( System.getProperty( "numNodes" ) );
-        int numLabels = Integer.parseInt( System.getProperty( "numLabels" ) );
+        long numNodes = Long.parseLong( System.getenv( "NUM_NODES" ) );
+        int numLabels = Integer.parseInt( System.getenv( "NUM_LABELS" ) );
 
         Label[] labels = createLabels( numLabels );
 
