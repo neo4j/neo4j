@@ -56,7 +56,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 public class TestConcurrentRelationshipChainLoadingIssue
 {
     private final int relCount = 2;
-    public final @Rule ImpermanentDatabaseRule graphDb = new ImpermanentDatabaseRule()
+    public final @Rule
+    ImpermanentDatabaseRule graphDb = new ImpermanentDatabaseRule()
     {
         protected void configure( GraphDatabaseBuilder builder )
         {
@@ -139,10 +140,11 @@ public class TestConcurrentRelationshipChainLoadingIssue
         executor.awaitTermination( 10, SECONDS );
         
         if ( !errors.isEmpty() )
-            throw new MultipleCauseException( format("Exceptions from threads after %s iterations", iterations),
+            throw new MultipleCauseException(
+                    format("Exception(s) after %s iterations with %s threads", iterations, threads),
                     errors );
     }
-    
+
     private static int idleLoop( int l )
     {
         int i = 0;
