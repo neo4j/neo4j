@@ -28,6 +28,6 @@ object QueryStateHelper {
   def queryStateFrom(db: GraphDatabaseAPI) = {
     val tx = db.beginTx()
     val statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statement()
-    new QueryState(db, new TransactionBoundExecutionContext(db, tx, statement), Map.empty, NullDecorator, None)
+    new QueryState(db, new TransactionBoundExecutionContext(db, tx, statement), Map.empty, NullDecorator)
   }
 }

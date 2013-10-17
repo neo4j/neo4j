@@ -54,6 +54,7 @@ object PartiallySolvedQuery {
       namedPaths = q.namedPaths.map(Unsolved(_)),
       aggregateToDo = q.aggregation.isDefined,
       extracted = false,
+      optional = q.optional,
       tail = q.tail.map(q => PartiallySolvedQuery(q))
     )
   }
@@ -70,6 +71,7 @@ object PartiallySolvedQuery {
     namedPaths = Seq(),
     aggregateToDo = false,
     extracted = false,
+    optional = false,
     tail = None
   )
 }
@@ -93,6 +95,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 namedPaths: Seq[QueryToken[NamedPath]],
                                 aggregateToDo: Boolean,
                                 extracted: Boolean,
+                                optional: Boolean,
                                 tail: Option[PartiallySolvedQuery]) extends AstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
 
   val matchPattern : MatchPattern = MatchPattern(patterns.map(_.token))

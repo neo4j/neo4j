@@ -17,23 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
+package org.neo4j.cypher.internal.pipes.optional
 
-import org.neo4j.cypher.internal.commands.Predicate
-import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.data.SimpleVal
-import org.neo4j.cypher.internal.ExecutionContext
+class Listener[A](in: Iterator[A]) extends Iterator[A] {
+  var seen: List[A] = List.empty
 
-class FilterPipe(source: Pipe, val predicate: Predicate) extends PipeWithSource(source) {
-  val symbols = source.symbols
+  def hasNext: Boolean = in.hasNext
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
-    input.filter(ctx => predicate.isMatch(ctx)(state))
-
-  override def executionPlanDescription =
-    source.executionPlanDescription.andThen(this, "Filter", "pred" -> SimpleVal.fromStr(predicate))
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    predicate.throwIfSymbolsMissing(symbols)
+  def next(): A = {
+    val n = in.next()
+    seen = seen :+ n
+    n
   }
+
+  def clear() {
+    seen = List.empty
+  }
+
+  override def toString(): String = "SEEN: " + seen.toString
 }

@@ -13,6 +13,10 @@ include::ql/match/index.asciidoc[]
 
 :leveloffset: 2
 
+include::ql/optional-match/index.asciidoc[]
+
+:leveloffset: 2
+
 include::ql/where/index.asciidoc[]
 
 :leveloffset: 2

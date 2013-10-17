@@ -18,14 +18,14 @@
  */
 package org.neo4j.examples;
 
+import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.test.GraphDescription.Graph;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
-
-import org.junit.Test;
-import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.test.GraphDescription.Graph;
 
 public class AclExampleDocTest extends AbstractJavaDocTestbase
 {
@@ -206,8 +206,8 @@ public class AclExampleDocTest extends AbstractJavaDocTestbase
         
         //ACL
         query = "START file=node:node_auto_index('name:File*') " +
-        		"MATCH " +
-        		"file<-[:leaf]-()<-[:contains*0..]-dir<-[?:canRead]-role-[:member]->readUser " +
+        		"MATCH (file)<-[:leaf]-()<-[:contains*0..]-(dir) " +
+        		"OPTIONAL MATCH (dir)<-[:canRead]-(role)-[:member]->(readUser) " +
         		"RETURN file.name, dir.name, role.name, readUser.name";
         gen.get().addSnippet( "query3", createCypherSnippet( query ) );
         result = engine.execute( query )

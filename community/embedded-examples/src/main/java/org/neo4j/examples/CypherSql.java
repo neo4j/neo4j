@@ -149,7 +149,7 @@ public class CypherSql
                         "LeftJoin",
                         "SELECT `Person`.name, `Email`.address FROM `Person` LEFT JOIN `Email` ON `Person`.id = `Email`.person_id".replace(
                                 "`", identifierQuoteString ),
-                        "START person=node:Person('name: *') MATCH person-[?:email]->email RETURN person.name, email.address",
+                        "START person=node:Person('name: *') OPTIONAL MATCH person-[:email]->email RETURN person.name, email.address",
                         "Anakin", "anakin@example.org", "Bridget", "<null>",
                         "3 rows" ) );
                 add( new TestData(

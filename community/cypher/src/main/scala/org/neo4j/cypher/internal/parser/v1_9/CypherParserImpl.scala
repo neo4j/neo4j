@@ -115,14 +115,18 @@ Thank you, the Neo4j Team.
   private def expandQuery(start: Seq[StartItem], namedPaths: Seq[NamedPath], updates: Seq[UpdateAction], body: Body): Query = body match {
     case b: BodyWith => {
       checkForAggregates(b.where)
-      Query(b.returns, start, updates, b.matching, Seq(), b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, Some(expandQuery(b.start, b.startPaths, b.updates, b.next)))
+      Query(returns = b.returns, start = start, updatedCommands = updates, matching = b.matching, optional = false, hints = Seq(), where = b.where.getOrElse(True()), aggregation = b.aggregate,
+        sort = b.order, slice = b.slice, namedPaths = b.namedPath ++ namedPaths, tail = Some(expandQuery(b.start, b.startPaths, b.updates, b.next)))
     }
     case b: BodyReturn => {
       checkForAggregates(b.where)
-      Query(b.returns, start, updates, b.matching, Seq(), b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, None)
+      Query(returns = b.returns, start = start, updatedCommands = updates, matching = b.matching, optional = false,
+        hints = Seq(), where = b.where.getOrElse(True()), aggregation = b.aggregate, sort = b.order, slice = b.slice,
+        namedPaths = b.namedPath ++ namedPaths, tail = None)
     }
     case NoBody() => {
-      Query(Return(Nil), start, updates, Seq(), Seq(), True(), None, Seq(), None, namedPaths, None)
+      Query(returns = Return(Nil), start = start, updatedCommands = updates, matching = Seq(), optional = false,
+        hints = Seq(), where = True(), aggregation = None, sort = Seq(), slice = None, namedPaths = namedPaths, tail = None)
     }
   }
 

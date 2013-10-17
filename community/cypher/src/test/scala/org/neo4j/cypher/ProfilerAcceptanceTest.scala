@@ -71,6 +71,16 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     assertDbHits(1)(result)("ColumnFilter", "Extract", "AllNodes")
   }
 
+  @Test
+  def tracks_optional_matches() {
+    //GIVEN
+    val result: ExecutionResult = engine.profile("start n=node(*) optional match (n)-->(x) return x")
+
+    //WHEN THEN
+    assertDbHits(1)(result)("ColumnFilter", "NullableMatch")
+    assertDbHits(0)(result)("ColumnFilter", "NullableMatch", "PatternMatch")
+  }
+
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
     assert(expectedRows === parentCd(result, names).getProfilerStatistics.getRows)
   }

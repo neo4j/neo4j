@@ -204,40 +204,6 @@ class MatchTest extends DocumentingTestBase {
     )
   }
 
-  @Test def optionalRelationship() {
-    testQuery(
-      title = "Optional relationship",
-      text = "If a relationship is optional, it can be marked with a question mark. This is similar to how a SQL outer join " +
-        "works. If the relationship is there, it is returned. If it's not, +null+ is returned in it's place. Remember that " +
-        "anything hanging off an optional relationship, is in turn optional, unless it is connected with a bound node through some other " +
-        "path.",
-      queryText = """start a=node(%WallStreet%) match a-[?]->x return x""",
-      returns = """Returns +null+, since the node has no outgoing relationships.""",
-      assertions = (p) => assertEquals(List(Map("x" -> null)), p.toList)
-    )
-  }
-
-  @Test def nodePropertyFromOptionalNode() {
-    testQuery(
-      title = "Properties on optional elements",
-      text = "Returning a property from an optional element that is +null+ will also return +null+.",
-      queryText = """start a=node(%WallStreet%) match a-[?]->x return x, x.name""",
-      returns = """Returns the element x (`null` in this query), and `null` as its name.""",
-      assertions = (p) => assertEquals(List(Map("x" -> null, "x.name" -> null)), p.toList)
-    )
-  }
-
-  @Test def optionalTypedRelationship() {
-    testQuery(
-      title = "Optional typed and named relationship",
-      text = "Just as with a normal relationship, you can decide which identifier it goes into, and what relationship type " +
-        "you need.",
-      queryText = """start a=node(%WallStreet%) match a-[r?:ACTS_IN]->() return r""",
-      returns = """This returns a node, and +null+, since the node has no outgoing `ACTS_IN` relationships.""",
-      assertions = (p) => assertEquals(List(Map("r" -> null)), p.toList)
-    )
-  }
-
   @Test def shortestPathBetweenTwoNodes() {
     testQuery(
       title = "Shortest path",
@@ -281,17 +247,6 @@ Cypher will try to match the relationship where the connected nodes switch sides
       queryText = """match a-[r]-b where id(r) = 0 return a,b""",
       returns = "This returns the two connected nodes, once as the start node, and once as the end node.",
       assertions = p => assertEquals(2, p.toSeq.length)
-    )
-  }
-
-  @Test def match_mimicking_or() {
-    testQuery(
-      title = "Match with OR",
-      text = "Strictly speaking, you can't do `OR` in your `MATCH`. It's still possible to form a query that " +
-        "works a lot like `OR`.",
-      queryText = "start movie1=node(%WallStreet%), movie2=node(%TheAmericanPresident%) match (movie1)<-[?:ACTED_IN]-(actor)-[?:ACTED_IN]->(movie2) return actor",
-      returns = "Find the actors who acted in Wall Street, or in The American President, or in both movies.",
-      assertions = p => assertEquals(Set(node("Martin"), node("Michael"), node("Charlie")), p.columnAs[Node]("actor").toSet)
     )
   }
 
