@@ -371,7 +371,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(pipe, query)
 
     assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
-    // assert(plan.query.where === Seq(Solved(equalityPredicate)))
+    assert(plan.query.where === Seq(Solved(equalityPredicate)))
   }
 
   @Test
@@ -380,8 +380,9 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
 
     val propertyLookup: Property = Property(Identifier(identifier), PropertyKey("collection"))
     val equalityPredicate: Equals = Equals(IdFunction(Identifier(otherIdentifier)), propertyLookup)
+    val collectionPredicate: AnyInCollection = AnyInCollection(propertyLookup, "-_-INNER-_-", equalityPredicate)
     val query = q(
-      where = Seq(AnyInCollection(propertyLookup, "-_-INNER-_-", equalityPredicate)),
+      where = Seq(collectionPredicate),
       patterns = Seq(SingleNode(otherIdentifier))
     )
 
@@ -389,6 +390,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(pipe, query)
 
     assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
+    assert(plan.query.where === Seq(Solved(collectionPredicate)))
   }
 
   @Test

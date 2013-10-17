@@ -64,9 +64,4 @@ class PredicateRewriter extends PlanBuilder {
   }
 
   def priority = PlanBuilder.QueryRewriting
-
-  implicit class SeqWithReplace[A](inSeq: Seq[A]) {
-    def replace(remove: A, replaceWith: A) = inSeq.filterNot(_ == remove) :+ replaceWith
-  }
-
 }

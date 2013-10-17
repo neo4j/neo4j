@@ -38,8 +38,6 @@ To do this, three things are done.
 
 
 class StartPointChoosingBuilder extends PlanBuilder {
-  val Single = 0
-
   type LabelName = String
   type IdentifierName = String
   type PropertyKey = String
@@ -52,22 +50,30 @@ class StartPointChoosingBuilder extends PlanBuilder {
     val q: PartiallySolvedQuery = plan.query
 
     // Find disconnected patterns, and make sure we have start points for all of them
-    val disconnectedStarItems: Seq[QueryToken[StartItem]] = findStartItemsForDisconnectedPatterns(plan, ctx).map(Unsolved(_))
+    val disconnectedRatedStartItems: Seq[RatedStartItem] = findStartItemsForDisconnectedPatterns(plan, ctx)
 
-    plan.copy(query = q.copy(start = disconnectedStarItems ++ q.start))
+    val solvedPredicates: Seq[Predicate] = disconnectedRatedStartItems.flatMap(_.solvedPredicates)
+    val disconnectedStartItems = disconnectedRatedStartItems.map( (r: RatedStartItem) => Unsolved(r.s) )
+
+    val filteredWhere = solvedPredicates.foldLeft(q.where) {
+      (currentWhere: Seq[QueryToken[Predicate]], predicate: Predicate) =>
+        currentWhere.replace(Unsolved(predicate), Solved(predicate))
+    }
+
+    plan.copy(query = q.copy(start = disconnectedStartItems ++ q.start, where = filteredWhere))
   }
 
-  private def findStartItemsForDisconnectedPatterns(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[StartItem] = {
+  private def findStartItemsForDisconnectedPatterns(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[RatedStartItem] = {
     val disconnectedPatterns = plan.query.matchPattern.disconnectedPatternsWithout(plan.pipe.symbols.keys)
     val startPointNames = plan.query.start.map(_.token.identifierName)
     val allPredicates = plan.query.where.map(_.token)
 
-    def findSingleNodePoints(startPoints: Set[RatedStartItem]): Iterable[StartItem] =
-      startPoints.collect {
-        case RatedStartItem(si, r, _) if r == Single => si
+    def findSingleNodePoints(startPoints: Set[RatedStartItem]): Iterable[RatedStartItem] =
+      startPoints.filter {
+        case RatedStartItem(si, r, _) => r == NodeFetchStrategy.Single
       }
 
-    def findStartItemFor(pattern: MatchPattern): Iterable[StartItem] = {
+    def findStartItemFor(pattern: MatchPattern): Iterable[RatedStartItem] = {
       val shortestPathPoints: Set[IdentifierName] = plan.query.patterns.collect {
         case Unsolved(ShortestPath(_, start, end, _, _, _, _, _, _)) => Seq(start.name, end.name)
       }.flatten.toSet
@@ -79,15 +85,15 @@ class StartPointChoosingBuilder extends PlanBuilder {
       val shortestPathPointsInPattern: Set[IdentifierName] = shortestPathPoints intersect pattern.nodes.toSet
 
       if (shortestPathPointsInPattern.nonEmpty) {
-        startPoints.collect {
-          case RatedStartItem(si, r, _) if shortestPathPoints.contains(si.identifierName) => si
+        startPoints.filter {
+          case RatedStartItem(si, r, _) => shortestPathPoints.contains(si.identifierName)
         }.toSet union singleNodePoints.toSet
       } else if (singleNodePoints.nonEmpty) {
         // We want to keep all these start points because cartesian product with them is free
         singleNodePoints
       } else {
         // Lastly, let's pick the best start point possible
-        Some(startPoints.toSeq.sortBy(_.rating).head.s)
+        Some(startPoints.toSeq.sortBy(_.rating).head)
       }
     }
 

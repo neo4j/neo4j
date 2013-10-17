@@ -193,5 +193,4 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 
 case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean = false) {
   def boundIdentifiers: Set[String] = pipe.symbols.keys.toSet
-  // val starts: Set[String] = query.start.filter(_.solved).map(_.token.identifierName).toSet
 }

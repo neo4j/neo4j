@@ -67,7 +67,7 @@ import NodeFetchStrategy.LabelScan
 Bundles a possible start item with a rating (where lower implies better) and a list of predicates that
 are implicitly solved when using the start item
  */
-case class RatedStartItem(s: StartItem, rating: Integer, solvedPredicates: Seq[Predicate])
+case class RatedStartItem(s: StartItem, rating: Int, solvedPredicates: Seq[Predicate])
 
 /*
 Finders produce StartItemWithRatings for a node and a set of required predicates over that node

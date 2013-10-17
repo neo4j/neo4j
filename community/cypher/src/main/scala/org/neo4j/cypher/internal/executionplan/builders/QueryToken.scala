@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
+
 abstract sealed class QueryToken[T](val token: T) {
   def solved: Boolean
 
