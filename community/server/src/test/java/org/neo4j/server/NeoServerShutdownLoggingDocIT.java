@@ -21,6 +21,8 @@ package org.neo4j.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.AdditionalMatchers.or;
 
 import java.io.IOException;
 
@@ -56,6 +58,9 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     {
         InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
         server.stop();
-        assertThat( appender.toString(), containsString( "INFO: Successfully shutdown database." ) );
+        String actual = appender.toString();
+        // Handle local log4j configuration that changes how log levels are formatted
+        assertTrue( actual.contains( "INFO: Successfully shutdown database." )
+                    || actual.contains( "Information: Successfully shutdown database." ) );
     }
 }

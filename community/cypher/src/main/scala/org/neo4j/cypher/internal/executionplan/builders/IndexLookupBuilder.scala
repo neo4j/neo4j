@@ -57,16 +57,16 @@ class IndexLookupBuilder extends PlanBuilder {
 
   def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[QueryToken[Predicate]] =
     plan.query.where.collect {
-      case predicate@PredicateQueryToken(HasLabel(Identifier(identifier), label))
+      case predicate@QueryToken(HasLabel(Identifier(identifier), label))
         if identifier == hint.identifier && label.name == hint.label => predicate
     }
 
   private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(QueryToken[Predicate], Expression)] =
     plan.query.where.collect {
-      case predicate@PredicateQueryToken(Equals(Property(Identifier(id), prop), expression))
+      case predicate@QueryToken(Equals(Property(Identifier(id), prop), expression))
         if id == hint.identifier && prop.name == hint.property => (predicate, expression)
 
-      case predicate@PredicateQueryToken(Equals(expression, Property(Identifier(id), prop)))
+      case predicate@QueryToken(Equals(expression, Property(Identifier(id), prop)))
         if id == hint.identifier && prop.name == hint.property => (predicate, expression)
     }
 
@@ -79,11 +79,4 @@ class IndexLookupBuilder extends PlanBuilder {
   }
 
   def priority = PlanBuilder.IndexLookup
-
-  object PredicateQueryToken {
-    def unapply(v: Any): Option[Predicate] = v match {
-      case q: QueryToken[Predicate] => Some(q.token)
-      case _                        => None
-    }
-  }
 }
