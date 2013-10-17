@@ -21,15 +21,19 @@ package org.neo4j.kernel.impl.cache;
 
 import java.lang.ref.ReferenceQueue;
 
-public class WeakReferenceQueue<K,V> extends ReferenceQueue<WeakValue<K,V>>
+/**
+ * Common interface for soft and weak values.
+ */
+public interface ReferenceWithKey<KEY, VALUE>
 {
-    public WeakReferenceQueue()
+    interface Factory
     {
-        super();
+        <FK, FV> ReferenceWithKey<FK, FV> newReference( FK key, FV value, ReferenceQueue<? super FV> queue );
     }
-    
-    public WeakValue<K,V> safePoll()
-    {
-        return (WeakValue) poll();
-    }
+
+    KEY key();
+    VALUE get();
+    void clear();
+    boolean enqueue();
+
 }
