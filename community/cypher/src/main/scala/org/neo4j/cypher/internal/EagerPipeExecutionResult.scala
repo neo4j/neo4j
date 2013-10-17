@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal
 
-import internal.pipes.QueryState
-import collection.Map
-import org.neo4j.cypher.internal.ClosingIterator
-import java.io.PrintWriter
+import pipes.QueryState
 import org.neo4j.cypher.internal.spi.TokenContext
+import collection.Map
+import java.io.PrintWriter
 
 class EagerPipeExecutionResult(result: ClosingIterator,
                                columns: List[String],

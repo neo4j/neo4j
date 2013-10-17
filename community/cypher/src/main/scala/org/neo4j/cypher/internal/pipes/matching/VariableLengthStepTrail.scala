@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
+import org.neo4j.cypher.internal._
+import commands.{True, Pattern}
+import pipes.MutableMaps
+import symbols._
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer, Direction}
-import org.neo4j.cypher.internal.commands.{True, Pattern}
-import org.neo4j.cypher.internal.pipes.MutableMaps
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.PathImpl
 
 final case class VariableLengthStepTrail(next: Trail,
                                          dir: Direction,

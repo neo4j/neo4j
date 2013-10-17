@@ -19,19 +19,20 @@
  */
 package org.neo4j.cypher
 
-import internal.commands._
-import expressions._
+import org.neo4j.cypher.internal._
+import commands._
+import commands.expressions._
+import commands.values.TokenType._
+import org.neo4j.graphdb._
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException
+import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
+import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.Assert._
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
-import org.neo4j.graphdb._
 import org.junit.{Ignore, Test}
-import org.neo4j.test.ImpermanentGraphDatabase
 import util.Random
-import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
-import org.neo4j.cypher.internal.commands.values.TokenType._
 import java.util.concurrent.TimeUnit
-import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException
 
 class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker {
 

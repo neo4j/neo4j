@@ -20,18 +20,17 @@
 package org.neo4j.cypher.internal.executionplan
 
 import builders._
-import org.neo4j.cypher.internal.pipes._
-import org.neo4j.cypher._
-import internal.profiler.Profiler
-import internal.spi.{PlanContext, QueryContext}
-import internal.ClosingIterator
-import internal.commands._
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal._
+import commands._
+import commands.values.{TokenType, KeyToken}
+import executionplan.builders.prepare.KeyTokenResolver
+import pipes._
+import pipes.optional.NullInsertingPipe
+import profiler.Profiler
+import symbols.SymbolTable
+import org.neo4j.cypher.internal.spi.{PlanContext, QueryContext}
+import org.neo4j.cypher.{SyntaxException, ExecutionPlan, ExecutionResult}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.ExecutionResult
-import org.neo4j.cypher.internal.commands.values.{TokenType, KeyToken}
-import org.neo4j.cypher.internal.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.pipes.optional.NullInsertingPipe
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 

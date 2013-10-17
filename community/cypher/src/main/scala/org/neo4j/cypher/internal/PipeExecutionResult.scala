@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal
 
-import internal.helpers.CollectionSupport
-import internal.pipes.QueryState
-import org.neo4j.cypher.internal.{ClosingIterator}
-import internal.commands.expressions.StringHelper
+import commands.expressions.StringHelper
+import helpers.CollectionSupport
+import pipes.QueryState
+import org.neo4j.cypher._
+import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.graphdb.ResourceIterator
 import scala.collection.JavaConverters._
 import java.io.{StringWriter, PrintWriter}
 import collection.immutable.{Map => ImmutableMap}
 import collection.Map
-import org.neo4j.graphdb.ResourceIterator
 import java.util
-import org.neo4j.cypher.internal.spi.{QueryContext, TokenContext}
 
 class PipeExecutionResult(result: ClosingIterator,
                           val columns: List[String], state: QueryState,
