@@ -31,6 +31,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class LabelScanStoreIT
 {
@@ -97,7 +98,7 @@ public class LabelScanStoreIT
                 asSet( node2 ),
                 getAllNodesWithLabel( Labels.First ) );
         assertEquals(
-                asSet(),
+                emptySetOf( Node.class ),
                 getAllNodesWithLabel( Labels.Second ) );
         assertEquals(
                 asSet( node2 ),
@@ -123,14 +124,13 @@ public class LabelScanStoreIT
                 asSet( node1 ),
                 getAllNodesWithLabel( Labels.Second ) );
         assertEquals(
-                asSet(),
+                emptySetOf( Node.class ),
                 getAllNodesWithLabel( Labels.Third ) );
     }
     
     private void removeLabels( Node node, Label... labels )
     {
-        Transaction tx = dbRule.getGraphDatabaseService().beginTx();
-        try
+        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
         {
             for ( Label label : labels )
             {
@@ -138,68 +138,44 @@ public class LabelScanStoreIT
             }
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private void deleteNode( Node node )
     {
-        Transaction tx = dbRule.getGraphDatabaseService().beginTx();
-        try
+        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
         {
             node.delete();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        Transaction tx = dbRule.getGraphDatabaseService().beginTx();
-        try
+        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
         {
             return asSet( GlobalGraphOperations.at( dbRule.getGraphDatabaseService() ).getAllNodesWithLabel( label ) );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        Transaction tx = dbRule.getGraphDatabaseService().beginTx();
-        try
+        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
         {
             Node node = dbRule.getGraphDatabaseService().createNode( labels );
             tx.success();
             return node;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
     
     private void addLabels( Node node, Label... labels )
     {
-        Transaction tx = dbRule.getGraphDatabaseService().beginTx();
-        try
+        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
         {
             for ( Label label : labels )
             {
                 node.addLabel( label );
             }
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -209,6 +185,6 @@ public class LabelScanStoreIT
     {
         First,
         Second,
-        Third;
+        Third
     }
 }
