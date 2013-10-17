@@ -41,7 +41,7 @@ case class Unsolved[T](t: T) extends QueryToken[T](t) {
 
 object QueryToken {
   def unapply(v: Any): Option[Any] = v match {
-    case q: QueryToken[Any] => Some(q.token)
-    case _                  => None
+    case q: QueryToken[_] => Some(q.token)
+    case _                => None
   }
 }

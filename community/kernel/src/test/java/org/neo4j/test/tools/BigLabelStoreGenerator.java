@@ -28,9 +28,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
+import static java.lang.Integer.parseInt;
+import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 
-// Builds a store in the path given as first argument of of $NUM_NODES nodes, where each node has at most
+// Builds a store in the path at $GRAPH_DB of $NUM_NODES nodes, where each node has at most
 // $NUM_LABELS randomly selected labels
 public class BigLabelStoreGenerator
 {
@@ -38,21 +40,21 @@ public class BigLabelStoreGenerator
 
     public static void main(String[] args)
     {
-        long batchSize = 1000;
-
-        long numNodes = Long.parseLong( System.getenv( "NUM_NODES" ) );
-        int numLabels = Integer.parseInt( System.getenv( "NUM_LABELS" ) );
+        long batchSize = parseLong( withDefault( System.getenv().get( "BATCH_SIZE" ), "100000" ) );
+        long numNodes = parseLong( withDefault( System.getenv( "NUM_NODES" ), "1000000" ) );
+        int numLabels = parseInt( withDefault( System.getenv( "NUM_LABELS" ), "10" ) );
 
         Label[] labels = createLabels( numLabels );
 
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        GraphDatabaseService graph = factory.newEmbeddedDatabase( args[0] );
+        GraphDatabaseService graph = factory.newEmbeddedDatabase( System.getenv( "GRAPH_DB" ) );
+        long labelings = 0;
 
+        long start = System.currentTimeMillis();
         try {
             for ( long l = 0; l < numNodes; l += batchSize )
             {
-                long labelings = 0;
-                long start = System.currentTimeMillis();
+                long batchStart = System.currentTimeMillis();
                 try ( Transaction tx = graph.beginTx() )
                 {
                     for ( long m = 0; m < batchSize; m++ )
@@ -63,15 +65,21 @@ public class BigLabelStoreGenerator
                     }
                     tx.success();
                 }
-                long duration = System.currentTimeMillis() - start;
-                System.out.println( format( "nodes: %d, labelings: %d, duration: %d", l, labelings, duration ) );
+                long batchDuration = System.currentTimeMillis() - batchStart;
+                System.out.println( format( "nodes: %d, ratio: %d, labelings: %d, duration: %d", l, l*100/numNodes, labelings, batchDuration ) );
             }
         }
         finally
         {
             graph.shutdown();
         }
+        long duration = System.currentTimeMillis() - start;
+        System.out.println( format( "nodes: %d, ratio: %d, labelings: %d, duration: %d", numNodes, 100, labelings, duration ) );
+    }
 
+    private static String withDefault( String value, String defaultValue )
+    {
+        return null == value ? defaultValue : value;
     }
 
     private static Label[] pickRandomLabels( Label[] labels )
