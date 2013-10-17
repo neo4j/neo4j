@@ -239,12 +239,16 @@ public class IndexingService extends LifecycleAdapter
 
         long ruleId = rule.getId();
         IndexProxy index = indexMap.getIndexProxy( ruleId );
+        if (index != null)
+        {
+            // We already have this index
+            return;
+        }
         final IndexDescriptor descriptor = createDescriptor( rule );
         SchemaIndexProvider.Descriptor providerDescriptor = rule.getProviderDescriptor();
         boolean constraint = rule.isConstraintIndex();
         if ( serviceRunning )
         {
-            assert index == null : "Index " + rule + " already exists";
             try
             {
                 index = createAndStartPopulatingIndexProxy( ruleId, descriptor, providerDescriptor, constraint );
@@ -254,7 +258,7 @@ public class IndexingService extends LifecycleAdapter
                 throw new RuntimeException( e );
             }
         }
-        else if ( index == null )
+        else
         {
             index = createAndStartRecoveringIndexProxy( descriptor, providerDescriptor );
         }
