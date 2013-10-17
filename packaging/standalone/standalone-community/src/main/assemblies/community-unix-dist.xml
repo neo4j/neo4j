@@ -44,7 +44,6 @@
       <includes>
         <include>system/lib/*.jar</include>
         <include>lib/*.jar</include>
-        <include>plugins/gremlin1.5/*.jar</include>
       </includes>
     </fileSet>
     <!-- filter and chmod 755 shell scripts -->

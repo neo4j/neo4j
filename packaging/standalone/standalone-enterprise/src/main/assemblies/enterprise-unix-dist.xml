@@ -57,7 +57,6 @@
       <includes>
         <include>system/lib/*.jar</include>
         <include>lib/*.jar</include>
-        <include>plugins/gremlin1.5/*.jar</include>
       </includes>
     </fileSet>
     <!-- chmod 755 for unix bins -->
