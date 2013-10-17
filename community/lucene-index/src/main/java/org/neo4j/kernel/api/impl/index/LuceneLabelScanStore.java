@@ -38,7 +38,6 @@ import org.apache.lucene.store.LockObtainFailedException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
@@ -49,25 +48,9 @@ import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
-/**
- * {@link LabelScanStore} implemented using Lucene. There's only one big index for all labels because
- * the Lucene document structure handles that quite efficiently. It's as follows (pseudo field keys):
- *
- * { // document for node 1
- *     id: 1
- *     label: 4
- *     label: 2
- *     label: 56
- * }
- * { // document for node 2
- *     id: 2
- *     label: 4
- * }
- */
-public class LuceneLabelScanStore implements LabelScanStore
+public class LuceneLabelScanStore implements LabelScanStore, LabelScanStorageStrategy.StorageService
 {
-    private static final String LABEL_FIELD_IDENTIFIER = "label";
-    private final LuceneDocumentStructure documentStructure;
+    private final LabelScanStorageStrategy strategy;
     private final DirectoryFactory directoryFactory;
     private final LuceneIndexWriterFactory writerFactory;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
@@ -109,7 +92,7 @@ public class LuceneLabelScanStore implements LabelScanStore
             public void noIndex()
             {
                 logger.info( "No lucene scan store index found, this might just be first use. " +
-                        "Preparing to rebuild." );
+                             "Preparing to rebuild." );
             }
 
             @Override
@@ -139,11 +122,11 @@ public class LuceneLabelScanStore implements LabelScanStore
         };
     }
 
-    public LuceneLabelScanStore( LuceneDocumentStructure luceneDocumentStructure, DirectoryFactory directoryFactory,
+    public LuceneLabelScanStore( LabelScanStorageStrategy strategy, DirectoryFactory directoryFactory,
             File directoryLocation, FileSystemAbstraction fs, LuceneIndexWriterFactory writerFactory,
             FullStoreChangeStream fullStoreStream, Monitor monitor )
     {
-        this.documentStructure = luceneDocumentStructure;
+        this.strategy = strategy;
         this.directoryFactory = directoryFactory;
         this.directoryLocation = directoryLocation;
         this.fs = fs;
@@ -153,28 +136,39 @@ public class LuceneLabelScanStore implements LabelScanStore
     }
 
     @Override
+    public void deleteDocuments( Term documentTerm ) throws IOException
+    {
+        writer.deleteDocuments( documentTerm );
+    }
+
+    @Override
+    public void updateDocument( Term documentTerm, Document document ) throws IOException
+    {
+        writer.updateDocument( documentTerm, document );
+    }
+
+    @Override
+    public IndexSearcher acquireSearcher()
+    {
+        return searcherManager.acquire();
+    }
+
+    @Override
+    public void refreshSearcher() throws IOException
+    {
+        searcherManager.maybeRefresh();
+    }
+
+    @Override
+    public void releaseSearcher( IndexSearcher searcher ) throws IOException
+    {
+        searcherManager.release( searcher );
+    }
+
+    @Override
     public void updateAndCommit( Iterator<NodeLabelUpdate> updates ) throws IOException
     {
-        while ( updates.hasNext() )
-        {
-            NodeLabelUpdate update = updates.next();
-            Term documentTerm = documentStructure.newQueryForChangeOrRemove( update.getNodeId() );
-            if ( update.getLabelsAfter().length > 0 )
-            {
-                // Delete any existing document for this node and index the current set of labels
-                Document document = documentStructure.newDocument( update.getNodeId() );
-                for ( long label : update.getLabelsAfter() )
-                {
-                    document.add( documentStructure.newField( LABEL_FIELD_IDENTIFIER, label ) );
-                }
-                writer.updateDocument( documentTerm, document );
-            }
-            else
-            {
-                // Delete the document for this node from the index
-                writer.deleteDocuments( documentTerm );
-            }
-        }
+        strategy.applyUpdates( this, updates );
         searcherManager.maybeRefresh();
     }
 
@@ -202,22 +196,13 @@ public class LuceneLabelScanStore implements LabelScanStore
     @Override
     public LabelScanReader newReader()
     {
-        final IndexSearcher searcher = searcherManager.acquire();
+        final IndexSearcher searcher = acquireSearcher();
         return new LabelScanReader()
         {
             @Override
             public PrimitiveLongIterator nodesWithLabel( int labelId )
             {
-                try
-                {
-                    Hits hits = new Hits( searcher,
-                            documentStructure.newQuery( LABEL_FIELD_IDENTIFIER, labelId ), null );
-                    return new HitsPrimitiveLongIterator( hits, documentStructure );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                return strategy.nodesWithLabel( searcher, labelId );
             }
 
             @Override
@@ -225,7 +210,7 @@ public class LuceneLabelScanStore implements LabelScanStore
             {
                 try
                 {
-                    searcherManager.release( searcher );
+                    releaseSearcher( searcher );
                 }
                 catch ( IOException e )
                 {
