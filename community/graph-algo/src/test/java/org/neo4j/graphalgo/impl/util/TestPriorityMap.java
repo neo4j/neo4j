@@ -28,8 +28,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.graphalgo.impl.util.PriorityMap.withSelfKeyNaturalOrder;
-
 public class TestPriorityMap
 {
     @Test
@@ -75,7 +73,7 @@ public class TestPriorityMap
     public void shouldReplaceIfBetter() throws Exception
     {
         // GIVEN
-        PriorityMap<Integer, Integer, Double> map = withSelfKeyNaturalOrder();
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.<Integer, Double>withSelfKeyNaturalOrder();
         map.put( 1, 2d );
 
         // WHEN
