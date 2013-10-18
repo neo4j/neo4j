@@ -120,7 +120,7 @@ public class PersistenceWindowPool implements WindowPool
      * @return A locked window encapsulating the position
      */
     @Override
-    public PersistenceWindow acquire( long position, OperationType operationType )
+    public synchronized PersistenceWindow acquire( long position, OperationType operationType )
     {
         LockableWindow window = null;
         if ( brickMiss >= REFRESH_BRICK_COUNT )
@@ -254,7 +254,7 @@ public class PersistenceWindowPool implements WindowPool
         }
     }
 
-    private void applyChangesToWindowIfNecessary( PersistenceRow dpw )
+    private synchronized void applyChangesToWindowIfNecessary( PersistenceRow dpw )
     {
         int brickIndex = positionToBrickIndex( dpw.position() );
         LockableWindow existingBrickWindow = brickIndex < brickArray.length ?
@@ -420,7 +420,7 @@ public class PersistenceWindowPool implements WindowPool
      * 
      * @param nr the number of windows to free.
      */
-    private void freeWindows( int nr )
+    private synchronized void freeWindows( int nr )
     {
         // Only called from expandBricks, so we're under a lock here
         if ( brickSize <= 0 )
@@ -542,7 +542,7 @@ public class PersistenceWindowPool implements WindowPool
      * 
      * @return all bricks in this pool divided into mapped and unmapped.
      */
-    private Pair<List<BrickElement>, List<BrickElement>> gatherMappedVersusUnmappedWindows()
+    private synchronized Pair<List<BrickElement>, List<BrickElement>> gatherMappedVersusUnmappedWindows()
     {
         List<BrickElement> mappedBricks = new ArrayList<BrickElement>();
         List<BrickElement> unmappedBricks = new ArrayList<BrickElement>();
