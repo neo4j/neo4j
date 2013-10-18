@@ -40,12 +40,11 @@ import static java.lang.String.format;
 @Ignore("Too costly to run by default but useful for testing resource clean up and indexing")
 public class ManyMergesStressTest
 {
-    private int numParts = 8;
     private Random random = new Random();
 
     private String[] SYLLABLES = new String[] { "Om", "Pa", "So", "Hu", "Ma", "Ni", "Ru", "Gu", "Ha", "Ta" };
 
-    private int TRIES = 8000;
+    private final static int TRIES = 8000;
 
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
@@ -55,15 +54,15 @@ public class ManyMergesStressTest
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
 
+        Label person = DynamicLabel.label( "Person" );
+
         try ( Transaction tx = db.beginTx() )
         {
-            Label person = DynamicLabel.label( "Person" );
-
-            // THIS CAUSES OUT OF FILE HANDLES
+            // THIS USED TO CAUSE OUT OF FILE HANDLES
             // (maybe look at:  http://stackoverflow.com/questions/6210348/too-many-open-files-error-on-lucene)
-            db.schema().indexFor( DynamicLabel.label("Person") ).on( "id" ).create();
+            db.schema().indexFor( person ).on( "id" ).create();
 
-            // THIS WORKS
+            // THIS SHOULD ALSO WORK
             // db.schema().constraintFor( person ).on( "id" ).unique().create();
 
             tx.success();
@@ -71,7 +70,6 @@ public class ManyMergesStressTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Label person = DynamicLabel.label( "Person" );
             db.schema().indexFor( person ).on( "name" ).create();
             tx.success();
         }
@@ -117,5 +115,4 @@ public class ManyMergesStressTest
 
         return Pair.of( identBuilder.toString(), nameBuilder.toString() );
     }
-
 }

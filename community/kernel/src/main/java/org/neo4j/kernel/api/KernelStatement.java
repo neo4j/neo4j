@@ -108,6 +108,10 @@ public class KernelStatement implements TxState.Holder, Statement
         {
             closed = true;
             indexReaderFactory.close();
+            if ( null != labelScanReader )
+            {
+                labelScanReader.close();
+            }
             transaction.releaseStatement( this );
         }
     }
