@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -80,18 +81,29 @@ public class IndexingServiceTest
 {
     @Rule
     public final LifeRule life = new LifeRule();
-    private int labelId, propertyKeyId;
+
+    private int labelId;
+    private int propertyKeyId;
+    private IndexPopulator populator;
+    private IndexUpdater updater;
+    private IndexAccessor accessor;
+
+    @Before
+    public void setUp()
+    {
+        labelId = 7;
+        propertyKeyId = 15;
+        populator = mock( IndexPopulator.class );
+        updater = mock( IndexUpdater.class );
+        accessor = mock( IndexAccessor.class );
+
+    }
 
     @Test
     public void shouldBringIndexOnlineAndFlipOverToIndexAccessor() throws Exception
     {
         // given
-        labelId = 7;
-        propertyKeyId = 15;
-        IndexPopulator populator = mock( IndexPopulator.class );
-        IndexUpdater mockedUpdater = mock( IndexUpdater.class );
-        IndexAccessor accessor = mock( IndexAccessor.class );
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( mockedUpdater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn(updater);
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -110,24 +122,36 @@ public class IndexingServiceTest
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
-        InOrder order = inOrder( populator, accessor, mockedUpdater );
+        InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).close( true );
         order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE );
-        order.verify( mockedUpdater ).process( add( 10, "foo" ) );
-        order.verify( mockedUpdater ).close();
+        order.verify(updater).process( add( 10, "foo" ) );
+        order.verify(updater).close();
+    }
+
+    @Test
+    public void indexCreationShouldBeIdempotent() throws Exception
+    {
+        // given
+        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn(updater);
+
+        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+
+        life.start();
+
+        // when
+        indexingService.createIndex( IndexRule.indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        indexingService.createIndex( IndexRule.indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+
+        // We are asserting that the second call to createIndex does not throw an exception.
     }
 
     @Test
     public void shouldDeliverUpdatesThatOccurDuringPopulationToPopulator() throws Exception
     {
         // given
-        labelId = 7;
-        propertyKeyId = 15;
-        IndexPopulator populator = mock( IndexPopulator.class );
-        IndexAccessor accessor = mock( IndexAccessor.class );
-        IndexUpdater mockedUpdater = mock( IndexUpdater.class );
-        when( populator.newPopulatingUpdater() ).thenReturn( mockedUpdater );
+        when( populator.newPopulatingUpdater() ).thenReturn(updater);
 
         CountDownLatch latch = new CountDownLatch( 1 );
         doAnswer( afterAwaiting( latch ) ).when( populator ).add( anyLong(), any() );
@@ -154,21 +178,21 @@ public class IndexingServiceTest
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
-        InOrder order = inOrder( populator, accessor, mockedUpdater );
+        InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).add( 1, "value1" );
 
         // this is invoked from indexAllNodes(),
         // empty because the id we added (2) is bigger than the one we indexed (1)
         order.verify( populator ).newPopulatingUpdater();
-        order.verify( mockedUpdater ).close();
+        order.verify(updater).close();
 
         order.verify( populator ).newPopulatingUpdater();
-        order.verify( mockedUpdater ).process( add( 2, "value2" ) );
-        order.verify( mockedUpdater ).close();
+        order.verify(updater).process( add( 2, "value2" ) );
+        order.verify(updater).close();
 
         order.verify( populator ).close( true );
-        verifyNoMoreInteractions( mockedUpdater );
+        verifyNoMoreInteractions(updater);
         verifyNoMoreInteractions( populator );
         verifyZeroInteractions( accessor );
     }
@@ -177,12 +201,7 @@ public class IndexingServiceTest
     public void shouldStillReportInternalIndexStateAsPopulatingWhenConstraintIndexIsDonePopulating() throws Exception
     {
         // given
-        labelId = 7;
-        propertyKeyId = 15;
-        IndexPopulator populator = mock( IndexPopulator.class );
-        IndexUpdater mockedUpdater = mock( IndexUpdater.class );
-        IndexAccessor accessor = mock( IndexAccessor.class );
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( mockedUpdater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn(updater);
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -202,23 +221,18 @@ public class IndexingServiceTest
 
         // then
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
-        InOrder order = inOrder( populator, accessor, mockedUpdater );
+        InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).close( true );
         order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE );
-        order.verify( mockedUpdater ).process( add( 10, "foo") );
-        order.verify( mockedUpdater ).close();
+        order.verify(updater).process( add( 10, "foo") );
+        order.verify(updater).close();
     }
 
     @Test
     public void shouldBringConstraintIndexOnlineWhenExplicitlyToldTo() throws Exception
     {
         // given
-        labelId = 7;
-        propertyKeyId = 15;
-        IndexPopulator populator = mock( IndexPopulator.class );
-        IndexAccessor accessor = mock( IndexAccessor.class );
-
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
         life.start();
