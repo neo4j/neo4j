@@ -70,11 +70,9 @@ public class CypherUpdateMapTest
 
     private Node getNodeByIdInTx( int nodeId )
     {
-        Transaction transaction = gdb.beginTx();
-        try {
+        try ( Transaction ignored = gdb.beginTx(); )
+        {
             return gdb.getNodeById( nodeId );
-        } finally {
-            transaction.finish();
         }
     }
 
