@@ -2574,7 +2574,13 @@ RETURN x0.name""")
 
   @Test
   def should_be_able_to_index_into_nested_literal_lists() {
-    execute("RETURN [[1]][0][0]")
-    // shoud not throw an exception
+    execute("RETURN [[1]][0][0]").toList
+    // should not throw an exception
+  }
+
+  @Test
+  def should_not_fail_if_asking_for_a_non_existent_node_id_with_WHERE() {
+    execute("match (n) where id(n) in [0,1] return n").toList
+    // should not throw an exception
   }
 }
