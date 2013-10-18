@@ -9,3 +9,5 @@ These indexes are automatically managed and kept up to date by the database when
 
 include::create-index-on-a-label.asciidoc[]
 include::drop-index-on-a-label.asciidoc[]
+include::use-index.asciidoc[]
+

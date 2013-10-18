@@ -2,15 +2,16 @@
 Start
 =====
 
-Every query describes a pattern, and in that pattern one can have multiple
-starting points. A starting point is a relationship or a node where a pattern is anchored.
-You can either introduce starting points by id, or by
-index lookups. Note that trying to use an index that doesn't exist will throw
-an exception.
+Every query describes a pattern, and in that pattern one can have multiple starting points.
+A starting point is a relationship or a node where a pattern is anchored.
+You can either introduce starting points by id, or by index lookups.
+Note that trying to use an index that doesn't exist will throw an exception.
 
-+START+ is optional. If you do not specify explicit start points, Cypher will try and infer start points from your
-query. This is done based on node labels and predicates contained in your query.
-Additionally, you can use index hints with the +USING+ clause to help Cypher pick an index to use to find start points.
+[NOTE]
++START+ is optional.
+If you do not specify explicit start points, Cypher will try and infer start points from your query.
+This is done based on node labels and predicates contained in your query.
+Additionally, you can use index hints with the +USING+ clause to help Cypher pick an index to use to find starting points, see <<query-using>>.
 
 .Graph
 include::includes/cypher-start-graph.asciidoc[]

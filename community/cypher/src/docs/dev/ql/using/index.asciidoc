@@ -7,12 +7,12 @@ This is done by looking at the +WHERE+ clause and the +MATCH+ clause and using t
 
 This index might not be the best choice though -- sometimes multiple indexes could be used, and Cypher has picked the wrong one (from a performance point of view).
 
-You can force Cypher to use a specific start point by using the +USING+ clause.
+You can force Cypher to use a specific starting point by using the +USING+ clause.
 This is called giving Cypher an index hint.
 
-If your query matches large parts of an index, it might be faster to scan the label and filtering out nodes that do not match.
+If your query matches large parts of an index, it might be faster to scan the label and filter out nodes that do not match.
 To do this, you can use +USING+ +SCAN+.
-It will force Cypher to not use an index that could be used, and instead do a label scan.
+It will force Cypher to not use an index that could have been used, and instead do a label scan.
 
 NOTE: You cannot use index hints if your query has a +START+ clause.
 
@@ -21,3 +21,4 @@ include::query-using-an-index-hint.asciidoc[]
 include::query-using-multiple-index-hints.asciidoc[]
 
 include::hinting-a-label-scan.asciidoc[]
+

@@ -169,7 +169,8 @@ return keanu""",
   @Test def using_map_parameters_with_merge() {
     prepareAndTestQuery(
       title = "Using map parameters with MERGE",
-      text = "By explicitly choosing the keys from the map, MERGE handles map params just fine.",
+      text = """+MERGE+ does not support map parameters like for example +CREATE+ does.
+To use map parameters with +MERGE+, it is necessary to explicitly use the expected properties, like in the following example.""",
       prepare = setParameters(Map("param" -> Map("name" -> "Keanu Reeves", "role" -> "Neo"))),
       queryText = "merge (oliver:Person {name:{param}.name, role:{param}.role}) return oliver",
       returns = "",

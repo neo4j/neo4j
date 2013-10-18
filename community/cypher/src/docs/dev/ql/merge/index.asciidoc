@@ -54,9 +54,5 @@ include::merge-using-unique-constraints-creates-a-new-node-if-no-node-is-found.a
 
 include::merge-using-unique-constraints-matches-an-existing-node.asciidoc[]
 
-== Using MERGE with map parameters ==
-
-+MERGE+ does not support map parameters like for example +CREATE+ does. To use map parameters with +MERGE+, it is
-necessary to explicitly use the expected properties, like in the following example.
-
 include::using-map-parameters-with-merge.asciidoc[]
+

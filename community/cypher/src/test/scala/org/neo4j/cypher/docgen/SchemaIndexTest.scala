@@ -20,6 +20,7 @@
 package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.StatisticsChecker
+import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.internal.helpers.GraphIcing
 
@@ -45,7 +46,6 @@ class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with Gr
     )
   }
 
-
   @Test def drop_index_on_a_label() {
     prepareAndTestQuery(
       title = "Drop index on a label",
@@ -54,6 +54,18 @@ class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with Gr
       queryText = "drop index on :Person(name)",
       returns = "",
       assertions = (p) => assertIndexesOnLabels("Person", List())
+    )
+  }
+
+  @Test def use_index() {
+    testQuery(
+      title = "Use index",
+      text = "There is usually no need to specify which indexes to use in a query, Cypher will figure that out by itself. " +
+        "For example the query below will use the `Person(name)` index, if it exists. " +
+        "If you for some reason want to hint to specific indexes, see <<query-using>>.",
+      queryText = "match (n:Person) where n.name = 'Andres' return n",
+      returns = "",
+      assertions = (p) => assertEquals(0, p.size)
     )
   }
 
