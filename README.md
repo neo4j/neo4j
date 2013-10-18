@@ -24,7 +24,7 @@ you can read the [RepositoryOverview.md](RepositoryOverview.md).
 Building Neo4j
 --------------
 
-Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.
+Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.0.x and a recent version of Java 7.
 
 * A plain `mvn clean install` will only build the individual jar files. 
 * Test execution is, of course, part of the build.
