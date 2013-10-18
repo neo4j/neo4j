@@ -33,6 +33,8 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+
 public class TestApplyTransactions
 {
     @Test
@@ -63,14 +65,7 @@ public class TestApplyTransactions
                 NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         destNeoDataSource.applyCommittedTransaction( latestTxId, theTx );
         origin.shutdown();
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                dest.shutdown();
-            }
-        } );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( dest ) );
 
         /*
          * Open crashed db, try to extract the transaction it reports as latest. It should be there.
@@ -84,6 +79,6 @@ public class TestApplyTransactions
         long extractedTxId = destNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
         assertEquals( latestTxId, extractedTxId );
     }
-    
+
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }
