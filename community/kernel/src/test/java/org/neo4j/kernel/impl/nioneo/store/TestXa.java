@@ -384,7 +384,7 @@ public class TestXa
                 dependencyResolverForNoIndexProvider( nodeManager ), txManager,
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
                 mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), mock(LockManager.class),
-                nodeManager, mock( SchemaWriteGuard.class));
+                mock( SchemaWriteGuard.class));
         neoStoreXaDataSource.init();
         neoStoreXaDataSource.start();
         return neoStoreXaDataSource;

@@ -487,7 +487,6 @@ public class
                     resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                     resolver.resolveDependency( PersistenceManager.class ),
                     resolver.resolveDependency( LockManager.class ),
-                    resolver.resolveDependency( NodeManager.class ),
                     (SchemaWriteGuard)graphDb);
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*

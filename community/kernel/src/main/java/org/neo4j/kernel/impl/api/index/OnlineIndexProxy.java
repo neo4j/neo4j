@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -123,6 +125,12 @@ public class OnlineIndexProxy implements IndexProxy
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {
         throw new IllegalStateException( this + " is ONLINE" );
+    }
+
+    @Override
+    public ResourceIterator<File> snapshotFiles() throws IOException
+    {
+        return accessor.snapshotFiles();
     }
 
     @Override
