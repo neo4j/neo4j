@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -40,6 +38,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -48,18 +47,22 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+
 public class SlaveStoreWriter
 {
     public static final String COPY_FROM_MASTER_TEMP = "temp-copy";
     private final Config config;
+    private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final ConsoleLogger console;
 
     // TODO Should be accepted as a dependency
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
-    public SlaveStoreWriter( Config config, ConsoleLogger console )
+    public SlaveStoreWriter( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, ConsoleLogger console )
     {
         this.config = config;
+        this.kernelExtensions = kernelExtensions;
         this.console = console;
     }
 
@@ -84,13 +87,16 @@ public class SlaveStoreWriter
         {
             NeoStore.setVersion( fileSystem, tempStore, highestLogVersion + 1 );
         }
-        GraphDatabaseAPI copiedDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                tempStore.getAbsolutePath() ).setConfig(
-                GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).setConfig(
-                GraphDatabaseSettings.allow_store_upgrade,
-                config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() ).
 
-                newGraphDatabase();
+        GraphDatabaseAPI copiedDb = (GraphDatabaseAPI) new GraphDatabaseFactory()
+                .setKernelExtensions( kernelExtensions )
+                .newEmbeddedDatabaseBuilder(tempStore.getAbsolutePath() )
+                .setConfig(
+                    GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).setConfig(
+                    GraphDatabaseSettings.allow_store_upgrade,
+                    config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
+
+                .newGraphDatabase();
 
         // Apply pending transactions
         try

@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.File;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 public class IndexProxyAdapter implements IndexProxy
 {
@@ -96,6 +99,12 @@ public class IndexProxyAdapter implements IndexProxy
     @Override
     public void validate()
     {
+    }
+
+    @Override
+    public ResourceIterator<File> snapshotFiles()
+    {
+        return emptyIterator();
     }
 
     @Override
