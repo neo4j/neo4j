@@ -67,15 +67,6 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         assertFalse( GlobalGraphOperations.at( getGraphDb() ).getAllNodes().iterator().hasNext() );
         // TODO: this should be valid, fails right now!
         // assertEquals( 0, numNodesPost );
-        try
-        {
-            getGraphDb().getReferenceNode();
-            fail();
-        }
-        catch ( NotFoundException nfe )
-        {
-            // should be thrown
-        }
         tx.success();
         tx.finish();
     }

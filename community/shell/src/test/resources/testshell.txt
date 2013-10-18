@@ -1,3 +1,3 @@
 mknode
-cd -a 1
+cd -a 0
 set "foo" "bar"

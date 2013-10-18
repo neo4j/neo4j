@@ -39,7 +39,6 @@ import org.neo4j.kernel.Traversal;
 @Description( "Here you can describe your plugin. It will show up in the description of the methods." )
 public class Plugin extends ServerPlugin
 {
-    public static final String GET_REFERENCE_NODE = "reference_node_uri";
     public static final String GET_CONNECTED_NODES = "connected_nodes";
     static String _string;
     static Byte _byte;
@@ -55,14 +54,6 @@ public class Plugin extends ServerPlugin
     static List<String> stringList;
     static String[] stringArray;
     public static int[] intArray;
-
-    @Description( "Get the reference node from the graph database" )
-    @PluginTarget( GraphDatabaseService.class )
-    @Name( GET_REFERENCE_NODE )
-    public Node getReferenceNode( @Source GraphDatabaseService graphDb )
-    {
-        return graphDb.getReferenceNode();
-    }
 
     @Name( GET_CONNECTED_NODES )
     @PluginTarget( Node.class )
@@ -82,7 +73,7 @@ public class Plugin extends ServerPlugin
     public Iterable<Relationship> getRelationshipsBetween( final @Source Node start,
             final @Parameter( name = "other" ) Node end )
     {
-        return new FilteringIterable<Relationship>( start.getRelationships(), new Predicate<Relationship>()
+        return new FilteringIterable<>( start.getRelationships(), new Predicate<Relationship>()
         {
             @Override
             public boolean accept( Relationship item )
@@ -97,20 +88,14 @@ public class Plugin extends ServerPlugin
     public Iterable<Relationship> createRelationships( @Source Node start,
             @Parameter( name = "type" ) RelationshipType type, @Parameter( name = "nodes" ) Iterable<Node> nodes )
     {
-        List<Relationship> result = new ArrayList<Relationship>();
-        Transaction tx = start.getGraphDatabase()
-                .beginTx();
-        try
+        List<Relationship> result = new ArrayList<>();
+        try(Transaction tx = start.getGraphDatabase().beginTx())
         {
             for ( Node end : nodes )
             {
                 result.add( start.createRelationshipTo( end, type ) );
             }
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
         return result;
     }
@@ -161,7 +146,7 @@ public class Plugin extends ServerPlugin
         _double = h;
         _boolean = i;
 
-        return db.getReferenceNode();
+        return db.createNode();
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -169,7 +154,7 @@ public class Plugin extends ServerPlugin
             @Parameter( name = "strings", optional = false ) Set<String> params )
     {
         stringSet = params;
-        return db.getReferenceNode();
+        return db.createNode();
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -177,7 +162,7 @@ public class Plugin extends ServerPlugin
             @Parameter( name = "strings", optional = false ) List<String> params )
     {
         stringList = params;
-        return db.getReferenceNode();
+        return db.createNode();
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -185,7 +170,7 @@ public class Plugin extends ServerPlugin
             @Parameter( name = "strings", optional = false ) String[] params )
     {
         stringArray = params;
-        return db.getReferenceNode();
+        return db.createNode();
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -193,7 +178,7 @@ public class Plugin extends ServerPlugin
             @Parameter( name = "ints", optional = false ) int[] params )
     {
         intArray = params;
-        return db.getReferenceNode();
+        return db.createNode();
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -201,7 +186,7 @@ public class Plugin extends ServerPlugin
             @Parameter( name = "ints", optional = true ) int[] params )
     {
         intArray = params;
-        return db.getReferenceNode();
+        return db.createNode();
     }
 
     @PluginTarget( Node.class )
@@ -209,6 +194,6 @@ public class Plugin extends ServerPlugin
     {
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath( Traversal.expanderForAllTypes(), 6 );
         return finder.findSinglePath( me.getGraphDatabase()
-                .getReferenceNode(), me );
+                .createNode(), me );
     }
 }

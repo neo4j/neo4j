@@ -198,6 +198,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
   @Test
   def create_node_from_map_values() {
     execute("create (n {a}) return n", "a" -> Map("name" -> "Andres", "age" -> 66))
+    graph.createdNodes.dequeue() // Pop off reference node, remove this once reference node is gone entirely from tests.
     val n = graph.createdNodes.dequeue()
     assertThat(n, inTx(graph, hasProperty("name").withValue("Andres")))
     assertThat(n, inTx(graph, hasProperty("age").withValue(66)))

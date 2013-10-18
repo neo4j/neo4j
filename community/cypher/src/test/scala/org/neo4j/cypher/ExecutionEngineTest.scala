@@ -43,11 +43,6 @@ foreach(x in [1,2,3] |
     println(result.dumpToString())
   }
 
-  @Test def shouldGetReferenceNode() {
-    val result = execute("start n=node(0) return n")
-    assertEquals(List(refNode), result.columnAs[Node]("n").toList)
-  }
-
   @Test def shouldGetRelationshipById() {
     val n = createNode()
     val r = relate(n, refNode, "KNOWS")
@@ -2199,7 +2194,7 @@ RETURN x0.name""")
     val engine = createReadOnlyEngine()
 
     //WHEN
-    val result = engine.execute("START n=node(0) WHERE n:NonExistingLabel RETURN n")
+    val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n")
 
     //THEN
     assert(result.toList === List())

@@ -22,9 +22,6 @@ package org.neo4j.server.rest;
 import java.util.Map;
 
 import org.junit.Test;
-
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
@@ -34,19 +31,14 @@ import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
 {
     /**
      * The service root is your starting point to discover the REST API. It
      * contains the basic starting points for the database, and some version and
-     * extension information. The +reference_node+ entry will only be present if
-     * there is a reference node set and that node actually exists in the
-     * database.
+     * extension information.
      */
     @Documented
     @Test
@@ -54,11 +46,9 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
     @Title("Get service root")
     public void assert200OkFromGet() throws Exception
     {
-        long referenceNodeId = setReferenceNodeIdToI();
         String body = gen.get().expectedStatus( 200 ).get( getDataUri() ).entity();
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         assertEquals( getDataUri() + "node", map.get( "node" ) );
-        assertNotNull( map.get( "reference_node" ) ); // See DatabaseRepresentation#serialize
         assertNotNull( map.get( "node_index" ) );
         assertNotNull( map.get( "relationship_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
@@ -92,22 +82,9 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.getStatus() );
         response.close();
 
-        response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"START n=node(" +
-                referenceNodeId + ") RETURN n\"}" );
+        response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"CREATE (n) RETURN n\"}" );
         assertEquals( 200, response.getStatus() );
         response.close();
-    }
-
-    private long setReferenceNodeIdToI()
-    {
-        InternalAbstractGraphDatabase db = (InternalAbstractGraphDatabase) graphdb();
-        try ( Transaction tx = db.beginTx() )
-        {
-            long referenceNodeId = data.get().get( "I" ).getId();
-            db.getNodeManager().setReferenceNodeId( referenceNodeId );
-            tx.success();
-            return referenceNodeId;
-        }
     }
 
     /**
@@ -128,7 +105,6 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
     public void streaming() throws Exception
     {
         data.get();
-        setReferenceNodeIdToI();
         ResponseEntity responseEntity = gen().docHeadingLevel( 2 )
                 .withHeader( StreamingFormat.STREAM_HEADER, "true" )
                 .expectedType( APPLICATION_JSON_TYPE )
@@ -145,6 +121,5 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         String body = responseEntity.entity();
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         assertEquals( getDataUri() + "node", map.get( "node" ) );
-        assertNotNull( map.get( "reference_node" ) ); // See DatabaseRepresentation#serialize
     }
 }

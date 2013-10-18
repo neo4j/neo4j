@@ -19,40 +19,40 @@
  */
 package org.neo4j.management;
 
-import java.io.File;
 import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
 import org.neo4j.kernel.info.ResourceType;
 import org.neo4j.kernel.info.WaitingThread;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class TestLockManagerBean
 {
     private LockManager lockManager;
 
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    private GraphDatabaseAPI graphDb;
+
     @Before
-    public void setupLockManager()
+    public void setup()
     {
-        lockManager = ((GraphDatabaseAPI)graphDb).getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+        graphDb = dbRule.getGraphDatabaseAPI();
+        lockManager = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( LockManager.class );
     }
 
@@ -65,10 +65,16 @@ public class TestLockManagerBean
     @Test
     public void modifiedNodeImpliesLock()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        Node node;
+        try(Transaction tx = graphDb.beginTx())
         {
-            graphDb.getReferenceNode().setProperty( "key", "value" );
+            node = graphDb.createNode();
+            tx.success();
+        }
+
+        try(Transaction ignore = graphDb.beginTx())
+        {
+            node.setProperty( "key", "value" );
 
             List<LockInfo> locks = lockManager.getLocks();
             assertEquals( "unexpected lock count", 1, locks.size() );
@@ -94,10 +100,6 @@ public class TestLockManagerBean
 
             assertEquals( "waiting thread count", 0, lock.getWaitingThreadsCount() );
         }
-        finally
-        {
-            tx.finish();
-        }
         List<LockInfo> locks = lockManager.getLocks();
         assertEquals( "unexpected lock count", 0, locks.size() );
     }
@@ -108,27 +110,27 @@ public class TestLockManagerBean
         Transaction tx = graphDb.beginTx();
         try
         {
-            Node root = graphDb.getReferenceNode();
+            Node root = graphDb.createNode();
             Lock first = tx.acquireReadLock( root );
 
             LockInfo lock = getSingleLock();
             assertEquals( "read count", 1, lock.getReadCount() );
-            assertEquals( "write count", 0, lock.getWriteCount() );
+            assertEquals( "write count", 1, lock.getWriteCount() );
 
             tx.acquireReadLock( root );
             lock = getSingleLock();
             assertEquals( "read count", 2, lock.getReadCount() );
-            assertEquals( "write count", 0, lock.getWriteCount() );
+            assertEquals( "write count", 1, lock.getWriteCount() );
 
             tx.acquireWriteLock( root );
             lock = getSingleLock();
             assertEquals( "read count", 2, lock.getReadCount() );
-            assertEquals( "write count", 1, lock.getWriteCount() );
+            assertEquals( "write count", 2, lock.getWriteCount() );
 
             first.release();
             lock = getSingleLock();
             assertEquals( "read count", 1, lock.getReadCount() );
-            assertEquals( "write count", 1, lock.getWriteCount() );
+            assertEquals( "write count", 2, lock.getWriteCount() );
         }
         finally
         {
@@ -141,10 +143,15 @@ public class TestLockManagerBean
     @Test
     public void canGetToContendedLocksOnly() throws Exception
     {
+        Node root;
+        try(Transaction tx = graphDb.beginTx())
+        {
+            root = graphDb.createNode();
+            tx.success();
+        }
         Transaction tx = graphDb.beginTx();
         try
         {
-            final Node root = graphDb.getReferenceNode();
             graphDb.createNode();
             Lock lock = tx.acquireReadLock( root );
 
@@ -155,7 +162,7 @@ public class TestLockManagerBean
                 switch ( l.getResourceType() )
                 {
                     case NODE:
-                        if ( "0".equals( l.getResourceId() ) )
+                        if ( l.getResourceId().equals( String.valueOf( root.getId() ) ) )
                         {
                             assertEquals( "read count", 1, l.getReadCount() );
                             assertEquals( "write count", 0, l.getWriteCount() );
@@ -171,6 +178,7 @@ public class TestLockManagerBean
                 }
             }
             final CountDownLatch latch = new CountDownLatch( 1 );
+            final Node finalRoot = root;
             Thread t = new Thread()
             {
                 @Override
@@ -179,7 +187,7 @@ public class TestLockManagerBean
                     Transaction tx = graphDb.beginTx();
                     try
                     {
-                        root.setProperty( "block", "here" );
+                        finalRoot.setProperty( "block", "here" );
                     }
                     finally
                     {
@@ -260,30 +268,5 @@ public class TestLockManagerBean
         LockInfo lock = locks.get( 0 );
         assertNotNull( "null lock", lock );
         return lock;
-    }
-
-    private static GraphDatabaseService graphDb;
-
-    @BeforeClass
-    public static synchronized void startGraphDb()
-    {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "target" + File.separator + "var" + File.separator
-                + ManagementBeansTest.class.getSimpleName() );
-    }
-
-    @AfterClass
-    public static synchronized void stopGraphDb()
-    {
-        try
-        {
-            if ( graphDb != null )
-            {
-                graphDb.shutdown();
-            }
-        }
-        finally
-        {
-            graphDb = null;
-        }
     }
 }

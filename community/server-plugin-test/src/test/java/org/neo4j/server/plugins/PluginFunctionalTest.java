@@ -84,15 +84,15 @@ public class PluginFunctionalTest extends SharedServerTestBase
     }
 
     @Test
-    public void canGetExtensionDataForGetReferenceNode() throws Exception
+    public void canGetExtensionDataForCreateNode() throws Exception
     {
         Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
-        assertThat( (String) map.get( FunctionalTestPlugin.GET_REFERENCE_NODE ), RegExp.endsWith( String.format(
+        assertThat( (String) map.get( FunctionalTestPlugin.CREATE_NODE ), RegExp.endsWith( String.format(
                 "/ext/%s/graphdb/%s", FunctionalTestPlugin.class.getSimpleName(),
-                FunctionalTestPlugin.GET_REFERENCE_NODE ) ) );
+                FunctionalTestPlugin.CREATE_NODE ) ) );
     }
 
     @Test
@@ -102,7 +102,7 @@ public class PluginFunctionalTest extends SharedServerTestBase
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
-        String uri = (String) map.get( FunctionalTestPlugin.GET_REFERENCE_NODE );
+        String uri = (String) map.get( FunctionalTestPlugin.CREATE_NODE );
         PluginFunctionalTestHelper.makeGet( uri );
     }
 
@@ -113,7 +113,7 @@ public class PluginFunctionalTest extends SharedServerTestBase
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
-        String uri = (String) map.get( FunctionalTestPlugin.GET_REFERENCE_NODE );
+        String uri = (String) map.get( FunctionalTestPlugin.CREATE_NODE );
         Map<String, Object> description = PluginFunctionalTestHelper.makePostMap( uri );
 
         NodeRepresentationTest.verifySerialisation( description );
@@ -231,7 +231,7 @@ public class PluginFunctionalTest extends SharedServerTestBase
                 .createNode();
         String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "getThisNodeOrById" );
         long id = functionalTestHelper.getGraphDbHelper()
-                .getReferenceNode();
+                .getFirstNode();
         Map<String, Object> params = MapUtil.map( "id", id );
 
         PluginFunctionalTestHelper.makePostMap( methodUri, params );
@@ -399,7 +399,7 @@ public class PluginFunctionalTest extends SharedServerTestBase
         long n = functionalTestHelper.getGraphDbHelper()
                 .createNode();
         long r = functionalTestHelper.getGraphDbHelper()
-                .getReferenceNode();
+                .getFirstNode();
         functionalTestHelper.getGraphDbHelper()
                 .createRelationship( "friend", n, r );
 

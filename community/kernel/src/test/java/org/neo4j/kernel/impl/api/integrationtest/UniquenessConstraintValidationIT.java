@@ -212,7 +212,6 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         // then
         dataWriteOperationsInNewTransaction();
-        db.getReferenceNode().delete();
         assertEquals( "number of nodes", 5, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
         rollback();
     }

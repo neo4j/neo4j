@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.lucene.index.IndexWriter;
 import org.junit.Test;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
@@ -111,7 +112,9 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         {
             try(Transaction ignored = graphdb.beginTx())
             {
-                assertTrue( (Boolean) graphdb.getReferenceNode().getProperty( "success" ) );
+                // TODO: Pass a node reference around of assuming the id will be deterministically assigned,
+                // artifact of removing the reference node, upon which this test used to depend.
+                assertTrue( (Boolean) graphdb.getNodeById(3).getProperty( "success" ) );
             }
         }
     }
@@ -176,7 +179,8 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         {
             try(Transaction tx = graphdb.beginTx())
             {
-                graphdb.getReferenceNode().setProperty( "success", success );
+                Node node = graphdb.createNode();
+                node.setProperty( "success", success );
                 tx.success();
             }
         }

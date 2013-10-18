@@ -219,7 +219,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
             assertEquals( asList( node, node ), asList( relationship.getNodes() ) );
             try
             {
-                relationship.getOtherNode( getGraphDb().getReferenceNode() );
+                relationship.getOtherNode( getGraphDb().createNode() );
                 fail( "Should throw exception if another node is passed into loop.getOtherNode" );
             }
             catch ( NotFoundException e )

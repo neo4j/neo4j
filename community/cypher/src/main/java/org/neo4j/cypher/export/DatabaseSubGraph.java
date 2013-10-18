@@ -56,11 +56,6 @@ public class DatabaseSubGraph implements SubGraph {
     }
 
     @Override
-    public Node getReferenceNode() {
-        return gdb.getReferenceNode();
-    }
-
-    @Override
     public boolean contains(Relationship relationship) {
         return relationship.getGraphDatabase().equals(gdb);
     }

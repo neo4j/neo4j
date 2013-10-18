@@ -81,9 +81,8 @@ public class TestGuard
         Node n0 = db.getNodeById( 0 );
         Node n1 = db.getNodeById( 1 );
         Node n2 = db.getNodeById( 2 );
-        Node n3 = db.getNodeById( 3 );
         Guard.OperationsCount ops2 = db.getGuard().stop();
-        assertEquals( 4, ops2.getOpsCount() );
+        assertEquals( 3, ops2.getOpsCount() );
 
         db.getGuard().startOperationsCount( MAX_VALUE );
         n0.createRelationshipTo( n1, withName( "REL" ));
@@ -112,7 +111,7 @@ public class TestGuard
         Guard guard = db.getGuard();
 
         guard.startOperationsCount( 2 );
-        Node n0 = db.getNodeById( 0 );
+        Node n0 = db.createNode();
         Node n1 = db.createNode();
         try
         {

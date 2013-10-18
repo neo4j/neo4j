@@ -58,6 +58,14 @@ public class IndexConstraintsTest
     {
         final int numThreads = 25;
         final String uuid = UUID.randomUUID().toString();
+
+        final Node commonNode;
+        try(Transaction tx = graphDb.beginTx())
+        {
+            commonNode = graphDb.createNode();
+            tx.success();
+        }
+
         ExecutorCompletionService<Node> ecs = new ExecutorCompletionService<>(
                 Executors.newFixedThreadPool( numThreads ) );
         for ( int i = 0; i < numThreads; i++ )
@@ -71,7 +79,7 @@ public class IndexConstraintsTest
                     {
                         final Node node = graphDb.createNode();
                         // Acquire lock
-                        tx.acquireWriteLock( graphDb.getReferenceNode() );
+                        tx.acquireWriteLock( commonNode );
                         Index<Node> index = graphDb.index().forNodes( "uuids" );
                         final Node existing = index.get( "uuid", uuid ).getSingle();
                         if ( existing != null )

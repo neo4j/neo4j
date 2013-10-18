@@ -47,7 +47,7 @@ public class TestRaceOnMultipleNodeImpl
             @Override
             public Node call() throws Exception
             {
-                return graphdb.getReferenceNode();
+                return graphdb.createNode();
             }
         });
         final Node original = tx( new Callable<Node>()
@@ -132,7 +132,7 @@ public class TestRaceOnMultipleNodeImpl
             @Override
             public Node call() throws Exception
             {
-                return graphdb.getReferenceNode();
+                return graphdb.createNode();
             }
         } );
         tx( new Runnable()

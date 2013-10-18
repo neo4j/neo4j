@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.util.Map;
 
 import org.junit.After;
@@ -38,6 +31,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestIndexImplOnNeo
 {
@@ -84,19 +82,7 @@ public class TestIndexImplOnNeo
 
         assertTrue( indexExists( indexName ) );
         assertEquals( config, db.index().getConfiguration( index ) );
-        
-        // Querying for "refnode" always returns the reference node for this dummy index.
-        transaction = db.beginTx();
-        try
-        {
-            assertEquals( db.getReferenceNode(), index.get( "key", "refnode" ).getSingle() );
-        }
-        finally
-        {
-            transaction.finish();
-        }
 
-        // Querying for something other than "refnode" returns null for this dummy index.
         assertEquals( 0, count( (Iterable<Node>) index.get( "key", "something else" ) ) );
         
         restartDb();

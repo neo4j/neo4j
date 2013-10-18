@@ -178,12 +178,6 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     }
 
     @Override
-    public Node getReferenceNode()
-    {
-        return getNodeById( 0 );
-    }
-
-    @Override
     public Relationship getRelationshipById( long id )
     {
         RelationshipBatchImpl rel = rels.get( id );

@@ -20,11 +20,11 @@
 package org.neo4j.server;
 
 import java.io.IOException;
+
 import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Test;
-
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -33,10 +33,9 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
+import static org.junit.Assert.*;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+import static org.neo4j.test.server.HTTP.POST;
 
 public class ServerConfigDocIT extends ExclusiveServerTestBase
 {
@@ -137,9 +136,10 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
+        String node = POST( server.baseUri().toASCIIString() + "db/data/node" ).location();
 
         // When
-        JaxRsResponse response = new RestRequest().post( "http://localhost:7474/db/data/node/0/traverse/node", "{\n" +
+        JaxRsResponse response = new RestRequest().post( node + "/traverse/node", "{\n" +
                 "  \"order\" : \"breadth_first\",\n" +
                 "  \"return_filter\" : {\n" +
                 "    \"body\" : \"position.getClass().getClassLoader()\",\n" +

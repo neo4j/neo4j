@@ -259,7 +259,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """Returns the id of the relationship or node.""",
       queryText = """match a return ID(a)""",
       returns = """This returns the node id for three nodes.""",
-      assertions = (p) => assert(Seq(1,2,3,4,5) === p.columnAs[Int]("ID(a)").toSeq)
+      assertions = (p) => assert(Seq(0,1,2,3,4) === p.columnAs[Int]("ID(a)").toSeq)
     )
   }
 

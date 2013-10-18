@@ -90,7 +90,7 @@ public class PagingTraversalTest
                 .get( "Location" )
                 .get( 0 )
                 .toString();
-        assertThat( responseUri, containsString( "/node/1/paged/traverse/node/" ) );
+        assertThat( responseUri, containsString( "/node/0/paged/traverse/node/" ) );
         assertNotNull( response.getEntity() );
         assertThat( new String( (byte[]) response.getEntity() ), containsString( "\"name\" : \"19\"" ) );
     }

@@ -37,6 +37,7 @@ Please see individual maintainers about availability.
 For instance, the source for the Gremlin plugin will be available at: https://github.com/neo4j-contrib/gremlin-plugin
 
 The Reference Node::
-With the introduction of Labels in Neo4j 2.0 the Reference Node becomes obsolete and will be removed.
+With the introduction of Labels in Neo4j 2.0 the Reference Node becomes obsolete.
+It was deprecated several versions ago, and has now been removed in entirety.
 Instead, labelled nodes become the well-known starting points in your graph.
 

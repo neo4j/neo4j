@@ -45,7 +45,7 @@ public class TestTransactionEventDeadlocks
     {
         GraphDatabaseService graphdb = database.getGraphDatabaseService();
         Transaction tx = graphdb.beginTx();
-        final Node root = graphdb.getReferenceNode();
+        final Node root = graphdb.createNode();
         try
         {
             root.setProperty( "counter", Long.valueOf( 0L ) );

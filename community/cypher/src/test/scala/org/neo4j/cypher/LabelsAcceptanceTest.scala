@@ -182,7 +182,7 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
     graph.shutdown()
 
     graph = new ImpermanentGraphDatabase() with Snitch
-    refNode = graph.inTx(graph.getReferenceNode)
+    refNode = graph.inTx(graph.createNode)
     executionEngineHelperInit()
   }
 

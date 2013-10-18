@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v1_9.mutation
 import org.neo4j.cypher.internal.compiler.v1_9._
 import commands.expressions.Literal
 import pipes.QueryStateHelper
-import org.neo4j.cypher.ExecutionEngineHelper
 import org.scalatest.Assertions
+import org.neo4j.cypher.{NoReferenceNode, ExecutionEngineHelper}
 import org.junit.Test
 
-class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
+class CreateNodeActionTest extends ExecutionEngineHelper with Assertions with NoReferenceNode {
 
   @Test def mixed_types_are_not_ok() {
     val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Seq.empty)

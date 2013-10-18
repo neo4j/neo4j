@@ -1278,16 +1278,6 @@ public class BatchInserterImpl implements BatchInserter
         return storeDir.getPath();
     }
 
-    @Override
-    public long getReferenceNode()
-    {
-        if ( nodeExists( 0 ) )
-        {
-            return 0;
-        }
-        return -1;
-    }
-
     // needed by lucene-index
     public IndexStore getIndexStore()
     {

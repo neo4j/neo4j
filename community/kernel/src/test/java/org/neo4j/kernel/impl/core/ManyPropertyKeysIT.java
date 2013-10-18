@@ -95,7 +95,7 @@ public class ManyPropertyKeysIT
         Transaction tx = db.beginTx();
         try
         {
-            Node node = db.getReferenceNode();
+            Node node = db.createNode();
             for ( int i = 0; i < propertyKeyCount; i++ )
                 node.setProperty( key( i ), true );
             tx.success();

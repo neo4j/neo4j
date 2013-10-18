@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -41,12 +37,16 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.webadmin.rest.console.ConsoleService;
 import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
+import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.server.webadmin.console.ShellSession;
+import org.neo4j.server.webadmin.rest.console.ConsoleService;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.*;
 
 public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
 {
@@ -81,7 +81,7 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
     public void doesntMangleNewlines() throws Exception
     {
         Response response = consoleService.exec( new JsonFormat(),
-                "{ \"command\" : \"start n=node(0) return n;\", \"engine\":\"shell\" }" );
+                "{ \"command\" : \"create (n) return n;\", \"engine\":\"shell\" }" );
 
 
         assertEquals( 200, response.getStatus() );

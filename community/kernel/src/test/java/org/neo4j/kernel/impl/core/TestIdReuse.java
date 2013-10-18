@@ -23,15 +23,15 @@ import java.io.File;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TestIdReuse
 {
@@ -75,27 +75,28 @@ public class TestIdReuse
             newGraphDatabase();
         for ( int i = 0; i < 5; i++ )
         {
-            setSomeAndRemoveSomePropertiesFromReferenceNode( db, value );
+            setAndRemoveSomeProperties( db, value );
         }
         db.shutdown();
         long sizeBefore = file.length();
         db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir.getPath() );
         for ( int i = 0; i < iterations; i++ )
         {
-            setSomeAndRemoveSomePropertiesFromReferenceNode( db, value );
+            setAndRemoveSomeProperties( db, value );
         }
         db.shutdown();
         assertEquals( sizeBefore, file.length() );
     }
     
-    private void setSomeAndRemoveSomePropertiesFromReferenceNode( GraphDatabaseService graphDatabaseService, Object value )
+    private void setAndRemoveSomeProperties( GraphDatabaseService graphDatabaseService, Object value )
     {
         Transaction tx = graphDatabaseService.beginTx();
+        Node commonNode = graphDatabaseService.createNode();
         try
         {
             for ( int i = 0; i < 10; i++ )
             {
-                graphDatabaseService.getReferenceNode().setProperty( "key" + i, value );
+                commonNode.setProperty( "key" + i, value );
             }
             tx.success();
         }
@@ -108,7 +109,7 @@ public class TestIdReuse
         {
             for ( int i = 0; i < 10; i++ )
             {
-                graphDatabaseService.getReferenceNode().removeProperty( "key" + i );
+                commonNode.removeProperty( "key" + i );
             }
             tx.success();
         }

@@ -314,13 +314,11 @@ public abstract class AbstractShellTest
 
     protected Relationship[] createRelationshipChain( RelationshipType type, int length )
     {
-        Transaction transaction = db.beginTx();
-        try {
-            Relationship[] relationshipChain = createRelationshipChain( db.getReferenceNode(), type, length );
+        try(Transaction transaction = db.beginTx())
+        {
+            Relationship[] relationshipChain = createRelationshipChain( db.createNode(), type, length );
             transaction.success();
             return relationshipChain;
-        } finally {
-            transaction.finish();
         }
     }
 

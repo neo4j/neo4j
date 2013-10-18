@@ -146,12 +146,6 @@ public class CypherResultSubGraph implements SubGraph
     }
 
     @Override
-    public Node getReferenceNode()
-    {
-        return nodes.get( REF_NODE_ID );
-    }
-
-    @Override
     public boolean contains( Relationship relationship )
     {
         return relationships.containsKey( relationship.getId() );

@@ -64,7 +64,7 @@ public class CypherSessionDocTest
         try
         {
             CypherSession session = new CypherSession( executor );
-            Pair<String, String> result = session.evaluate( "start a=node(0) return a" );
+            Pair<String, String> result = session.evaluate( "create (a) return a" );
             assertThat( result.first(), containsString( "Node[0]" ) );
         }
         finally

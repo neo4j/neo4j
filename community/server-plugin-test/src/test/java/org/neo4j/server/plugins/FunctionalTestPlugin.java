@@ -28,6 +28,7 @@ import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -39,8 +40,7 @@ import org.neo4j.kernel.Traversal;
 @Description( "Here you can describe your plugin. It will show up in the description of the methods." )
 public class FunctionalTestPlugin extends ServerPlugin
 {
-    // TODO Remove this when the reference node is removed and fix the rest of the plugin tests
-    public static final String GET_REFERENCE_NODE = "reference_node_uri";
+    public static final String CREATE_NODE = "createNode";
     public static final String GET_CONNECTED_NODES = "connected_nodes";
     static String _string;
     static Byte _byte;
@@ -56,15 +56,6 @@ public class FunctionalTestPlugin extends ServerPlugin
     static List<String> stringList;
     static String[] stringArray;
     public static int[] intArray;
-
-    // TODO remove when the reference node is no more
-    @Description( "Get the reference node from the graph database - deprecated functionality" )
-    @PluginTarget( GraphDatabaseService.class )
-    @Name( GET_REFERENCE_NODE )
-    public Node getReferenceNode( @Source GraphDatabaseService graphDb )
-    {
-        return referenceNode( graphDb );
-    }
 
     @Name( GET_CONNECTED_NODES )
     @PluginTarget( Node.class )
@@ -156,6 +147,23 @@ public class FunctionalTestPlugin extends ServerPlugin
     }
 
     @PluginTarget( GraphDatabaseService.class )
+    public Node createNode( @Source GraphDatabaseService db )
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node node = db.createNode();
+
+            tx.success();
+            return node;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    @PluginTarget( GraphDatabaseService.class )
     public Node methodWithIntParam( @Source GraphDatabaseService db, @Parameter( name = "id", optional = false ) int id )
     {
         Transaction tx = db.beginTx();
@@ -209,7 +217,7 @@ public class FunctionalTestPlugin extends ServerPlugin
         _double = h;
         _boolean = i;
 
-        return referenceNode( db );
+        return getOrCreateANode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -217,7 +225,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "strings", optional = false ) Set<String> params )
     {
         stringSet = params;
-        return referenceNode( db );
+        return getOrCreateANode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -225,7 +233,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "strings", optional = false ) List<String> params )
     {
         stringList = params;
-        return referenceNode( db );
+        return getOrCreateANode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -235,7 +243,7 @@ public class FunctionalTestPlugin extends ServerPlugin
     {
         stringList = params;
         _integer = i;
-        return referenceNode( db );
+        return getOrCreateANode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -243,7 +251,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "strings", optional = false ) String[] params )
     {
         stringArray = params;
-        return referenceNode( db );
+        return getOrCreateANode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -251,7 +259,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "ints", optional = false ) int[] params )
     {
         intArray = params;
-        return referenceNode( db );
+        return getOrCreateANode( db );
     }
 
     @PluginTarget( GraphDatabaseService.class )
@@ -259,7 +267,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             @Parameter( name = "ints", optional = true ) int[] params )
     {
         intArray = params;
-        return referenceNode( db );
+        return getOrCreateANode( db );
     }
 
     @PluginTarget( Node.class )
@@ -270,7 +278,7 @@ public class FunctionalTestPlugin extends ServerPlugin
         try
         {
             @SuppressWarnings("deprecation")
-            Path path = finder.findSinglePath( me.getGraphDatabase().getReferenceNode(), me );
+            Path path = finder.findSinglePath( me.getGraphDatabase().getNodeById( 0l ), me );
 
             tx.success();
             return path;
@@ -281,20 +289,21 @@ public class FunctionalTestPlugin extends ServerPlugin
         }
     }
 
-    private Node referenceNode( GraphDatabaseService db )
+    private Node getOrCreateANode( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        try
+        try(Transaction tx = db.beginTx())
         {
-            @SuppressWarnings("deprecation")
-            Node node = db.getReferenceNode();
-
+            Node node;
+            try
+            {
+                node = db.getNodeById( 0l );
+            } catch(NotFoundException e)
+            {
+                node = db.createNode();
+            }
             tx.success();
             return node;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
+
 }

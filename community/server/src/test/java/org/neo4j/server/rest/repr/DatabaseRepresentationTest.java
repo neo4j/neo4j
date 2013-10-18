@@ -41,7 +41,6 @@ public class DatabaseRepresentationTest
         // given
         Node refNode = node( 0, properties() );
         GraphDatabaseService mockDb = mock( GraphDatabaseService.class );
-        when( mockDb.getReferenceNode() ).thenReturn( refNode );
         DatabaseRepresentation representation = new DatabaseRepresentation( mockDb );
 
         // when

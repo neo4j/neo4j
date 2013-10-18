@@ -43,7 +43,7 @@ public class CypherUpdateMapTest
     public void updateNodeByMapParameter()
     {
         engine.execute(
-                "START n=node(0) SET n = {data} RETURN n" ,
+                "CREATE (n:Reference) SET n = {data} RETURN n" ,
                 map( "data",
                         map("key1", "value1", "key2", 1234)
                 )
@@ -55,7 +55,7 @@ public class CypherUpdateMapTest
         assertThat( node1, inTx( gdb, hasProperty( "key2" ).withValue( 1234 ) ) );
 
         engine.execute(
-                "START n=node(0) SET n = {data} RETURN n",
+                "MATCH (n:Reference) SET n = {data} RETURN n",
                 map( "data",
                         map("key1", null, "key3", 5678)
                 )

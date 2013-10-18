@@ -59,6 +59,6 @@ public class TestConfiguration
     {
         CollectingOutput output = new CollectingOutput();
         client.evaluate( "pwd", output );
-        assertTrue( output.asString().contains( "(0)" ) );
+        assertTrue( output.asString().contains( "(?)" ) );
     }
 }

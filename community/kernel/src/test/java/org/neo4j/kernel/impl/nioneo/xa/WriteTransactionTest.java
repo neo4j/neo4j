@@ -216,7 +216,7 @@ public class WriteTransactionTest
     public void shouldConvertAddedPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1;
+        long nodeId = 0;
         CapturingIndexingService indexingService = new CapturingIndexingService();
         WriteTransaction writeTransaction = newWriteTransaction( indexingService );
         int propertyKey1 = 1, propertyKey2 = 2;
@@ -240,7 +240,7 @@ public class WriteTransactionTest
     public void shouldConvertChangedPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        int nodeId = 1;
+        int nodeId = 0;
         WriteTransaction writeTransaction = newWriteTransaction( mockIndexing );
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
@@ -269,7 +269,7 @@ public class WriteTransactionTest
     public void shouldConvertRemovedPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        int nodeId = 1;
+        int nodeId = 0;
         WriteTransaction writeTransaction = newWriteTransaction( mockIndexing );
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
@@ -297,7 +297,7 @@ public class WriteTransactionTest
     public void shouldConvertLabelAdditionToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1;
+        long nodeId = 0;
         WriteTransaction writeTransaction = newWriteTransaction( mockIndexing );
         int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
         long[] labelIds = new long[] {labelId};
@@ -325,7 +325,7 @@ public class WriteTransactionTest
     public void shouldConvertMixedLabelAdditionAndSetPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1;
+        long nodeId = 0;
         WriteTransaction writeTransaction = newWriteTransaction( mockIndexing );
         int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
@@ -354,7 +354,7 @@ public class WriteTransactionTest
     public void shouldConvertLabelRemovalToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1;
+        long nodeId = 0;
         WriteTransaction writeTransaction = newWriteTransaction( mockIndexing );
         int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
         long[] labelIds = new long[] {labelId};
@@ -383,7 +383,7 @@ public class WriteTransactionTest
     public void shouldConvertMixedLabelRemovalAndRemovePropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1;
+        long nodeId = 0;
         WriteTransaction writeTransaction = newWriteTransaction( mockIndexing );
         int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
@@ -413,7 +413,7 @@ public class WriteTransactionTest
     public void shouldConvertMixedLabelRemovalAndAddPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        long nodeId = 1;
+        long nodeId = 0;
         WriteTransaction writeTransaction = newWriteTransaction( mockIndexing );
         int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
         Object value1 = "first", value2 = 4;
@@ -560,7 +560,7 @@ public class WriteTransactionTest
          * was created resulted in two exact copies of NodePropertyUpdates. */
 
         // GIVEN
-        long nodeId = 1;
+        long nodeId = 0;
         int labelId = 5, propertyKeyId = 7;
         NodePropertyUpdate expectedUpdate = NodePropertyUpdate.add( nodeId, propertyKeyId, "Neo", new long[] {labelId} );
 

@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.plugins;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
@@ -38,6 +32,10 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.server.SharedServerTestBase;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.*;
 
 public class ExtensionListingFunctionalTest extends SharedServerTestBase
 {
@@ -91,7 +89,7 @@ public class ExtensionListingFunctionalTest extends SharedServerTestBase
 
         json = JsonHelper.jsonToMap(result);
         json = (Map<String, Object>) json.get("graphdb");
-        assertThat(json, hasKey( FunctionalTestPlugin.GET_REFERENCE_NODE ));
+        assertThat(json, hasKey( FunctionalTestPlugin.CREATE_NODE ));
         response.close();
     }
 }

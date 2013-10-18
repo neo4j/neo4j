@@ -257,13 +257,7 @@ public class StoreFactory
     public void createNodeStore( File fileName )
     {
         createNodeLabelsStore( new File( fileName.getPath() + LABELS_PART ) );
-
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( NodeStore.TYPE_DESCRIPTOR ) );
-        NodeStore store = newNodeStore( fileName );
-        NodeRecord nodeRecord = new NodeRecord( store.nextId(), Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
-        nodeRecord.setInUse( true );
-        store.updateRecord( nodeRecord );
-        store.close();
     }
 
     private void createNodeLabelsStore( File fileName )

@@ -46,7 +46,7 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   }
 
 
-  def getReferenceNode = graph.inTx(graph.getReferenceNode)
+  def getReferenceNode = graph.inTx(graph.createNode)
 
   def assertInTx(f: => Option[String]) {
     graph.inTx {
@@ -214,12 +214,12 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
 }
 
-trait DeletedReferenceNode {
+trait NoReferenceNode {
 
   self: GraphDatabaseTestBase =>
 
+  // TODO: There is no reference node anymore, clean this up.
   override def getReferenceNode: Node = {
-    RichGraph(graph).inTx(graph.getReferenceNode.delete())
     null
   }
 }

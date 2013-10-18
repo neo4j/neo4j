@@ -40,7 +40,8 @@ public class TestReadOnlyServer extends AbstractShellTest
     public void executeReadCommands() throws Exception
     {
         Relationship[] rels = createRelationshipChain( 3 );
-        executeCommand( "ls", "me", "TYPE" );
+        executeCommand( "cd " + getStartNode(rels[0]).getId() );
+        executeCommand( "ls" );
         executeCommand( "cd " + getEndNode( rels[0] ).getId() );
         executeCommand( "ls", "<", ">" );
         executeCommand( "trav", "me" );
@@ -59,13 +60,23 @@ public class TestReadOnlyServer extends AbstractShellTest
         }
     }
 
+    private Node getStartNode( Relationship rel )
+    {
+        beginTx();
+        try
+        {
+            return rel.getStartNode();
+        }
+        finally
+        {
+            finishTx(false);
+        }
+    }
+
     @Test
     public void executeWriteCommands() throws Exception
     {
-        executeCommandExpectingException( "mkrel -ct KNOWS", "read only" );
         executeCommandExpectingException( "mknode", "read only" );
-        executeCommandExpectingException( "set name test", "read only" );
-        executeCommandExpectingException( "rm name", "read only" );
         executeCommandExpectingException( "begin", "read only" );
     }
 }

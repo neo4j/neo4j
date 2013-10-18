@@ -19,17 +19,6 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,6 +45,16 @@ import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
+import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 public class JavaExecutionEngineDocTest
 {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -80,9 +79,9 @@ public class JavaExecutionEngineDocTest
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
         engine = new ExecutionEngine( db );
         Transaction tx = db.beginTx();
+        michaelaNode = db.createNode();
         andreasNode = db.createNode();
         johanNode = db.createNode();
-        michaelaNode = db.getReferenceNode();
         andreasNode.setProperty( "name", "Andreas" );
         johanNode.setProperty( "name", "Johan" );
         michaelaNode.setProperty( "name", "Michaela" );
@@ -288,7 +287,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "s", 1 );
         params.put( "l", 1 );
-        String query = "START n=node(0,1,2) RETURN n.name SKIP {s} LIMIT {l}";
+        String query = "MATCH (n) RETURN n.name SKIP {s} LIMIT {l}";
         ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterForSkipLimit
 
@@ -304,7 +303,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithParameterRegularExpression
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "regex", ".*h.*" );
-        String query = "START n=node(0,1,2) WHERE n.name =~ {regex} RETURN n.name";
+        String query = "MATCH (n) WHERE n.name =~ {regex} RETURN n.name";
         ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithParameterRegularExpression
         dumpToFile( "exampleWithParameterRegularExpression", query, params );
@@ -330,7 +329,7 @@ public class JavaExecutionEngineDocTest
         // END SNIPPET: create_node_from_map
         dumpToFile( "create_node_from_map", query, params );
 
-        ExecutionResult result = engine.execute( "start n=node(*) where n.name = 'Andres' and n.position = 'Developer' return n" );
+        ExecutionResult result = engine.execute( "match (n) where n.name = 'Andres' and n.position = 'Developer' return n" );
         assertThat( count( result ), is( 1 ) );
     }
 

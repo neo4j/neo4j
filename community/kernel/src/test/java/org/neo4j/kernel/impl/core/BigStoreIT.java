@@ -150,7 +150,7 @@ public class BigStoreIT implements RelationshipType
         {
             Node node = db.createNode();
             setProperties( node, properties );
-            Relationship rel = db.getReferenceNode().createRelationshipTo( node, this );
+            Relationship rel = db.createNode().createRelationshipTo( node, this );
             setProperties( rel, properties );
             Node highNode = db.createNode();
             node.createRelationshipTo( highNode, OTHER_TYPE );
@@ -170,7 +170,7 @@ public class BigStoreIT implements RelationshipType
         
         // Verify the data
         int verified = 0;
-        for ( Relationship rel : db.getReferenceNode().getRelationships( Direction.OUTGOING ) )
+        for ( Relationship rel : db.createNode().getRelationships( Direction.OUTGOING ) )
         {
             Node node = rel.getEndNode();
             assertProperties( properties, node );

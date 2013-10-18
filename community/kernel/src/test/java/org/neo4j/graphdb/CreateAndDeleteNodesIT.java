@@ -48,7 +48,7 @@ public class CreateAndDeleteNodesIT
             myNode = beansAPI.createNode();
             myNode.setProperty( "Name", "Bob" );
 
-            myNode.createRelationshipTo( beansAPI.getReferenceNode(), RelTypes.ASD );
+            myNode.createRelationshipTo( beansAPI.createNode(), RelTypes.ASD );
             tx.success();
         }
         finally

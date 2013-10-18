@@ -52,7 +52,7 @@ public class StartClientTest
 
         // Then
         db.getGraphDatabaseService().beginTx();
-        assertThat( (String) db.getGraphDatabaseService().getNodeById( 1 ).getProperty( "foo" ),
+        assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
                 equalTo( "bar" ) );
     }
 }

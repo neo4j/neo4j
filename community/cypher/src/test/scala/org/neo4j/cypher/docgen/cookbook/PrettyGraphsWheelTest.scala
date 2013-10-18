@@ -63,6 +63,6 @@ CREATE last_leaf-[:X]->first_leaf
 RETURN id(center) as id""",
       returns =
 """The query returns the id of the center node.""",
-      assertions = (p) => assertEquals(List(Map("id" -> 1)),p.toList))
+      assertions = (p) => assertEquals(List(Map("id" -> 0)),p.toList))
   } 
 }

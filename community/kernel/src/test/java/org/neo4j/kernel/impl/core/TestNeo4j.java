@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Iterator;
 import java.util.Random;
 
@@ -39,33 +35,10 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.junit.Assert.*;
+
 public class TestNeo4j extends AbstractNeo4jTestCase
 {
-    @Test
-    public void testReferenceNode()
-    {
-        // fix this test when we can set reference node again
-        Node oldReferenceNode = null;
-        try
-        {
-            // get old reference node if one is set
-            oldReferenceNode = getGraphDb().getReferenceNode();
-        }
-        catch ( RuntimeException e )
-        {
-            // ok no one set, oldReferenceNode is null then
-        }
-        Node newReferenceNode = getGraphDb().createNode();
-        getNodeManager().setReferenceNodeId( newReferenceNode.getId() );
-        assertEquals( newReferenceNode, getGraphDb().getReferenceNode() );
-        newReferenceNode.delete();
-        if ( oldReferenceNode != null )
-        {
-            getNodeManager().setReferenceNodeId( oldReferenceNode.getId() );
-            assertEquals( oldReferenceNode, getGraphDb().getReferenceNode() );
-        }
-    }
-
     @Test
     public void testBasicNodeRelationships()
     {

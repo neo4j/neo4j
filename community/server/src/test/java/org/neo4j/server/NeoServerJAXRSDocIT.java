@@ -45,7 +45,6 @@ import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
 {
-    private static final int ROOT_NODE = 1;
     private NeoServer server;
 
     @Before
@@ -96,7 +95,7 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
                 .toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
         response = CLIENT.resource( thirdPartyServiceUri.toString() )
                 .get( String.class );
-        assertEquals( String.valueOf( nodesCreated + ROOT_NODE ), response );
+        assertEquals( String.valueOf( nodesCreated ), response );
     }
 
     private int createSimpleDatabase( final GraphDatabaseAPI graph )
