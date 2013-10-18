@@ -19,19 +19,17 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.AdditionalMatchers.or;
-
 import java.io.IOException;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.junit.Assert.assertTrue;
 
 public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
 {
@@ -56,7 +54,7 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldLogShutdown() throws Exception
     {
-        InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
+        InMemoryAppender appender = new InMemoryAppender( AbstractNeoServer.log );
         server.stop();
         String actual = appender.toString();
         // Handle local log4j configuration that changes how log levels are formatted
