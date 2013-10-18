@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal._
-import commands.AbstractQuery
-import org.neo4j.cypher.internal.parser.MarkOptionalNodes
 import org.parboiled.scala._
 import org.parboiled.errors.InvalidInputError
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.commands.AbstractQuery
+import org.neo4j.cypher.internal.ReattachAliasedExpressions
 
 case class CypherParser() extends Parser
   with Statement
@@ -65,6 +64,6 @@ case class CypherParser() extends Parser
     statement.semanticCheck(SemanticState.clean).errors.map { error =>
       throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", query, error.token.startPosition.offset)
     }
-    MarkOptionalNodes(ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(query)))
+    ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(query))
   }
 }
