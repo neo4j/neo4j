@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.copyOf;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
@@ -888,27 +889,48 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         for ( PropertyCommand propertyCommand : propCommands )
         {
             PropertyRecord after = propertyCommand.getAfter();
-            if ( after.isNodeSet() )
+            if ( !after.isNodeSet() )
             {
-                long[] nodeLabelsBefore, nodeLabelsAfter;
-                NodeCommand nodeChanges = nodeCommands.get( after.getNodeId() );
-                if ( nodeChanges != null )
-                {
-                    nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore );
-                    nodeLabelsAfter = parseLabelsField( nodeChanges.getAfter() ).get( nodeStore );
-                }
-                else
-                {
-                    nodeLabelsBefore = nodeLabelsAfter =
-                            parseLabelsField( nodeStore.getRecord( after.getNodeId() ) ).get( nodeStore );
-                }
+                continue;
+            }
 
-                for ( NodePropertyUpdate update :
-                        propertyStore.toLogicalUpdates( propertyCommand.getBefore(), nodeLabelsBefore, after,
-                                                        nodeLabelsAfter ) )
+            long[] nodeLabelsBefore, nodeLabelsAfter;
+            NodeCommand nodeChanges = nodeCommands.get( after.getNodeId() );
+            if ( nodeChanges != null )
+            {
+                nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore );
+                nodeLabelsAfter = parseLabelsField( nodeChanges.getAfter() ).get( nodeStore );
+            }
+            else
+            {
+                /* If the node doesn't exist here then we've most likely encountered this scenario:
+                 * - TX1: Node N exists and has property record P
+                 * - rotate log
+                 * - TX2: P gets changed
+                 * - TX3: N gets deleted (also P, but that's irrelevant for this scenario)
+                 * - N is persisted to disk for some reason
+                 * - crash
+                 * - recover
+                 * - TX2: P has changed and updates to indexes are gathered. As part of that it tries to read
+                 *        the labels of N (which does not exist a.t.m.).
+                 *
+                 * We can actually (if we disregard any potential inconsistencies) just assume that
+                 * if this happens and we're in recovery mode that the node in question will be deleted
+                 * in an upcoming transaction, so just skip this update.
+                 */
+                NodeRecord nodeRecord = nodeStore.forceGetRecord( after.getNodeId() );
+                if ( !nodeRecord.inUse() && isRecovered() )
                 {
-                    updates.add( update );
+                    continue;
                 }
+                nodeLabelsBefore = nodeLabelsAfter = parseLabelsField( nodeRecord ).get( nodeStore );
+            }
+
+            for ( NodePropertyUpdate update :
+                    propertyStore.toLogicalUpdates( propertyCommand.getBefore(), nodeLabelsBefore, after,
+                                                    nodeLabelsAfter ) )
+            {
+                updates.add( update );
             }
         }
     }

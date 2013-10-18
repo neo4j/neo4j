@@ -25,6 +25,7 @@ import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,7 +36,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
 public class TestTxEntries
 {
@@ -58,24 +62,17 @@ public class TestTxEntries
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         createSomeTransactions( db );
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                db.shutdown();
-            }
-        } );
-        
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
+
         new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
     }
-    
+
     @Test
     public void startEntryShouldBeUniqueIfEitherValueChanges() throws Exception
     {
         // Positive Xid hashcode
         assertCorrectChecksumEquality( randomXid( Boolean.TRUE ) );
-        
+
         // Negative Xid hashcode
         assertCorrectChecksumEquality( randomXid( Boolean.FALSE ) );
     }
@@ -84,7 +81,7 @@ public class TestTxEntries
     {
         Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l );
         assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l ) );
-        
+
         // Different Xids
         assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime, 0l ) );
 
@@ -110,14 +107,20 @@ public class TestTxEntries
         while ( true )
         {
             Xid xid = new XidImpl( randomBytes(), randomBytes() );
-            if ( trueForPositive == null || xid.hashCode() > 0 == trueForPositive.booleanValue() ) return xid;
+            if ( trueForPositive == null || xid.hashCode() > 0 == trueForPositive.booleanValue() )
+            {
+                return xid;
+            }
         }
     }
 
     private byte[] randomBytes()
     {
         byte[] bytes = new byte[random.nextInt( 10 )+5];
-        for ( int i = 0; i < bytes.length; i++ ) bytes[i] = (byte) random.nextInt( 255 );
+        for ( int i = 0; i < bytes.length; i++ )
+        {
+            bytes[i] = (byte) random.nextInt( 255 );
+        }
         return bytes;
     }
 
