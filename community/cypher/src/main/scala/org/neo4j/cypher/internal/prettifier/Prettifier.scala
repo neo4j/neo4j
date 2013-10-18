@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.prettifier
 
-import org.parboiled.scala._
-import org.neo4j.cypher.internal.parser.v2_0.rules.Base
-import org.neo4j.cypher.internal.parser.v2_0.rules.Strings
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.compiler.v2_0.parser.{Base, Strings}
+import org.parboiled.scala._
 
 sealed abstract class SyntaxToken {
   def text: String

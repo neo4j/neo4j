@@ -37,7 +37,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.cypher.internal.commands.values.TokenType._
 import org.neo4j.cypher.internal.commands._
 
-
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def builder = new StartPointChoosingBuilder
 

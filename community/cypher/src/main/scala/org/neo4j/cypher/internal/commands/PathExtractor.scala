@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import scala.collection.Map
+import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.{PropertyContainer, Path}
-import org.neo4j.cypher.PathImpl
+import scala.collection.Map
 import collection.JavaConverters._
 
 

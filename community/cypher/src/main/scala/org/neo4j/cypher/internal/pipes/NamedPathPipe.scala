@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.data.SimpleVal
-import org.neo4j.cypher.internal.symbols.{SymbolTable, PathType}
-import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.PathImpl
+import org.neo4j.cypher.internal._
+import data.SimpleVal
+import parser._
+import symbols.{SymbolTable, PathType}
 import org.neo4j.graphdb.{Path, PropertyContainer}
-import org.neo4j.cypher.internal.parser._
 import collection.JavaConverters._
 
 case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractPattern]) extends PipeWithSource(source) {

@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
+import org.neo4j.cypher.internal._
+import commands.True
+import pipes.matching.{VariableLengthStepTrail, SingleStepTrail, EndPoint}
+import org.neo4j.cypher.GraphDatabaseTestBase
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.scalatest.Assertions
-import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
-import org.neo4j.cypher.internal.pipes.matching.{VariableLengthStepTrail, SingleStepTrail, EndPoint}
-import org.neo4j.cypher.internal.commands.True
 
 class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
   @Test def decompose_simple_path() {

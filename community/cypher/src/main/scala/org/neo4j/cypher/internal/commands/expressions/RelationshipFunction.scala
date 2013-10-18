@@ -18,12 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.commands.expressions
+
+import org.neo4j.cypher.internal._
+import pipes.QueryState
+import symbols._
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Path
-import org.neo4j.cypher.{PathImpl, SyntaxException}
-import org.neo4j.cypher.internal.symbols._
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
