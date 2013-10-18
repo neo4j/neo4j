@@ -33,10 +33,11 @@ class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
 
     indexOp match {
       case CreateIndex(_, propertyKeys, _) =>
-        val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
+        val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId )
         queryContext.addIndexRule(labelId, single(propertyKeyIds))
+
       case DropIndex(_, propertyKeys, _) =>
-        val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
+        val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId )
         queryContext.dropIndexRule(labelId, single(propertyKeyIds))
 
       case _ =>

@@ -30,10 +30,13 @@ import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.kernel.api._
-import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.cypher.{FailedIndexException, EntityNotFoundException}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException
+import org.neo4j.kernel.api.index.InternalIndexState
+import org.neo4j.kernel.api.operations.StatementTokenNameLookup
 
 class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement)
   extends TransactionBoundTokenContext(statement) with QueryContext {
@@ -67,8 +70,8 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
       val tx = graph.beginTx()
       try {
         val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-        val otherStatement   = bridge.statement()
-        val result   = try {
+        val otherStatement = bridge.statement()
+        val result = try {
           work(new TransactionBoundExecutionContext(graph, tx, otherStatement))
         }
         finally {
@@ -90,7 +93,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
     start.createRelationshipTo(end, withName(relType))
 
   def getLabelsForNode(node: Long) =
-    JavaConversionSupport.asScala( statement.readOperations().nodeGetLabels(node) )
+    JavaConversionSupport.asScala(statement.readOperations().nodeGetLabels(node))
 
   override def isLabelSetOnNode(label: Int, node: Long) =
     statement.readOperations().nodeHasLabel(node, label)
@@ -104,7 +107,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
   }
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
-    mapToScala( statement.readOperations().nodesGetFromIndexLookup(index, value) )(nodeOps.getById)
+    mapToScala(statement.readOperations().nodesGetFromIndexLookup(index, value))(nodeOps.getById)
 
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = statement.readOperations().nodeGetUniqueFromIndexLookup(index, value)
@@ -121,7 +124,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
   }
 
   def getNodesByLabel(id: Int): Iterator[Node] =
-    mapToScala( statement.readOperations().nodesGetForLabel(id) )(nodeOps.getById)
+    mapToScala(statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
@@ -143,16 +146,16 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
     }
 
     def setProperty(obj: Node, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().nodeSetProperty(obj.getId, properties.Property.property(propertyKeyId, value) )
+      statement.dataWriteOperations().nodeSetProperty(obj.getId, properties.Property.property(propertyKeyId, value))
     }
 
 
     def getById(id: Long) = try {
-        graph.getNodeById(id)
-      } catch {
-        case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
-        case e: RuntimeException  => throw e
-      }
+      graph.getNodeById(id)
+    } catch {
+      case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
+      case e: RuntimeException  => throw e
+    }
 
     def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
 
@@ -182,7 +185,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
     }
 
     def setProperty(obj: Relationship, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().relationshipSetProperty(obj.getId, properties.Property.property(propertyKeyId, value) )
+      statement.dataWriteOperations().relationshipSetProperty(obj.getId, properties.Property.property(propertyKeyId, value))
     }
 
     def getById(id: Long) = graph.getRelationshipById(id)
@@ -228,8 +231,14 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int) =
+  def addIndexRule(labelId: Int, propertyKeyId: Int) = try {
     statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId)
+  } catch {
+    case _: AlreadyIndexedException =>
+      val indexDescriptor = statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
+      if(statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
+        throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
+  }
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().indexDrop(new IndexDescriptor(labelId, propertyKeyId))
@@ -239,4 +248,6 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
+
+  private val tokenNameLookup = new StatementTokenNameLookup(statement.readOperations())
 }

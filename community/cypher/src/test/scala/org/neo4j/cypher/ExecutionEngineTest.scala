@@ -2185,17 +2185,6 @@ RETURN x0.name""")
     }
   }
 
-  @Test def should_not_create_existing_index() {
-    // GIVEN
-    val labelName = "Person"
-    val propertyKeys = Seq("name")
-    execute(s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
-
-    // WHEN
-    val e = intercept[CypherExecutionException](execute(s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})"""))
-    assert(e.getCause.isInstanceOf[AlreadyIndexedException])
-  }
-
   @Test def union_ftw() {
     // WHEN
     val result = execute("START n=node(0) RETURN 1 as x UNION ALL START n=node(0) RETURN 2 as x")

@@ -270,15 +270,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
-  @Test def creating_an_index_twice_should_return_sensible_error() {
-    graph.createIndex("LabelName", "Prop")
-
-    expectError(
-      "CREATE INDEX ON :LabelName(Prop)",
-      "Already indexed :LabelName(Prop)"
-    )
-  }
-
   @Test def trying_to_drop_constraint_index_should_return_sensible_error() {
     graph.createConstraint("LabelName", "Prop")
 
