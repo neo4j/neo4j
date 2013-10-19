@@ -26,35 +26,37 @@ class CypherTypeTest extends Assertions {
   @Test
   def testTypeMergeDown() {
     assertCorrectTypeMergeDown(NumberType(), NumberType(), NumberType())
-    assertCorrectTypeMergeDown(NumberType(), ScalarType(), ScalarType())
-    assertCorrectTypeMergeDown(NumberType(), StringType(), ScalarType())
+    assertCorrectTypeMergeDown(NumberType(), AnyType(), AnyType())
+    assertCorrectTypeMergeDown(NumberType(), StringType(), AnyType())
     assertCorrectTypeMergeDown(NumberType(), CollectionType(AnyType()), AnyType())
     assertCorrectTypeMergeDown(LongType(), DoubleType(), NumberType())
-    assertCorrectTypeMergeDown(MapType(), DoubleType(), ScalarType())
+    assertCorrectTypeMergeDown(MapType(), DoubleType(), AnyType())
   }
 
-  def assertCorrectTypeMergeDown(a: CypherType, b: CypherType, result: CypherType) {
+  @Test
+  def testTypeMergeUp() {
+    assertCorrectTypeMergeUp(NumberType(), NumberType(), Some(NumberType()))
+    assertCorrectTypeMergeUp(NumberType(), AnyType(), Some(NumberType()))
+    assertCorrectTypeMergeUp(CollectionType(NumberType()), CollectionType(LongType()), Some(CollectionType(LongType())))
+    assertCorrectTypeMergeUp(NumberType(), StringType(), None)
+    assertCorrectTypeMergeUp(NumberType(), CollectionType(AnyType()), None)
+    assertCorrectTypeMergeUp(LongType(), DoubleType(), None)
+    assertCorrectTypeMergeUp(MapType(), DoubleType(), None)
+    assertCorrectTypeMergeUp(BooleanType(), CollectionType(AnyType()), Some(BooleanType()))
+  }
+
+  private def assertCorrectTypeMergeUp(a: CypherType, b: CypherType, result: Option[CypherType]) {
+    val simpleMergedType: Option[CypherType] = a mergeUp b
+    assert(simpleMergedType === result)
+    val collectionMergedType: Option[CypherType] = CollectionType(a) mergeUp CollectionType(b)
+    assert(collectionMergedType === (for (t <- result) yield CollectionType(t)))
+  }
+
+  private def assertCorrectTypeMergeDown(a: CypherType, b: CypherType, result: CypherType) {
     val simpleMergedType: CypherType = a mergeDown b
     assert(simpleMergedType === result)
     val collectionMergedType: CypherType = CollectionType(a) mergeDown CollectionType(b)
     assert(collectionMergedType === CollectionType(result))
   }
 
-  @Test
-  def testTypeMergeUp() {
-    assertCorrectTypeMergeUp(NumberType(), NumberType(), Some(NumberType()))
-    assertCorrectTypeMergeUp(NumberType(), ScalarType(), Some(NumberType()))
-    assertCorrectTypeMergeUp(CollectionType(NumberType()), CollectionType(LongType()), Some(CollectionType(LongType())))
-    assertCorrectTypeMergeUp(NumberType(), StringType(), None)
-    assertCorrectTypeMergeUp(NumberType(), CollectionType(AnyType()), None)
-    assertCorrectTypeMergeUp(LongType(), DoubleType(), None)
-    assertCorrectTypeMergeUp(MapType(), DoubleType(), None)
-  }
-
-  def assertCorrectTypeMergeUp(a: CypherType, b: CypherType, result: Option[CypherType]) {
-    val simpleMergedType: Option[CypherType] = a mergeUp b
-    assert(simpleMergedType === result)
-    val collectionMergedType: Option[CypherType] = CollectionType(a) mergeUp CollectionType(b)
-    assert(collectionMergedType === (for (t <- result) yield CollectionType(t)))
-  }
 }

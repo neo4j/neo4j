@@ -74,7 +74,7 @@ class SemanticStateTest extends Assertions {
       }
     }
     SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), NodeType(), RelationshipType()) then
-    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), ScalarType())) match {
+    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), AnyType())) match {
       case Left(_) => fail("Expected success")
       case Right(state) => {
         val types = state.symbolTypes("foo")
@@ -114,7 +114,7 @@ class SemanticStateTest extends Assertions {
   @Test
   def shouldExtendSymbolInParent() {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
-    val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo", DummyToken(0, 1)), ScalarType()).right.get
+    val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo", DummyToken(0, 1)), AnyType()).right.get
     assertEquals(Set(NodeType()), s2.symbolTypes("foo"))
   }
 

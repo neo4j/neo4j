@@ -30,8 +30,8 @@ object LabelType {
   def apply(): LabelType = instance
 }
 
-class LabelType extends ScalarType {
-  override def parentType:CypherType = ScalarType()
+class LabelType extends AnyType {
+  override def parentType: CypherType = AnyType()
   override def toString = "Label"
 }
 

@@ -37,7 +37,7 @@ class ListComprehensionTest extends Assertions {
     val filter = ListComprehension(Identifier("x", DummyToken(5,6)), dummyExpression, None, None, DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CollectionType(NodeType()), CollectionType(StringType())), filter.types(result.state))
+    assertEquals(Set(CollectionType(NodeType()), BooleanType(), CollectionType(StringType())), filter.types(result.state))
   }
 
   @Test
@@ -61,7 +61,7 @@ class ListComprehensionTest extends Assertions {
     val predicate = new Expression {
       def token = DummyToken(7,9)
       def semanticCheck(ctx: SemanticContext) = s => {
-        assertEquals(Set(NodeType(), StringType()), s.symbolTypes("x"))
+        assertEquals(Set(NodeType(), StringType(), BooleanType()), s.symbolTypes("x"))
         SemanticCheckResult.error(s, error)
       }
 

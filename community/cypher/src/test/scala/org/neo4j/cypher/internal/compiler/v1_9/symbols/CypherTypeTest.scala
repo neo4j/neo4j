@@ -26,11 +26,11 @@ class CypherTypeTest extends Assertions {
   @Test
   def testTypeMergeDown() {
     assertCorrectTypeMergeDown(NumberType(), NumberType(), NumberType())
-    assertCorrectTypeMergeDown(NumberType(), ScalarType(), ScalarType())
-    assertCorrectTypeMergeDown(NumberType(), StringType(), ScalarType())
+    assertCorrectTypeMergeDown(NumberType(), AnyType(), AnyType())
+    assertCorrectTypeMergeDown(NumberType(), StringType(), AnyType())
     assertCorrectTypeMergeDown(NumberType(), CollectionType(AnyType()), AnyType())
     assertCorrectTypeMergeDown(LongType(), DoubleType(), NumberType())
-    assertCorrectTypeMergeDown(MapType(), DoubleType(), ScalarType())
+    assertCorrectTypeMergeDown(MapType(), DoubleType(), AnyType())
   }
 
   def assertCorrectTypeMergeDown(a: CypherType, b: CypherType, result: CypherType) {
@@ -43,7 +43,7 @@ class CypherTypeTest extends Assertions {
   @Test
   def testTypeMergeUp() {
     assertCorrectTypeMergeUp(NumberType(), NumberType(), Some(NumberType()))
-    assertCorrectTypeMergeUp(NumberType(), ScalarType(), Some(NumberType()))
+    assertCorrectTypeMergeUp(NumberType(), AnyType(), Some(NumberType()))
     assertCorrectTypeMergeUp(CollectionType(NumberType()), CollectionType(LongType()), Some(CollectionType(LongType())))
     assertCorrectTypeMergeUp(NumberType(), StringType(), None)
     assertCorrectTypeMergeUp(NumberType(), CollectionType(AnyType()), None)

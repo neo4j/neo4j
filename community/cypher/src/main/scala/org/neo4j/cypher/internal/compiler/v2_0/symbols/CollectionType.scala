@@ -29,6 +29,10 @@ class CollectionType(override val iteratedType: CypherType) extends AnyType {
 
   override def toString: String = s"Collection<$iteratedType>"
 
+  override def isCoercibleFrom(other: CypherType): Boolean =
+    super.isCoercibleFrom(other) ||
+    other == BooleanType()
+
   override def isAssignableFrom(other: CypherType): Boolean = super.isAssignableFrom(other) &&
     iteratedType.isAssignableFrom(other.asInstanceOf[CollectionType].iteratedType)
 

@@ -35,19 +35,19 @@ class TypeSetTest extends Assertions {
 
   @Test
   def shouldFormatSingleType() {
-    assertEquals("Scalar", SortedSet(ScalarType()).formattedString)
+    assertEquals("Any", SortedSet(AnyType()).formattedString)
     assertEquals("Node", SortedSet(NodeType()).formattedString)
   }
 
   @Test
   def shouldFormatTwoTypes() {
-    assertEquals("Node or Scalar", SortedSet(ScalarType(), NodeType()).formattedString)
+    assertEquals("Any or Node", SortedSet(AnyType(), NodeType()).formattedString)
     assertEquals("Node or Relationship", SortedSet(RelationshipType(), NodeType()).formattedString)
   }
 
   @Test
   def shouldFormatThreeTypes() {
-	  assertEquals("Node, Relationship or Scalar", SortedSet(RelationshipType(), ScalarType(), NodeType()).formattedString)
+	  assertEquals("Any, Node or Relationship", SortedSet(RelationshipType(), AnyType(), NodeType()).formattedString)
 	  assertEquals("Integer, Node or Relationship", SortedSet(RelationshipType(), IntegerType(), NodeType()).formattedString)
   }
 
@@ -58,8 +58,8 @@ class TypeSetTest extends Assertions {
     assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeDown Set(NodeType(), NumberType()))
     assertEquals(Set(NumberType()), Set(NodeType(), NumberType()) mergeDown Set(NumberType()))
     assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeDown Set(NodeType(), NumberType(), RelationshipType()))
-    assertEquals(Set(ScalarType()), Set(NodeType(), NumberType()) mergeDown Set(ScalarType()))
-    assertEquals(Set(ScalarType()), Set(ScalarType()) mergeDown Set(NodeType(), NumberType()))
+    assertEquals(Set(AnyType()), Set(NodeType(), NumberType()) mergeDown Set(AnyType()))
+    assertEquals(Set(AnyType()), Set(AnyType()) mergeDown Set(NodeType(), NumberType()))
 
     assertEquals(Set(MapType()), Set(RelationshipType()) mergeDown Set(NodeType()))
     assertEquals(Set(MapType(), NumberType()), Set(RelationshipType(), LongType()) mergeDown Set(NodeType(), NumberType()))
@@ -67,7 +67,7 @@ class TypeSetTest extends Assertions {
 
   @Test
   def shouldMergeDownCollectionIterable() {
-    assertEquals(Set(NumberType(), CollectionType(ScalarType())),
+    assertEquals(Set(NumberType(), CollectionType(AnyType())),
       Set(IntegerType(), CollectionType(StringType())) mergeDown Set(NumberType(), CollectionType(IntegerType())))
   }
 
@@ -76,7 +76,7 @@ class TypeSetTest extends Assertions {
     assertEquals(Set(IntegerType()),
       Set(IntegerType(), StringType(), CollectionType(IntegerType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
     assertEquals(Set(IntegerType(), CollectionType(StringType())),
-      Set(IntegerType(), StringType(), CollectionType(ScalarType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
+      Set(IntegerType(), StringType(), CollectionType(AnyType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
   }
 
   @Test
@@ -84,8 +84,8 @@ class TypeSetTest extends Assertions {
     assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NodeType(), NumberType()))
     assertEquals(Set(NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NumberType()))
     assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NodeType(), NumberType(), RelationshipType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(ScalarType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(ScalarType()) mergeUp Set(NodeType(), NumberType()))
+    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(AnyType()))
+    assertEquals(Set(NodeType(), NumberType()), Set(AnyType()) mergeUp Set(NodeType(), NumberType()))
 
     assertEquals(Set(), Set(RelationshipType()) mergeUp Set(NodeType()))
     assertEquals(Set(LongType()), Set(RelationshipType(), LongType()) mergeUp Set(NodeType(), NumberType()))

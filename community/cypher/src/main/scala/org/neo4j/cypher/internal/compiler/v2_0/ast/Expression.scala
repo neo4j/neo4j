@@ -111,7 +111,7 @@ case class Identifier(name: String, token: InputToken) extends Expression {
 }
 
 case class Parameter(name: String, token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(BooleanType(), MapType(), NumberType(), StringType(), CollectionType(ScalarType()))
+  protected def possibleTypes = Set(BooleanType(), MapType(), NumberType(), StringType(), CollectionType(AnyType()))
 
   def toCommand = commandexpressions.ParameterExpression(name)
 }

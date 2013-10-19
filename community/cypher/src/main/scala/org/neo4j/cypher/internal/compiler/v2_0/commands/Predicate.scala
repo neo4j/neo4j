@@ -364,3 +364,22 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with 
 
   def containsIsNull = false
 }
+
+case class CoercedPredicate(inner:Expression) extends Predicate with CollectionSupport {
+  def children = Seq(inner)
+
+  def isMatch(m: ExecutionContext)(implicit state: QueryState) = inner(m) match {
+    case x: Boolean         => x
+    case null               => false
+    case IsCollection(coll) => coll.nonEmpty
+    case x                  => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
+  }
+
+  def rewrite(f: (Expression) => Expression) = CoercedPredicate(inner.rewrite(f))
+
+  def containsIsNull = false
+
+  def assertInnerTypes(symbols: SymbolTable) = inner.throwIfSymbolsMissing(symbols)
+
+  def symbolTableDependencies = inner.symbolTableDependencies
+}

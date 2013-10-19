@@ -26,8 +26,8 @@ object StringType
   def apply() = instance
 }
 
-class StringType extends ScalarType {
-  override def parentType:CypherType = ScalarType()
+class StringType extends AnyType {
+  override def parentType: CypherType = AnyType()
   override def toString = "String"
 }
 
