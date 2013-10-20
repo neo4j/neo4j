@@ -54,37 +54,38 @@ public class JavaQuery
 
         // START SNIPPET: addData
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
-        Transaction tx = db.beginTx();
-        try
+
+        try ( Transaction tx = db.beginTx(); )
         {
             Node myNode = db.createNode();
             myNode.setProperty( "name", "my node" );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
         // END SNIPPET: addData
 
         // START SNIPPET: execute
         ExecutionEngine engine = new ExecutionEngine( db );
-        tx = db.beginTx();
-        ExecutionResult result = engine.execute( "start n=node(*) where n.name = 'my node' return n, n.name" );
-        // END SNIPPET: execute
+
+        ExecutionResult result;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            result = engine.execute( "start n=node(*) where n.name = 'my node' return n, n.name" );
+            // END SNIPPET: execute
+            // START SNIPPET: items
+            Iterator<Node> n_column = result.columnAs( "n" );
+            for ( Node node : IteratorUtil.asIterable( n_column ) )
+            {
+                // note: we're grabbing the name property from the node,
+                // not from the n.name in this case.
+                nodeResult = node + ": " + node.getProperty( "name" );
+            }
+            // END SNIPPET: items
+        }
+
         // START SNIPPET: columns
         List<String> columns = result.columns();
         // END SNIPPET: columns
-        // START SNIPPET: items
-        Iterator<Node> n_column = result.columnAs( "n" );
-        for ( Node node : IteratorUtil.asIterable( n_column ) )
-        {
-            // note: we're grabbing the name property from the node,
-            // not from the n.name in this case.
-            nodeResult = node + ": " + node.getProperty( "name" );
-        }
-        // END SNIPPET: items
-        tx.finish();
+
         // the result is now empty, get a new one
         result = engine.execute( "start n=node(*) where n.name = 'my node' return n, n.name" );
         // START SNIPPET: rows

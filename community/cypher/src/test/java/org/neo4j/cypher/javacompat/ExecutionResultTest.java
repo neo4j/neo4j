@@ -21,6 +21,9 @@ package org.neo4j.cypher.javacompat;
 
 import java.util.Map;
 
+import javax.transaction.SystemException;
+import javax.transaction.TransactionManager;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
@@ -36,7 +39,6 @@ import static org.hamcrest.core.IsNull.nullValue;
 
 public class ExecutionResultTest
 {
-
     private GraphDatabaseAPI db;
     private ExecutionEngine engine;
 
@@ -56,13 +58,13 @@ public class ExecutionResultTest
         ExecutionResult executionResult = engine.execute( "START n=node(*) RETURN n" );
         ResourceIterator<Map<String, Object>> resultIterator = executionResult.iterator();
         resultIterator.next();
-        assertThat( db.getTxManager().getTransaction(), is( notNullValue() ) );
+        assertThat( activeTransaction(), is( notNullValue() ) );
 
         // When
         resultIterator.close();
 
         // Then
-        assertThat( db.getTxManager().getTransaction(), is( nullValue() ) );
+        assertThat( activeTransaction(), is( nullValue() ) );
     }
 
     @Test
@@ -73,20 +75,27 @@ public class ExecutionResultTest
         ExecutionResult executionResult = engine.execute( "START n=node(*) RETURN n" );
         ResourceIterator<Node> resultIterator = executionResult.columnAs("n");
         resultIterator.next();
-        assertThat( db.getTxManager().getTransaction(), is( notNullValue() ) );
+        assertThat( activeTransaction(), is( notNullValue() ) );
 
         // When
         resultIterator.close();
 
         // Then
-        assertThat( db.getTxManager().getTransaction(), is( nullValue() ) );
+        assertThat( activeTransaction(), is( nullValue() ) );
     }
 
     private void createNode()
     {
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
+    }
+
+    private javax.transaction.Transaction activeTransaction() throws SystemException
+    {
+        TransactionManager txManager = db.getDependencyResolver().resolveDependency( TransactionManager.class );
+        return txManager.getTransaction();
     }
 }
