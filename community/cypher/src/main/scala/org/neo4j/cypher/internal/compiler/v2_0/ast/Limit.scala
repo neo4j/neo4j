@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
 case class Limit(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(LongType())

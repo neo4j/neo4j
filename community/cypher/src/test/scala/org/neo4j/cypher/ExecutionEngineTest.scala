@@ -19,12 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal._
-import commands._
-import commands.expressions._
-import commands.values.TokenType._
 import org.neo4j.graphdb._
-import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException
 import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.Assert._
@@ -33,6 +28,7 @@ import org.junit.matchers.JUnitMatchers._
 import org.junit.{Ignore, Test}
 import util.Random
 import java.util.concurrent.TimeUnit
+import org.neo4j.cypher.internal.PathImpl
 
 class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker {
 
@@ -261,13 +257,6 @@ foreach(x in [1,2,3] |
     val n1 = createNode(Map("name" -> "boy"))
     val n2 = createNode(Map("name" -> "girl"))
 
-    Query.
-      start(NodeById("n", n1.getId, n2.getId)).
-      where(Or(
-      Equals(Property(Identifier("n"), PropertyKey("name")), Literal("boy")),
-      Equals(Property(Identifier("n"), PropertyKey("name")), Literal("girl")))).
-      returns(ReturnItem(Identifier("n"), "n"))
-
     val result = execute(
       s"start n=node(${n1.getId}, ${n2.getId}) where n.name = 'boy' OR n.name = 'girl' return n"
     )
@@ -365,12 +354,6 @@ foreach(x in [1,2,3] |
     val b = createNode()
     relate(refNode, a, "A")
     relate(refNode, b, "A")
-
-    Query.
-      start(NodeById("a", refNode.getId)).
-      matches(RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING)).
-      aggregation(CountStar()).
-      returns(ReturnItem(Identifier("a"), "a"), ReturnItem(CountStar(), "count(*)"))
 
     val result = execute(
       s"start a=node(${refNode.getId}) match (a)-[rel]->(b) return a, count(*)"

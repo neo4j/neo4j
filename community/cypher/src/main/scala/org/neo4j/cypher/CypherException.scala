@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.expressions.Expression
-import internal.commands.SchemaIndex
 import org.neo4j.kernel.api.exceptions.KernelException
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
@@ -61,13 +59,10 @@ class ProfilerStatisticsNotReadyException() extends CypherException("This result
 class UnknownLabelException(labelName: String) extends CypherException(s"The provided label :`$labelName` does not exist in the store")
 
 class IndexHintException(identifier: String, label: String, property: String, message: String)
-  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`") {
-  def this(hint: SchemaIndex, message: String) = this(hint.identifier, hint.label, hint.property, message)
-}
+  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`")
 
 class LabelScanHintException(identifier: String, label: String, message: String)
-  extends CypherException(s"$message\nLabel: `$label`") {
-}
+  extends CypherException(s"$message\nLabel: `$label`")
 
 class UnableToPickStartPointException(message: String) extends CypherException(message)
 

@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.{expressions => legacy}
+import commands.values.TokenType.PropertyKey
 import org.junit.Test
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.compiler.v2_0.ast
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Expression] with Expressions {
   implicit val parserToTest = ListComprehension ~ EOI

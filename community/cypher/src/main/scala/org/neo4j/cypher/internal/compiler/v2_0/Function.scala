@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.commands.{Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{Predicate => CommandPredicate}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
 
 object Function {
   private val knownFunctions = Seq(

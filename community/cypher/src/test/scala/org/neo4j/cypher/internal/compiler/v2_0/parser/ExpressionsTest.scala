@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.compiler.v2_0.parser
 
+import org.neo4j.cypher.internal.compiler.v2_0.{commands => oldCommands}
+import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.Expression
+import commands.{expressions => old}
+import commands.expressions.GenericCase
+import commands.values.TokenType.PropertyKey
 import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_0.ast
-import org.neo4j.cypher.internal.commands.{expressions => old}
-import org.neo4j.cypher.internal.{commands => oldCommands}
-import org.neo4j.cypher.internal.commands.expressions.GenericCase
-import org.neo4j.cypher.internal.compiler.v2_0.parser.{ParserTest, Expressions}
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression
-
 
 class ExpressionsTest extends ParserTest[ast.Expression, old.Expression] with Expressions {
   implicit val parserToTest = Expression

@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{values => commandvalues}
-import org.neo4j.cypher.internal.mutation
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v2_0.mutation
 
 sealed trait RemoveItem extends AstNode with SemanticCheckable {
   def toLegacyUpdateAction : mutation.UpdateAction

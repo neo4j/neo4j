@@ -19,14 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
+import org.neo4j.cypher.internal.compiler.v1_9._
+import commands.expressions._
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier}
-import org.neo4j.cypher.internal.parser._
-import org.neo4j.cypher.internal.parser.ParsedEntity
-import scala.Some
-import org.neo4j.cypher.internal.parser.ParsedShortestPath
-import org.neo4j.cypher.internal.parser.ParsedNamedPath
 
 trait ParserPattern extends Base {
 

@@ -19,43 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.internal.commands._
-import expressions._
-import expressions.Literal
-import expressions.ParameterExpression
+import org.neo4j.cypher.internal.compiler.v1_9._
+import commands._
+import commands.expressions._
+import mutation._
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.AllNodes
-import org.neo4j.cypher.internal.commands.NodeByIndex
-import org.neo4j.cypher.internal.mutation.CreateNode
-import org.neo4j.cypher.internal.mutation.CreateRelationship
-import org.neo4j.cypher.internal.commands.RelationshipByIndexQuery
-import org.neo4j.cypher.internal.commands.AllRelationships
-import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.commands.NamedPath
-import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
-import org.neo4j.cypher.internal.mutation.RelationshipEndpoint
-import org.neo4j.cypher.internal.commands.CreateNodeStartItem
-import org.neo4j.cypher.internal.commands.RelationshipByIndex
-import org.neo4j.cypher.internal.parser._
-import org.neo4j.cypher.internal.parser.ParsedEntity
-import org.neo4j.cypher.internal.commands.expressions.ParameterExpression
-import org.neo4j.cypher.internal.commands.AllNodes
-import org.neo4j.cypher.internal.commands.NodeByIndex
-import org.neo4j.cypher.internal.mutation.CreateNode
-import org.neo4j.cypher.internal.mutation.CreateRelationship
-import org.neo4j.cypher.internal.commands.RelationshipByIndexQuery
-import org.neo4j.cypher.internal.commands.AllRelationships
-import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.commands.NamedPath
-import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
-import org.neo4j.cypher.internal.mutation.RelationshipEndpoint
-import org.neo4j.cypher.internal.commands.CreateNodeStartItem
-import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.commands.RelationshipByIndex
-import org.neo4j.cypher.internal.parser.ParsedNamedPath
-import org.neo4j.cypher.internal.parser.ParsedRelation
-
 
 trait StartClause extends Base with Expressions with CreateUnique {
   def start: Parser[(Seq[StartItem], Seq[NamedPath])] = createStart | readStart | failure("expected START or CREATE")

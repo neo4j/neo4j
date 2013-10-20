@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import parser.CypherParser
-import org.neo4j.cypher._
-import org.neo4j.cypher.internal._
 import commands.AbstractQuery
-import org.neo4j.cypher.internal.executionplan.ExecutionPlanBuilder
-import org.neo4j.cypher.internal.executionplan.verifiers.{OptionalPatternWithoutStartVerifier, HintVerifier}
-import spi.gdsimpl.TransactionBoundPlanContext
+import executionplan.ExecutionPlanBuilder
+import executionplan.verifiers.{OptionalPatternWithoutStartVerifier, HintVerifier}
+import parser.CypherParser
+import org.neo4j.cypher.{ExecutionPlan, SyntaxException}
+import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.graphdb.GraphDatabaseService
-
 
 case class CypherCompiler(
   graph: GraphDatabaseService,

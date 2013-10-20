@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.compiler.v1_9._
 import commands._
 import commands.expressions._
 import commands.values.TokenType.PropertyKey
 import mutation._
-import parser._
 import org.neo4j.graphdb.Direction
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._

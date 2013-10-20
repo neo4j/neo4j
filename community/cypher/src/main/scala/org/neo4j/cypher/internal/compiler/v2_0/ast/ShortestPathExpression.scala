@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
-import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
 
 case class ShortestPathExpression(pattern: ShortestPath) extends Expression with SimpleTypedExpression {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.compiler.v1_9.commands._
 import expressions.{Identifier, AggregationExpression}
 import org.neo4j.cypher.SyntaxException
 

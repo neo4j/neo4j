@@ -19,20 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
+import Pattern.SemanticContext.Update
 import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.{expressions => legacy, values => commandvalues}
+import commands.expressions.{Expression => CommandExpression}
+import commands.values.KeyToken.Unresolved
+import commands.values.UnresolvedLabel
+import symbols._
 import org.neo4j.cypher.{PatternException, SyntaxException}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => legacy, values => commandvalues}
-import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
-import org.neo4j.cypher.internal.mutation
-import org.neo4j.cypher.internal.parser._
-import org.neo4j.cypher.internal.commands.values.KeyToken.Unresolved
-import org.neo4j.cypher.internal.parser.ParsedNamedPath
-import org.neo4j.cypher.internal.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Pattern.SemanticContext.Update
 
 object Pattern {
   sealed trait SemanticContext

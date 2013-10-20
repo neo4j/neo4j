@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
-import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0._
+import symbols._
 import org.junit.Test
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.compiler.v2_0._
 
 class LabelsTest extends Assertions {
 

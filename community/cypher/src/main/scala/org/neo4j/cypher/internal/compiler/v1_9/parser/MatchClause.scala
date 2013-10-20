@@ -19,18 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.internal.commands._
-import expressions.{Identifier, Expression}
-import collection.Map
+import org.neo4j.cypher.internal.compiler.v1_9._
+import commands._
+import commands.expressions._
 import org.neo4j.cypher.internal.helpers.CastSupport.sift
-import org.neo4j.cypher.internal.parser._
-import org.neo4j.cypher.internal.commands.NamedPath
-import org.neo4j.cypher.internal.parser.ParsedEntity
-import org.neo4j.cypher.internal.commands.SingleNode
-import org.neo4j.cypher.internal.parser.ParsedNamedPath
-import org.neo4j.cypher.internal.parser.ParsedRelation
-import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.cypher.SyntaxException
+import collection.Map
 
 trait MatchClause extends Base with ParserPattern {
 

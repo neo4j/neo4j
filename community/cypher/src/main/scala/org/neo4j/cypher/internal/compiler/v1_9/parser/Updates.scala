@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.internal.mutation._
-import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.compiler.v1_9.mutation._
+import org.neo4j.cypher.internal.compiler.v1_9.commands._
 import expressions.Property
 import org.neo4j.cypher.SyntaxException
 

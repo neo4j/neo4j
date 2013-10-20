@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 
 sealed trait Hint extends AstNode with SemanticCheckable {
   def toLegacySchemaIndex : commands.StartItem with commands.Hint

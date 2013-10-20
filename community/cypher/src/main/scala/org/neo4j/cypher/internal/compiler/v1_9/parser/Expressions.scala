@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.internal.commands._
-import expressions._
+import org.neo4j.cypher.internal.compiler.v1_9._
+import commands._
+import commands.expressions._
+import commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.parser.{Yes, No, Maybe, AbstractPattern}
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
 
 trait Expressions extends Base with ParserPattern with Predicates with StringLiteral {
   def expression: Parser[Expression] = term ~ rep("+" ~ term | "-" ~ term) ^^ {

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v1_9.parser
 
 import scala.util.parsing.combinator._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.expressions.{ParameterExpression, Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v1_9.commands.expressions.{ParameterExpression, Expression, Literal}
 
 abstract class Base extends JavaTokenParsers {
   var namer = new NodeNamer
