@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -26,6 +27,7 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 import static java.lang.Integer.parseInt;
@@ -43,11 +45,14 @@ public class BigLabelStoreGenerator
         long batchSize = parseLong( withDefault( System.getenv().get( "BATCH_SIZE" ), "100000" ) );
         long numNodes = parseLong( withDefault( System.getenv( "NUM_NODES" ), "1000000" ) );
         int numLabels = parseInt( withDefault( System.getenv( "NUM_LABELS" ), "10" ) );
+        String graphDbPath = System.getenv( "GRAPH_DB" );
+
+        System.out.println( format( "# BATCH_SIZE: %d, NUM_NODE: %d, NUM_LABELS: %d, GRAPH_DB: '%s'",
+                batchSize, numNodes, numLabels, graphDbPath ) );
+
+        GraphDatabaseService graph = createGraphDatabaseService( graphDbPath );
 
         Label[] labels = createLabels( numLabels );
-
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        GraphDatabaseService graph = factory.newEmbeddedDatabase( System.getenv( "GRAPH_DB" ) );
         long labelings = 0;
 
         long start = System.currentTimeMillis();
@@ -75,6 +80,20 @@ public class BigLabelStoreGenerator
         }
         long duration = System.currentTimeMillis() - start;
         System.out.println( format( "nodes: %d, ratio: %d, labelings: %d, duration: %d", numNodes, 100, labelings, duration ) );
+    }
+
+    private static GraphDatabaseService createGraphDatabaseService( String graphDbPath )
+    {
+        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseBuilder graphBuilder = factory.newEmbeddedDatabaseBuilder( graphDbPath );
+        File propertiesFile = new File( graphDbPath, "neo4j.properties ");
+        if ( propertiesFile.exists() && propertiesFile.isFile() && propertiesFile.canRead() )
+        {
+            System.out.println( format( "# Loading properties file '%s'", propertiesFile.getAbsolutePath() ) );
+            graphBuilder.loadPropertiesFromFile( propertiesFile.getAbsolutePath() );
+        }
+        System.out.println( format( "# No properties file found at '%s'", propertiesFile.getAbsolutePath() ) );
+        return graphBuilder.newGraphDatabase();
     }
 
     private static String withDefault( String value, String defaultValue )
