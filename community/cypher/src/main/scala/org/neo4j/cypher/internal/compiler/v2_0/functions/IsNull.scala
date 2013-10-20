@@ -22,14 +22,15 @@ package org.neo4j.cypher.internal.compiler.v2_0.functions
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 
-case object IsNull extends Function with LegacyPredicate {
+case object IsNull extends PredicateFunction {
   def name = "IS NULL"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
     invocation.specifyType(BooleanType())
 
-  def toCommand(invocation: ast.FunctionInvocation) =
+  protected def internalToPredicate(invocation: FunctionInvocation) =
     commands.IsNull(invocation.arguments(0).toCommand)
 }

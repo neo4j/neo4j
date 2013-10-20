@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
+import ast.FunctionInvocation
+import symbols._
 
-case object GreaterThanOrEqual extends Function with LegacyPredicate {
+case object GreaterThanOrEqual extends PredicateFunction {
   def name = ">="
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
     invocation.specifyType(BooleanType())
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  protected def internalToPredicate(invocation: FunctionInvocation) = {
     val left = invocation.arguments(0)
     val right = invocation.arguments(1)
     commands.GreaterThanOrEqual(left.toCommand, right.toCommand)

@@ -1200,7 +1200,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 0)).
         aggregation(Distinct(Count(Identifier("a")), Identifier("a"))).
-        columns("count(distinct a)")
+        columns("count(distinct a)").
         returns (ReturnItem(Distinct(Count(Identifier("a")), Identifier("a")), "count(distinct a)"))
     )
   }
@@ -1211,7 +1211,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) where a-->b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq(), Direction.OUTGOING, optional = false)))).
+        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq(), Direction.OUTGOING, optional = false))))).
         returns (ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -1221,7 +1221,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) where not(a-->()) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(Not(PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED42"), "  UNNAMED38", Seq(), Direction.OUTGOING, optional = false))))).
+        where(Not(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED42"), "  UNNAMED38", Seq(), Direction.OUTGOING, optional = false)))))).
         returns (ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -1457,7 +1457,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) where a-[:KNOWS|:BLOCKS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq("KNOWS","BLOCKS"), Direction.BOTH, optional = false))))
+        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq("KNOWS","BLOCKS"), Direction.BOTH, optional = false))))).
         returns (ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -2116,7 +2116,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a  = node(1) return a-->()",
       Query.
         start(NodeById("a", 1)).
-        returns(ReturnItem(PatternPredicate(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED31"), "  UNNAMED27", Seq(), Direction.OUTGOING, optional = false))), "a-->()"))
+        returns(ReturnItem(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED31"), "  UNNAMED27", Seq(), Direction.OUTGOING, optional = false))), "a-->()"))
     )
   }
 
@@ -2148,19 +2148,18 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def not_with_pattern() {
+    def parsedQueryWithOffsets(offset1: Int, offset2: Int) = Query.
+      matches(SingleNode("admin")).
+      where(Not(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("admin"), SingleNode("  UNNAMED" + offset2), "  UNNAMED" + offset1, Seq("MEMBER_OF"), Direction.OUTGOING, optional = false)))))).
+      returns(ReturnItem(Identifier("admin"), "admin"))
+
     test(
       "MATCH (admin) WHERE NOT (admin)-[:MEMBER_OF]->() RETURN admin",
-      Query.
-        matches(SingleNode("admin")).
-        where(Not(PatternPredicate(Seq(RelatedTo(SingleNode("admin"), SingleNode("  UNNAMED47"), "  UNNAMED31", Seq("MEMBER_OF"), Direction.OUTGOING, optional = false))))).
-        returns(ReturnItem(Identifier("admin"), "admin")))
+      parsedQueryWithOffsets(31, 47))
 
     test(
       "MATCH (admin) WHERE NOT ((admin)-[:MEMBER_OF]->()) RETURN admin",
-      Query.
-        matches(SingleNode("admin")).
-        where(Not(PatternPredicate(Seq(RelatedTo(SingleNode("admin"), SingleNode("  UNNAMED48"), "  UNNAMED32", Seq("MEMBER_OF"), Direction.OUTGOING, optional = false))))).
-        returns(ReturnItem(Identifier("admin"), "admin")))
+      parsedQueryWithOffsets(32, 48))
   }
 
   @Test def full_path_in_create() {

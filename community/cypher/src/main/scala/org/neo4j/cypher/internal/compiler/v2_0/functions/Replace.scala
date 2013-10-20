@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
-case object Replace extends Function with LegacyPredicate {
+case object Replace extends Function {
   def name = "replace"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =

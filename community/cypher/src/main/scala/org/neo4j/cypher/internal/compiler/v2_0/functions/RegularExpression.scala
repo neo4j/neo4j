@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 
-case object RegularExpression extends Function with LegacyPredicate {
+case object RegularExpression extends PredicateFunction {
   def name = "=~"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
@@ -32,12 +33,12 @@ case object RegularExpression extends Function with LegacyPredicate {
     invocation.arguments.constrainType(StringType()) then
     invocation.specifyType(BooleanType())
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  protected def internalToPredicate(invocation: FunctionInvocation) = {
     val left = invocation.arguments(0)
     val right = invocation.arguments(1)
     right.toCommand match {
       case literal: commandexpressions.Literal => commands.LiteralRegularExpression(left.toCommand, literal)
-      case command => commands.RegularExpression(left.toCommand, command)
+      case command                             => commands.RegularExpression(left.toCommand, command)
     }
   }
 }

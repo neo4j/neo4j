@@ -24,8 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 
-case object Has extends Function {
+case object Has extends PredicateFunction {
   def name = "HAS"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
@@ -36,7 +37,7 @@ case object Has extends Function {
       }
     } then invocation.specifyType(BooleanType())
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  protected def internalToPredicate(invocation: FunctionInvocation) = {
     val property = invocation.arguments(0).asInstanceOf[ast.Property]
     commands.Has(property.map.toCommand, PropertyKey(property.identifier.name))
   }

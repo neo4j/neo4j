@@ -34,6 +34,8 @@ class FilteringExpressionTest extends Assertions {
     def token = DummyToken(0,10)
 
     def toCommand(command: expressions.Expression, name: String, inner: Predicate) = ???
+
+    def toPredicate(command: expressions.Expression, name: String, inner: Predicate) = ???
   }
 
   @Test

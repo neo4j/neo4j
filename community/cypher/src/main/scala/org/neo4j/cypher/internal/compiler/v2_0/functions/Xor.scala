@@ -22,14 +22,16 @@ package org.neo4j.cypher.internal.compiler.v2_0.functions
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 
-case object Xor extends Function with LegacyPredicate {
+case object Xor extends PredicateFunction {
   def name = "XOR"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
     invocation.specifyType(BooleanType())
 
-  def toCommand(invocation: ast.FunctionInvocation) =
-    constructCommandPredicate(invocation.arguments) { a => commands.Xor(a(0), a(1)) }
+
+  protected def internalToPredicate(invocation: FunctionInvocation) =
+    commands.Xor(invocation.arguments(0).toPredicate, invocation.arguments(1).toPredicate)
 }

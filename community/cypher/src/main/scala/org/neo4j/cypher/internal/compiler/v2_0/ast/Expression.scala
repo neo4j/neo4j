@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, values => commandvalues}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, values => commandvalues, Predicate => CommandPredicate, NonEmpty, CoercedPredicate}
+import commands.expressions.{Expression => CommandExpression}
+import commands.values.TokenType.PropertyKey
+import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object Expression {
@@ -81,11 +80,20 @@ abstract class Expression extends AstNode with SemanticChecking {
     _.constrainType(this, token, possibleTypes)
 
   def toCommand: CommandExpression
+  def toPredicate: CommandPredicate = CoercedPredicate(toCommand)
 }
 
 trait SimpleTypedExpression { self: Expression =>
   protected def possibleTypes : TypeSet
   def semanticCheck(ctx: SemanticContext) : SemanticCheck = specifyType(possibleTypes)
+}
+
+trait PredicateExpression extends Expression with SimpleTypedExpression {
+  protected def possibleTypes = Set(BooleanType())
+  def toCommand: CommandExpression = internalToPredicate
+  override def toPredicate : CommandPredicate = internalToPredicate
+
+  protected def internalToPredicate : CommandPredicate
 }
 
 case class Identifier(name: String, token: InputToken) extends Expression {
@@ -122,16 +130,12 @@ case class Null(token: InputToken) extends Expression with SimpleTypedExpression
   def toCommand = commandexpressions.Literal(null)
 }
 
-case class True(token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(BooleanType())
-
-  def toCommand = commands.True()
+case class True(token: InputToken) extends Expression with PredicateExpression {
+  protected def internalToPredicate = commands.True()
 }
 
-case class False(token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(BooleanType())
-
-  def toCommand = commands.Not(commands.True())
+case class False(token: InputToken) extends Expression with PredicateExpression {
+  protected def internalToPredicate = commands.Not(commands.True())
 }
 
 case class CountStar(token: InputToken) extends Expression with SimpleTypedExpression {
@@ -174,12 +178,12 @@ case class PatternExpression(pattern: RelationshipsPattern) extends Expression w
   override def semanticCheck(ctx: SemanticContext) =
     pattern.semanticCheck(Pattern.SemanticContext.Expression) then super.semanticCheck(ctx)
 
-  def toCommand = commands.PatternPredicate(pattern.toLegacyPatterns)
+  def toCommand = commands.PathExpression(pattern.toLegacyPatterns)
+
+  override def toPredicate = NonEmpty(toCommand)
 }
 
-case class HasLabels(expression: Expression, labels: Seq[Identifier], token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(BooleanType())
-
+case class HasLabels(expression: Expression, labels: Seq[Identifier], token: InputToken) extends Expression with PredicateExpression {
   override def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) then
       expression.constrainType(NodeType()) then
@@ -188,7 +192,7 @@ case class HasLabels(expression: Expression, labels: Seq[Identifier], token: Inp
   private def toPredicate(l: Identifier): commands.Predicate =
     commands.HasLabel(expression.toCommand, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label))
 
-  def toCommand = labels.map(toPredicate).reduceLeft(commands.And(_, _))
+  protected def internalToPredicate = labels.map(toPredicate).reduceLeft(commands.And(_, _))
 }
 
 case class Collection(expressions: Seq[Expression], token: InputToken) extends Expression {

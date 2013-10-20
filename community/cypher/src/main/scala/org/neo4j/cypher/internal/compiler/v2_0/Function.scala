@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
+import ast.FunctionInvocation
+import commands.{Predicate => CommandPredicate}
+import commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
 
 object Function {
   private val knownFunctions = Seq(
@@ -141,6 +142,17 @@ abstract class Function extends SemanticChecking {
   }
 
   def toCommand(invocation: ast.FunctionInvocation) : CommandExpression
+
+  def toPredicate(invocation: ast.FunctionInvocation): CommandPredicate =
+    throw new SyntaxException(s"Expression must return a boolean")
+}
+
+abstract class PredicateFunction extends Function {
+  def toCommand(invocation: FunctionInvocation): CommandExpression = internalToPredicate(invocation)
+
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) : CommandPredicate
+
+  override def toPredicate(invocation: ast.FunctionInvocation) : CommandPredicate = internalToPredicate(invocation)
 }
 
 
@@ -149,15 +161,4 @@ abstract class AggregatingFunction extends Function {
     when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.token)
     } then invocation.arguments.semanticCheck(ctx) then semanticCheck(ctx, invocation)
-}
-
-
-trait LegacyPredicate { self: Function =>
-  protected def constructCommandPredicate(arguments: Seq[ast.Expression])(constructor: => (IndexedSeq[CommandPredicate] => CommandPredicate)) = {
-    val commands = arguments.map(e => (e, e.toCommand))
-    commands.find(!_._2.isInstanceOf[CommandPredicate]) match {
-      case Some((arg, _)) => throw new SyntaxException(s"Argument to function '$name' is not a predicate (${arg.token.startPosition})")
-      case None => constructor(commands.map(_._2.asInstanceOf[CommandPredicate]).toIndexedSeq)
-    }
-  }
 }
