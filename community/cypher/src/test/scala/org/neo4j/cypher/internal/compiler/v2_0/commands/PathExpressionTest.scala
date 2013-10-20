@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v1_9.commands
+package org.neo4j.cypher.internal.compiler.v2_0.commands
 
 import expressions.ShortestPathExpression
 import values.UnresolvedLabel
-import org.neo4j.cypher.internal.compiler.v1_9._
+import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.QueryStateHelper
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.graphdb.{Path, Direction}
 import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
+import org.neo4j.graphdb.{Path, Direction}
 
-class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
+class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
 
   @Test def shouldAcceptShortestPathExpressions() {
     val a = createNode()
@@ -69,7 +69,7 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
     relate(a, b)
 
     val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
-    val expression = PatternPredicate(Seq(pattern))
+    val expression = NonEmpty(PathExpression(Seq(pattern)))
     val m = createExecutionContext(Map("a" -> a))
 
     // WHEN
@@ -87,7 +87,7 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
     relate(a, b)
 
     val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
-    val expression = PatternPredicate(Seq(pattern))
+    val expression = NonEmpty(PathExpression(Seq(pattern)))
     val m = createExecutionContext(Map("a" -> a))
 
     // WHEN

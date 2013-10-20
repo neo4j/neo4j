@@ -153,7 +153,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     val preds = plan.query.where.filter(_.unsolved).map(_.token).
     // TODO We should not filter these out. This should be removed once we only use TraversalMatcher
     filterNot {
-      case pred => pred.exists( exp => exp.isInstanceOf[PatternPredicate] || exp.isInstanceOf[PathExpression]  )
+      case pred => pred.exists( exp => exp.isInstanceOf[PathExpression]  )
     }
 
     TrailBuilder.findLongestTrail(pattern, startPoints, preds)
