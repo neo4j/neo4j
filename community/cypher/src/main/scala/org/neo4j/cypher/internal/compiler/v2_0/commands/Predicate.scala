@@ -46,9 +46,8 @@ abstract class Predicate extends Expression {
 
   def andWith(preds: Predicate*): Predicate = { preds match {
     case _ if preds.isEmpty => this
-    case _ => preds.fold(this)(_ ++ _)
+    case _                  => preds.fold(this)(_ ++ _)
   } }
-
 }
 
 object Predicate {
@@ -308,12 +307,12 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
   def symbolTableDependencies = a.symbolTableDependencies ++ regex.symbolTableDependencies
 }
 
-case class NonEmpty(collection:Expression) extends Predicate with CollectionSupport {
+case class NonEmpty(collection: Expression) extends Predicate with CollectionSupport {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     collection(m) match {
-      case IsCollection(x) => this.makeTraversable(collection(m)).nonEmpty
-      case null          => false
-      case x             => throw new CypherTypeException("Expected a collection, got `%s`".format(x))
+      case IsCollection(x) => x.nonEmpty
+      case null            => false
+      case x               => throw new CypherTypeException("Expected a collection, got `%s`".format(x))
     }
   }
 
@@ -328,7 +327,7 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   def symbolTableDependencies = collection.symbolTableDependencies
 }
 
-case class HasLabel(entity: Expression, label: KeyToken) extends Predicate with CollectionSupport {
+case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = entity(m) match {
 
