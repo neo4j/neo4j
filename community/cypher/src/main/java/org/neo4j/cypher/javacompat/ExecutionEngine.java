@@ -22,14 +22,13 @@ package org.neo4j.cypher.javacompat;
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
- * To run a {@link Query}, use this class.
+ * To run a Cypher query, use this class.
  */
 public class
         ExecutionEngine
