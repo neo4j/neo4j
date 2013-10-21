@@ -34,8 +34,18 @@ import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 
-// Builds a store in the path at $GRAPH_DB of $NUM_NODES nodes, where each node has at most
-// $NUM_LABELS randomly selected labels
+/**
+ * Builds a store in the path at $GRAPH_DB of $NUM_NODES nodes, where each node has at most
+ * $NUM_LABELS randomly selected labels.
+ *
+ * cache_type=none
+ * keep_logical_logs=false
+ * neostore.nodestore.db.mapped_memory=28000M
+ * neostore.nodestore.db.labels.mapped_memory=14000M
+ *
+ * MAVEN_OPTS="-server -Xmx10g -Xms10G -Xmn4G -XX:MaxDirectMemorySize=35G"
+ * mvn exec:java -Dexec.mainClass="org.neo4j.shell.BigLabelStoreGenerator"
+ */
 public class BigLabelStoreGenerator
 {
     private static Random random = new Random();
@@ -47,7 +57,7 @@ public class BigLabelStoreGenerator
         int numLabels = parseInt( withDefault( System.getenv( "NUM_LABELS" ), "10" ) );
         String graphDbPath = System.getenv( "GRAPH_DB" );
 
-        System.out.println( format( "# BATCH_SIZE: %d, NUM_NODE: %d, NUM_LABELS: %d, GRAPH_DB: '%s'",
+        System.out.println( format( "# BATCH_SIZE: %d, NUM_NODES: %d, NUM_LABELS: %d, GRAPH_DB: '%s'",
                 batchSize, numNodes, numLabels, graphDbPath ) );
 
         GraphDatabaseService graph = createGraphDatabaseService( graphDbPath );
@@ -92,7 +102,10 @@ public class BigLabelStoreGenerator
             System.out.println( format( "# Loading properties file '%s'", propertiesFile.getAbsolutePath() ) );
             graphBuilder.loadPropertiesFromFile( propertiesFile.getAbsolutePath() );
         }
-        System.out.println( format( "# No properties file found at '%s'", propertiesFile.getAbsolutePath() ) );
+        else
+        {
+            System.out.println( format( "# No properties file found at '%s'", propertiesFile.getAbsolutePath() ) );
+        }
         return graphBuilder.newGraphDatabase();
     }
 
