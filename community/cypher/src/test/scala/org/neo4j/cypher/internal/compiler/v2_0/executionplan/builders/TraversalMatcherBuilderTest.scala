@@ -20,20 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import parser.CypherParser
-import org.neo4j.cypher.internal.executionplan.builders._
-import org.neo4j.cypher.internal._
 import commands._
 import commands.expressions._
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import pipes.NullPipe
-import spi.PlanContext
-import spi.gdsimpl.TransactionBoundPlanContext
+import executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
+import parser.CypherParser
+import org.neo4j.cypher.internal.spi.PlanContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
+import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.graphdb.Transaction
 import org.junit.{After, Before, Test}
 import org.scalatest.Assertions
-import org.neo4j.cypher.GraphDatabaseTestBase
 import org.junit.Assert._
-import org.neo4j.graphdb.Transaction
 
 class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
   var builder: TraversalMatcherBuilder = null

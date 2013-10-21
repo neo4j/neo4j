@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.symbols.AnyType
+import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.AnyType
 import org.neo4j.cypher.SyntaxException
 
 case class Where(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {

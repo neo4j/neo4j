@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.symbols.{DoubleType, NumberType}
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.{DoubleType, NumberType}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
 case object Haversin extends Function {
   def name = "haversin"

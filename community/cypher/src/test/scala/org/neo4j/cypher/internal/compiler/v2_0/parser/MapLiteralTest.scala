@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.{expressions => legacy}
 import org.junit.Test
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.compiler.v2_0.ast
-import org.neo4j.cypher.internal.commands.{expressions => legacy}
 
 class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
   implicit val parserToTest = MapLiteral ~ EOI

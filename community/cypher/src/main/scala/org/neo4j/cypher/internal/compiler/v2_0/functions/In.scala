@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
 case object In extends Function with LegacyPredicate {
   def name = "IN"

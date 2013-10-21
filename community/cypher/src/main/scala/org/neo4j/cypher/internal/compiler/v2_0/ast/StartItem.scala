@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.symbols.{NodeType, RelationshipType}
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, RelationshipType}
+import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
 sealed trait StartItem extends AstNode with SemanticCheckable {
   def identifier : Identifier

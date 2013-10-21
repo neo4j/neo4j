@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
+import org.neo4j.cypher.internal.compiler.v2_0.{commands => legacyCommands}
+import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.Expression
 import org.junit.Test
 import org.parboiled.scala._
 import org.parboiled.scala.rules.Rule1
-import org.neo4j.cypher.internal.compiler.v2_0.ast
-import org.neo4j.cypher.internal.{commands => legacyCommands}
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression
 
 class ConstraintTest extends ParserTest[ast.Command, legacyCommands.AbstractQuery] with Command {
   implicit val parserToTest = Command ~ EOI

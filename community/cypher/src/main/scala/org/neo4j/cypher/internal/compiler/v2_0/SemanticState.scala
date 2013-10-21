@@ -23,7 +23,7 @@ import scala.collection.immutable.Map
 import scala.collection.immutable.HashMap
 import scala.collection.immutable.SortedSet
 import scala.collection.breakOut
-import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 
 case class Symbol(identifiers: Set[ast.Identifier], types: TypeSet) {
   def tokens = identifiers.map(_.token)(breakOut[Set[ast.Identifier], InputToken, SortedSet[InputToken]])

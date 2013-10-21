@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.{commands, mutation}
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
-import org.neo4j.cypher.internal.mutation.{UpdateAction, ForeachAction}
-import org.neo4j.cypher.internal.parser.AbstractPattern
-import org.neo4j.cypher.internal.symbols._
+import commands.{expressions => commandexpressions}
+import mutation.{UpdateAction, ForeachAction}
+import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 sealed trait Clause extends AstNode with SemanticCheckable {

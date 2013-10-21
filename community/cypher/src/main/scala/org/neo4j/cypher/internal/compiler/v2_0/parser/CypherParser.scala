@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher._
+import commands.AbstractQuery
+import org.neo4j.cypher.SyntaxException
+import org.neo4j.helpers.ThisShouldNotHappenError
 import org.parboiled.scala._
 import org.parboiled.errors.InvalidInputError
-import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.AbstractQuery
-import org.neo4j.cypher.internal.ReattachAliasedExpressions
 
 case class CypherParser() extends Parser
   with Statement

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.neo4j.cypher.internal.symbols._
+import symbols._
 import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions

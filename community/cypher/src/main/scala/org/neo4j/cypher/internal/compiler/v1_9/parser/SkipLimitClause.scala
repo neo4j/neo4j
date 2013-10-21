@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
+import org.neo4j.cypher.internal.compiler.v1_9.commands.expressions.{Literal, Expression}
 
 trait SkipLimitClause extends Base {
   def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)

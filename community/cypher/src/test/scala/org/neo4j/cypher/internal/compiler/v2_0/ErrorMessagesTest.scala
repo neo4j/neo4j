@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_0
 
+import commands.expressions.StringHelper
+import org.neo4j.cypher.{CypherException, ExecutionEngineHelper, SyntaxException}
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
-import org.neo4j.cypher.CypherVersion._
-import org.neo4j.cypher.internal.commands.expressions.StringHelper
-import com.sun.tools.javac.resources.legacy
 
 class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringHelper {
   @Test def noReturnColumns() {

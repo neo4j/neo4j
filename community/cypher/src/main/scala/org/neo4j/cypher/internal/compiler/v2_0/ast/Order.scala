@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.commands
+import org.neo4j.cypher.internal.compiler.v2_0.commands
 
 case class OrderBy(sortItems: Seq[SortItem], token: InputToken) extends AstNode with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck

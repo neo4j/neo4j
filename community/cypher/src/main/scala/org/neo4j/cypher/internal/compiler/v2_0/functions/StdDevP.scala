@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
 case object StdDevP extends AggregatingFunction {
   def name = "stdevp"

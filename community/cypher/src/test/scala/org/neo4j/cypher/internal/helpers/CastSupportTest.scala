@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.helpers
 
+import org.neo4j.cypher.CypherTypeException
 import org.scalatest.Assertions
 import org.junit.Test
-import org.junit.internal.runners.statements.Fail
-import org.scalatest.exceptions.TestFailedException
-import org.neo4j.cypher.CypherTypeException
 
 class CastSupportTest extends Assertions {
 

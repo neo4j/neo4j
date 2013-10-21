@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands
+import org.neo4j.cypher.internal.compiler.v2_0.commands
 
 sealed trait Query extends Statement
 

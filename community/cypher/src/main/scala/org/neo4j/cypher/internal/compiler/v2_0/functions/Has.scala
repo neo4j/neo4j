@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions}
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType.PropertyKey
 
 case object Has extends Function {
   def name = "HAS"

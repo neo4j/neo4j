@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.MergeAst
+import commands.expressions
+import commands.values.{KeyToken, TokenType}
+import commands.values.TokenType.PropertyKey
+import mutation.PropertySetAction
 import org.junit.Test
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.commands.expressions
-import org.neo4j.cypher.internal.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.commands.MergeAst
-import org.neo4j.cypher.internal.compiler.v2_0.ast
-import org.neo4j.cypher.internal.mutation.PropertySetAction
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.parser.{On, OnAction, ParsedEntity}
 
 class MergeTest extends ParserTest[ast.Merge, MergeAst] with Query with Expressions {
   implicit val parserToTest = Merge ~ EOI

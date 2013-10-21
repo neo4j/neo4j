@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v1_9.commands.expressions.Literal
 
 
 trait StringLiteral extends Base {

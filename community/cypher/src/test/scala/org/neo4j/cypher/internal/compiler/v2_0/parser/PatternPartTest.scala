@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands._
+import commands.{Pattern => LegacyPattern}
 import org.junit.Test
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.commands.{Pattern => LegacyPattern}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_0.ast
 
 class PatternPartTest extends ParserTest[ast.PatternPart, Seq[LegacyPattern]] with Patterns with Expressions {
   implicit val parserToTest = PatternPart ~ EOI

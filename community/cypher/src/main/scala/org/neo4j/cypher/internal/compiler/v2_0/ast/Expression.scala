@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, values => commandvalues}
-import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
-import org.neo4j.cypher.internal.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType.PropertyKey
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object Expression {

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v1_9.parser
 
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.compiler.v1_9._
 import commands._
 import commands.expressions.AggregationExpression
 import mutation.UpdateAction
+import org.neo4j.cypher.SyntaxException
 
 class CypherParser extends Base
 with StartClause

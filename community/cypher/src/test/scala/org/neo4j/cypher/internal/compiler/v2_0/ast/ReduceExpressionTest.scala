@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
-import org.neo4j.cypher.internal.symbols._
+import Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_0._
+import symbols._
 import org.junit.Test
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
 
 class ReduceExpressionTest extends Assertions {
 

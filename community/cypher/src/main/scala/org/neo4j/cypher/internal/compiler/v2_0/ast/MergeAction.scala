@@ -20,11 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.{commands, mutation}
-import org.neo4j.cypher.internal.parser.{AbstractPattern, Action, On, OnAction}
-import org.neo4j.cypher.internal.commands.{CreateUniqueAst, MergeAst}
-import org.neo4j.cypher.internal.mutation.{UpdateAction, ForeachAction}
-import org.neo4j.cypher.internal.symbols._
+import symbols._
 
 sealed trait MergeAction extends AstNode with SemanticCheckable {
   def name: String

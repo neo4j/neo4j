@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
-import org.neo4j.cypher._
-import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.parser.{ParsedVarLengthRelation, ParsedEntity, ParsedRelation}
+import org.neo4j.cypher.internal.compiler.v2_0._
 import commands._
 import commands.expressions._
 import commands.values.{UnresolvedLabel, TokenType, KeyToken}
 import commands.values.TokenType.PropertyKey
 import helpers.LabelSupport
 import mutation._
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._

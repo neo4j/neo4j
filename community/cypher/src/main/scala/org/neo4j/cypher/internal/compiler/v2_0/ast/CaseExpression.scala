@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands.{expressions => commandexpressions, Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, Predicate => CommandPredicate}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
 
 case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression], token: InputToken) extends Expression {
