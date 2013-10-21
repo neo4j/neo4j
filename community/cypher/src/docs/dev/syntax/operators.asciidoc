@@ -5,7 +5,7 @@ Operators
 [[query-operators-mathematical]]
 == Mathematical operators ==
 
-The mathematical operators are `+`, `-`, `*`, `/` and `%`.
+The mathematical operators are `+`, `-`, `*`, `/` and `%`, `^`.
 
 [[query-operators-comparison]]
 == Comparison operators ==

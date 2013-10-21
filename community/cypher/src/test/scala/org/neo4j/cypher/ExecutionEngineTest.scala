@@ -2566,4 +2566,25 @@ RETURN x0.name""")
     execute("match (n) where id(n) in [0,1] return n").toList
     // should not throw an exception
   }
+
+  @Test
+  def non_optional_patterns_should_not_contain_nulls() {
+    // given
+    val h = createNode()
+    val g = createNode()
+    val t = createNode()
+    val b = createNode()
+
+    relate(h, g)
+    relate(h, t)
+    relate(h, b)
+    relate(g, t)
+    relate(g, b)
+    relate(t, b)
+
+    val result = engine.profile("START h=node(1),g=node(2) MATCH h-[r1]-n-[r2]-g-[r3]-o-[r4]-h, n-[r]-o RETURN o")
+
+    // then
+    assert(!result.columnAs[Node]("o").exists(_ == null), "Result should not contain nulls")
+  }
 }

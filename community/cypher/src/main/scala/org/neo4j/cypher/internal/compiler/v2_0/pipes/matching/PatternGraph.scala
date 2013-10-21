@@ -21,10 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes.matching
 
 import collection.mutable.{Set => MutableSet}
 import org.neo4j.cypher.PatternException
+import org.neo4j.cypher.internal.compiler.v2_0.commands.Pattern
 
-class PatternGraph(val patternNodes: Map[String, PatternNode],
-                   val patternRels: Map[String, PatternRelationship],
-                   val boundElements: Seq[String]) {
+case class PatternGraph(patternNodes: Map[String, PatternNode],
+                        patternRels: Map[String, PatternRelationship],
+                        boundElements: Seq[String],
+                        patternsContained: Seq[Pattern]) {
+
   def nonEmpty: Boolean = !isEmpty
 
   def identifiers: Seq[String] = patternGraph.keys.toSeq
@@ -62,14 +65,14 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
 
     val newNodes = oldNodes.map(patternNode => patternNode.key -> new PatternNode(patternNode.key, patternNode.labels)).toMap
     val newRelationships = relationshipsNotInDoubleOptionalPaths.map {
-      case pr: VariableLengthPatternRelationship => throw new Exception("apa")
+      case pr: VariableLengthPatternRelationship => ???
       case pr: PatternRelationship               =>
         val s = newNodes(pr.startNode.key)
         val e = newNodes(pr.endNode.key)
         pr.key -> s.relateTo(pr.key, e, pr.relTypes, pr.dir, pr.optional)
     }.toMap
 
-    new PatternGraph(newNodes, newRelationships, boundPoints)
+    new PatternGraph(newNodes, newRelationships, boundPoints, Seq.empty /* This is only used for plan building and is not needed here */)
   }
 
   def apply(key: String) = patternGraph(key)

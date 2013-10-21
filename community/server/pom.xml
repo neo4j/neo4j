@@ -324,8 +324,20 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>webadmin-html/index.html</exclude>
+                </excludes>
+                <filtering>false</filtering>
+            </resource>
+
+            <resource>
+                <directory>src/main/resources/</directory>
+                <includes>
+                    <include>webadmin-html/index.html</include>
+                </includes>
                 <filtering>true</filtering>
             </resource>
+
             <resource>
                 <directory>${project.build.directory}/generated-sources</directory>
             </resource>

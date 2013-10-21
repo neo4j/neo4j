@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,8 +52,7 @@ public class PersistenceWindowPool implements WindowPool
     // == recordSize
     private final int blockSize;
     private FileChannel fileChannel;
-    private final ConcurrentMap<Long,PersistenceRow> activeRowWindows =
-        new ConcurrentHashMap<Long,PersistenceRow>();
+    private final ConcurrentMap<Long,PersistenceRow> activeRowWindows;
     private long availableMem = 0;
     private long memUsed = 0;
     private int brickCount = 0;
@@ -82,6 +80,7 @@ public class PersistenceWindowPool implements WindowPool
     /**
      * Create new pool for a store.
      *
+     *
      * @param storeName
      *            Name of store that use this pool
      * @param blockSize
@@ -90,12 +89,15 @@ public class PersistenceWindowPool implements WindowPool
      *            A fileChannel to the store
      * @param mappedMem
      *            Number of bytes dedicated to memory mapped windows
-     * @throws UnderlyingStorageException
-     *             If unable to create pool
+     * @param activeRowWindows
+     *            Data structure for storing active "row windows", generally just provide a concurrent hash map.
+     * @throws UnderlyingStorageException If unable to create pool
      */
     public PersistenceWindowPool( File storeName, int blockSize,
-        FileChannel fileChannel, long mappedMem,
-        boolean useMemoryMappedBuffers, boolean readOnly, StringLogger log )
+                                  FileChannel fileChannel, long mappedMem,
+                                  boolean useMemoryMappedBuffers, boolean readOnly,
+                                  ConcurrentMap<Long, PersistenceRow> activeRowWindows,
+                                  StringLogger log )
     {
         this.storeName = storeName;
         this.blockSize = blockSize;
@@ -103,6 +105,7 @@ public class PersistenceWindowPool implements WindowPool
         this.availableMem = mappedMem;
         this.useMemoryMapped = useMemoryMappedBuffers;
         this.readOnly = readOnly;
+        this.activeRowWindows = activeRowWindows;
         this.mapMode = readOnly ? MapMode.READ_ONLY : MapMode.READ_WRITE;
         this.log = log;
         setupBricks();
@@ -174,8 +177,12 @@ public class PersistenceWindowPool implements WindowPool
                     // Someone else put it there before us. Close this row
                     // which was unnecessarily opened. The next go in this loop
                     // will get that one instead.
-                    dpw.close();
-                    theBrick.unLock();
+                    dpw.close();;
+                    if(theBrick != null)
+                    {
+                        // theBrick may be null here if brick size is 0.
+                        theBrick.unLock();
+                    }
                 }
             }
             else

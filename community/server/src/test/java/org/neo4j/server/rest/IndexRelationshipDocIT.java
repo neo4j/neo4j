@@ -349,17 +349,21 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
                 corruptJson );
         assertEquals( 400, response.getStatus() );
     }
-
+    
     /**
      * Get or create unique relationship (create).
      * 
      * Create a unique relationship in an index.
+     * If a relationship matching the given key and value already exists in the index, it will be returned.
+     * If not, a new relationship will be created.
+     * 
+     * NOTE: The type and direction of the relationship is not regarded when determining uniqueness.
      */
     @Documented
     @Test
     public void get_or_create_relationship() throws Exception
     {
-        final String index = "knowledge", key = "name", value = "Tobias";
+        final String index = "MyIndex", type="knowledge", key = "name", value = "Tobias";
         helper.createRelationshipIndex( index );
         long start = helper.createNode();
         long end = helper.createNode();
@@ -367,32 +371,10 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
                 .noGraph()
                 .expectedStatus( 201 /* created */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
-                .payload(
-                        "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"start\": \""
-                                + functionalTestHelper.nodeUri( start ) + "\", \"end\": \""
-                                + functionalTestHelper.nodeUri( end ) + "\", \"type\": \"" + index + "\"}" )
-                .post( functionalTestHelper.relationshipIndexUri() + index + "/?uniqueness=get_or_create" );
-    }
-
-    /**
-     * Get or create unique relationship (create).
-     * 
-     * Add a relationship to an index unless a relationship already exists for the given mapping.
-     * Here, no previous relationship is found in the index, a new one is created and indexed.
-     */
-    @Documented
-    @Test
-    public void get_or_create_unique_relationship_create() throws Exception
-    {
-        final String index = "knowledge", key = "name", value = "Mattias";
-        helper.createRelationshipIndex( index );
-        gen.get()
-                .noGraph()
-                .expectedStatus( 201 /* created */)
-                .payloadType( MediaType.APPLICATION_JSON_TYPE )
-                .payload(
-                        "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \""
-                                + functionalTestHelper.relationshipUri( helper.createRelationship( index ) ) + "\"}" )
+                .payload( "{\"key\": \"" + key + "\", \"value\":\"" + value +
+                          "\", \"start\": \"" + functionalTestHelper.nodeUri( start ) +
+                          "\", \"end\": \"" + functionalTestHelper.nodeUri( end ) +
+                          "\", \"type\": \"" + type + "\"}" )
                 .post( functionalTestHelper.relationshipIndexUri() + index + "/?uniqueness=get_or_create" );
     }
 
@@ -420,7 +402,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
         }
         gen.get()
                 .noGraph()
-                .expectedStatus( 200 /* conflict */)
+                .expectedStatus( 200 /* existing */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(
                         "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"start\": \""
@@ -494,8 +476,14 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Add a relationship to an index
-     * unless a node already exists for the given mapping then return fail (case create).
+     * Add an existing relationship to a unique index (not indexed).
+     *
+     * If a relationship matching the given key and value already exists in the index, it will be returned.
+     * If not, an `HTTP 409` (conflict) status will be returned in this case, as we are using `create_or_fail`.
+     *
+     * It's possible to use `get_or_create` uniqueness as well.
+     *
+     * NOTE: The type and direction of the relationship is not regarded when determining uniqueness.
      */
     @Documented
     @Test
@@ -514,7 +502,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
                                 + value
                                 + "\", \"uri\":\""
                                 + functionalTestHelper.relationshipUri( helper.createRelationship( "KNOWS",
-                                        helper.createNode(), helper.createNode() ) ) + "\"}" )
+                                helper.createNode(), helper.createNode() ) ) + "\"}" )
                 .post( functionalTestHelper.relationshipIndexUri() + index + "?uniqueness=create_or_fail" );
     }
 
@@ -538,6 +526,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
             graphdb.index().forRelationships( index ).add( rel, key, value );
             tx.success();
         }
+
         gen.get()
                 .noGraph()
                 .expectedStatus( 409 /* conflict */)

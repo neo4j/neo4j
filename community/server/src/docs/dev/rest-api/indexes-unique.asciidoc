@@ -20,6 +20,10 @@ include::create-a-unique-node-or-return-fail-(create).asciidoc[]
 
 include::create-a-unique-node-or-return-fail-(fail).asciidoc[]
 
+include::add-an-existing-node-to-unique-index-(not-indexed).asciidoc[]
+
+include::add-an-existing-node-to-unique-index-(already-indexed).asciidoc[]
+
 include::get-or-create-unique-relationship-(create).asciidoc[]
 
 include::get-or-create-unique-relationship-(existing).asciidoc[]
@@ -27,5 +31,9 @@ include::get-or-create-unique-relationship-(existing).asciidoc[]
 include::create-a-unique-relationship-or-return-fail-(create).asciidoc[]
 
 include::create-a-unique-relationship-or-return-fail-(fail).asciidoc[]
+
+include::add-an-existing-relationship-to-a-unique-index-(not-indexed).asciidoc[]
+
+include::add-an-existing-relationship-to-a-unique-index-(already-indexed).asciidoc[]
 
 

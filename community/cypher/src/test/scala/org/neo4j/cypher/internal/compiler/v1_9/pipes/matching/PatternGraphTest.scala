@@ -39,7 +39,7 @@ class PatternGraphTest extends Assertions {
     val r2 = relate(b, x, "r2")
 
     //when
-    val graph = new PatternGraph(nodes, rels, Seq("a","b"))
+    val graph = new PatternGraph(nodes, rels, Seq("a","b"), Seq.empty)
 
     //then
     assert(graph.doubleOptionalPaths.toSeq === Seq(DoubleOptionalPath(Seq(a,r1,x,r2,b))))
@@ -59,7 +59,7 @@ class PatternGraphTest extends Assertions {
     val r4 = relate(z, b, "r4")
 
     //when
-    val graph = new PatternGraph(nodes, rels, Seq("a","b"))
+    val graph = new PatternGraph(nodes, rels, Seq("a","b"), Seq.empty)
 
     //then
     assert(graph.doubleOptionalPaths.toSet === Set(DoubleOptionalPath(Seq(a, r1, x, r2, b)), DoubleOptionalPath(Seq(a, r3, z, r4, b))))
@@ -79,7 +79,7 @@ class PatternGraphTest extends Assertions {
     val r4 = relate(b, z, "r4", optional = false)
 
     //when
-    val graph = new PatternGraph(nodes, rels, Seq("a", "b"))
+    val graph = new PatternGraph(nodes, rels, Seq("a", "b"), Seq.empty)
 
     //then we should find the shortest possible DOP
     assert(graph.doubleOptionalPaths.toSet === Set(DoubleOptionalPath(Seq(x,r2,unknown,r3,z))))
@@ -97,7 +97,7 @@ class PatternGraphTest extends Assertions {
     relate(c, x, "r3", optional = false)
 
     //when
-    val graph = new PatternGraph(nodes, rels, Seq("a", "b", "c"))
+    val graph = new PatternGraph(nodes, rels, Seq("a", "b", "c"), Seq.empty)
 
     //then we should find the shortest possible DOP
     assert(graph.doubleOptionalPaths === Seq())
@@ -113,7 +113,7 @@ class PatternGraphTest extends Assertions {
     val r2 = relate(z, x, "r2")
     val r3 = relate(x, b, "r3")
 
-    val graph = new PatternGraph(nodes, rels, Seq("a", "b"))
+    val graph = new PatternGraph(nodes, rels, Seq("a", "b"), Seq.empty)
 
     //when
     val mandatory: PatternGraph = graph.mandatoryGraph
@@ -138,7 +138,7 @@ class PatternGraphTest extends Assertions {
     relate(a, z, "r3")
     relate(b, z, "r4")
 
-    val graph = new PatternGraph(nodes, rels, Seq("a", "b"))
+    val graph = new PatternGraph(nodes, rels, Seq("a", "b"), Seq.empty)
 
     //when
     val mandatory: PatternGraph = graph.mandatoryGraph
@@ -163,7 +163,7 @@ class PatternGraphTest extends Assertions {
     relate(x, z, "r2", optional = false)
     relate(z, b, "r3")
 
-    val graph = new PatternGraph(nodes, rels, Seq("a", "b"))
+    val graph = new PatternGraph(nodes, rels, Seq("a", "b"), Seq.empty)
 
     //when
     val mandatory: PatternGraph = graph.mandatoryGraph
@@ -200,7 +200,7 @@ class PatternGraphTest extends Assertions {
     relate(c, x, "r3")
 
     //when
-    intercept[PatternException](new PatternGraph(nodes, rels, Seq("a", "b", "c")))
+    intercept[PatternException](new PatternGraph(nodes, rels, Seq("a", "b", "c"), Seq.empty))
   }
 
   private def createNode(name: String, labels: Seq[KeyToken] = Seq.empty): PatternNode = {

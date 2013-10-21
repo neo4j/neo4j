@@ -90,5 +90,7 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Yin Wang|https://github.com/yinwang0[yinwang0]
 |Volker Lanting|https://github.com/VolkerL[VolkerL]
 |Mark Needham|https://github.com/mneedham[mneedham]
+|Chris Vest|https://github.com/chrisvest[chrisvest]
+|Ben Butler-Cole|https://github.com/benbc[benbc]
 |=======
 

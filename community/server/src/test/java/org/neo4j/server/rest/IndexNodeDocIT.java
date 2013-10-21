@@ -877,7 +877,67 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, data.get( "sequence" ) );
     }
 
-    
+    /**
+     * Add an existing node to unique index (not indexed).
+     * 
+     * Associates a node with the given key/value pair in the given unique
+     * index.
+     * 
+     * In this example, we are using `create_or_fail` uniqueness.
+     */
+    @Documented
+    @Test
+    public void addExistingNodeToUniqueIndexAdded() throws Exception
+    {
+        final String indexName = "favorites";
+        final String key = "some-key";
+        final String value = "some value";
+        long nodeId = createNode();
+        // implicitly create the index
+        gen().noGraph()
+                .expectedStatus( 201 /* created */ )
+                .payload(
+                        JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
+                                functionalTestHelper.nodeUri( nodeId ) ) ) )
+                .post( functionalTestHelper.indexNodeUri( indexName ) + "?uniqueness=create_or_fail" );
+        // look if we get one entry back
+        JaxRsResponse response = RestRequest.req()
+                .get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) );
+        String entity = response.getEntity();
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        assertEquals( 1, hits.size() );
+    }
+
+    /**
+     * Add an existing node to unique index (already indexed).
+     * 
+     * In this case, the node already exists in the index, and thus we get a `HTTP 409` status response,
+     * as we have set the uniqueness to `create_or_fail`.
+     * 
+     */
+    @Documented
+    @Test
+    public void addExistingNodeToUniqueIndexExisting() throws Exception
+    {
+        final String indexName = "favorites";
+        final String key = "some-key";
+        final String value = "some value";
+        long nodeId = createNode();
+        // implicitly create the index
+        gen().noGraph()
+                .expectedStatus( 201 /* created */ )
+                .payload(
+                        JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
+                                functionalTestHelper.nodeUri( nodeId ) ) ) )
+                .post( functionalTestHelper.indexNodeUri( indexName ) + "?uniqueness=create_or_fail" );
+        gen().noGraph()
+                .expectedStatus( 409 /* conflict */ )
+                .payload(
+                        JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
+                                functionalTestHelper.nodeUri( nodeId ) ) ) )
+                .post( functionalTestHelper.indexNodeUri( indexName ) + "?uniqueness=create_or_fail" );
+    }
+
     /**
      * Backward Compatibility Test (using old syntax ?unique)
      * Put node if absent - Create.
@@ -903,6 +963,4 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertTrue( type.isInstance( object ) );
         return type.cast( object );
     }
-    
-    
 }

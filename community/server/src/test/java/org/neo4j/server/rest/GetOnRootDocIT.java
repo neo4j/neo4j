@@ -115,7 +115,7 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
      * better performance and lower memory overhead on the server side. To use
      * it, adjust the request headers for every call, see the example below for
      * details.
-     * <p/>
+     * 
      * CAUTION: This feature is new, and you should make yourself comfortable
      * with the streamed response style versus the non-streamed API where
      * results are delivered in a single large response. Expect future releases

@@ -19,22 +19,18 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.PathImpl;
+import org.neo4j.graphalgo.impl.util.PriorityMap;
+import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
 import org.neo4j.graphalgo.impl.util.WeightedPathImpl;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,6 +44,7 @@ import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
+import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 public class AStar implements PathFinder<WeightedPath>
@@ -56,13 +53,13 @@ public class AStar implements PathFinder<WeightedPath>
     private final CostEvaluator<Double> lengthEvaluator;
     private final EstimateEvaluator<Double> estimateEvaluator;
     private Metadata lastMetadata;
-    
+
     public AStar( RelationshipExpander expander,
             CostEvaluator<Double> lengthEvaluator, EstimateEvaluator<Double> estimateEvaluator )
     {
         this( toPathExpander( expander ), lengthEvaluator, estimateEvaluator );
     }
-    
+
     public AStar( PathExpander<?> expander,
             CostEvaluator<Double> lengthEvaluator, EstimateEvaluator<Double> estimateEvaluator )
     {
@@ -70,27 +67,28 @@ public class AStar implements PathFinder<WeightedPath>
         this.lengthEvaluator = lengthEvaluator;
         this.estimateEvaluator = estimateEvaluator;
     }
-    
+
+    @Override
     public WeightedPath findSinglePath( Node start, Node end )
     {
         lastMetadata = new Metadata();
-        Doer doer = new Doer( start, end );
-        while ( doer.hasNext() )
+        AStarIterator iterator = new AStarIterator( start, end );
+        while ( iterator.hasNext() )
         {
-            Node node = doer.next();
+            Node node = iterator.next();
             GraphDatabaseService graphDb = node.getGraphDatabase();
             if ( node.equals( end ) )
             {
                 // Hit, return path
-                double weight = doer.score.get( node.getId() ).wayLength;
+                double weight = iterator.visitData.get( node.getId() ).wayLength;
                 LinkedList<Relationship> rels = new LinkedList<Relationship>();
-                Relationship rel = graphDb.getRelationshipById( doer.cameFrom.get( node.getId() ) );
+                Relationship rel = graphDb.getRelationshipById( iterator.visitData.get( node.getId() ).cameFromRelationship );
                 while ( rel != null )
                 {
                     rels.addFirst( rel );
                     node = rel.getOtherNode( node );
-                    Long nextRelId = doer.cameFrom.get( node.getId() );
-                    rel = nextRelId == null ? null : graphDb.getRelationshipById( nextRelId );
+                    long nextRelId = iterator.visitData.get( node.getId() ).cameFromRelationship;
+                    rel = nextRelId == -1 ? null : graphDb.getRelationshipById( nextRelId );
                 }
                 Path path = toPath( start, rels );
                 lastMetadata.paths++;
@@ -99,19 +97,19 @@ public class AStar implements PathFinder<WeightedPath>
         }
         return null;
     }
-    
-    public Iterable<WeightedPath> findAllPaths( Node node, Node end )
+
+    @Override
+    public Iterable<WeightedPath> findAllPaths( final Node node, final Node end )
     {
-        WeightedPath path = findSinglePath( node, end );
-        return path != null ? Arrays.asList( path ) : Collections.<WeightedPath>emptyList();
+        return option( findSinglePath( node, end ) );
     }
-    
+
     @Override
     public TraversalMetadata metadata()
     {
         return lastMetadata;
     }
-    
+
     private Path toPath( Node start, LinkedList<Relationship> rels )
     {
         PathImpl.Builder builder = new PathImpl.Builder( start );
@@ -121,100 +119,82 @@ public class AStar implements PathFinder<WeightedPath>
         }
         return builder.build();
     }
-    
-    private static class Data
+
+    private static class Visit
     {
-        private double wayLength; // acumulated cost to get here (g)
+        private double wayLength; // accumulated cost to get here (g)
         private double estimate; // heuristic estimate of cost to reach end (h)
-        
+        private long cameFromRelationship;
+        private boolean visited;
+        private boolean next;
+
+        Visit( long cameFromRelationship, double wayLength, double estimate )
+        {
+            update( cameFromRelationship, wayLength, estimate );
+        }
+
+        void update( long cameFromRelationship, double wayLength, double estimate )
+        {
+            this.cameFromRelationship = cameFromRelationship;
+            this.wayLength = wayLength;
+            this.estimate = estimate;
+        }
+
         double getFscore()
         {
             return wayLength + estimate;
         }
     }
 
-    private class Doer extends PrefetchingIterator<Node> implements Path
+    private class AStarIterator extends PrefetchingIterator<Node> implements Path
     {
+        private final Node start;
         private final Node end;
         private Node lastNode;
-        private boolean expand;
-        private final Set<Long> visitedNodes = new HashSet<Long>();
-        private final Set<Node> nextNodesSet = new HashSet<Node>();
-        private final TreeMap<Double, Collection<Node>> nextNodes =
-                new TreeMap<Double, Collection<Node>>();
-        private final Map<Long, Long> cameFrom = new HashMap<Long, Long>();
-        private final Map<Long, Data> score = new HashMap<Long, Data>();
-        private final Node start;
-        
-        Doer( Node start, Node end )
+        private final PriorityMap<Node, Node, Double> nextPrioritizedNodes =
+                PriorityMap.<Node, Double>withSelfKeyNaturalOrder();
+        private final Map<Long, Visit> visitData = new HashMap<Long, Visit>();
+
+        AStarIterator( Node start, Node end )
         {
             this.start = start;
             this.end = end;
-            
-            Data data = new Data();
-            data.wayLength = 0;
-            data.estimate = estimateEvaluator.getCost( start, end );
-            addNext( start, data.getFscore() );
-            this.score.put( start.getId(), data );
+
+            Visit visit = new Visit( -1, 0, estimateEvaluator.getCost( start, end ) );
+            addNext( start, visit.getFscore(), visit );
+            this.visitData.put( start.getId(), visit );
         }
-        
-        private void addNext( Node node, double fscore )
+
+        private void addNext( Node node, double fscore, Visit visit )
         {
-            Collection<Node> nodes = this.nextNodes.get( fscore );
-            if ( nodes == null )
-            {
-                nodes = new HashSet<Node>();
-                this.nextNodes.put( fscore, nodes );
-            }
-            nodes.add( node );
-            this.nextNodesSet.add( node );
+            nextPrioritizedNodes.put( node, fscore );
+            visit.next = true;
         }
 
         private Node popLowestScoreNode()
         {
-            Iterator<Map.Entry<Double, Collection<Node>>> itr =
-                    this.nextNodes.entrySet().iterator();
-            if ( !itr.hasNext() )
+            Entry<Node, Double> top = nextPrioritizedNodes.pop();
+            if ( top == null )
             {
                 return null;
             }
-            
-            Map.Entry<Double, Collection<Node>> entry = itr.next();
-            Node node = entry.getValue().isEmpty() ? null : entry.getValue().iterator().next();
-            if ( node == null )
-            {
-                return null;
-            }
-            
-            if ( node != null )
-            {
-                entry.getValue().remove( node );
-                this.nextNodesSet.remove( node );
-                if ( entry.getValue().isEmpty() )
-                {
-                    this.nextNodes.remove( entry.getKey() );
-                }
-                this.visitedNodes.add( node.getId() );
-            }
+
+            Node node = top.getEntity();
+            Visit visit = visitData.get( node.getId() );
+            visit.visited = true;
+            visit.next = false;
             return node;
         }
 
         @Override
         protected Node fetchNextOrNull()
         {
-            // FIXME
-            if ( !this.expand )
-            {
-                this.expand = true;
-            }
-            else
+            if ( lastNode != null )
             {
                 expand();
             }
-            
-            Node node = popLowestScoreNode();
-            this.lastNode = node;
-            return node;
+
+            return (lastNode = popLowestScoreNode());
         }
 
         @SuppressWarnings( "unchecked" )
@@ -223,34 +203,30 @@ public class AStar implements PathFinder<WeightedPath>
             for ( Relationship rel : expander.expand( this, BranchState.NO_STATE ) )
             {
                 lastMetadata.rels++;
-                Node node = rel.getOtherNode( this.lastNode );
-                if ( this.visitedNodes.contains( node.getId() ) )
+                Node node = rel.getOtherNode( lastNode );
+                Visit visit = visitData.get( node.getId() );
+                if ( visit != null && visit.visited )
                 {
                     continue;
                 }
-                
-                Data lastNodeData = this.score.get( this.lastNode.getId() );
-                double tentativeGScore = lastNodeData.wayLength +
+
+                Visit lastVisit = visitData.get( lastNode.getId() );
+                double tentativeGScore = lastVisit.wayLength +
                         lengthEvaluator.getCost( rel, Direction.OUTGOING );
-                boolean isBetter = false;
-                double estimate = estimateEvaluator.getCost( node, this.end );
-                if ( !this.nextNodesSet.contains( node ) )
+                double estimate = estimateEvaluator.getCost( node, end );
+
+                if ( visit == null || !visit.next || tentativeGScore < visit.wayLength )
                 {
-                    addNext( node, estimate + tentativeGScore );
-                    isBetter = true;
-                }
-                else if ( tentativeGScore < this.score.get( node.getId() ).wayLength )
-                {
-                    isBetter = true;
-                }
-                
-                if ( isBetter )
-                {
-                    this.cameFrom.put( node.getId(), rel.getId() );
-                    Data data = new Data();
-                    data.wayLength = tentativeGScore;
-                    data.estimate = estimate;
-                    this.score.put( node.getId(), data );
+                    if ( visit == null )
+                    {
+                        visit = new Visit( rel.getId(), tentativeGScore, estimate );
+                        visitData.put( node.getId(), visit );
+                    }
+                    else
+                    {
+                        visit.update( rel.getId(), tentativeGScore, estimate );
+                    }
+                    addNext( node, estimate + tentativeGScore, visit );
                 }
             }
         }
@@ -284,13 +260,13 @@ public class AStar implements PathFinder<WeightedPath>
         {
             throw new UnsupportedOperationException();
         }
-        
+
         @Override
         public Iterable<Node> nodes()
         {
             throw new UnsupportedOperationException();
         }
-        
+
         @Override
         public Iterable<Node> reverseNodes()
         {
@@ -309,12 +285,12 @@ public class AStar implements PathFinder<WeightedPath>
             throw new UnsupportedOperationException();
         }
     }
-    
+
     private static class Metadata implements TraversalMetadata
     {
         private int rels;
         private int paths;
-        
+
         @Override
         public int getNumberOfPathsReturned()
         {

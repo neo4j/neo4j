@@ -19,12 +19,14 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import org.junit.Test;
+
+import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-
-import org.junit.Test;
-import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
+import static org.junit.Assert.assertTrue;
 
 public class TestPriorityMap
 {
@@ -65,6 +67,24 @@ public class TestPriorityMap
         map.put( y, 8d );
         // get x
 //        map.put(
+    }
+
+    @Test
+    public void shouldReplaceIfBetter() throws Exception
+    {
+        // GIVEN
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.<Integer, Double>withSelfKeyNaturalOrder();
+        map.put( 1, 2d );
+
+        // WHEN
+        boolean putResult = map.put( 1, 1.5d );
+
+        // THEN
+        assertTrue( putResult );
+        Entry<Integer, Double> top = map.pop();
+        assertNull( map.peek() );
+        assertEquals( 1, top.getEntity().intValue() );
+        assertEquals( 1.5d, top.getPriority().doubleValue(), 0d );
     }
 
     private void assertEntry( Entry<Integer, Double> entry, Integer entity,

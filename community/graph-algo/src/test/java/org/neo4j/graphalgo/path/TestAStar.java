@@ -19,15 +19,6 @@
  */
 package org.neo4j.graphalgo.path;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.kernel.Traversal.expanderForAllTypes;
-import static org.neo4j.kernel.Traversal.pathExpanderForAllTypes;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,6 +32,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
@@ -55,6 +47,16 @@ import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.helpers.collection.MapUtil;
 
 import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
+import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.kernel.Traversal.expanderForAllTypes;
+import static org.neo4j.kernel.Traversal.pathExpanderForAllTypes;
 
 @RunWith( Parameterized.class )
 public class TestAStar extends Neo4jAlgoTestCase
@@ -234,14 +236,14 @@ public class TestAStar extends Neo4jAlgoTestCase
             assertFalse( "expected at most two paths", paths.hasNext() );
         }
     }
-    
+
     @SuppressWarnings( { "rawtypes", "unchecked" } )
     @Test
     public void canUseBranchState() throws Exception
     {
         // This test doesn't use the predefined finder, which only means an unnecessary instantiation
         // if such an object. And this test will be run twice (once for each finder type in data()).
-        
+
         Node nodeA = graph.makeNode( "A", "x", 0d, "y", 0d );
         Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
         Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );
@@ -249,7 +251,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "A", "B", "length", 2d );
         graph.makeEdge( "B", "C", "length", 3d );
         graph.makeEdge( "A", "C", "length", 10d );
-        
+
         final Map<Node, Double> seenBranchStates = new HashMap<Node, Double>();
         PathExpander<Double> expander = new PathExpander<Double>()
         {
@@ -263,7 +265,7 @@ public class TestAStar extends Neo4jAlgoTestCase
                     state.setState( newState );
                 }
                 seenBranchStates.put( path.endNode(), newState );
-                
+
                 return path.endNode().getRelationships( OUTGOING );
             }
 
@@ -273,7 +275,7 @@ public class TestAStar extends Neo4jAlgoTestCase
                 throw new UnsupportedOperationException();
             }
         };
-        
+
         double initialStateValue = 0D;
         PathFinder<WeightedPath> traversalFinder = new TraversalAStar( expander,
                 new InitialBranchState.State( initialStateValue, initialStateValue ),
@@ -282,6 +284,40 @@ public class TestAStar extends Neo4jAlgoTestCase
         assertEquals( (Double) 5.0D, (Double) path.weight() );
         assertPathDef( path, "A", "B", "C" );
         assertEquals( MapUtil.<Node,Double>genericMap( nodeA, 0D, nodeB, 2D, nodeC, 5D ), seenBranchStates );
+    }
+
+    @Test
+    public void betterTentativePath() throws Exception
+    {
+        // GIVEN
+        EstimateEvaluator<Double> estimator = new EstimateEvaluator<Double>()
+        {
+            @Override
+            public Double getCost( Node node, Node goal )
+            {
+                return ((Double)node.getProperty( "estimate" ));
+            }
+        };
+        PathFinder<WeightedPath> finder = aStar( pathExpanderForAllTypes(),
+                doubleCostEvaluator( "weight", 0d ), estimator );
+
+        final Node node1 = graph.makeNode( "1", "estimate", 0.003d );
+        final Node node2 = graph.makeNode( "2", "estimate", 0.002d );
+        final Node node3 = graph.makeNode( "3", "estimate", 0.001d );
+        final Node node4 = graph.makeNode( "4", "estimate", 0d );
+        graph.makeEdge( "1", "3", "weight", 0.253d );
+        graph.makeEdge( "1", "2", "weight", 0.018d );
+        graph.makeEdge( "2", "4", "weight", 0.210d );
+        graph.makeEdge( "2", "3", "weight", 0.180d );
+        graph.makeEdge( "2", "3", "weight", 0.024d );
+        graph.makeEdge( "3", "4", "weight", 0.135d );
+        graph.makeEdge( "3", "4", "weight", 0.013d );
+
+        // WHEN
+        WeightedPath best1_4 = finder.findSinglePath( node1, node4 );
+
+        // THEN
+        assertPath( best1_4, node1, node2, node3, node4 );
     }
 
     static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = new EstimateEvaluator<Double>()
@@ -311,9 +347,9 @@ public class TestAStar extends Neo4jAlgoTestCase
             }
         } );
     }
-    
+
     private final PathFinder<WeightedPath> finder;
-    
+
     public TestAStar( PathFinder<WeightedPath> finder )
     {
         this.finder = finder;
