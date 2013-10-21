@@ -67,6 +67,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
+import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -384,7 +385,38 @@ public class IndexingServiceTest
         ResourceIterator<File> files = indexing.snapshotStoreFiles();
 
         // THEN
+        // We get a snapshot per online index
         assertThat( asCollection( files ), equalTo( asCollection( iterator( theFile, theFile ) ) ) );
+    }
+
+    @Test
+    public void shouldNotSnapshotPopulatingIndexes() throws Exception
+    {
+        // GIVEN
+        IndexAccessor indexAccessor = mock(IndexAccessor.class);
+        IndexingService indexing = newIndexingServiceWithMockedDependencies(
+                mock( IndexPopulator.class ), indexAccessor,
+                new DataUpdates( new NodePropertyUpdate[0] ) );
+        int indexId = 1;
+        int indexId2 = 2;
+        File theFile = new File( "Blah" );
+
+        IndexRule rule1 = indexRule( indexId, 2, 3, PROVIDER_DESCRIPTOR );
+        IndexRule rule2 = indexRule( indexId2, 4, 5, PROVIDER_DESCRIPTOR );
+
+        when( indexAccessor.snapshotFiles()).thenAnswer( newResourceIterator( theFile ) );
+        when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
+        when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
+
+        indexing.initIndexes( iterator(rule1, rule2) );
+        life.start();
+
+        // WHEN
+        ResourceIterator<File> files = indexing.snapshotStoreFiles();
+
+        // THEN
+        // We get a snapshot from the online index, but no snapshot from the populating one
+        assertThat( asCollection( files ), equalTo( asCollection( iterator( theFile ) ) ) );
     }
 
     private Answer<ResourceIterator<File>> newResourceIterator( final File theFile )
@@ -490,23 +522,5 @@ public class IndexingServiceTest
         {
             return Arrays.toString( updates );
         }
-    }
-
-    private static Matcher<Iterable<NodePropertyUpdate>> containsAll( final DataUpdates updates )
-    {
-        return new TypeSafeMatcher<Iterable<NodePropertyUpdate>>()
-        {
-            @Override
-            protected boolean matchesSafely( Iterable<NodePropertyUpdate> item )
-            {
-                return asSet( updates ).equals( asSet( item ) );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendValue( updates );
-            }
-        };
     }
 }

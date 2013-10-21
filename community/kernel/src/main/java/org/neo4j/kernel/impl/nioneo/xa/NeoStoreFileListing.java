@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -57,31 +58,24 @@ public class NeoStoreFileListing
         Collection<File> files = new ArrayList<>();
         gatherNeoStoreFiles( includeLogicalLogs, files );
         Closeable labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
-        Closeable schemaIndexSnapshots = getherSchemaIndexFiles( files );
+        Closeable schemaIndexSnapshots = gatherSchemaIndexFiles(files);
 
         return new StoreSnapshot( files.iterator(), labelScanStoreSnapshot, schemaIndexSnapshots );
     }
 
-    private Closeable getherSchemaIndexFiles( Collection<File> targetFiles ) throws IOException
+    private Closeable gatherSchemaIndexFiles(Collection<File> targetFiles) throws IOException
     {
         ResourceIterator<File> snapshot = indexingService.snapshotStoreFiles();
-        while ( snapshot.hasNext() )
-        {
-            targetFiles.add( snapshot.next() );
-        }
+        IteratorUtil.addToCollection(snapshot, targetFiles);
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
     }
 
-    private Closeable gatherLabelScanStoreFiles( Collection<File> targetFiles )
-            throws IOException
+    private Closeable gatherLabelScanStoreFiles( Collection<File> targetFiles ) throws IOException
     {
         ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
-        while ( snapshot.hasNext() )
-        {
-            targetFiles.add( snapshot.next() );
-        }
+        IteratorUtil.addToCollection(snapshot, targetFiles);
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
