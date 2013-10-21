@@ -185,7 +185,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
 
         for ( int port = ports[0]; port <= ports[1]; port++ )
         {
-            if ( config.getServerAddress().getHost() == null )
+            if ( config.getServerAddress().getHost() == null || config.getServerAddress().getHost().equals( "0.0.0.0" ))
             {
                 socketAddress = new InetSocketAddress( port );
             }

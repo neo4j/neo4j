@@ -152,6 +152,12 @@ public class NetworkSenderReceiverTest
             sender = new NetworkSender( new NetworkSender.Configuration()
             {
                 @Override
+                public int port()
+                {
+                    return 5001;
+                }
+
+                @Override
                 public int defaultPort()
                 {
                     return 5001;
