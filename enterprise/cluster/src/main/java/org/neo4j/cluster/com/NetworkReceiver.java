@@ -174,6 +174,8 @@ public class NetworkReceiver
 
                 Channel listenChannel = serverBootstrap.bind( localAddress );
 
+                listeningAt( getURI( localAddress ) );
+
                 channels.add( listenChannel );
                 return;
             }
@@ -294,7 +296,7 @@ public class NetworkReceiver
     {
         private MessageReceiver()
         {
-            System.out.println("CREATE RECEIVER");
+//            System.out.println("CREATE RECEIVER");
         }
 
         @Override
