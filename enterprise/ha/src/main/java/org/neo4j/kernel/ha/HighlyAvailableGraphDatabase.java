@@ -201,7 +201,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // can server (possibly quite outdated) read requests.
         if (!accessGuard.await( stateSwitchTimeoutMillis ))
         {
-            throw new TransactionFailureException( "Timeout waiting for cluster to elect master" );
+            throw new TransactionFailureException( "Timeout waiting to join cluster, or for cluster to elect master" );
         }
 
         return super.beginTx( forceMode );
