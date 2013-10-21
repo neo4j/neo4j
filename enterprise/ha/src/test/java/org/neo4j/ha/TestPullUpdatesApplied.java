@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
@@ -127,13 +128,12 @@ public class TestPullUpdatesApplied
 
         dbToKill.shutdown();
 
-        latch1.await();
+        if (!latch1.await(60, TimeUnit.SECONDS))
+            throw new IllegalStateException( "Timeout waiting for instance to leave cluster" );
 
         addNode( master ); // this will be pulled by tne next start up, applied
                            // but not written to log.
         File targetDirectory = dir.directory( "" + toKill, false );
-
-        dbToKill.shutdown();
 
         // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
         // through the heartbeat and not through the cluster change as above.
@@ -150,8 +150,12 @@ public class TestPullUpdatesApplied
             }
         });
 
+        dbToKill.shutdown();
+
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
-        latch2.await();
+
+        if (!latch2.await(60, TimeUnit.SECONDS))
+            throw new IllegalStateException( "Timeout waiting for instance to fail" );
 
         start( toKill, false ); // recovery and branching.
         boolean hasBranchedData = new File( targetDirectory, "branched" ).listFiles().length > 0;
