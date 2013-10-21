@@ -65,7 +65,7 @@ public class HaSettings
             setting( "ha.max_concurrent_channels_per_slave", INTEGER, "20", min( 1 ) );
 
     @Description( "Hostname and port to bind the HA server." )
-    public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, ":6001-6011" );
+    public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, "0.0.0.0:6001-6011" );
 
     @Description("Whether this instance should only participate as slave in cluster. If set to true, it will never be elected as master.")
     public static final Setting<Boolean> slave_only = setting( "ha.slave_only", BOOLEAN, Settings.FALSE );
