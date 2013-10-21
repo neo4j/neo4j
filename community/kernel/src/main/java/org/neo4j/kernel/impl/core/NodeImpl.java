@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
@@ -50,7 +49,6 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.binarySearch;
-
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
@@ -727,31 +725,9 @@ public class NodeImpl extends ArrayBasedPrimitive
         return binarySearch( labels, labelId ) >= 0;
     }
 
-    public synchronized void commitLabels( Set<Integer> added, Set<Integer> removed )
+    public synchronized void commitLabels( int[] labels )
     {
-        if ( labels != null )
-        {
-            int estimatedDelta = added.size() - removed.size();
-            int[] newLabels = new int[labels.length+estimatedDelta];
-            int cursor = 0;
-
-            // Remove the removed
-            for ( int label : labels )
-            {
-                if ( !removed.contains( label ) )
-                {
-                    newLabels[cursor++] = label;
-                }
-            }
-
-            // Add the added
-            for ( int label : added )
-            {
-                newLabels[cursor++] = label;
-            }
-            Arrays.sort( newLabels );
-            labels = newLabels;
-        }
+        this.labels = labels;
     }
 
     @Override

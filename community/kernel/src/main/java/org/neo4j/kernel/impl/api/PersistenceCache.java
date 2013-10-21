@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Thunk;
@@ -28,8 +29,7 @@ import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.state.NodeState;
-import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -114,19 +114,23 @@ public class PersistenceCache
         return relationship;
     }
 
-    public void apply( TxState state )
+    public void apply( Collection<NodeLabelUpdate> updates )
     {
-        for ( NodeState stateEntity : state.nodeStates() )
+        for ( NodeLabelUpdate update : updates )
         {
-            NodeImpl node = nodeCache.getIfCached( stateEntity.getId() );
-            if ( node == null )
+            NodeImpl node = nodeCache.getIfCached( update.getNodeId() );
+            if(node != null)
             {
-                continue;
+                // TODO: This is because the labels are still longs in WriteTransaction, this should go away once
+                // we make labels be ints everywhere.
+                long[] labelsAfter = update.getLabelsAfter();
+                int[] labels = new int[labelsAfter.length];
+                for(int i=0;i<labels.length;i++)
+                {
+                    labels[i] = (int)labelsAfter[i];
+                }
+                node.commitLabels( labels );
             }
-
-            node.commitLabels(
-                    stateEntity.labelDiffSets().getAdded(),
-                    stateEntity.labelDiffSets().getRemoved() );
         }
     }
 

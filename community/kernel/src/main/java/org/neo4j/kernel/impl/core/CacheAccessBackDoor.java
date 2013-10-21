@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Collection;
+
+import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public interface CacheAccessBackDoor
@@ -40,6 +43,8 @@ public interface CacheAccessBackDoor
     void addLabelToken( Token labelId );
 
     void addPropertyKeyToken( Token index );
+
+    void applyLabelUpdates( Collection<NodeLabelUpdate> labelUpdates );
 
     /**
      * Patches the relationship chain loading parts of the start and end nodes of deleted relationships. This is

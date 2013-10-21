@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Collection;
+
+import org.neo4j.kernel.api.scan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PersistenceCache;
 import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.SchemaState;
@@ -105,5 +108,11 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     {
         nodeManager.patchDeletedRelationshipNodes( relId, firstNodeId, firstNodeNextRelId, secondNodeId,
                 secondNodeNextRelId );
+    }
+
+    @Override
+    public void applyLabelUpdates( Collection<NodeLabelUpdate> labelUpdates )
+    {
+        persistenceCache.apply( labelUpdates );
     }
 }
