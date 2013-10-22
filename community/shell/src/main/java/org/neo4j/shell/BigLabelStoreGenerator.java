@@ -54,7 +54,7 @@ public class BigLabelStoreGenerator
     {
         long batchSize = parseLong( withDefault( System.getenv().get( "BATCH_SIZE" ), "100000" ) );
         long numNodes = parseLong( withDefault( System.getenv( "NUM_NODES" ), "1000000" ) );
-        int numLabels = parseInt( withDefault( System.getenv( "NUM_LABELS" ), "10" ) );
+        int numLabels = parseInt( withDefault( System.getenv( "NUM_LABELS" ), "5" ) );
         String graphDbPath = System.getenv( "GRAPH_DB" );
 
         System.out.println( format( "# BATCH_SIZE: %d, NUM_NODES: %d, NUM_LABELS: %d, GRAPH_DB: '%s'",
@@ -63,6 +63,9 @@ public class BigLabelStoreGenerator
         GraphDatabaseService graph = createGraphDatabaseService( graphDbPath );
 
         Label[] labels = createLabels( numLabels );
+        int[] statistics = new int[numLabels];
+        assert( numLabels == labels.length );
+
         long labelings = 0;
 
         long start = System.currentTimeMillis();
@@ -75,13 +78,18 @@ public class BigLabelStoreGenerator
                     for ( long m = 0; m < batchSize; m++ )
                     {
                         Label[] selectedLabels = pickRandomLabels( labels );
+                        for (int i = 0; i < selectedLabels.length; i++)
+                        {
+                            statistics[i]++;
+                        }
                         labelings += selectedLabels.length;
                         graph.createNode( selectedLabels );
                     }
                     tx.success();
                 }
                 long batchDuration = System.currentTimeMillis() - batchStart;
-                System.out.println( format( "nodes: %d, ratio: %d, labelings: %d, duration: %d", l, l*100/numNodes, labelings, batchDuration ) );
+                System.out.println( format( "nodes: %d, ratio: %d, labelings: %d, duration: %d, label statistics: %s",
+                        l, l*100/numNodes, labelings, batchDuration, Arrays.toString( statistics ) ) );
             }
         }
         finally
@@ -116,7 +124,7 @@ public class BigLabelStoreGenerator
 
     private static Label[] pickRandomLabels( Label[] labels )
     {
-        return Arrays.copyOf( labels, 1 + random.nextInt( labels.length - 1 ) );
+        return Arrays.copyOf( labels, 1 + random.nextInt( labels.length ) );
     }
 
     private static Label[] createLabels( int numLabels )
