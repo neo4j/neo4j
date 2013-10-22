@@ -87,7 +87,7 @@ public class NetworkSenderReceiverTest
 
         // when
 
-        server1.process( Message.to( TestMessage.helloWorld, URI.create( "neo4j://127.0.0.1:1235" ), "Hello World" ) );
+        server1.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ), "Hello World" ) );
 
         // then
 
@@ -154,7 +154,7 @@ public class NetworkSenderReceiverTest
                 @Override
                 public int port()
                 {
-                    return 5001;
+                    return 1235;
                 }
 
                 @Override
@@ -204,15 +204,17 @@ public class NetworkSenderReceiverTest
 
             sem.acquire(); // wait for start from listeningAt() in the NetworkChannelsListener
 
-            sender.process( Message.to( TestMessage.helloWorld, URI.create( "neo4j://127.0.0.1:1235" ), "Hello World" ) );
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ), "Hello World" ) );
 
             sem.acquire(); // wait for process from the MessageProcessor
+
+            sem.acquire(); // wait for detecting our correct binding address
 
             receiver.stop();
 
             sem.acquire(); // wait for overridden stop method in receiver
 
-            sender.process( Message.to( TestMessage.helloWorld, URI.create( "neo4j://127.0.0.1:1235" ), "Hello World2" ) );
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ), "Hello World2" ) );
 
             sem.acquire(); // wait for the warn from the sender
 
@@ -222,7 +224,7 @@ public class NetworkSenderReceiverTest
 
             received.set( false );
 
-            sender.process( Message.to( TestMessage.helloWorld, URI.create( "neo4j://127.0.0.1:1235" ), "Hello World3" ) );
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ), "Hello World3" ) );
 
             sem.acquire(); // wait for receiver.process();
 
