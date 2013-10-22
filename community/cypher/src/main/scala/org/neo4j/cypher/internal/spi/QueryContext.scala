@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -58,7 +59,7 @@ trait QueryContext extends TokenContext {
 
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int)
+  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor]
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int)
 
@@ -76,7 +77,7 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int)
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint]
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int)
 

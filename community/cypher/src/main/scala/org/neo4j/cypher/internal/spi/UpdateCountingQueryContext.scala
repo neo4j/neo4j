@@ -77,9 +77,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyId: Int) {
-    inner.addIndexRule(labelId, propertyKeyId)
-    indexesAdded.increase()
+  override def addIndexRule(labelId: Int, propertyKeyId: Int) = {
+    val result = inner.addIndexRule(labelId, propertyKeyId)
+    result.ifCreated { indexesAdded.increase() }
+    result
   }
 
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) {
@@ -87,9 +88,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     indexesRemoved.increase()
   }
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) {
-    inner.createUniqueConstraint(labelId, propertyKeyId)
-    constraintsAdded.increase()
+  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) = {
+    val result = inner.createUniqueConstraint(labelId, propertyKeyId)
+    result.ifCreated { constraintsAdded.increase() }
+    result
   }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {
@@ -108,7 +110,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   }
 
   private class CountingOps[T <: PropertyContainer](inner: Operations[T],
-                                                    deletes: Counter) extends DelegatingOperations[T](inner) {
+                                                    deletes: Counter)
+    extends DelegatingOperations[T](inner) {
+
     override def delete(obj: T) {
       deletes.increase()
       inner.delete(obj)

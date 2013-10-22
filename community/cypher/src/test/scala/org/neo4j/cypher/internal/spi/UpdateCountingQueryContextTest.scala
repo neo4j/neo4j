@@ -28,6 +28,8 @@ import org.mockito.Mockito.when
 import org.mockito.Matchers
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.kernel.impl.api.index.IndexDescriptor
 
 class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   @Test def create_node() {
@@ -139,6 +141,10 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
         invocation.getArguments()(1).asInstanceOf[Iterator[String]].size
       }
     } )
+    when( inner.createUniqueConstraint(Matchers.anyInt(), Matchers.anyInt()) )
+      .thenReturn(IdempotentResult(mock[UniquenessConstraint]))
+    when( inner.addIndexRule(Matchers.anyInt(), Matchers.anyInt()) )
+      .thenReturn(IdempotentResult(mock[IndexDescriptor]))
     context = new UpdateCountingQueryContext(inner)
   }
 }

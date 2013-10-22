@@ -64,7 +64,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getOrCreatePropertyKeyId(propertyKey: String) = inner.getOrCreatePropertyKeyId(propertyKey)
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int) { inner.addIndexRule(labelId, propertyKeyId) }
+  def addIndexRule(labelId: Int, propertyKeyId: Int) = inner.addIndexRule(labelId, propertyKeyId)
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) { inner.dropIndexRule(labelId, propertyKeyId) }
 
@@ -76,9 +76,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = inner.getOrCreateFromSchemaState(key, creator)
 
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) {
-    inner.createUniqueConstraint(labelId, propertyKeyId)
-  }
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) = inner.createUniqueConstraint(labelId, propertyKeyId)
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {
     inner.dropUniqueConstraint(labelId, propertyKeyId)
