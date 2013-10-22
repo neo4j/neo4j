@@ -38,6 +38,6 @@ class CollectionTest extends Assertions {
 
   @Test
   def collection_with_several_items_should_be_typed_for_their_common_supertype(){
-    assert(Collection(Literal(1), Literal(true)).getType(SymbolTable()) === CollectionType(ScalarType()))
+    assert(Collection(Literal(1), Literal(true)).getType(SymbolTable()) === CollectionType(AnyType()))
   }
 }

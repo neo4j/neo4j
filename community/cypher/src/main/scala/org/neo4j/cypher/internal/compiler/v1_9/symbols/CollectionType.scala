@@ -25,7 +25,7 @@ object CollectionType {
   def apply(iteratedType: CypherType) = if (iteratedType == AnyType()) anyCollectionTypeInstance else new CollectionType(iteratedType)
 }
 
-class CollectionType(override val iteratedType: CypherType) extends AnyType {
+class CollectionType(override val iteratedType: CypherType) extends BooleanType {
 
   override def toString: String = s"Collection<$iteratedType>"
 

@@ -113,7 +113,7 @@ return `This isn't a common identifier`.happy""",
 
         assertEquals("I'm a literal", row("\"I'm a literal\""))
         assertEquals(true, row("a.age > 30"))
-        assertEquals(true, row("a-->()"))
+        assert(row("a-->()").asInstanceOf[Seq[_]].size === 2)
       })
   }
 

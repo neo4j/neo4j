@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_0.functions
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 
-case object Not extends Function with LegacyPredicate {
+case object Not extends PredicateFunction {
   def name = "NOT"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
@@ -31,6 +32,5 @@ case object Not extends Function with LegacyPredicate {
     invocation.arguments.constrainType(BooleanType()) then
     invocation.specifyType(BooleanType())
 
-  def toCommand(invocation: ast.FunctionInvocation) =
-    constructCommandPredicate(invocation.arguments) { a => commands.Not(a(0)) }
+  protected def internalToPredicate(invocation: FunctionInvocation) = commands.Not(invocation.arguments(0).toPredicate)
 }

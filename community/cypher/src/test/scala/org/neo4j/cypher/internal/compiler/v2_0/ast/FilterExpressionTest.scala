@@ -28,20 +28,28 @@ import org.scalatest.Assertions
 class FilterExpressionTest extends Assertions {
 
   val dummyExpression = DummyExpression(
-    TypeSet(CollectionType(NodeType()), BooleanType(), CollectionType(StringType())),
-    DummyToken(2,3))
+    possibleTypes = TypeSet(CollectionType(NodeType()), BooleanType(), CollectionType(StringType())),
+    token = DummyToken(2, 3))
 
   @Test
   def shouldHaveCollectionTypesOfInnerExpression() {
-    val filter = FilterExpression(Identifier("x", DummyToken(5,6)), dummyExpression, Some(True(DummyToken(5,6))), DummyToken(0, 10))
+    val filter = FilterExpression(
+      identifier = Identifier("x", DummyToken(5, 6)),
+      expression = dummyExpression,
+      innerPredicate = Some(True(DummyToken(5, 6))),
+      token = DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CollectionType(NodeType()), CollectionType(StringType())), filter.types(result.state))
+    assertEquals(Set(CollectionType(NodeType()), CollectionType(StringType()), BooleanType()), filter.types(result.state))
   }
 
   @Test
   def shouldRaiseSyntaxErrorIfMissingPredicate() {
-    val filter = FilterExpression(Identifier("x", DummyToken(5, 6)), dummyExpression, None, DummyToken(0, 10))
+    val filter = FilterExpression(
+      identifier = Identifier("x", DummyToken(5, 6)),
+      expression = dummyExpression,
+      innerPredicate = None,
+      token = DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(SemanticError("filter(...) requires a WHERE predicate", DummyToken(0, 10))), result.errors)
   }

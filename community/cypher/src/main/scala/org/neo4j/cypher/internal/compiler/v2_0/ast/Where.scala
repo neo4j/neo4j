@@ -29,10 +29,5 @@ case class Where(expression: Expression, token: InputToken) extends AstNode with
     expression.semanticCheck(Expression.SemanticContext.Simple) then
       expression.constrainType(AnyType()) // TODO: should constrain to boolean, when coercion is possible
 
-  def toLegacyPredicate = {
-    expression.toCommand match {
-      case p: commands.Predicate => p
-      case _                     => throw new SyntaxException(s"WHERE clause expression must return a boolean (${expression.token.startPosition})")
-    }
-  }
+  def toLegacyPredicate = expression.toPredicate
 }

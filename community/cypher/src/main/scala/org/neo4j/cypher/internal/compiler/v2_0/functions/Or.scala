@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 
-case object Or extends Function with LegacyPredicate {
+case object Or extends PredicateFunction {
   def name = "OR"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
     invocation.specifyType(invocation.arguments.mergeDownTypes)
 
-  def toCommand(invocation: ast.FunctionInvocation) =
-    constructCommandPredicate(invocation.arguments) { a => commands.Or(a(0), a(1)) }
+  protected def internalToPredicate(invocation: FunctionInvocation) =
+    commands.Or(invocation.arguments(0).toPredicate, invocation.arguments(1).toPredicate)
 }

@@ -1755,9 +1755,9 @@ RETURN x0.name""")
     relate(a, b)
 
     val resultPath = execute("START a=node(1), b=node(2) RETURN a-[*]->b as path")
-      .toList.head("path")
+      .toList.head("path").asInstanceOf[Seq[_]]
 
-    assert(resultPath === true)
+    assert(resultPath.size === 1)
   }
 
   @Test
@@ -2145,9 +2145,9 @@ RETURN x0.name""")
     // WHEN
     val result = execute("START n=node(1) RETURN n-->(:A)")
 
-    val x = result.toList.head("n-->(:A)")
+    val x = result.toList.head("n-->(:A)").asInstanceOf[Seq[_]]
 
-    assert(x === true)
+    assert(x.size === 1)
   }
 
   @Test def should_create_index() {
@@ -2586,5 +2586,14 @@ RETURN x0.name""")
 
     // then
     assert(!result.columnAs[Node]("o").exists(_ == null), "Result should not contain nulls")
+  }
+
+  @Test
+    def should_be_able_to_coerce_collections_to_predicates() {
+    val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
+
+    val foundNode = execute("match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
+
+    assert(foundNode === n)
   }
 }

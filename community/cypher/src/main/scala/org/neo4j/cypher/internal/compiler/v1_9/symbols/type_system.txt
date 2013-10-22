@@ -5,14 +5,17 @@ used first as a pattern path and then a pattern node. MATCH n = n-->()
 To do this, it has a class tree hierarchy of types, with Any as the root of
 it all.
 
+                                     Collection<T>
+                                         /
+                                        /
     String  Double  Long  Node  Rel  Bool
        \         \   /      \   /     /
         \       Number       Map     /
          \            \      /      /
-          \------------Scalar------/   Iterable<T>
-                            \           /
-                             \         /
-                              ---Any---
+          \------------Any---------/
+
+
+
 
 All expressions have a type. Some expressions type depend on other expressions types -
 e.g. LAST(x) will have type T, given that x has type Iterable<T>.
@@ -22,7 +25,7 @@ expects that X is an Iterable<T>. These expectations are met by any subtype of t
 expected type - e.g. if the expectation is a Number, Double and Long are fine, but
 not a Scalar expression.
 
-Lastly, an expression has dependencies on what identifiers exists in the symbol table,
+An expression has dependencies on what identifiers exists in the symbol table,
 and their types. An example is always in place:
 
 +`LENGTH(FILTER(n in nodes(p) WHERE n.prop = 'foo'))`+
@@ -31,3 +34,6 @@ In this expression, LENGTH has an expectation on FILTER, and FILTER has one on N
 and so one. But the dependency on identifiers on the symbol table is just one - it has
 to have an identifier named 'p', and it's type is expected to be an
 Iterable<Map> (PathType is a shortcut to this in the code).
+
+A note about why Collection<T> extends Bool - collections are always treated as predicates when a predicate is expected.
+The semantics is that empty collections equal false, and non-empty ones equal true.

@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
-import org.neo4j.cypher.SyntaxException
+import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
+import commands.{expressions => commandexpressions, Predicate => CommandPredicate, NonEmpty}
+import commands.expressions.{Expression => CommandExpression}
+import symbols._
 
 trait FilteringExpression extends Expression {
   def name: String
@@ -59,15 +57,18 @@ trait FilteringExpression extends Expression {
   }
 
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) : CommandExpression
+  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : CommandPredicate
 
-  def toCommand = {
+  override def toCommand = {
     val command = expression.toCommand
-    val inner = innerPredicate.map(_.toCommand) match {
-      case Some(e: commands.Predicate) => e
-      case None                        => commands.True()
-      case _                           => throw new SyntaxException(s"Argument to ${name} is not a predicate (${expression.token.startPosition})")
-    }
+    val inner: CommandPredicate = innerPredicate.map(_.toPredicate).getOrElse(commands.True())
     toCommand(command, identifier.name, inner)
+  }
+
+  override def toPredicate = {
+    val command = expression.toCommand
+    val inner = innerPredicate.map(_.toPredicate).getOrElse(commands.True())
+    toPredicate(command, identifier.name, inner)
   }
 }
 
@@ -81,6 +82,8 @@ case class FilterExpression(identifier: Identifier, expression: Expression, inne
       this.specifyType(expression.types)
 
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = commandexpressions.FilterFunction(command, name, inner)
+
+  def toPredicate(command: CommandExpression, name: String, inner: CommandPredicate) = NonEmpty(toCommand(command, name, inner))
 }
 
 
@@ -101,7 +104,7 @@ case class ExtractExpression(
 
   private def checkExtractExpressionDefined =
     when (extractExpression.isEmpty) {
-      SemanticError(s"${name}(...) requires '| expression' (an extract expression)", token)
+      SemanticError(s"$name(...) requires '| expression' (an extract expression)", token)
     }
 
   private def checkInnerExpression : SemanticCheck =
@@ -115,7 +118,11 @@ case class ExtractExpression(
       }
     }
 
-  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = commandexpressions.ExtractFunction(command, name, extractExpression.get.toCommand)
+  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) =
+    commandexpressions.ExtractFunction(command, name, extractExpression.get.toCommand)
+
+  def toPredicate(command: CommandExpression, name: String, inner: CommandPredicate) =
+    NonEmpty(toCommand(command, name, inner))
 }
 
 
@@ -154,6 +161,9 @@ case class ListComprehension(
     }
     extract
   }
+
+  def toPredicate(command: CommandExpression, name: String, inner: CommandPredicate) =
+     NonEmpty(toCommand(command, name, inner))
 }
 
 

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v1_9.pipes
 import org.neo4j.cypher.internal.compiler.v1_9._
 import commands.SortItem
 import commands.expressions.{Add, Literal, RandFunction, Identifier}
-import symbols.{NumberType, StringType, ScalarType}
+import symbols.{NumberType, StringType, AnyType}
 import org.neo4j.cypher.PatternException
 import org.junit.Test
 import org.junit.Assert._
@@ -32,7 +32,7 @@ import scala.util.Random
 
 class SortPipeTest extends JUnitSuite {
   @Test def emptyInIsEmptyOut() {
-    val source = new FakePipe(List(), "x" -> ScalarType())
+    val source = new FakePipe(List(), "x" -> AnyType())
     val sortPipe = new SortPipe(source, List(SortItem(Identifier("x"), true)))
 
     assertEquals(List(), sortPipe.createResults(QueryStateHelper.empty).toList)

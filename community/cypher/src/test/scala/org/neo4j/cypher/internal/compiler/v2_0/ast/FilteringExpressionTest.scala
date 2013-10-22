@@ -34,6 +34,8 @@ class FilteringExpressionTest extends Assertions {
     def token = DummyToken(0,10)
 
     def toCommand(command: expressions.Expression, name: String, inner: Predicate) = ???
+
+    def toPredicate(command: expressions.Expression, name: String, inner: Predicate) = ???
   }
 
   @Test
@@ -49,7 +51,7 @@ class FilteringExpressionTest extends Assertions {
     val predicate = new Expression {
       def token = DummyToken(7,9)
       def semanticCheck(ctx: SemanticContext) = s => {
-        assertEquals(Set(NodeType(), StringType()), s.symbolTypes("x"))
+        assertEquals(Set(NodeType(), BooleanType(), StringType()), s.symbolTypes("x"))
         SemanticCheckResult.error(s, error)
       }
 

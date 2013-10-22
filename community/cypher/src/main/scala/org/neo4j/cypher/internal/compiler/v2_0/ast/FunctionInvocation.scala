@@ -35,7 +35,7 @@ object FunctionInvocation {
   def apply(identifier: Identifier, expression: Expression) : FunctionInvocation =
     FunctionInvocation(identifier, false, IndexedSeq(expression), identifier.token)
 }
-case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression], token: InputToken)  extends Expression {
+case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression], token: InputToken) extends Expression {
   val name = identifier.name
   private val function = Function.lookup.get(name.toLowerCase)
 
@@ -48,4 +48,10 @@ case class FunctionInvocation(identifier: Identifier, distinct: Boolean, argumen
     case None    => throw new ThisShouldNotHappenError("cleishm", "Unknown function should have failed semantic check")
     case Some(f) => f.toCommand(this)
   }
+
+  override def toPredicate = function match {
+    case None    => throw new ThisShouldNotHappenError("cleishm", "Unknown function should have failed semantic check")
+    case Some(f) => f.toPredicate(this)
+  }
+
 }

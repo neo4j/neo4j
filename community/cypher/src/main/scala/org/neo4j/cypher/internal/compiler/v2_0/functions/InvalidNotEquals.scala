@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_0.functions
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
+import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 
-case object InvalidNotEquals extends Function with LegacyPredicate {
+case object InvalidNotEquals extends PredicateFunction {
   def name = "!="
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
@@ -31,7 +32,7 @@ case object InvalidNotEquals extends Function with LegacyPredicate {
     invocation.specifyType(BooleanType()) then
     SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", invocation.token)
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  protected def internalToPredicate(invocation: FunctionInvocation) = {
     val left = invocation.arguments(0)
     val right = invocation.arguments(1)
     commands.Not(commands.Equals(left.toCommand, right.toCommand))
