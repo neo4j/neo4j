@@ -231,13 +231,14 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int) = try {
-    statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId)
+  def addIndexRule(labelId: Int, propertyKeyId: Int): (IndexDescriptor, Boolean) = try {
+    (statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId), true)
   } catch {
     case _: AlreadyIndexedException =>
       val indexDescriptor = statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
       if(statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
         throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
+      (indexDescriptor, false)
   }
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) =

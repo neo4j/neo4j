@@ -77,10 +77,14 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyId: Int) {
-    inner.addIndexRule(labelId, propertyKeyId)
-    indexesAdded.increase()
-  }
+  override def addIndexRule(labelId: Int, propertyKeyId: Int) =
+    inner.addIndexRule(labelId, propertyKeyId) match {
+      case result @ (_, added) =>
+        if (added) {
+          indexesAdded.increase()
+        }
+        result
+    }
 
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) {
     inner.dropIndexRule(labelId, propertyKeyId)

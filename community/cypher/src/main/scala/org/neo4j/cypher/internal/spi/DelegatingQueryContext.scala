@@ -64,7 +64,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getOrCreatePropertyKeyId(propertyKey: String) = inner.getOrCreatePropertyKeyId(propertyKey)
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int) { inner.addIndexRule(labelId, propertyKeyId) }
+  def addIndexRule(labelId: Int, propertyKeyId: Int) = inner.addIndexRule(labelId, propertyKeyId)
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) { inner.dropIndexRule(labelId, propertyKeyId) }
 

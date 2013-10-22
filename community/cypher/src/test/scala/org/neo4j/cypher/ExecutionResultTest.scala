@@ -96,4 +96,22 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
     assert(stats.labelsAdded === 0)
     assert(stats.labelsRemoved === 1)
   }
+
+  @Test def correctIndexStatisticsForIndexAdded() {
+    val result = execute("create index on :Person(name)")
+    val stats  = result.queryStatistics()
+
+    assert(stats.indexesAdded === 1)
+    assert(stats.indexesRemoved === 0)
+  }
+
+  @Test def correctIndexStatisticsForIndexAddedTwice() {
+    execute("create index on :Person(name)")
+
+    val result = execute("create index on :Person(name)")
+    val stats  = result.queryStatistics()
+
+    assert(stats.indexesAdded === 0)
+    assert(stats.indexesRemoved === 0)
+  }
 }

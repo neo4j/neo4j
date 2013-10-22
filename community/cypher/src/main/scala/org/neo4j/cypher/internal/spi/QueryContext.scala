@@ -58,7 +58,7 @@ trait QueryContext extends TokenContext {
 
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int)
+  def addIndexRule(labelId: Int, propertyKeyId: Int): (IndexDescriptor, Boolean)
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int)
 
