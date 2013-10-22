@@ -815,6 +815,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             indexes.updateIndexes( propertyUpdates );
             updateLabelScanStore( labelUpdates );
 
+            cacheAccess.applyLabelUpdates( labelUpdates );
+
             // schema rules. Execute these after generating the property updates so. If executed
             // before and we've got a transaction that sets properties/labels as well as creating an index
             // we might end up with this corner-case:

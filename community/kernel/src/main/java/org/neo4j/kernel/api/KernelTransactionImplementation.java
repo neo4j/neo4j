@@ -128,26 +128,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         try
         {
-            try
-            {
-                // TODO: This should be done by log application, not by this level of the stack.
-                if ( hasTxStateWithChanges() )
-                {
-                    persistenceCache.apply( this.txState() );
-                }
-            }
-            finally
-            {
-                try
-                {
-                    lockHolder.releaseLocks();
-                }
-                catch ( ReleaseLocksFailedKernelException e )
-                {
-                    throw new TransactionFailureException( new RuntimeException(e.getMessage(), e) );
-                }
-            }
+            lockHolder.releaseLocks();
             close();
+        }
+        catch ( ReleaseLocksFailedKernelException e )
+        {
+            throw new TransactionFailureException( new RuntimeException(e.getMessage(), e) );
         }
         finally
         {

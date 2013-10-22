@@ -21,18 +21,16 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.kernel.api.scan.NodeLabelUpdate.labelChanges;
 
 public class PersistenceCacheTest
 {
@@ -66,6 +64,20 @@ public class PersistenceCacheTest
 
         // THEN
         verify( nodeCache, times( 1 ) ).remove( nodeId );
+    }
+
+    @Test
+    public void shouldApplyUpdates() throws Exception
+    {
+        // GIVEN
+        NodeImpl node = mock(NodeImpl.class);
+        when( nodeCache.getIfCached( nodeId ) ).thenReturn( node );
+
+        // WHEN
+        persistenceCache.apply(asList( labelChanges( nodeId, new long[]{2l}, new long[]{1l} )));
+
+        // THEN
+        verify(node).commitLabels( new int[]{1} );
     }
 
     private PersistenceCache persistenceCache;
