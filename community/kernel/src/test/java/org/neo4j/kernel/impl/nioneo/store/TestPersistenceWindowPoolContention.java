@@ -40,6 +40,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -69,7 +70,9 @@ public class TestPersistenceWindowPoolContention
         assertTrue( "delete " + file, file.delete() );
         channel = new RandomAccessFile( file, "rw" ).getChannel();
         write( channel, fileSize );
-        pool = new PersistenceWindowPool( new File("contention test"), recordSize, channel, mappingSize, true, false, new ConcurrentHashMap<Long, PersistenceRow>(), StringLogger.DEV_NULL );
+        pool = new PersistenceWindowPool( new File("contention test"), recordSize, channel, mappingSize,
+                true, false, new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT,
+                StringLogger.DEV_NULL );
     }
 
     private void write( FileChannel channel, long bytes ) throws IOException
@@ -126,10 +129,14 @@ public class TestPersistenceWindowPoolContention
         }
         
         for ( Worker worker : workers )
+        {
             worker.halted = true;
+        }
         long total = 0;
         for ( Worker putter : workers )
+        {
             total += putter.waitForEnd();
+        }
         
         System.out.println( "total:" + total );
     }
@@ -207,7 +214,9 @@ public class TestPersistenceWindowPoolContention
             // Just having this Map lookup affects the test too much.
             Long existingValue = values.get( id );
             if ( existingValue != null )
+            {
                 Assert.assertEquals( existingValue.longValue(), read );
+            }
         }
         
         private void writeStuff( PersistenceWindow window, long id )
