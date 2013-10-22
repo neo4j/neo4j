@@ -206,6 +206,7 @@ public class NetworkSenderReceiverTest
 
             sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ), "Hello World" ) );
 
+            sem.acquire(); // wait for the listeningAt trigger on receive (same as the previous but with real URI this time)
             sem.acquire(); // wait for process from the MessageProcessor
 
             sem.acquire(); // wait for detecting our correct binding address
