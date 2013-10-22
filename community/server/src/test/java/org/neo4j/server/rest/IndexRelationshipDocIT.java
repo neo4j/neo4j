@@ -19,26 +19,10 @@
  */
 package org.neo4j.server.rest;
 
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -49,12 +33,18 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response.Status;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-
+import static org.junit.Assert.*;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
@@ -507,8 +497,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Add a relationship to an index
-     * unless a node already exists for the given mapping then return fail (case fail).
+     * Add an existing relationship to a unique index (already indexed).
      */
     @Documented
     @Test
