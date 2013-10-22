@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v1_9._
 import commands.values.KeyToken
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.helpers._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_0.helpers.IsMap
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable

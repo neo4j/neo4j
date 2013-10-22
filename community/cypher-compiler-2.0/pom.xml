@@ -20,7 +20,7 @@
   <artifactId>neo4j-cypher-compiler-2.0</artifactId>
   <packaging>jar</packaging>
   <version>2.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher Compile 2.0</name>
+  <name>Neo4j - Cypher Compiler 2.0</name>
   <description>Compiler for Cypher 2.0</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 

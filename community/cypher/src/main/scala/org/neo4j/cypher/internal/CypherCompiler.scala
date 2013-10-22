@@ -25,9 +25,10 @@ import CypherVersion._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.cypher.internal.spi.QueryContext
 
 trait CypherCompiler {
-  def prepare(query: String, context: TransactionBoundPlanContext): ExecutionPlan
+  def prepare(query: String, context: TransactionBoundPlanContext): ExecutionPlan[QueryContext]
 }
 
 
@@ -49,7 +50,7 @@ object CypherCompiler {
     )
 
     @throws(classOf[SyntaxException])
-    def prepare(query: String, context: TransactionBoundPlanContext): ExecutionPlan = {
+    def prepare(query: String, context: TransactionBoundPlanContext): ExecutionPlan[QueryContext] = {
       val (version, remainingQuery) = query match {
         case hasVersionDefined(versionName, remainingQuery) => (CypherVersion(versionName), remainingQuery)
         case _ => (vDefault, query)

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.helpers._
 import org.neo4j.cypher.internal.spi.{QueryContext, Operations}
 import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
 import collection.Map
+import org.neo4j.cypher.internal.compiler.v2_0.helpers.{IsMap, MapSupport}
 
 case class MapPropertySetAction(element: Expression, mapExpression: Expression)
   extends UpdateAction with GraphElementPropertyFunctions with MapSupport {

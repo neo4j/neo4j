@@ -30,6 +30,7 @@ import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniq
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.{Node, Direction}
 import collection.Map
+import org.neo4j.cypher.internal.compiler.v2_0.helpers.{IsMap, MapSupport}
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =

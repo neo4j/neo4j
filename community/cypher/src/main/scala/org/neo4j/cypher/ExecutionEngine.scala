@@ -40,7 +40,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    prepare(query, { (plan: ExecutionPlan, queryContext: QueryContext) =>
+    prepare(query, { (plan: ExecutionPlan[QueryContext], queryContext: QueryContext) =>
       plan.profile(queryContext, params)
     })
   }
@@ -58,7 +58,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    prepare(query, { (plan: ExecutionPlan, queryContext: QueryContext) =>
+    prepare(query, { (plan: ExecutionPlan[QueryContext], queryContext: QueryContext) =>
       plan.execute(queryContext, params)
     })
   }
@@ -67,7 +67,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def prepare[T](query: String, run: (ExecutionPlan, QueryContext) => T): T =  {
+  def prepare[T](query: String, run: (ExecutionPlan[QueryContext], QueryContext) => T): T =  {
 
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
@@ -77,7 +77,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       val statement = txBridge.statement()
       val plan = try {
         // fetch plan cache
-        val planCache = getOrCreateFromSchemaState(statement, new LRUCache[String, ExecutionPlan](getPlanCacheSize))
+        val planCache = getOrCreateFromSchemaState(statement, new LRUCache[String, ExecutionPlan[QueryContext]](getPlanCacheSize))
 
         // get plan or build it
         planCache.getOrElseUpdate(query, {

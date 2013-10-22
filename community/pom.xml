@@ -37,6 +37,7 @@
     <module>lucene-index</module>
     <module>graph-algo</module>
     <module>graph-matching</module>
+    <module>cypher-commons</module>
     <module>cypher-compiler-1.9</module>
     <module>cypher-compiler-2.0</module>
     <module>cypher</module>
