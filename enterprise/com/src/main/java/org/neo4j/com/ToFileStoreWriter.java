@@ -42,6 +42,10 @@ public class ToFileStoreWriter implements StoreWriter
         {
             temporaryBuffer.clear();
             File file = new File( basePath, path );
+            if(path.contains( "write\\.lock" ))
+            {
+                System.out.println("OMGOMGOMG");
+            }
             RandomAccessFile randomAccessFile = null;
             try
             {

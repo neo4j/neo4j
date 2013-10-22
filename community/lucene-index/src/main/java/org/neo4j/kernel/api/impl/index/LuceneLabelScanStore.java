@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -37,7 +36,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
@@ -224,46 +222,7 @@ public class LuceneLabelScanStore implements LabelScanStore, LabelScanStorageStr
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
         SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-        return new StoreSnapshot( deletionPolicy );
-    }
-
-    private class StoreSnapshot extends PrefetchingIterator<File> implements ResourceIterator<File>
-    {
-        private final String ID = "backup";
-        private final SnapshotDeletionPolicy deletionPolicy;
-        private final IndexCommit commit;
-        private final Iterator<String> fileNames;
-
-        StoreSnapshot( SnapshotDeletionPolicy deletionPolicy ) throws IOException
-        {
-            this.deletionPolicy = deletionPolicy;
-            this.commit = deletionPolicy.snapshot( ID );
-            this.fileNames = commit.getFileNames().iterator();
-        }
-
-        @Override
-        protected File fetchNextOrNull()
-        {
-            if ( !fileNames.hasNext() )
-            {
-                return null;
-            }
-            return new File( directoryLocation, fileNames.next() );
-        }
-
-        @Override
-        public void close()
-        {
-            try
-            {
-                deletionPolicy.release( ID );
-            }
-            catch ( IOException e )
-            {
-                // TODO What to do here?
-                throw new RuntimeException( "Unable to close lucene index snapshot", e );
-            }
-        }
+        return new LuceneStoreSnapshot( directoryLocation, deletionPolicy );
     }
 
     @Override

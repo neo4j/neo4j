@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -36,6 +38,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 
 public class PopulatingIndexProxy implements IndexProxy
@@ -157,7 +161,13 @@ public class PopulatingIndexProxy implements IndexProxy
     {
         throw new IllegalStateException( "Cannot validate index while it is still populating." );
     }
-    
+
+    @Override
+    public ResourceIterator<File> snapshotFiles()
+    {
+        return emptyIterator();
+    }
+
     @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {
