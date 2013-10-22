@@ -209,8 +209,6 @@ public class NetworkSenderReceiverTest
             sem.acquire(); // wait for the listeningAt trigger on receive (same as the previous but with real URI this time)
             sem.acquire(); // wait for process from the MessageProcessor
 
-            sem.acquire(); // wait for detecting our correct binding address
-
             receiver.stop();
 
             sem.acquire(); // wait for overridden stop method in receiver
