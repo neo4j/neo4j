@@ -25,6 +25,8 @@ import pipes.QueryStateHelper
 import org.neo4j.cypher.ExecutionEngineHelper
 import org.scalatest.Assertions
 import org.junit.Test
+import scala.collection.mutable
+import org.neo4j.graphdb.Node
 
 class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
 
@@ -35,7 +37,8 @@ class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
       action.exec(ExecutionContext.empty, QueryStateHelper.queryStateFrom(graph)).size
     }
 
-    val n = graph.createdNodes.dequeue()
+    val nodes: mutable.Queue[Node] = graph.createdNodes
+    val n = nodes.dequeue()
 
     assertInTx(n.getProperty("name") === "Andres")
     assertInTx(n.getProperty("age") === 37)

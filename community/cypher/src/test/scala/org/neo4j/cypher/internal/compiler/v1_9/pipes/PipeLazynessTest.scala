@@ -142,10 +142,10 @@ object PipeLazynessTest extends MockitoSugar {
   private def matchPipe = {
     // Produces a MatchPipe for the pattern (x)-[r?]->(y)
 
-    val node = mock[Node]
-    when(node.getRelationships(Direction.OUTGOING)).thenReturn(Iterable[Relationship]().asJava)
+    val reference = mock[Node]
+    when(reference.getRelationships(Direction.OUTGOING)).thenReturn(Iterable[Relationship]().asJava)
 
-    val iter = new LazyIterator[Map[String, Any]](10, (_, db) => Map("x" -> db.getNodeById(0)))
+    val iter = new LazyIterator[Map[String, Any]](10, (_, db) => Map("x" -> reference))
     val src = new FakePipe(iter, "x" -> NodeType())
     val x = new PatternNode("x")
     val y = new PatternNode("y")

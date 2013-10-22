@@ -19,9 +19,14 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
+import org.junit.{Before, Test}
 
 class ColumnNameTest extends ExecutionEngineHelper {
+
+  @Before def init() {
+    createNode()
+  }
+
   @Test def shouldKeepUsedExpression1() {
     val result = execute("start n=node(0) return cOuNt( * )")
     assert(result.columns === List("cOuNt( * )"))

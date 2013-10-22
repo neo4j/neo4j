@@ -47,7 +47,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     val a = createNode()
     val m = Map("meaning_of_life" -> 420)
 
-    setThatShit(a, m)
+    setProperties(a, m)
 
     assert(a.getProperty("meaning_of_life") === 420)
     assert(state.getStatistics.propertiesSet === 1)
@@ -57,7 +57,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     val a = createNode()
     val m = Map("A" -> 1, "b" -> 2)
 
-    setThatShit(a, m)
+    setProperties(a, m)
 
     assert(a.getProperty("A") === 1)
     assert(a.getProperty("b") === 2)
@@ -66,11 +66,11 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
   @Test def set_properties_on_relationship() {
     val a = createNode()
-    val r = relate(refNode, a)
+    val r = relate(createNode(), a)
 
     val m = Map("A" -> 1, "b" -> 2)
 
-    setThatShit(r, m)
+    setProperties(r, m)
 
     assert(r.getProperty("A") === 1)
     assert(r.getProperty("b") === 2)
@@ -81,7 +81,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     val from = createNode("foo" -> "bar", "buzz" -> 42)
     val to = createNode()
 
-    setThatShit(to, from)
+    setProperties(to, from)
 
     assert(to.getProperty("foo") === "bar")
     assert(to.getProperty("buzz") === 42)
@@ -92,7 +92,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     val from = Map("a" -> 1)
     val to = createNode("b" -> 2)
 
-    setThatShit(to, from)
+    setProperties(to, from)
 
     assert(to.getProperty("a") === 1)
     assert(to.hasProperty("b") === false, "Expected the `b` property to removed")
@@ -103,13 +103,13 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     val from = Map("a" -> 1)
     val to = createNode("a" -> "apa")
 
-    setThatShit(to, from)
+    setProperties(to, from)
 
     assert(to.getProperty("a") === 1)
     assert(state.getStatistics.propertiesSet === 1)
   }
 
-  private def setThatShit(a: PropertyContainer, m: Any) {
+  private def setProperties(a: PropertyContainer, m: Any) {
     val setter = MapPropertySetAction(Literal(a), Literal(m))
     setter.exec(ExecutionContext.empty, state)
   }

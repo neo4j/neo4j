@@ -37,7 +37,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   def tracks_number_of_rows() {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = engine.profile("START n=node(1) RETURN n")
+    val result: ExecutionResult = engine.profile("START n = node(0) RETURN n")
 
     //WHEN THEN
     assertRows(1)(result)("NodeById")
@@ -47,7 +47,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   def tracks_number_of_graph_accesses() {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = engine.profile("START n=node(1) RETURN n.foo")
+    val result: ExecutionResult = engine.profile("START n = node(0) RETURN n.foo")
 
     //WHEN THEN
     assertDbHits(1)(result)("ColumnFilter", "Extract", "NodeById")
@@ -64,6 +64,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
 
   @Test
   def tracks_graph_global_queries() {
+    createNode()
+
     //GIVEN
     val result: ExecutionResult = engine.profile("START n=node(*) RETURN n.foo")
 
@@ -74,6 +76,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test
   def tracks_optional_matches() {
     //GIVEN
+    createNode()
     val result: ExecutionResult = engine.profile("start n=node(*) optional match (n)-->(x) return x")
 
     //WHEN THEN

@@ -140,6 +140,6 @@ class UniqueConstraintValidationAcceptanceTest
 
     // THEN
     val result: ExecutionResult = execute("match (n) where id(n) <> 0 return count(*) as nodeCount")
-    assertEquals(List(5), result.columnAs[Int]("nodeCount").toList)
+    assertEquals(List(4), result.columnAs[Int]("nodeCount").toList)
   }
 }

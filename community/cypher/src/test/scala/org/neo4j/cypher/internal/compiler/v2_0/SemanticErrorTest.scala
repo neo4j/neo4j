@@ -84,7 +84,7 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
 
   @Test def shouldComplainAboutUnknownIdentifier() {
     test(
-      "start s = node(1) where s.name = Name and s.age = 10 return s",
+      "start s = node(0) where s.name = Name and s.age = 10 return s",
       "Name not defined (line 1, column 34)"
     )
   }

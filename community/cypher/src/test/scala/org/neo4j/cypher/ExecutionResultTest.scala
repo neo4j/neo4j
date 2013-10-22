@@ -26,17 +26,17 @@ import java.util.regex.Pattern
 
 class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
   @Test def columnOrderIsPreserved() {
-    val columns = List("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
+    val columns = List("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
 
     columns.foreach(createNode)
 
-    val q="start one=node(1), two=node(2), three=node(3), four=node(4), five=node(5), six=node(6), seven=node(7), eight=node(8), nine=node(9), ten=node(10) " +
-      "return one, two, three, four, five, six, seven, eight, nine, ten"
+    val q="start zero=node(0), one=node(1), two=node(2), three=node(3), four=node(4), five=node(5), six=node(6), seven=node(7), eight=node(8), nine=node(9)" +
+      "return zero, one, two, three, four, five, six, seven, eight, nine"
 
     val result = execute(q)
 
     assert( result.columns === columns )
-    val regex = "one.*two.*three.*four.*five.*six.*seven.*eight.*nine.*ten"
+    val regex = "zero.*one.*two.*three.*four.*five.*six.*seven.*eight.*nine"
     val pattern = Pattern.compile(regex)
 
     assertTrue( "Columns did not apperar in the expected order: \n" + result.dumpToString(), pattern.matcher(result.dumpToString()).find() )
