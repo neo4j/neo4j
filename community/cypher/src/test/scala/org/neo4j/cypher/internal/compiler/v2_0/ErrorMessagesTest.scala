@@ -296,15 +296,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
-  @Test def trying_to_add_a_constraint_that_already_exists() {
-    execute("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE")
-
-    expectError(
-      "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
-      "Already constrained CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE."
-    )
-  }
-
   @Test def drop_a_non_existent_constraint() {
     expectError(
       "DROP CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",

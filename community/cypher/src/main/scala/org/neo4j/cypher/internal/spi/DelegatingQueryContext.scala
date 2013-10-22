@@ -76,9 +76,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = inner.getOrCreateFromSchemaState(key, creator)
 
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) {
-    inner.createUniqueConstraint(labelId, propertyKeyId)
-  }
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) = inner.createUniqueConstraint(labelId, propertyKeyId)
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {
     inner.dropUniqueConstraint(labelId, propertyKeyId)

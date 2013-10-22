@@ -34,9 +34,11 @@ import org.neo4j.cypher.{FailedIndexException, EntityNotFoundException}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException
+import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup
+import scala.Boolean
+import org.neo4j.helpers.collection.IteratorUtil
 
 class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement)
   extends TransactionBoundTokenContext(statement) with QueryContext {
@@ -231,21 +233,27 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int): (IndexDescriptor, Boolean) = try {
-    (statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId), true)
+  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = try {
+    IdempotentResult(statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId))
   } catch {
     case _: AlreadyIndexedException =>
       val indexDescriptor = statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
       if(statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
         throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
-      (indexDescriptor, false)
+     IdempotentResult(indexDescriptor, wasCreated = false)
   }
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().indexDrop(new IndexDescriptor(labelId, propertyKeyId))
 
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    statement.schemaWriteOperations().uniquenessConstraintCreate(labelId, propertyKeyId)
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
+    IdempotentResult(statement.schemaWriteOperations().uniquenessConstraintCreate(labelId, propertyKeyId))
+  } catch {
+    case _: AlreadyConstrainedException =>
+      val readOperations: ReadOperations = statement.readOperations()
+      val uniquenessConstraints = readOperations.constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
+      IdempotentResult(IteratorUtil.single(uniquenessConstraints), wasCreated = false)
+  }
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))

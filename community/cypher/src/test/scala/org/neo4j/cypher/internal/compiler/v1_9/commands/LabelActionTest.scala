@@ -23,12 +23,14 @@ import expressions.Literal
 import values.{TokenType, KeyToken}
 import org.neo4j.cypher.internal.compiler.v1_9._
 import pipes.{NullDecorator, QueryState}
-import org.neo4j.cypher.internal.spi.{LockingQueryContext, QueryContext}
+import org.neo4j.cypher.internal.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.scalatest.Assertions
 import org.junit.Test
+import scala.Boolean
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val queryContext = new SnitchingQueryContext
@@ -112,7 +114,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def getPropertyKeyId(propertyKey: String) = ???
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int): (IndexDescriptor, Boolean) = ???
+  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = ???
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) = ???
 
@@ -128,7 +130,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def getOptLabelId(labelName: String): Option[Int] = labels.get(labelName)
 
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) {???}
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = ???
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {???}
 
