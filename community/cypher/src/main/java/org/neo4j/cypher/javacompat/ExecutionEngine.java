@@ -30,8 +30,7 @@ import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 /**
  * To run a Cypher query, use this class.
  */
-public class
-        ExecutionEngine
+public class ExecutionEngine
 {
     private org.neo4j.cypher.ExecutionEngine inner;
 

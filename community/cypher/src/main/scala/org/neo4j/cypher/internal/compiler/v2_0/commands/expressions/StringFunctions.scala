@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import scala.collection.Map
+import org.neo4j.cypher.internal.compiler.v2_0.helpers.IsMap
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
   def innerExpectedType = StringType()

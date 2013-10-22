@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.helpers._
 import org.neo4j.cypher.internal.spi.Operations
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
+import org.neo4j.cypher.internal.compiler.v2_0.helpers.IsMap
 
 object NamedExpectation {
   def apply(name: String, bare: Boolean): NamedExpectation = NamedExpectation(name, Map.empty, bare)
