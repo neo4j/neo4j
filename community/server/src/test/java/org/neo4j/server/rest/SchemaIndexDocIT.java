@@ -73,7 +73,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         
         Map<String, Object> serialized = jsonToMap( result );
         assertEquals( labelName, serialized.get( "label" ) );
-        assertEquals( asList( propertyKey ), serialized.get( "property-keys" ) );
+        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
     }
     
     /**
@@ -101,7 +101,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, serializedList.size() );
         Map<String, Object> serialized = serializedList.get( 0 );
         assertEquals( labelName, serialized.get( "label" ) );
-        assertEquals( asList( propertyKey ), serialized.get( "property-keys" ) );
+        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
     }
 
     /**

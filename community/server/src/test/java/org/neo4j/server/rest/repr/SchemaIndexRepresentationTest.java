@@ -19,16 +19,15 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.DynamicLabel.label;
-
 import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class SchemaIndexRepresentationTest
 {
@@ -44,7 +43,7 @@ public class SchemaIndexRepresentationTest
         Map<String, Object> serialized = RepresentationTestAccess.serialize( representation );
 
         // THEN
-        assertEquals( asList( propertyKey ), serialized.get( "property-keys" ) );
+        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
         assertEquals( labelName, serialized.get( "label" ) );
     }
 }

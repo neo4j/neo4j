@@ -1462,7 +1462,7 @@ public class DatabaseActionsTest
         assertEquals( 1, serialized.size() );
         Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
         assertEquals( labelName, definition.get( "label" ) );
-        assertEquals( asList( propertyKey ), definition.get( "property-keys" ) );
+        assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
     }
 
     @Test
@@ -1527,7 +1527,7 @@ public class DatabaseActionsTest
         assertEquals( 1, serialized.size() );
         Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
         assertEquals( labelName, definition.get( "label" ) );
-        assertEquals( asList( propertyKey ), definition.get( "property-keys" ) );
+        assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
         assertEquals( "UNIQUENESS", definition.get( "type" ) );
     }
 }
