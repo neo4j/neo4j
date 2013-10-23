@@ -19,13 +19,6 @@
  */
 package org.neo4j.ha;
 
-import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +29,7 @@ import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
@@ -47,6 +41,12 @@ import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static java.lang.System.currentTimeMillis;
+import static org.junit.Assert.*;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class TestPullUpdates
 {
@@ -73,21 +73,23 @@ public class TestPullUpdates
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
 
+        long commonNodeId = createNodeOnMaster();
+
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        setProperty( master, 1 );
-        awaitPropagation( 1, cluster );
+        setProperty( master, commonNodeId, 1 );
+        awaitPropagation( 1, commonNodeId, cluster );
         cluster.await( masterSeesSlavesAsAvailable( 2 ) );
         ClusterManager.RepairKit masterShutdownRK = cluster.shutdown( master );
         cluster.await( masterAvailable() );
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
-        setProperty( cluster.getMaster(), 2 );
+        setProperty( cluster.getMaster(), commonNodeId, 2 );
 
         masterShutdownRK.repair();
         cluster.await( masterAvailable() );
 
         cluster.await( masterSeesSlavesAsAvailable( 2 ) );
 
-        awaitPropagation( 2, cluster );
+        awaitPropagation( 2, commonNodeId, cluster );
     }
 
     @Test
@@ -109,18 +111,31 @@ public class TestPullUpdates
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
 
-        setProperty( cluster.getMaster(), 1 );
+        long commonNodeId = createNodeOnMaster();
+
+        setProperty( cluster.getMaster(), commonNodeId, 1 );
         callPullUpdatesViaShell( 2 );
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         Transaction transaction = slave.beginTx();
         try
         {
-            assertEquals( 1, slave.getReferenceNode().getProperty( "i" ) );
+            assertEquals( 1, slave.getNodeById(commonNodeId).getProperty( "i" ) );
         }
         finally
         {
             transaction.finish();
         }
+    }
+
+    private long createNodeOnMaster()
+    {
+        long commonNodeId;
+        try(Transaction tx=cluster.getMaster().beginTx())
+        {
+            commonNodeId = cluster.getMaster().createNode().getId();
+            tx.success();
+        }
+        return commonNodeId;
     }
 
     @Test
@@ -196,7 +211,7 @@ public class TestPullUpdates
         Thread.sleep( 50 );
     }
 
-    private void awaitPropagation( int i, ClusterManager.ManagedCluster cluster ) throws Exception
+    private void awaitPropagation( int i, long nodeId, ClusterManager.ManagedCluster cluster ) throws Exception
     {
         long endTime = currentTimeMillis() + PULL_INTERVAL * 20;
         boolean ok = false;
@@ -205,10 +220,17 @@ public class TestPullUpdates
             ok = true;
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
-                Object value = db.getReferenceNode().getProperty( "i", null );
-                if ( value == null || (Integer) value != i )
+                try
                 {
-                    ok = false;
+                    Object value = db.getNodeById(nodeId).getProperty( "i", null );
+                    if ( value == null || value != i )
+                    {
+                        ok = false;
+                    }
+                }
+                catch(NotFoundException e)
+                {
+                    ok=false;
                 }
             }
             if ( !ok )
@@ -219,12 +241,12 @@ public class TestPullUpdates
         assertTrue( "Change wasn't propagated by pulling updates", ok );
     }
 
-    private void setProperty( HighlyAvailableGraphDatabase db, int i ) throws Exception
+    private void setProperty( HighlyAvailableGraphDatabase db, long nodeId, int i ) throws Exception
     {
         Transaction tx = db.beginTx();
         try
         {
-            db.getReferenceNode().setProperty( "i", i );
+            db.getNodeById( nodeId ).setProperty( "i", i );
             tx.success();
         }
         finally

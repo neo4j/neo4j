@@ -45,20 +45,6 @@ public class DatabaseRepresentation extends MappingRepresentation implements Ext
     protected void serialize( MappingSerializer serializer )
     {
         serializer.putUri( "node", "node" );
-        try
-        {
-            // TODO Depracation of reference node
-            /*
-             * When the reference node is removed as a concept this try/catch should be removed completely.
-             * This will make GetOnRootFunctionalTest to break so the two places (at the time of this writing)
-             * where the field reference_node is checked should just be removed.
-             */
-            serializer.putUri( "reference_node", NodeRepresentation.path( graphDb.getReferenceNode() ) );
-        }
-        catch ( NotFoundException e )
-        {
-//            serializer.putString( "reference_node","null" );
-        }
         serializer.putUri( "node_index", "index/node" );
         serializer.putUri( "relationship_index", "index/relationship" );
         serializer.putUri( "extensions_info", "ext" );

@@ -58,7 +58,7 @@ public class TestPartialTransactionCopier
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void testIt() throws Exception
+    public void shouldCopyRunningTransactionsToNewLog() throws Exception
     {
         // Given
         int masterId = -1;
@@ -90,20 +90,17 @@ public class TestPartialTransactionCopier
                 logEntries( fs.get(), newLogFile ),
                 containsExactly(
                         startEntry( brokenTxIdentifier, masterId, meId ),
-                        nodeCommandEntry( brokenTxIdentifier, /*nodeId=*/2 ),
-
-                        // Note that identifier is not the same as tx id here. This is because
-                        // there is one read transaction ran, which increments the identifier,
-                        // but does not increment the tx id.
+                        nodeCommandEntry( brokenTxIdentifier, /*nodeId=*/1 ),
                         onePhaseCommitEntry( brokenTxIdentifier, /*txid=*/3 ),
+                        // Missing done entry
 
                         startEntry( 5, masterId, meId ),
-                        nodeCommandEntry( 5, /*nodeId=*/3),
+                        nodeCommandEntry( 5, /*nodeId=*/2),
                         onePhaseCommitEntry( 5, /*txid=*/4 ),
                         doneEntry( 5 ),
 
                         startEntry( 6, masterId, meId ),
-                        nodeCommandEntry( 6, /*nodeId=*/4 ),
+                        nodeCommandEntry( 6, /*nodeId=*/3 ),
                         onePhaseCommitEntry( 6, /*txid=*/5 ),
                         doneEntry( 6 )
                 ));

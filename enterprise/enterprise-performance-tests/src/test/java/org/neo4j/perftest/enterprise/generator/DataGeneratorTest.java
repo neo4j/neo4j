@@ -19,25 +19,20 @@
  */
 package org.neo4j.perftest.enterprise.generator;
 
-import java.util.Map;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
-
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 
+import java.util.Map;
+
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.*;
 
 public class DataGeneratorTest
 {
@@ -62,8 +57,7 @@ public class DataGeneratorTest
         generator.generateData( batchInserter );
 
         // then
-        verify( batchInserter, times( 1 ) ).setNodeProperties( eq( 0L ), argThat( hasSize( 2 ) ) );
-        verify( batchInserter, times( 4 /* reference node already exists*/ ) ).createNode( argThat( hasSize( 2 ) ) );
+        verify( batchInserter, times( 5 ) ).createNode( argThat( hasSize( 2 ) ) );
         verify( batchInserter, times( 5 ) ).createRelationship( anyLong(), anyLong(), argThat( hasName( "FOO" ) ),
                                                                 argThat( hasSize( 1 ) ) );
         verify( batchInserter, times( 10 ) )

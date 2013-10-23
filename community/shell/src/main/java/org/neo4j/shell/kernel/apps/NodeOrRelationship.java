@@ -48,7 +48,7 @@ public abstract class NodeOrRelationship
 
     private final Object nodeOrRelationship;
 
-    private NodeOrRelationship( Object nodeOrRelationship )
+    NodeOrRelationship( Object nodeOrRelationship )
     {
         this.nodeOrRelationship = nodeOrRelationship;
     }

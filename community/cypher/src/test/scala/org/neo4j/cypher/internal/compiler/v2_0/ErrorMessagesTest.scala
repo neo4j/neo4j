@@ -292,7 +292,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     expectError(
       "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
       String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
-        "Multiple nodes with label `Person` have property `name` = 'A':%n  node(1)%n  node(2)")
+        "Multiple nodes with label `Person` have property `name` = 'A':%n  node(0)%n  node(1)")
     )
   }
 
@@ -319,21 +319,21 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def report_deprecated_use_of_property_name_with_question_mark() {
     expectError(
-      "start n=node(1) return n.title? = \"foo\"",
+      "start n = node(0) return n.title? = \"foo\"",
       "This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior."
     )
   }
 
   @Test def report_deprecated_use_of_property_name_with_exclamation_mark() {
     expectError(
-      "start n=node(1) return n.title! = \"foo\"",
+      "start n = node(0) return n.title! = \"foo\"",
       "This syntax is no longer supported (missing properties are now returned as null)."
     )
   }
 
   @Test def recommend_using_remove_when_user_tries_to_delete_a_label() {
     expectError(
-      "start n=node(1) delete n:Person",
+      "start n = node(0) delete n:Person",
       "DELETE doesn't support removing labels from a node. Try REMOVE."
     )
   }

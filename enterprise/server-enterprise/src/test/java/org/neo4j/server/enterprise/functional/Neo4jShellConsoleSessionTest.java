@@ -30,6 +30,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
@@ -95,8 +96,9 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
         Transaction tx = db.beginTx();
         try
         {
-            db.getReferenceNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            db.getReferenceNode().setProperty( "name", "Test" );
+            Node first = db.createNode();
+            first.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+            first.setProperty( "name", "Test" );
             tx.success();
         }
         finally

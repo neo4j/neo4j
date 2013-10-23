@@ -63,7 +63,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
   def start_with_a_node_and_create_a_new_node_with_the_same_properties() {
     createNode("age" -> 15)
 
-    val result = execute("start a = node(1) with a create (b {age : a.age * 2}) return b")
+    val result = execute("start a = node(0) with a create (b {age : a.age * 2}) return b")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
 
@@ -94,7 +94,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
   def deletes_single_node() {
     val a = createNode().getId
 
-    val result = execute("start a = node(1) delete a")
+    val result = execute("start a = node(0) delete a")
     assertStats(result, nodesDeleted = 1    )
 
     assert(result.toList === List())
@@ -105,7 +105,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
   def multiple_deletes_should_not_break_anything() {
     (1 to 4).foreach(i => createNode())
 
-    val result = execute("start a = node(1),b=node(2,3,4) delete a")
+    val result = execute("start a = node(0),b=node(1,2,3) delete a")
     assertStats(result, nodesDeleted = 1)
 
     assert(result.toList === List())
@@ -122,7 +122,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     relate(a, c)
     relate(a, d)
 
-    val result = execute("start a = node(1) match a-[r]->() delete r")
+    val result = execute("start a = node(0) match a-[r]->() delete r")
     assertStats(result, relationshipsDeleted = 3    )
 
     assertInTx(a.getRelationships.asScala.size === 0)
@@ -134,7 +134,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     val b = createNode()
     val c = createNode()
 
-    val result = execute("create n with n start x = node(1,2,3) create n-[:REL]->x")
+    val result = execute("create n with n start x = node(0,1,2) create n-[:REL]->x")
     assertStats(result,
       nodesCreated = 1,
       relationshipsCreated = 3
@@ -149,7 +149,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
   def set_a_property() {
     val a = createNode("name" -> "Andres")
 
-    val result = execute("start n=node(1) set n.name = 'Michael'")
+    val result = execute("start n = node(0) set n.name = 'Michael'")
     assertStats(result,      propertiesSet = 1    )
 
     assertThat(a, inTx(graph, hasProperty("name").withValue("Michael")))
@@ -159,7 +159,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
   def set_a_property_to_an_expression() {
     val a = createNode("name" -> "Andres")
 
-    val result = execute("start n=node(1) set n.name = n.name + ' was here'")
+    val result = execute("start n = node(0) set n.name = n.name + ' was here'")
     assertStats(result,
       propertiesSet = 1
     )
@@ -173,26 +173,26 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     createNode("Michael")
     createNode("Peter")
 
-    val result = execute("start n=node(1,2,3) with collect(n.name) as names create ({name : names})")
+    val result = execute("start n=node(0,1,2) with collect(n.name) as names create ({name : names})")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
     )
 
-    assertInTx(graph.getNodeById(4).getProperty("name") === Array("Andres", "Michael", "Peter"))
+    assertInTx(graph.getNodeById(3).getProperty("name") === Array("Andres", "Michael", "Peter"))
   }
 
   @Test
   def set_a_property_to_an_empty_collection() {
     createNode("Andres")
 
-    val result = execute("start n=node(1) with filter(x in collect(n.name) WHERE x = 12) as names create ({x : names})")
+    val result = execute("start n = node(0) with filter(x in collect(n.name) WHERE x = 12) as names create ({x : names})")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
     )
 
-    assertInTx(graph.getNodeById(2).getProperty("x") === Array())
+    assertInTx(graph.getNodeById(1).getProperty("x") === Array())
   }
 
   @Test
@@ -206,7 +206,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
   @Test
   def set_property_for_null_removes_the_property() {
     val n = createNode("name" -> "Michael")
-    execute("start n = node(1) set n.name = null return n")
+    execute("start n = node(0) set n.name = null return n")
 
     assertThat(n, inTx(graph, not(hasProperty("name"))))
   }
@@ -216,7 +216,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     createNode()
     createNode()
 
-    val r = execute("start a = node(1), b = node(2) create a-[r:REL {param}]->b return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
+    val r = execute("start a = node(0), b = node(1) create a-[r:REL {param}]->b return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
       toList.head("r").asInstanceOf[Relationship]
     assertThat(r, inTx(graph, hasProperty("name").withValue("Andres")))
     assertThat(r, inTx(graph, hasProperty("age").withValue(66)))
@@ -231,7 +231,7 @@ class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with
     relate(b, c)
 
     val q = """
-start a = node(1), c = node(3)
+start a = node(0), c = node(2)
 match p=a-->b-->c
 with p
 foreach(n in nodes(p) |
@@ -254,14 +254,14 @@ foreach(n in nodes(p) |
     relate(a, b, "HATES")
     relate(a, b, "LOVES")
 
-    intercept[NodeStillHasRelationshipsException](execute("start n = node(1) match n-[r:HATES]->() delete n,r"))
+    intercept[NodeStillHasRelationshipsException](execute("start n = node(0) match n-[r:HATES]->() delete n,r"))
   }
 
   @Test
   def delete_and_return() {
     val a = createNode()
 
-    val result = execute("start n = node(1) delete n return n").toList
+    val result = execute("start n = node(0) delete n return n").toList
     assert(result === List(Map("n" -> a)))
   }
 
@@ -316,9 +316,9 @@ foreach(n in nodes(p) |
     relate(root, b)
     relate(root, c)
 
-    execute("start root=node(1) match root-->other create (new {name:other.name}), root-[:REL]->new")
+    execute("start root=node(0) match root-->other create (new {name:other.name}), root-[:REL]->new")
 
-    val result = execute("start root=node(1) match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
+    val result = execute("start root=node(0) match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
     assert(result === List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
 
@@ -334,6 +334,7 @@ return distinct center""")
 
   @Test
   def extract_on_arrays() {
+    createNode()
     val result = execute( """start n=node(0) set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x""")
     assert(result.toList === List(Map("x" -> List(0.5, 1.0, 1.5))))
   }
@@ -355,8 +356,8 @@ return distinct center""")
     val b = createNode()
     relate(a,b)
 
-    execute("""start n=node(1) match p=n-->() delete p""")
-    assertInTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size === 1)
+    execute("""start n = node(0) match p=n-->() delete p""")
+    assertInTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size === 0)
   }
 
   @Test
@@ -412,8 +413,8 @@ return distinct center""")
     val map2 = new HashMap[String, Any]()
     map2.put("name", "Anders")
 
-    val r1 = executeScalar[Relationship]("start a=node(1), b=node(2) create unique a-[r:FOO {param}]->b return r", "param" -> map1)
-    val r2 = executeScalar[Relationship]("start a=node(1), b=node(2) create unique a-[r:FOO {param}]->b return r", "param" -> map2)
+    val r1 = executeScalar[Relationship]("start a=node(0), b=node(1) create unique a-[r:FOO {param}]->b return r", "param" -> map1)
+    val r2 = executeScalar[Relationship]("start a=node(0), b=node(1) create unique a-[r:FOO {param}]->b return r", "param" -> map2)
 
     assert(r1 === r2)
   }
@@ -422,7 +423,7 @@ return distinct center""")
     createNode()
     createNode()
 
-    val r1 = executeScalar[Relationship]("start a=node(1), b=node(2) create unique a-[r:FOO]->b set r.foo = 'bar' return r")
+    val r1 = executeScalar[Relationship]("start a=node(0), b=node(1) create unique a-[r:FOO]->b set r.foo = 'bar' return r")
 
     assertThat(r1, inTx(graph, hasProperty("foo").withValue("bar")))
   }
@@ -432,8 +433,8 @@ return distinct center""")
     createNode()
     createNode()
 
-    execute("start a=node(1) create unique a-[:X]->({foo:[1,2,3]})")
-    val result = execute("start a=node(1) create unique a-[:X]->({foo:[1,2,3]})")
+    execute("start a=node(0) create unique a-[:X]->({foo:[1,2,3]})")
+    val result = execute("start a=node(0) create unique a-[:X]->({foo:[1,2,3]})")
 
     assertFalse("Should not have created node", result.queryStatistics().containsUpdates)
   }
@@ -442,7 +443,7 @@ return distinct center""")
   def full_path_in_one_create() {
     createNode()
     createNode()
-    val result = execute("start a=node(1), b=node(2) create a-[:KNOWS]->()-[:LOVES]->b")
+    val result = execute("start a=node(0), b=node(1) create a-[:KNOWS]->()-[:LOVES]->b")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }
@@ -450,7 +451,7 @@ return distinct center""")
   @Test
   def delete_and_delete_again() {
     createNode()
-    val result = execute("start a=node(1) delete a foreach( x in [1] | delete a)")
+    val result = execute("start a=node(0) delete a foreach( x in [1] | delete a)")
 
     assertStats(result, nodesDeleted = 1)
   }
@@ -459,7 +460,7 @@ return distinct center""")
   def created_paths_honor_directions() {
     val a = createNode()
     val b = createNode()
-    val result = execute("start a=node(1), b=node(2) create p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
+    val result = execute("start a=node(0), b=node(1) create p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
 
     assert(result.startNode() === a)
     assert(result.endNode() === b)
@@ -469,7 +470,7 @@ return distinct center""")
   def create_unique_paths_honor_directions() {
     val a = createNode()
     val b = createNode()
-    val result = execute("start a=node(1), b=node(2) create unique p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
+    val result = execute("start a=node(0), b=node(1) create unique p = a<-[:X]-b return p").toList.head("p").asInstanceOf[Path]
 
     assert(result.startNode() === a)
     assert(result.endNode() === b)
@@ -510,6 +511,7 @@ return distinct center""")
 
   @Test
   def can_create_anonymous_nodes_inside_foreach() {
+    createNode()
     val result = execute("start me=node(0) foreach (i in range(1,10) | create me-[:FRIEND]->())")
 
     assert(result.toList === List())
@@ -517,6 +519,7 @@ return distinct center""")
 
   @Test
   def should_be_able_to_use_external_identifiers_inside_foreach() {
+    createNode()
     val result = execute("start a=node(0), b=node(0) foreach(x in [b] | create x-[:FOO]->a) ")
 
     assert(result.toList === List())
@@ -533,6 +536,7 @@ return distinct center""")
   
   @Test
   def should_be_able_to_add_label_to_node() {
+    createNode()
     val result = execute("start n=node(0) set n:FOO return n")
     val createdNode = result.columnAs[Node]("n").next()
 

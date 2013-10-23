@@ -19,16 +19,6 @@
  */
 package org.neo4j.cypher.export;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.collection.Iterables;
-
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -36,6 +26,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 
 public class SubGraphExporter
 {
@@ -48,7 +47,6 @@ public class SubGraphExporter
 
     public void export( PrintWriter out )
     {
-        init(out); // todo remove with reference node
         appendNodes(out);
         appendRelationships(out);
     }
@@ -68,22 +66,6 @@ public class SubGraphExporter
 
     public String quote(String id) {
         return "`"+id+"`";
-    }
-
-    private void init( PrintWriter out )
-    {
-        final Node node = getReferenceNode();
-        if ( node != null && (node.hasRelationship() || hasProperties(node)))
-        {
-            String id = identifier(node);
-            out.println( "start "+id+" = node("+node.getId()+") with "+id+" " );
-            String labels = labelString(node);
-            if (!labels.isEmpty())
-            {
-                out.print("set " + identifier(node) + " " + labels + " ");
-            }
-            appendPropertySetters( out, node );
-        }
     }
 
     private boolean hasProperties(Node node) {
@@ -115,17 +97,6 @@ public class SubGraphExporter
         }
     }
 
-    private Node getReferenceNode()
-    {
-        try
-        {
-            return graph.getReferenceNode();
-        } catch ( NotFoundException nfe )
-        {
-            return null;
-        }
-    }
-
     private void appendRelationships( PrintWriter out )
     {
         for ( Node node : graph.getNodes() )
@@ -153,10 +124,6 @@ public class SubGraphExporter
     {
         for ( Node node : graph.getNodes() )
         {
-            if ( isReferenceNode( node ) )
-            {
-                continue;
-            }
             appendNode( out, node );
         }
     }

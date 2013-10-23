@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -34,6 +32,8 @@ import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.test.AsciiDocGenerator;
+
+import static org.junit.Assert.*;
 
 public class Documenter
 {

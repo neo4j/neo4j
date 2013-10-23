@@ -360,6 +360,9 @@ public class ComponentVersion extends Version
           <excludes>
             <!-- Ignore known breaking changes introduced in 2.0 -->
 
+            <!-- Remove reference node -->
+            <exclude>org/neo4j/graphdb/GraphDatabaseService</exclude>
+
             <!-- Changes to isolate state per builder to avoid race conditions -->
             <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactory</exclude>
             <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactory$1</exclude>

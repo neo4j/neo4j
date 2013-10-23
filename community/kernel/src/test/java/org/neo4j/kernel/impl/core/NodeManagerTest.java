@@ -80,7 +80,7 @@ public class NodeManagerTest
         delete( node );
 
         //THEN
-        assertThat( tracker.removed, is( "1:wut" ) );
+        assertThat( tracker.removed, is( "0:wut" ) );
     }
 
     @Test
@@ -101,7 +101,7 @@ public class NodeManagerTest
         tx.finish();
 
         //THEN prop is removed only once
-        assertThat( tracker.removed, is( "1:wut" ) );
+        assertThat( tracker.removed, is( "0:wut" ) );
     }
 
     @Test
@@ -127,7 +127,6 @@ public class NodeManagerTest
         // GIVEN
         // Three nodes
         Transaction tx = db.beginTx();
-        Node referenceNode = db.getReferenceNode();
         Node firstCommittedNode = db.createNode();
         Node secondCommittedNode = db.createNode();
         Node thirdCommittedNode = db.createNode();
@@ -151,7 +150,7 @@ public class NodeManagerTest
 
         // THEN
         assertEquals( allNodes.size(), allNodesSet.size() );
-        assertEquals( asSet( referenceNode, firstCommittedNode, firstAdditionalNode, secondAdditionalNode ), allNodesSet );
+        assertEquals( asSet( firstCommittedNode, firstAdditionalNode, secondAdditionalNode ), allNodesSet );
     }
     
     @Test
@@ -222,7 +221,7 @@ public class NodeManagerTest
 
 
         // THEN the new node is picked up by the iterator
-        assertThat( addToCollection( allNodes, new ArrayList<Node>() ).size(), is( 3 ) );
+        assertThat( addToCollection( allNodes, new ArrayList<Node>() ).size(), is( 2 ) );
         transaction.finish();
     }
     

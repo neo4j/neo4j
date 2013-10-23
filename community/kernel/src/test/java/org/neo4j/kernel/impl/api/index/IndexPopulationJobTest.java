@@ -441,7 +441,7 @@ public class IndexPopulationJobTest
         @Override
         public void add( long nodeId, Object propertyValue )
         {
-            if ( nodeId == 3 )
+            if ( nodeId == 2 )
             {
                 job.update( remove( nodeToDelete, propertyKeyId, valueToDelete, new long[] { label } ) );
             }

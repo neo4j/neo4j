@@ -331,7 +331,7 @@ public class TestBackup
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "backup", "Is great" );
-        db.getReferenceNode().createRelationshipTo( node,
+        db.createNode().createRelationshipTo( node,
                 DynamicRelationshipType.withName( "LOVES" ) );
         tx.success();
         tx.finish();
@@ -357,7 +357,7 @@ public class TestBackup
         node.setProperty( "myKey", "myValue" );
         Index<Node> nodeIndex = db.index().forNodes( "db-index" );
         nodeIndex.add( node, "myKey", "myValue" );
-        db.getReferenceNode().createRelationshipTo( node,
+        db.createNode().createRelationshipTo( node,
                 DynamicRelationshipType.withName( "KNOWS" ) );
         tx.success();
         tx.finish();

@@ -257,12 +257,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public Node getReferenceNode()
-    {
-        return new ReadOnlyNodeProxy( actual.getReferenceNode() );
-    }
-
-    @Override
     public Relationship getRelationshipById( long id )
     {
         return new ReadOnlyRelationshipProxy( actual.getRelationshipById( id ) );

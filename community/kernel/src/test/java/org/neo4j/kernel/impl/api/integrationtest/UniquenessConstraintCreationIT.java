@@ -213,7 +213,7 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
             // then both the node I created, and the constraint, should be online
             try( Transaction ignored = gdb.beginTx() )
             {
-                assertThat( count( GlobalGraphOperations.at( gdb ).getAllNodes() ), equalTo(2l));
+                assertThat( count( GlobalGraphOperations.at( gdb ).getAllNodes() ), equalTo(1l));
                 assertThat( count( gdb.schema().getConstraints() ), equalTo(1l));
             }
         }

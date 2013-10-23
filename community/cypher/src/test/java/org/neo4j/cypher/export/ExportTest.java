@@ -73,9 +73,8 @@ public class ExportTest
     @Test
     public void testNodeWithProperties() throws Exception
     {
-        gdb.getReferenceNode().setProperty( "name", "Andres" );
-        assertEquals( "start _0 = node(0) with _0 " + NL +
-                "set _0.`name`=\"Andres\"" + NL, doExportGraph( gdb ) );
+        gdb.createNode().setProperty( "name", "Andres" );
+        assertEquals( "create (_0 {`name`:\"Andres\"})" + NL, doExportGraph( gdb ) );
     }
 
     private String doExportGraph( GraphDatabaseService db )
@@ -154,24 +153,24 @@ public class ExportTest
     @Test
     public void testFromRelCypherResult() throws Exception
     {
-        Node n = gdb.getReferenceNode();
+        Node n = gdb.createNode();
         final Relationship rel = n.createRelationshipTo( n, DynamicRelationshipType.withName( "REL" ) );
         final ExecutionResult result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, true );
-        assertEquals( "start _0 = node(0) with _0 " + NL +
+        assertEquals( "create (_0)" + NL +
                 "create _0-[:`REL`]->_0" + NL, doExportGraph( graph ) );
     }
 
     @Test
     public void testFromPathCypherResult() throws Exception
     {
-        Node n1 = gdb.getReferenceNode();
+        Node n1 = gdb.createNode();
         Node n2 = gdb.createNode();
         final Relationship rel = n1.createRelationshipTo( n2, DynamicRelationshipType.withName( "REL" ) );
         final Path path = new PathImpl.Builder( n1 ).push( rel ).build();
         final ExecutionResult result = result( "path", path );
         final SubGraph graph = CypherResultSubGraph.from( result, true );
-        assertEquals( "start _0 = node(0) with _0 " + NL +
+        assertEquals( "create (_0)" + NL +
                 "create (_1)" + NL +
                 "create _0-[:`REL`]->_1" + NL, doExportGraph( graph ) );
     }

@@ -69,7 +69,7 @@ public class GraphDescription implements GraphDefinition
             {
                 if ( nodes.size() == 0 )
                 {
-                    node = graphdb.getReferenceNode();
+                    node = graphdb.createNode();
                 }
                 else
                 {

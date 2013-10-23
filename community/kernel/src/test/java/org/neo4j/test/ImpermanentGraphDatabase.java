@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexProvider;
@@ -192,25 +191,11 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 }
                 if ( !node.hasRelationship() )
                 {
-                    if ( retainReferenceNode )
+                    if(retainReferenceNode && node.getId() == 0)
                     {
-                        try
-                        {
-                            Node referenceNode = getReferenceNode();
-                            if ( !node.equals( referenceNode ) )
-                            {
-                                node.delete();
-                            }
-                        }
-                        catch ( NotFoundException nfe )
-                        {
-                            // no ref node
-                        }
+                        continue;
                     }
-                    else
-                    {
-                        node.delete();
-                    }
+                    node.delete();
                 }
             }
             tx.success();

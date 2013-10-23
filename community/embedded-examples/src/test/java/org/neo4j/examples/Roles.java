@@ -81,7 +81,7 @@ public class Roles extends AbstractJavaDocTestbase
      * 
      * In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (green edges) relationships
      * to model the group hierarchy and +MEMBER_OF+ (blue edges) to model membership in groups.
-     * We also connect the top level groups to the reference node by +ROOT+ relationships.
+     * We also connect the top level groups to a reference node by +ROOT+ relationships.
      * This gives us a useful partitioning of the graph. Neo4j has no predefined relationship
      * types, you are free to create any relationship types and give them any semantics you want.
      * 

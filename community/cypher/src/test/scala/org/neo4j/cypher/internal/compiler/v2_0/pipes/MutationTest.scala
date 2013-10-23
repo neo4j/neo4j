@@ -42,7 +42,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val queryState = createQueryState
     createNode.createResults(queryState).toList
 
-    val n = graph.getNodeById(1)
+    val n = graph.getNodeById(0)
     assert(n.getProperty("name") === "Andres")
     assert(queryState.getStatistics.nodesCreated === 1)
     assert(queryState.getStatistics.propertiesSet === 1)
@@ -73,7 +73,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     tx.success()
     tx.finish()
 
-    assertInTx(graph.getNodeById(1).getProperty("name") === "Andres")
+    assertInTx(graph.getNodeById(0).getProperty("name") === "Andres")
   }
 
   private def getNode(key: String, n: Node) = InjectValue(n, NodeType())

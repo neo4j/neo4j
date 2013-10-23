@@ -73,8 +73,6 @@ import static org.neo4j.helpers.collection.Iterables.cast;
 
 public class NodeManager implements Lifecycle, EntityFactory
 {
-    private long referenceNodeId = 0;
-
     private final StringLogger logger;
     private final GraphDatabaseService graphDbService;
     private final AutoLoadingCache<NodeImpl> nodeCache;
@@ -426,20 +424,6 @@ public class NodeManager implements Lifecycle, EntityFactory
             throw new NotFoundException( format( "Node %d not found", nodeId ) );
         }
         return node;
-    }
-
-    public Node getReferenceNode() throws NotFoundException
-    {
-        if ( referenceNodeId == -1 )
-        {
-            throw new NotFoundException( "No reference node set" );
-        }
-        return getNodeById( referenceNodeId );
-    }
-
-    public void setReferenceNodeId( long nodeId )
-    {
-        this.referenceNodeId = nodeId;
     }
 
     protected Relationship getRelationshipByIdOrNull( long relId )

@@ -30,8 +30,6 @@ public interface SubGraph
 
     Iterable<Relationship> getRelationships();
 
-    Node getReferenceNode();
-
     boolean contains( Relationship relationship );
 
     Iterable<IndexDefinition> indexes();

@@ -37,7 +37,10 @@ public class TestTxSuspendResume
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         TransactionManager tm = graphdb.getTxManager();
         tm.begin();
-        Node refNode = graphdb.getReferenceNode();
+        Node refNode = graphdb.createNode();
+        tm.commit();
+
+        tm.begin();
         Transaction tx1 = tm.suspend();
         tm.begin();
         refNode.setProperty( "test2", "test" );

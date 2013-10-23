@@ -36,17 +36,12 @@ import org.neo4j.kernel.api.DataWriteOperations
 class GraphDatabaseTestBase extends GraphIcing with Assertions {
 
   var graph: GraphDatabaseAPI with Snitch = null
-  var refNode: Node = null
   var nodes: List[Node] = null
 
   @Before
   def baseInit() {
     graph = new ImpermanentGraphDatabase() with Snitch
-    refNode = getReferenceNode
   }
-
-
-  def getReferenceNode = graph.inTx(graph.getReferenceNode)
 
   def assertInTx(f: => Option[String]) {
     graph.inTx {
@@ -212,16 +207,6 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
   def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statement()
 
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
-}
-
-trait DeletedReferenceNode {
-
-  self: GraphDatabaseTestBase =>
-
-  override def getReferenceNode: Node = {
-    RichGraph(graph).inTx(graph.getReferenceNode.delete())
-    null
-  }
 }
 
 trait Snitch extends GraphDatabaseAPI {

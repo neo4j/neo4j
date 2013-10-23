@@ -69,16 +69,6 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> GET_REFERENCE_NODE =
-        new FacadeMethod<GraphDatabaseService>( "Node getReferenceNode()" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
-        {
-            graphDatabaseService.getReferenceNode();
-        }
-    };
-
     static final FacadeMethod<GraphDatabaseService> GET_ALL_NODES =
             new FacadeMethod<GraphDatabaseService>( "Iterable<Node> getAllNodes()" )
     {
@@ -132,7 +122,6 @@ public class GraphDatabaseServiceFacadeMethods
             CREATE_NODE_WITH_LABELS,
             GET_NODE_BY_ID,
             GET_RELATIONSHIP_BY_ID,
-            GET_REFERENCE_NODE,
             GET_ALL_NODES,
             FIND_NODES_BY_LABEL_AND_PROPERTY,
             GET_RELATIONSHIP_TYPES,

@@ -758,15 +758,6 @@ public class DatabaseActionsTest
         assertTrue( graphdbHelper.getIndexedNodes( indexName, key, "nohit" ).isEmpty() );
     }
 
-    // TODO remove once reference node is gone
-    @Test
-    public void shouldBeAbleToGetReferenceNode() throws Exception
-    {
-        @SuppressWarnings("deprecation"/*even if reference node is deprecated, we still need to test it*/)
-        NodeRepresentation rep = actions.getReferenceNode();
-        assertNotNull( actions.getNode( rep.getId() ) );
-    }
-
     @Test
     public void shouldGetExtendedNodeRepresentationsWhenGettingFromIndex()
     {

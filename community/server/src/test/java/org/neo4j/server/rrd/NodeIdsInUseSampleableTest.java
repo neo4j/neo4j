@@ -43,8 +43,7 @@ public class NodeIdsInUseSampleableTest
     @Test
     public void emptyDbHasZeroNodesInUse()
     {
-        // Reference node is always created in empty dbs
-        assertThat( sampleable.getValue(), is( 1d ) );
+        assertThat( sampleable.getValue(), is( 0d ) );
     }
 
     @Test

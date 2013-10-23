@@ -130,6 +130,7 @@ public class ShellDocTest
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "sample session", server );
+        doc.add( "mknode --cd", "", "Create a node");
         doc.add( "pwd", "", "where are we?" );
         doc.add( "set name \"Jon\"", "", "On the current node, set the key \"name\" to value \"Jon\"" );
         doc.add( "start n=node(0) return n;", "Jon", "send a cypher query" );
@@ -145,9 +146,9 @@ public class ShellDocTest
         doc.add( "ls -avr", "KNOWS", "verbose list relationships" );
         db.beginTx();
         doc.run();
-        doc.add( "rmnode -f 0", "", "delete node 0 (reference node)" );
-        doc.add( "cd", "", "cd back to the reference node" );
-        doc.add( "pwd", "(?)", "the reference node doesn't exist now" );
+        doc.add( "rmnode -f 0", "", "delete node 0" );
+        doc.add( "cd 0", "", "cd back to node 0" );
+        doc.add( "pwd", "(?)", "the node doesn't exist now" );
         doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
         server.shutdown();
         db.shutdown();
@@ -165,7 +166,7 @@ public class ShellDocTest
             doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
             doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "create a relationship" );
             doc.add( "dump START n=node({self}) MATCH (n)-[r]-(m) return n,r,m;",
-                    "create (_1 {`name`:\"Neo\"})", "Export the cypher statement results" );
+                    "create (_0 {`name`:\"Neo\"})", "Export the cypher statement results" );
             doc.run();
         }
         server.shutdown();
@@ -183,8 +184,8 @@ public class ShellDocTest
         doc.add( "create (m:Person:Hacker {name:'Mattias'}), (m)-[:KNOWS]->(m);", "", "create one labeled node and a relationship" );
         doc.add( "dump", "begin" +
                 NL +"create index on :`Person`(`name`);" +
-                NL +"create (_1:`Person`:`Hacker` {`name`:\"Mattias\"})" +
-                NL +"create _1-[:`KNOWS`]->_1" +
+                NL +"create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
+                NL +"create _0-[:`KNOWS`]->_0" +
                 NL +";" +
                 NL +"commit", "Export the whole database including indexes" );
         doc.run();
@@ -200,6 +201,7 @@ public class ShellDocTest
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "a matrix example", server );
+        doc.add("mknode --cd", "", "Create a reference node");
         doc.add( "mkrel -t ROOT -c -v", "created",
                 "create the Thomas Andersson node" );
         doc.add( "cd 1", "", "go to the new node" );

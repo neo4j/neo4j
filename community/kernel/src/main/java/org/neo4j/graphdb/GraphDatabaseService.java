@@ -35,14 +35,13 @@ import org.neo4j.tooling.GlobalGraphOperations;
  * <code>EmbeddedGraphDatabase</code> instance as follows:
  * 
  * <pre>
- * <code>GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "var/graphDb" );
+ * <code>GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "var/graphDb" );
  * // ... use Neo4j
  * graphDb.{@link #shutdown() shutdown()};</code>
  * </pre>
  * 
  * GraphDatabaseService provides operations to {@link #createNode() create
- * nodes}, {@link #getNodeById(long) get nodes given an id}, get the
- * {@link #getReferenceNode() reference node} and ultimately {@link #shutdown()
+ * nodes}, {@link #getNodeById(long) get nodes given an id} and ultimately {@link #shutdown()
  * shutdown Neo4j}.
  * <p>
  * Please note that all operations that write to the graph must be invoked in a
@@ -88,19 +87,6 @@ public interface GraphDatabaseService
      */
     Relationship getRelationshipById( long id );
 
-    /**
-     * Returns the reference node, which is a "starting point" in the node
-     * space. Usually, a client attaches relationships to this node that leads
-     * into various parts of the graph.
-     *
-     * @return the reference node
-     * @throws NotFoundException if unable to get the reference node
-     * @deprecated The reference node concept is obsolete - indexes are the
-     *              canonical way of getting hold of entry points in the graph.
-     */
-    @Deprecated
-    Node getReferenceNode();
-    
     /**
      * Returns all nodes in the graph.
      * 

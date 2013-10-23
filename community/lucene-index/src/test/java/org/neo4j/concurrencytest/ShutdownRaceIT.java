@@ -107,7 +107,7 @@ public class ShutdownRaceIT extends AbstractSubProcessTestBase
                 Transaction tx = graphdb.beginTx();
                 try
                 {
-                    index( graphdb.index().forNodes( "name" ), graphdb.getReferenceNode() );
+                    index( graphdb.index().forNodes( "name" ), graphdb.createNode() );
                     tx.success();
                 }
                 finally

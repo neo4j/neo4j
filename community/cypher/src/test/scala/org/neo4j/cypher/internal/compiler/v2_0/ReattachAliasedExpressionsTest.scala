@@ -67,7 +67,7 @@ class ReattachAliasedExpressionsTest extends Assertions {
 
   @Test
   def rewriteQueryWithWITH() {
-    // START x = node(1) WITH x RETURN count(x) as foo ORDER BY foo
+    // START x = node(0) WITH x RETURN count(x) as foo ORDER BY foo
 
     val secondQ = Query.
       start().

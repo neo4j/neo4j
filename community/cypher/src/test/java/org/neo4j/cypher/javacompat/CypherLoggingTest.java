@@ -50,12 +50,12 @@ public class CypherLoggingTest
         debugEnabled = true;
 
         // when
-        engine.execute( "START n=node(0) CREATE (foo {test:'me'}) RETURN n" );
+        engine.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
         engine.execute( "START n=node(*) RETURN n" );
 
         // then
         assertEquals(
-                "START n=node(0) CREATE (foo {test:'me'}) RETURN n" + LINE_SEPARATOR +
+                "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" + LINE_SEPARATOR +
                         "START n=node(*) RETURN n" + LINE_SEPARATOR,
                 logger.toString() );
     }
@@ -67,7 +67,7 @@ public class CypherLoggingTest
         debugEnabled = false;
 
         // when
-        engine.execute( "START n=node(0) CREATE (foo {test:'me'}) RETURN n" );
+        engine.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
         engine.execute( "START n=node(*) RETURN n" );
 
         // then

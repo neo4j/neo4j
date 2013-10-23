@@ -305,13 +305,4 @@ public interface BatchInserter
      */
     String getStoreDir();
 
-    /**
-     * Returns the reference node id or <code>-1</code> if it doesn't exist.
-     *
-     * @return the reference node
-     * @deprecated The reference node concept is obsolete - indexes are the
-     *              canonical way of getting hold of entry points in the graph.
-     */
-    @Deprecated
-    long getReferenceNode();
 }

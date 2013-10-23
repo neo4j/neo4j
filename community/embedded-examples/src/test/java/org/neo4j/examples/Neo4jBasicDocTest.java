@@ -91,9 +91,8 @@ public class Neo4jBasicDocTest
             tx.success();
         }
 
-        // The node should have an id greater than 0, which is the id of the
-        // reference node.
-        assertThat( n.getId(), is( greaterThan( 0L ) ) );
+        // The node should have a valid id
+        assertThat( n.getId(), is( greaterThan( -1L ) ) );
 
         // Retrieve a node by using the id of the created node. The id's and
         // property should match.

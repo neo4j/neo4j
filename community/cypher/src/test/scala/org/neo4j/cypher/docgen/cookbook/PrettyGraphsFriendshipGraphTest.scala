@@ -47,6 +47,6 @@ foreach( x in range(1,3) |
 RETURN ID(center) as id""",
       returns =
 """The id of the center node is returned by the query.""",
-      assertions = (p) => assertEquals(List(Map("id" -> 1)),p.toList))
+      assertions = (p) => assertEquals(List(Map("id" -> 0)),p.toList))
   } 
 }

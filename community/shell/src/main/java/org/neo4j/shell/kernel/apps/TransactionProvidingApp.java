@@ -99,18 +99,10 @@ public abstract class TransactionProvidingApp extends AbstractApp
     {
         String currentThing = session.getCurrent();
         NodeOrRelationship result;
-        if ( currentThing == null )
+        /*                           Note: Artifact of removing the ref node, revisit and clean up */
+        if ( currentThing == null || currentThing.equals( "(?)" )  )
         {
-            try
-            {
-                result = NodeOrRelationship.wrap(
-                    server.getDb().getReferenceNode() );
-            }
-            catch ( NotFoundException e )
-            {
-                throw new ShellException( "Reference node not found" );
-            }
-            setCurrent( session, result );
+            throw new ShellException( "Not currently standing on any entity." );
         }
         else
         {
@@ -135,7 +127,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
 
     protected static void clearCurrent( Session session )
     {
-        session.setCurrent( new TypedId( NodeOrRelationship.TYPE_NODE, 0 ).toString() );
+        session.setCurrent( getDisplayNameForNonExistent());
     }
 
     protected static void setCurrent( Session session,

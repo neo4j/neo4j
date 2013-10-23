@@ -19,18 +19,6 @@
  */
 package org.neo4j.perftest.enterprise.generator;
 
-import static java.util.Arrays.asList;
-import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
-import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
-import static org.neo4j.perftest.enterprise.util.Predicate.integerRange;
-import static org.neo4j.perftest.enterprise.util.Setting.adaptSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.listSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.restrictSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
-import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -51,6 +39,18 @@ import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
+
+import static java.util.Arrays.asList;
+import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
+import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
+import static org.neo4j.perftest.enterprise.util.Predicate.integerRange;
+import static org.neo4j.perftest.enterprise.util.Setting.adaptSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.listSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.restrictSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
+import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
 
 public class DataGenerator
 {
@@ -161,8 +161,7 @@ public class DataGenerator
 
     private void generateNodes( BatchInserter batchInserter, ProgressListener progressListener )
     {
-        batchInserter.setNodeProperties( 0, generate( nodeProperties ) ); // reference node properties
-        for ( int i = 1 /*reference node already exists*/; i < nodeCount; i++ )
+        for ( int i = 0; i < nodeCount; i++ )
         {
             batchInserter.createNode( generate( nodeProperties ) );
             progressListener.set( i );

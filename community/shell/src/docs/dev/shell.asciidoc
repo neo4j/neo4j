@@ -183,14 +183,13 @@ Single line comments, which will be ignored, can be made by using the prefix "//
 [[shell-current-pos]]
 === Current node/relationship and path ===
 You have a current node/relationship and a "current path" (like a current working directory in bash) that you've traversed so far.
-You start at the http://api.neo4j.org/current/org/neo4j/graphdb/GraphDatabaseService.html#getReferenceNode()[reference node] and can then +cd+ your way through the graph (check your current path at any time with the +pwd+ command).
+When the shell first starts you are not positioned on any entity, but you can +cd+ your way through the graph (check your current path at any time with the +pwd+ command).
 +cd+ can be used in different ways:
 
 * +cd <node-id>+ will traverse one relationship to the supplied node id. The node must have a direct relationship to the current node.
 * +cd -a <node-id>+ will do an absolute path change, which means the supplied node doesn't have to have a direct relationship to the current node.
 * +cd -r <relationship-id>+ will traverse to a relationship instead of a node. The relationship must have the current node as either start or end point. To see the relationship ids use the +ls -vr+ command on nodes.
 * +cd -ar <relationship-id>+ will do an absolute path change which means the relationship can be any relationship in the graph.
-* +cd+ will take you back to the reference node, where you started in the first place.
 * +cd ..+ will traverse back one step to the previous location, removing the last path item from your current path (+pwd+).
 * +cd start+ _(only if your current location is a relationship)_. Traverses to the start node of the relationship.
 * +cd end+ _(only if your current location is a relationship)_. Traverses to the end node of the relationship.

@@ -1054,12 +1054,6 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
-    public Node getReferenceNode()
-    {
-        return nodeManager.getReferenceNode();
-    }
-
-    @Override
     public TransactionBuilder tx()
     {
         return defaultTxBuilder;

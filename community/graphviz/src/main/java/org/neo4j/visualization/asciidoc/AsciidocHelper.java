@@ -19,6 +19,10 @@
  */
 package org.neo4j.visualization.asciidoc;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
@@ -26,10 +30,6 @@ import org.neo4j.visualization.graphviz.AsciiDocStyle;
 import org.neo4j.visualization.graphviz.GraphStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
 import org.neo4j.walk.Walker;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 import static java.lang.String.format;
 
@@ -87,7 +87,6 @@ public class AsciidocHelper
                                                               GraphDatabaseService graph, String identifier,
                                                               String graphvizOptions )
     {
-        removeReferenceNode( graph );
         return createGraphViz( title, graph, identifier,
                 AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors(),
                 graphvizOptions );
@@ -104,7 +103,6 @@ public class AsciidocHelper
             String title, GraphDatabaseService graph, String identifier,
             String graphvizOptions )
     {
-        removeReferenceNode( graph );
         return createGraphViz( title, graph, identifier,
                 AsciiDocStyle.withAutomaticRelationshipTypeColors(),
                 graphvizOptions );
@@ -152,15 +150,6 @@ public class AsciidocHelper
             {
                 throw new RuntimeException( e );
             }
-        }
-    }
-
-    private static void removeReferenceNode( GraphDatabaseService graph )
-    {
-        try ( Transaction tx = graph.beginTx() )
-        {
-            graph.getReferenceNode().delete();
-            tx.success();
         }
     }
 

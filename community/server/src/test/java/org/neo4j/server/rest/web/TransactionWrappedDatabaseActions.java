@@ -107,23 +107,6 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
     }
 
     @Override
-    public NodeRepresentation getReferenceNode()
-    {
-        Transaction transaction = graph.beginTx();
-
-        try
-        {
-            NodeRepresentation referenceNode = super.getReferenceNode();
-            transaction.success();
-            return referenceNode;
-        }
-        finally
-        {
-            transaction.finish();
-        }
-    }
-
-    @Override
     public void setNodeProperty( long nodeId, String key, Object value ) throws PropertyValueException,
             NodeNotFoundException
     {

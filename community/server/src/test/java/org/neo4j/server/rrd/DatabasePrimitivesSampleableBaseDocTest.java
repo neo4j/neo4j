@@ -40,7 +40,7 @@ public class DatabasePrimitivesSampleableBaseDocTest
         
         DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db.getNodeManager() );
 
-        assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
+        assertTrue( "There should be no nodes in use.", sampleable.getValue() == 0 );
 
         db.shutdown();
     }
@@ -52,7 +52,7 @@ public class DatabasePrimitivesSampleableBaseDocTest
 
         DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db.getNodeManager() );
 
-        assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
+        assertTrue( "There should be no nodes in use.", sampleable.getValue() == 0 );
 
         db.shutdown();
     }

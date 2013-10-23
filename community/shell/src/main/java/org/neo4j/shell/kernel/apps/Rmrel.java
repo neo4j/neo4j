@@ -20,17 +20,9 @@
 package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.Traverser;
-import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -40,7 +32,6 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * Mimics the POSIX application "rmdir", but neo4j has relationships instead of
@@ -87,12 +78,7 @@ public class Rmrel extends TransactionProvidingApp
         rel.delete();
         
         Node otherNode = rel.getOtherNode( currentNode );
-        boolean forceDeletion = parser.options().containsKey( "f" );
-        if ( !forceDeletion )
-        {
-            ensureConnectedness( otherNode );
-            ensureConnectedness( currentNode );
-        }
+
         boolean deleteOtherNodeIfEmpty = parser.options().containsKey( "d" );
         if ( deleteOtherNodeIfEmpty && !otherNode.hasRelationship() )
         {
@@ -101,15 +87,6 @@ public class Rmrel extends TransactionProvidingApp
             otherNode.delete();
         }
         return Continuation.INPUT_COMPLETE;
-    }
-
-    private void ensureConnectedness( Node otherNode ) throws ShellException
-    {
-        if ( !hasPathToRefNode( otherNode ) )
-        {
-            throw new ShellException( "It would result in " + otherNode +
-                " to be recursively decoupled with the reference node. Use -f to disable this check" );
-        }
     }
 
     private Relationship findRel( Node currentNode, long relId )
@@ -122,33 +99,5 @@ public class Rmrel extends TransactionProvidingApp
         }
         throw new ShellException( "No relationship " + relId +
             " connected to " + currentNode );
-    }
-
-    private Iterable<RelationshipType> getAllRelationshipTypes()
-    {
-        return GlobalGraphOperations.at( this.getServer().getDb() ).getAllRelationshipTypes();
-    }
-
-    private boolean hasPathToRefNode( Node node )
-    {
-        List<Object> filterList = new ArrayList<Object>();
-        for ( RelationshipType rel : this.getAllRelationshipTypes() )
-        {
-            filterList.add( rel );
-            filterList.add( Direction.BOTH );
-        }
-
-        Node refNode = getServer().getDb().getReferenceNode();
-        Traverser traverser = node.traverse( Order.DEPTH_FIRST,
-            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
-            filterList.toArray() );
-        for ( Node testNode : traverser )
-        {
-            if ( refNode.equals( testNode ) )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 }

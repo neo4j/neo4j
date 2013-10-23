@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -139,11 +138,7 @@ public class DummyIndexExtensionFactory extends
         @Override
         public IndexHits<T> get( String key, Object value )
         {
-            if ( value.equals( "refnode" ) )
-            {
-                return new IteratorIndexHits<T>( Arrays.asList( (T) db.getReferenceNode() ) );
-            }
-            return new IteratorIndexHits<T>( Collections.<T>emptyList() );
+            return new IteratorIndexHits<>( Collections.<T>emptyList() );
         }
 
         @Override

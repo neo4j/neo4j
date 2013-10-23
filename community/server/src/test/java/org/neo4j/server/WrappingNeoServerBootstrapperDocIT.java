@@ -117,7 +117,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
                 "{\"command\" : \"ls\",\"engine\":\"shell\"}" ).expectedStatus(
                 Status.OK.getStatusCode() ).post(
                 "http://127.0.0.1:7575/db/manage/server/console/" ).entity();
-        assertTrue( response.contains( "neo4j-sh (0)$" ) );
+        assertTrue( response.contains( "neo4j-sh (?)$" ) );
         srv.stop();
     }
 
@@ -131,7 +131,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
                 "{\"command\" : \"ls\",\"engine\":\"shell\"}" ).expectedStatus(
                 Status.OK.getStatusCode() ).post(
                 "http://127.0.0.1:7474/db/manage/server/console/" ).entity();
-        assertTrue( response.contains( "neo4j-sh (0)$" ) );
+        assertTrue( response.contains( "neo4j-sh (?)$" ) );
         srv.stop();
     }
 
@@ -193,7 +193,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         // Should be able to still talk to the db
         try ( Transaction tx = myDb.beginTx() )
         {
-            assertTrue( myDb.getReferenceNode() != null );
+            assertTrue( myDb.createNode() != null );
         }
     }
 }

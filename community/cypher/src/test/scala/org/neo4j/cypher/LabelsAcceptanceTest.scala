@@ -59,7 +59,10 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
   }
 
   @Test def Using_labels_in_RETURN_clauses() {
+    createNode()
     assertThat("START n=node(0) RETURN labels(n)", List())
+
+    createNode()
     assertThat("START n=node(0) SET n :FOO RETURN labels(n)", List("FOO"))
   }
 
@@ -90,73 +93,14 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
   }
 
   private def usingLabels(labels:String*):UsingLabels = new UsingLabels(labels)
- 
- /*
- Removing multiple literal labels
- REMOVE n :BAR:BAZ
- REMOVE n:BAR:BAZ
-
- Removing multiple literal labels using an expression
- REMOVE n LABEL <expr>
-
-   */
-
-  /* STILL TO DO
-   Setting labels literally
-
- Removing a single literal label
- REMOVE n LABEL :FOO
- REMOVE n:FOO
-
- Removing multiple literal labels
- REMOVE n :BAR:BAZ
- REMOVE n:BAR:BAZ
-
- Removing multiple literal labels using an expression
- REMOVE n LABEL <expr>
-
-
- Matching
- Expressing label requirements in match without negation
- MATCH n:Person-->x:Person
- MATCH (n:Person:Husband|:BAR)-[:FOO|:BAR]->x:Person
- MATCH n:Person|:Husband-[:FOO|:BAR]->x:Person
-
- Note:
- Concatenation (logical and) binds tighter than |, so a b|c is (a and b) or c
-
- Write predicate that tests for the existence of a single label
- MATCH n-->x:Person
- WHERE :Person IN labels(n) // arbitrary label expression
-
- Write predicate that tests for the existence of one of multiple labels
- WHERE n:Male OR n:Female
- WHERE n:Male|:Female
-
- Write predicate that tests for existence of labels from collection
- MATCH n:Foo-->x<--m:Bar
- WHERE ALL(l in labels(x): l in labels(n) and l in labels(m))
-
- Reusing the label predicate sublanguage from match (simple case)
- MATCH n-->x<--m:Bar
- WHERE n:Animal or (n:Person and n.income > 0)
-
- Reusing the label predicate sublanguage from match (complex case)
- MATCH n-->x<--m:Bar
- WHERE n:Animal or (n:Person:Chef and n.income > 0)
-
-
- Returning label membership of a node
- START n=node(0) WHERE n:FOO RETURN n:BAR, n:BAR|:baz
-*/
 
   private def assertThat(q: String, expectedLabels: List[String]) {
-    val result = execute(q)
+    val result = execute(q).toList
 
     graph.inTx {
 
       if (result.isEmpty) {
-        val n = graph.getNodeById(1)
+        val n = graph.getNodeById(0)
         assert(n.labels === expectedLabels)
       } else {
         result.foreach {
@@ -182,7 +126,6 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
     graph.shutdown()
 
     graph = new ImpermanentGraphDatabase() with Snitch
-    refNode = graph.inTx(graph.getReferenceNode)
     executionEngineHelperInit()
   }
 

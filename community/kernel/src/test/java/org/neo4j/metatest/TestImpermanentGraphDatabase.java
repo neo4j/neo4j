@@ -22,21 +22,19 @@ package org.neo4j.metatest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TestImpermanentGraphDatabase
 {
     private ImpermanentGraphDatabase db;
 
     @Before
-    @SuppressWarnings("deprecation")
-    public void Given()
+    public void createDb()
     {
         db = new ImpermanentGraphDatabase();
     }
@@ -52,37 +50,36 @@ public class TestImpermanentGraphDatabase
     {
         createNode();
 
-        assertEquals( "Expected one new node, plus reference node", 2, nodeCount() );
+        assertEquals( "Expected one new node", 1, nodeCount() );
     }
 
     @Test
     public void should_keep_reference_node()
     {
         createNode();
-        assertEquals( "Expected one new node, plus reference node", 2, nodeCount() );
+        assertEquals( "Expected one new node", 1, nodeCount() );
         db.cleanContent( true );
-        assertEquals( "reference node", 1, nodeCount() );
+        assertEquals( "node 0, for legacy tests", 1, nodeCount() );
         db.cleanContent( false );
-        assertEquals( "reference node", 0, nodeCount() );
+        assertEquals( "node 0, for legacy tests", 0, nodeCount() );
     }
 
     @Test
-    @SuppressWarnings("deprecation")
     public void data_should_not_survive_shutdown()
     {
         createNode();
         db.shutdown();
 
-        db = new ImpermanentGraphDatabase();
+        createDb();
 
-        assertEquals( "Should not see anything but the default reference node.", 1, nodeCount() );
+        assertEquals( "Should not see anything.", 0, nodeCount() );
     }
 
     private int nodeCount()
     {
         Transaction transaction = db.beginTx();
         int count = IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() );
-        transaction.finish();
+        transaction.close();
         return count;
     }
 

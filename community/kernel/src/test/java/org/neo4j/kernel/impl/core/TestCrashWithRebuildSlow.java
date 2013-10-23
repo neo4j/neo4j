@@ -78,10 +78,6 @@ public class TestCrashWithRebuildSlow
             int relCount = 0;
             for ( Node node : GlobalGraphOperations.at( newDb ).getAllNodes() )
             {
-                if ( node.equals( newDb.getReferenceNode() ) )
-                {
-                    continue;
-                }
                 nameCount++;
                 assertThat( node, inTx( newDb, hasProperty( "name" )  ) );
                 relCount += count( node.getRelationships( Direction.OUTGOING ) );

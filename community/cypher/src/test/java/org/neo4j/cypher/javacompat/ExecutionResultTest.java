@@ -55,7 +55,8 @@ public class ExecutionResultTest
     {
         // Given an execution result that has been started but not exhausted
         createNode();
-        ExecutionResult executionResult = engine.execute( "START n=node(*) RETURN n" );
+        createNode();
+        ExecutionResult executionResult = engine.execute( "MATCH (n) RETURN n" );
         ResourceIterator<Map<String, Object>> resultIterator = executionResult.iterator();
         resultIterator.next();
         assertThat( activeTransaction(), is( notNullValue() ) );
@@ -72,7 +73,8 @@ public class ExecutionResultTest
     {
         // Given an execution result that has been started but not exhausted
         createNode();
-        ExecutionResult executionResult = engine.execute( "START n=node(*) RETURN n" );
+        createNode();
+        ExecutionResult executionResult = engine.execute( "MATCH (n) RETURN n" );
         ResourceIterator<Node> resultIterator = executionResult.columnAs("n");
         resultIterator.next();
         assertThat( activeTransaction(), is( notNullValue() ) );

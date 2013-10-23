@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -54,6 +46,11 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+
 public class TestIdGenerator
 {
     @Rule public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
@@ -65,7 +62,6 @@ public class TestIdGenerator
         fs = fsRule.get();
     }
 
-//    @Before
     private void deleteIdGeneratorFile()
     {
         fs.deleteFile( idGeneratorFile() );
@@ -627,10 +623,11 @@ public class TestIdGenerator
         Set<Long> createdNodeIds = new HashSet<Long>();
         Set<Long> createdRelationshipIds = new HashSet<Long>();
         Transaction tx = db.beginTx();
+        Node commonNode = db.createNode();
         for ( int i = 0; i < 20; i++ )
         {
             Node otherNode = db.createNode();
-            Relationship relationship = db.getReferenceNode().createRelationshipTo( otherNode, type );
+            Relationship relationship = commonNode.createRelationshipTo( otherNode, type );
             if ( i % 5 == 0 )
             {
                 otherNode.delete();
@@ -651,6 +648,7 @@ public class TestIdGenerator
         // all ids are unique.
         db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
         tx = db.beginTx();
+        commonNode = db.getNodeById( commonNode.getId() );
         for ( int i = 0; i < 100; i++ )
         {
             Node otherNode = db.createNode();
@@ -658,7 +656,7 @@ public class TestIdGenerator
             {
                 fail( "Managed to create a node with an id that was already in use" );
             }
-            Relationship relationship = db.getReferenceNode().createRelationshipTo( otherNode, type );
+            Relationship relationship = commonNode.createRelationshipTo( otherNode, type );
             if ( !createdRelationshipIds.add( relationship.getId() ) )
             {
                 fail( "Managed to create a relationship with an id that was already in use" );

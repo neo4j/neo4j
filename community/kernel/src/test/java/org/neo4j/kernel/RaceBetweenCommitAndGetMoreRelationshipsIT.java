@@ -108,8 +108,14 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
 
     private void execute() throws Throwable
     {
+        try(Transaction tx = graphdb.beginTx())
+        {
+            graphdb.createNode(); // Create a node with id 0 (test was originally written to use the reference node)
+            tx.success();
+        }
         setup( 1000 );
         nodeManager.clearCache();
+
         timer.schedule( this, 10, 10 );
         Worker[] threads = { new Worker( "writer", error )
         {
@@ -127,7 +133,7 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
                 try
                 {
                     int count = 0;
-                    for ( @SuppressWarnings( "unused" ) Relationship rel : graphdb.getReferenceNode()
+                    for ( @SuppressWarnings( "unused" ) Relationship rel : graphdb.getNodeById(0)
                             .getRelationships() )
                     {
                         count++;
@@ -161,18 +167,19 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
         return assertions;
     }
 
-    protected void setup( int relCount )
+    protected Node setup( int relCount )
     {
         Transaction tx = graphdb.beginTx();
         try
         {
-            Node root = graphdb.getReferenceNode();
+            Node root = graphdb.getNodeById( 0 );
             for ( int i = 0; i < relCount; i++ )
             {
                 root.createRelationshipTo( graphdb.createNode(), TYPE );
             }
 
             tx.success();
+            return root;
         }
         finally
         {

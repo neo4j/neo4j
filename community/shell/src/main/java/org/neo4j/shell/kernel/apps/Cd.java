@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.TreeSet;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -138,17 +137,9 @@ public class Cd extends TransactionProvidingApp
         NodeOrRelationship newThing = null;
         if ( parser.arguments().isEmpty() )
         {
-            try
-            {
-                newThing = NodeOrRelationship.wrap( getServer().getDb().getReferenceNode() );
-                paths.clear();
-            }
-            catch ( NotFoundException nne )
-            {
-                clearCurrent( session );
-                writeCurrentWorkingDir( paths, session );
-                return Continuation.INPUT_COMPLETE;
-            }
+            clearCurrent( session );
+            writeCurrentWorkingDir( paths, session );
+            return Continuation.INPUT_COMPLETE;
         }
         else
         {

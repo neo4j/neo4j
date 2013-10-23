@@ -72,7 +72,7 @@ public class TestReadOnlyNeo4j
         }
         try
         {
-            readGraphDb.getReferenceNode().setProperty( "key", "value" );
+            readGraphDb.createNode();
 
             fail( "expected exception" );
         }
@@ -90,7 +90,7 @@ public class TestReadOnlyNeo4j
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
         Transaction tx = db.beginTx();
         @SuppressWarnings("deprecation")
-        Node prevNode = db.getReferenceNode();
+        Node prevNode = db.createNode();
         for ( int i = 0; i < 100; i++ )
         {
             Node node = db.createNode();

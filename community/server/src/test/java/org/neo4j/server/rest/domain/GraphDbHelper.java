@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -396,16 +397,24 @@ public class GraphDbHelper
         }
     }
 
-    public long getReferenceNode()
+    public long getFirstNode()
     {
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            @SuppressWarnings("deprecation")
-            Node referenceNode = database.getGraph().getReferenceNode();
+            try
+            {
+                Node referenceNode = database.getGraph().getNodeById(0l);
 
-            tx.success();
-            return referenceNode.getId();
+                tx.success();
+                return referenceNode.getId();
+            }
+            catch(NotFoundException e)
+            {
+                Node newNode = database.getGraph().createNode();
+                tx.success();
+                return newNode.getId();
+            }
         }
         finally
         {

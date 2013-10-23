@@ -24,7 +24,7 @@ import org.junit.Test
 import org.neo4j.graphdb.Node
 
 class MergeAcceptanceTest
-  extends ExecutionEngineHelper with Assertions with StatisticsChecker with DeletedReferenceNode {
+  extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
   @Test
   def merge_node_when_no_nodes_exist() {

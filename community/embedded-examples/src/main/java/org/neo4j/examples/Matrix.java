@@ -84,7 +84,7 @@ public class Matrix
             thomas.setProperty( "name", "Thomas Anderson" );
             thomas.setProperty( "age", 29 );
 
-            // connect Neo/Thomas to the reference node
+            // connect Neo/Thomas to the matrix node
             matrix.createRelationshipTo( thomas, RelTypes.NEO_NODE );
 
             Node trinity = graphDb.createNode();

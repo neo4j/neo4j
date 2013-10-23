@@ -1,3 +1,7 @@
+2.0.0-SNAPSHOT
+--------------
+o BREAKING CHANGE: Reference node has been removed.
+
 2.0.0-M05
 ---------
 o BREAKING CHANGE: GraphDatabaseSettings now only exposes Setting, deprecated settings classes have been removed.

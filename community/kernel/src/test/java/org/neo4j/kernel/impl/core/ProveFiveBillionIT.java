@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.lang.Math.pow;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-
 import java.io.File;
 import java.util.Map;
 
@@ -36,6 +32,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
+
+import static java.lang.Math.pow;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 @Ignore( "Requires a lot of disk space" )
 public class ProveFiveBillionIT
@@ -59,7 +59,7 @@ public class ProveFiveBillionIT
         
         // Start off by creating the first 4 billion (or so) entities with the
         // batch inserter just to speed things up a little
-        long first = inserter.getReferenceNode();
+        long first = inserter.createNode(map());
         int max = (int) pow( 2, 32 )-1000;
         Map<String, Object> nodeProperties = map( "number", 123 );
         Map<String, Object> relationshipProperties =
