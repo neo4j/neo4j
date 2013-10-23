@@ -19,6 +19,10 @@
  */
 package org.neo4j.test.ha;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -37,15 +41,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import ch.qos.logback.classic.LoggerContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
-import org.w3c.dom.Document;
-
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
@@ -77,12 +77,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
+import org.w3c.dom.Document;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -428,13 +426,14 @@ public class ClusterManager
             StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
             for (int i = 1; i < spec.getMembers().size(); i++)
                 initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
+            File parent = new File( root, name );
             if ( member.isFullHaMember() )
             {
                 URI clusterUri = new URI( "cluster://" + member.getHost() );
                 int clusterPort = clusterUri.getPort();
                 int haPort = clusterUri.getPort() + 3000;
                 GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory()
-                        .newHighlyAvailableDatabaseBuilder( new File( new File( root, name ),
+                        .newHighlyAvailableDatabaseBuilder( new File( parent,
                                 "server" + serverId ).getAbsolutePath() ).
                                 setConfig( ClusterSettings.cluster_name, name ).
                                 setConfig( ClusterSettings.initial_hosts, initialHosts.toString() ).
@@ -470,7 +469,8 @@ public class ClusterManager
                         ClusterSettings.cluster_name.name(), name,
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.server_id.name(), serverId + "",
-                        ClusterSettings.cluster_server.name(), member.getHost() );
+                        ClusterSettings.cluster_server.name(), member.getHost(),
+                        GraphDatabaseSettings.store_dir.name(), new File( parent, "arbiter" + serverId ).getAbsolutePath() );
                 Config config1 = new Config( config );
                 Logging clientLogging =life.add( new LogbackService(
                         config1, (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory() ) );
