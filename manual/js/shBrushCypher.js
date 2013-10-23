@@ -23,7 +23,7 @@
 
   function Brush()
   {
-        var funcs   =   'abs acos all allShortestPaths any asin atan atan2 avg ceil coalesce collect cos cot count degrees e endnode exp extract filter floor has head id labels last left length log log10 lower ltrim max min node nodes none percentileCont percentileDisc pi radians rand range reduce rel relationship relationships replace right round rtrim shortestPath sign sin single sqrt startnode stdev stdevp str substring sum tail tan timestamp trim type upper';
+        var funcs   =   'abs acos all allShortestPaths any asin atan atan2 avg ceil coalesce collect cos cot count degrees e endnode exp extract filter floor has haversin head id labels last left length log log10 lower ltrim max min node nodes none percentileCont percentileDisc pi radians rand range reduce rel relationship relationships replace right round rtrim shortestPath sign sin single sqrt startnode stdev stdevp str substring sum tail tan timestamp trim type upper';
 
         var keywords =  'as asc ascending assert by case constraint create cypher delete desc descending distinct drop else end false foreach in index is limit match merge null on optional order remove return set skip start then true union unique using when where with';
 
