@@ -63,7 +63,9 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
   def extractGraphFromPaths(relationshipsNotInDoubleOptionalPaths: Iterable[PatternRelationship], boundPoints: Seq[String]): PatternGraph = {
     val oldNodes = relationshipsNotInDoubleOptionalPaths.flatMap(p => Seq(p.startNode, p.endNode)).toSeq.distinct
 
-    val newNodes = oldNodes.map(patternNode => patternNode.key -> new PatternNode(patternNode.key, patternNode.labels)).toMap
+    val newNodes = oldNodes.map(patternNode => patternNode.key ->
+      new PatternNode(patternNode.key, patternNode.labels, patternNode.properties)).toMap
+
     val newRelationships = relationshipsNotInDoubleOptionalPaths.map {
       case pr: VariableLengthPatternRelationship => ???
       case pr: PatternRelationship               =>
