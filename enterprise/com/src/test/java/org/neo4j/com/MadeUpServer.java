@@ -27,7 +27,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.tooling.RealClock;
+import org.neo4j.tooling.Clock;
 
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {
@@ -64,7 +64,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             {
                 return new HostnamePort( null, port );
             }
-        }, new DevNullLoggingService(), FRAME_LENGTH, applicationProtocolVersion, txVerifier, new RealClock());
+        }, new DevNullLoggingService(), FRAME_LENGTH, applicationProtocolVersion, txVerifier, Clock.REAL_CLOCK);
         this.internalProtocolVersion = internalProtocolVersion;
     }
 

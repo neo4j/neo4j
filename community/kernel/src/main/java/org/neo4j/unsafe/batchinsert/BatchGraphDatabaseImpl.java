@@ -199,6 +199,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     }
 
     @Override
+    public boolean isAvailable( long timeout )
+    {
+        return true;
+    }
+
+    @Override
     public void shutdown()
     {
         clearCaches();

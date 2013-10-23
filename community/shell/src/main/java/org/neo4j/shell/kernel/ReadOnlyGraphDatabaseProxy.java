@@ -296,6 +296,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         return readOnly();
     }
 
+    @Override
+    public boolean isAvailable( long timeout )
+    {
+        return actual.isAvailable( timeout );
+    }
+
     public void shutdown()
     {
         actual.shutdown();

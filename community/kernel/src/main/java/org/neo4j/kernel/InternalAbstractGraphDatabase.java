@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
@@ -121,7 +116,12 @@ import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.tooling.Clock;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.lang.String.format;
+
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -198,13 +198,15 @@ public abstract class InternalAbstractGraphDatabase
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
     protected TransactionStateFactory stateFactory;
+    protected AvailabilityGuard availabilityGuard;
+    protected long accessTimeout;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
                                              Iterable<Class<?>> settingsClasses,
                                              Iterable<IndexProvider> indexProviders,
                                              Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                              Iterable<CacheProvider> cacheProviders,
-                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders)
     {
         this.params = params;
 
@@ -235,6 +237,7 @@ public abstract class InternalAbstractGraphDatabase
                 dependencyResolver );
 
         this.storeDir = config.get( Configuration.store_dir );
+        accessTimeout = 1*1000; // TODO make configurable
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -281,6 +284,12 @@ public abstract class InternalAbstractGraphDatabase
         }
     }
 
+    protected void createDatabaseAvailability()
+    {
+        // This is how we lock the entire database to avoid threads using it during lifecycle events
+        life.add( new DatabaseAvailability( txManager, availabilityGuard ) );
+    }
+
     protected void registerRecovery()
     {
         life.addLifecycleListener( new LifecycleListener()
@@ -309,6 +318,23 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void create()
     {
+        availabilityGuard = createAvailabilityGuard();
+
+        availabilityGuard.addListener( new AvailabilityGuard.AvailabilityListener()
+        {
+            @Override
+            public void available()
+            {
+                msgLog.logMessage( "Database is now ready" );
+            }
+
+            @Override
+            public void unavailable()
+            {
+                msgLog.logMessage( "Database is no longer ready" );
+            }
+        } );
+
         fileSystem = createFileSystemAbstraction();
 
         // Create logger
@@ -479,16 +505,20 @@ public abstract class InternalAbstractGraphDatabase
 
         life.add( new MonitorGc( config, msgLog ) );
 
-        // This is how we lock the entire database to avoid threads using it during lifecycle events
-        life.add( new DatabaseAvailability() );
+        life.add( nodeManager );
+
+        createDatabaseAvailability();
 
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
 
-        life.add( nodeManager );
-
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected AvailabilityGuard createAvailabilityGuard()
+    {
+        return new AvailabilityGuard( Clock.REAL_CLOCK, 1 );
     }
 
     protected TransactionStateFactory createTransactionStateFactory()
@@ -631,12 +661,19 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
+    public boolean isAvailable( long timeout )
+    {
+        return availabilityGuard.isAvailable( timeout );
+    }
+
+    @Override
     public void shutdown()
     {
         try
         {
             msgLog.info( "Shutdown started" );
             msgLog.flush();
+            availabilityGuard.shutdown();
             life.shutdown();
         }
         catch ( LifecycleException throwable )
@@ -811,6 +848,9 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Transaction beginTx( ForceMode forceMode )
     {
+        if (!availabilityGuard.isAvailable( accessTimeout ))
+            throw new TransactionFailureException( "Database is currently not available "+availabilityGuard.hashCode() );
+
         if ( transactionRunning() )
         {
             return new PlaceboTransaction( txManager, lockManager, txManager.getTransactionState() );
@@ -1324,6 +1364,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) kernelPanicEventGenerator;
             }
+            else if ( LifeSupport.class.isAssignableFrom( type ) )
+            {
+                return (T) life;
+            }
             else if ( DependencyResolver.class.isAssignableFrom( type ) )
             {
                 return (T) DependencyResolverImpl.this;
@@ -1371,45 +1415,6 @@ public abstract class InternalAbstractGraphDatabase
         public void shutdown()
                 throws Throwable
         {
-        }
-    }
-
-    /**
-     * This class handles whether the database as a whole is available to use at all.
-     * As it runs as the last service in the lifecycle list, the stop() is called first
-     * on stop, shutdown or restart, and thus blocks access to everything else for outsiders.
-     */
-    class DatabaseAvailability
-            implements Lifecycle
-    {
-        @Override
-        public void init()
-                throws Throwable
-        {
-            // TODO: Starting database. Make sure none can access it through lock or CAS
-        }
-
-        @Override
-        public void start()
-                throws Throwable
-        {
-            // TODO: Starting database. Make sure none can access it through lock or CAS
-            msgLog.logMessage( "Started - database is now available" );
-        }
-
-        @Override
-        public void stop()
-                throws Throwable
-        {
-            // TODO: Starting database. Make sure none can access it through lock or CAS
-            msgLog.logMessage( "Stopping - database is now unavailable" );
-        }
-
-        @Override
-        public void shutdown()
-                throws Throwable
-        {
-            // TODO: Starting database. Make sure none can access it through lock or CAS
         }
     }
 

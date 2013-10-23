@@ -31,7 +31,7 @@ import org.neo4j.com.Server;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveClient.SlaveRequestType;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.tooling.RealClock;
+import org.neo4j.tooling.Clock;
 
 public class SlaveServer extends Server<Slave, Void>
 {
@@ -40,7 +40,7 @@ public class SlaveServer extends Server<Slave, Void>
     public SlaveServer( Slave requestTarget, Configuration config, Logging logging )
             throws IOException
     {
-        super( requestTarget, config, logging, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, ALWAYS_MATCH, new RealClock() );
+        super( requestTarget, config, logging, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, ALWAYS_MATCH, Clock.REAL_CLOCK );
     }
 
     @Override

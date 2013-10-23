@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.tooling.RealClock;
+import org.neo4j.tooling.Clock;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -116,7 +116,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels,
-                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( ResourcePool.DEFAULT_CHECK_INTERVAL, new RealClock() ),
+                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( ResourcePool.DEFAULT_CHECK_INTERVAL, Clock.REAL_CLOCK ),
                 new LoggingResourcePoolMonitor( msgLog ))
         {
             @Override

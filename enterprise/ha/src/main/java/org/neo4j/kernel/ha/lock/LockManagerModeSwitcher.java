@@ -21,11 +21,11 @@ package org.neo4j.kernel.ha.lock;
 
 import java.net.URI;
 
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.InstanceAccessGuard;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -43,14 +43,14 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
     private final HaXaDataSourceManager xaDsm;
     private final Master master;
     private final RequestContextFactory requestContextFactory;
-    private final InstanceAccessGuard switchBlock;
+    private final AvailabilityGuard availabilityGuard;
     private final Config config;
 
     public LockManagerModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                     DelegateInvocationHandler<LockManager> delegate,
                                     AbstractTransactionManager txManager,
                                     TxHook txHook, HaXaDataSourceManager xaDsm, Master master,
-                                    RequestContextFactory requestContextFactory, InstanceAccessGuard switchBlock,
+                                    RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
                                     Config config )
     {
         super( stateMachine, delegate );
@@ -59,7 +59,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
         this.xaDsm = xaDsm;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.switchBlock = switchBlock;
+        this.availabilityGuard = availabilityGuard;
         this.config = config;
     }
 
@@ -75,13 +75,13 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
         SlaveLockManager.Configuration slaveConfig = new SlaveLockManager.Configuration()
         {
             @Override
-            public long getStateSwitchTimeout()
+            public long getAvailabilityTimeout()
             {
                 return config.get( HaSettings.state_switch_timeout );
             }
         };
 
-        return new SlaveLockManager(txManager, txHook, switchBlock, slaveConfig, new RagManager( txManager ),
+        return new SlaveLockManager(txManager, txHook, availabilityGuard, slaveConfig, new RagManager( txManager ),
                 requestContextFactory, master, xaDsm );
     }
 }

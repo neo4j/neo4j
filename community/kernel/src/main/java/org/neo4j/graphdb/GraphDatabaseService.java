@@ -114,6 +114,12 @@ public interface GraphDatabaseService
     public Iterable<RelationshipType> getRelationshipTypes();
 
     /**
+     * Use this method to check if the database is in a usable state. If the database is currently not in a usable state,
+     * you can provide a timeout to wait for it to become so. If the database has been shutdown this immediately returns false.
+     */
+    public boolean isAvailable( long timeout );
+
+    /**
      * Shuts down Neo4j. After this method has been invoked, it's invalid to
      * invoke any methods in the Neo4j API and all references to this instance
      * of GraphDatabaseService should be discarded.

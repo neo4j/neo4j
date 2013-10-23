@@ -46,7 +46,6 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.tooling.Clock;
 import org.neo4j.tooling.FakeClock;
-import org.neo4j.tooling.RealClock;
 
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
@@ -125,7 +124,7 @@ public class ServerBuilder
             @Override
             protected DatabaseActions createDatabaseActions()
             {
-                Clock clockToUse = (clock != null) ? clock : new RealClock();
+                Clock clockToUse = (clock != null) ? clock : Clock.REAL_CLOCK;
 
                 return new DatabaseActions(
                         database,

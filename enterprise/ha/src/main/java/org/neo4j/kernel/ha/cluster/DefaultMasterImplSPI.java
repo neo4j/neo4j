@@ -63,6 +63,13 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
+    public boolean isAccessible()
+    {
+        // Wait for 5s for the database to become available, if not already so
+        return graphDb.isAvailable( 5000 );
+    }
+
+    @Override
     public void acquireLock( MasterImpl.LockGrabber grabber, Object... entities )
     {
         LockManager lockManager = graphDb.getLockManager();

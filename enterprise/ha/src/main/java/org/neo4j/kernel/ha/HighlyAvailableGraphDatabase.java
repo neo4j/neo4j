@@ -44,11 +44,12 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
@@ -87,7 +88,6 @@ import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -95,6 +95,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.tooling.Clock;
 
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
@@ -109,7 +110,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private DelegateInvocationHandler masterDelegateInvocationHandler;
     private LoggerContext loggerContext;
     private Master master;
-    private final InstanceAccessGuard accessGuard;
     private HighAvailabilityMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
     private LastUpdateTime lastUpdateTime;
@@ -150,10 +150,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
         super( storeDir, params,
-                Iterables.<Class<?>,Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,ClusterSettings.class ),
+                Iterables.<Class<?>, Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,
+                        ClusterSettings.class ),
                 indexProviders, kernelExtensions,
                 cacheProviders, txInterceptorProviders );
-        accessGuard = new InstanceAccessGuard();
         run();
     }
 
@@ -168,9 +168,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         super.create();
 
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( xaDataSourceManager,
-                (TxManager) txManager, accessGuard ) );
+                (TxManager) txManager, availabilityGuard ) );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
-                requestContextFactory, txManager, accessGuard, lastUpdateTime, config, msgLog ) );
+                requestContextFactory, txManager, availabilityGuard, lastUpdateTime, config, msgLog ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
         if ( !compatibilityMode )
@@ -178,9 +178,24 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             life.add( paxosLife );
         }
 
+        life.add( new DatabaseAvailability( txManager, availabilityGuard ) );
+
         life.add( new StartupWaiter() );
 
         diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
+    }
+
+    @Override
+    protected AvailabilityGuard createAvailabilityGuard()
+    {
+        // 3 conditions: DatabaseAvailability, HighAvailabilityMemberStateMachine, and HA Kernel Panic
+        return new AvailabilityGuard( Clock.REAL_CLOCK, 3 );
+    }
+
+    @Override
+    protected void createDatabaseAvailability()
+    {
+        // Skip this, it's done manually in create() to ensure it is as late as possible
     }
 
     public void start()
@@ -191,20 +206,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     public void stop()
     {
         life.stop();
-    }
-
-    @Override
-    protected org.neo4j.graphdb.Transaction beginTx( ForceMode forceMode )
-    {
-        // TODO first startup ever we don't have a proper db, so don't even serve read requests
-        // if this is a startup for where we have been a member of this cluster before we
-        // can server (possibly quite outdated) read requests.
-        if (!accessGuard.await( stateSwitchTimeoutMillis ))
-        {
-            throw new TransactionFailureException( "Timeout waiting for cluster to elect master" );
-        }
-
-        return super.beginTx( forceMode );
     }
 
     @Override
@@ -357,11 +358,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
                 new InstanceId( config.get( ClusterSettings.server_id ) ) );
-        memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, members, clusterEvents,
+        memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members, clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
 
         HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging.getConsoleLog( HighAvailabilityConsoleLogger.class), new InstanceId(config.get(ClusterSettings.server_id) ));
-        accessGuard.addListener( highAvailabilityConsoleLogger );
+        availabilityGuard.addListener( highAvailabilityConsoleLogger );
         clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
         clusterClient.addClusterListener( highAvailabilityConsoleLogger );
 
@@ -457,7 +458,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (LockManager) Proxy.newProxyInstance( LockManager.class.getClassLoader(),
                         new Class[]{LockManager.class}, lockManagerDelegate );
         new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate, txManager, txHook,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, accessGuard, config );
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, availabilityGuard, config );
         return lockManager;
     }
 
@@ -646,7 +647,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         @Override
         public void start() throws Throwable
         {
-            accessGuard.await( stateSwitchTimeoutMillis );
+            availabilityGuard.isAvailable( stateSwitchTimeoutMillis );
         }
     }
 }

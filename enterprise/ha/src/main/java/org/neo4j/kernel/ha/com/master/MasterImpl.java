@@ -43,6 +43,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
@@ -79,6 +80,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
     // SPI implementation, thus making it easier to test this class by mocking the SPI.
     public interface SPI
     {
+        boolean isAccessible();
+
         void acquireLock(LockGrabber grabber, Object... entities);
 
         Transaction beginTx() throws SystemException, NotSupportedException;
@@ -147,6 +150,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<Void> initializeTx( RequestContext context )
     {
+        if (!spi.isAccessible())
+        {
+            throw new TransactionFailureException( "Database is currently not available" );
+        }
+
         try
         {
             Transaction tx = spi.beginTx();

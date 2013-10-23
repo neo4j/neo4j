@@ -25,6 +25,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.logging.ConsoleLogger;
 
 /**
@@ -32,7 +33,7 @@ import org.neo4j.kernel.logging.ConsoleLogger;
  * are issued.
  */
 public class HighAvailabilityConsoleLogger
-    implements ClusterMemberListener, ClusterListener, InstanceAccessGuard.AccessListener
+    implements ClusterMemberListener, ClusterListener, AvailabilityGuard.AvailabilityListener
 {
     private ConsoleLogger console;
     private InstanceId myId;
@@ -172,7 +173,7 @@ public class HighAvailabilityConsoleLogger
      * Logged when users are allowed to access the database for transactions.
      */
     @Override
-    public void accessGranted()
+    public void available()
     {
         console.log( "Database available for write transactions" );
     }
@@ -181,7 +182,7 @@ public class HighAvailabilityConsoleLogger
      * Logged when users are not allowed to access the database for transactions.
      */
     @Override
-    public void accessDenied()
+    public void unavailable()
     {
         console.log( "Write transactions to database disabled" );
     }
