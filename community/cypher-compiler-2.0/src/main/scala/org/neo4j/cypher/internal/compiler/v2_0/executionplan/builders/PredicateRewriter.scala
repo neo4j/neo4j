@@ -41,13 +41,15 @@ class PredicateRewriter extends PlanBuilder {
 
   def findNodeWithLabels(tokens: Seq[QueryToken[Pattern]]): Option[LabelExtraction] =
     tokens.collectFirst {
-      case node@Unsolved(pattern@SingleNode(name, labels, false)) if labels.nonEmpty                                        =>
+      case node@Unsolved(pattern@SingleNode(name, labels, false, _)) if labels.nonEmpty                                        =>
         LabelExtraction(node, labels, Unsolved(pattern.copy(labels = Seq())), name)
 
-      case relationship@Unsolved(RelationshipPattern(pattern, left@SingleNode(name, labels, false), _)) if labels.nonEmpty =>
+      case relationship@Unsolved(RelationshipPattern(pattern, left@SingleNode(name, labels, false, _), _))
+        if labels.nonEmpty =>
         LabelExtraction(relationship, labels, Unsolved(pattern.changeEnds(left = left.copy(labels = Seq.empty))), name)
 
-      case relationship@Unsolved(RelationshipPattern(pattern, _, right@SingleNode(name, labels, false))) if labels.nonEmpty =>
+      case relationship@Unsolved(RelationshipPattern(pattern, _, right@SingleNode(name, labels, false, _)))
+        if labels.nonEmpty =>
         LabelExtraction(relationship, labels, Unsolved(pattern.changeEnds(right = right.copy(labels = Seq.empty))), name)
     }
 

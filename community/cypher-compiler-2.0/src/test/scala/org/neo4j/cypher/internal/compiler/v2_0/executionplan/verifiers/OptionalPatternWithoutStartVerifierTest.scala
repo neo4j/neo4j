@@ -31,7 +31,7 @@ class OptionalPatternWithoutStartVerifierTest extends Assertions {
   def should_throw_on_optional_pattern_without_start() {
     //GIVEN
     val q = Query.
-      matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Nil, Direction.OUTGOING, true)).
+      matches(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Nil, Direction.OUTGOING, true, Map.empty)).
       returns()
 
     //WHEN & THEN
@@ -44,8 +44,8 @@ class OptionalPatternWithoutStartVerifierTest extends Assertions {
     //GIVEN
     val q = Query.
       matches(
-      RelatedTo(SingleNode("a"), SingleNode("b"), "r", Nil, Direction.OUTGOING, true),
-      RelatedTo(SingleNode("a2"), SingleNode("b2"), "r2", Nil, Direction.OUTGOING, true)).
+      RelatedTo(SingleNode("a"), SingleNode("b"), "r", Nil, Direction.OUTGOING, true, Map.empty),
+      RelatedTo(SingleNode("a2"), SingleNode("b2"), "r2", Nil, Direction.OUTGOING, true, Map.empty)).
       returns()
 
     //WHEN & THEN
@@ -59,8 +59,8 @@ class OptionalPatternWithoutStartVerifierTest extends Assertions {
     val q = Query.
       start(NodeById("a", 0)).
       matches(
-      RelatedTo(SingleNode("a"), SingleNode("b"), "r", Nil, Direction.OUTGOING, true),
-      RelatedTo(SingleNode("a2"), SingleNode("b2"), "r2", Nil, Direction.OUTGOING, true)
+      RelatedTo(SingleNode("a"), SingleNode("b"), "r", Nil, Direction.OUTGOING, true, Map.empty),
+      RelatedTo(SingleNode("a2"), SingleNode("b2"), "r2", Nil, Direction.OUTGOING, true, Map.empty)
     ).
       returns()
 

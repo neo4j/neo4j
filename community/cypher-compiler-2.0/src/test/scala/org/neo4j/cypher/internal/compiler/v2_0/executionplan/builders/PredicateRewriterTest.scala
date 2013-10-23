@@ -68,7 +68,7 @@ object PredicateRewriterTest {
   val labeledB = SingleNode("b", Seq(label))
   val bareA = SingleNode("a")
   val bareB = SingleNode("b")
-  val relationshipLabeledBoth = RelatedTo(labeledA, labeledB, "r", Seq.empty, Direction.OUTGOING, false)
+  val relationshipLabeledBoth = RelatedTo(labeledA, labeledB, "r", Seq.empty, Direction.OUTGOING, false, Map.empty)
   val relationshipLabeledLeft = relationshipLabeledBoth.copy(right = bareB)
   val relationshipLabeledRight = relationshipLabeledBoth.copy(left = bareA)
   val relationshipLabeledNone = relationshipLabeledLeft.copy(left = bareA)

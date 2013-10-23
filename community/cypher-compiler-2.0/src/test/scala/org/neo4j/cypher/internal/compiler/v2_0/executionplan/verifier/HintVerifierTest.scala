@@ -38,7 +38,7 @@ import org.neo4j.graphdb.Direction
 
 class HintVerifierTest extends Assertions {
   val labeledA = SingleNode("a", Seq(UnresolvedLabel("Person")))
-  val relatedTo = RelatedTo(labeledA, SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, optional = false)
+  val relatedTo = RelatedTo(labeledA, SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, optional = false, Map.empty)
 
   @Test
   def throws_when_the_predicate_is_not_usable_for_index_seek() {
@@ -115,7 +115,7 @@ class HintVerifierTest extends Assertions {
   def accepts_query_with_label_on_the_right_side() {
     //GIVEN  MATCH b-->a:Person
     val q = Query.
-      matches(RelatedTo(SingleNode("b"), labeledA, "r", Seq.empty, Direction.OUTGOING, optional = false)).
+      matches(RelatedTo(SingleNode("b"), labeledA, "r", Seq.empty, Direction.OUTGOING, optional = false, Map.empty)).
       using(NodeByLabel("a", "Person")).
       returns()
 

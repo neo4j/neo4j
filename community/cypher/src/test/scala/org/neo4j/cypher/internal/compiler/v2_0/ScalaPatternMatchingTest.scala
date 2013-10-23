@@ -150,7 +150,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineHelper with PatternGraphBu
     val r1 = relate(n2, n3)
 
     val pr1 = RelatedTo("a", "b", "pr1", Seq.empty, Direction.BOTH)
-    val pr2 = RelatedTo(SingleNode("b"), SingleOptionalNode("c"), "pr2", Seq.empty, Direction.OUTGOING, optional = true)
+    val pr2 = RelatedTo(SingleNode("b"), SingleOptionalNode("c"), "pr2", Seq.empty, Direction.OUTGOING, optional = true, Map.empty)
 
     val startingState = ExecutionContext.empty.newWith(Map("pr1" -> r0))
     val symbolTable = symbols.add("pr1", RelationshipType())

@@ -71,7 +71,7 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
 
     relate(a, b)
 
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false, Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern)))
     val m = createExecutionContext(Map("a" -> a))
 
@@ -89,7 +89,7 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
 
     relate(a, b)
 
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false, Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern)))
     val m = createExecutionContext(Map("a" -> a))
 

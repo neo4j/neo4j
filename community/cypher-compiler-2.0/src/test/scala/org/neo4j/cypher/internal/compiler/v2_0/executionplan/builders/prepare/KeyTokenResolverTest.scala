@@ -79,11 +79,11 @@ class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
   @Test
   def should_resolve_label_keytoken_on_related_to_pattern() {
     val q = Query.
-      matches(RelatedTo(SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, optional = false)).
+      matches(RelatedTo(SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, optional = false, Map.empty)).
       returns()
 
     val result = assertAccepts(q)
-    assert(result.query.patterns === Seq(Unsolved(RelatedTo(SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, optional = false))))
+    assert(result.query.patterns === Seq(Unsolved(RelatedTo(SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, optional = false, Map.empty))))
   }
 
   @Test

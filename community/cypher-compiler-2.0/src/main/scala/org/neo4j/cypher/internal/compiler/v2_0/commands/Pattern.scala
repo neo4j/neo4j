@@ -25,6 +25,8 @@ import org.neo4j.graphdb.Direction
 import collection.Seq
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.GraphElementPropertyFunctions
+import collection.Map
 
 trait Pattern extends TypeSafe with AstNode[Pattern] {
   def optional: Boolean
@@ -47,7 +49,7 @@ object Pattern {
 
 object RelationshipPattern {
   def unapply(x: Any): Option[(RelationshipPattern, SingleNode, SingleNode)] = x match {
-    case pattern@RelatedTo(left, right, _, _, _, _)                   => Some((pattern, left, right))
+    case pattern@RelatedTo(left, right, _, _, _, _, _)                => Some((pattern, left, right))
     case pattern@VarLengthRelatedTo(_, left, right, _, _, _, _, _, _) => Some((pattern, left, right))
     case pattern@ShortestPath(_, left, right, _, _, _, _, _, _)       => Some((pattern, left, right))
     case _                                                    => None
@@ -60,23 +62,10 @@ trait RelationshipPattern {
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): Pattern
 }
 
-
-object RelatedTo {
-  def apply(left: String, right: String, relName: String, relType: String, direction: Direction, optional: Boolean = false) =
-    new RelatedTo(SingleNode(left), SingleNode(right), relName, Seq(relType), direction, optional)
-
-  def apply(left: String, right: String, relName: String, types: Seq[String], direction: Direction) =
-    new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, false)
-
-  def optional(left: String, right: String, relName: String, types: Seq[String], direction: Direction) =
-    new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, true)
-}
-
-object SingleOptionalNode {
-  def apply(name:String, labels:Seq[KeyToken]=Seq.empty) = SingleNode(name, labels, optional = true)
-}
-
-case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, optional: Boolean = false) extends Pattern {
+case class SingleNode(name: String,
+                      labels: Seq[KeyToken] = Seq.empty,
+                      optional: Boolean = false,
+                      properties: Map[String, Expression]=Map.empty) extends Pattern with GraphElementPropertyFunctions {
   def possibleStartPoints = Seq(name -> NodeType())
 
   def predicate = True()
@@ -85,7 +74,7 @@ case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, optional:
 
   def relTypes = Seq.empty
 
-  def rewrite(f: (Expression) => Expression) = SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), optional)
+  def rewrite(f: (Expression) => Expression) = SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), optional, properties.rewrite(f))
 
   def children = Seq.empty
 
@@ -101,12 +90,29 @@ case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, optional:
   }
 }
 
+object RelatedTo {
+  def apply(left: String, right: String, relName: String, relType: String, direction: Direction) =
+    new RelatedTo(SingleNode(left), SingleNode(right), relName, Seq(relType), direction, false, Map.empty)
+
+  def apply(left: String, right: String, relName: String, types: Seq[String], direction: Direction) =
+    new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, false, Map.empty)
+
+  def optional(left: String, right: String, relName: String, types: Seq[String], direction: Direction) =
+    new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, true, Map.empty)
+}
+
+object SingleOptionalNode {
+  def apply(name:String, labels:Seq[KeyToken]=Seq.empty) = SingleNode(name, labels, optional = true)
+}
+
 case class RelatedTo(left: SingleNode,
                      right: SingleNode,
                      relName: String,
                      relTypes: Seq[String],
                      direction: Direction,
-                     optional: Boolean) extends Pattern with RelationshipPattern {
+                     optional: Boolean = false,
+                     properties: Map[String, Expression])
+  extends Pattern with RelationshipPattern with GraphElementPropertyFunctions {
   override def toString = left + leftArrow(direction) + relInfo + rightArrow(direction) + right
 
   private def relInfo: String = {
@@ -119,7 +125,7 @@ case class RelatedTo(left: SingleNode,
   val possibleStartPoints: Seq[(String, MapType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->RelationshipType()
 
   def rewrite(f: (Expression) => Expression) =
-    new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, optional)
+    new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, optional, properties.rewrite(f))
 
   def rels = Seq(relName)
 
