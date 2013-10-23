@@ -94,15 +94,15 @@ trait LockingQueryContext extends QueryContext {
 trait Operations[T <: PropertyContainer] {
   def delete(obj: T)
 
-  def setProperty(obj: T, propertyKeyId: Int, value: Any)
+  def setProperty(obj: Long, propertyKeyId: Int, value: Any)
 
-  def removeProperty(obj: T, propertyKeyId: Int)
+  def removeProperty(obj: Long, propertyKeyId: Int)
 
-  def getProperty(obj: T, propertyKeyId: Int): Any
+  def getProperty(obj: Long, propertyKeyId: Int): Any
 
-  def hasProperty(obj: T, propertyKeyId: Int): Boolean
+  def hasProperty(obj: Long, propertyKeyId: Int): Boolean
 
-  def propertyKeyIds(obj: T): Iterator[Int]
+  def propertyKeyIds(obj: Long): Iterator[Int]
 
   def getById(id: Long): T
 

@@ -133,24 +133,23 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
       statement.dataWriteOperations().nodeDelete(obj.getId)
     }
 
-    def propertyKeyIds(obj: Node): Iterator[Int] =
-      statement.readOperations().nodeGetAllProperties(obj.getId).asScala.map(_.propertyKeyId())
+    def propertyKeyIds(id: Long): Iterator[Int] =
+      statement.readOperations().nodeGetAllProperties(id).asScala.map(_.propertyKeyId())
 
-    def getProperty(obj: Node, propertyKeyId: Int): Any = {
-      statement.readOperations().nodeGetProperty(obj.getId, propertyKeyId).value(null)
+    def getProperty(id: Long, propertyKeyId: Int): Any = {
+      statement.readOperations().nodeGetProperty(id, propertyKeyId).value(null)
     }
 
-    def hasProperty(obj: Node, propertyKey: Int) =
-      statement.readOperations().nodeGetProperty(obj.getId, propertyKey).isDefined
+    def hasProperty(id: Long, propertyKey: Int) =
+      statement.readOperations().nodeGetProperty(id, propertyKey).isDefined
 
-    def removeProperty(obj: Node, propertyKeyId: Int) {
-      statement.dataWriteOperations().nodeRemoveProperty(obj.getId, propertyKeyId)
+    def removeProperty(id: Long, propertyKeyId: Int) {
+      statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
     }
 
-    def setProperty(obj: Node, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().nodeSetProperty(obj.getId, properties.Property.property(propertyKeyId, value))
+    def setProperty(id: Long, propertyKeyId: Int, value: Any) {
+      statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
     }
-
 
     def getById(id: Long) = try {
       graph.getNodeById(id)
@@ -173,21 +172,21 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
       statement.dataWriteOperations().relationshipDelete(obj.getId)
     }
 
-    def propertyKeyIds(obj: Relationship): Iterator[Int] =
-      statement.readOperations().relationshipGetAllProperties(obj.getId).asScala.map(_.propertyKeyId())
+    def propertyKeyIds(id: Long): Iterator[Int] =
+      statement.readOperations().relationshipGetAllProperties(id).asScala.map(_.propertyKeyId())
 
-    def getProperty(obj: Relationship, propertyKeyId: Int): Any =
-      statement.readOperations().relationshipGetProperty(obj.getId, propertyKeyId).value(null)
+    def getProperty(id: Long, propertyKeyId: Int): Any =
+      statement.readOperations().relationshipGetProperty(id, propertyKeyId).value(null)
 
-    def hasProperty(obj: Relationship, propertyKey: Int) =
-      statement.readOperations().relationshipGetProperty(obj.getId, propertyKey).isDefined
+    def hasProperty(id: Long, propertyKey: Int) =
+      statement.readOperations().relationshipGetProperty(id, propertyKey).isDefined
 
-    def removeProperty(obj: Relationship, propertyKeyId: Int) {
-      statement.dataWriteOperations().relationshipRemoveProperty(obj.getId, propertyKeyId)
+    def removeProperty(id: Long, propertyKeyId: Int) {
+      statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
     }
 
-    def setProperty(obj: Relationship, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().relationshipSetProperty(obj.getId, properties.Property.property(propertyKeyId, value))
+    def setProperty(id: Long, propertyKeyId: Int, value: Any) {
+      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
     }
 
     def getById(id: Long) = graph.getRelationshipById(id)

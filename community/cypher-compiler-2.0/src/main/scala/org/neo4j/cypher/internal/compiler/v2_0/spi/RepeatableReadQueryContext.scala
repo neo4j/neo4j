@@ -63,14 +63,16 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends De
   }
 
   class RepeatableReadOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
-    override def getProperty(obj: T, propertyKeyId: Int) = {
+    override def getProperty(id: Long, propertyKeyId: Int) = {
+      val obj = inner.getById(id)
       locker.acquireLock(obj)
-      inner.getProperty(obj, propertyKeyId)
+      inner.getProperty(id, propertyKeyId)
     }
 
-    override def hasProperty(obj: T, propertyKeyId: Int) = {
+    override def hasProperty(id: Long, propertyKeyId: Int) = {
+      val obj = inner.getById(id)
       locker.acquireLock(obj)
-      inner.hasProperty(obj, propertyKeyId)
+      inner.hasProperty(id, propertyKeyId)
     }
 
     override def getById(id: Long): T = {
