@@ -112,7 +112,7 @@ public class TxPushStrategyConfigIT
     {
         startCluster( 3, 1, "fixed" );
         cluster.shutdown( cluster.getMaster() );
-        cluster.await( masterAvailable(), 10 );
+        cluster.await( masterAvailable() );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
         createTransaction( newMaster );
