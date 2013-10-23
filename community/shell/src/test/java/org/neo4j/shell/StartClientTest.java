@@ -19,6 +19,9 @@
  */
 package org.neo4j.shell;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -49,6 +52,22 @@ public class StartClientTest
 
         // When
         StartClient.main(new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()});
+
+        // Then
+        db.getGraphDatabaseService().beginTx();
+        assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
+                equalTo( "bar" ) );
+    }
+
+    @Test
+    public void givenShellClientWhenReadFromStdinThenExecuteFileCommands() throws IOException
+    {
+        // Given
+        // an empty database
+
+        // When
+        System.setIn(new ByteArrayInputStream( "CREATE (n {foo:'bar'});".getBytes() ));
+        StartClient.main(new String[]{"-file", "-"});
 
         // Then
         db.getGraphDatabaseService().beginTx();

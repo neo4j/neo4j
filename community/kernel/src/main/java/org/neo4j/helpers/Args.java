@@ -178,7 +178,7 @@ public class Args
 
     private static boolean isOption( String arg )
     {
-        return arg.startsWith( "-" );
+        return arg.startsWith( "-" ) && arg.length() > 1;
     }
 
     private static String stripOption( String arg )

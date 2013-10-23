@@ -23,7 +23,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.rmi.ConnectException;
@@ -318,22 +318,37 @@ public class StartClient
         String fileName = args.get( ARG_FILE, null );
         if ( fileName != null )
         {
-            File file = new File( fileName );
-            if ( !file.exists() )
+            BufferedReader reader = null;
+            try
             {
-                throw new ShellException( "File to execute " +
-                        "does not exist " + fileName );
+                if ( fileName.equals( "-" ) )
+                {
+                    reader = new BufferedReader( new InputStreamReader( System.in ) );
+                }
+                else
+                {
+                    File file = new File( fileName );
+                    if ( !file.exists() )
+                    {
+                        throw new ShellException( "File to execute " + "does not exist " + fileName );
+                    }
+                    reader = newBufferedFileReader( file, UTF_8 );
+                }
+                executeCommandStream( client, reader );
             }
-            executeFile( client, file );
+            finally
+            {
+                reader.close();
+            }
             return;
         }
 
         client.grabPrompt();
     }
 
-    private static void executeFile( ShellClient client, File file ) throws IOException, ShellException
+    private static void executeCommandStream( ShellClient client, BufferedReader reader ) throws IOException,
+            ShellException
     {
-        BufferedReader reader = newBufferedFileReader( file, UTF_8 );
         try
         {
             for ( String line; ( line = reader.readLine() ) != null; )
@@ -453,8 +468,8 @@ public class StartClient
                         padArg( ARG_PID, longestArgLength ) + "Process ID to connect to\n" +
                         padArg( ARG_COMMAND, longestArgLength ) + "Command line to execute. After executing it the " +
                         "shell exits\n" +
-                        padArg( ARG_FILE, longestArgLength ) + "File containing commands to execute. After executing it the " +
-                        "shell exits\n" +
+                        padArg( ARG_FILE, longestArgLength ) + "File containing commands to execute, or '-' to read " +
+                        "from stdin. After executing it the shell exits\n" +
                         padArg( ARG_READONLY, longestArgLength ) + "Connect in readonly mode\n" +
                         padArg( ARG_PATH, longestArgLength ) + "Points to a neo4j db path so that a local server can " +
                         "be started there\n" +
