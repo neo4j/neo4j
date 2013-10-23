@@ -49,3 +49,17 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
 
   def symbolTableDependencies = mapExpr.symbolTableDependencies
 }
+
+/*
+git rm -rf cypher-compiler-2.0/src/main/scala/org/neo4j/cypher/internal/compiler/v2_0/MarkOptionalNodes.scala
+git rm -rf cypher-compiler-2.0/src/main/scala/org/neo4j/cypher/internal/compiler/v2_0/commands/expressions/Nullable.scala
+git rm -rf cypher-compiler-2.0/src/main/scala/org/neo4j/cypher/internal/compiler/v2_0/symbols/LabelType.scala
+git rm -rf cypher-compiler-2.0/src/test/scala/org/neo4j/cypher/internal/compiler/v2_0/SemanticErrorTest.scala
+git rm -rf cypher-compiler-2.0/src/test/scala/org/neo4j/cypher/internal/compiler/v2_0/commands/HasRelationshipTest.scala
+git rm -rf cypher/src/main/scala/org/neo4j/cypher/internal/compiler/v2_0/commands/expressions/Nullable.scala
+git rm -rf cypher/src/main/scala/org/neo4j/cypher/internal/compiler/v2_0/symbols/LabelType.scala
+git rm -rf cypher/src/test/scala/org/neo4j/cypher/SemanticErrorAcceptanceTest.scala
+git rm -rf cypher/src/test/scala/org/neo4j/cypher/internal/compiler/v2_0/SemanticErrorTest.scala
+git rm -rf cypher/src/test/scala/org/neo4j/cypher/internal/compiler/v2_0/commands/expressions/DivideTest.scala
+git rm -rf kernel/src/main/java/org/neo4j/kernel/api/scan/ScannableStores.java
+*/

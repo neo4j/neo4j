@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import internal.{CypherCompiler, LRUCache}
+import org.neo4j.cypher.internal.{ExecutionPlan, CypherCompiler, LRUCache}
 import internal.prettifier.Prettifier
 import internal.spi.gdsimpl.{TransactionBoundExecutionContext, TransactionBoundPlanContext}
 import internal.spi.{ExceptionTranslatingQueryContext, QueryContext}
