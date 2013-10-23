@@ -50,6 +50,7 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class TestBackup
@@ -393,7 +394,8 @@ public class TestBackup
                 index.add( node, "key", "value" + i );
                 tx.success();
                 tx.finish();
-                backup.incremental( backupPath.getPath() );
+                backup = backup.incremental( backupPath.getPath() );
+                assertTrue( "Should be consistent", backup.isConsistent() );
                 assertEquals( lastCommittedTxForLucene + i + 1,
                         getLastCommittedTx( backupPath.getPath() ) );
             }
@@ -495,7 +497,8 @@ public class TestBackup
             tx.finish();
         }
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         db.shutdown();
     }
