@@ -257,11 +257,11 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
   @Test def shouldFailIfNoParensAroundNode() {
     test(
       "match n:Person return n",
-      "Parenthesises are required to identify nodes in patterns (line 1, column 7)"
+      "Parentheses are required to identify nodes in patterns (line 1, column 7)"
     )
     test(
       "match n {foo: 'bar'} return n",
-      "Parenthesises are required to identify nodes in patterns (line 1, column 7)"
+      "Parentheses are required to identify nodes in patterns (line 1, column 7)"
     )
   }
 

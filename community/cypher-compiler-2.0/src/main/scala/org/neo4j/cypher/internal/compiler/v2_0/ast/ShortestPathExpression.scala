@@ -29,9 +29,10 @@ case class ShortestPathExpression(pattern: ShortestPath) extends Expression with
   def token = pattern.token
   protected def possibleTypes = Set(CollectionType(PathType()))
 
-  override def semanticCheck(ctx: SemanticContext) = {
-    pattern.semanticCheck(Pattern.SemanticContext.Expression) then super.semanticCheck(ctx)
-  }
+  override def semanticCheck(ctx: SemanticContext) =
+    pattern.declareIdentifiers(Pattern.SemanticContext.Expression) then
+    pattern.semanticCheck(Pattern.SemanticContext.Expression) then
+    super.semanticCheck(ctx)
 
   def toCommand: CommandExpression = commandexpressions.ShortestPathExpression(pattern.toLegacyPatterns(None).head)
 }
