@@ -49,10 +49,10 @@ object Pattern {
 
 object RelationshipPattern {
   def unapply(x: Any): Option[(RelationshipPattern, SingleNode, SingleNode)] = x match {
-    case pattern@RelatedTo(left, right, _, _, _, _, _)                => Some((pattern, left, right))
-    case pattern@VarLengthRelatedTo(_, left, right, _, _, _, _, _, _) => Some((pattern, left, right))
-    case pattern@ShortestPath(_, left, right, _, _, _, _, _, _)       => Some((pattern, left, right))
-    case _                                                    => None
+    case pattern@RelatedTo(left, right, _, _, _, _, _)                   => Some((pattern, left, right))
+    case pattern@VarLengthRelatedTo(_, left, right, _, _, _, _, _, _, _) => Some((pattern, left, right))
+    case pattern@ShortestPath(_, left, right, _, _, _, _, _, _)          => Some((pattern, left, right))
+    case _                                                               => None
   }
 }
 
@@ -152,7 +152,7 @@ abstract class PathPattern extends Pattern with RelationshipPattern {
 object VarLengthRelatedTo {
   def apply(pathName: String, left: String, right: String, minHops: Option[Int], maxHops: Option[Int], relTypes: String,
             direction: Direction, relIterator:Option[String]=None, optional: Boolean = false) =
-    new VarLengthRelatedTo(pathName, SingleNode(left), SingleNode(right), minHops, maxHops, Seq(relTypes), direction, relIterator, optional)
+    new VarLengthRelatedTo(pathName, SingleNode(left), SingleNode(right), minHops, maxHops, Seq(relTypes), direction, relIterator, optional, Map.empty)
 }
 
 case class VarLengthRelatedTo(pathName: String,
@@ -163,7 +163,8 @@ case class VarLengthRelatedTo(pathName: String,
                               relTypes: Seq[String],
                               direction: Direction,
                               relIterator: Option[String],
-                              optional: Boolean) extends PathPattern {
+                              optional: Boolean,
+                              properties: Map[String, Expression]) extends PathPattern with GraphElementPropertyFunctions {
 
   override def toString: String = pathName + "=" + left + leftArrow(direction) + relInfo + rightArrow(direction) + right
 
@@ -189,7 +190,7 @@ case class VarLengthRelatedTo(pathName: String,
 
   def rewrite(f: (Expression) => Expression) =
     new VarLengthRelatedTo(pathName, left.rewrite(f), right.rewrite(f),
-      minHops, maxHops, relTypes, direction, relIterator, optional)
+      minHops, maxHops, relTypes, direction, relIterator, optional, properties.rewrite(f))
 
   lazy val possibleStartPoints: Seq[(String, AnyType)] =
     left.possibleStartPoints ++

@@ -36,10 +36,10 @@ object MatchPattern {
       }
 
       val theThings: Seq[TUPLE] = patterns.map {
-        case SingleNode(n, _, _, _)                            => Seq(n) -> Seq()
-        case RelatedTo(from, to, r, _, _, _, _)                => tuple(from.name, to.name)
-        case ShortestPath(_, from, to, _, _, _, _, _, _)       => tuple(from.name, to.name)
-        case VarLengthRelatedTo(_, from, to, _, _, _, _, _, _) => tuple(from.name, to.name)
+        case SingleNode(n, _, _, _)                               => Seq(n) -> Seq()
+        case RelatedTo(from, to, r, _, _, _, _)                   => tuple(from.name, to.name)
+        case ShortestPath(_, from, to, _, _, _, _, _, _)          => tuple(from.name, to.name)
+        case VarLengthRelatedTo(_, from, to, _, _, _, _, _, _, _) => tuple(from.name, to.name)
       }
 
       val (nodes, rels) = theThings.reduce( (a,b) => {

@@ -84,7 +84,7 @@ object PredicateRewriterTest {
   val relationshipPropsOnBoth = relationshipBare.copy(left = propertiedA, right = propertiedB)
   val relationshipPropsOnLeft = relationshipBare.copy(left = propertiedA)
   val relationshipPropsOnRight = relationshipBare.copy(right = propertiedB)
-  val varlengthRelatedToNoLabels = VarLengthRelatedTo("p", bareA, bareB, None, None, Seq(), Direction.OUTGOING, None, optional = false)
+  val varlengthRelatedToNoLabels = VarLengthRelatedTo("p", bareA, bareB, None, None, Seq(), Direction.OUTGOING, None, optional = false, Map.empty)
 
 
   val predicateForLabelA = HasLabel(Identifier("a"), label)
