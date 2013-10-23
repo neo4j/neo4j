@@ -38,6 +38,8 @@ trait BuilderTest extends Assertions {
   // for avoiding missing an override while refactoring
   final def plan(q: PartiallySolvedQuery): ExecutionPlanInProgress = plan(NullPipe, q)
 
+  final def plan(q: Query): ExecutionPlanInProgress = plan(NullPipe, PartiallySolvedQuery(q))
+
   final def plan(p: Pipe, q: PartiallySolvedQuery): ExecutionPlanInProgress = ExecutionPlanInProgress(q, p)
 
   def assertAccepts(q: PartiallySolvedQuery): ExecutionPlanInProgress = assertAccepts(plan(q))

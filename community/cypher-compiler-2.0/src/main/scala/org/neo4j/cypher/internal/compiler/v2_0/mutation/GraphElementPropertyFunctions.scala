@@ -51,6 +51,10 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
     }
   }
 
+  def toString(m:Map[String,Expression]):String = m.map {
+    case (k, e) => "%s: %s".format(k, e.toString)
+  }.mkString("{", ", ", "}")
+
   def getMapFromExpression(v: Any): Map[String, Any] = {
     v match {
       case _: collection.Map[_, _] => v.asInstanceOf[collection.Map[String, Any]].toMap

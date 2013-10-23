@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PlanBuilder
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.compiler.v2_0.commands.ReturnItem
-import org.neo4j.cypher.internal.compiler.v2_0.commands.HasLabel
-import org.neo4j.cypher.internal.compiler.v2_0.commands.SingleNode
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands._
+import commands.expressions.{Literal, Property, Identifier}
+import commands.values.{UnresolvedProperty, UnresolvedLabel}
+import executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.Direction
+import java.util
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import java.util
+import org.junit.Test
 
 @RunWith(value = classOf[Parameterized])
 class PredicateRewriterTest(name: String,
@@ -53,30 +51,48 @@ class PredicateRewriterTest(name: String,
     }
 
     // Otherwise, when supposed to accept...
-    val result = assertAccepts(q)
+    val result = untilDone(plan(q))
 
     // Then
-    assert(result.query.where === expectedWhere.map(Unsolved(_)))
-    assert(result.query.patterns === expectedPattern.map(Unsolved(_)))
+    assert(result.query.where.toSet === expectedWhere.map(Unsolved.apply).toSet)
+    assert(result.query.patterns.toSet === expectedPattern.map(Unsolved.apply).toSet)
   }
+
+  private def untilDone(q: ExecutionPlanInProgress): ExecutionPlanInProgress =
+    if (builder.canWorkWith(q, context))
+      untilDone(builder(q, context))
+    else q
 }
 
 object PredicateRewriterTest {
-
+  val properties = Map("foo" -> Literal("bar"))
   val label = UnresolvedLabel("Person")
+
+  // Nodes
   val labeledA = SingleNode("a", Seq(label))
   val labeledB = SingleNode("b", Seq(label))
+  val propertiedA = SingleNode("a", properties = properties)
+  val propertiedB = SingleNode("b", properties = properties)
   val bareA = SingleNode("a")
   val bareB = SingleNode("b")
-  val relationshipLabeledBoth = RelatedTo(labeledA, labeledB, "r", Seq.empty, Direction.OUTGOING, false, Map.empty)
+
+  // Relationships
+  val relationshipLabeledBoth = RelatedTo(labeledA, labeledB, "r", Seq.empty, Direction.OUTGOING, optional = false, Map.empty)
   val relationshipLabeledLeft = relationshipLabeledBoth.copy(right = bareB)
   val relationshipLabeledRight = relationshipLabeledBoth.copy(left = bareA)
-  val relationshipLabeledNone = relationshipLabeledLeft.copy(left = bareA)
-  val varlengthRelatedToNoLabels = VarLengthRelatedTo("p", bareA, bareB, None, None, Seq(), Direction.OUTGOING, None, false)
-  val predicateA = HasLabel(Identifier("a"), label)
-  val predicateB = HasLabel(Identifier("b"), label)
+  val relationshipBare = relationshipLabeledLeft.copy(left = bareA)
+  val relationshipPropsOnBoth = relationshipBare.copy(left = propertiedA, right = propertiedB)
+  val relationshipPropsOnLeft = relationshipBare.copy(left = propertiedA)
+  val relationshipPropsOnRight = relationshipBare.copy(right = propertiedB)
+  val varlengthRelatedToNoLabels = VarLengthRelatedTo("p", bareA, bareB, None, None, Seq(), Direction.OUTGOING, None, optional = false)
+
+
+  val predicateForLabelA = HasLabel(Identifier("a"), label)
+  val predicateForLabelB = HasLabel(Identifier("b"), label)
   val shortestPathNoLabels = ShortestPath("p", bareA, bareB, Seq.empty, Direction.OUTGOING, None, optional = false, single = false, None)
 
+  val predicateForPropertiedA = Equals(Property(Identifier("a"), UnresolvedProperty("foo")), Literal("bar"))
+  val predicateForPropertiedB = Equals(Property(Identifier("b"), UnresolvedProperty("foo")), Literal("bar"))
 
   @Parameters(name = "{0}")
   def parameters: util.Collection[Array[AnyRef]] = {
@@ -96,24 +112,24 @@ object PredicateRewriterTest {
 
     add("MATCH a:Person RETURN a => MATCH a WHERE a:Person RETURN a",
       labeledA,
-      Seq(predicateA),
+      Seq(predicateForLabelA),
       Seq(bareA)
     )
 
     add("MATCH a:Person-->b RETURN a => MATCH a-->b WHERE a:Person RETURN a",
       relationshipLabeledLeft,
-      Seq(predicateA),
-      Seq(relationshipLabeledNone)
+      Seq(predicateForLabelA),
+      Seq(relationshipBare)
     )
 
     add("MATCH a-->b:Person RETURN a => MATCH a-->b WHERE b:Person RETURN a",
       relationshipLabeledRight,
-      Seq(predicateB),
-      Seq(relationshipLabeledNone)
+      Seq(predicateForLabelB),
+      Seq(relationshipBare)
     )
 
     add("MATCH (a)-->(b?:Person) RETURN a => :(",
-      relationshipLabeledNone.copy(right = labeledB.copy(optional = true)),
+      relationshipBare.copy(right = labeledB.copy(optional = true)),
       Seq(),
       Seq()
     )
@@ -126,13 +142,13 @@ object PredicateRewriterTest {
 
     add("MATCH p = a:Person-[*]->b RETURN a => MATCH p = a-[*]->b WHERE a:Person RETURN a",
       varlengthRelatedToNoLabels.copy(left = labeledA),
-      Seq(predicateA),
+      Seq(predicateForLabelA),
       Seq(varlengthRelatedToNoLabels)
     )
 
     add("MATCH p = a-[*]->b:Person RETURN a => MATCH p = a-[*]->b WHERE b:Person RETURN a",
       varlengthRelatedToNoLabels.copy(right = labeledB),
-      Seq(predicateB),
+      Seq(predicateForLabelB),
       Seq(varlengthRelatedToNoLabels)
     )
 
@@ -150,13 +166,13 @@ object PredicateRewriterTest {
 
     add("MATCH p = shortestPath(a:Person-[*]->b) => MATCH p = shortestPath(a-[*]->b) WHERE a:Person",
       shortestPathNoLabels.copy(left = labeledA),
-      Seq(predicateA),
+      Seq(predicateForLabelA),
       Seq(shortestPathNoLabels)
     )
 
     add("MATCH p = shortestPath(a-[*]->b:Person) => MATCH p = shortestPath(a-[*]->b) WHERE b:Person",
       shortestPathNoLabels.copy(right = labeledB),
-      Seq(predicateB),
+      Seq(predicateForLabelB),
       Seq(shortestPathNoLabels)
     )
 
@@ -164,6 +180,30 @@ object PredicateRewriterTest {
       shortestPathNoLabels.copy(right = labeledB.copy(optional = true)),
       Seq(),
       Seq()
+    )
+
+    add("MATCH (a {foo:'bar'}) RETURN a => MATCH a WHERE a.foo='bar'",
+      propertiedA,
+      Seq(predicateForPropertiedA),
+      Seq(bareA)
+    )
+
+    add("MATCH (a {foo:'bar'})-->(b) RETURN a => MATCH (a)-->(b) WHERE a.foo='bar'",
+      relationshipPropsOnLeft,
+      Seq(predicateForPropertiedA),
+      Seq(relationshipBare)
+    )
+
+    add("MATCH (a)-->(b {foo:'bar'}) RETURN a => MATCH (a)-->(b) WHERE b.foo='bar'",
+      relationshipPropsOnRight,
+      Seq(predicateForPropertiedB),
+      Seq(relationshipBare)
+    )
+
+    add("MATCH (a {foo:'bar'})-->(b {foo:'bar'}) RETURN a => MATCH (a)-->(b) WHERE a.foo = 'bar' AND b.foo='bar'",
+      relationshipPropsOnBoth,
+      Seq(predicateForPropertiedB, predicateForPropertiedA),
+      Seq(relationshipBare)
     )
 
     list

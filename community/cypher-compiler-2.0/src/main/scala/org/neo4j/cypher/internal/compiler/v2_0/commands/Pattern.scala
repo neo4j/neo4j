@@ -86,7 +86,8 @@ case class SingleNode(name: String,
     val namePart = if (notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
     val optPart = if(optional) "?" else ""
-    "(" + namePart + labelPart + optPart + ")"
+    val props = if (properties.isEmpty) "" else " " + toString(properties)
+    "(%s%s%s%s)".format(namePart, optPart, labelPart, props)
   }
 }
 

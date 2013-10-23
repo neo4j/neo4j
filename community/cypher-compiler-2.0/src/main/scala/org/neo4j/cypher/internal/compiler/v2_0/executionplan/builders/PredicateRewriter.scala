@@ -19,19 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PlanBuilder
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands._
+import commands.expressions.{Property, Expression, Identifier}
+import commands.values.{KeyToken, UnresolvedProperty}
+import executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import spi.PlanContext
+import collection.Map
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 class PredicateRewriter extends PlanBuilder {
 
-
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
-    // We can process this if there are any SingleNodes in the patterns, that have labels on them
-    findNodeWithLabels(plan.query.patterns).nonEmpty
+    findNodeWithLabels(plan.query.patterns).nonEmpty ||
+      findNodeWithProperties(plan.query.patterns).nonEmpty
   }
 
   case class LabelExtraction(patternWithLabels: Unsolved[Pattern],
@@ -39,10 +40,15 @@ class PredicateRewriter extends PlanBuilder {
                              patternWithoutLabels: Unsolved[Pattern],
                              name: String)
 
+  case class PropertyExtraction(patternWithProperties: Unsolved[Pattern],
+                                props: Map[String, Expression],
+                                patternWithoutProperties: Unsolved[Pattern],
+                                name: String)
+
   def findNodeWithLabels(tokens: Seq[QueryToken[Pattern]]): Option[LabelExtraction] =
     tokens.collectFirst {
-      case node@Unsolved(pattern@SingleNode(name, labels, false, _)) if labels.nonEmpty                                        =>
-        LabelExtraction(node, labels, Unsolved(pattern.copy(labels = Seq())), name)
+      case node@Unsolved(pattern@SingleNode(name, labels, false, _)) if labels.nonEmpty =>
+      LabelExtraction(node, labels, Unsolved(pattern.copy(labels = Seq())), name)
 
       case relationship@Unsolved(RelationshipPattern(pattern, left@SingleNode(name, labels, false, _), _))
         if labels.nonEmpty =>
@@ -53,16 +59,48 @@ class PredicateRewriter extends PlanBuilder {
         LabelExtraction(relationship, labels, Unsolved(pattern.changeEnds(right = right.copy(labels = Seq.empty))), name)
     }
 
+  def findNodeWithProperties(tokens: Seq[QueryToken[Pattern]]): Option[PropertyExtraction] =
+    tokens.collectFirst {
+      case node@Unsolved(pattern@SingleNode(name, _, false, props)) if props.nonEmpty =>
+        PropertyExtraction(node, props, Unsolved(pattern.copy(properties = Map())), name)
+
+      case relationship@Unsolved(RelationshipPattern(pattern, left@SingleNode(name, _, false, props), _))
+        if props.nonEmpty =>
+        PropertyExtraction(relationship, props, Unsolved(pattern.changeEnds(left = left.copy(properties = Map.empty))), name)
+
+      case relationship@Unsolved(RelationshipPattern(pattern, _, right@SingleNode(name, _, false, props)))
+        if props.nonEmpty =>
+        PropertyExtraction(relationship, props, Unsolved(pattern.changeEnds(right = right.copy(properties = Map.empty))), name)
+    }
+
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
-    val nodeWithLabel: LabelExtraction = findNodeWithLabels(plan.query.patterns).get
-    val predicates = mapLabelsToPredicates(nodeWithLabel.labels, nodeWithLabel.name)
+    val maybeLabel = findNodeWithLabels(plan.query.patterns)
+    val maybeProp = findNodeWithProperties(plan.query.patterns)
+
+    val (predicates, oldPattern, newPattern) = (maybeLabel, maybeProp) match {
+      case (Some(nodeWithLabel), _) =>
+        val predicates = mapLabelsToPredicates(nodeWithLabel.labels, nodeWithLabel.name)
+        (predicates, nodeWithLabel.patternWithLabels, nodeWithLabel.patternWithoutLabels)
+
+      case (_, Some(nodeWithProp)) =>
+        val predicates = mapPropertiesToPredicates(nodeWithProp.props, nodeWithProp.name)
+        (predicates, nodeWithProp.patternWithProperties, nodeWithProp.patternWithoutProperties)
+
+      case (None,None) =>
+        throw new ThisShouldNotHappenError("Andres", "This query should not have been treated by this plan builder")
+    }
+
     plan.copy(query = plan.query.copy(
       where = plan.query.where ++ predicates,
-      patterns = plan.query.patterns.replace(nodeWithLabel.patternWithLabels, nodeWithLabel.patternWithoutLabels)))
+      patterns = plan.query.patterns.replace(oldPattern, newPattern)))
   }
 
   def mapLabelsToPredicates(tokens: Seq[KeyToken], name: String): Seq[Unsolved[Predicate]] = tokens.map {
     token => Unsolved(HasLabel(Identifier(name), token).asInstanceOf[Predicate])
+  }
+
+  def mapPropertiesToPredicates(props: Map[String, Expression], name: String): Seq[Unsolved[Predicate]] = props.toSeq.map {
+    case (prop, value) => Unsolved(Equals(Property(Identifier(name), UnresolvedProperty(prop)), value).asInstanceOf[Predicate])
   }
 
   def priority = PlanBuilder.QueryRewriting
