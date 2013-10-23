@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -355,8 +356,8 @@ public class LabelsAcceptanceTest
         tx.finish();
 
         // THEN
-        assertThat(glops, inTx( beansAPI, hasNodes( Labels.MY_LABEL, node )));
-        assertThat(glops, inTx( beansAPI, hasNoNodes( Labels.MY_OTHER_LABEL )));
+        assertThat( glops, inTx( beansAPI, hasNodes( Labels.MY_LABEL, node ) ) );
+        assertThat( glops, inTx( beansAPI, hasNoNodes( Labels.MY_OTHER_LABEL ) ) );
     }
 
     @Test
@@ -413,13 +414,14 @@ public class LabelsAcceptanceTest
 
         // Then
         assertEquals( 2, labels.size() );
-        assertThat( map( new Function<Label,String>(){
+        assertThat( map( new Function<Label, String>()
+        {
             @Override
             public String apply( Label label )
             {
                 return label.name();
             }
-        }, labels), hasItems( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() ) );
+        }, labels ), hasItems( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() ) );
     }
 
     @Test
@@ -454,6 +456,53 @@ public class LabelsAcceptanceTest
         assertEquals( 0, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
         transaction.finish();
     }
+
+    @Test
+    public void removingLabelDoesNotBreakPreviouslyCreatedLabelsIterator()
+    {
+        // GIVEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        Label label1 = DynamicLabel.label( "A" );
+        Label label2 = DynamicLabel.label( "B" );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label1, label2 );
+
+            Iterable<Label> labels = node.getLabels();
+            Iterator<Label> labelIterator = labels.iterator();
+
+            while ( labelIterator.hasNext() )
+            {
+                Label next = labelIterator.next();
+                node.removeLabel( next );
+            }
+            tx.success();
+        }
+    }
+
+    @Test
+    public void removingPropertyDoesNotBreakPreviouslyCreatedNodePropertyKeysIterator()
+    {
+        // GIVEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "name", "Horst" );
+            node.setProperty( "age", "72" );
+
+            Iterator<String> iterator = node.getPropertyKeys().iterator();
+
+            while ( iterator.hasNext() )
+            {
+                node.removeProperty( iterator.next() );
+            }
+            tx.success();
+        }
+    }
+
 
     @Test
     public void shouldCreateNodeWithLotsOfLabelsAndThenRemoveMostOfThem() throws Exception
