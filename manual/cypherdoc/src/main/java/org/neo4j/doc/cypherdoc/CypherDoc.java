@@ -71,8 +71,6 @@ public final class CypherDoc
             ExecutionEngine engine = new ExecutionEngine( database );
             State state = new State( engine, database );
 
-            removeReferenceNode( database );
-
             boolean hasConsole = false;
             for ( Block block : blocks )
             {
@@ -127,16 +125,5 @@ public final class CypherDoc
             blocks.add( Block.getBlock( currentBlock ) );
         }
         return blocks;
-    }
-
-    static void removeReferenceNode( GraphDatabaseService database )
-    {
-        try(Transaction tx = database.beginTx())
-        {
-            //noinspection deprecation
-            database.getReferenceNode()
-                    .delete();
-            tx.success();
-        }
     }
 }

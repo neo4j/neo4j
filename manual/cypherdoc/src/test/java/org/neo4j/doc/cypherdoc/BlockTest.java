@@ -19,17 +19,6 @@
  */
 package org.neo4j.doc.cypherdoc;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.Matchers.startsWith;
-
-import java.util.Arrays;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,9 +26,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import java.util.Arrays;
+import java.util.List;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 public class BlockTest
 {
@@ -60,30 +54,12 @@ public class BlockTest
         database = new TestGraphDatabaseFactory().newImpermanentDatabase();
         engine = new ExecutionEngine( database );
         state = new State( engine, database );
-        CypherDoc.removeReferenceNode( database );
     }
 
     @After
     public void tearDown()
     {
         database.shutdown();
-    }
-
-    @Test
-    @SuppressWarnings( "deprecation" )
-    public void noReferenceNode()
-    {
-        expectedException.expect( NotFoundException.class );
-
-        Transaction transaction = database.beginTx();
-        try
-        {
-            database.getReferenceNode();
-        }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     @Test
