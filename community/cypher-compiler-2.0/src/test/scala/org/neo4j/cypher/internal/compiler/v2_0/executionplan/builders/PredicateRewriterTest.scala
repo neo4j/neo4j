@@ -30,13 +30,14 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.junit.Test
+import scala.util.Random
 
 @RunWith(value = classOf[Parameterized])
 class PredicateRewriterTest(name: String,
                             inputMatchPattern: Pattern,
                             expectedWhere: Seq[Predicate],
                             expectedPattern: Seq[Pattern]) extends BuilderTest {
-  def builder: PlanBuilder = new PredicateRewriter
+  def builder: PlanBuilder = new PredicateRewriter(new Random(42))
 
   @Test def should_rewrite_patterns_with_labels() {
     // Given
@@ -51,6 +52,7 @@ class PredicateRewriterTest(name: String,
     }
 
     // Otherwise, when supposed to accept...
+    assertAccepts(q)
     val result = untilDone(plan(q))
 
     // Then
@@ -65,7 +67,8 @@ class PredicateRewriterTest(name: String,
 }
 
 object PredicateRewriterTest {
-  val properties = Map("foo" -> Literal("bar"))
+  val literal = Literal("bar")
+  val properties = Map("foo" -> literal)
   val label = UnresolvedLabel("Person")
 
   // Nodes
@@ -85,14 +88,19 @@ object PredicateRewriterTest {
   val relationshipPropsOnLeft = relationshipBare.copy(left = propertiedA)
   val relationshipPropsOnRight = relationshipBare.copy(right = propertiedB)
   val varlengthRelatedToNoLabels = VarLengthRelatedTo("p", bareA, bareB, None, None, Seq(), Direction.OUTGOING, None, optional = false, Map.empty)
+  val varlengthRelatedToWithProps = varlengthRelatedToNoLabels.copy(properties = properties)
 
 
   val predicateForLabelA = HasLabel(Identifier("a"), label)
   val predicateForLabelB = HasLabel(Identifier("b"), label)
   val shortestPathNoLabels = ShortestPath("p", bareA, bareB, Seq.empty, Direction.OUTGOING, None, optional = false, single = false, None)
 
-  val predicateForPropertiedA = Equals(Property(Identifier("a"), UnresolvedProperty("foo")), Literal("bar"))
-  val predicateForPropertiedB = Equals(Property(Identifier("b"), UnresolvedProperty("foo")), Literal("bar"))
+  val prop = UnresolvedProperty("foo")
+
+  val predicateForPropertiedA = Equals(Property(Identifier("a"), prop), literal)
+  val predicateForPropertiedB = Equals(Property(Identifier("b"), prop), literal)
+  val predicateForPropertiedR = Equals(Property(Identifier("r"), prop), literal)
+  val predicateForPropertiedRelIterator = AllInCollection(Identifier("rels"), "  UNNAMEDR30", Equals(Property(Identifier("  UNNAMEDR30"), prop), literal))
 
   @Parameters(name = "{0}")
   def parameters: util.Collection[Array[AnyRef]] = {
@@ -204,6 +212,18 @@ object PredicateRewriterTest {
       relationshipPropsOnBoth,
       Seq(predicateForPropertiedB, predicateForPropertiedA),
       Seq(relationshipBare)
+    )
+
+    add("MATCH (a)-[r {foo:'bar'}]->(b) RETURN a => MATCH (a)-[r]->(b) WHERE r.foo = 'bar'",
+      relationshipBare.copy(properties = properties),
+      Seq(predicateForPropertiedR),
+      Seq(relationshipBare)
+    )
+
+    add("MATCH (a)-[rels* {foo:'bar'}]->(b) RETURN a => MATCH (a)-[rels*]->(b) WHERE ALL(x in rels | x.foo = 'bar')" ,
+      varlengthRelatedToWithProps.copy(relIterator = Some("rels")),
+      Seq(predicateForPropertiedRelIterator),
+      Seq(varlengthRelatedToNoLabels.copy(relIterator = Some("rels")))
     )
 
     list

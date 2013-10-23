@@ -27,12 +27,14 @@ import executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import spi.PlanContext
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
+import scala.util.Random
 
-class PredicateRewriter extends PlanBuilder {
+class PredicateRewriter(random: Random = new Random) extends PlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
     findNodeWithLabels(plan.query.patterns).nonEmpty ||
-      findNodeWithProperties(plan.query.patterns).nonEmpty
+      findPatternWithProperties(plan.query.patterns).nonEmpty ||
+      findVarlengthPatternWithProperties(plan.query.patterns).nonEmpty
   }
 
   case class LabelExtraction(patternWithLabels: Unsolved[Pattern],
@@ -45,7 +47,7 @@ class PredicateRewriter extends PlanBuilder {
                                 patternWithoutProperties: Unsolved[Pattern],
                                 name: String)
 
-  def findNodeWithLabels(tokens: Seq[QueryToken[Pattern]]): Option[LabelExtraction] =
+  private def findNodeWithLabels(tokens: Seq[QueryToken[Pattern]]): Option[LabelExtraction] =
     tokens.collectFirst {
       case node@Unsolved(pattern@SingleNode(name, labels, false, _)) if labels.nonEmpty =>
       LabelExtraction(node, labels, Unsolved(pattern.copy(labels = Seq())), name)
@@ -59,7 +61,7 @@ class PredicateRewriter extends PlanBuilder {
         LabelExtraction(relationship, labels, Unsolved(pattern.changeEnds(right = right.copy(labels = Seq.empty))), name)
     }
 
-  def findNodeWithProperties(tokens: Seq[QueryToken[Pattern]]): Option[PropertyExtraction] =
+  private def findPatternWithProperties(tokens: Seq[QueryToken[Pattern]]): Option[PropertyExtraction] =
     tokens.collectFirst {
       case node@Unsolved(pattern@SingleNode(name, _, false, props)) if props.nonEmpty =>
         PropertyExtraction(node, props, Unsolved(pattern.copy(properties = Map())), name)
@@ -71,22 +73,49 @@ class PredicateRewriter extends PlanBuilder {
       case relationship@Unsolved(RelationshipPattern(pattern, _, right@SingleNode(name, _, false, props)))
         if props.nonEmpty =>
         PropertyExtraction(relationship, props, Unsolved(pattern.changeEnds(right = right.copy(properties = Map.empty))), name)
+
+      case relationship@Unsolved(rel@RelatedTo(_, _, relName, _, _, false, props)) if props.nonEmpty =>
+        PropertyExtraction(relationship, props, Unsolved(rel.copy(properties = Map.empty)), relName)
     }
+
+  private def findVarlengthPatternWithProperties(tokens: Seq[QueryToken[Pattern]]): Option[(VarLengthRelatedTo, Predicate)] = {
+    val relationShip: Option[VarLengthRelatedTo] = tokens.collectFirst {
+      case relationship@Unsolved(rel@VarLengthRelatedTo(_, _, _, _, _, _, _, _, false, props)) if props.nonEmpty =>
+        rel
+    }
+
+    relationShip.map {
+      rel =>
+        val iteratorName = rel.relIterator.getOrElse("  UNNAMEDR" + random.nextInt(100))
+        val innerSymbolName = "  UNNAMEDR" + random.nextInt(100)
+        val innerPredicate1: Seq[Predicate] = rel.properties.toSeq.map {
+          case (prop, value) => Equals(Property(Identifier(innerSymbolName), UnresolvedProperty(prop)), value).asInstanceOf[Predicate]
+        }
+        val innerPredicate2 = True().andWith(innerPredicate1: _*)
+        val predicate = AllInCollection(Identifier(iteratorName), innerSymbolName, innerPredicate2)
+
+        (rel.copy(relIterator = Some(iteratorName)), predicate)
+    }
+  }
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
     val maybeLabel = findNodeWithLabels(plan.query.patterns)
-    val maybeProp = findNodeWithProperties(plan.query.patterns)
+    val maybeProp = findPatternWithProperties(plan.query.patterns)
+    val maybeVarlengthProp: Option[(VarLengthRelatedTo, Predicate)] = findVarlengthPatternWithProperties(plan.query.patterns)
 
-    val (predicates, oldPattern, newPattern) = (maybeLabel, maybeProp) match {
-      case (Some(nodeWithLabel), _) =>
+    val (predicates, oldPattern: Unsolved[Pattern], newPattern: Unsolved[Pattern]) = (maybeLabel, maybeProp, maybeVarlengthProp) match {
+      case (Some(nodeWithLabel), _, _) =>
         val predicates = mapLabelsToPredicates(nodeWithLabel.labels, nodeWithLabel.name)
         (predicates, nodeWithLabel.patternWithLabels, nodeWithLabel.patternWithoutLabels)
 
-      case (_, Some(nodeWithProp)) =>
+      case (_, Some(nodeWithProp), _) =>
         val predicates = mapPropertiesToPredicates(nodeWithProp.props, nodeWithProp.name)
         (predicates, nodeWithProp.patternWithProperties, nodeWithProp.patternWithoutProperties)
 
-      case (None,None) =>
+      case (_, _, Some((varlengthRel, predicate))) =>
+        (Seq(Unsolved(predicate)), Unsolved(varlengthRel), Unsolved(varlengthRel.copy(properties = Map.empty)))
+
+      case (None, None, None) =>
         throw new ThisShouldNotHappenError("Andres", "This query should not have been treated by this plan builder")
     }
 

@@ -119,7 +119,9 @@ case class RelatedTo(left: SingleNode,
   private def relInfo: String = {
     var info = relName
     if (optional) info = info + "?"
-    if (relTypes.nonEmpty) info = info + ":" + relTypes.mkString("|")
+    if (relTypes.nonEmpty) info += ":" + relTypes.mkString("|")
+    if (properties.nonEmpty) info += toString(properties)
+
     if (info == "") "" else "[" + info + "]"
   }
 
@@ -174,13 +176,14 @@ case class VarLengthRelatedTo(pathName: String,
 
   private def relInfo: String = {
     var info = if (optional) "?" else ""
-    if (relTypes.nonEmpty) info = info + ":" + relTypes.mkString("|")
+    if (relTypes.nonEmpty) info += ":" + relTypes.mkString("|")
     val hops = (minHops, maxHops) match {
-      case (None, None) => "*"
-      case (Some(min), None) => "*" + min + ".."
-      case (None, Some(max)) => "*" + ".." + max
+      case (None, None)           => "*"
+      case (Some(min), None)      => "*" + min + ".."
+      case (None, Some(max))      => "*" + ".." + max
       case (Some(min), Some(max)) => "*" + min + ".." + max
     }
+    if (properties.nonEmpty) info += toString(properties)
 
     val relName = relIterator.getOrElse("")
     info = relName + info + hops
