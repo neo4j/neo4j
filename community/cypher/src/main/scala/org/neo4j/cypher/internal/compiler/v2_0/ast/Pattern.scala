@@ -261,7 +261,7 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     when (naked && (!labels.isEmpty || properties.isDefined)) {
-      SemanticError("Parenthesis are required to identify nodes in patterns", token)
+      SemanticError("Parenthesises are required to identify nodes in patterns", token)
     } then checkProperties(ctx)
 
   def checkProperties(ctx: SemanticContext): SemanticCheck =
