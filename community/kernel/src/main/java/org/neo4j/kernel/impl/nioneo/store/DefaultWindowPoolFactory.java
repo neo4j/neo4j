@@ -43,7 +43,7 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
                 calculateMappedMemory( configuration, storageFileName ),
                 configuration.get( CommonAbstractStore.Configuration.use_memory_mapped_buffers ),
                 isReadOnly( configuration ) && !isBackupSlave( configuration ),
-                new ConcurrentHashMap<Long, PersistenceRow>(), log );
+                new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT, log );
     }
 
     private boolean isBackupSlave( Config configuration )
@@ -70,7 +70,9 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
     {
         Long mem = config.get( memoryMappingSetting( storageFileName.getName() ) );
         if ( mem == null )
+        {
             mem = 0L;
+        }
 
         return mem;
     }

@@ -18,7 +18,7 @@ An expression in Cypher can be:
 * An aggregate function: `avg(x.prop)`, `count(*)`.
 * Relationship types: `:REL_TYPE`, +:\`REL TYPE`+, `:REL1|REL2`.
 * A path-pattern: `a-->()<--b`.
-* A predicate expression is an expression that returns true or false: a.prop = "Hello", length(p) > 10, has(a.name)
+* A predicate expression is an expression that returns true or false: `a.prop = "Hello"`, `length(p) > 10`, `has(a.name)`
 * a +CASE+ expression
 
 == Note on string literals ==
