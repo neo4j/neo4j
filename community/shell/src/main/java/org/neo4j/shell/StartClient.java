@@ -390,11 +390,10 @@ public class StartClient
 
     private static void applyProfileFile( File file, Map<String, Serializable> session ) throws ShellException
     {
-        InputStream in = null;
-        try
+        try (FileInputStream fis = new FileInputStream( file ))
         {
             Properties properties = new Properties();
-            properties.load( new FileInputStream( file ) );
+            properties.load( fis );
             for ( Object key : properties.keySet() )
             {
                 String stringKey = (String) key;
@@ -406,20 +405,6 @@ public class StartClient
         {
             throw new IllegalArgumentException( "Couldn't find profile '" +
                     file.getAbsolutePath() + "'" );
-        }
-        finally
-        {
-            if ( in != null )
-            {
-                try
-                {
-                    in.close();
-                }
-                catch ( IOException e )
-                {
-                    // OK
-                }
-            }
         }
     }
 
