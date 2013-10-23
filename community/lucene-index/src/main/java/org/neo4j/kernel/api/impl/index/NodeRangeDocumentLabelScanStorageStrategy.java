@@ -64,7 +64,9 @@ import static org.neo4j.helpers.collection.IteratorUtil.flatten;
 public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStorageStrategy
 {
     private static final int DOCUMENT_BATCH_SIZE = 32, CHANGES_BATCH_SIZE = 256;
-    private static final int RANGES_PER_PAGE = 16;
+
+    // This must be high to avoid to many calls to the lucene searcher. Tweak using LabelScanBenchmark
+    private static final int RANGES_PER_PAGE = 4096;
     private final BitmapDocumentFormat format;
 
     public NodeRangeDocumentLabelScanStorageStrategy()
