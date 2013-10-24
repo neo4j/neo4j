@@ -304,21 +304,28 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
   @Test def shouldFailIfUsingLegacyOptionalsMatch() {
     test(
       "start n = node(0) match (n)-[?]->(m) return n",
-      "Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead. (line 1, column 28)"
+      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 28)"
     )
   }
 
   @Test def shouldFailIfUsingLegacyOptionalsMatch2() {
     test(
       "start n = node(0) match (n)-[?*]->(m) return n",
-      "Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead. (line 1, column 28)"
+      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 28)"
     )
   }
 
   @Test def shouldFailIfUsingLegacyOptionalsMatch3() {
     test(
       "start n = node(0) match shortestPath((n)-[?*]->(m)) return n",
-      "Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead. (line 1, column 41)"
+      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 41)"
+    )
+  }
+
+  @Test def shouldRequireWithAfterOptionalMatch() {
+    test(
+      "OPTIONAL MATCH (a)-->(b) MATCH (c)-->(d) return d",
+      "MATCH cannot follow OPTIONAL MATCH (perhaps use a WITH clause between them) (line 1, column 26)"
     )
   }
 

@@ -337,7 +337,7 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
 
   private def checkNoLegacyOptionals(ctx: SemanticContext) =
     when (optional) {
-      SemanticError("Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead.", token)
+      SemanticError("Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead", token)
     }
 
   private def checkPropertiesOnlyWhenUpdating(ctx: SemanticContext) =
