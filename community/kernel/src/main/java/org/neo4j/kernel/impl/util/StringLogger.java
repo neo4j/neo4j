@@ -296,8 +296,10 @@ public abstract class StringLogger
             @Override
             public void close()
             {
-                createLogger();
-                logger.close();
+                if ( logger != null )
+                {
+                    logger.close();
+                }
             }
 
             @Override
