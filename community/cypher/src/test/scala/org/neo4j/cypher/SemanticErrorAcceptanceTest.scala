@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0
+package org.neo4j.cypher
 
 import org.junit.Assert._
 import org.junit.Test
@@ -25,7 +25,7 @@ import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
 import org.neo4j.cypher.{CypherException, ExecutionEngineHelper}
 
-class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
+class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test def returnNodeThatsNotThere() {
     test(
       "start x=node(0) return bar",
