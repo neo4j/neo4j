@@ -427,9 +427,9 @@ public class ClusterManager
             for (int i = 1; i < spec.getMembers().size(); i++)
                 initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
             File parent = new File( root, name );
+            URI clusterUri = new URI( "cluster://" + member.getHost() );
             if ( member.isFullHaMember() )
             {
-                URI clusterUri = new URI( "cluster://" + member.getHost() );
                 int clusterPort = clusterUri.getPort();
                 int haPort = clusterUri.getPort() + 3000;
                 GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory()
@@ -469,7 +469,7 @@ public class ClusterManager
                         ClusterSettings.cluster_name.name(), name,
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.server_id.name(), serverId + "",
-                        ClusterSettings.cluster_server.name(), member.getHost(),
+                        ClusterSettings.cluster_server.name(), "0.0.0.0:"+clusterUri.getPort(),
                         GraphDatabaseSettings.store_dir.name(), new File( parent, "arbiter" + serverId ).getAbsolutePath() );
                 Config config1 = new Config( config );
                 Logging clientLogging =life.add( new LogbackService(
