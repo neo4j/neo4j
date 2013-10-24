@@ -72,6 +72,7 @@ public class ConsistencyCheckService
         }
         finally
         {
+            report.close();
             neoStore.close();
         }
 
