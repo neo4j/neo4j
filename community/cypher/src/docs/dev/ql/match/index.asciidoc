@@ -4,13 +4,16 @@ Match
 
 == Introduction ==
 
++MATCH+ is the primary way of getting data from the database into the current set of bindings.
+
 The +MATCH+ clause allows you to specify the pattern Cypher will search for in the database.
 Nodes and relationships that are already known at this stage are called _bound pattern elements_.
 Cypher will now try to find the unknown parts of the pattern.
 
 If +MATCH+ is the first clause in your query, nothing is bound at this stage.
 Cypher needs starting points to do it's pattern matching.
-If no bound nodes exist, Cypher can scan all nodes in the database, all nodes with a certain label, or it can use indexes to quickly find the relevant start points.
+If no bound nodes exist, Cypher can scan all nodes in the database, all nodes with a certain label, or it can use
+indexes to quickly find the relevant start points.
 If you want to use index hints to force Cypher to use a specific index, read more here: <<query-using>>.
 
 +WHERE+ defines the +MATCH+ patterns in more detail.

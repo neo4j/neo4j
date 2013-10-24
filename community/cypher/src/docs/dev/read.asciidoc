@@ -1,7 +1,9 @@
 [[query-read]]
 = Reading Clauses =
 
-Read data from the database.
+The flow of data within a Cypher query is an unordered sequence of maps with key-value pairs - a set of possible
+bindings between the identifiers in the query and values derived from the database.
+This set is refined and augmented by subsequent parts of the query.
 
 :leveloffset: 2
 

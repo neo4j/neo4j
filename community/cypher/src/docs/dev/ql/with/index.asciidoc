@@ -1,11 +1,20 @@
 [[query-with]]
 With
 ====
-The ability to chain queries together allows for powerful constructs. In Cypher, the +WITH+ clause is
-used to pipe the result from one query to the next.
+With +WITH+, you can manipulate the result sequence before it is passed on to the following query parts. The
+manipulations can be of the shape and/or number of entries in the result set.
 
-+WITH+ is also used to separate reading from updating of the graph. Every sub-query of a query must be either
-read-only or write-only.
+One common usage of +WITH+ is to limit the number of entries that are then passed on to other +MATCH+ clauses.
+By combining +ORDER+ +BY+ and +LIMIT+, it's possible to get the top X entries by some criteria, and then bring
+in additional data from the graph.
+
+Another use is to filter on aggregated values. +WITH+ is used to introduce aggregates which can then by used in
+predicates in +WHERE+. These aggregate expressions create new bindings in the results. +WITH+ can also, just like
++RETURN+, alias expressions that are introduced into the results using the aliases as binding name.
+
++WITH+ is also used to separate reading from updating of the graph. Every part of a query must be either
+read-only or write-only. When going from a writing part to a reading part, the switch must be done
+with a +WITH+ clause.
 
 .Graph
 include::includes/cypher-with-graph.asciidoc[]
