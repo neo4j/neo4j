@@ -138,7 +138,7 @@ possible since it will force you to take care of invalidation which sometimes
 can be hard. But when everything else fails you have to use it so here is an 
 example of how it can be done.
 
-We have some POJO that wrapps a node holding its state. In this particular 
+We have some POJO that wraps a node holding its state. In this particular
 POJO we've overridden the equals implementation.
 
 [source,java]
