@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.kernel.impl.nioneo.store.labels.InlineNodeLabels.parseInlined;
 
 public class NodeRecord extends PrimitiveRecord
 {
@@ -94,7 +96,7 @@ public class NodeRecord extends PrimitiveRecord
                 .append( ",used=" ).append( inUse() )
                 .append( ",rel=" ).append( nextRel )
                 .append( ",prop=" ).append( getNextProp() )
-                .append( ",labels=" ).append( getLabelField() )
+                .append( ",labels=" ).append( Arrays.toString(parseInlined( getLabelField() )) )
                 .append( "," ).append( isLight ? "light" : "heavy" );
         if ( !isLight && !dynamicLabelRecords.isEmpty() )
         {
@@ -117,6 +119,7 @@ public class NodeRecord extends PrimitiveRecord
         clone.nextRel = nextRel;
         clone.labels = labels;
         clone.isLight = isLight;
+        clone.setInUse( inUse() );
 
         if( dynamicLabelRecords.size() > 0 )
         {

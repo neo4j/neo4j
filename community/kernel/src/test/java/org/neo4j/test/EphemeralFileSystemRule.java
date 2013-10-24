@@ -26,20 +26,12 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class EphemeralFileSystemRule extends ExternalResource
 {
-    private EphemeralFileSystemAbstraction fs;
-
-    @Override
-    protected void before() throws Throwable
-    {
-        super.before();
-        fs = new EphemeralFileSystemAbstraction();
-    }
+    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
 
     @Override
     protected void after()
     {
         fs.shutdown();
-        super.after();
     }
 
     public EphemeralFileSystemAbstraction get()
