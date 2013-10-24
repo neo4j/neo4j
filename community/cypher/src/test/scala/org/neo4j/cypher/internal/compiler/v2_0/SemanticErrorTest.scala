@@ -329,6 +329,13 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
     )
   }
 
+  @Test def shouldRequireWithBeforeStart() {
+    test(
+      "MATCH (a)-->(b) START c=node(0) return c",
+      "WITH is required between MATCH and START (line 1, column 1)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)
