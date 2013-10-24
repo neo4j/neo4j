@@ -560,42 +560,26 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public ResourceIterable<Label> getLabels()
+    public Iterable<Label> getLabels()
     {
-        return new ResourceIterable<Label>()
+        try ( Statement statement = statementContextProvider.statement() )
         {
-            @Override
-            public ResourceIterator<Label> iterator()
+            PrimitiveIntIterator labels = statement.readOperations().nodeGetLabels( getId() );
+            List<Label> keys = new ArrayList<>();
+            while ( labels.hasNext() )
             {
-                PrimitiveIntIterator labels;
-                final Statement statement = statementContextProvider.statement();
-                try
-                {
-                    labels = statement.readOperations().nodeGetLabels( getId() );
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    statement.close();
-                    throw new NotFoundException( "No node with id " + getId() + " found.", e );
-                }
-
-                return nodeLookup.getCleanupService().resourceIterator( map( new FunctionFromPrimitiveInt<Label>()
-                {
-                    @Override
-                    public Label apply( int labelId )
-                    {
-                        try
-                        {
-                            return label( statement.readOperations().labelGetName( labelId ) );
-                        }
-                        catch ( LabelNotFoundKernelException e )
-                        {
-                            throw new ThisShouldNotHappenError( "Mattias", "Listed labels for node " + nodeId +
-                                    ", but the returned label " + labelId + " doesn't exist anymore" );
-                        }
-                    }
-                }, labels ), statement );
+                int labelId = labels.next();
+                keys.add( label( statement.readOperations().labelGetName( labelId ) ) );
             }
-        };
+            return keys;
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Node not found", e );
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            throw new ThisShouldNotHappenError( "Stefan", "Label retrieved through kernel API should exist." );
+        }
     }
 }

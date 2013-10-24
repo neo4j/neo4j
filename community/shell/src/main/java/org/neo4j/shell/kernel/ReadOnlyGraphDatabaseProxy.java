@@ -465,7 +465,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
         
         @Override
-        public ResourceIterable<Label> getLabels()
+        public Iterable<Label> getLabels()
         {
             return actual.getLabels();
         }

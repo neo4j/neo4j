@@ -29,6 +29,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.web.InternalJettyServletRequest;
+import org.neo4j.server.rest.web.InternalJettyServletResponse;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -550,6 +552,61 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 
         assertEquals(200, response.getStatus());
 
+    }
+
+    @Test
+    public void shouldNotFailWhenRemovingAndAddingLabelsInOneBatch() throws Exception
+    {
+        // given
+
+        /*
+        curl -X POST http://localhost:7474/db/data/batch -H 'Content-Type: application/json'
+        -d '[
+           {"body":{"name":"Alice"},"to":"node","id":0,"method":"POST"},
+           {"body":["expert","coder"],"to":"{0}/labels","id":1,"method":"POST"},
+           {"body":["novice","chef"],"to":"{0}/labels","id":2,"method":"PUT"}
+        ]'
+        */
+
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("node")
+                    .key("id")      .value(0)
+                    .key("body")
+                    .object()
+                        .key("key").value("name")
+                        .key("value").value("Alice")
+                    .endObject()
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("{0}/labels")
+                    .key("id")      .value(1)
+                    .key("body")
+                    .array()
+                        .value( "expert" )
+                        .value( "coder" )
+                    .endArray()
+                .endObject()
+                .object()
+                    .key("method")  .value("PUT")
+                    .key("to")      .value("{0}/labels")
+                    .key("id")      .value(2)
+                    .key("body")
+                    .array()
+                        .value( "novice" )
+                        .value( "chef" )
+                    .endArray()
+                .endObject()
+             .endArray().toString();
+
+        // when
+        JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
+
+        // then
+        assertEquals(200, response.getStatus());
     }
 
     // It has to be possible to create relationships among created and not-created nodes
