@@ -21,6 +21,7 @@ package org.neo4j.shell.kernel.apps.cypher;
 
 import java.io.PrintWriter;
 import java.rmi.RemoteException;
+import java.text.MessageFormat;
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
@@ -48,11 +49,11 @@ public class Start extends TransactionProvidingApp
     @Override
     public String getDescription()
     {
-        return "Executes a Cypher query. Usage: start <rest of query>;\n" +
-                "Example: START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name;\n" +
-                "where {self} will be replaced with the current location in the graph." +
-                "Please, note that the query must end with a semicolon. Other parameters are\n" +
-                "taken from shell variables, see 'help export'.";
+        String className = this.getClass().getSimpleName().toUpperCase();
+        return MessageFormat.format( "Executes a Cypher query. Usage: {0} <rest of query>;\nExample: MATCH " +
+                "(me)-[:KNOWS]->(you) RETURN you.name;\nwhere '{'self'}' will be replaced with the current location in " +
+                "the graph.Please, note that the query must end with a semicolon. Other parameters are\ntaken from " +
+                "shell variables, see ''help export''.", className );
     }
 
     @Override

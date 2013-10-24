@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
@@ -42,7 +43,11 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -135,23 +140,30 @@ public class TestApps extends AbstractShellTest
         executeCommandExpectingException( "mkrel -c", "type" );
 
         executeCommand( "mkrel -ct " + type1.name() );
-        Transaction transaction = db.beginTx();
-        Relationship relationship = db.getNodeById(0).getSingleRelationship( type1, Direction.OUTGOING );
-        Node node = relationship.getEndNode();
-        transaction.finish();
+        Node node;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            Relationship relationship = db.getNodeById( 0 ).getSingleRelationship( type1, Direction.OUTGOING );
+            node = relationship.getEndNode();
+        }
         executeCommand( "mkrel -t " + type2.name() + " " + node.getId() );
-        transaction = db.beginTx();
-        Relationship otherRelationship = db.getNodeById(0).getSingleRelationship( type2, Direction.OUTGOING );
-        assertEquals( node, otherRelationship.getEndNode() );
-        transaction.finish();
+
+        try ( Transaction ignored = db.beginTx() )
+        {
+            Relationship otherRelationship = db.getNodeById( 0 ).getSingleRelationship( type2, Direction.OUTGOING );
+            assertEquals( node, otherRelationship.getEndNode() );
+        }
 
         // With properties
         executeCommand( "mkrel -ct " + type3.name() + " --np \"{'name':'Neo','destiny':'The one'}\" --rp \"{'number':11}\"" );
-        transaction = db.beginTx();
-        Relationship thirdRelationship = db.getNodeById(0).getSingleRelationship( type3, Direction.OUTGOING );
-        assertThat( thirdRelationship, inTx( db, hasProperty( "number" ).withValue( 11 ) ) );
-        Node thirdNode = thirdRelationship.getEndNode();
-        transaction.finish();
+        Node thirdNode;
+        Relationship thirdRelationship;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            thirdRelationship = db.getNodeById( 0 ).getSingleRelationship( type3, Direction.OUTGOING );
+            assertThat( thirdRelationship, inTx( db, hasProperty( "number" ).withValue( 11 ) ) );
+            thirdNode = thirdRelationship.getEndNode();
+        }
         assertThat( thirdNode, inTx( db, hasProperty( "name" ).withValue( "Neo" ) ) );
         assertThat( thirdNode, inTx( db, hasProperty( "destiny" ).withValue( "The one" ) ) );
         executeCommand( "cd -r " + thirdRelationship.getId() );
@@ -214,28 +226,10 @@ public class TestApps extends AbstractShellTest
         executeCommand( "rmrel -fd " + relationships[1].getId(), "not having any relationships" );
         assertNodeExists( currentNode );
 
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction ignored = db.beginTx() )
         {
             assertFalse( currentNode.hasRelationship() );
         }
-        finally
-        {
-            transaction.finish();
-        }
-
-        executeCommand( "pwd" );
-
-        transaction = db.beginTx();
-        try
-        {
-            executeCommand( "cd -a 0");
-        }
-        finally
-        {
-            transaction.finish();
-        }
-        executeCommand( "pwd" );
     }
 
     private Node getStartNode( Relationship relationship )
@@ -314,12 +308,14 @@ public class TestApps extends AbstractShellTest
     @Test
     public void startEvenIfReferenceNodeHasBeenDeleted() throws Exception
     {
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        String name = "Test";
-        node.setProperty( "name", name );
-        tx.success();
-        tx.finish();
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            String name = "Test";
+            node.setProperty( "name", name );
+            tx.success();
+        }
 
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( db );
         ShellClient client = newShellClient( server );
@@ -439,15 +435,11 @@ public class TestApps extends AbstractShellTest
         String type = "ARRAY";
         executeCommand( "mknode --cd" );
         executeCommand( "mkrel -ct " + type + " --rp \"{'values':[1,2,3,4]}\"" );
-        Transaction transaction = db.beginTx();
-        try
+
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getCurrentNode().getSingleRelationship( withName( type ), OUTGOING ), inTx( db, hasProperty(
                     "values" ).withValue( new int[]{1, 2, 3, 4} ) ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -457,15 +449,11 @@ public class TestApps extends AbstractShellTest
         String type = "TEST";
         executeCommand( "mknode --cd" );
         executeCommand( "mkrel -ctl " + type + " Person" );
-        Transaction transaction = db.beginTx();
-        try
+
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getCurrentNode().getSingleRelationship(
                     withName( type ), OUTGOING ).getEndNode(), inTx( db, hasLabels( "Person" ) ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -605,10 +593,11 @@ public class TestApps extends AbstractShellTest
     {
         Map<String, Serializable> variables = genericMap( "id", 0 );
         ShellClient client = newShellClient( shellServer, variables );
-        Transaction transaction = db.beginTx();
-        db.createNode();
-        executeCommand( client, "start n=node({id}) return n;", "1 row" );
-        transaction.finish();
+        try ( Transaction ignored = db.beginTx() )
+        {
+            db.createNode();
+            executeCommand( client, "start n=node({id}) return n;", "1 row" );
+        }
     }
 
     @Test
@@ -937,5 +926,11 @@ public class TestApps extends AbstractShellTest
     public void allowsArgumentsStartingWithDoubldHyphensForCommandsThatDontTakeOptions() throws Exception
     {
         executeCommand( "MATCH () -- () RETURN 0;" );
+    }
+
+    @Test
+    public void shouldAllowQueriesToStartWithOptionalMatch() throws Exception
+    {
+        executeCommand( "OPTIONAL MATCH (n) RETURN n;" );
     }
 }
