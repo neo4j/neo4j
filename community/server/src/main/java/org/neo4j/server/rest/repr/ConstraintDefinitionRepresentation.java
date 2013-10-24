@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static java.lang.String.format;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
-
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+
+import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
 
 public class ConstraintDefinitionRepresentation extends MappingRepresentation
 {
@@ -68,7 +68,7 @@ public class ConstraintDefinitionRepresentation extends MappingRepresentation
             }
         };
         Iterable<Representation> propertyKeyRepresentations = map( converter, constraintDefinition.getPropertyKeys() );
-        serializer.putList( "property-keys",
+        serializer.putList( "property_keys",
             new ListRepresentation( RepresentationType.STRING, propertyKeyRepresentations ) );
     }
 }

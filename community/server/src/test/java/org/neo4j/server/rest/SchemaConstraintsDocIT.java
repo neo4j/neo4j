@@ -68,7 +68,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized = jsonToMap( result );
         assertEquals( labelName, serialized.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized.get( "type" ) );
-        assertEquals( asList( propertyKey ), serialized.get( "property-keys" ) );
+        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
     }
 
     /**
@@ -93,7 +93,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized = serializedList.get( 0 );
         assertEquals( labelName, serialized.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized.get( "type" ) );
-        assertEquals( asList( propertyKey ), serialized.get( "property-keys" ) );
+        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
     }
 
     /**
@@ -120,12 +120,12 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized1 = serializedList.get( 0 );
         assertEquals( labelName, serialized1.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-        List<String> keyList1 = (List<String>) serialized1.get( "property-keys" );
+        List<String> keyList1 = (List<String>) serialized1.get( "property_keys" );
 
         Map<String, Object> serialized2 = serializedList.get( 1 );
         assertEquals( labelName, serialized2.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-        List<String> keyList2 = (List<String>) serialized2.get( "property-keys" );
+        List<String> keyList2 = (List<String>) serialized2.get( "property_keys" );
 
         assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), asSet( keyList1, keyList2 ) );
     }
@@ -154,12 +154,12 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized1 = serializedList.get( 0 );
         assertEquals( labelName, serialized1.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-        List<String> keyList1 = (List<String>) serialized1.get( "property-keys" );
+        List<String> keyList1 = (List<String>) serialized1.get( "property_keys" );
 
         Map<String, Object> serialized2 = serializedList.get( 1 );
         assertEquals( labelName, serialized2.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-        List<String> keyList2 = (List<String>) serialized2.get( "property-keys" );
+        List<String> keyList2 = (List<String>) serialized2.get( "property_keys" );
 
         assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), asSet( keyList1, keyList2 ) );
     }
@@ -189,12 +189,12 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized1 = serializedList.get( 0 );
         assertEquals( labelName1, serialized1.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-        List<String> keyList1 = (List<String>) serialized1.get( "property-keys" );
+        List<String> keyList1 = (List<String>) serialized1.get( "property_keys" );
 
         Map<String, Object> serialized2 = serializedList.get( 1 );
         assertEquals( labelName2, serialized2.get( "label" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-        List<String> keyList2 = (List<String>) serialized2.get( "property-keys" );
+        List<String> keyList2 = (List<String>) serialized2.get( "property_keys" );
 
         assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), asSet( keyList1, keyList2 ) );
     }
