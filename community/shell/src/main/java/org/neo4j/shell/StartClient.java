@@ -329,7 +329,7 @@ public class StartClient
             {
                 if ( fileName.equals( ARG_FILE_STDIN ) )
                 {
-                    reader = new BufferedReader( new InputStreamReader( System.in ) );
+                    reader = new BufferedReader( new InputStreamReader( System.in, UTF_8 ) );
                 }
                 else
                 {
