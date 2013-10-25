@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v1_9
 
 import commands.SchemaIndex
-import org.neo4j.cypher.IndexHintException
+import org.neo4j.cypher
 
 object IndexHintException {
-  def apply(hint: SchemaIndex, message: String) = new IndexHintException(hint.identifier, hint.label, hint.property, message)
+  def apply(hint: SchemaIndex, message: String) = new cypher.IndexHintException(hint.identifier, hint.label, hint.property, message)
 }
