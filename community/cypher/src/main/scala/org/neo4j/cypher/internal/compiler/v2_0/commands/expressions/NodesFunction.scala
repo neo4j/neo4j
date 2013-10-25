@@ -39,7 +39,7 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
   def children = Seq(path)
 
   def calculateType(symbols: SymbolTable) = {
-    path.evaluateType(CollectionType(MapType()), symbols)
+    path.evaluateType(PathType(), symbols)
 
     CollectionType(NodeType())
   }

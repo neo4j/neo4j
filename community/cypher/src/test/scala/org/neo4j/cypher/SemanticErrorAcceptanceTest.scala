@@ -57,7 +57,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
   @Test def cantUseLENGTHOnNodes() {
     test(
       "start n=node(0) return length(n)",
-      "Type mismatch: n already defined with conflicting type Node (expected Collection<Any> or String) (line 1, column 31)"
+      "Type mismatch: n already defined with conflicting type Node (expected Collection<Any>, Path or String) (line 1, column 31)"
     )
   }
 
@@ -153,7 +153,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
   @Test def shouldFailTypeCheckWhenDeleting() {
     test(
       "start a=node(0) delete 1 + 1",
-      "Type mismatch: expected Node, Relationship or Collection<Map> but was Long (line 1, column 26)"
+      "Type mismatch: expected Node, Relationship or Path but was Long (line 1, column 26)"
     )
   }
 
@@ -287,7 +287,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
   @Test def shouldFailIfMergeActionUsesPathIdentifier() {
     test(
       "MERGE p=(n:Person) ON CREATE p SET n.foo = 1",
-      "Type mismatch: p already defined with conflicting type Collection<Map> (expected Node or Relationship) (line 1, column 30)"
+      "Type mismatch: p already defined with conflicting type Path (expected Node or Relationship) (line 1, column 30)"
     )
   }
 

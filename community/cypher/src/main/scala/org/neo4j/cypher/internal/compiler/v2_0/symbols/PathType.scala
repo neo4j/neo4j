@@ -20,6 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 object PathType {
-  lazy val instance = CollectionType(MapType())
+  lazy val instance = new PathType()
   def apply() = instance
+}
+
+class PathType extends CollectionType(MapType()) {
+  override def parentType:CypherType = CollectionType(MapType())
+  override def toString = "Path"
 }
