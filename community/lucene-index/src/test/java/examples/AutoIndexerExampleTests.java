@@ -147,14 +147,20 @@ public class AutoIndexerExampleTests implements GraphHolder
 
         // Get the Node AutoIndexer, set nodeProp1 and nodeProp2 as auto
         // indexed.
-        AutoIndexer<Node> nodeAutoIndexer = graphDb.index()
-                .getNodeAutoIndexer();
+        AutoIndexer<Node> nodeAutoIndexer;
+        try ( Transaction ignore = graphDb.beginTx() )
+        {
+            nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
+        }
         nodeAutoIndexer.startAutoIndexingProperty( "nodeProp1" );
         nodeAutoIndexer.startAutoIndexingProperty( "nodeProp2" );
 
         // Get the Relationship AutoIndexer
-        AutoIndexer<Relationship> relAutoIndexer = graphDb.index()
-                .getRelationshipAutoIndexer();
+        AutoIndexer<Relationship> relAutoIndexer;
+        try ( Transaction ignore = graphDb.beginTx() )
+        {
+            relAutoIndexer = graphDb.index().getRelationshipAutoIndexer();
+        }
         relAutoIndexer.startAutoIndexingProperty( "relProp1" );
 
         // None of the AutoIndexers are enabled so far. Do that now
@@ -244,8 +250,12 @@ public class AutoIndexerExampleTests implements GraphHolder
          *  Here both nodes are indexed. To demonstrate removal, we stop
          *  autoindexing nodeProp1.
          */
-        AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
-        nodeAutoIndexer.stopAutoIndexingProperty( "nodeProp1" );
+        AutoIndexer<Node> nodeAutoIndexer;
+        try ( Transaction ignore = graphDb.beginTx() )
+        {
+            nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
+            nodeAutoIndexer.stopAutoIndexingProperty( "nodeProp1" );
+        }
 
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -297,8 +307,11 @@ public class AutoIndexerExampleTests implements GraphHolder
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex() throws Exception
     {
         GraphDatabaseService graphDatabase = data.get().values().iterator().next().getGraphDatabase();
-        assertTrue( "node autoindex Nodes not enabled.", graphDatabase.index().getNodeAutoIndexer().isEnabled() );
-        assertTrue( "node autoindex Rels not enabled.", graphDatabase.index().getRelationshipAutoIndexer().isEnabled() );
+        try( Transaction ignore = graphDatabase.beginTx() )
+        {
+            assertTrue( "node autoindex Nodes not enabled.", graphDatabase.index().getNodeAutoIndexer().isEnabled() );
+            assertTrue( "node autoindex Rels not enabled.", graphDatabase.index().getRelationshipAutoIndexer().isEnabled() );
+        }
     }
 
     @BeforeClass

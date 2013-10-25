@@ -29,6 +29,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
@@ -46,8 +47,13 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
     
     private void assertIsLuceneIndex( GraphDatabaseService db, Index<T> index )
     {
-        Map<String, String> config = db.index().getConfiguration( index );
-        if ( !config.get( IndexManager.PROVIDER ).equals( "lucene" ) ) // Not so hard coded please
+        String indexProvider;
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Map<String, String> config = db.index().getConfiguration( index );
+            indexProvider = config.get(IndexManager.PROVIDER);
+        }
+        if ( !indexProvider.equals("lucene") ) // Not so hard coded please
         {
             throw new IllegalArgumentException( index + " isn't a Lucene index" );
         }
