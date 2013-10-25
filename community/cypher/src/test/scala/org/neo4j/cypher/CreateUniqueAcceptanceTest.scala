@@ -122,8 +122,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
     createNode()
     val nodeProps = Map("name"->"Lasse")
 
-    val result = execute("start a = node(0) create unique path=a-[:X]->({p}) return last(path)", "p" -> nodeProps)
-    val endNode = result.columnAs[Node]("last(path)").toList.head
+    val result = execute("start a = node(0) create unique path=a-[:X]->({p}) return last(nodes(path))", "p" -> nodeProps)
+    val endNode = result.columnAs[Node]("last(nodes(path))").toList.head
 
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
 

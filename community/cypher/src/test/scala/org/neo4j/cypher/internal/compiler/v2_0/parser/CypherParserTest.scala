@@ -1334,51 +1334,51 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def filter() {
     test(
-      "start x = NODE(1) match p=x-[r]->z return filter(x in p WHERE x.prop = 123)",
+      "start x = NODE(1) match p=x-[r]->z return filter(x in nodes(p) WHERE x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo(SingleNode("x"), SingleNode("z"), "r", Seq.empty, Direction.OUTGOING, optional = false)).
         namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
-        ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), PropertyKey("prop")), Literal(123))), "filter(x in p WHERE x.prop = 123)"))
+        ReturnItem(FilterFunction(NodesFunction(Identifier("p")), "x", Equals(Property(Identifier("x"), PropertyKey("prop")), Literal(123))), "filter(x in nodes(p) WHERE x.prop = 123)"))
     )
 
     test(
-      "start x = NODE(1) match p=x-[r]->z return [x in p WHERE x.prop = 123]",
+      "start x = NODE(1) match p=x-[r]->z return [x in nodes(p) WHERE x.prop = 123]",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo(SingleNode("x"), SingleNode("z"), "r", Seq(), Direction.OUTGOING, false)).
         namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
-        ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), PropertyKey("prop")), Literal(123))), "[x in p WHERE x.prop = 123]"))
+        ReturnItem(FilterFunction(NodesFunction(Identifier("p")), "x", Equals(Property(Identifier("x"), PropertyKey("prop")), Literal(123))), "[x in nodes(p) WHERE x.prop = 123]"))
     )
   }
 
   @Test def extract() {
     test(
-      "start x = NODE(1) match p=x-[r]->z return [x in p | x.prop]",
+      "start x = NODE(1) match p=x-[r]->z return [x in nodes(p) | x.prop]",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo(SingleNode("x"), SingleNode("z"), "r", Seq(), Direction.OUTGOING, false)).
         namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
-        ReturnItem(ExtractFunction(Identifier("p"), "x", Property(Identifier("x"), PropertyKey("prop"))), "[x in p | x.prop]"))
+        ReturnItem(ExtractFunction(NodesFunction(Identifier("p")), "x", Property(Identifier("x"), PropertyKey("prop"))), "[x in nodes(p) | x.prop]"))
     )
   }
 
   @Test def listComprehension() {
     test(
-      "start x = NODE(1) match p=x-[r]->z return [x in p WHERE x.prop > 123 | x.prop]",
+      "start x = NODE(1) match p=x-[r]->z return [x in rels(p) WHERE x.prop > 123 | x.prop]",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo(SingleNode("x"), SingleNode("z"), "r", Seq(), Direction.OUTGOING, false)).
         namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
         ReturnItem(ExtractFunction(
-          FilterFunction(Identifier("p"), "x", GreaterThan(Property(Identifier("x"), PropertyKey("prop")), Literal(123))),
+          FilterFunction(RelationshipFunction(Identifier("p")), "x", GreaterThan(Property(Identifier("x"), PropertyKey("prop")), Literal(123))),
           "x",
           Property(Identifier("x"), PropertyKey("prop"))
-        ), "[x in p WHERE x.prop > 123 | x.prop]"))
+        ), "[x in rels(p) WHERE x.prop > 123 | x.prop]"))
     )
   }
 

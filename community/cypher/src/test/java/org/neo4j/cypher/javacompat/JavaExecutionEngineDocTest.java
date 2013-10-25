@@ -395,7 +395,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", props );
 
-        String query = "START n=node(0) CREATE UNIQUE p = n-[:REL]->({props}) RETURN last(p) AS X";
+        String query = "START n=node(0) CREATE UNIQUE p = n-[:REL]->({props}) RETURN last(nodes(p)) AS X";
         ExecutionResult result = engine.execute( query, params );
         assertThat( count( result ), is( 1 ) );
     }

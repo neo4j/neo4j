@@ -24,7 +24,7 @@ object PathType {
   def apply() = instance
 }
 
-class PathType extends CollectionType(MapType()) {
-  override def parentType:CypherType = CollectionType(MapType())
+class PathType extends AnyType {
+  override def parentType:CypherType = AnyType()
   override def toString = "Path"
 }

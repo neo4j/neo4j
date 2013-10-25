@@ -1393,17 +1393,17 @@ RETURN x0.name""")
   @Test def functions_should_return_null_if_they_get_path_containing_unbound() {
     createNode()
 
-    val result = execute("start a=node(0) optional match p=a-[r]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
+    val result = execute("start a=node(0) optional match p=a-[r]->() return length(nodes(p)), id(r), type(r), nodes(p), rels(p)").toList
 
-    assert(List(Map("length(p)" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
+    assert(List(Map("length(nodes(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
   }
 
   @Test def functions_should_return_null_if_they_get_path_containing_null() {
     createNode()
 
-    val result = execute("start a=node(0) optional match p=a-[r]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
+    val result = execute("start a=node(0) optional match p=a-[r]->() return length(rels(p)), id(r), type(r), nodes(p), rels(p)").toList
 
-    assert(List(Map("length(p)" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
+    assert(List(Map("length(rels(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
   }
 
   @Test def aggregates_in_aggregates_should_fail() {
@@ -1440,11 +1440,11 @@ RETURN x0.name""")
     val b = createNode("foo" -> 3)
     val r = relate(a, b, "rel", Map("foo" -> 2))
 
-    val result = execute("start a=node(0) match p=a-->() return filter(x in p WHERE x.foo = 2)").toList
+    val result = execute("start a=node(0) match p=a-->() return filter(x in nodes(p) WHERE x.foo > 2) as n").toList
 
-    val resultingCollection = result.head("filter(x in p WHERE x.foo = 2)").asInstanceOf[Seq[_]].toList
+    val resultingCollection = result.head("n").asInstanceOf[Seq[_]].toList
 
-    assert(List(r) == resultingCollection)
+    assert(List(b) == resultingCollection)
   }
 
   @Test def expose_problem_with_aliasing() {
@@ -1593,7 +1593,7 @@ RETURN x0.name""")
     val b = createNode()
     relate(a, b)
 
-    val q = "start n = node(0) match p = n-[*1..]->m return p, last(p) order by length(p) asc"
+    val q = "start n = node(0) match p = n-[*1..]->m return p, last(nodes(p)) order by length(nodes(p)) asc"
 
     assert(execute(q).size === 1)
   }
