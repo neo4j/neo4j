@@ -40,6 +40,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
@@ -134,12 +135,14 @@ public class
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Logging logging;
     private final UpdateableSchemaState updateableSchemaState;
+    private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
 
     public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
                                          HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging,
-                                         UpdateableSchemaState updateableSchemaState )
+                                         UpdateableSchemaState updateableSchemaState,
+                                         Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         this.delegateHandler = delegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
@@ -148,6 +151,7 @@ public class
         this.config = config;
         this.logging = logging;
         this.updateableSchemaState = updateableSchemaState;
+        this.kernelExtensions = kernelExtensions;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.life = new LifeSupport();
         this.stateHandler = stateHandler;
@@ -487,7 +491,6 @@ public class
                     resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                     resolver.resolveDependency( PersistenceManager.class ),
                     resolver.resolveDependency( LockManager.class ),
-                    resolver.resolveDependency( NodeManager.class ),
                     (SchemaWriteGuard)graphDb);
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
@@ -518,7 +521,7 @@ public class
 
             // This will move the copied db to the graphdb location
             console.log( "Copying store from master" );
-            new SlaveStoreWriter( config, console ).copyStore( copyMaster );
+            new SlaveStoreWriter( config, kernelExtensions, console ).copyStore( copyMaster );
 
             startServicesAgain();
             console.log( "Finished copying store from master" );

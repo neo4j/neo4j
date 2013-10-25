@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
@@ -72,5 +75,11 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     public void validate() throws IndexPopulationFailedKernelException
     {
         throw getPopulationFailure().asIndexPopulationFailure( getDescriptor(), indexUserDescription );
+    }
+
+    @Override
+    public ResourceIterator<File> snapshotFiles()
+    {
+        return emptyIterator();
     }
 }

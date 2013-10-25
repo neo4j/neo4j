@@ -70,7 +70,7 @@ public abstract class FutureAdapter<V> implements Future<V>
         }
     };
     
-    public static final Future<Void> VOID = new Present<Void>( null );
+    public static final Future<Void> VOID = new Present<>( null );
     
     public static <T> Future<T> latchGuardedValue( final ValueGetter<T> value, final CountDownLatch guardedByLatch )
     {

@@ -19,18 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -45,7 +41,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.BridgingCacheAccess;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -74,7 +69,6 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
@@ -108,7 +102,6 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.helpers.SillyUtils.nonNull;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
@@ -168,6 +161,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private XaContainer xaContainer;
     private ArrayMap<Class<?>,Store> idGenerators;
     private IntegrityValidator integrityValidator;
+    private NeoStoreFileListing fileListing;
 
     private File storeDir;
     private boolean readOnly;
@@ -274,7 +268,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
                                  RelationshipTypeTokenHolder relationshipTypeTokens,
                                  PersistenceManager persistenceManager, LockManager lockManager,
-                                 NodeManager nodeManager, SchemaWriteGuard schemaWriteGuard )
+                                 SchemaWriteGuard schemaWriteGuard )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -369,6 +363,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
             labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
+
+            fileListing = new NeoStoreFileListing( xaContainer, storeDir, labelScanStore, indexingService );
 
             kernel = life.add( new Kernel( txManager, propertyKeyTokens, labelTokens, relationshipTypeTokens,
                     persistenceManager, lockManager, updateableSchemaState, schemaWriteGuard,
@@ -681,85 +677,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     @Override
     public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     {
-        Collection<File> files = new ArrayList<>();
-        gatherNeoStoreFiles( includeLogicalLogs, files );
-        Closeable labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
-
-        return new StoreSnapshot( files.iterator(), labelScanStoreSnapshot );
-    }
-
-    private static class StoreSnapshot extends PrefetchingIterator<File> implements ResourceIterator<File>
-    {
-        private final Iterator<File> files;
-        private final Closeable closeable;
-
-        StoreSnapshot( Iterator<File> files, Closeable closeable )
-        {
-            this.files = files;
-            this.closeable = closeable;
-        }
-
-        @Override
-        protected File fetchNextOrNull()
-        {
-            return files.hasNext() ? files.next() : null;
-        }
-
-        @Override
-        public void close()
-        {
-            try
-            {
-                closeable.close();
-            }
-            catch ( IOException e )
-            {
-                // The underlying closeable is currently actually a ResourceIterator, so
-                // the close() method doesn't actually throw IOException.
-                throw new RuntimeException( e );
-            }
-        }
-    }
-
-    private Closeable gatherLabelScanStoreFiles( Collection<File> targetFiles ) throws IOException
-    {
-        ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
-        while ( snapshot.hasNext() )
-        {
-            targetFiles.add( snapshot.next() );
-        }
-        // Intentionally don't close the snapshot here, return it for closing by the consumer of
-        // the targetFiles list.
-        return snapshot;
-    }
-
-    private void gatherNeoStoreFiles( boolean includeLogicalLogs, final Collection<File> targetFiles )
-    {
-        File neostoreFile = null;
-        Pattern logFilePattern = getXaContainer().getLogicalLog().getHistoryFileNamePattern();
-        for ( File dbFile : nonNull( storeDir.listFiles() ) )
-        {
-            String name = dbFile.getName();
-            // To filter for "neostore" is quite future proof, but the "index.db" file
-            // maybe should be
-            if ( dbFile.isFile() )
-            {
-                if ( name.equals( NeoStore.DEFAULT_NAME ) )
-                {
-                    neostoreFile = dbFile;
-                }
-                else if ( (name.startsWith( NeoStore.DEFAULT_NAME ) ||
-                        name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
-                {   // Store files
-                    targetFiles.add( dbFile );
-                }
-                else if ( includeLogicalLogs && logFilePattern.matcher( dbFile.getName() ).matches() )
-                {   // Logs
-                    targetFiles.add( dbFile );
-                }
-            }
-        }
-        targetFiles.add( neostoreFile );
+        return fileListing.listStoreFiles( includeLogicalLogs );
     }
 
     public void registerDiagnosticsWith( DiagnosticsManager manager )
