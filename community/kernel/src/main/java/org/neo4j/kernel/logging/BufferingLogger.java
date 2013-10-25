@@ -23,6 +23,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -35,11 +37,15 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * where, for one reason or another, we have not yet set up proper logging in
  * the application lifecycle.
  * 
- * This will replay messages in the order they are recieved, *however*, it will
+ * This will replay messages in the order they are received, *however*, it will
  * not preserve the time stamps of the original messages.
  * 
  * You should not use this for logging messages where the time stamps are
  * important.
+ *
+ * You should also not use this logger, when there is a risk that it can be
+ * subjected to an unbounded quantity of log messages, since the buffer keeps
+ * all messages until it gets a chance to replay them.
  */
 public class BufferingLogger extends StringLogger
 {
@@ -57,7 +63,7 @@ public class BufferingLogger extends StringLogger
         public boolean flush;
     }
 
-    private List<LogMessage> buffer = new ArrayList<LogMessage>();
+    private final Queue<LogMessage> buffer = new ConcurrentLinkedQueue<>();
 
     @Override
     public void logMessage( String msg )
@@ -123,15 +129,18 @@ public class BufferingLogger extends StringLogger
      */
     public void replayInto( StringLogger other )
     {
-        List<LogMessage> oldBuffer = buffer;
-        buffer = new ArrayList<LogMessage>();
-
-        for ( LogMessage message : oldBuffer )
+        LogMessage message = buffer.poll();
+        while ( message != null )
         {
             if ( message.throwable != null )
+            {
                 other.logMessage( message.message, message.throwable, message.flush );
+            }
             else
+            {
                 other.logMessage( message.message, message.flush );
+            }
+            message = buffer.poll();
         }
     }
 
@@ -148,5 +157,4 @@ public class BufferingLogger extends StringLogger
         }
         return stringWriter.toString();
     }
-
 }

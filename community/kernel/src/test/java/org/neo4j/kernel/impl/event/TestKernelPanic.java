@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import java.util.concurrent.atomic.AtomicReference;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
@@ -36,30 +35,32 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class TestKernelPanic
 {
-    @Test
+    @Test( timeout = 10000 )
     public void panicTest() throws Exception
     {
-        final AtomicReference<BufferingLogger> logger = new AtomicReference<BufferingLogger>();
+        final BufferingLogger logger = new BufferingLogger();
         @SuppressWarnings("deprecation")
         GraphDatabaseService graphDb = new ImpermanentGraphDatabase()
         {
             @Override
             protected Logging createLogging()
             {
-                logger.set( new BufferingLogger() );
-                return new SingleLoggingService( logger.get() );
+                return new SingleLoggingService( logger );
             }
         };
         XaDataSourceManager xaDs =
             ((GraphDatabaseAPI)graphDb).getXaDataSourceManager();
         
-        IllBehavingXaDataSource noob = new IllBehavingXaDataSource(UTF8.encode( "554342" ), "noob");
-        xaDs.registerDataSource( noob );
+        IllBehavingXaDataSource adversarialDataSource =
+                new IllBehavingXaDataSource(UTF8.encode( "554342" ), "adversarialDataSource");
+        xaDs.registerDataSource( adversarialDataSource );
         
         Panic panic = new Panic();
         graphDb.registerKernelEventHandler( panic );
@@ -69,34 +70,40 @@ public class TestKernelPanic
         Transaction tx = txMgr.getTransaction();
         
         graphDb.createNode();
-        noob.getXaConnection().enlistResource( tx );
+        adversarialDataSource.getXaConnection().enlistResource( tx );
         try
         {
             gdbTx.success();
             gdbTx.finish();
             fail( "Should fail" );
         }
-        catch ( Throwable t )
+        catch ( Exception t )
         {
-            // ok
-            for ( int i = 0; i < 10 && !panic.panic; i++ )
-            {
-                Thread.sleep( 1000 );
-            }
+            // It's okay, we expected this.
+            // Now just wait until we observe the kernel panicking:
+            //noinspection StatementWithEmptyBody
+            while ( !panic.panic );
         }
         finally
         {
             graphDb.unregisterKernelEventHandler( panic );
         }
-        assertTrue( panic.panic );
-        assertTrue( "Log didn't contain expected string",
-                logger.get().toString().contains( "at org.neo4j.kernel.impl.event.TestKernelPanic.panicTest" ) );
-        graphDb.shutdown();
+
+        try
+        {
+            assertTrue( panic.panic );
+            assertThat("Log didn't contain expected string",
+                    logger.toString(), containsString("at org.neo4j.kernel.impl.event.TestKernelPanic.panicTest"));
+        }
+        finally
+        {
+            graphDb.shutdown();
+        }
     }
 
     private static class Panic implements KernelEventHandler
     {
-        boolean panic = false;
+        volatile boolean panic = false;
         
         @Override
         public void beforeShutdown()
