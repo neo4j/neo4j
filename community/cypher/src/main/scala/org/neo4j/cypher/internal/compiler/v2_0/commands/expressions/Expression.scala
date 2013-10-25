@@ -94,6 +94,8 @@ abstract class Arithmetics(left: Expression, right: Expression)
     val bVal = right(ctx)
 
     (aVal, bVal) match {
+      case (null, _) => null
+      case (_, null) => null
       case (x: Number, y: Number) => calc(x, y)
       case _ => throwTypeError(bVal, aVal)
     }

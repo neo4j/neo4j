@@ -71,3 +71,5 @@ class InvalidSemanticsException(message: String) extends CypherException(message
 class OutOfBoundsException(message: String) extends CypherException(message)
 
 class MergeConstraintConflictException(message: String) extends CypherException(message)
+
+class ArithmeticException(message: String) extends CypherException(message)

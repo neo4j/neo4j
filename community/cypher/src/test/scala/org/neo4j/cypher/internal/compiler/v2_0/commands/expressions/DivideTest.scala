@@ -20,30 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import pipes.QueryState
+import pipes.QueryStateHelper
 import org.neo4j.cypher.ArithmeticException
+import org.junit.Test
+import org.scalatest.Assertions
 
-case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
-  def operand = "/"
-
-  def verb = "divide"
-
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
-    val aVal = a(ctx)
-    val bVal = b(ctx)
-
-    (aVal, bVal) match {
-      case (_, 0) => throw new ArithmeticException("/ by zero")
-      case (null, _) => null
-      case (_, null) => null
-      case (x: Number, y: Number) => calc(x, y)
-      case _ => throwTypeError(bVal, aVal)
-    }
+class DivideTest extends Assertions {
+  @Test
+  def should_throw_arithmetic_exception_for_divide_by_zero() {
+    intercept[ArithmeticException](Divide(Literal(1), Literal(0))(ExecutionContext.empty)(QueryStateHelper.empty))
+    intercept[ArithmeticException](Divide(Literal(1.4), Literal(0))(ExecutionContext.empty)(QueryStateHelper.empty))
+    intercept[ArithmeticException](Divide(Literal(1), Literal(0.0))(ExecutionContext.empty)(QueryStateHelper.empty))
+    intercept[ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ExecutionContext.empty)(QueryStateHelper.empty))
   }
-
-  def calc(a: Number, b: Number) = divide(a, b)
-
-  def rewrite(f: (Expression) => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

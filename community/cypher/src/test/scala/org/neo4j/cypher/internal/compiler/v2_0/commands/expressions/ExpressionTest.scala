@@ -24,7 +24,6 @@ import commands.values.TokenType._
 import commands.ReturnItem
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.CypherTypeException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.junit.Test
 import org.scalatest.Assertions
@@ -88,11 +87,6 @@ class ExpressionTest extends Assertions {
 
     //THEN
     assert(aggregates.toList ===  List(Avg(Property(Identifier("a"), PropertyKey("age")))))
-  }
-
-  private def expectFailure(a: Map[String, CypherType], b: Map[String, CypherType]) {
-    intercept[CypherTypeException](merge(a, b, a))
-    intercept[CypherTypeException](merge(a, b, a))
   }
 
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {

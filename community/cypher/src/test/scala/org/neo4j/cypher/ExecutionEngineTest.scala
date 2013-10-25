@@ -992,14 +992,14 @@ return p""")
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = execute( """
-start a  = node(0), x = node(1,2)
-optional match p = (a)-[*]->(x)
-return x, p""")
+    val result = execute("""
+start a = node(0), x = node(1,2)
+optional match p = (a)-[r*]->(x)
+return r, x, p""")
 
     assert(List(
-      Map("x" -> b, "p" -> PathImpl(a, r, b)),
-      Map("x" -> c, "p" -> null)
+      Map("r" -> Seq(r), "x" -> b, "p" -> PathImpl(a, r, b)),
+      Map("r" -> null, "x" -> c, "p" -> null)
     ) === result.toList)
   }
 
@@ -2540,6 +2540,12 @@ RETURN x0.name""")
 
     // then
     assert(result.toList === List(Map("A" -> false, "B" -> false, "C" -> false, "D" -> false, "E" -> true, "F" -> true)))
+  }
+
+  @Test
+  def should_propagate_null_through_math_funcs() {
+    val result = execute("return 1 + (2 - (3 * (4 / (5 ^ (6 % null))))) as A")
+    assert(result.toList === List(Map("A" -> null)))
   }
 
   @Test
