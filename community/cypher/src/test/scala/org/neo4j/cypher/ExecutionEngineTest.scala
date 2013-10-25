@@ -34,13 +34,12 @@ class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker {
 
   @Ignore
   @Test def assignToPathInsideForeachShouldWork() {
-    val result = execute(
+    execute(
 """start n=node(0)
 foreach(x in [1,2,3] |
   create p = ({foo:x})-[:X]->()
   foreach( i in p |
     set i.touched = true))""")
-    println(result.dumpToString())
   }
 
   @Test def shouldGetRelationshipById() {
@@ -1209,16 +1208,6 @@ RETURN x0.name""")
     assert(List(Map("x0.name"->"Mark")) === result.toList)
   }
 
-  private def createTriangle(number: Int): (Node, Node, Node) = {
-    val z = createNode("Z" + number)
-    val x = createNode("X" + number)
-    val y = createNode("Y" + number)
-    relate(z, x, "X", "ZX")
-    relate(x, y, "X", "ZY")
-    relate(y, z, "X", "YZ")
-    (z, x, y)
-  }
-
   @Test def shouldFindNodesBothDirections() {
     val n = createNode()
     val a = createNode()
@@ -2290,7 +2279,6 @@ RETURN x0.name""")
 
     //WHEN
     val result = execute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
-    println(result.executionPlanDescription())
 
     //THEN
     assert(result.toList === List(Map("n"->jake)))
