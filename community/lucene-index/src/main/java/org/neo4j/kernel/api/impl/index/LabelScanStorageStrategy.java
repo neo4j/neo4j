@@ -27,6 +27,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
+import org.neo4j.kernel.api.scan.NodeRangeReader;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 public interface LabelScanStorageStrategy
@@ -34,6 +35,8 @@ public interface LabelScanStorageStrategy
     void applyUpdates( StorageService storage, Iterator<NodeLabelUpdate> updates ) throws IOException;
 
     PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId );
+
+    NodeRangeReader newNodeLabelReader( IndexSearcher searcher );
 
     interface StorageService
     {

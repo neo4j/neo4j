@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -41,7 +42,9 @@ import org.junit.runners.Parameterized;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.scan.LabelScanReader;
+import org.neo4j.kernel.api.scan.NodeLabelRange;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
+import org.neo4j.kernel.api.scan.NodeRangeReader;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -53,13 +56,16 @@ import static java.util.Collections.emptyList;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.scan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
@@ -135,6 +141,63 @@ public class LuceneLabelScanStoreTest
 
         // THEN
         assertNodesForLabel( labelId );
+    }
+
+    @Test
+    public void shouldScanSingleRange() throws Exception
+    {
+        // GIVEN
+        int labelId1 = 1, labelId2 = 2;
+        long nodeId1 = 10, nodeId2 = 11;
+        start( asList(
+                labelChanges( nodeId1, NO_LABELS, new long[] { labelId1 } ),
+                labelChanges( nodeId2, NO_LABELS, new long[] { labelId1, labelId2 } )
+        ) );
+
+        // WHEN
+        NodeRangeReader reader = store.newRangeReader();
+        NodeLabelRange range = single( reader.iterator() );
+
+        // THEN
+        assertArrayEquals( new long[]{labelId1, labelId2}, sorted( range.labels() ) );
+
+        assertArrayEquals( new long[]{nodeId1, nodeId2}, sorted( range.nodes( labelId1 ) ) );
+        assertArrayEquals( new long[]{nodeId2}, sorted( range.nodes( labelId2 ) ) );
+    }
+
+    @Test
+    public void shouldScanMultipleRanges() throws Exception
+    {
+        // GIVEN
+        int labelId1 = 1, labelId2 = 2;
+        long nodeId1 = 10, nodeId2 = 1280;
+        start( asList(
+                labelChanges( nodeId1, NO_LABELS, new long[] { labelId1 } ),
+                labelChanges( nodeId2, NO_LABELS, new long[] { labelId1, labelId2 } )
+        ) );
+
+        // WHEN
+        NodeRangeReader reader = store.newRangeReader();
+        Iterator<NodeLabelRange> iterator = reader.iterator();
+        NodeLabelRange range1 = iterator.next();
+        NodeLabelRange range2 = iterator.next();
+        assertFalse( iterator.hasNext() );
+
+        // THEN
+        assertArrayEquals( new long[] { labelId1 }, sorted( range1.labels() ) );
+        assertArrayEquals( new long[] { labelId1, labelId2 }, sorted( range2.labels() ) );
+
+        assertArrayEquals( new long[] { nodeId1 }, sorted( range1.nodes( labelId1 ) ) );
+        assertArrayEquals( new long[] { }, sorted( range1.nodes( labelId2 ) ) );
+
+        assertArrayEquals( new long[] { nodeId2 }, sorted( range2.nodes( labelId1 ) ) );
+        assertArrayEquals( new long[] { nodeId2 }, sorted( range2.nodes( labelId2 ) ) );
+    }
+
+    private long[] sorted( long[] input )
+    {
+        Arrays.sort( input );
+        return input;
     }
 
     @Test
@@ -238,9 +301,6 @@ public class LuceneLabelScanStoreTest
     public static List<Object[]> parameterizedWithStrategies()
     {
         return asList(
-                new Object[]{
-                        new SingleNodeDocumentLabelScanStorageStrategy(
-                                new LuceneDocumentStructure() )},
                 new Object[]{
                         new NodeRangeDocumentLabelScanStorageStrategy(
                                 BitmapDocumentFormat._32 )},
