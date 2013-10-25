@@ -38,7 +38,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Function;

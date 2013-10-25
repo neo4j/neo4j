@@ -116,6 +116,18 @@ public class ConsistencyCheckService
 
     public enum Result
     {
-        FAILURE, SUCCESS
+        FAILURE( false ), SUCCESS( true );
+        
+        private boolean successful;
+
+        private Result( boolean successful )
+        {
+            this.successful = successful;
+        }
+        
+        public boolean isSuccessful()
+        {
+            return this.successful;
+        }
     }
 }

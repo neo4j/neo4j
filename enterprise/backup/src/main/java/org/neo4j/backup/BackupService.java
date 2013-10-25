@@ -226,7 +226,7 @@ class BackupService
                             targetDirectory,
                             tuningConfiguration,
                             ProgressMonitorFactory.textual( System.err ),
-                            logger );
+                            logger ).isSuccessful();
                 }
                 catch ( ConsistencyCheckIncompleteException e )
                 {

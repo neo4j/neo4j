@@ -26,6 +26,7 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -43,7 +44,10 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
@@ -222,8 +226,8 @@ public class TestPullUpdates
             {
                 try
                 {
-                    Object value = db.getNodeById(nodeId).getProperty( "i", null );
-                    if ( value == null || value != i )
+                    Number value = (Number)db.getNodeById(nodeId).getProperty( "i", null );
+                    if ( value == null || value.intValue() != i )
                     {
                         ok = false;
                     }
