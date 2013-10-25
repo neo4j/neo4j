@@ -25,7 +25,17 @@ import symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class LastFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = makeTraversable(value).last
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = {
+      val collection = makeTraversable(value).iterator
+
+      if(collection.hasNext) {
+        var last:Any = null
+        while (collection.hasNext) last = collection.next()
+        last
+      }
+      else
+        null
+    }
 
   def rewrite(f: (Expression) => Expression) = f(LastFunction(collection.rewrite(f)))
 
