@@ -2,7 +2,10 @@
 ------------
 o Add OPTIONAL MATCH to Cypher
 o Remove question mark symbol from patterns in Cypher
-
+o Fixes #1168
+o Makes MATCH illegal following OPTIONAL MATCH without a WITH between
+o Makes pattern expressions return collections of paths
+o Introduces type coercion to allow collections to be treated as predicates
 
 2.0.0-M06
 ---------
