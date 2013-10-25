@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.junit.Test
+import org.neo4j.graphdb.Node
 
 class OptionalBehaviourAcceptanceTest extends ExecutionEngineHelper {
   @Test def optional_nodes_with_labels_in_match_clause_should_return_null_when_where_is_no_match() {
@@ -32,5 +33,21 @@ class OptionalBehaviourAcceptanceTest extends ExecutionEngineHelper {
     createNode()
     val result = execute("start n = node(0) optional match (n)-[r]-(m) where m:Person return r")
     assert(result.toList === List(Map("r" -> null)))
+  }
+
+  @Test def should_allow_match_following_optional_match_if_there_is_an_intervening_with_when_there_are_results() {
+    val a = createLabeledNode("A")
+    val c = createLabeledNode("C")
+    relate(a, c)
+    val d = createNode()
+    relate(c, d)
+    val result = executeScalar[Node]("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
+    assert(result === d)
+  }
+
+  @Test def should_allow_match_following_optional_match_if_there_is_an_intervening_with_when_there_are_no_results() {
+    createLabeledNode("A")
+    val result = execute("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
+    assert(result.toList === List())
   }
 }

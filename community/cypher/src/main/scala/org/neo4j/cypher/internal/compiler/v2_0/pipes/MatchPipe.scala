@@ -30,12 +30,15 @@ case class MatchPipe(source: Pipe,
                      identifiersInClause: Set[String]) extends PipeWithSource(source) {
   val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph, identifiersInClause)
   val symbols = matchingContext.symbols
+  val identifiersBoundInSource = identifiersInClause intersect source.symbols.keys.toSet
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap {
       ctx =>
-        val result = matchingContext.getMatches(ctx, state)
-        result
+        if (identifiersBoundInSource.exists(i => ctx(i) == null))
+          None
+        else
+          matchingContext.getMatches(ctx, state)
     }
   }
 

@@ -49,10 +49,11 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
     ExpectedException(intercept[T](execute(q)))
 
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
-    case List(m) => if (m.size!=1)
-      fail("expected scalar value: " + m)
+    case m :: Nil =>
+      if (m.size!=1)
+        fail("expected scalar value: " + m)
       else m.head._2.asInstanceOf[T]
-    case x => fail(x.toString())
+    case _ => fail("expected to get a single row back")
   }
 
   protected def timeOutIn(length: Int, timeUnit: TimeUnit)(f: => Unit) {
