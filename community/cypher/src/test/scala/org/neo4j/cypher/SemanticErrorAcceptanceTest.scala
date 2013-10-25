@@ -57,7 +57,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
   @Test def cantUseLENGTHOnNodes() {
     test(
       "start n=node(0) return length(n)",
-      "Type mismatch: n already defined with conflicting type Node (expected Collection<Any>) (line 1, column 31)"
+      "Type mismatch: n already defined with conflicting type Node (expected Collection<Any> or String) (line 1, column 31)"
     )
   }
 
