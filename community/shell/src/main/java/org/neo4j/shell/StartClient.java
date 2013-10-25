@@ -97,6 +97,12 @@ public class StartClient
     public static final String ARG_FILE = "file";
 
     /**
+     * Special character used to request reading from stdin rather than a file.
+     * Uses the dash character, which is a common way to specify this.
+     */
+    public static final String ARG_FILE_STDIN = "-";
+
+    /**
      * Configuration file to load and use if a local {@link GraphDatabaseService}
      * is started in this JVM.
      */
@@ -321,7 +327,7 @@ public class StartClient
             BufferedReader reader = null;
             try
             {
-                if ( fileName.equals( "-" ) )
+                if ( fileName.equals( ARG_FILE_STDIN ) )
                 {
                     reader = new BufferedReader( new InputStreamReader( System.in ) );
                 }

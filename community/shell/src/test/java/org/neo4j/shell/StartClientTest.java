@@ -21,6 +21,7 @@ package org.neo4j.shell;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,14 +61,22 @@ public class StartClientTest
     }
 
     @Test
-    public void givenShellClientWhenReadFromStdinThenExecuteFileCommands() throws IOException
+    public void givenShellClientWhenReadFromStdinThenExecutePipedCommands() throws IOException
     {
         // Given
         // an empty database
 
         // When
-        System.setIn(new ByteArrayInputStream( "CREATE (n {foo:'bar'});".getBytes() ));
-        StartClient.main(new String[]{"-file", "-"});
+        InputStream realStdin = System.in;
+        try
+        {
+            System.setIn( new ByteArrayInputStream( "CREATE (n {foo:'bar'});".getBytes() ) );
+            StartClient.main( new String[] { "-file", "-" } );
+        }
+        finally
+        {
+            System.setIn( realStdin );
+        }
 
         // Then
         db.getGraphDatabaseService().beginTx();
