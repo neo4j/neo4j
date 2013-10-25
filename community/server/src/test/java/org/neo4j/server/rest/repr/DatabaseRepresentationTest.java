@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Node;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import static org.neo4j.test.mocking.GraphMock.node;
 import static org.neo4j.test.mocking.Properties.properties;

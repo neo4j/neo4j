@@ -20,18 +20,13 @@
 package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.Version;
-
 
 public class DatabaseRepresentation extends MappingRepresentation implements ExtensibleRepresentation
 {
-    private final GraphDatabaseService graphDb;
-
     public DatabaseRepresentation( GraphDatabaseService graphDb )
     {
         super( RepresentationType.GRAPHDB );
-        this.graphDb = graphDb;
     }
 
     @Override
