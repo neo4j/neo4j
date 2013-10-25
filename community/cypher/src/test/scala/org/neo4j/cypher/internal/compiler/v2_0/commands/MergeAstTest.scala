@@ -63,7 +63,7 @@ class MergeAstTest extends Assertions {
     assert(from.nextStep() === Seq(MergeNodeAction(A,
       props = Map(propertyKey -> expression),
       labels = Seq.empty,
-      expectations = Seq(Equals(Nullable(Property(Identifier(A), propertyKey)), expression)),
+      expectations = Seq(Equals(Property(Identifier(A), propertyKey), expression)),
       onCreate = Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)),
       onMatch = Seq.empty,
       maybeNodeProducer = NO_PRODUCER)))

@@ -141,8 +141,6 @@ object IndexSeekStrategy extends NodeStrategy {
     where.collect {
       case predicate @ Equals(Property(Identifier(id), propertyKey), expression) if id == identifier => SolvedPredicate(propertyKey.name, predicate)
       case predicate @ Equals(expression, Property(Identifier(id), propertyKey)) if id == identifier => SolvedPredicate(propertyKey.name, predicate)
-      case predicate @ Equals(nullable @ Nullable(Property(Identifier(id), propertyKey)), expression) if nullable.default == Some(false) && id == identifier => SolvedPredicate(propertyKey.name, predicate)
-      case predicate @ Equals(expression, nullable @ Nullable(Property(Identifier(id), propertyKey))) if nullable.default == Some(false) && id == identifier => SolvedPredicate(propertyKey.name, predicate)
     }
 }
 

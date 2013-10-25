@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.SchemaIndex
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.PlainMergeNodeProducer
 import org.neo4j.cypher.internal.compiler.v2_0.commands.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_0.commands.Equals
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Nullable
 
 /*
 This builder is concerned with finding queries that use MERGE, and finds a way to try to find matching nodes
@@ -78,8 +77,8 @@ class MergeStartPointBuilder extends PlanBuilder {
         val startItems: Seq[(KeyToken, KeyToken, RatedStartItem)] = indexes.map {
           case ((label, key)) =>
             val equalsPredicates = Seq(
-              Equals(Nullable(Property(Identifier(identifier), key)), props(key)),
-              Equals(props(key), Nullable(Property(Identifier(identifier), key)))
+              Equals(Property(Identifier(identifier), key), props(key)),
+              Equals(props(key), Property(Identifier(identifier), key))
             )
             val hasLabelPredicates = labels.map {
               HasLabel(Identifier(identifier), _)

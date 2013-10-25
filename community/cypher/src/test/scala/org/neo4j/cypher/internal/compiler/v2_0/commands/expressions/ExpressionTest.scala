@@ -32,14 +32,14 @@ import collection.Map
 
 class ExpressionTest extends Assertions {
   @Test def replacePropWithCache() {
-    val a = Collect(Nullable(Property(Identifier("r"), PropertyKey("age"))))
+    val a = Collect(Property(Identifier("r"), PropertyKey("age")))
 
     val b = a.rewrite {
       case Property(n, p) => Literal(n + "." + p.name)
       case x              => x
     }
 
-    assert(b === Collect(Nullable(Literal("r.age"))))
+    assert(b === Collect(Literal("r.age")))
   }
 
   @Test def merge_two_different_identifiers() {
