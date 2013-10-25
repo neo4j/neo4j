@@ -116,7 +116,7 @@ final case class VariableLengthStepTrail(next: Trail,
   val end = next.end
 
   def symbols(table: SymbolTable) = {
-    val symbolTable = next.symbols(table).add(start, NodeType()).add(path, PathType())
+    val symbolTable = next.symbols(table).add(start, NodeType()).add(path, CollectionType(RelationshipType()))
 
     //If we have a rel-iterator, let's include it
     relIterator match {

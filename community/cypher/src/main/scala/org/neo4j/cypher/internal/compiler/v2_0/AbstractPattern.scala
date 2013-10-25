@@ -23,7 +23,7 @@ import commands._
 import commands.expressions.{Expression, Identifier}
 import commands.values.KeyToken
 import mutation.GraphElementPropertyFunctions
-import symbols.{PathType, RelationshipType, NodeType, CypherType}
+import symbols._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import collection.Map
@@ -163,7 +163,7 @@ case class ParsedVarLengthRelation(name: String,
     copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
 
   def possibleStartPoints: Seq[(String, CypherType)] =
-    (start.possibleStartPoints :+ name -> PathType()) ++ end.possibleStartPoints
+    (start.possibleStartPoints :+ name -> CollectionType(RelationshipType())) ++ end.possibleStartPoints
 }
 
 case class ParsedShortestPath(name: String,
