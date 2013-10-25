@@ -31,6 +31,9 @@ case class SingleQuery(clauses: Seq[Clause], token: InputToken) extends Query {
   private def checkOrder(clauses: Seq[Clause]): SemanticCheck = clauses match {
     case Seq() => Seq()
     case _     => (clauses.take(2) match {
+      case Seq(_: With, _: Start)                => Seq()
+      case Seq(clause, start: Start)             => Seq(SemanticError(s"WITH is required between ${clause.name} and ${start.name}", clause.token, start.token))
+      case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional => Seq(SemanticError(s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)", match2.token, match1.token))
       case Seq(clause: Return, _)                => Seq(SemanticError(s"${clause.name} can only be used at the end of the query", clause.token))
       case Seq(_: UpdateClause, _: UpdateClause) => Seq()
       case Seq(_: UpdateClause, _: With)         => Seq()

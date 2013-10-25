@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0
+package org.neo4j.cypher
 
 import org.junit.Assert._
 import org.junit.Test
@@ -25,7 +25,7 @@ import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
 import org.neo4j.cypher.{CypherException, ExecutionEngineHelper}
 
-class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
+class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test def returnNodeThatsNotThere() {
     test(
       "start x=node(0) return bar",
@@ -304,21 +304,35 @@ class SemanticErrorTest extends ExecutionEngineHelper with Assertions {
   @Test def shouldFailIfUsingLegacyOptionalsMatch() {
     test(
       "start n = node(0) match (n)-[?]->(m) return n",
-      "Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead. (line 1, column 28)"
+      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 28)"
     )
   }
 
   @Test def shouldFailIfUsingLegacyOptionalsMatch2() {
     test(
       "start n = node(0) match (n)-[?*]->(m) return n",
-      "Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead. (line 1, column 28)"
+      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 28)"
     )
   }
 
   @Test def shouldFailIfUsingLegacyOptionalsMatch3() {
     test(
       "start n = node(0) match shortestPath((n)-[?*]->(m)) return n",
-      "Question mark is not used for optional patterns any more. Please use OPTIONAL MATCH instead. (line 1, column 41)"
+      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 41)"
+    )
+  }
+
+  @Test def shouldRequireWithAfterOptionalMatch() {
+    test(
+      "OPTIONAL MATCH (a)-->(b) MATCH (c)-->(d) return d",
+      "MATCH cannot follow OPTIONAL MATCH (perhaps use a WITH clause between them) (line 1, column 26)"
+    )
+  }
+
+  @Test def shouldRequireWithBeforeStart() {
+    test(
+      "MATCH (a)-->(b) START c=node(0) return c",
+      "WITH is required between MATCH and START (line 1, column 1)"
     )
   }
 
