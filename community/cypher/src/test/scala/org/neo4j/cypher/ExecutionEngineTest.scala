@@ -597,6 +597,11 @@ foreach(x in [1,2,3] |
     assertEquals(List(1), result.columnAs[Int]("length(p)").toList)
   }
 
+  @Test def shouldReturnCollectionSize() {
+    val result = execute("return size([1,2,3]) as n")
+    assertEquals(List(3), result.columnAs[Int]("n").toList)
+  }
+
   @Test def shouldBeAbleToFilterOnPathNodes() {
     val a = createNode(Map("foo" -> "bar"))
     val b = createNode(Map("foo" -> "bar"))

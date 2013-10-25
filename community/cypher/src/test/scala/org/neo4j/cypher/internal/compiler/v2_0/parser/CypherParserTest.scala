@@ -723,6 +723,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "return LENGTH('foo') = 10 as n",
       Query.
         matches().
+        returns(ReturnItem(Equals(LengthFunction(Literal("foo")), Literal(10.0)), "n", true)))
+  }
+
+  @Test def collectionSize() {
+    test(
+      "return SIZE([1, 2]) = 10 as n",
+      Query.
+        matches().
+        returns(ReturnItem(Equals(LengthFunction(Collection(Literal(1), Literal(2))), Literal(10.0)), "n", true)))
   }
 
   @Test def relationshipTypeOut() {
