@@ -55,7 +55,8 @@ LOCAL OPTIONS
   Command line to execute. After executing it the shell exits.
 
 *-file* 'FILE'::
-  File to read and execute. After executing it the shell exits.
+  File to read and execute. After executing it the shell exits. 
+  If '-' is supplied as filename data is read from stdin instead.
 
 *-config* 'CONFIG'::
   The path to the Neo4j configuration file to be used.
