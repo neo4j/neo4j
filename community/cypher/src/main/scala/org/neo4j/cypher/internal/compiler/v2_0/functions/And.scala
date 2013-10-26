@@ -28,6 +28,7 @@ case object And extends PredicateFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
+//    invocation.arguments.constrainType(BooleanType()) then // TODO: should constrain to boolean, when coercion is possible
     invocation.specifyType(BooleanType())
 
   protected def internalToPredicate(invocation: FunctionInvocation) =

@@ -38,10 +38,10 @@ case class SemanticState(
     typeTable: Map[ast.Expression, TypeSet],
     parent: Option[SemanticState]) {
 
-  def newScope = SemanticState(HashMap.empty, typeTable, Some(this))
-  def popScope = SemanticState(parent.get.symbolTable, typeTable, parent.get.parent)
+  def newScope = copy(symbolTable = HashMap.empty, parent = Some(this))
+  def popScope = copy(symbolTable = parent.get.symbolTable, parent = parent.get.parent)
 
-  def clearSymbols = SemanticState(HashMap.empty, typeTable, None)
+  def clearSymbols = copy(symbolTable = HashMap.empty, parent = None)
 
   def symbol(name: String): Option[Symbol] = symbolTable.get(name) orElse parent.flatMap(_.symbol(name))
   def symbolTypes(name: String) = this.symbol(name).map(_.types).getOrElse(TypeSet.empty)
@@ -116,11 +116,11 @@ case class SemanticState(
     }
 
   def importSymbols(symbols: Map[String, Symbol]) =
-    SemanticState(symbolTable ++ symbols, typeTable, parent)
+    copy(symbolTable = symbolTable ++ symbols)
 
   private def updateIdentifier(identifier: ast.Identifier, types: TypeSet, identifiers: Set[ast.Identifier]) =
-    SemanticState(symbolTable + ((identifier.name, Symbol(identifiers, types))), typeTable + ((identifier, types)), parent)
+    copy(symbolTable = symbolTable + ((identifier.name, Symbol(identifiers, types))), typeTable = typeTable + ((identifier, types)))
 
   private def updateType(expression: ast.Expression, types: TypeSet) =
-    SemanticState(symbolTable, typeTable + ((expression, types)), parent)
+    copy(typeTable = typeTable + ((expression, types)))
 }
