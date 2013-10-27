@@ -40,7 +40,7 @@ case class LabelsFunction(nodeExpr: Expression) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(LabelsFunction(nodeExpr.rewrite(f)))
 
-  def children = Seq(nodeExpr)
+  def arguments = Seq(nodeExpr)
 
   def symbolTableDependencies = nodeExpr.symbolTableDependencies
 

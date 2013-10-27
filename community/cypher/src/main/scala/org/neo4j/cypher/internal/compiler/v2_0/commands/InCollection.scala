@@ -45,7 +45,9 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
 
   def containsIsNull = predicate.containsIsNull
 
-  def children = Seq(collection, predicate)
+  override def children = Seq(collection, predicate)
+
+  def arguments: scala.Seq[Expression] = Seq(collection)
 
   def assertInnerTypes(symbols: SymbolTable) {
     val innerType = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType

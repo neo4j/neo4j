@@ -43,7 +43,7 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
 
   private def alternativeExpressions = alternatives.map(_._2)
 
-  def children: Seq[AstNode[_]] = (expression +: (alternativeComparison ++ alternativeExpressions)).distinct
+  def arguments = (expression +: (alternativeComparison ++ alternativeExpressions)).distinct
 
   protected def calculateType(symbols: SymbolTable): CypherType =
     calculateUpperTypeBound(AnyType(), symbols, alternativeExpressions ++ default.toSeq)

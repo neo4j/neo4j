@@ -35,7 +35,7 @@ case class Nullable(expression: Expression) extends Expression with HasOptionalD
 
   def rewrite(f: (Expression) => Expression) = f(Nullable(expression.rewrite(f)))
 
-  def children = Seq(expression)
+  def arguments = Seq(expression)
 
   def calculateType(symbols: SymbolTable): CypherType = expression.getType(symbols)
 

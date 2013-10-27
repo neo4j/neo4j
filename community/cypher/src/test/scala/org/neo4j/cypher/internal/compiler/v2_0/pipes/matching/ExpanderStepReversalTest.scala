@@ -150,7 +150,7 @@ case class Pred(identifier: String) extends Predicate {
 
   def containsIsNull = false
 
-  def children = Nil
+  def arguments = Nil
 
   def assertInnerTypes(symbols: SymbolTable) {}
 

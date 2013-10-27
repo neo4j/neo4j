@@ -27,17 +27,16 @@ object Collection {
   val empty = Literal(Seq())
 }
 
-case class Collection(children: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = children.map(e => e(ctx))
+case class Collection(arguments: Expression*) extends Expression {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = arguments.map(e => e(ctx))
 
-  def rewrite(f: (Expression) => Expression): Expression = f(Collection(children.map(f): _*))
+  def rewrite(f: (Expression) => Expression): Expression = f(Collection(arguments.map(f): _*))
 
-  def calculateType(symbols: SymbolTable): CypherType = {
-    children.map(_.getType(symbols)) match {
+  def calculateType(symbols: SymbolTable): CypherType =
+    arguments.map(_.getType(symbols)) match {
       case Seq() => CollectionType(AnyType())
       case types => CollectionType(types.reduce(_ mergeDown _))
     }
-  }
 
-  def symbolTableDependencies = children.flatMap(_.symbolTableDependencies).toSet
+  def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 }
