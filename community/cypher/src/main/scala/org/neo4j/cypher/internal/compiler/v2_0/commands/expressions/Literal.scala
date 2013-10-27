@@ -29,7 +29,7 @@ case class Literal(v: Any) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def children = Nil
+  def arguments = Nil
 
   def calculateType(symbols: SymbolTable): CypherType = deriveType(v)
 

@@ -38,7 +38,7 @@ case class RelationshipEndPoints(relExpression: Expression, start: Boolean) exte
         rel.getEndNode
   }
 
-  def children: Seq[AstNode[_]] = Seq(relExpression)
+  def arguments = Seq(relExpression)
 
   protected def calculateType(symbols: SymbolTable): CypherType = NodeType()
 

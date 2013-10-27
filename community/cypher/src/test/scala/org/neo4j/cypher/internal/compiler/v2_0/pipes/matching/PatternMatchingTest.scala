@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes.matching
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.{HasLabel, RelatedTo}
 import commands.expressions.Identifier
-import commands.values.KeyToken.Unresolved
 import commands.values.UnresolvedLabel
 import executionplan.builders.PatternGraphBuilder
 import pipes.QueryStateHelper
@@ -35,7 +34,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
   val symbols = new SymbolTable(Map("a" -> NodeType()))
   val patternRelationship: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, Direction.OUTGOING)
   val rightNode = patternRelationship.right
-  val label: Unresolved = UnresolvedLabel("Person")
+  val label = UnresolvedLabel("Person")
 
 
   @Test def should_handle_a_single_relationship_with_no_matches() {

@@ -58,7 +58,9 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
       case Some(x) => false
     })
 
-  def children = Seq(ast)
+  override def children = Seq(ast)
+
+  def arguments = Seq.empty
 
   def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(ast.rewrite(f)))
 

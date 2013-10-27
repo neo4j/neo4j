@@ -37,7 +37,7 @@ with ExpressionWInnerExpression {
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
 
-  def children = Seq(inner)
+  def arguments = Seq(inner)
 
   val myType = LongType()
   val expectedInnerType = CollectionType(AnyType())

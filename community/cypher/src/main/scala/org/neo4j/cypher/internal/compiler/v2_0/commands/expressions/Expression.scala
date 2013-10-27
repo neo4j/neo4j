@@ -31,6 +31,12 @@ abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
 
   def subExpressions = filter( _ != this)
 
+  // Expressions that do not get anything in their context from this expression.
+  def arguments:Seq[Expression]
+
+  // Any expressions that this expression builds on
+  def children: Seq[AstNode[_]] = arguments
+
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any
@@ -74,7 +80,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def children = Seq()
+  def arguments = Seq()
 
   def calculateType(symbols: SymbolTable) = typ
 
@@ -107,7 +113,7 @@ abstract class Arithmetics(left: Expression, right: Expression)
     NumberType()
   }
 
-  def children = Seq(left, right)
+  def arguments = Seq(left, right)
 }
 
 trait ExpressionWInnerExpression extends Expression {

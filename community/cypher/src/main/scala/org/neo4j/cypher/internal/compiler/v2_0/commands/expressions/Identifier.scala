@@ -39,7 +39,7 @@ case class Identifier(entityName: String) extends Expression with Typed {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def children = Seq()
+  def arguments = Seq()
 
   def calculateType(symbols: SymbolTable) =
     throw new ThisShouldNotHappenError("Andres", "This class should override evaluateType, and this method should never be run")

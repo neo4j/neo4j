@@ -115,7 +115,7 @@ class FakeExpression(typ: CypherType) extends Expression {
 
   def rewrite(f: (Expression) => Expression): Expression = null
 
-  def children = Nil
+  def arguments = Nil
 
   def calculateType(symbols: SymbolTable) = typ
 
