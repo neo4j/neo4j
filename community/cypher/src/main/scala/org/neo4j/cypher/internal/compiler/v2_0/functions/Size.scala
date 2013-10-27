@@ -17,27 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
+package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import pipes.QueryState
-import symbols.{SymbolTable, CypherType}
-import org.neo4j.cypher.EntityNotFoundException
-import org.neo4j.graphdb.NotFoundException
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
-case class Nullable(expression: Expression) extends Expression with HasOptionalDefault[Boolean] {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = try {
-    expression.apply(ctx)
-  } catch {
-    case x: EntityNotFoundException => null
-    case x: NotFoundException       => null
-  }
+case object Size extends Function {
+  def name = "size"
 
-  def rewrite(f: (Expression) => Expression) = f(Nullable(expression.rewrite(f)))
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+    checkArgs(invocation, 1) then
+      invocation.arguments.constrainType(CollectionType(AnyType())) then
+      invocation.specifyType(LongType())
 
-  def children = Seq(expression)
-
-  def calculateType(symbols: SymbolTable): CypherType = expression.getType(symbols)
-
-  def symbolTableDependencies = expression.symbolTableDependencies
+  def toCommand(invocation: ast.FunctionInvocation) =
+    commandexpressions.LengthFunction(invocation.arguments(0).toCommand)
 }

@@ -29,6 +29,7 @@ case object LessThan extends PredicateFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
+//    invocation.arguments.constrainType(???) then // TODO: should constrain types
     invocation.specifyType(BooleanType())
 
   protected def internalToPredicate(invocation: FunctionInvocation) = {

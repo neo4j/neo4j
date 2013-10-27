@@ -28,7 +28,7 @@ case object Length extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(CollectionType(AnyType())) then
+    invocation.arguments.constrainType(CollectionType(AnyType()), PathType(), StringType()) then
     invocation.specifyType(LongType())
 
   def toCommand(invocation: ast.FunctionInvocation) =

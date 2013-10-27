@@ -28,7 +28,7 @@ case object Nodes extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(CollectionType(MapType())) then
+    invocation.arguments.constrainType(PathType()) then
     invocation.specifyType(CollectionType(NodeType()))
 
   def toCommand(invocation: ast.FunctionInvocation) =

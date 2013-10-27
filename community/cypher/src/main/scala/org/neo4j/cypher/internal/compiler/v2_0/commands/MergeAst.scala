@@ -44,7 +44,7 @@ case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
         val labelPredicates = labelTokens.map(labelName => HasLabel(Identifier(name), labelName))
 
         val propertyPredicates = props.map {
-          case (propertyKey, expression) => Equals(Nullable(Property(Identifier(name), PropertyKey(propertyKey))), expression)
+          case (propertyKey, expression) => Equals(Property(Identifier(name), PropertyKey(propertyKey)), expression)
         }
 
         val propertyMap: Map[KeyToken, Expression] = props.collect {

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 case class LengthFunction(inner: Expression)
   extends NullInNullOutExpression(inner)
   with CollectionSupport
-with ExpressionWInnerExpression {
+{
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
     case path: Path => path.length()
     case s: String  => s.length()
@@ -39,8 +39,7 @@ with ExpressionWInnerExpression {
 
   def children = Seq(inner)
 
-  val myType = LongType()
-  val expectedInnerType = CollectionType(AnyType())
+  def calculateType(symbols: SymbolTable): CypherType = LongType()
 
   def symbolTableDependencies = inner.symbolTableDependencies
 }

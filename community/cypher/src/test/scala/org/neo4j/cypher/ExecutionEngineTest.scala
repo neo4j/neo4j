@@ -34,13 +34,12 @@ class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker {
 
   @Ignore
   @Test def assignToPathInsideForeachShouldWork() {
-    val result = execute(
+    execute(
 """start n=node(0)
 foreach(x in [1,2,3] |
   create p = ({foo:x})-[:X]->()
   foreach( i in p |
     set i.touched = true))""")
-    println(result.dumpToString())
   }
 
   @Test def shouldGetRelationshipById() {
@@ -598,6 +597,11 @@ foreach(x in [1,2,3] |
     assertEquals(List(1), result.columnAs[Int]("length(p)").toList)
   }
 
+  @Test def shouldReturnCollectionSize() {
+    val result = execute("return size([1,2,3]) as n")
+    assertEquals(List(3), result.columnAs[Int]("n").toList)
+  }
+
   @Test def shouldBeAbleToFilterOnPathNodes() {
     val a = createNode(Map("foo" -> "bar"))
     val b = createNode(Map("foo" -> "bar"))
@@ -988,14 +992,14 @@ return p""")
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = execute( """
-start a  = node(0), x = node(1,2)
-optional match p = (a)-[*]->(x)
-return x, p""")
+    val result = execute("""
+start a = node(0), x = node(1,2)
+optional match p = (a)-[r*]->(x)
+return r, x, p""")
 
     assert(List(
-      Map("x" -> b, "p" -> PathImpl(a, r, b)),
-      Map("x" -> c, "p" -> null)
+      Map("r" -> Seq(r), "x" -> b, "p" -> PathImpl(a, r, b)),
+      Map("r" -> null, "x" -> c, "p" -> null)
     ) === result.toList)
   }
 
@@ -1209,16 +1213,6 @@ RETURN x0.name""")
     assert(List(Map("x0.name"->"Mark")) === result.toList)
   }
 
-  private def createTriangle(number: Int): (Node, Node, Node) = {
-    val z = createNode("Z" + number)
-    val x = createNode("X" + number)
-    val y = createNode("Y" + number)
-    relate(z, x, "X", "ZX")
-    relate(x, y, "X", "ZY")
-    relate(y, z, "X", "YZ")
-    (z, x, y)
-  }
-
   @Test def shouldFindNodesBothDirections() {
     val n = createNode()
     val a = createNode()
@@ -1399,17 +1393,17 @@ RETURN x0.name""")
   @Test def functions_should_return_null_if_they_get_path_containing_unbound() {
     createNode()
 
-    val result = execute("start a=node(0) optional match p=a-[r]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
+    val result = execute("start a=node(0) optional match p=a-[r]->() return length(nodes(p)), id(r), type(r), nodes(p), rels(p)").toList
 
-    assert(List(Map("length(p)" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
+    assert(List(Map("length(nodes(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
   }
 
   @Test def functions_should_return_null_if_they_get_path_containing_null() {
     createNode()
 
-    val result = execute("start a=node(0) optional match p=a-[r]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
+    val result = execute("start a=node(0) optional match p=a-[r]->() return length(rels(p)), id(r), type(r), nodes(p), rels(p)").toList
 
-    assert(List(Map("length(p)" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
+    assert(List(Map("length(rels(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
   }
 
   @Test def aggregates_in_aggregates_should_fail() {
@@ -1446,11 +1440,11 @@ RETURN x0.name""")
     val b = createNode("foo" -> 3)
     val r = relate(a, b, "rel", Map("foo" -> 2))
 
-    val result = execute("start a=node(0) match p=a-->() return filter(x in p WHERE x.foo = 2)").toList
+    val result = execute("start a=node(0) match p=a-->() return filter(x in nodes(p) WHERE x.foo > 2) as n").toList
 
-    val resultingCollection = result.head("filter(x in p WHERE x.foo = 2)").asInstanceOf[Seq[_]].toList
+    val resultingCollection = result.head("n").asInstanceOf[Seq[_]].toList
 
-    assert(List(r) == resultingCollection)
+    assert(List(b) == resultingCollection)
   }
 
   @Test def expose_problem_with_aliasing() {
@@ -1599,7 +1593,7 @@ RETURN x0.name""")
     val b = createNode()
     relate(a, b)
 
-    val q = "start n = node(0) match p = n-[*1..]->m return p, last(p) order by length(p) asc"
+    val q = "start n = node(0) match p = n-[*1..]->m return p, last(nodes(p)) order by length(nodes(p)) asc"
 
     assert(execute(q).size === 1)
   }
@@ -2290,7 +2284,6 @@ RETURN x0.name""")
 
     //WHEN
     val result = execute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
-    println(result.executionPlanDescription())
 
     //THEN
     assert(result.toList === List(Map("n"->jake)))
@@ -2547,6 +2540,12 @@ RETURN x0.name""")
 
     // then
     assert(result.toList === List(Map("A" -> false, "B" -> false, "C" -> false, "D" -> false, "E" -> true, "F" -> true)))
+  }
+
+  @Test
+  def should_propagate_null_through_math_funcs() {
+    val result = execute("return 1 + (2 - (3 * (4 / (5 ^ (6 % null))))) as A")
+    assert(result.toList === List(Map("A" -> null)))
   }
 
   @Test

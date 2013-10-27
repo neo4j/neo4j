@@ -53,7 +53,7 @@ case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
   def keys: Seq[String] = identifiers.map(_._1).toSeq
   def missingSymbolTableDependencies(x: TypeSafe) = x.symbolTableDependencies.filterNot( dep => identifiers.exists(_._1 == dep))
 
-    def evaluateType(name: String, expectedType: CypherType): CypherType = identifiers.get(name) match {
+  def evaluateType(name: String, expectedType: CypherType): CypherType = identifiers.get(name) match {
     case Some(typ) if (expectedType.isAssignableFrom(typ)) => typ
     case Some(typ) if (typ.isAssignableFrom(expectedType)) => typ
     case Some(typ)                                         => throw new CypherTypeException("Expected `%s` to be a %s but it was a %s".format(name, expectedType, typ))

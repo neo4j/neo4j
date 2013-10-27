@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.AnyType
-import org.neo4j.cypher.SyntaxException
+import symbols._
 
 case class Where(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
   def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
-      expression.constrainType(AnyType()) // TODO: should constrain to boolean, when coercion is possible
+    expression.semanticCheck(Expression.SemanticContext.Simple) //then
+//    expression.constrainType(BooleanType()) // TODO: should constrain to boolean, when coercion is possible
 
   def toLegacyPredicate = expression.toPredicate
 }

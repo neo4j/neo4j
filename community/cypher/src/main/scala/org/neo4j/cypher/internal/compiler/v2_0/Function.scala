@@ -93,6 +93,7 @@ object Function {
     functions.RTrim,
     functions.Sign,
     functions.Sin,
+    functions.Size,
     functions.Sqrt,
     functions.StartNode,
     functions.StdDev,
