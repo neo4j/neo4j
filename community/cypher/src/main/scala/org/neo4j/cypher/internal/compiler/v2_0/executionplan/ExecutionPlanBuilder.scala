@@ -23,7 +23,7 @@ import builders._
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands._
 import commands.values.{TokenType, KeyToken}
-import executionplan.builders.prepare.KeyTokenResolver
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.prepare.{AggregationPreparationRewriter, KeyTokenResolver}
 import pipes._
 import pipes.optional.NullInsertingPipe
 import profiler.Profiler
@@ -229,7 +229,8 @@ The Neo4j Team""")
       new StartPointChoosingBuilder,
       new PredicateRewriter,
       new KeyTokenResolver,
-      new MergeStartPointBuilder
+      new MergeStartPointBuilder,
+      new AggregationPreparationRewriter()
     )
   }
 
