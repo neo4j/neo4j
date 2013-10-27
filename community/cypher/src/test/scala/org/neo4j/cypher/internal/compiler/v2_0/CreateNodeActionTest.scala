@@ -17,8 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.pipes
+package org.neo4j.cypher.internal.compiler.v2_0
 
-object QueryStateHelper {
-  def empty = new QueryState(null, null, Map.empty, NullDecorator)
+import commands.expressions.Literal
+import org.scalatest.Assertions
+import org.neo4j.cypher.ExecutionEngineHelper
+import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateNode
+
+class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
+
+  @Test def mixed_types_are_not_ok() {
+    val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Seq.empty)
+
+    graph.inTx {
+      action.exec(ExecutionContext.empty, QueryStateHelper.queryStateFrom(graph)).size
+    }
+
+    val n = graph.createdNodes.dequeue()
+
+    assertInTx(n.getProperty("name") === "Andres")
+    assertInTx(n.getProperty("age") === 37)
+  }
 }

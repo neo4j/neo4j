@@ -44,7 +44,7 @@ class Profiler extends PipeDecorator {
   }
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = {
-    assert(!contextStats.contains(pipe), "Can't profile the same pipe twice")
+    assert(!contextStats.contains(pipe), "Can't profile the same pipe twice: " + pipe)
 
     val decoratedContext = state.query match {
       case p: ProfilingQueryContext => new ProfilingQueryContext(p.inner, pipe)

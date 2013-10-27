@@ -25,14 +25,12 @@ import expressions._
 import org.neo4j.graphdb.Direction
 import org.scalatest.Assertions
 import org.neo4j.graphdb.Direction._
-import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.VarLengthStep
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.NodeIdentifier
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.VariableLengthStepTrail
-import scala.Some
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.SingleStep
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.EndPoint
 import org.neo4j.cypher.internal.compiler.v2_0.commands.Equals
@@ -40,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.compiler.v2_0.commands.True
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Property
 
-class TrailToStepTest extends GraphDatabaseTestBase with Assertions {
+class TrailToStepTest extends Assertions {
   val A = "A"
   val B = "B"
   val C = "C"

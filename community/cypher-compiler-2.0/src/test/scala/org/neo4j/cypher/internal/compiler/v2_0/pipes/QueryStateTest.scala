@@ -49,7 +49,7 @@ class QueryStateTest extends Assertions with MockitoSugar {
     //WHEN
     val ts1 = state.readTimeStamp()
     Thread.sleep(10)
-    val stateCopy = state.copy(db = mockDb)
+    val stateCopy = state.copy(params = Map.empty)
 
 
     //THEN
@@ -63,7 +63,7 @@ class QueryStateTest extends Assertions with MockitoSugar {
     val mockDb = mock[GraphDatabaseService]
 
     //WHEN
-    val stateCopy = state.copy(db = mockDb)
+    val stateCopy = state.copy(params = Map.empty)
     val ts1 = state.readTimeStamp()
     Thread.sleep(10)
 

@@ -17,8 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.pipes
+package org.neo4j.cypher.internal.compiler.v2_0
+
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
+import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.{NullDecorator, QueryState}
 
 object QueryStateHelper {
   def empty = new QueryState(null, null, Map.empty, NullDecorator)
+
+  def queryStateFrom(db: GraphDatabaseAPI) = {
+    val tx = db.beginTx()
+    val statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statement()
+    new QueryState(db, new TransactionBoundExecutionContext(db, tx, statement), Map.empty, NullDecorator)
+  }
 }

@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.spi.v2_0
 
-import org.neo4j.cypher.internal.spi.TokenContext
 import org.neo4j.kernel.api.exceptions.{PropertyKeyNotFoundException, LabelNotFoundKernelException}
 import org.neo4j.kernel.api.operations.KeyReadOperations
 import org.neo4j.kernel.api.Statement
+import org.neo4j.cypher.internal.compiler.v2_0.spi.TokenContext
 
-abstract class TransactionBoundTokenContext(statement: Statement) extends TokenContext
-{
+abstract class TransactionBoundTokenContext(statement: Statement) extends TokenContext {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
     TokenContext.tryGet[PropertyKeyNotFoundException](getPropertyKeyId(propertyKeyName))
 
