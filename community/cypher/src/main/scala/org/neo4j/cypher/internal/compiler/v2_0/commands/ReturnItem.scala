@@ -48,4 +48,6 @@ case class ReturnItem(expression: Expression, name: String, renamed: Boolean = f
     name
 
   def rename(newName: String) = ReturnItem(expression, newName, renamed = true)
+
+  def map(f: Expression => Expression): ReturnItem = copy(expression = f(expression))
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes.matching
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.{HasLabel, RelatedTo}
 import commands.expressions.Identifier
-import commands.values.UnresolvedLabel
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.UnresolvedLabel
 import executionplan.builders.PatternGraphBuilder
 import pipes.QueryStateHelper
 import symbols.{NodeType, SymbolTable}
@@ -34,6 +34,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
   val symbols = new SymbolTable(Map("a" -> NodeType()))
   val patternRelationship: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, Direction.OUTGOING)
   val rightNode = patternRelationship.right
+
   val label = UnresolvedLabel("Person")
 
 

@@ -38,7 +38,7 @@ trait AstNode[T] {
   def filter(isMatch: Expression => Boolean): Seq[Expression] =
   // We use our visit method to create an traversable, from which we create the Seq
     new Traversable[Expression] {
-      def foreach[U](f: (Expression) => U) {
+      def foreach[U](f: Expression => U) {
         visit {
           case e: Expression if isMatch(e) => f(e)
         }
