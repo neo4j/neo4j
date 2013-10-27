@@ -25,12 +25,11 @@ import commands.expressions.Literal
 import commands.expressions.Multiply
 import commands.expressions.Subtract
 import pipes.QueryStateHelper
-import org.neo4j.cypher.ExecutionEngineHelper
 import org.junit.Test
 import org.hamcrest.CoreMatchers._
 import org.hamcrest.Matcher
 
-class TypeTest extends ExecutionEngineHelper {
+class TypeTest {
   @Test
   def plus_int_int() {
     val op = Add(Literal(1), Literal(2))

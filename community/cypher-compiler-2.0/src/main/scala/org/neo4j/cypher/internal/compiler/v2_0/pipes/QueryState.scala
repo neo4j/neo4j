@@ -29,11 +29,11 @@ import org.neo4j.kernel.GraphDatabaseAPI
 class ListenerDelegate(var delegate: Option[Listener[ExecutionContext]] = None)
 
 case class QueryState(db: GraphDatabaseService,
-                 inner: QueryContext,
-                 params: Map[String, Any],
-                 decorator: PipeDecorator,
-                 timeReader: TimeReader = new TimeReader,
-                 listenerDelegate: ListenerDelegate = new ListenerDelegate()) {
+                      inner: QueryContext,
+                      params: Map[String, Any],
+                      decorator: PipeDecorator,
+                      timeReader: TimeReader = new TimeReader,
+                      listenerDelegate: ListenerDelegate = new ListenerDelegate()) {
 
   def listener_=(newListener: Listener[ExecutionContext]) {
     assert(listenerDelegate.delegate.isEmpty, "Should not set a listener when one already exists")

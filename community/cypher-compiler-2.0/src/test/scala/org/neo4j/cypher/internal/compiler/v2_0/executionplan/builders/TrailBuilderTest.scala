@@ -25,7 +25,6 @@ import expressions.{Identifier, Literal, Property}
 import org.neo4j.graphdb.Direction
 import org.scalatest.Assertions
 import org.neo4j.graphdb.DynamicRelationshipType.withName
-import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.EndPoint
 import org.neo4j.cypher.internal.compiler.v2_0.commands.Equals
@@ -33,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.compiler.v2_0.commands.True
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType.PropertyKey
 
-class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
+class TrailBuilderTest extends Assertions {
   val A = withName("A")
   val B = withName("B")
   val C = withName("C")

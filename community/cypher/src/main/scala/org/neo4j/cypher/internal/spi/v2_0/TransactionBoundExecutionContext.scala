@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi.v2_0
 
-import org.neo4j.cypher.internal.spi._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.kernel.{GraphDatabaseAPI, ThreadToStatementContextBridge}
@@ -37,9 +36,9 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup
-import scala.Boolean
 import org.neo4j.helpers.collection.IteratorUtil
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundTokenContext
+import org.neo4j.cypher.internal.compiler.v2_0.spi._
+import org.neo4j.cypher.internal.compiler.v2_0.spi.IdempotentResult
 
 class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement)
   extends TransactionBoundTokenContext(statement) with QueryContext {

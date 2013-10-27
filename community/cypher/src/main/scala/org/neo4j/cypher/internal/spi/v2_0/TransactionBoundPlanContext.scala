@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi.v2_0
 
-import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.index.InternalIndexState
@@ -28,7 +27,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundTokenContext
+import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
 class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {

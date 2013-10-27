@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.ExecutionResult
-import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.graphdb.Transaction
+import org.neo4j.kernel.api.Statement
 
 trait ExecutionPlan {
-  def execute(context: QueryContext, params: Map[String, Any]): ExecutionResult
-  def profile(context: QueryContext, params: Map[String,Any]): ExecutionResult
+  def execute(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]): ExecutionResult
+  def profile(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]): ExecutionResult
 }

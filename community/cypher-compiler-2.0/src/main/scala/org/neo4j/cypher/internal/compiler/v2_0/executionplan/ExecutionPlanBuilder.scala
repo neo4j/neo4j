@@ -36,7 +36,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
 
   type PipeAndIsUpdating = (Pipe, Boolean)
 
-  def build(planContext: PlanContext, inputQuery: AbstractQuery): ExecutionPlan[QueryContext] = {
+  def build(planContext: PlanContext, inputQuery: AbstractQuery): ExecutionPlan = {
 
     val (p, isUpdating) = buildPipes(planContext, inputQuery)
 
@@ -47,7 +47,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       getLazyReadonlyQuery(p, columns)
     }
 
-    new ExecutionPlan[QueryContext] {
+    new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, true)
     }
