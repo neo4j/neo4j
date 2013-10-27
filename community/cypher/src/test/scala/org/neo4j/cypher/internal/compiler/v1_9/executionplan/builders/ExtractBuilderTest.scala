@@ -153,18 +153,5 @@ class ExtractBuilderTest extends BuilderTest {
       Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
       Unsolved(ReturnItem(CachedExpression("foo", NumberType()), "foo"))
     ), returnItems)
-
-
-    //    assertTrue("This query should be accepted", builder.canWorkWith(plan))
-    //
-    //    val result = builder(plan(p, q))
-    //
-    //    assertTrue("the builder did not mark the query as extracted", result.query.extracted)
-    //
-    //    val returnItems = result.query.returns.toSet
-    //    assertEquals( Set(
-    //      Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
-    //      Unsolved(ReturnItem(CachedExpression("foo", NumberType()), "foo"))
-    //    ), returnItems )
   }
 }

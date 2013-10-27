@@ -47,7 +47,7 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
   def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
 
 
-  def children = Seq(a, b)
+  def arguments = Seq(a, b)
 
   def calculateType(symbols: SymbolTable): CypherType = {
     val aT = a.getType(symbols)

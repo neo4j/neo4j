@@ -33,7 +33,7 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
 
   def rewrite(f: (Expression) => Expression) = f(LiteralMap(data.rewrite(f)))
 
-  def children = data.values.flatMap(_.children).toSeq
+  def arguments = data.values.toSeq
 
   def calculateType(symbols: SymbolTable): CypherType = {
     data.values.foreach(_.evaluateType(AnyType(), symbols))
@@ -42,5 +42,5 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
 
   def symbolTableDependencies = data.symboltableDependencies
 
-  override def toString() = "LiteralMap(" + data + ")"
+  override def toString = "LiteralMap(" + data + ")"
 }

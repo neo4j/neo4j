@@ -30,7 +30,7 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
 
-  def children = Seq(relationship)
+  def arguments = Seq(relationship)
 
   def calculateType(symbols: SymbolTable) = {
     relationship.evaluateType(RelationshipType(), symbols)

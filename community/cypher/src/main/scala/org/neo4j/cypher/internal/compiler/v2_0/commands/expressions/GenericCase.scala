@@ -42,7 +42,7 @@ case class GenericCase(alternatives: Seq[(Predicate, Expression)], default: Opti
   private def alternativePredicates: Seq[Predicate] = alternatives.map(_._1)
   private def alternativeExpressions: Seq[Expression] = alternatives.map(_._2)
 
-  def children: Seq[AstNode[_]] = alternatives.map(_._1) ++ alternatives.map(_._2) ++ default.toSeq
+  def arguments = alternatives.map(_._1) ++ alternatives.map(_._2) ++ default.toSeq
 
   protected def calculateType(symbols: SymbolTable): CypherType =
     calculateUpperTypeBound(AnyType(), symbols, alternativeExpressions ++ default.toSeq)

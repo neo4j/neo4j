@@ -27,6 +27,7 @@ import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.NotFoundException
+import org.neo4j.cypher.internal.compiler.v2_0.commands.AstNode
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
@@ -44,7 +45,9 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
 
   def rewrite(f: (Expression) => Expression) = f(new Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
 
-  def children = Seq(mapExpr)
+  override def children = Seq(mapExpr, propertyKey)
+
+  def arguments = Seq(mapExpr)
 
   def calculateType(symbols: SymbolTable) =
     throw new ThisShouldNotHappenError("Andres", "This class should override evaluateType, and this method should never be run")

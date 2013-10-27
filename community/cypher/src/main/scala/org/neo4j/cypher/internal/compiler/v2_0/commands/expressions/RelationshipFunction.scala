@@ -36,7 +36,7 @@ case class RelationshipFunction(path: Expression) extends NullInNullOutExpressio
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))
 
-  def children = Seq(path)
+  def arguments = Seq(path)
 
   def calculateType(symbols: SymbolTable) = {
     path.evaluateType(PathType(), symbols)

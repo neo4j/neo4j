@@ -2598,11 +2598,24 @@ RETURN x0.name""")
   }
 
   @Test
-    def should_be_able_to_coerce_collections_to_predicates() {
+  def should_be_able_to_coerce_collections_to_predicates() {
     val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
 
     val foundNode = execute("match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
 
     assert(foundNode === n)
+  }
+
+  @Test
+  def should_be_able_to_mix_key_expressions_with_aggregate_expressions() {
+    // Given
+    createNode("Foo")
+
+    // when
+    val result = executeScalar[Map[String,Any]]("match (n) return { name: n.name, count: count(*) }")
+
+    // then
+    assert(result("name") === "Foo")
+    assert(result("count") === 1)
   }
 }

@@ -47,7 +47,7 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
   override def toString = left.toString() + " " + sign + " " + right.toString()
   def containsIsNull = false
 
-  def children = Seq(left, right)
+  def arguments = Seq(left, right)
 
   def assertInnerTypes(symbols: SymbolTable) {
     left.throwIfSymbolsMissing(symbols)
@@ -84,7 +84,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
 
   def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
 
-  def children = Seq(a, b)
+  def arguments = Seq(a, b)
 
   def assertInnerTypes(symbols: SymbolTable) {
     a.throwIfSymbolsMissing(symbols)

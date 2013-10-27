@@ -34,6 +34,7 @@ case class CypherCompiler(
 {
   val parser = CypherParser()
   val verifiers = Seq(HintVerifier, OptionalPatternWithoutStartVerifier)
+  val planBuilder = new ExecutionPlanBuilder(graph)
 
   @throws(classOf[SyntaxException])
   def prepare(query: String, context: TransactionBoundPlanContext): ExecutionPlan = {
@@ -44,7 +45,6 @@ case class CypherCompiler(
       parsedQuery
     }).asInstanceOf[AbstractQuery]
 
-    val planBuilder = new ExecutionPlanBuilder(graph)
     planBuilder.build(context, cachedQuery)
   }
 

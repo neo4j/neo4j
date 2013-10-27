@@ -39,7 +39,9 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
   def rewrite(f: (Expression) => Expression) =
     f(ReduceFunction(collection.rewrite(f), id, expression.rewrite(f), acc, init.rewrite(f)))
 
-  def children = Seq(collection, expression, init)
+  def arguments: Seq[Expression] = Seq(collection, init)
+
+  override def children = Seq(collection, expression, init)
 
   def identifierDependencies(expectedType: CypherType) = AnyType
 

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.QueryState
 import symbols._
 
-case class CoalesceFunction(children: Expression*) extends Expression {
+case class CoalesceFunction(arguments: Expression*) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
-    children.
+    arguments.
       view.
       map(expression => expression(ctx)).
       find(value => value != null) match {
@@ -37,16 +37,16 @@ case class CoalesceFunction(children: Expression*) extends Expression {
 
   val argumentsString: String = children.mkString(",")
 
-  override def toString() = "coalesce(" + argumentsString + ")"
+  override def toString = "coalesce(" + argumentsString + ")"
 
-  def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(children.map(e => e.rewrite(f)): _*))
+  def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(arguments.map(e => e.rewrite(f)): _*))
 
   def calculateType(symbols: SymbolTable) = {
-    children.map(_.getType(symbols)) match {
+    arguments.map(_.getType(symbols)) match {
       case Seq() => AnyType()
       case types => types.reduceLeft(_ mergeDown _)
     }
   }
 
-  def symbolTableDependencies = children.flatMap(_.symbolTableDependencies).toSet
+  def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 }

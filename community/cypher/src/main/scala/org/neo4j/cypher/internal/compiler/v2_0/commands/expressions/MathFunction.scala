@@ -28,7 +28,7 @@ import java.lang.Math
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
   def innerExpectedType = NumberType()
 
-  def children = Seq(arg)
+  def arguments = Seq(arg)
 
   def calculateType(symbols: SymbolTable) = arg.evaluateType(NumberType(), symbols)
 
@@ -79,7 +79,7 @@ case class AtanFunction(argument: Expression) extends MathFunction(argument) {
 case class Atan2Function(y: Expression, x: Expression) extends Expression with NumericHelper {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.atan2(asDouble(y(ctx)), asDouble(x(ctx)))
 
-  def children = Seq(x, y)
+  def arguments = Seq(x, y)
 
   def rewrite(f: (Expression) => Expression) = f(Atan2Function(y.rewrite(f), x.rewrite(f)))
 
@@ -121,7 +121,7 @@ case class DegreesFunction(argument: Expression) extends MathFunction(argument) 
 case class EFunction() extends Expression() {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.E
 
-  def children = Seq()
+  def arguments = Seq()
 
   def symbolTableDependencies = Set[String]()
 
@@ -163,7 +163,7 @@ case class Log10Function(argument: Expression) extends MathFunction(argument) {
 case class PiFunction() extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.Pi
 
-  def children = Seq()
+  def arguments = Seq()
 
   def symbolTableDependencies = Set()
 
@@ -208,7 +208,7 @@ case class TanFunction(argument: Expression) extends MathFunction(argument) {
 case class RandFunction() extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.random
 
-  def children = Seq()
+  def arguments = Seq()
 
   def symbolTableDependencies = Set[String]()
 
@@ -225,7 +225,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     new Range(startVal, endVal + 1, stepVal).toList
   }
 
-  def children = Seq(start, end, step)
+  def arguments = Seq(start, end, step)
 
   def rewrite(f: (Expression) => Expression) = f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 

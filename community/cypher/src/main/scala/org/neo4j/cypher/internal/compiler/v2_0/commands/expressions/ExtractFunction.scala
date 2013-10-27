@@ -37,7 +37,10 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))
 
-  def children = Seq(collection, expression)
+  override def children = Seq(collection, expression)
+
+
+  def arguments: Seq[Expression] = Seq(collection)
 
   def calculateType(symbols: SymbolTable): CypherType = {
     val iteratorType = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType

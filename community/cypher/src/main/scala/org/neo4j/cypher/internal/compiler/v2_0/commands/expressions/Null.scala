@@ -28,7 +28,7 @@ case class Null() extends Expression {
 
   def rewrite(f: (Expression) => Expression): Expression = f(this)
 
-  def children = Seq()
+  def arguments = Seq()
 
   def calculateType(symbols: SymbolTable): CypherType = AnyType()
 

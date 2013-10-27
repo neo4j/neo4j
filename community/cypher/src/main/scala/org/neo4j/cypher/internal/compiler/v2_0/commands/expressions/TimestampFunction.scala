@@ -28,7 +28,7 @@ case class TimestampFunction() extends Expression {
 
   def innerExpectedType = StringType()
 
-  def children = Seq()
+  def arguments = Seq()
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
