@@ -109,8 +109,9 @@ public class LuceneIndexIT
     }
 
     @After
-    public void after()
+    public void after() throws IOException
     {
+        accessor.close();
         dirFactory.close();
     }
 
