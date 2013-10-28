@@ -116,6 +116,8 @@ it against the given database. For example:
 $ neo4j-shell -file export.cql > result.txt
 ----
 
+Supplying +-+ as the filename reads from +stdin+ instead.
+
 [[shell-options]]
 == Passing options and arguments ==
 

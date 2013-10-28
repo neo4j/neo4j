@@ -55,6 +55,16 @@ public class TestArgs
     }
     
     @Test
+    public void testParameterWithDashValue()
+    {
+        String [] line = { "-file", "-" };
+        Args args = new Args ( line );
+        assertEquals( 1, args.asMap().size() );
+        assertEquals( "-", args.get ( "file", null ) );
+        assertTrue( args.orphans().isEmpty() );
+    }
+    
+    @Test
     public void testEnum()
     {
         String[] line = { "--enum=" + MyEnum.second.name() };
