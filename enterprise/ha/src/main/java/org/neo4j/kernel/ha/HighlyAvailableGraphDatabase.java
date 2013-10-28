@@ -201,7 +201,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // can server (possibly quite outdated) read requests.
         if (!accessGuard.await( stateSwitchTimeoutMillis ))
         {
-            throw new TransactionFailureException( "Timeout waiting for cluster to elect master" );
+            throw new TransactionFailureException( "Timeout waiting to join cluster, or for cluster to elect master" );
         }
 
         return super.beginTx( forceMode );
@@ -436,7 +436,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         idGeneratorFactory = new HaIdGeneratorFactory( master, logging );
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
-                config, logging, updateableSchemaState );
+                config, logging, updateableSchemaState, kernelExtensions.listFactories() );
         /*
          * We always need the mode switcher and we need it to restart on switchover. So:
          * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover

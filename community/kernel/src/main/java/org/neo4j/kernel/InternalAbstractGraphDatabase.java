@@ -196,9 +196,10 @@ public abstract class InternalAbstractGraphDatabase
     protected File storeDir;
     protected Map<String, String> params;
     private final TransactionInterceptorProviders transactionInterceptorProviders;
-    private final KernelExtensions kernelExtensions;
     protected StoreId storeId;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
+
+    protected final KernelExtensions kernelExtensions;
 
     protected Config config;
 
@@ -874,7 +875,7 @@ public abstract class InternalAbstractGraphDatabase
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                persistenceManager, lockManager, nodeManager, this );
+                persistenceManager, lockManager, this );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
