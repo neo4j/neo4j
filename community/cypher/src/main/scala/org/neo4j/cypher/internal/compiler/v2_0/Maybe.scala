@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
+import org.neo4j.cypher.InternalException
+
 abstract sealed class Maybe[+T] {
   def values: Seq[T]
   def success: Boolean
@@ -43,7 +45,7 @@ case class Yes[T](values: Seq[T]) extends Maybe[T] {
 }
 
 case class No(messages: Seq[String]) extends Maybe[Nothing] {
-  def values = throw new Exception("No values exists")
+  def values = throw new InternalException("No values exists")
   def success = false
 
   def ++[B >: Nothing](other: Maybe[B]): Maybe[B] = other match {

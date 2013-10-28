@@ -25,6 +25,7 @@ import org.neo4j.kernel.{Uniqueness, Traversal}
 import org.neo4j.graphdb.{Path, Node}
 import org.neo4j.graphdb.traversal._
 import collection.JavaConverters._
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node])
   extends TraversalMatcher {
@@ -62,5 +63,5 @@ class MyEvaluator extends PathEvaluator[Option[ExpanderStep]] {
       case _                                                => Evaluation.EXCLUDE_AND_CONTINUE
     }
 
-  def evaluate(path: Path) = throw new RuntimeException
+  def evaluate(path: Path) = throw new ThisShouldNotHappenError("Andres", "This method should never be used")
 }
