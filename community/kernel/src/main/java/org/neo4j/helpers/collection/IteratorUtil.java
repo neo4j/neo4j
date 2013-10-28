@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -42,9 +43,7 @@ import org.neo4j.kernel.impl.api.PrimitiveIntIteratorForArray;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray;
 
-import static java.util.Arrays.asList;
 import static java.util.EnumSet.allOf;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -585,6 +584,11 @@ public abstract class IteratorUtil
         return addToCollection( iterable, new ArrayList<T>() );
     }
 
+    public static <T> List<T> asList( Iterator<T> iterator )
+    {
+        return addToCollection( iterator, new ArrayList<T>() );
+    }
+
     /**
      * Creates a {@link Set} from an {@link Iterable}.
      *
@@ -623,7 +627,7 @@ public abstract class IteratorUtil
     @SafeVarargs
     public static <T> Set<T> asSet( T... items )
     {
-        return new HashSet<>( asList( items ) );
+        return new HashSet<>( Arrays.asList( items ) );
     }
 
     public static <T> Set<T> emptySetOf( @SuppressWarnings("unused"/*just used as a type marker*/) Class<T> type )
@@ -1036,54 +1040,7 @@ public abstract class IteratorUtil
 
     public static <T> ResourceIterator<T> asResourceIterator( final Iterator<T> iterator )
     {
-        return new ResourceIterator<T>()
-        {
-            boolean hasNext = iterator.hasNext();
-
-            @Override
-            public void close()
-            {
-                assertHasNext();
-                hasNext = false;
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return hasNext;
-            }
-
-            @Override
-            public T next()
-            {
-                assertHasNext();
-                T result = iterator.next();
-                hasNext = iterator.hasNext();
-                return result;
-            }
-
-            @Override
-            public void remove()
-            {
-                assertHasNext();
-                try
-                {
-                    iterator.remove();
-                }
-                finally
-                {
-                    hasNext = iterator.hasNext();
-                }
-            }
-
-            private void assertHasNext()
-            {
-                if ( ! hasNext )
-                {
-                    throw new IllegalArgumentException( "Iterator already closed" );
-                }
-            }
-        };
+        return new WrappingResourceIterator<>( iterator );
     }
 
     @SuppressWarnings("UnusedDeclaration"/*Useful when debugging in tests, but not used outside of debugging sessions*/)

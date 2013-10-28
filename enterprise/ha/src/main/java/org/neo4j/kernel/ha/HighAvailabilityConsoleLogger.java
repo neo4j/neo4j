@@ -188,6 +188,6 @@ public class HighAvailabilityConsoleLogger
 
     private String printId( InstanceId id )
     {
-        return id+(id.equals(myId)?" (this server) ":" ");
+        return id+(id != null && id.equals(myId)?" (this server) ":" ");
     }
 }

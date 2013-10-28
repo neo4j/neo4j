@@ -29,7 +29,7 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -45,14 +45,17 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     protected final LuceneDocumentStructure documentStructure;
     protected final SearcherManager searcherManager;
     protected final IndexWriter writer;
+
     private final IndexWriterStatus writerStatus;
     private final Directory dir;
+    private final File dirFile;
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure, LuceneIndexWriterFactory indexWriterFactory,
                          IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
             throws IOException
     {
         this.documentStructure = documentStructure;
+        this.dirFile = dirFile;
         this.dir = dirFactory.open( dirFile );
         this.writer = indexWriterFactory.create( dir );
         this.writerStatus = writerStatus;
@@ -107,6 +110,11 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         return new LuceneIndexAccessorReader( searcherManager, documentStructure );
     }
 
+    @Override
+    public ResourceIterator<File> snapshotFiles() throws IOException
+    {
+        return new LuceneSnapshotter().snapshot( this.dirFile, writer );
+    }
 
     private void addRecovered( long nodeId, Object value ) throws IOException
     {

@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
+
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 /**
  * Used for online operation of an index.
@@ -70,6 +74,13 @@ public interface IndexAccessor
      */
     IndexReader newReader();
 
+    /**
+     * Should return a full listing of all files needed by this index accessor to work with the index. The files
+     * need to remain available until the resource iterator returned here is closed. This is used to duplicate created
+     * indexes across clusters, among other things.
+     */
+    ResourceIterator<File> snapshotFiles() throws IOException;
+
     class Adapter implements IndexAccessor
     {
         @Override
@@ -97,6 +108,12 @@ public interface IndexAccessor
         public IndexReader newReader()
         {
             return IndexReader.EMPTY;
+        }
+
+        @Override
+        public ResourceIterator<File> snapshotFiles()
+        {
+            return emptyIterator();
         }
     }
 }

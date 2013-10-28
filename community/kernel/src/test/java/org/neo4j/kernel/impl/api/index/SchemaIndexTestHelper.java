@@ -26,19 +26,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Ignore;
-
 import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @Ignore( "This is not a test" )
 public class SchemaIndexTestHelper
@@ -51,6 +49,7 @@ public class SchemaIndexTestHelper
     
     public interface SingleInstanceSchemaIndexProviderFactoryDependencies
     {
+        Config config();
     }
     
     private static class SingleInstanceSchemaIndexProviderFactory

@@ -20,7 +20,6 @@
 package org.neo4j.test.ha;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.rules.ExternalResource;
@@ -60,14 +59,14 @@ public class ClusterRule extends ExternalResource
         return startCluster( databaseFactory, stringMap() );
     }
 
-    public ClusterManager.ManagedCluster startCluster( HighlyAvailableGraphDatabaseFactory databaseFactory, Map<String, String> config )
-            throws Exception
+    public ClusterManager.ManagedCluster startCluster( HighlyAvailableGraphDatabaseFactory databaseFactory,
+                                                       Map<String, String> config ) throws Exception
     {
         config.putAll(stringMap(
                 default_timeout.name(), "1s",
-                tx_push_factor.name(), "0" ));
-        clusterManager = new ClusterManager( provider, storeDirectory,
-                config, new HashMap<Integer, Map<String,String>>(), databaseFactory );
+                tx_push_factor.name(), "0"));
+        clusterManager = new ClusterManager.Builder( storeDirectory )
+                .withDbFactory(databaseFactory).build();
         try
         {
             clusterManager.start();
