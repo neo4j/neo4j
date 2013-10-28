@@ -23,14 +23,12 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -47,6 +45,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     protected final LuceneDocumentStructure documentStructure;
     protected final SearcherManager searcherManager;
     protected final IndexWriter writer;
+
     private final IndexWriterStatus writerStatus;
     private final Directory dir;
     private final File dirFile;
@@ -114,8 +113,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-        return new LuceneStoreSnapshot( dirFile, deletionPolicy );
+        return new LuceneSnapshotter().snapshot( this.dirFile, writer );
     }
 
     private void addRecovered( long nodeId, Object value ) throws IOException

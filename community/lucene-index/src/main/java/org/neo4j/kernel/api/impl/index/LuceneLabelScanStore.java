@@ -27,14 +27,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
@@ -221,8 +219,7 @@ public class LuceneLabelScanStore implements LabelScanStore, LabelScanStorageStr
     @Override
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
-        SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-        return new LuceneStoreSnapshot( directoryLocation, deletionPolicy );
+        return new LuceneSnapshotter().snapshot( directoryLocation, writer );
     }
 
     @Override

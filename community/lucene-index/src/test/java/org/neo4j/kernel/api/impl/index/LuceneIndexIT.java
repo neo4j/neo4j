@@ -56,15 +56,18 @@ public class LuceneIndexIT
         accessor.force();
 
         // When & Then
-        assertThat( asUniqueSetOfNames( accessor.snapshotFiles() ), equalTo( asSet(
-                "_0.nrm",
-                "_0.tis",
-                "_0.fnm",
-                "_0.tii",
-                "segments_1",
-                "_0.frq",
-                "_0.fdx",
-                "_0.fdt" ) ) );
+        try(ResourceIterator<File> snapshot = accessor.snapshotFiles())
+        {
+            assertThat( asUniqueSetOfNames( snapshot ), equalTo( asSet(
+                    "_0.nrm",
+                    "_0.tis",
+                    "_0.fnm",
+                    "_0.tii",
+                    "segments_1",
+                    "_0.frq",
+                    "_0.fdx",
+                    "_0.fdt" ) ) );
+        }
     }
 
     @Test
@@ -74,7 +77,10 @@ public class LuceneIndexIT
         // A completely un-used index
 
         // When & Then
-        assertThat( asUniqueSetOfNames( accessor.snapshotFiles() ), equalTo( emptySetOf( String.class ) ) );
+        try(ResourceIterator<File> snapshot = accessor.snapshotFiles())
+        {
+            assertThat( asUniqueSetOfNames( snapshot ), equalTo( emptySetOf( String.class ) ) );
+        }
     }
 
     private Set<String> asUniqueSetOfNames( ResourceIterator<File> files )
