@@ -171,7 +171,8 @@ public class TestStoreCopy extends AbstractClusterTest
 
     private void assertNodeAndIndexingExists( HighlyAvailableGraphDatabase db, long nodeId, String key, Object value )
     {
-        try (Transaction tx = db.beginTx())
+        Transaction transaction = db.beginTx();
+        try
         {
             Node node = db.getNodeById( nodeId );
             assertEquals( "Property '" + key + "'='" + value + "' mismatch on " + node + " for " + db,
@@ -179,6 +180,10 @@ public class TestStoreCopy extends AbstractClusterTest
             assertTrue( "Index '" + key + "' not found for " + db, db.index().existsForNodes( key ) );
             assertEquals( "Index '" + key + "'='" + value + "' mismatch on " + node + " for " + db,
                     node, db.index().forNodes( key ).get( key, value ).getSingle() );
+        }
+        finally
+        {
+            transaction.finish();
         }
     }
 }

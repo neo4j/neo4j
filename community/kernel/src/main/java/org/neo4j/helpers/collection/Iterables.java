@@ -466,11 +466,6 @@ public final class Iterables
         return concat( Arrays.asList( (Iterator<T>[]) iterables ).iterator() );
     }
 
-    public static <T> ResourceIterator<T> concatResourceIterators( Iterator<ResourceIterator<T>> iterators )
-    {
-        return new CombiningResourceIterator<>(iterators);
-    }
-
     public static <T> Iterator<T> concat( Iterator<Iterator<T>> iterators )
     {
         return new CombiningIterator<>(iterators);

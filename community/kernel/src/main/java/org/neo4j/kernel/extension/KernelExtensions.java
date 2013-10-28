@@ -215,11 +215,6 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
                 new KernelExtensionHandler() );
     }
 
-    public Iterable<KernelExtensionFactory<?>> listFactories()
-    {
-        return kernelExtensionFactories;
-    }
-
     private static class TypeFilter<T> implements Predicate
     {
         private final Class<T> type;

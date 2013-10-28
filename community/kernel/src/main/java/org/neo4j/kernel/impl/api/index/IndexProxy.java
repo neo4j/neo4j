@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -98,6 +96,4 @@ public interface IndexProxy
     void activate() throws IndexActivationFailedKernelException;
 
     void validate() throws ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException;
-
-    ResourceIterator<File> snapshotFiles() throws IOException;
 }

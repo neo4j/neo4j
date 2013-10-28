@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,7 +27,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.BiConsumer;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -54,8 +52,8 @@ import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
@@ -130,12 +128,9 @@ public class IndexingService extends LifecycleAdapter
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
-
-            logger.info( format( "IndexingService.initIndexes: index on %s is %s",
-                    descriptor.userDescription( tokenNameLookup ), initialState ) );
-
+            String userDescription = descriptor.userDescription( tokenNameLookup );
+            logger.info( format( "IndexingService.initIndexes: index on %s is %s", userDescription, initialState ) );
             boolean constraint = indexRule.isConstraintIndex();
-
             switch ( initialState )
             {
                 case ONLINE:
@@ -589,17 +584,6 @@ public class IndexingService extends LifecycleAdapter
     private Pair<IndexDescriptor, SchemaIndexProvider.Descriptor> getIndexProxyDescriptors( IndexProxy indexProxy )
     {
         return Pair.of( indexProxy.getDescriptor(), indexProxy.getProviderDescriptor() );
-    }
-
-    public ResourceIterator<File> snapshotStoreFiles() throws IOException
-    {
-        Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
-        for ( IndexProxy indexProxy : indexMapReference.getAllIndexProxies() )
-        {
-            snapshots.add(indexProxy.snapshotFiles());
-        }
-
-        return concatResourceIterators( snapshots.iterator() );
     }
 }
 

@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -58,12 +56,6 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     public void validate()
     {
         throw new UnsupportedOperationException( "Cannot validate recovering index." );
-    }
-
-    @Override
-    public ResourceIterator<File> snapshotFiles()
-    {
-        throw new UnsupportedOperationException( "Cannot snapshot a recovering index." );
     }
 
     @Override
