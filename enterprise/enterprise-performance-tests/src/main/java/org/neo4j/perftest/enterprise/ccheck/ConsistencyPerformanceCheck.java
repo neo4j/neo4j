@@ -19,16 +19,6 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
-import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
-import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
-import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
-import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
-
 import java.io.File;
 import java.util.Map;
 
@@ -38,10 +28,14 @@ import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.api.scan.ScannableStores;
+import org.neo4j.kernel.api.scan.SimpleScannableStores;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -50,6 +44,16 @@ import org.neo4j.perftest.enterprise.generator.DataGenerator;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
+
+import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
+import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
+import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
+import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
 
 public class ConsistencyPerformanceCheck
 {
@@ -115,28 +119,30 @@ public class ConsistencyPerformanceCheck
         }
 
         Config tuningConfiguration = buildTuningConfiguration( configuration );
-        StoreAccess storeAccess = createStoreAccess( configuration.get( DataGenerator.store_dir ),
+        ScannableStores scannableStores = createScannableStores( configuration.get( DataGenerator.store_dir ),
                 tuningConfiguration );
 
         JsonReportWriter reportWriter = new JsonReportWriter( configuration, tuningConfiguration );
         TimingProgress progressMonitor = new TimingProgress( new TimeLogger( reportWriter ), progress );
 
-        configuration.get( checker_version ).run( progressMonitor, storeAccess, tuningConfiguration );
+        configuration.get( checker_version ).run( progressMonitor, scannableStores, tuningConfiguration );
     }
 
-    private static StoreAccess createStoreAccess( String storeDir, Config tuningConfiguration )
+    private static ScannableStores createScannableStores( String storeDir, Config tuningConfiguration )
     {
         StringLogger logger = StringLogger.DEV_NULL;
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
                         .windowPoolFactory( tuningConfiguration, logger ),
-                new DefaultFileSystemAbstraction(), logger, new DefaultTxHook() );
+                fileSystem, logger, new DefaultTxHook() );
 
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
 
-        return new StoreAccess( neoStore );
+        return new SimpleScannableStores( new StoreAccess( neoStore ),
+                new LuceneLabelScanStoreBuilder( storeDir, neoStore, fileSystem, logger ).build() );
     }
 
     private static Config buildTuningConfiguration( Configuration configuration )

@@ -20,6 +20,7 @@
 package org.neo4j.consistency;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -29,9 +30,13 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.api.scan.LabelScanStore;
+import org.neo4j.kernel.api.scan.ScannableStores;
+import org.neo4j.kernel.api.scan.SimpleScannableStores;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -51,11 +56,12 @@ public class ConsistencyCheckService
         params.put( GraphDatabaseSettings.store_dir.name(), storeDir );
         tuningConfiguration.applyChanges( params );
 
+        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
-                        .windowPoolFactory( tuningConfiguration, logger ), new DefaultFileSystemAbstraction(), logger,
+                        .windowPoolFactory( tuningConfiguration, logger ), fileSystem, logger,
                 new DefaultTxHook() );
 
         ConsistencySummaryStatistics summary;
@@ -67,11 +73,33 @@ public class ConsistencyCheckService
         {
             neoStore.makeStoreOk();
             StoreAccess store = new StoreAccess( neoStore );
-            summary = new FullCheck( tuningConfiguration, progressFactory )
-                    .execute( store, StringLogger.tee( logger, report ) );
+            LabelScanStore labelScanStore = null;
+            try {
+
+                labelScanStore =
+                    new LuceneLabelScanStoreBuilder( storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
+                ScannableStores stores = new SimpleScannableStores( store, labelScanStore );
+                summary = new FullCheck( tuningConfiguration, progressFactory )
+                        .execute( stores, StringLogger.tee( logger, report ) );
+            }
+            finally
+            {
+                try
+                {
+                    if ( null != labelScanStore )
+                    {
+                        labelScanStore.shutdown();
+                    }
+                }
+                catch ( IOException e )
+                {
+                    logger.error( "Faiure during shutdown of label scan store", e );
+                }
+            }
         }
         finally
         {
+
             report.close();
             neoStore.close();
         }

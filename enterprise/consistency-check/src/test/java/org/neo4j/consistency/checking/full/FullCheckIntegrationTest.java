@@ -31,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -39,6 +40,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.scan.ScannableStores;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -57,7 +59,6 @@ import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.GraphStoreFixture;
 
 import static java.util.Arrays.asList;
 
@@ -104,13 +105,13 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException
     {
-        return check( fixture.storeAccess() );
+        return check( fixture );
     }
 
-    private ConsistencySummaryStatistics check( StoreAccess access ) throws ConsistencyCheckIncompleteException
+    private ConsistencySummaryStatistics check( ScannableStores stores ) throws ConsistencyCheckIncompleteException
     {
         FullCheck checker = new FullCheck( config( TaskExecutionOrder.MULTI_PASS ), ProgressMonitorFactory.NONE );
-        return checker.execute( access, StringLogger.wrap( log ) );
+        return checker.execute( stores, StringLogger.wrap( log ) );
     }
 
     private void verifyInconsistency( RecordType recordType, ConsistencySummaryStatistics stats )
@@ -503,7 +504,7 @@ public class FullCheckIntegrationTest
 
                 schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
                 IndexRule rule = IndexRule.indexRule( 1, 1, 1,
-                        new SchemaIndexProvider.Descriptor( "in-memory", "1.0" ) );
+                        new SchemaIndexProvider.Descriptor( "lucene", "1.0" ) );
                 schema.setData( new RecordSerializer().append( rule ).serialize() );
 
                 tx.createSchema( asList(schemaBefore), asList( schema ) );
@@ -537,7 +538,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1Before = record1.clone();
                 DynamicRecord record2Before = record2.clone();
 
-                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
 
                 IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor,
                         (long) ruleId1 );
@@ -584,7 +585,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1Before = record1.clone();
                 DynamicRecord record2Before = record2.clone();
 
-                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
 
                 IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId2 );
                 UniquenessConstraintRule rule2 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
@@ -676,13 +677,13 @@ public class FullCheckIntegrationTest
                 tx.relationshipType( inconsistentName.get(), "FOO" );
             }
         } );
-        StoreAccess access = fixture.storeAccess();
+        StoreAccess access = fixture.nativeStores();
         DynamicRecord record = access.getRelationshipTypeNameStore().forceGetRecord( inconsistentName.get() );
         record.setNextBlock( record.getId() );
         access.getRelationshipTypeNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( access );
+        ConsistencySummaryStatistics stats = check( fixture );
 
         // then
         verifyInconsistency( RecordType.RELATIONSHIP_TYPE_NAME, stats );
@@ -703,13 +704,13 @@ public class FullCheckIntegrationTest
                 tx.propertyKey( inconsistentName.get(), "FOO" );
             }
         } );
-        StoreAccess access = fixture.storeAccess();
+        StoreAccess access = fixture.nativeStores();
         DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentName.get() );
         record.setNextBlock( record.getId() );
         access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( access );
+        ConsistencySummaryStatistics stats = check( fixture );
 
         // then
         verifyInconsistency( RecordType.PROPERTY_KEY_NAME, stats );
@@ -719,14 +720,14 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipTypeInconsistencies() throws Exception
     {
         // given
-        StoreAccess access = fixture.storeAccess();
+        StoreAccess access = fixture.nativeStores();
         RelationshipTypeTokenRecord record = access.getRelationshipTypeTokenStore().forceGetRecord( 1 );
         record.setNameId( 20 );
         record.setInUse( true );
         access.getRelationshipTypeTokenStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( access );
+        ConsistencySummaryStatistics stats = check( fixture );
 
         // then
         verifyInconsistency( RecordType.RELATIONSHIP_TYPE, stats );
@@ -736,14 +737,14 @@ public class FullCheckIntegrationTest
     public void shouldReportLabelInconsistencies() throws Exception
     {
         // given
-        StoreAccess access = fixture.storeAccess();
+        StoreAccess access = fixture.nativeStores();
         LabelTokenRecord record = access.getLabelTokenStore().forceGetRecord( 1 );
         record.setNameId( 20 );
         record.setInUse( true );
         access.getLabelTokenStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( access );
+        ConsistencySummaryStatistics stats = check( fixture );
 
         // then
         verifyInconsistency( RecordType.LABEL, stats );
@@ -764,13 +765,13 @@ public class FullCheckIntegrationTest
                 tx.propertyKey( inconsistentKey.get(), "FOO" );
             }
         } );
-        StoreAccess access = fixture.storeAccess();
+        StoreAccess access = fixture.nativeStores();
         DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentKey.get() );
         record.setInUse( false );
         access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( access );
+        ConsistencySummaryStatistics stats = check( fixture );
 
         // then
         verifyInconsistency( RecordType.PROPERTY_KEY, stats );
