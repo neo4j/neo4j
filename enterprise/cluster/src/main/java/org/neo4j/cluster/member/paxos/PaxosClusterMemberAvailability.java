@@ -39,7 +39,7 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class PaxosClusterMemberAvailability implements ClusterMemberAvailability, Lifecycle
 {
-    private URI serverClusterId;
+    private volatile URI serverClusterId;
     private StringLogger logger;
     protected AtomicBroadcastSerializer serializer;
     private final InstanceId myId;

@@ -126,7 +126,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Logging logging;
-    private URI me;
+    private volatile URI me;
 
     public HighAvailabilityModeSwitcher( BindingNotifier bindingNotifier, DelegateInvocationHandler delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,

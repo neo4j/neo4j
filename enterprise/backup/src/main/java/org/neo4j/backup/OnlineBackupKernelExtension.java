@@ -43,7 +43,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
     private BindingNotifier bindingNotifier;
     private BackupServer server;
     private URI backupUri;
-    private URI me;
+    private volatile URI me;
 
     public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI)
     {
