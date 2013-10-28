@@ -2,7 +2,7 @@
 ------------
 o Add OPTIONAL MATCH to Cypher
 o Remove question mark symbol from patterns in Cypher
-
+o Fixes 1313
 
 2.0.0-M06
 ---------

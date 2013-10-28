@@ -2604,4 +2604,9 @@ RETURN x0.name""")
 
     assert(foundNode === n)
   }
+
+  @Test
+  def query_should_work() {
+    assert(executeScalar[Int]("WITH 1 AS x RETURN 1 + x") === 2)
+  }
 }

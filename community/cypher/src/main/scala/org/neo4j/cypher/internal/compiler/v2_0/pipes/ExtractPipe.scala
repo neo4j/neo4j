@@ -26,8 +26,12 @@ import symbols._
 
 object ExtractPipe {
   def apply(source: Pipe, expressions: Map[String, Expression]): ExtractPipe = source match {
-    case p: ExtractPipe => new ExtractPipe(p.source, p.expressions ++ expressions)
-    case _              => new ExtractPipe(source, expressions)
+      // If we can merge the two pipes together, do it
+    case p: ExtractPipe if expressions.values.forall(_.symbolDependenciesMet(p.source.symbols)) =>
+      new ExtractPipe(p.source, p.expressions ++ expressions)
+
+    case _              =>
+      new ExtractPipe(source, expressions)
   }
 }
 
