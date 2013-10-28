@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,7 +33,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.Triplet;
@@ -63,7 +60,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
-import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -89,6 +85,8 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     private final NodeProxy.NodeLookup nodeLookup;
     private final RelationshipProxy.RelationshipLookups relationshipLookups;
+
+    private final RelationshipLoader relationshipLoader;
 
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
@@ -122,7 +120,7 @@ public class NodeManager implements Lifecycle, EntityFactory
             int typeId = data.getType();
             final long startNodeId = data.getFirstNode();
             final long endNodeId = data.getSecondNode();
-            return newRelationshipImpl( id, startNodeId, endNodeId, typeId, false );
+            return new RelationshipImpl( id, startNodeId, endNodeId, typeId, false );
         }
     };
 
@@ -153,6 +151,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         this.xaDsm = xaDsm;
         nodePropertyTrackers = new LinkedList<>();
         relationshipPropertyTrackers = new LinkedList<>();
+        this.relationshipLoader = new RelationshipLoader( persistenceManager, relCache );
         this.graphProperties = instantiateGraphProperties();
     }
 
@@ -257,7 +256,7 @@ public class NodeManager implements Lifecycle, EntityFactory
                     + "] deleted" );
         }
         long id = idGenerator.nextId( Relationship.class );
-        RelationshipImpl rel = newRelationshipImpl( id, startNodeId, endNodeId, typeId, true );
+        RelationshipImpl rel = new RelationshipImpl( id, startNodeId, endNodeId, typeId, true );
         RelationshipProxy proxy = new RelationshipProxy( id, relationshipLookups, statementCtxProvider );
         TransactionState tx = getTransactionState();
         tx.acquireWriteLock( proxy );
@@ -289,11 +288,6 @@ public class NodeManager implements Lifecycle, EntityFactory
                 setRollbackOnly();
             }
         }
-    }
-
-    private RelationshipImpl newRelationshipImpl( long id, long startNodeId, long endNodeId, int typeId, boolean newRel)
-    {
-        return new RelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
     }
 
     public Node getNodeByIdOrNull( long nodeId )
@@ -584,83 +578,9 @@ public class NodeManager implements Lifecycle, EntityFactory
         return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
 
-    Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long> getMoreRelationships( NodeImpl node )
-    {
-        long nodeId = node.getId();
-        long position = node.getRelChainPosition();
-        Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
-                persistenceManager.getMoreRelationships( nodeId, position );
-        ArrayMap<Integer, RelIdArray> newRelationshipMap =
-                new ArrayMap<>();
-
-        List<RelationshipImpl> relsList = new ArrayList<>( 150 );
-
-        Iterable<RelationshipRecord> loops = rels.first().get( DirectionWrapper.BOTH );
-        boolean hasLoops = loops != null;
-        if ( hasLoops )
-        {
-            populateLoadedRelationships( loops, relsList, DirectionWrapper.BOTH, true, newRelationshipMap );
-        }
-        populateLoadedRelationships( rels.first().get( DirectionWrapper.OUTGOING ), relsList,
-                DirectionWrapper.OUTGOING, hasLoops,
-                newRelationshipMap
-        );
-        populateLoadedRelationships( rels.first().get( DirectionWrapper.INCOMING ), relsList,
-                DirectionWrapper.INCOMING, hasLoops,
-                newRelationshipMap
-        );
-
-        return Triplet.of( newRelationshipMap, relsList, rels.other() );
-    }
-
-    /**
-     * @param loadedRelationshipsOutputParameter
-     *         This is the return value for this method. It's written like this
-     *         because several calls to this method are used to gradually build up
-     *         the map of RelIdArrays that are ultimately involved in the operation.
-     */
-    private void populateLoadedRelationships( Iterable<RelationshipRecord> loadedRelationshipRecords,
-                                              List<RelationshipImpl> relsList,
-                                              DirectionWrapper dir,
-                                              boolean hasLoops,
-                                              ArrayMap<Integer, RelIdArray> loadedRelationshipsOutputParameter )
-    {
-        for ( RelationshipRecord rel : loadedRelationshipRecords )
-        {
-            long relId = rel.getId();
-            RelationshipImpl relImpl = getOrCreateRelationshipFromCache( relsList, rel, relId );
-
-            getOrCreateRelationships( hasLoops, relImpl.getTypeId(), loadedRelationshipsOutputParameter )
-                    .add( relId, dir );
-        }
-    }
-
-    private RelIdArray getOrCreateRelationships( boolean hasLoops, int typeId, ArrayMap<Integer, RelIdArray> loadedRelationships )
-    {
-        RelIdArray relIdArray = loadedRelationships.get( typeId );
-        if ( relIdArray == null )
-        {
-            relIdArray = hasLoops ? new RelIdArrayWithLoops( typeId ) : new RelIdArray( typeId );
-            loadedRelationships.put( typeId, relIdArray );
-        }
-        return relIdArray;
-    }
-
     void putAllInRelCache( Collection<RelationshipImpl> relationships )
     {
         relCache.putAll( relationships );
-    }
-
-    private RelationshipImpl getOrCreateRelationshipFromCache( List<RelationshipImpl> newlyCreatedRelationships,
-                                                               RelationshipRecord rel, long relId )
-    {
-        RelationshipImpl relImpl = relCache.get( relId );
-        if ( relImpl == null )
-        {
-            newlyCreatedRelationships.add( relImpl );
-            relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), rel.getType(), false );
-        }
-        return relImpl;
     }
 
     Iterator<DefinedProperty> loadGraphProperties( boolean light )
@@ -850,6 +770,11 @@ public class NodeManager implements Lifecycle, EntityFactory
                 setRollbackOnly();
             }
         }
+    }
+
+    public Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long> getMoreRelationships( NodeImpl node )
+    {
+        return relationshipLoader.getMoreRelationships( node );
     }
 
     public NodeImpl getNodeIfCached( long nodeId )
