@@ -19,9 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -47,6 +44,7 @@ import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
@@ -54,13 +52,16 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
 
 public class ServerUtil
 {
-    private static File getBaseDir( GraphDatabaseAPI graphDb )
+    private static File getBaseDir( String storeDir )
     {
-        File file = new File( graphDb.getStoreDir() );
+        File file = new File( storeDir );
         try
         {
             return file.getCanonicalFile().getAbsoluteFile();
@@ -99,9 +100,8 @@ public class ServerUtil
         return path;
     }
 
-    public static Tx[] rotateLogs( GraphDatabaseAPI graphDb )
+    public static Tx[] rotateLogs( XaDataSourceManager dsManager, KernelPanicEventGenerator kernelPanicEventGenerator, StringLogger logger )
     {
-        XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
         Collection<XaDataSource> sources = dsManager.getAllRegisteredDataSources();
 
         Tx[] appliedTransactions = new Tx[sources.size()];
@@ -116,24 +116,21 @@ public class ServerUtil
             catch ( IOException e )
             {
                 // TODO: what about error message?
-                graphDb.getDependencyResolver().resolveDependency( Logging.class ).getMessagesLog( ServerUtil.class ).logMessage(
-                        "Unable to rotate log for " + ds, e );
+                logger.logMessage( "Unable to rotate log for " + ds, e );
                 // TODO If we do it in rotate() the transaction semantics for such a failure will change
                 // slightly and that has got to be verified somehow. But to have it in there feels much better.
-                graphDb.getKernelPanicGenerator().generateEvent( ErrorState.TX_MANAGER_NOT_OK );
+                kernelPanicEventGenerator.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
                 throw new ServerFailureException( e );
             }
         }
         return appliedTransactions;
     }
 
-    public static RequestContext rotateLogsAndStreamStoreFiles( GraphDatabaseAPI graphDb,
+    public static RequestContext rotateLogsAndStreamStoreFiles( String storeDir, XaDataSourceManager dsManager, KernelPanicEventGenerator kernelPanicEventGenerator, StringLogger logger,
                                                                 boolean includeLogicalLogs, StoreWriter writer )
     {
-        File baseDir = getBaseDir( graphDb );
-        XaDataSourceManager dsManager =
-                graphDb.getXaDataSourceManager();
-        RequestContext context = RequestContext.anonymous( rotateLogs( graphDb ) );
+        File baseDir = getBaseDir( storeDir );
+        RequestContext context = RequestContext.anonymous( rotateLogs( dsManager, kernelPanicEventGenerator, logger ) );
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
@@ -291,12 +288,11 @@ public class ServerUtil
      *                 those that evaluate to true
      * @return The response, packed with the latest transactions
      */
-    public static <T> Response<T> packResponse( GraphDatabaseAPI graphDb,
+    public static <T> Response<T> packResponse( StoreId storeId, XaDataSourceManager dsManager,
                                                 RequestContext context, T response, Predicate<Long> filter )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
         Set<String> resourceNames = new HashSet<String>();
-        XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
         final List<LogExtractor> logExtractors = new ArrayList<LogExtractor>();
         try
         {
@@ -319,7 +315,7 @@ public class ServerUtil
                         filter );
                 logExtractors.add( logExtractor );
             }
-            return new Response<T>( response, graphDb.getStoreId(), createTransactionStream( resourceNames,
+            return new Response<T>( response, storeId, createTransactionStream( resourceNames,
                     stream, logExtractors ), ResourceReleaser.NO_OP );
         }
         catch ( Throwable t )

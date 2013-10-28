@@ -1320,6 +1320,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) storeLocker;
             }
+            else if ( KernelPanicEventGenerator.class.isAssignableFrom( type ) )
+            {
+                return (T) kernelPanicEventGenerator;
+            }
             else if ( DependencyResolver.class.isAssignableFrom( type ) )
             {
                 return (T) DependencyResolverImpl.this;
