@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -32,6 +34,7 @@ import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.lang.Boolean.getBoolean;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 class InMemoryIndex
 {
@@ -154,6 +157,12 @@ class InMemoryIndex
         public IndexReader newReader()
         {
             return indexData;
+        }
+
+        @Override
+        public ResourceIterator<File> snapshotFiles()
+        {
+            return emptyIterator();
         }
     }
 

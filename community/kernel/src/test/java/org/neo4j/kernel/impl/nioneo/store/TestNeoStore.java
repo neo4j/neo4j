@@ -199,7 +199,7 @@ public class TestNeoStore
                 dependencyResolverForNoIndexProvider( nodeManager ), mock( AbstractTransactionManager.class),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
                 mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), mock(LockManager.class),
-                nodeManager, mock( SchemaWriteGuard.class));
+                mock( SchemaWriteGuard.class));
         ds.init();
         ds.start();
 

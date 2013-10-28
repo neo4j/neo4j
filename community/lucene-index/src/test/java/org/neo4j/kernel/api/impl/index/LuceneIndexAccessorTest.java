@@ -26,7 +26,6 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -34,9 +33,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -122,7 +119,7 @@ public class LuceneIndexAccessorTest
         assertEquals( asSet( nodeId2 ), asUniqueSet( reader.lookup( value ) ) );
         reader.close();
     }
-    
+
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value", value2 = 40;
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
