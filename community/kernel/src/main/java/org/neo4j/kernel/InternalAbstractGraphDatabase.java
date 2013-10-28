@@ -1075,7 +1075,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public IndexManager index()
     {
-        // TODO: txManager.assertInTransaction();
+        txManager.assertInTransaction();
         return indexManager;
     }
 

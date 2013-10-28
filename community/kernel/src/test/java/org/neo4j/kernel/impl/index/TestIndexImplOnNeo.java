@@ -68,38 +68,36 @@ public class TestIndexImplOnNeo
         Map<String, String> config = stringMap( PROVIDER, "test-dummy-neo-index",
                 "config1", "A value", "another config", "Another value" );
 
-        Transaction transaction = db.beginTx();
         Index<Node> index;
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             index = db.index().forNodes( indexName, config );
-            transaction.success();
-        }
-        finally
-        {
-            transaction.finish();
+            tx.success();
         }
 
         assertTrue( indexExists( indexName ) );
-        assertEquals( config, db.index().getConfiguration( index ) );
+        assertEquals( config, getConfiguration(index));
 
         assertEquals( 0, count( (Iterable<Node>) index.get( "key", "something else" ) ) );
         
         restartDb();
         assertTrue( indexExists( indexName ) );
-        assertEquals( config, db.index().getConfiguration( index ) );
+        assertEquals( config, getConfiguration(index));
     }
 
     private boolean indexExists( String indexName )
     {
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction ignored = db.beginTx() )
         {
             return db.index().existsForNodes( indexName );
         }
-        finally
+    }
+
+    private Map<String, String> getConfiguration(Index<Node> index)
+    {
+        try ( Transaction ignored = db.beginTx() )
         {
-            transaction.finish();
+            return db.index().getConfiguration(index);
         }
     }
 }
