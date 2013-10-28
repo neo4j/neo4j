@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 
 import static java.lang.String.format;
 
-class StoreProcessorTask<R extends AbstractBaseRecord> implements Runnable
+class StoreProcessorTask<R extends AbstractBaseRecord> implements StoppableRunnable
 {
     private final RecordStore<R> store;
     private final StoreProcessor[] processors;
@@ -117,6 +117,7 @@ class StoreProcessorTask<R extends AbstractBaseRecord> implements Runnable
         // intentionally empty
     }
 
+    @Override
     public void stopScanning()
     {
         processors[0].stopScanning();
