@@ -25,9 +25,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -35,7 +37,9 @@ import org.apache.lucene.search.TopDocs;
 
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
+import org.neo4j.kernel.api.scan.NodeLabelRange;
 import org.neo4j.kernel.api.scan.NodeLabelUpdate;
+import org.neo4j.kernel.api.scan.NodeRangeReader;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.flatten;
@@ -90,6 +94,12 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     {
         return flatten(
                 new PageOfRangesIterator( format, searcher, RANGES_PER_PAGE, format.labelQuery( labelId ), labelId ) );
+    }
+
+    @Override
+    public NodeRangeReader newNodeLabelReader( final IndexSearcher searcher )
+    {
+        return new LuceneNodeRangeReader( searcher, format );
     }
 
     @Override
@@ -219,5 +229,162 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
             }
         }
         return fields;
+    }
+
+    private static class LuceneNodeRangeReader implements NodeRangeReader
+    {
+        private final IndexSearcher searcher;
+        private final BitmapDocumentFormat format;
+
+        public LuceneNodeRangeReader( IndexSearcher searcher, BitmapDocumentFormat format )
+        {
+            this.searcher = searcher;
+            this.format = format;
+        }
+
+        @Override
+        public Iterator<NodeLabelRange> iterator()
+        {
+            final IndexReader reader = searcher.getIndexReader();
+            return new Iterator<NodeLabelRange>()
+            {
+                private int id = 0;
+                private NodeLabelRange current = computeNext();
+
+                @Override
+                public boolean hasNext()
+                {
+                    return current != null;
+                }
+
+                @Override
+                public NodeLabelRange next()
+                {
+                    if ( hasNext() )
+                    {
+                        NodeLabelRange result = current;
+                        current = computeNext();
+                        return result;
+                    }
+                    else
+                    {
+                        throw new NoSuchElementException();
+                    }
+                }
+
+                @Override
+                public void remove()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                NodeLabelRange computeNext()
+                {
+                    while ( id < searcher.maxDoc() )
+                    {
+                        if ( reader.isDeleted( id ) )
+                        {
+                            id++;
+                            continue;
+                        }
+
+                        try
+                        {
+                            Document document = searcher.doc( id );
+
+                            List<Fieldable> fields = document.getFields();
+
+                            long[] labelIds = new long[ fields.size() - 1 ];
+                            Bitmap[] bitmaps = new Bitmap[ fields.size() - 1 ];
+
+                            int i = 0;
+                            long rangeId = -1;
+                            for ( Fieldable field : fields )
+                            {
+                                if ( format.isRangeField( field ) )
+                                {
+                                    rangeId = format.rangeOf( field );
+                                }
+                                else
+                                {
+                                    labelIds[i] = format.labelId( field );
+                                    bitmaps[i] = format.readBitmap( field );
+                                    i++;
+                                }
+                            }
+                            assert( rangeId >= 0 );
+                            id++;
+                            return new LuceneNodeLabelRange( rangeId, labelIds, getLongs( bitmaps, rangeId ), bitmaps );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                    }
+                    return null;
+                }
+
+                private long[][] getLongs( Bitmap[] bitmaps, long rangeId )
+                {
+                    long[][] nodeIds = new long[bitmaps.length][];
+                    for ( int k = 0; k < nodeIds.length; k++ )
+                    {
+                        nodeIds[k] = format.bitmapFormat().convertRangeAndBitmapToArray( rangeId, bitmaps[k].bitmap() );
+                    }
+                    return nodeIds;
+                }
+
+            };
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            searcher.close();
+        }
+
+        private static class LuceneNodeLabelRange implements NodeLabelRange
+        {
+            private final static long[] NO_NODES = new long[ 0 ];
+
+            private final long[] labelIds;
+            private final long rangeId;
+            private final long[][] nodeIds;
+            private final Bitmap[] bitmaps;
+
+            public LuceneNodeLabelRange( long rangeId, long[] labelIds, long[][] nodeIds, Bitmap[] bitmaps )
+            {
+                this.labelIds = labelIds;
+                this.rangeId = rangeId;
+                this.bitmaps = bitmaps;
+                this.nodeIds = nodeIds;
+            }
+
+            @Override
+            public long[] labels()
+            {
+                return labelIds;
+            }
+
+            @Override
+            public long[] nodes( long labelId )
+            {
+                int i = 0;
+                while ( i < labelIds.length )
+                {
+                    if ( labelId == labelIds[i] )
+                    {
+                        return nodes( i, labelId );
+                    }
+                    i++;
+                }
+                return NO_NODES;
+            }
+
+            private long[] nodes( int i, long labelId )
+            {
+                return nodeIds[i];
+            }
+        }
     }
 }

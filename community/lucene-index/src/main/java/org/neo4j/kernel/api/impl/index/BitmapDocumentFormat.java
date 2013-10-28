@@ -78,6 +78,11 @@ public enum BitmapDocumentFormat
         return Long.parseLong( doc.get( RANGE ) );
     }
 
+    public long rangeOf( Fieldable field )
+    {
+        return Long.parseLong( field.stringValue() );
+    }
+
     public long mapOf( Document doc, long labelId )
     {
         return bitmap( doc.getFieldable( label( labelId ) ) );
@@ -133,6 +138,11 @@ public enum BitmapDocumentFormat
     String label( long key )
     {
         return Long.toString( key );
+    }
+
+    public long labelId( Fieldable field )
+    {
+        return Long.parseLong( field.name() );
     }
 
     public Term rangeTerm( long range )
