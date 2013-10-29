@@ -118,7 +118,7 @@ public class InlineNodeLabels implements NodeLabels
         return true;
     }
 
-    private static long[] parseInlined( long labelField )
+    public static long[] parseInlined( long labelField )
     {
         byte numberOfLabels = labelCount( labelField );
         if ( numberOfLabels == 0 )

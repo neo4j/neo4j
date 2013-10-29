@@ -87,7 +87,7 @@ import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEn
  *
  * <h3>Online operation</h3>
  *
- * Once the index is online, the database will move to using the {@link #getOnlineAccessor(long,IndexConfiguration) online accessor} to
+ * Once the index is online, the database will move to using the {@link #getOnlineAccessor(boolean, boolean) online accessor} to
  * write to the index.
  */
 public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>

@@ -1,0 +1,203 @@
+/**
+ * Copyright (c) 2002-2013 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.index.recovery;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.single;
+
+/**
+ * Arbitrary recovery scenarios boiled down to as small tests as possible
+ */
+@RunWith(Parameterized.class)
+public class UniqueIndexRecoveryTests
+{
+    @Test
+    public void shouldRecoverWhenCommandsTemporarilyViolateConstraints() throws Exception
+    {
+        // GIVEN
+        Node unLabeledNode = createUnLabeledNode();
+        Node labeledNode = createLabeledNode();
+        createUniqueConstraint();
+        rotateLog(); // snapshot
+        setPropertyOnLabeledNode( labeledNode );
+        deletePropertyOnLabeledNode( labeledNode );
+        addLabelToUnLabeledNode( unLabeledNode );
+        flushAll(); // persist - recovery will do everything since last log rotate
+
+        // WHEN recovery is triggered
+        File newStore = snapshot(storeDir.absolutePath());
+        db.shutdown();
+
+        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( newStore.getAbsolutePath() );
+
+        // THEN
+        // it should just not blow up!
+        try(Transaction tx = db.beginTx())
+        {
+            assertThat(
+                    single( db.findNodesByLabelAndProperty( LABEL, PROPERTY_KEY, PROPERTY_VALUE ) ),
+                    equalTo( unLabeledNode ) );
+            tx.success();
+        }
+    }
+
+    private File snapshot( String path ) throws IOException
+    {
+        File snapshotDir = new File( path, "snapshot-" + new Random().nextInt() );
+        FileUtils.copyRecursively(new File(path), snapshotDir );
+        return snapshotDir;
+    }
+
+    private void addLabelToUnLabeledNode( Node unLabeledNode )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            unLabeledNode.addLabel( LABEL );
+            tx.success();
+        }
+    }
+
+    private void setPropertyOnLabeledNode( Node labeledNode )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            labeledNode.setProperty( PROPERTY_KEY, PROPERTY_VALUE );
+            tx.success();
+        }
+    }
+
+    private void deletePropertyOnLabeledNode( Node labeledNode )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            labeledNode.removeProperty( PROPERTY_KEY );
+            tx.success();
+        }
+    }
+
+    private void createUniqueConstraint()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( LABEL ).on( PROPERTY_KEY ).unique().create();
+            tx.success();
+        }
+    }
+
+    private Node createLabeledNode()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            tx.success();
+            return node;
+        }
+    }
+
+    private Node createUnLabeledNode()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( PROPERTY_KEY, PROPERTY_VALUE );
+            tx.success();
+            return node;
+        }
+    }
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> parameters()
+    {
+        return asList(
+                new Object[]{new LuceneSchemaIndexProviderFactory()},
+                new Object[]{new InMemoryIndexProviderFactory()} );
+    }
+
+    @Parameterized.Parameter(0)
+    public KernelExtensionFactory<?> kernelExtensionFactory;
+
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir =
+            TargetDirectory.cleanTestDirForTest( UniqueIndexRecoveryTests.class );
+
+    private static final String PROPERTY_KEY = "key";
+    private static final String PROPERTY_VALUE = "value";
+    private static final Label LABEL = label( "label" );
+
+    private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+    private GraphDatabaseAPI db;
+
+    @Before
+    public void before()
+    {
+        List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
+        extensionFactories.add( kernelExtensionFactory );
+        factory.addKernelExtensions( extensionFactories );
+        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir.absolutePath() );
+    }
+
+    @After
+    public void after()
+    {
+        db.shutdown();
+    }
+
+    private void rotateLog()
+    {
+        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
+    }
+
+    private void flushAll()
+    {
+        db.getDependencyResolver().resolveDependency(
+                XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flushAll();
+        db.getDependencyResolver().resolveDependency(
+                IndexingService.class ).flushAll();
+    }
+}
