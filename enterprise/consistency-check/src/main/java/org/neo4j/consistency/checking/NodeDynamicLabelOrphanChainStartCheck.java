@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.fieldDyn
  * Actual list of labels is verified from {@link NodeRecordCheck}
  */
 public class NodeDynamicLabelOrphanChainStartCheck
-        implements RecordCheck<DynamicRecord,DynamicLabelConsistencyReport>,
+        implements RecordCheck<DynamicRecord, DynamicLabelConsistencyReport>,
         ComparativeRecordChecker<DynamicRecord, DynamicRecord, DynamicLabelConsistencyReport>
 {
 
@@ -44,12 +44,13 @@ public class NodeDynamicLabelOrphanChainStartCheck
             {
                 @Override
                 public void checkReference( DynamicRecord record, NodeRecord nodeRecord,
-                                            DynamicLabelConsistencyReport report, RecordAccess records )
+                                            CheckerEngine<DynamicRecord, DynamicLabelConsistencyReport> engine,
+                                            RecordAccess records )
                 {
                     if ( ! nodeRecord.inUse() )
                     {
                         // if this node record is not in use it is not a valid owner
-                        report.orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
+                        engine.report().orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
                     }
                     else
                     {
@@ -59,14 +60,16 @@ public class NodeDynamicLabelOrphanChainStartCheck
                         long recordId = record.getLongId();
                         if ( dynamicLabelRecordId == null || dynamicLabelRecordId.longValue() != recordId )
                         {
-                            report.orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
+                            engine.report().orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
                         }
                     }
                 }
             };
 
     @Override
-    public void check( DynamicRecord record, DynamicLabelConsistencyReport report, RecordAccess records )
+    public void check( DynamicRecord record,
+                       CheckerEngine<DynamicRecord, DynamicLabelConsistencyReport> engine,
+                       RecordAccess records )
     {
         if ( record.inUse() && record.isStartRecord() )
         {
@@ -74,25 +77,27 @@ public class NodeDynamicLabelOrphanChainStartCheck
             if ( null == ownerId )
             {
                 // no owner but in use indicates a broken record
-                report.orphanDynamicLabelRecord();
+                engine.report().orphanDynamicLabelRecord();
             }
             else
             {
                 // look at owning node record to verify consistency
-                report.forReference( records.node( ownerId ), VALID_NODE_RECORD );
+                engine.comparativeCheck( records.node( ownerId ), VALID_NODE_RECORD );
             }
         }
     }
 
     @Override
-    public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord, DynamicLabelConsistencyReport report,
+    public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
+                             CheckerEngine<DynamicRecord, DynamicLabelConsistencyReport> engine,
                              DiffRecordAccess records )
     {
-        check( newRecord, report, records );
+        check( newRecord, engine, records );
     }
 
     @Override
-    public void checkReference( DynamicRecord record, DynamicRecord record2, DynamicLabelConsistencyReport report,
+    public void checkReference( DynamicRecord record, DynamicRecord record2,
+                                CheckerEngine<DynamicRecord, DynamicLabelConsistencyReport> engine,
                                 RecordAccess records )
     {
     }

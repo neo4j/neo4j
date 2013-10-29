@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class RelationshipTypeTokenRecordCheckTest extends
         RecordCheckTestBase<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport, RelationshipTypeTokenRecordCheck>
@@ -45,7 +46,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
         ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -58,7 +59,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
         ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -74,7 +75,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
 
         // then
         verify( report ).nameBlockNotInUse( name );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -90,7 +91,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
 
         // then
         verify( report ).emptyName( name );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     // change checking
@@ -109,7 +110,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
         ConsistencyReport.RelationshipTypeConsistencyReport report = checkChange( oldRecord, newRecord );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -126,6 +127,6 @@ public class RelationshipTypeTokenRecordCheckTest extends
 
         // then
         verify( report ).nameBlockNotInUse( name );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 }

@@ -106,41 +106,44 @@ enum OwnerChain
             {
                 @Override
                 public void checkReference( PropertyRecord record, PrimitiveRecord owner,
-                                            ConsistencyReport.PropertyConsistencyReport report, RecordAccess records )
+                                            CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
+                                            RecordAccess records )
                 {
                     if ( !owner.inUse() || Record.NO_NEXT_PROPERTY.is( owner.getNextProp() ) )
                     {
-                        wrongOwner( report );
+                        wrongOwner( engine.report() );
                     }
                     else if ( owner.getNextProp() != record.getId() )
                     {
-                        report.forReference( property( (DiffRecordAccess) records, owner.getNextProp() ),
-                                             OwnerChain.this );
+                        engine.comparativeCheck( property( (DiffRecordAccess) records, owner.getNextProp() ),
+                                                 OwnerChain.this );
                     }
                 }
             };
 
     @Override
     public void checkReference( PropertyRecord record, PropertyRecord property,
-                                ConsistencyReport.PropertyConsistencyReport report, RecordAccess records )
+                                CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
+                                RecordAccess records )
     {
         if ( record.getId() != property.getId() )
         {
             if ( !property.inUse() || Record.NO_NEXT_PROPERTY.is( property.getNextProp() ) )
             {
-                wrongOwner( report );
+                wrongOwner( engine.report() );
             }
             else if ( property.getNextProp() != record.getId() )
             {
-                report.forReference( property( (DiffRecordAccess) records, property.getNextProp() ), this );
+                engine.comparativeCheck( property( (DiffRecordAccess) records, property.getNextProp() ), this );
             }
         }
     }
 
-    void check( PropertyRecord record, ConsistencyReport.PropertyConsistencyReport report,
+    void check( PropertyRecord record,
+                CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
                 DiffRecordAccess records )
     {
-        report.forReference( ownerOf( record, records ), OWNER_CHECK );
+        engine.comparativeCheck( ownerOf( record, records ), OWNER_CHECK );
     }
 
     private RecordReference<? extends PrimitiveRecord> ownerOf( PropertyRecord record, DiffRecordAccess records )

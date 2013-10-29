@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 public abstract class PrimitiveRecordCheck
-        <RECORD extends PrimitiveRecord, REPORT extends ConsistencyReport.PrimitiveConsistencyReport<RECORD, REPORT>>
+        <RECORD extends PrimitiveRecord, REPORT extends ConsistencyReport.PrimitiveConsistencyReport>
         implements RecordCheck<RECORD, REPORT>
 {
     private final RecordField<RECORD, REPORT>[] fields;
@@ -40,23 +40,25 @@ public abstract class PrimitiveRecordCheck
             new ComparativeRecordChecker<RECORD, PrimitiveRecord, REPORT>()
             {
                 @Override
-                public void checkReference( RECORD record, PrimitiveRecord other, REPORT report, RecordAccess records )
+                public void checkReference( RECORD record, PrimitiveRecord other, CheckerEngine<RECORD, REPORT> engine,
+                                            RecordAccess records )
                 {
                     if ( other instanceof NodeRecord )
                     {
-                        report.multipleOwners( (NodeRecord) other );
+                        engine.report().multipleOwners( (NodeRecord) other );
                     }
                     else if ( other instanceof RelationshipRecord )
                     {
-                        report.multipleOwners( (RelationshipRecord) other );
+                        engine.report().multipleOwners( (RelationshipRecord) other );
                     }
                     else if ( other instanceof NeoStoreRecord )
                     {
-                        report.multipleOwners( (NeoStoreRecord) other );
+                        engine.report().multipleOwners( (NeoStoreRecord) other );
                     }
                 }
             };
 
+    @SafeVarargs
     PrimitiveRecordCheck( RecordField<RECORD, REPORT>... fields )
     {
         this.fields = Arrays.copyOf( fields, fields.length + 1 );
@@ -67,11 +69,12 @@ public abstract class PrimitiveRecordCheck
             implements RecordField<RECORD, REPORT>, ComparativeRecordChecker<RECORD, PropertyRecord, REPORT>
     {
         @Override
-        public void checkConsistency( RECORD record, REPORT report, RecordAccess records )
+        public void checkConsistency( RECORD record, CheckerEngine<RECORD, REPORT> engine,
+                                      RecordAccess records )
         {
             if ( !Record.NO_NEXT_PROPERTY.is( record.getNextProp() ) )
             {
-                report.forReference( records.property( record.getNextProp() ), this );
+                engine.comparativeCheck( records.property( record.getNextProp() ), this );
             }
         }
 
@@ -82,37 +85,39 @@ public abstract class PrimitiveRecordCheck
         }
 
         @Override
-        public void checkChange( RECORD oldRecord, RECORD newRecord, REPORT report, DiffRecordAccess records )
+        public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
+                                 DiffRecordAccess records )
         {
             if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
             {
                 if ( !Record.NO_NEXT_PROPERTY.is( valueFrom( oldRecord ) )
                      && records.changedProperty( valueFrom( oldRecord ) ) == null )
                 {
-                    report.propertyNotUpdated();
+                    engine.report().propertyNotUpdated();
                 }
             }
         }
 
         @Override
-        public void checkReference( RECORD record, PropertyRecord property, REPORT report, RecordAccess records )
+        public void checkReference( RECORD record, PropertyRecord property, CheckerEngine<RECORD, REPORT> engine,
+                                    RecordAccess records )
         {
             if ( !property.inUse() )
             {
-                report.propertyNotInUse( property );
+                engine.report().propertyNotInUse( property );
             }
             else
             {
                 if ( !Record.NO_PREVIOUS_PROPERTY.is( property.getPrevProp() ) )
                 {
-                    report.propertyNotFirstInChain( property );
+                    engine.report().propertyNotFirstInChain( property );
                 }
             }
         }
     }
 
     @Override
-    public void check( RECORD record, REPORT report, RecordAccess records )
+    public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
     {
         if ( !record.inUse() )
         {
@@ -120,19 +125,20 @@ public abstract class PrimitiveRecordCheck
         }
         for ( RecordField<RECORD, REPORT> field : fields )
         {
-            field.checkConsistency( record, report, records );
+            field.checkConsistency( record, engine, records );
         }
     }
 
     @Override
-    public void checkChange( RECORD oldRecord, RECORD newRecord, REPORT report, DiffRecordAccess records )
+    public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
+                             DiffRecordAccess records )
     {
-        check( newRecord, report, records );
+        check( newRecord, engine, records );
         if ( oldRecord.inUse() )
         {
             for ( RecordField<RECORD, REPORT> field : fields )
             {
-                field.checkChange( oldRecord, newRecord, report, records );
+                field.checkChange( oldRecord, newRecord, engine, records );
             }
         }
     }

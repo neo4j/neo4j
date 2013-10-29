@@ -92,7 +92,9 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     }
 
     @Override
-    public void check( DynamicRecord record, ConsistencyReport.SchemaConsistencyReport report, RecordAccess records )
+    public void check( DynamicRecord record,
+                       CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
+                       RecordAccess records )
     {
         if ( record.inUse() && record.isStartRecord() )
         {
@@ -104,20 +106,20 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
             }
             catch ( MalformedSchemaRuleException e )
             {
-                report.malformedSchemaRule();
+                engine.report().malformedSchemaRule();
                 return;
             }
 
             // given a parsed schema rule
             if ( Phase.CHECK_RULES == phase )
             {
-                report.forReference( records.label( (int) rule.getLabel() ), VALID_LABEL );
+                engine.comparativeCheck( records.label( rule.getLabel() ), VALID_LABEL );
 
                 SchemaRuleContent content = new SchemaRuleContent( rule );
                 DynamicRecord previousContentRecord = contentMap.put( content, record );
                 if ( null != previousContentRecord )
                 {
-                    report.duplicateRuleContent( previousContentRecord );
+                    engine.report().duplicateRuleContent( previousContentRecord );
                 }
             }
 
@@ -126,28 +128,28 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
             {
                 case INDEX_RULE:
                 case CONSTRAINT_INDEX_RULE:
-                    checkIndexRule( (IndexRule) rule, record, records, report );
+                    checkIndexRule( (IndexRule) rule, engine, record, records );
                     break;
                 case UNIQUENESS_CONSTRAINT:
-                    checkUniquenessConstraintRule( (UniquenessConstraintRule) rule, record, records, report );
+                    checkUniquenessConstraintRule( (UniquenessConstraintRule) rule, engine, record, records );
                     break;
                 default:
-                    report.unsupportedSchemaRuleKind( kind );
+                    engine.report().unsupportedSchemaRuleKind( kind );
             }
         }
     }
 
     private void checkUniquenessConstraintRule( UniquenessConstraintRule rule,
-                                                DynamicRecord record, RecordAccess records,
-                                                ConsistencyReport.SchemaConsistencyReport report )
+                                                CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
+                                                DynamicRecord record, RecordAccess records )
     {
         if ( phase == Phase.CHECK_RULES )
         {
-            report.forReference( records.propertyKey( (int) rule.getPropertyKey() ), VALID_PROPERTY_KEY );
+            engine.comparativeCheck( records.propertyKey( rule.getPropertyKey() ), VALID_PROPERTY_KEY );
             DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), record );
             if ( null != previousObligation )
             {
-                report.duplicateObligation( previousObligation );
+                engine.report().duplicateObligation( previousObligation );
             }
         }
         else if ( phase == Phase.CHECK_OBLIGATIONS )
@@ -155,31 +157,31 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
             DynamicRecord obligation = constraintObligations.get( rule.getId() );
             if ( null == obligation)
             {
-                report.missingObligation( SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
+                engine.report().missingObligation( SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
             }
             else
             {
                 if ( obligation.getId() != rule.getOwnedIndex() )
                 {
-                    report.uniquenessConstraintNotReferencingBack( obligation );
+                    engine.report().uniquenessConstraintNotReferencingBack( obligation );
                 }
             }
         }
     }
 
     private void checkIndexRule( IndexRule rule,
-                                 DynamicRecord record, RecordAccess records,
-                                 ConsistencyReport.SchemaConsistencyReport report )
+                                 CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
+                                 DynamicRecord record, RecordAccess records )
     {
         if ( phase == Phase.CHECK_RULES )
         {
-            report.forReference( records.propertyKey( (int) rule.getPropertyKey() ), VALID_PROPERTY_KEY );
+            engine.comparativeCheck( records.propertyKey( rule.getPropertyKey() ), VALID_PROPERTY_KEY );
             if ( rule.isConstraintIndex() && rule.getOwningConstraint() != null )
             {
                 DynamicRecord previousObligation = constraintObligations.put( rule.getOwningConstraint(), record );
                 if ( null != previousObligation )
                 {
-                    report.duplicateObligation( previousObligation );
+                    engine.report().duplicateObligation( previousObligation );
                 }
             }
         }
@@ -192,7 +194,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                 {
                     if ( rule.getOwningConstraint() != null ) // we only expect a pointer if we have an owner
                     {
-                        report.missingObligation( SchemaRule.Kind.UNIQUENESS_CONSTRAINT );
+                        engine.report().missingObligation( SchemaRule.Kind.UNIQUENESS_CONSTRAINT );
                     }
                 }
                 else
@@ -200,7 +202,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                     // if someone points to here, it must be our owner
                     if ( obligation.getId() != rule.getOwningConstraint() )
                     {
-                        report.constraintIndexRuleNotReferencingBack( obligation );
+                        engine.report().constraintIndexRuleNotReferencingBack( obligation );
                     }
                 }
             }
@@ -211,7 +213,8 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
 
     @Override
     public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
-                             ConsistencyReport.SchemaConsistencyReport report, DiffRecordAccess records )
+                             CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
+                             DiffRecordAccess records )
     {
     }
 
@@ -221,11 +224,12 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     {
         @Override
         public void checkReference( DynamicRecord record, LabelTokenRecord labelTokenRecord,
-                                    ConsistencyReport.SchemaConsistencyReport report, RecordAccess records )
+                                    CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
+                                    RecordAccess records )
         {
             if ( !labelTokenRecord.inUse() )
             {
-                report.labelNotInUse( labelTokenRecord );
+                engine.report().labelNotInUse( labelTokenRecord );
             }
         }
     };
@@ -236,11 +240,12 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     {
         @Override
         public void checkReference( DynamicRecord record, PropertyKeyTokenRecord propertyKeyTokenRecord,
-                                    ConsistencyReport.SchemaConsistencyReport report, RecordAccess records )
+                                    CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
+                                    RecordAccess records )
         {
             if ( !propertyKeyTokenRecord.inUse() )
             {
-                report.propertyKeyNotInUse( propertyKeyTokenRecord );
+                engine.report().propertyKeyNotInUse( propertyKeyTokenRecord );
             }
         }
     };

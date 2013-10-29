@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 import static org.neo4j.consistency.checking.DynamicRecordCheckTest.configureDynamicStore;
@@ -56,7 +57,6 @@ import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.propertyBlock;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.string;
-import static org.neo4j.consistency.checking.RecordCheckTestBase.verifyOnlyReferenceDispatch;
 
 public class OwnerCheckTest
 {
@@ -416,8 +416,8 @@ public class OwnerCheckTest
         records.checkDeferred();
 
         // then
-        verifyOnlyReferenceDispatch( report );
-        verifyOnlyReferenceDispatch( nodeReport );
+        verifyNoMoreInteractions( report );
+        verifyNoMoreInteractions( nodeReport );
     }
 
     @Test
@@ -445,8 +445,8 @@ public class OwnerCheckTest
         records.checkDeferred();
 
         // then
-        verifyOnlyReferenceDispatch( report );
-        verifyOnlyReferenceDispatch( relationshipReport );
+        verifyNoMoreInteractions( report );
+        verifyNoMoreInteractions( relationshipReport );
     }
 
     @Test
@@ -474,8 +474,8 @@ public class OwnerCheckTest
         records.checkDeferred();
 
         // then
-        verifyOnlyReferenceDispatch( report );
-        verifyOnlyReferenceDispatch( masterReport );
+        verifyNoMoreInteractions( report );
+        verifyNoMoreInteractions( masterReport );
     }
 
     @Test
@@ -502,9 +502,9 @@ public class OwnerCheckTest
                                                                     checker, record2, records );
 
         // then
-        verifyOnlyReferenceDispatch( report1 );
+        verifyNoMoreInteractions( report1 );
         verify( report2 ).nextMultipleOwners( record1 );
-        verifyOnlyReferenceDispatch( report2 );
+        verifyNoMoreInteractions( report2 );
     }
 
     @Test
@@ -531,9 +531,9 @@ public class OwnerCheckTest
                                                                      propChecker, property2, records );
 
         // then
-        verifyOnlyReferenceDispatch( report1 );
+        verifyNoMoreInteractions( report1 );
         verify( report2 ).stringMultipleOwners( property1 );
-        verifyOnlyReferenceDispatch( report2 );
+        verifyNoMoreInteractions( report2 );
     }
 
     @Test
@@ -560,9 +560,9 @@ public class OwnerCheckTest
                                                                      propChecker, property2, records );
 
         // then
-        verifyOnlyReferenceDispatch( report1 );
+        verifyNoMoreInteractions( report1 );
         verify( report2 ).arrayMultipleOwners( property1 );
-        verifyOnlyReferenceDispatch( report2 );
+        verifyNoMoreInteractions( report2 );
     }
 
     @Test
@@ -592,9 +592,9 @@ public class OwnerCheckTest
                 ConsistencyReport.DynamicConsistencyReport.class, dynChecker, dynamic, records );
 
         // then
-        verifyOnlyReferenceDispatch( propReport );
+        verifyNoMoreInteractions( propReport );
         verify( dynReport ).nextMultipleOwners( property );
-        verifyOnlyReferenceDispatch( dynReport );
+        verifyNoMoreInteractions( dynReport );
     }
 
     @Test
@@ -624,9 +624,9 @@ public class OwnerCheckTest
                 ConsistencyReport.PropertyConsistencyReport.class, propChecker, property, records );
 
         // then
-        verifyOnlyReferenceDispatch( dynReport );
+        verifyNoMoreInteractions( dynReport );
         verify( propReport ).stringMultipleOwners( dynamic );
-        verifyOnlyReferenceDispatch( dynReport );
+        verifyNoMoreInteractions( dynReport );
     }
 
     @Test
@@ -656,9 +656,9 @@ public class OwnerCheckTest
                 ConsistencyReport.PropertyConsistencyReport.class, propChecker, property, records );
 
         // then
-        verifyOnlyReferenceDispatch( dynReport );
+        verifyNoMoreInteractions( dynReport );
         verify( propReport ).arrayMultipleOwners( dynamic );
-        verifyOnlyReferenceDispatch( dynReport );
+        verifyNoMoreInteractions( dynReport );
     }
 
     @Test
@@ -684,9 +684,9 @@ public class OwnerCheckTest
                                                                   checker,record2, records );
 
         // then
-        verifyOnlyReferenceDispatch( report1 );
+        verifyNoMoreInteractions( report1 );
         verify( report2 ).nameMultipleOwners( record1 );
-        verifyOnlyReferenceDispatch( report2 );
+        verifyNoMoreInteractions( report2 );
     }
 
     @Test
@@ -717,9 +717,9 @@ public class OwnerCheckTest
                                                                       dynChecker, dynamic, records );
 
         // then
-        verifyOnlyReferenceDispatch( labelReport );
+        verifyNoMoreInteractions( labelReport );
         verify( dynReport ).nextMultipleOwners( label );
-        verifyOnlyReferenceDispatch( dynReport );
+        verifyNoMoreInteractions( dynReport );
     }
 
     @Test
@@ -750,9 +750,9 @@ public class OwnerCheckTest
                                                                       labelCheck, label, records );
 
         // then
-        verifyOnlyReferenceDispatch( dynReport );
+        verifyNoMoreInteractions( dynReport );
         verify( labelReport ).nameMultipleOwners( dynamic );
-        verifyOnlyReferenceDispatch( labelReport );
+        verifyNoMoreInteractions( labelReport );
     }
 
     @Test
@@ -778,9 +778,9 @@ public class OwnerCheckTest
                 ConsistencyReport.PropertyKeyTokenConsistencyReport.class, checker,record2, records );
 
         // then
-        verifyOnlyReferenceDispatch( report1 );
+        verifyNoMoreInteractions( report1 );
         verify( report2 ).nameMultipleOwners( record1 );
-        verifyOnlyReferenceDispatch( report2 );
+        verifyNoMoreInteractions( report2 );
     }
 
     @Test
@@ -811,9 +811,9 @@ public class OwnerCheckTest
                 ConsistencyReport.DynamicConsistencyReport.class, dynChecker, dynamic, records );
 
         // then
-        verifyOnlyReferenceDispatch( keyReport );
+        verifyNoMoreInteractions( keyReport );
         verify( dynReport ).nextMultipleOwners( key );
-        verifyOnlyReferenceDispatch( dynReport );
+        verifyNoMoreInteractions( dynReport );
     }
 
     @Test
@@ -844,9 +844,9 @@ public class OwnerCheckTest
                 ConsistencyReport.PropertyKeyTokenConsistencyReport.class, keyCheck, key, records );
 
         // then
-        verifyOnlyReferenceDispatch( dynReport );
+        verifyNoMoreInteractions( dynReport );
         verify( keyReport ).nameMultipleOwners( dynamic );
-        verifyOnlyReferenceDispatch( keyReport );
+        verifyNoMoreInteractions( keyReport );
     }
 
     @Test

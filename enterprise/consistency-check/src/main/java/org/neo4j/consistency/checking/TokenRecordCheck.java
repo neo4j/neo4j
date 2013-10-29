@@ -27,17 +27,18 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 
-abstract class TokenRecordCheck<RECORD extends TokenRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
+abstract class TokenRecordCheck<RECORD extends TokenRecord, REPORT extends ConsistencyReport>
         implements RecordCheck<RECORD, REPORT>, ComparativeRecordChecker<RECORD, DynamicRecord, REPORT>
 {
     @Override
-    public void checkChange( RECORD oldRecord, RECORD newRecord, REPORT report, DiffRecordAccess records )
+    public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
+                             DiffRecordAccess records )
     {
-        check( newRecord, report, records );
+        check( newRecord, engine, records );
     }
 
     @Override
-    public void check( RECORD record, REPORT report, RecordAccess records )
+    public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
     {
         if ( !record.inUse() )
         {
@@ -45,22 +46,23 @@ abstract class TokenRecordCheck<RECORD extends TokenRecord, REPORT extends Consi
         }
         if ( !Record.NO_NEXT_BLOCK.is( record.getNameId() ) )
         {
-            report.forReference( name( records, record.getNameId() ), this );
+            engine.comparativeCheck( name( records, record.getNameId() ), this );
         }
     }
 
     @Override
-    public void checkReference( RECORD record, DynamicRecord name, REPORT report, RecordAccess records )
+    public void checkReference( RECORD record, DynamicRecord name, CheckerEngine<RECORD, REPORT> engine,
+                                RecordAccess records )
     {
         if ( !name.inUse() )
         {
-            nameNotInUse( report, name );
+            nameNotInUse( engine.report(), name );
         }
         else
         {
             if ( name.getLength() <= 0 )
             {
-                emptyName( report, name );
+                emptyName( engine.report(), name );
             }
         }
     }

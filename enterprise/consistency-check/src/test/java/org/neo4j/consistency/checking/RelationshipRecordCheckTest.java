@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class RelationshipRecordCheckTest extends
                                          RecordCheckTestBase<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport, RelationshipRecordCheck>
@@ -47,7 +48,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -63,7 +64,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -92,7 +93,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -108,7 +109,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).illegalRelationshipType();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -125,7 +126,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).relationshipTypeNotInUse( relationshipType );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -141,7 +142,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).illegalSourceNode();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -158,7 +159,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourceNodeNotInUse( node );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -174,7 +175,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).illegalTargetNode();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -191,7 +192,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetNodeNotInUse( node );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -210,7 +211,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).propertyNotInUse( property );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -230,7 +231,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).propertyNotFirstInChain( property );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -247,7 +248,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourceNodeDoesNotReferenceBack( source );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -264,7 +265,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetNodeDoesNotReferenceBack( target );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -282,7 +283,7 @@ public class RelationshipRecordCheckTest extends
         // then
         verify( report ).sourceNodeDoesNotReferenceBack( source );
         verify( report ).targetNodeDoesNotReferenceBack( target );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -302,7 +303,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourceNodeHasNoRelationships( source );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -322,7 +323,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetNodeHasNoRelationships( target );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -341,7 +342,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourcePrevReferencesOtherNodes( sPrev );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -360,7 +361,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetPrevReferencesOtherNodes( tPrev );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -379,7 +380,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourceNextReferencesOtherNodes( sNext );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -398,7 +399,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetNextReferencesOtherNodes( tNext );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -417,7 +418,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourcePrevReferencesOtherNodes( sPrev );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -436,7 +437,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetPrevReferencesOtherNodes( tPrev );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -455,7 +456,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourceNextReferencesOtherNodes( sNext );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -474,7 +475,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetNextReferencesOtherNodes( tNext );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -493,7 +494,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourcePrevDoesNotReferenceBack( sPrev );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -512,7 +513,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetPrevDoesNotReferenceBack( tPrev );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -531,7 +532,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourceNextDoesNotReferenceBack( sNext );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -550,7 +551,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetNextDoesNotReferenceBack( tNext );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     // change checking
@@ -602,7 +603,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -622,7 +623,7 @@ public class RelationshipRecordCheckTest extends
         verify( report ).sourceNodeNotInUse( source );
         verify( report ).targetNodeNotInUse( target );
         verify( report ).relationshipTypeNotInUse( label );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -644,7 +645,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -673,7 +674,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -699,7 +700,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -725,7 +726,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -750,7 +751,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -775,7 +776,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -804,7 +805,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -833,7 +834,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -862,7 +863,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -891,7 +892,7 @@ public class RelationshipRecordCheckTest extends
         ConsistencyReport.RelationshipConsistencyReport report = checkChange( oldRelationship, newRelationship );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -913,7 +914,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).propertyNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -937,7 +938,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourcePrevNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -961,7 +962,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourceNextNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -985,7 +986,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetPrevNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -1009,7 +1010,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetNextNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -1033,7 +1034,7 @@ public class RelationshipRecordCheckTest extends
         verify( report ).targetPrevNotUpdated();
         verify( report ).targetNextNotUpdated();
         verify( report ).propertyNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -1055,7 +1056,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).sourceNodeNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -1077,7 +1078,7 @@ public class RelationshipRecordCheckTest extends
 
         // then
         verify( report ).targetNodeNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -1095,6 +1096,6 @@ public class RelationshipRecordCheckTest extends
         // then
         verify( report ).sourceNodeNotUpdated();
         verify( report ).targetNodeNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 }

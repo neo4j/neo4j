@@ -43,16 +43,17 @@ class RelationshipRecordCheck
         RELATIONSHIP_TYPE;
 
         @Override
-        public void checkConsistency( RelationshipRecord record, ConsistencyReport.RelationshipConsistencyReport report,
+        public void checkConsistency( RelationshipRecord record,
+                                      CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
                                       RecordAccess records )
         {
             if ( record.getType() < 0 )
             {
-                report.illegalRelationshipType();
+                engine.report().illegalRelationshipType();
             }
             else
             {
-                report.forReference( records.relationshipType( record.getType() ), this );
+                engine.comparativeCheck( records.relationshipType( record.getType() ), this );
             }
         }
 
@@ -64,18 +65,20 @@ class RelationshipRecordCheck
 
         @Override
         public void checkChange( RelationshipRecord oldRecord, RelationshipRecord newRecord,
-                                 ConsistencyReport.RelationshipConsistencyReport report, DiffRecordAccess records )
+                                 CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
+                                 DiffRecordAccess records )
         {
             // nothing to check
         }
 
         @Override
         public void checkReference( RelationshipRecord record, RelationshipTypeTokenRecord referred,
-                                    ConsistencyReport.RelationshipConsistencyReport report, RecordAccess records )
+                                    CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
+                                    RecordAccess records )
         {
             if ( !referred.inUse() )
             {
-                report.relationshipTypeNotInUse( referred );
+                engine.report().relationshipTypeNotInUse( referred );
             }
         }
     }
@@ -227,42 +230,45 @@ class RelationshipRecordCheck
 
         @Override
         public void checkConsistency( RelationshipRecord relationship,
-                                      ConsistencyReport.RelationshipConsistencyReport report, RecordAccess records )
+                                      CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
+                                      RecordAccess records )
         {
             if ( !NONE.is( valueFrom( relationship ) ) )
             {
-                report.forReference( records.relationship( valueFrom( relationship ) ), this );
+                engine.comparativeCheck( records.relationship( valueFrom( relationship ) ), this );
             }
         }
 
         @Override
         public void checkReference( RelationshipRecord record, RelationshipRecord referred,
-                                    ConsistencyReport.RelationshipConsistencyReport report, RecordAccess records )
+                                    CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
+                                    RecordAccess records )
         {
             NodeField field = NodeField.select( referred, node( record ) );
             if ( field == null )
             {
-                otherNode( report, referred );
+                otherNode( engine.report(), referred );
             }
             else
             {
                 if ( other( field, referred ) != record.getId() )
                 {
-                    noBackReference( report, referred );
+                    noBackReference( engine.report(), referred );
                 }
             }
         }
 
         @Override
         public void checkChange( RelationshipRecord oldRecord, RelationshipRecord newRecord,
-                                 ConsistencyReport.RelationshipConsistencyReport report, DiffRecordAccess records )
+                                 CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
+                                 DiffRecordAccess records )
         {
             if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
             {
                 if ( !NONE.is( valueFrom( oldRecord ) )
                      && records.changedRelationship( valueFrom( oldRecord ) ) == null )
                 {
-                    notUpdated( report );
+                    notUpdated( engine.report() );
                 }
             }
         }

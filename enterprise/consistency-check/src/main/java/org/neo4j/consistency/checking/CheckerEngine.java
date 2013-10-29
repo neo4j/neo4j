@@ -20,10 +20,13 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 
-public interface ComparativeRecordChecker<RECORD extends AbstractBaseRecord, REFERRED extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+public interface CheckerEngine<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
 {
-    void checkReference( RECORD record, REFERRED referred, CheckerEngine<RECORD, REPORT> engine, RecordAccess records );
+    <REFERRED extends AbstractBaseRecord> void comparativeCheck(
+            RecordReference<REFERRED> other, ComparativeRecordChecker<RECORD, ? super REFERRED, REPORT> checker );
+
+    REPORT report();
 }

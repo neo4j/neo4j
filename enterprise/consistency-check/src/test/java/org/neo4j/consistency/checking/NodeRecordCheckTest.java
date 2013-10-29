@@ -40,6 +40,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class NodeRecordCheckTest
         extends RecordCheckTestBase<NodeRecord, ConsistencyReport.NodeConsistencyReport, NodeRecordCheck>
@@ -59,7 +60,7 @@ public class NodeRecordCheckTest
         ConsistencyReport.NodeConsistencyReport report = check( node );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -72,7 +73,7 @@ public class NodeRecordCheckTest
         ConsistencyReport.NodeConsistencyReport report = check( node );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -87,7 +88,7 @@ public class NodeRecordCheckTest
         ConsistencyReport.NodeConsistencyReport report = check( node );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -103,7 +104,7 @@ public class NodeRecordCheckTest
 
         // then
         verify( report ).relationshipNotInUse( relationship );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -118,7 +119,7 @@ public class NodeRecordCheckTest
 
         // then
         verify( report ).propertyNotInUse( property );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -134,7 +135,7 @@ public class NodeRecordCheckTest
 
         // then
         verify( report ).propertyNotFirstInChain( property );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -149,7 +150,7 @@ public class NodeRecordCheckTest
 
         // then
         verify( report ).relationshipForOtherNode( relationship );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -166,7 +167,7 @@ public class NodeRecordCheckTest
 
         // then
         verify( report ).relationshipNotFirstInSourceChain( relationship );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -183,7 +184,7 @@ public class NodeRecordCheckTest
 
         // then
         verify( report ).relationshipNotFirstInTargetChain( relationship );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -201,7 +202,7 @@ public class NodeRecordCheckTest
         // then
         verify( report ).relationshipNotFirstInSourceChain( relationship );
         verify( report ).relationshipNotFirstInTargetChain( relationship );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -350,7 +351,7 @@ public class NodeRecordCheckTest
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -368,7 +369,7 @@ public class NodeRecordCheckTest
         // then
         verify( report ).relationshipNotInUse( relationship );
         verify( report ).propertyNotInUse( property );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -384,7 +385,7 @@ public class NodeRecordCheckTest
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -405,7 +406,7 @@ public class NodeRecordCheckTest
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -422,7 +423,7 @@ public class NodeRecordCheckTest
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -443,7 +444,7 @@ public class NodeRecordCheckTest
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -460,7 +461,7 @@ public class NodeRecordCheckTest
 
         // then
         verify( report ).propertyNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -477,7 +478,7 @@ public class NodeRecordCheckTest
 
         // then
         verify( report ).relationshipNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -493,7 +494,7 @@ public class NodeRecordCheckTest
         // then
         verify( report ).relationshipNotUpdated();
         verify( report ).propertyNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     private long[] createLabels( int labelCount )

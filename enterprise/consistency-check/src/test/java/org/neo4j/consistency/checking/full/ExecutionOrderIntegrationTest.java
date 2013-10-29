@@ -32,6 +32,7 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
+import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.PrimitiveRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
@@ -79,17 +80,12 @@ public class ExecutionOrderIntegrationTest
         protected void generateInitialData( GraphDatabaseService graphDb )
         {
             // TODO: create bigger sample graph here
-            org.neo4j.graphdb.Transaction tx = graphDb.beginTx();
-            try
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
             {
                 Node node1 = set( graphDb.createNode() );
                 Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
                 node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "C" ) );
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
     };
@@ -226,7 +222,7 @@ public class ExecutionOrderIntegrationTest
             this.log = log;
         }
 
-        <REC extends AbstractBaseRecord, REP extends ConsistencyReport<REC, REP>> RecordCheck<REC, REP> logging(
+        <REC extends AbstractBaseRecord, REP extends ConsistencyReport> RecordCheck<REC, REP> logging(
                 RecordCheck<REC, REP> checker )
         {
             return new LoggingChecker<>( checker, log );
@@ -284,7 +280,7 @@ public class ExecutionOrderIntegrationTest
         }
     }
 
-    private static class LoggingChecker<REC extends AbstractBaseRecord, REP extends ConsistencyReport<REC, REP>>
+    private static class LoggingChecker<REC extends AbstractBaseRecord, REP extends ConsistencyReport>
             implements RecordCheck<REC, REP>
     {
         private final RecordCheck<REC, REP> checker;
@@ -297,15 +293,16 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public void check( REC record, REP report, RecordAccess records )
+        public void check( REC record, CheckerEngine<REC, REP> engine, RecordAccess records )
         {
-            checker.check( record, report, new ComparativeLogging( (DiffRecordAccess) records, log ) );
+            checker.check( record, engine, new ComparativeLogging( (DiffRecordAccess) records, log ) );
         }
 
         @Override
-        public void checkChange( REC oldRecord, REC newRecord, REP report, DiffRecordAccess records )
+        public void checkChange( REC oldRecord, REC newRecord, CheckerEngine<REC, REP> engine,
+                                 DiffRecordAccess records )
         {
-            checker.checkChange( oldRecord, newRecord, report, new ComparativeLogging( records, log ) );
+            checker.checkChange( oldRecord, newRecord, engine, new ComparativeLogging( records, log ) );
         }
     }
 

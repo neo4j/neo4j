@@ -26,6 +26,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.DiffRecordAccess;
@@ -41,7 +42,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
-import static java.lang.reflect.Proxy.getInvocationHandler;
 import static java.util.Arrays.asList;
 
 import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
@@ -50,23 +50,6 @@ import static org.neo4j.helpers.Exceptions.withCause;
 
 public class ConsistencyReporter implements ConsistencyReport.Reporter
 {
-    private static final Method FOR_REFERENCE;
-
-    static
-    {
-        try
-        {
-            FOR_REFERENCE = ConsistencyReport.class
-                    .getDeclaredMethod( "forReference", RecordReference.class,
-                                        ComparativeRecordChecker.class );
-        }
-        catch ( NoSuchMethodException cause )
-        {
-            throw withCause( new LinkageError( "Could not find dispatch method of " +
-                                               ConsistencyReport.class.getName() ), cause );
-        }
-    }
-
     private static final ProxyFactory<ConsistencyReport.SchemaConsistencyReport> SCHEMA_REPORT =
             ProxyFactory.create( ConsistencyReport.SchemaConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.NodeConsistencyReport> NODE_REPORT =
@@ -95,60 +78,64 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         this.report = report;
     }
 
-    private <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
+    private <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
     void dispatch( RecordType type, ProxyFactory<REPORT> factory, RECORD record, RecordCheck<RECORD, REPORT> checker )
     {
-        ReportHandler handler = new ReportHandler( report, type, record );
-        checker.check( record, factory.create( handler ), records );
+        ReportInvocationHandler<RECORD,REPORT> handler = new ReportHandler<>( report, factory, type, record );
+        checker.check( record, handler, records );
         handler.updateSummary();
     }
 
-    private <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
+    private <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
     void dispatchChange( RecordType type, ProxyFactory<REPORT> factory, RECORD oldRecord, RECORD newRecord,
                          RecordCheck<RECORD, REPORT> checker )
     {
-        DiffReportHandler handler = new DiffReportHandler( report, type, oldRecord, newRecord );
-        checker.checkChange( oldRecord, newRecord, factory.create( handler ), records );
+        ReportInvocationHandler<RECORD,REPORT> handler = new DiffReportHandler<>( report, factory, type, oldRecord, newRecord );
+        checker.checkChange( oldRecord, newRecord, handler, records );
         handler.updateSummary();
     }
 
-    static void dispatchReference( ConsistencyReport report, ComparativeRecordChecker checker,
+    static void dispatchReference( CheckerEngine engine, ComparativeRecordChecker checker,
                                    AbstractBaseRecord referenced, RecordAccess records )
     {
-        ReportInvocationHandler handler = (ReportInvocationHandler) getInvocationHandler( report );
-        handler.checkReference( report, checker, referenced, records );
+        ReportInvocationHandler handler = (ReportInvocationHandler) engine;
+        handler.checkReference( engine, checker, referenced, records );
         handler.updateSummary();
     }
 
-    static String pendingCheckToString(ConsistencyReport report,ComparativeRecordChecker checker)
+    static String pendingCheckToString( CheckerEngine engine, ComparativeRecordChecker checker )
     {
-        ReportInvocationHandler handler = (ReportInvocationHandler) getInvocationHandler( report );
+        ReportInvocationHandler handler = (ReportInvocationHandler) engine;
         return handler.pendingCheckToString(checker);
     }
 
-    static void dispatchChangeReference( ConsistencyReport report, ComparativeRecordChecker checker,
+    static void dispatchChangeReference( CheckerEngine engine, ComparativeRecordChecker checker,
                                          AbstractBaseRecord oldReferenced, AbstractBaseRecord newReferenced,
                                          RecordAccess records )
     {
-        ReportInvocationHandler handler = (ReportInvocationHandler) getInvocationHandler( report );
-        handler.checkDiffReference( report, checker, oldReferenced, newReferenced, records );
+        ReportInvocationHandler handler = (ReportInvocationHandler) engine;
+        handler.checkDiffReference( engine, checker, oldReferenced, newReferenced, records );
         handler.updateSummary();
     }
 
-    static void dispatchSkip( ConsistencyReport report )
+    static void dispatchSkip( CheckerEngine engine )
     {
-        ((ReportInvocationHandler) getInvocationHandler( report )).updateSummary();
+        ((ReportInvocationHandler) engine ).updateSummary();
     }
 
-    private static abstract class ReportInvocationHandler implements InvocationHandler
+    private static abstract class ReportInvocationHandler
+            <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+            implements CheckerEngine<RECORD, REPORT>, InvocationHandler
     {
         final InconsistencyReport report;
+        private final ProxyFactory<REPORT> factory;
         final RecordType type;
         private short errors = 0, warnings = 0, references = 1/*this*/;
 
-        private ReportInvocationHandler( InconsistencyReport report, RecordType type )
+        private ReportInvocationHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type )
         {
             this.report = report;
+            this.factory = factory;
             this.type = type;
         }
 
@@ -187,6 +174,20 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
         abstract long recordId();
 
+        @Override
+        public <REFERRED extends AbstractBaseRecord> void comparativeCheck(
+                RecordReference<REFERRED> reference, ComparativeRecordChecker<RECORD, ? super REFERRED, REPORT> checker )
+        {
+            references++;
+            reference.dispatch( new PendingReferenceCheck<REFERRED>( this, checker ) );
+        }
+
+        @Override
+        public REPORT report()
+        {
+            return factory.create( this );
+        }
+
         /**
          * Invoked when an inconsistency is encountered.
          *
@@ -195,34 +196,25 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         @Override
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
         {
-            if ( method.equals( FOR_REFERENCE ) )
+            String message;
+            Documented annotation = method.getAnnotation( Documented.class );
+            if ( annotation != null && !"".equals( annotation.value() ) )
             {
-                RecordReference reference = (RecordReference) args[0];
-                ComparativeRecordChecker checker = (ComparativeRecordChecker) args[1];
-                dispatchForReference( (ConsistencyReport) proxy, reference, checker );
+               message = annotation.value();
             }
             else
             {
-                String message;
-                Documented annotation = method.getAnnotation( Documented.class );
-                if ( annotation != null && !"".equals( annotation.value() ) )
-                {
-                   message = annotation.value();
-                }
-                else
-                {
-                    message = method.getName();
-                }
-                if ( method.getAnnotation( ConsistencyReport.Warning.class ) == null )
-                {
-                    errors++;
-                    logError( message, args );
-                }
-                else
-                {
-                    warnings++;
-                    logWarning( message, args );
-                }
+                message = method.getName();
+            }
+            if ( method.getAnnotation( ConsistencyReport.Warning.class ) == null )
+            {
+                errors++;
+                logError( message, args );
+            }
+            else
+            {
+                warnings++;
+                logWarning( message, args );
             }
             return null;
         }
@@ -231,38 +223,25 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
         protected abstract void logWarning( String message, Object[] args );
 
-        @SuppressWarnings("unchecked")
-        private void dispatchForReference( ConsistencyReport report, RecordReference reference,
-                                   ComparativeRecordChecker checker )
-        {
-            forReference( report, reference, checker );
-        }
-
-        final <REFERENCED extends AbstractBaseRecord>
-        void forReference( ConsistencyReport report, RecordReference<REFERENCED> reference,
-                           ComparativeRecordChecker<?, REFERENCED, ?> checker )
-        {
-            references++;
-            reference.dispatch( new PendingReferenceCheck<REFERENCED>( report, checker ) );
-        }
-
-        abstract void checkReference( ConsistencyReport report, ComparativeRecordChecker checker,
+        abstract void checkReference( CheckerEngine engine, ComparativeRecordChecker checker,
                                       AbstractBaseRecord referenced, RecordAccess records );
 
-        abstract void checkDiffReference( ConsistencyReport report, ComparativeRecordChecker checker,
+        abstract void checkDiffReference( CheckerEngine engine, ComparativeRecordChecker checker,
                                           AbstractBaseRecord oldReferenced, AbstractBaseRecord newReferenced,
                                           RecordAccess records );
     }
 
-    static class ReportHandler extends ReportInvocationHandler
+    static class ReportHandler
+            <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+            extends ReportInvocationHandler<RECORD,REPORT>
     {
         private final AbstractBaseRecord record;
 
-        ReportHandler( InconsistencyReport report, RecordType type,
-            AbstractBaseRecord record )
-            {
-                super( report, type );
-                this.record = record;
+        ReportHandler( InconsistencyReport report, ProxyFactory<REPORT> factory, RecordType type,
+                       AbstractBaseRecord record )
+        {
+            super( report, factory, type );
+            this.record = record;
         }
 
         @Override
@@ -285,31 +264,34 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
         @Override
         @SuppressWarnings("unchecked")
-        void checkReference( ConsistencyReport report, ComparativeRecordChecker checker, AbstractBaseRecord referenced,
+        void checkReference( CheckerEngine engine, ComparativeRecordChecker checker, AbstractBaseRecord referenced,
                              RecordAccess records )
         {
-            checker.checkReference( record, referenced, report, records );
+            checker.checkReference( record, referenced, this, records );
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        void checkDiffReference( ConsistencyReport report, ComparativeRecordChecker checker,
+        void checkDiffReference( CheckerEngine engine, ComparativeRecordChecker checker,
                                  AbstractBaseRecord oldReferenced, AbstractBaseRecord newReferenced,
                                  RecordAccess records )
         {
-            checker.checkReference( record, newReferenced, report, records );
+            checker.checkReference( record, newReferenced, this, records );
         }
     }
 
-    private static class DiffReportHandler extends ReportInvocationHandler
+    private static class DiffReportHandler
+            <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+            extends ReportInvocationHandler<RECORD,REPORT>
     {
         private final AbstractBaseRecord oldRecord;
         private final AbstractBaseRecord newRecord;
 
-        private DiffReportHandler( InconsistencyReport report, RecordType type,
+        private DiffReportHandler( InconsistencyReport report, ProxyFactory<REPORT> factory,
+                                   RecordType type,
                                    AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord )
         {
-            super( report, type );
+            super( report, factory, type );
             this.oldRecord = oldRecord;
             this.newRecord = newRecord;
         }
@@ -334,19 +316,19 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
         @Override
         @SuppressWarnings("unchecked")
-        void checkReference( ConsistencyReport report, ComparativeRecordChecker checker, AbstractBaseRecord referenced,
+        void checkReference( CheckerEngine engine, ComparativeRecordChecker checker, AbstractBaseRecord referenced,
                              RecordAccess records )
         {
-            checker.checkReference( newRecord, referenced, report, records );
+            checker.checkReference( newRecord, referenced, this, records );
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        void checkDiffReference( ConsistencyReport report, ComparativeRecordChecker checker,
+        void checkDiffReference( CheckerEngine engine, ComparativeRecordChecker checker,
                                  AbstractBaseRecord oldReferenced, AbstractBaseRecord newReferenced,
                                  RecordAccess records )
         {
-            checker.checkReference( newRecord, newReferenced, report, records );
+            checker.checkReference( newRecord, newReferenced, this, records );
         }
     }
 
@@ -477,7 +459,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         dispatchChange( type, DYNAMIC_LABEL_REPORT, oldRecord, newRecord, checker );
     }
 
-    private static class ProxyFactory<T>
+    static class ProxyFactory<T>
     {
         private Constructor<? extends T> constructor;
 
