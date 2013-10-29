@@ -357,8 +357,13 @@ public abstract class GraphStoreFixture implements TestRule, ScannableStores
         // allow for override
     }
 
-    protected void stop()
+    protected void stop() throws IOException
     {
+        if ( labelScanStore != null )
+        {
+            labelScanStore.shutdown();
+            labelScanStore = null;
+        }
         if ( storeAccess != null )
         {
             storeAccess.close();
