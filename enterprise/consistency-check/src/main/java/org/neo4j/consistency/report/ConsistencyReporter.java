@@ -32,6 +32,7 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -68,6 +69,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.DynamicConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.DynamicLabelConsistencyReport> DYNAMIC_LABEL_REPORT =
             ProxyFactory.create( ConsistencyReport.DynamicLabelConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.LabelScanConsistencyReport> LABEL_SCAN_REPORT =
+            ProxyFactory.create( ConsistencyReport.LabelScanConsistencyReport.class );
 
     private final DiffRecordAccess records;
     private final InconsistencyReport report;
@@ -391,7 +394,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     @Override
     public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipTypeTokenRecord,
                                          RecordCheck<RelationshipTypeTokenRecord,
-                                                 ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+                                         ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
         dispatch( RecordType.RELATIONSHIP_TYPE, RELATIONSHIP_TYPE_REPORT, relationshipTypeTokenRecord, checker );
     }
@@ -399,15 +402,23 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     @Override
     public void forRelationshipTypeNameChange( RelationshipTypeTokenRecord oldType, RelationshipTypeTokenRecord newType,
                                                RecordCheck<RelationshipTypeTokenRecord,
-                                                       ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+                                               ConsistencyReport.RelationshipTypeConsistencyReport> checker )
     {
         dispatchChange( RecordType.RELATIONSHIP_TYPE, RELATIONSHIP_TYPE_REPORT, oldType, newType, checker );
     }
 
     @Override
-    public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
+    public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord,
+                              ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
         dispatch( RecordType.LABEL, LABEL_KEY_REPORT, label, checker );
+    }
+
+    @Override
+    public void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument,
+                                  ConsistencyReport.LabelScanConsistencyReport> checker )
+    {
+        dispatch( RecordType.LABEL_SCAN_DOCUMENT, LABEL_SCAN_REPORT, document, checker );
     }
 
     @Override

@@ -46,6 +46,8 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.kernel.api.impl.index.LuceneNodeLabelRange;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -94,23 +96,20 @@ public class ConsistencyReporterTest
         }
 
         @Test
+        @SuppressWarnings("unchecked")
         public void shouldOnlySummarizeStatisticsWhenAllReferencesAreChecked()
         {
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
-            @SuppressWarnings("unchecked")
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
                     mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, new PropertyRecord( 0 ) );
 
-            @SuppressWarnings("unchecked")
             RecordReference<PropertyRecord> reference = mock( RecordReference.class );
-            @SuppressWarnings("unchecked")
             ComparativeRecordChecker<PropertyRecord, PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
                     checker = mock( ComparativeRecordChecker.class );
 
             handler.comparativeCheck( reference, checker );
-            @SuppressWarnings("unchecked")
             ArgumentCaptor<PendingReferenceCheck<PropertyRecord>> captor =
                     (ArgumentCaptor) ArgumentCaptor.forClass( PendingReferenceCheck.class );
             verify( reference ).dispatch( captor.capture() );
@@ -305,6 +304,10 @@ public class ConsistencyReporterTest
             if ( type == NeoStoreRecord.class )
             {
                 return new NeoStoreRecord();
+            }
+            if ( type == LabelScanDocument.class )
+            {
+                return new LabelScanDocument( 0, new LuceneNodeLabelRange( 0, new long[] {}, new long[][] {} ) );
             }
             if ( type == long.class )
             {

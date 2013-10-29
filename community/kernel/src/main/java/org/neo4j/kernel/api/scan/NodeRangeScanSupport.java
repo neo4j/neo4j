@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.api.scan;
 
+import java.io.IOException;
+
 public interface NodeRangeScanSupport
 {
     NodeRangeReader newRangeReader();
+    long getHighRangeId() throws IOException;
 }

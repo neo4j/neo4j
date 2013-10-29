@@ -75,7 +75,7 @@ public abstract class GraphStoreFixture implements TestRule, ScannableStores
         {
             labelScanStore = new LuceneLabelScanStoreBuilder(
                 directory().getAbsolutePath(),
-                storeAccess.getRawNeoStore(),
+                nativeStores().getRawNeoStore(),
                 new DefaultFileSystemAbstraction(),
                 StringLogger.SYSTEM
             ).build();
@@ -112,6 +112,11 @@ public abstract class GraphStoreFixture implements TestRule, ScannableStores
             }
             return buffer;
         }
+    }
+
+    public IdGenerator idGenerator()
+    {
+        return new IdGenerator();
     }
 
     public class IdGenerator
@@ -383,7 +388,7 @@ public abstract class GraphStoreFixture implements TestRule, ScannableStores
 
     protected final ReadableByteChannel write( Transaction transaction, Long txId ) throws IOException
     {
-        return transaction.write( new IdGenerator(), localIdGenerator++, masterId(), myId(), txId );
+        return transaction.write( idGenerator(), localIdGenerator++, masterId(), myId(), txId );
     }
 
     @SuppressWarnings("deprecation")

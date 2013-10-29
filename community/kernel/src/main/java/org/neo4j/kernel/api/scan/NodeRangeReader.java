@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.api.scan;
 
+import java.io.IOException;
+
 public interface NodeRangeReader extends Iterable<NodeLabelRange>, AutoCloseable
 {
+    @Override
+    public void close() throws IOException;
 }

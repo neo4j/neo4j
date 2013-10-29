@@ -68,7 +68,9 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.kernel.api.scan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
@@ -273,6 +275,25 @@ public class FullCheckIntegrationTest
 
         // then
         verifyInconsistency( RecordType.NODE_DYNAMIC_LABEL, stats );
+    }
+
+    @Test
+    public void shouldReportLabelScanStoreInconsistencies() throws Exception
+    {
+        // given
+        GraphStoreFixture.IdGenerator idGenerator = fixture.idGenerator();
+        long nodeId1 = idGenerator.node();
+        long labelId = idGenerator.label() - 1;
+
+        fixture.labelScanStore().updateAndCommit( asIterable(
+            labelChanges( nodeId1, new long[] {}, new long[] { labelId } )
+        ).iterator() );
+
+        // when
+        ConsistencySummaryStatistics result = check();
+
+        // then
+        verifyInconsistency( RecordType.LABEL_SCAN_DOCUMENT, result );
     }
 
     @Test

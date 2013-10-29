@@ -21,7 +21,9 @@ package org.neo4j.kernel.api.scan;
 
 public interface NodeLabelRange
 {
-    long[] labels();
-    long[] nodes( long labelId );
+    int id();
+
+    long[] nodes();
+    long[] labels( long nodeId );
 }
 
