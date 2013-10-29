@@ -1881,17 +1881,17 @@ RETURN x0.name""")
   }
 
   @Test
-  def head_on_empty_coll_should_return_null() {
+  def head_on_empty_coll_should_throw_exception() {
     val result = execute("RETURN head([])")
 
-    assert(result.toList === List(Map("head([])" -> null)))
+    intercept[IllegalValueException](result.toList)
   }
 
   @Test
-  def tail_on_empty_coll_should_return_empty_coll() {
+  def tail_on_empty_coll_should_throw_exception() {
     val result = execute("RETURN tail([])")
 
-    assert(result.toList === List(Map("tail([])" -> List())))
+    intercept[IllegalValueException](result.toList)
   }
 
   @Test

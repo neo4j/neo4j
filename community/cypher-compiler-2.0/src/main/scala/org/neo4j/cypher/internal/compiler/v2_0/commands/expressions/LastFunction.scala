@@ -23,9 +23,16 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.IllegalValueException
 
 case class LastFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = makeTraversable(value).last
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = {
+    val traversable = makeTraversable(value)
+    if (traversable.isEmpty)
+      throw new IllegalValueException("Cannot get the last element of an empty collection.")
+    else
+      traversable.last
+  }
 
   def rewrite(f: (Expression) => Expression) = f(LastFunction(collection.rewrite(f)))
 

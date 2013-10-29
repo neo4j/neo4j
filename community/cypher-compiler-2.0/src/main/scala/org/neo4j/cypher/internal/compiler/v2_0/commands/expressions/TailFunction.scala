@@ -23,12 +23,13 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.internal.helpers._
+import org.neo4j.cypher.IllegalValueException
 
 case class TailFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = {
     val coll = makeTraversable(value)
     if (coll.size == 0) 
-      Seq()
+      throw new IllegalValueException("Cannot get the tail of an empty collection.")
     else 
       coll.tail
   }
