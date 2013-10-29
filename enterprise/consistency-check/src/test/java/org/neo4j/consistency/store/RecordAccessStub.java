@@ -27,6 +27,7 @@ import java.util.Queue;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.PendingReferenceCheck;
@@ -49,59 +50,52 @@ import static org.mockito.Mockito.mock;
 
 public class RecordAccessStub implements RecordAccess, DiffRecordAccess
 {
-
     public static final int SCHEMA_RECORD_TYPE = 255;
 
-    @SuppressWarnings("unchecked")
-    public <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
-    REPORT mockReport( Class<REPORT> reportClass, RECORD record )
+    public <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+    CheckerEngine<RECORD, REPORT> engine( final RECORD record, final REPORT report )
     {
-        REPORT report = mock( reportClass );
-        doAnswer( new DeferredReferenceDispatch( report, record ) )
-                .when( report ).forReference( any( RecordReference.class ), any( ComparativeRecordChecker.class ) );
-        return report;
+        return new Engine<RECORD, REPORT>( report )
+        {
+            @Override
+            @SuppressWarnings("unchecked")
+            void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference,
+                                 AbstractBaseRecord newReference )
+            {
+                checker.checkReference( record, newReference, this, RecordAccessStub.this );
+            }
+        };
     }
 
-    @SuppressWarnings("unchecked")
-    public <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
-    REPORT mockReport( Class<REPORT> reportClass, RECORD oldRecord, RECORD newRecord )
+    public <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+    CheckerEngine<RECORD, REPORT> engine( final RECORD oldRecord, final RECORD newRecord, REPORT report )
     {
-        REPORT report = mock( reportClass );
-        doAnswer( new DeferredReferenceDispatch( report, oldRecord, newRecord ) )
-                .when( report ).forReference( any( RecordReference.class ), any( ComparativeRecordChecker.class ) );
-        return report;
+        return new Engine<RECORD, REPORT>( report )
+        {
+            @Override
+            @SuppressWarnings("unchecked")
+            void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference,
+                                 AbstractBaseRecord newReference )
+            {
+                checker.checkReference( newRecord, newReference, this, RecordAccessStub.this );
+            }
+        };
     }
 
-    private class DeferredReferenceDispatch<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
-            implements Answer<Void>
+    private abstract class Engine<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+            implements CheckerEngine<RECORD, REPORT>
     {
         private final REPORT report;
-        private final RECORD oldRecord;
-        private final RECORD newRecord;
 
-        DeferredReferenceDispatch( REPORT report, RECORD oldRecord, RECORD newRecord )
+        protected Engine( REPORT report )
         {
             this.report = report;
-            this.oldRecord = oldRecord;
-            this.newRecord = newRecord;
-        }
-
-        DeferredReferenceDispatch( REPORT report, RECORD record )
-        {
-            this.report = report;
-            this.oldRecord = null;
-            this.newRecord = record;
         }
 
         @Override
-        public Void answer( InvocationOnMock invocation ) throws Throwable
-        {
-            Object[] arguments = invocation.getArguments();
-            forReference( (RecordReference) arguments[0], (ComparativeRecordChecker) arguments[1] );
-            return null;
-        }
-
-        private void forReference( final RecordReference reference, final ComparativeRecordChecker checker )
+        public <REFERRED extends AbstractBaseRecord> void comparativeCheck(
+                final RecordReference<REFERRED> other,
+                final ComparativeRecordChecker<RECORD, ? super REFERRED, REPORT> checker )
         {
             deferredTasks.add( new Runnable()
             {
@@ -110,38 +104,32 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
                 public void run()
                 {
                     PendingReferenceCheck mock = mock( PendingReferenceCheck.class );
-                    DeferredReferenceCheck check = new DeferredReferenceCheck( DeferredReferenceDispatch.this,
-                                                                               checker );
+                    DeferredReferenceCheck check = new DeferredReferenceCheck( Engine.this, checker );
                     doAnswer( check ).when( mock ).checkReference( any( AbstractBaseRecord.class ),
                                                                    any( RecordAccess.class ) );
                     doAnswer( check ).when( mock ).checkDiffReference( any( AbstractBaseRecord.class ),
                                                                        any( AbstractBaseRecord.class ),
                                                                        any( RecordAccess.class ) );
-                    reference.dispatch( mock );
+                    other.dispatch( mock );
                 }
             } );
         }
 
-        void checkReference( final ComparativeRecordChecker checker, final AbstractBaseRecord oldReference, final AbstractBaseRecord newReference )
+        @Override
+        public REPORT report()
         {
-            deferredTasks.add( new Runnable()
-            {
-                @Override
-                @SuppressWarnings("unchecked")
-                public void run()
-                {
-                    checker.checkReference( newRecord, newReference, report, RecordAccessStub.this );
-                }
-            } );
+            return report;
         }
+
+        abstract void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference, AbstractBaseRecord newReference );
     }
 
     private static class DeferredReferenceCheck implements Answer<Void>
     {
-        private final DeferredReferenceDispatch dispatch;
+        private final Engine dispatch;
         private final ComparativeRecordChecker checker;
 
-        DeferredReferenceCheck( DeferredReferenceDispatch dispatch, ComparativeRecordChecker checker )
+        DeferredReferenceCheck( Engine dispatch, ComparativeRecordChecker checker )
         {
             this.dispatch = dispatch;
             this.checker = checker;
@@ -166,7 +154,7 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
         }
     }
 
-    private final Queue<Runnable> deferredTasks = new LinkedList<Runnable>();
+    private final Queue<Runnable> deferredTasks = new LinkedList<>();
 
     public void checkDeferred()
     {
@@ -176,19 +164,19 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
         }
     }
 
-    private final Map<Long, Delta<DynamicRecord>> schemata = new HashMap<Long, Delta<DynamicRecord>>();
-    private final Map<Long, Delta<NodeRecord>> nodes = new HashMap<Long, Delta<NodeRecord>>();
-    private final Map<Long, Delta<RelationshipRecord>> relationships = new HashMap<Long, Delta<RelationshipRecord>>();
-    private final Map<Long, Delta<PropertyRecord>> properties = new HashMap<Long, Delta<PropertyRecord>>();
-    private final Map<Long, Delta<DynamicRecord>> strings = new HashMap<Long, Delta<DynamicRecord>>();
-    private final Map<Long, Delta<DynamicRecord>> arrays = new HashMap<Long, Delta<DynamicRecord>>();
-    private final Map<Long, Delta<RelationshipTypeTokenRecord>> relationshipTypeTokens = new HashMap<Long, Delta<RelationshipTypeTokenRecord>>();
-    private final Map<Long, Delta<LabelTokenRecord>> labelTokens = new HashMap<Long, Delta<LabelTokenRecord>>();
-    private final Map<Long, Delta<PropertyKeyTokenRecord>> propertyKeyTokens = new HashMap<Long, Delta<PropertyKeyTokenRecord>>();
-    private final Map<Long, Delta<DynamicRecord>> relationshipTypeNames = new HashMap<Long, Delta<DynamicRecord>>();
-    private final Map<Long, Delta<DynamicRecord>> nodeDynamicLabels = new HashMap<Long, Delta<DynamicRecord>>();
-    private final Map<Long, Delta<DynamicRecord>> labelNames = new HashMap<Long, Delta<DynamicRecord>>();
-    private final Map<Long, Delta<DynamicRecord>> propertyKeyNames = new HashMap<Long, Delta<DynamicRecord>>();
+    private final Map<Long, Delta<DynamicRecord>> schemata = new HashMap<>();
+    private final Map<Long, Delta<NodeRecord>> nodes = new HashMap<>();
+    private final Map<Long, Delta<RelationshipRecord>> relationships = new HashMap<>();
+    private final Map<Long, Delta<PropertyRecord>> properties = new HashMap<>();
+    private final Map<Long, Delta<DynamicRecord>> strings = new HashMap<>();
+    private final Map<Long, Delta<DynamicRecord>> arrays = new HashMap<>();
+    private final Map<Long, Delta<RelationshipTypeTokenRecord>> relationshipTypeTokens = new HashMap<>();
+    private final Map<Long, Delta<LabelTokenRecord>> labelTokens = new HashMap<>();
+    private final Map<Long, Delta<PropertyKeyTokenRecord>> propertyKeyTokens = new HashMap<>();
+    private final Map<Long, Delta<DynamicRecord>> relationshipTypeNames = new HashMap<>();
+    private final Map<Long, Delta<DynamicRecord>> nodeDynamicLabels = new HashMap<>();
+    private final Map<Long, Delta<DynamicRecord>> labelNames = new HashMap<>();
+    private final Map<Long, Delta<DynamicRecord>> propertyKeyNames = new HashMap<>();
     private Delta<NeoStoreRecord> graph;
 
     private static class Delta<R extends AbstractBaseRecord>
@@ -240,13 +228,13 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
 
     private static <R extends AbstractBaseRecord> R add( Map<Long, Delta<R>> records, R record )
     {
-        records.put( record.getLongId(), new Delta<R>( record ) );
+        records.put( record.getLongId(), new Delta<>( record ) );
         return record;
     }
 
     private static <R extends AbstractBaseRecord> void add( Map<Long, Delta<R>> records, R oldRecord, R newRecord )
     {
-        records.put( newRecord.getLongId(), new Delta<R>( oldRecord, newRecord ) );
+        records.put( newRecord.getLongId(), new Delta<>( oldRecord, newRecord ) );
     }
 
     public DynamicRecord addSchema( DynamicRecord schema )
@@ -328,7 +316,7 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
         }
         else if ( newRecord instanceof NeoStoreRecord )
         {
-            this.graph = new Delta<NeoStoreRecord>( (NeoStoreRecord) oldRecord, (NeoStoreRecord) newRecord );
+            this.graph = new Delta<>( (NeoStoreRecord) oldRecord, (NeoStoreRecord) newRecord );
         }
         else
         {
@@ -385,7 +373,7 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
         }
         else if ( record instanceof NeoStoreRecord )
         {
-            this.graph = new Delta<NeoStoreRecord>( (NeoStoreRecord) record );
+            this.graph = new Delta<>( (NeoStoreRecord) record );
         }
         else
         {
@@ -397,7 +385,7 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     private <R extends AbstractBaseRecord> DirectRecordReference<R> reference( Map<Long, Delta<R>> records,
                                                                                long id, Version version )
     {
-        return new DirectRecordReference<R>( record( records, id, version ), this );
+        return new DirectRecordReference<>( record( records, id, version ), this );
     }
 
     private static <R extends AbstractBaseRecord> R record( Map<Long, Delta<R>> records, long id,

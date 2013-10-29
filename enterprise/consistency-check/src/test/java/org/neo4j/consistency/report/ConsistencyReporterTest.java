@@ -21,7 +21,6 @@ package org.neo4j.consistency.report;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +40,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.DiffRecordAccess;
@@ -57,6 +57,8 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+
+import static java.lang.String.format;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
@@ -78,9 +80,10 @@ public class ConsistencyReporterTest
         {
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
+            @SuppressWarnings("unchecked")
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
-                    RecordType.PROPERTY, new PropertyRecord( 0 ) );
+                    mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, new PropertyRecord( 0 ) );
 
             // when
             handler.updateSummary();
@@ -95,22 +98,18 @@ public class ConsistencyReporterTest
         {
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
+            @SuppressWarnings("unchecked")
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
-                    RecordType.PROPERTY, new PropertyRecord( 0 ) );
+                    mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, new PropertyRecord( 0 ) );
 
-            ConsistencyReport.PropertyConsistencyReport report =
-                    (ConsistencyReport.PropertyConsistencyReport) Proxy
-                            .newProxyInstance( ConsistencyReport.PropertyConsistencyReport.class.getClassLoader(),
-                                               new Class[]{ConsistencyReport.PropertyConsistencyReport.class},
-                                               handler );
             @SuppressWarnings("unchecked")
             RecordReference<PropertyRecord> reference = mock( RecordReference.class );
             @SuppressWarnings("unchecked")
             ComparativeRecordChecker<PropertyRecord, PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
                     checker = mock( ComparativeRecordChecker.class );
 
-            handler.forReference( report, reference, checker );
+            handler.comparativeCheck( reference, checker );
             @SuppressWarnings("unchecked")
             ArgumentCaptor<PendingReferenceCheck<PropertyRecord>> captor =
                     (ArgumentCaptor) ArgumentCaptor.forClass( PendingReferenceCheck.class );
@@ -192,7 +191,7 @@ public class ConsistencyReporterTest
         @Parameterized.Parameters(name="{1}")
         public static List<Object[]> methods()
         {
-            ArrayList<Object[]> methods = new ArrayList<Object[]>();
+            ArrayList<Object[]> methods = new ArrayList<>();
             for ( Method reporterMethod : ConsistencyReport.Reporter.class.getMethods() )
             {
                 Type[] parameterTypes = reporterMethod.getGenericParameterTypes();
@@ -200,10 +199,7 @@ public class ConsistencyReporterTest
                 Class reportType = (Class) checkerParameter.getActualTypeArguments()[1];
                 for ( Method method : reportType.getMethods() )
                 {
-                    if ( !method.getName().equals( "forReference" ) )
-                    {
-                        methods.add( new Object[]{reporterMethod, method} );
-                    }
+                    methods.add( new Object[]{reporterMethod, method} );
                 }
             }
             return methods;
@@ -237,8 +233,8 @@ public class ConsistencyReporterTest
         @Override
         public String toString()
         {
-            return String.format( "report.%s( %s{ reporter.%s(); } )",
-                                  reportMethod.getName(), signatureOf( reportMethod ), method.getName() );
+            return format( "report.%s( %s{ reporter.%s(); } )",
+                           reportMethod.getName(), signatureOf( reportMethod ), method.getName() );
         }
 
         private static String signatureOf( Method reportMethod )
@@ -326,11 +322,11 @@ public class ConsistencyReporterTest
         {
             RecordCheck checker = mock( RecordCheck.class );
             doAnswer( this ).when( checker ).check( any( AbstractBaseRecord.class ),
-                                                    any( ConsistencyReport.class ),
+                                                    any( CheckerEngine.class ),
                                                     any( RecordAccess.class ) );
             doAnswer( this ).when( checker ).checkChange( any( AbstractBaseRecord.class ),
                                                           any( AbstractBaseRecord.class ),
-                                                          any( ConsistencyReport.class ),
+                                                          any( CheckerEngine.class ),
                                                           any( DiffRecordAccess.class ) );
             return checker;
         }
@@ -339,7 +335,17 @@ public class ConsistencyReporterTest
         public Object answer( InvocationOnMock invocation ) throws Throwable
         {
             Object[] arguments = invocation.getArguments();
-            return method.invoke( arguments[arguments.length - 2], parameters( method ) );
+            ConsistencyReport report = ((CheckerEngine)arguments[arguments.length - 2]).report();
+            try
+            {
+                return method.invoke( report, parameters( method ) );
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                throw new IllegalArgumentException(
+                        format( "%s.%s#%s(...)", report, method.getDeclaringClass().getSimpleName(), method.getName() ),
+                        ex );
+            }
         }
     }
 

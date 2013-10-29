@@ -37,28 +37,29 @@ class PropertyRecordCheck
 {
     @Override
     public void checkChange( PropertyRecord oldRecord, PropertyRecord newRecord,
-                             ConsistencyReport.PropertyConsistencyReport report, DiffRecordAccess records )
+                             CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
+                             DiffRecordAccess records )
     {
-        check( newRecord, report, records );
+        check( newRecord, engine, records );
         if ( oldRecord.inUse() )
         {
             for ( PropertyField field : PropertyField.values() )
             {
-                field.checkChange( oldRecord, newRecord, report, records );
+                field.checkChange( oldRecord, newRecord, engine, records );
             }
         }
         // Did this record belong to the marked owner before it changed? - does it belong to it now?
         if ( oldRecord.inUse() )
         {
-            OwnerChain.OLD.check( newRecord, report, records );
+            OwnerChain.OLD.check( newRecord, engine, records );
         }
         if ( newRecord.inUse() )
         {
-            OwnerChain.NEW.check( newRecord, report, records );
+            OwnerChain.NEW.check( newRecord, engine, records );
         }
         // Previously referenced dynamic records should either still be referenced, or be deleted
-        Map<Long, PropertyBlock> prevStrings = new HashMap<Long, PropertyBlock>();
-        Map<Long, PropertyBlock> prevArrays = new HashMap<Long, PropertyBlock>();
+        Map<Long, PropertyBlock> prevStrings = new HashMap<>();
+        Map<Long, PropertyBlock> prevArrays = new HashMap<>();
         for ( PropertyBlock block : oldRecord.getPropertyBlocks() )
         {
             PropertyType type = block.getType();
@@ -95,20 +96,21 @@ class PropertyRecordCheck
         {
             if ( records.changedString( block.getSingleValueLong() ) == null )
             {
-                report.stringUnreferencedButNotDeleted( block );
+                engine.report().stringUnreferencedButNotDeleted( block );
             }
         }
         for ( PropertyBlock block : prevArrays.values() )
         {
             if ( records.changedArray( block.getSingleValueLong() ) == null )
             {
-                report.arrayUnreferencedButNotDeleted( block );
+                engine.report().arrayUnreferencedButNotDeleted( block );
             }
         }
     }
 
     @Override
-    public void check( PropertyRecord record, ConsistencyReport.PropertyConsistencyReport report,
+    public void check( PropertyRecord record,
+                       CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
                        RecordAccess records )
     {
         if ( !record.inUse() )
@@ -117,39 +119,41 @@ class PropertyRecordCheck
         }
         for ( PropertyField field : PropertyField.values() )
         {
-            field.checkConsistency( record, report, records );
+            field.checkConsistency( record, engine, records );
         }
         for ( PropertyBlock block : record.getPropertyBlocks() )
         {
-            checkDataBlock( block, report, records );
+            checkDataBlock( block, engine, records );
         }
     }
 
-    private void checkDataBlock( PropertyBlock block, ConsistencyReport.PropertyConsistencyReport report,
+    private void checkDataBlock( PropertyBlock block,
+                                 CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
                                  RecordAccess records )
     {
         if ( block.getKeyIndexId() < 0 )
         {
-            report.invalidPropertyKey( block );
+            engine.report().invalidPropertyKey( block );
         }
         else
         {
-            report.forReference( records.propertyKey( block.getKeyIndexId() ), propertyKey( block ) );
+            engine.comparativeCheck( records.propertyKey( block.getKeyIndexId() ), propertyKey( block ) );
         }
         PropertyType type = block.forceGetType();
         if ( type == null )
         {
-            report.invalidPropertyType( block );
+            engine.report().invalidPropertyType( block );
         }
         else
         {
             switch ( type )
             {
             case STRING:
-                report.forReference( records.string( block.getSingleValueLong() ), DynamicReference.string( block ) );
+                engine.comparativeCheck( records.string( block.getSingleValueLong() ),
+                                         DynamicReference.string( block ) );
                 break;
             case ARRAY:
-                report.forReference( records.array( block.getSingleValueLong() ), DynamicReference.array( block ) );
+                engine.comparativeCheck( records.array( block.getSingleValueLong() ), DynamicReference.array( block ) );
                 break;
             default:
                 try
@@ -158,7 +162,7 @@ class PropertyRecordCheck
                 }
                 catch ( Exception e )
                 {
-                    report.invalidPropertyValue( block );
+                    engine.report().invalidPropertyValue( block );
                 }
                 break;
             }
@@ -243,41 +247,44 @@ class PropertyRecordCheck
         abstract long otherReference( PropertyRecord record );
 
         @Override
-        public void checkConsistency( PropertyRecord record, ConsistencyReport.PropertyConsistencyReport report,
+        public void checkConsistency( PropertyRecord record,
+                                      CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
                                       RecordAccess records )
         {
             if ( !NONE.is( valueFrom( record ) ) )
             {
-                report.forReference( records.property( valueFrom( record ) ), this );
+                engine.comparativeCheck( records.property( valueFrom( record ) ), this );
             }
         }
 
         @Override
         public void checkReference( PropertyRecord record, PropertyRecord referred,
-                                    ConsistencyReport.PropertyConsistencyReport report, RecordAccess records )
+                                    CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
+                                    RecordAccess records )
         {
             if ( !referred.inUse() )
             {
-                notInUse( report, referred );
+                notInUse( engine.report(), referred );
             }
             else
             {
                 if ( otherReference( referred ) != record.getId() )
                 {
-                    noBackReference( report, referred );
+                    noBackReference( engine.report(), referred );
                 }
             }
         }
         @Override
         public void checkChange( PropertyRecord oldRecord, PropertyRecord newRecord,
-                                 ConsistencyReport.PropertyConsistencyReport report, DiffRecordAccess records )
+                                 CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
+                                 DiffRecordAccess records )
         {
             if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
             {
                 if ( !NONE.is( valueFrom( oldRecord ) )
                      && records.changedProperty( valueFrom( oldRecord ) ) == null )
                 {
-                    reportNotUpdated(report);
+                    reportNotUpdated( engine.report() );
                 }
             }
         }
@@ -296,11 +303,12 @@ class PropertyRecordCheck
         {
             @Override
             public void checkReference( PropertyRecord record, PropertyKeyTokenRecord referred,
-                                        ConsistencyReport.PropertyConsistencyReport report, RecordAccess records )
+                                        CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
+                                        RecordAccess records )
             {
                 if ( !referred.inUse() )
                 {
-                    report.keyNotInUse( block, referred );
+                    engine.report().keyNotInUse( block, referred );
                 }
             }
 
@@ -360,17 +368,18 @@ class PropertyRecordCheck
 
         @Override
         public void checkReference( PropertyRecord record, DynamicRecord referred,
-                                    ConsistencyReport.PropertyConsistencyReport report, RecordAccess records )
+                                    CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
+                                    RecordAccess records )
         {
             if ( !referred.inUse() )
             {
-                notUsed( report, referred );
+                notUsed( engine.report(), referred );
             }
             else
             {
                 if ( referred.getLength() <= 0 )
                 {
-                    empty( report, referred );
+                    empty( engine.report(), referred );
                 }
             }
         }

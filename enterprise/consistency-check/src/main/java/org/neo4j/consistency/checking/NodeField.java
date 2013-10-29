@@ -173,26 +173,27 @@ enum NodeField implements
 
     @Override
     public void checkConsistency( RelationshipRecord relationship,
-                                  ConsistencyReport.RelationshipConsistencyReport report,
+                                  CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
                                   RecordAccess records )
     {
         if ( valueFrom( relationship ) < 0 )
         {
-            illegalNode( report );
+            illegalNode( engine.report() );
         }
         else
         {
-            report.forReference( records.node( valueFrom( relationship ) ), this );
+            engine.comparativeCheck( records.node( valueFrom( relationship ) ), this );
         }
     }
 
     @Override
     public void checkReference( RelationshipRecord relationship, NodeRecord node,
-                                ConsistencyReport.RelationshipConsistencyReport report, RecordAccess records )
+                                CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
+                                RecordAccess records )
     {
         if ( !node.inUse() )
         {
-            nodeNotInUse( report, node );
+            nodeNotInUse( engine.report(), node );
         }
         else
         {
@@ -200,14 +201,14 @@ enum NodeField implements
             {
                 if ( node.getNextRel() != relationship.getId() )
                 {
-                    noBackReference( report, node );
+                    noBackReference( engine.report(), node );
                 }
             }
             else
             {
                 if ( Record.NO_NEXT_RELATIONSHIP.is( node.getNextRel() ) )
                 {
-                    noChain( report, node );
+                    noChain( engine.report(), node );
                 }
             }
         }
@@ -215,7 +216,8 @@ enum NodeField implements
 
     @Override
     public void checkChange( RelationshipRecord oldRecord, RelationshipRecord newRecord,
-                             ConsistencyReport.RelationshipConsistencyReport report, DiffRecordAccess records )
+                             CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
+                             DiffRecordAccess records )
     {
         if ( Record.NO_PREV_RELATIONSHIP.is( prev( oldRecord ) ) )
         {
@@ -225,7 +227,7 @@ enum NodeField implements
             {
                 if ( records.changedNode( valueFrom( oldRecord ) ) == null )
                 {
-                    notUpdated(report);
+                    notUpdated( engine.report() );
                 }
             }
         }

@@ -26,7 +26,7 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.DiffStore;
-import org.neo4j.consistency.store.DirectRecordAccess;
+import org.neo4j.consistency.store.DirectDiffRecordAccess;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
@@ -46,7 +46,7 @@ public class IncrementalDiffCheck extends DiffCheck
     public ConsistencySummaryStatistics execute( DiffStore diffs )
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
-        ConsistencyReporter reporter = new ConsistencyReporter( new DirectRecordAccess( diffs ),
+        ConsistencyReporter reporter = new ConsistencyReporter( new DirectDiffRecordAccess( diffs ),
                 new InconsistencyReport( new InconsistencyMessageLogger( logger ), summary ) );
         StoreProcessor processor = new StoreProcessor( reporter );
         diffs.applyToAll( processor );

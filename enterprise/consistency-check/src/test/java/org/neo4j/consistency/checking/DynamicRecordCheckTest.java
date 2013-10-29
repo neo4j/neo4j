@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.consistency.store.RecordAccessStub.SCHEMA_RECORD_TYPE;
@@ -63,7 +64,7 @@ public abstract class DynamicRecordCheckTest
         ConsistencyReport.DynamicConsistencyReport report = check( property );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -76,7 +77,7 @@ public abstract class DynamicRecordCheckTest
         ConsistencyReport.DynamicConsistencyReport report = check( property );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -91,7 +92,7 @@ public abstract class DynamicRecordCheckTest
         ConsistencyReport.DynamicConsistencyReport report = check( property );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -107,7 +108,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).nextNotInUse( next );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -122,7 +123,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).selfReferentialNext();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -138,7 +139,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).recordNotFullReferencesNext();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -153,7 +154,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).invalidLength();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -167,7 +168,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).emptyBlock();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -183,7 +184,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).emptyNextBlock( next );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     // change checking
@@ -208,7 +209,7 @@ public abstract class DynamicRecordCheckTest
         ConsistencyReport.DynamicConsistencyReport report = checkChange( oldProperty, newProperty );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -223,7 +224,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).emptyBlock();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -242,7 +243,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).nextNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     // utilities

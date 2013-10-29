@@ -19,9 +19,8 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.mockito.Mockito.verify;
-
 import org.junit.Test;
+
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -31,6 +30,9 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class PropertyRecordCheckTest
         extends RecordCheckTestBase<PropertyRecord, ConsistencyReport.PropertyConsistencyReport, PropertyRecordCheck>
@@ -50,7 +52,7 @@ public class PropertyRecordCheckTest
         ConsistencyReport.PropertyConsistencyReport report = check( property );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -63,7 +65,7 @@ public class PropertyRecordCheckTest
         ConsistencyReport.PropertyConsistencyReport report = check( property );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -80,7 +82,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).keyNotInUse( block, key );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -96,7 +98,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).prevNotInUse( prev );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -112,7 +114,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).nextNotInUse( next );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -128,7 +130,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).previousDoesNotReferenceBack( prev );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -144,7 +146,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).nextDoesNotReferenceBack( next );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -161,7 +163,7 @@ public class PropertyRecordCheckTest
         ConsistencyReport.PropertyConsistencyReport report = check( property );
         // then
         verify( report ).stringNotInUse( block, value );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -179,7 +181,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).arrayNotInUse( block, value );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -197,7 +199,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).stringEmpty( block, value );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -215,7 +217,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).arrayEmpty( block, value );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     // change checking
@@ -248,7 +250,7 @@ public class PropertyRecordCheckTest
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -270,7 +272,7 @@ public class PropertyRecordCheckTest
         verify( report ).prevNotInUse( prev );
         verify( report ).nextNotInUse( next );
         verify( report ).ownerDoesNotReferenceBack();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -290,7 +292,7 @@ public class PropertyRecordCheckTest
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -311,7 +313,7 @@ public class PropertyRecordCheckTest
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -335,7 +337,7 @@ public class PropertyRecordCheckTest
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -360,7 +362,7 @@ public class PropertyRecordCheckTest
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -383,7 +385,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).prevNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -404,7 +406,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).nextNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -424,7 +426,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).stringUnreferencedButNotDeleted( block );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -444,7 +446,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).arrayUnreferencedButNotDeleted( block );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -461,7 +463,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).changedForWrongOwner();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -481,7 +483,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).changedForWrongOwner();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -498,7 +500,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).changedForWrongOwner();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -520,7 +522,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).changedForWrongOwner();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -536,7 +538,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).changedForWrongOwner();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -556,7 +558,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).changedForWrongOwner();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -572,7 +574,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).ownerDoesNotReferenceBack();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -592,7 +594,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).ownerDoesNotReferenceBack();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -608,7 +610,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).ownerDoesNotReferenceBack();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -630,7 +632,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).ownerDoesNotReferenceBack();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -646,7 +648,7 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).ownerDoesNotReferenceBack();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -666,6 +668,6 @@ public class PropertyRecordCheckTest
 
         // then
         verify( report ).ownerDoesNotReferenceBack();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 }
