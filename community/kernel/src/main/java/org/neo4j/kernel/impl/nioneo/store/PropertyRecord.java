@@ -133,27 +133,8 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public void setPropertyBlock( PropertyBlock block )
     {
-        int index = getIndexOf( block );
-
-        if ( index != -1 )
-        {
-            removePropertyBlock( index );
-        }
-
+        removePropertyBlock( block.getKeyIndexId() );
         addPropertyBlock( block );
-    }
-
-    private int getIndexOf( PropertyBlock block )
-    {
-        for ( int i = 0; i < blockRecords.size(); i++ )
-        {
-            if ( blockRecords.get( i ).getKeyIndexId() == block.getKeyIndexId() )
-            {
-                return i;
-            }
-        }
-
-        return -1;
     }
 
     public PropertyBlock getPropertyBlock( int keyIndex )
