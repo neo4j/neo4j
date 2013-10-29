@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v1_9._
 import commands.expressions.Expression
 import pipes.QueryState
 import symbols.{CypherType, SymbolTable}
-import org.neo4j.cypher.UniquePathNotUniqueException
+import org.neo4j.cypher.{PatternException, UniquePathNotUniqueException}
 import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -41,7 +41,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
       if (results.isEmpty) {
         Iterator(executionContext) //We're done
       } else if (canNotAdvanced(results)) {
-        throw new Exception("Unbound pattern!") //None of the patterns can advance. Fail.
+        throw new PatternException("Unbound pattern!") //None of the patterns can advance. Fail.
       } else if (traversals.nonEmpty) {
         executionContext = traverseNextStep(traversals, executionContext) //We've found some way to move forward. Let's use it
       } else if (updateCommands.nonEmpty) {

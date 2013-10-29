@@ -36,6 +36,7 @@ import org.neo4j.tooling.GlobalGraphOperations
 import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
 import org.junit.{Test, Before}
+import org.junit.Assert._
 import collection.JavaConverters._
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
@@ -278,9 +279,8 @@ class LimitedIterator[T](limit: Int, f: Int => T, message: String = "Limit reach
 
   def next() = {
     count += 1
-    if ( count > limit )
-    {
-      throw new RuntimeException(message)
+    if ( count > limit ) {
+      fail(message)
     }
     f(count)
   }
@@ -291,9 +291,8 @@ class Limiter(limit: Int) {
 
   def monitor() {
     count += 1
-    if ( count > limit )
-    {
-      throw new RuntimeException("Limit passed!")
+    if ( count > limit ) {
+      fail("Limit passed!")
     }
   }
 }

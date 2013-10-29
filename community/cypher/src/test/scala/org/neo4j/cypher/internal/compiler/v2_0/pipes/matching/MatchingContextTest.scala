@@ -498,7 +498,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     expected.foreach(expectation => {
       if (!matches.exists(compare(_, expectation))) {
 
-        throw new Exception("Didn't find the expected row: " + expectation + "\r\nActual: " + matches.toList)
+        fail("Didn't find the expected row: " + expectation + "\r\nActual: " + matches.toList)
       }
     })
   }
