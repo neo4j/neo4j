@@ -54,34 +54,6 @@ object Predicate {
   def fromSeq(in: Seq[Predicate]) = in.reduceOption(_ ++ _).getOrElse(True())
 }
 
-case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState) = {
-    val nullValue = exp.find {
-      case (e, res) => e(m) == null
-    }
-
-    nullValue match {
-      case Some((_, res)) => res
-      case _              => inner.isMatch(m)
-    }
-  }
-
-  override def toString = "nullable([" + exp.mkString(",") +"],["  +inner.toString+"])"
-  def containsIsNull = inner.containsIsNull
-
-  def rewrite(f: (Expression) => Expression) = NullablePredicate(inner.rewrite(f), exp.map {
-    case (e, ascDesc) => (e.rewrite(f), ascDesc)
-  })
-
-  def children = Seq(inner) ++ exp.map(_._1)
-
-  def assertInnerTypes(symbols: SymbolTable) {
-    inner.throwIfSymbolsMissing(symbols)
-  }
-
-  def symbolTableDependencies = inner.symbolTableDependencies ++ exp.flatMap(_._1.symbolTableDependencies).toSet
-}
-
 object And {
   def apply(a: Predicate, b: Predicate) = (a, b) match {
     case (True(), other) => other
@@ -97,7 +69,7 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = And(a.rewrite(f), b.rewrite(f))
 
-  def children = Seq(a, b)
+  def arguments = Seq(a, b)
 
   def assertInnerTypes(symbols: SymbolTable) {
     a.throwIfSymbolsMissing(symbols)
@@ -121,7 +93,7 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = Or(a.rewrite(f), b.rewrite(f))
 
-  def children = Seq(a, b)
+  def arguments = Seq(a, b)
 
   def assertInnerTypes(symbols: SymbolTable) {
     a.throwIfSymbolsMissing(symbols)
@@ -137,7 +109,7 @@ case class Not(a: Predicate) extends Predicate {
   override def toString: String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
   def rewrite(f: (Expression) => Expression) = Not(a.rewrite(f))
-  def children = Seq(a)
+  def arguments = Seq(a)
   def assertInnerTypes(symbols: SymbolTable) {
     a.throwIfSymbolsMissing(symbols)
   }
@@ -151,7 +123,7 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = Xor(a.rewrite(f), b.rewrite(f))
 
-  def children = Seq(a, b)
+  def arguments = Seq(a, b)
 
   def assertInnerTypes(symbols: SymbolTable) {
     a.throwIfSymbolsMissing(symbols)
@@ -159,52 +131,6 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
-}
-
-case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
-    val fromNode = from(m).asInstanceOf[Node]
-    val toNode = to(m).asInstanceOf[Node]
-
-    if ((fromNode == null) || (toNode == null)) {
-      return false
-    }
-
-    state.query.getRelationshipsFor(fromNode, dir, relType).
-      exists(rel => rel.getOtherNode(fromNode) == toNode)
-  }
-
-  def containsIsNull = false
-  def rewrite(f: (Expression) => Expression) = HasRelationshipTo(from.rewrite(f), to.rewrite(f), dir, relType)
-  def children = Seq(from, to)
-  def assertInnerTypes(symbols: SymbolTable) {
-    from.throwIfSymbolsMissing(symbols)
-    to.throwIfSymbolsMissing(symbols)
-  }
-  def symbolTableDependencies = from.symbolTableDependencies ++ to.symbolTableDependencies
-}
-
-case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
-    val fromNode = from(m).asInstanceOf[Node]
-
-    if (fromNode == null) {
-      return false
-    }
-
-    val matchingRelationships = state.query.getRelationshipsFor(fromNode, dir, relType)
-
-    matchingRelationships.hasNext
-  }
-
-  def containsIsNull = false
-  def children = Seq(from)
-  def rewrite(f: (Expression) => Expression) = HasRelationship(from.rewrite(f), dir, relType)
-  def assertInnerTypes(symbols: SymbolTable) {
-    from.throwIfSymbolsMissing(symbols)
-  }
-
-  def symbolTableDependencies = from.symbolTableDependencies
 }
 
 case class IsNull(expression: Expression) extends Predicate {
@@ -216,7 +142,7 @@ case class IsNull(expression: Expression) extends Predicate {
   override def toString: String = expression + " IS NULL"
   def containsIsNull = true
   def rewrite(f: (Expression) => Expression) = IsNull(expression.rewrite(f))
-  def children = Seq(expression)
+  def arguments = Seq(expression)
   def assertInnerTypes(symbols: SymbolTable) {
     expression.throwIfSymbolsMissing(symbols)
   }
@@ -228,7 +154,7 @@ case class True() extends Predicate {
   override def toString: String = "true"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = True()
-  def children = Nil
+  def arguments = Nil
   def assertInnerTypes(symbols: SymbolTable) {}
   def symbolTableDependencies = Set()
 }
@@ -247,7 +173,7 @@ case class Has(identifier: Expression, propertyKey: KeyToken) extends Predicate 
 
   def rewrite(f: (Expression) => Expression) = Has(identifier.rewrite(f), propertyKey.rewrite(f))
 
-  def children = Seq(identifier)
+  def arguments = Seq(identifier)
 
   def assertInnerTypes(symbols: SymbolTable) {
     identifier.evaluateType(MapType(), symbols)
@@ -271,7 +197,7 @@ case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predi
     case other        => RegularExpression(a.rewrite(f), other)
   }
 
-  def children = Seq(a, regex)
+  def arguments = Seq(a, regex)
 
   def assertInnerTypes(symbols: SymbolTable) {
     a.evaluateType(StringType(), symbols)
@@ -298,7 +224,7 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
     case other => RegularExpression(a.rewrite(f), other)
   }
 
-  def children = Seq(a, regex)
+  def arguments = Seq(a, regex)
 
   def assertInnerTypes(symbols: SymbolTable) {
     a.evaluateType(StringType(), symbols)
@@ -319,7 +245,7 @@ case class NonEmpty(collection: Expression) extends Predicate with CollectionSup
   override def toString: String = "nonEmpty(" + collection.toString() + ")"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = NonEmpty(collection.rewrite(f))
-  def children = Seq(collection)
+  def arguments = Seq(collection)
   def assertInnerTypes(symbols: SymbolTable) {
     collection.evaluateType(CollectionType(AnyType()), symbols)
   }
@@ -351,7 +277,9 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   def rewrite(f: (Expression) => Expression) = HasLabel(entity.rewrite(f), label.typedRewrite[KeyToken](f))
 
-  def children = Seq(label, entity)
+  override def children = Seq(label, entity)
+
+  def arguments: Seq[Expression] = Seq(entity)
 
   def symbolTableDependencies = entity.symbolTableDependencies ++ label.symbolTableDependencies
 
@@ -365,7 +293,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 }
 
 case class CoercedPredicate(inner:Expression) extends Predicate with CollectionSupport {
-  def children = Seq(inner)
+  def arguments = Seq(inner)
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = inner(m) match {
     case x: Boolean         => x

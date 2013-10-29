@@ -34,7 +34,7 @@ case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) 
 
   def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
 
-  def children = Seq(inner)
+  def arguments = Seq(inner)
 
   def calculateType(symbols: SymbolTable): CypherType = LongType()
 

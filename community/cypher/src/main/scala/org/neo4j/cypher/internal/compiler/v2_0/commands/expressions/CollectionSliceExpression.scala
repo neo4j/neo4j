@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class CollectionSliceExpression(collection: Expression, from: Option[Expression], to: Option[Expression])
   extends NullInNullOutExpression(collection) with CollectionSupport {
-  def children: Seq[Expression] = from.toSeq ++ to.toSeq :+ collection
+  def arguments: Seq[Expression] = from.toSeq ++ to.toSeq :+ collection
 
   private val function: (Iterable[Any], ExecutionContext, QueryState) => Any = {
     (from, to) match {
@@ -98,5 +98,5 @@ case class CollectionSliceExpression(collection: Expression, from: Option[Expres
   def rewrite(f: (Expression) => Expression): Expression =
     f(CollectionSliceExpression(collection.rewrite(f), from.map(_.rewrite(f)), to.map(_.rewrite(f))))
 
-  def symbolTableDependencies: Set[String] = children.flatMap(_.symbolTableDependencies).toSet
+  def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 }

@@ -19,27 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_0._
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.UnresolvedProperty
+import org.scalatest.Assertions
 
-case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = {
-    val coll = makeTraversable(value)
-    if (coll.size == 0) 
-      null
-    else 
-      coll.head
+class LiteralMapTest extends Assertions {
+  @Test
+  def should_present_all_child_expressions() {
+    val x = Identifier("x")
+    // given
+    val propX = Property(x, UnresolvedProperty("foo"))
+    val count = CountStar()
+    val literalMap = LiteralMap(Map("x" -> propX, "count" -> count))
+
+    // when
+    val subExpressions = literalMap.arguments.toSet
+
+    // then
+    assert(subExpressions === Set(propX, count))
   }
-
-  def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
-
-  def arguments = Seq(collection)
-
-  def identifierDependencies(expectedType: CypherType) = null
-
-  def calculateType(symbols: SymbolTable) = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType
-
-  def symbolTableDependencies = collection.symbolTableDependencies
 }

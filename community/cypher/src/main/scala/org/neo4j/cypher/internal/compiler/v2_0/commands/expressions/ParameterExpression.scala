@@ -30,7 +30,7 @@ case class ParameterExpression(parameterName: String) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def children = Seq()
+  def arguments = Seq()
 
   def calculateType(symbols: SymbolTable) = AnyType()
 

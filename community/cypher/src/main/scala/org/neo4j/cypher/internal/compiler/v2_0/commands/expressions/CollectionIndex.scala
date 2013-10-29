@@ -27,7 +27,7 @@ import org.neo4j.cypher.OutOfBoundsException
 
 case class CollectionIndex(collection: Expression, index: Expression) extends NullInNullOutExpression(collection)
 with CollectionSupport {
-  def children = Seq(collection, index)
+  def arguments = Seq(collection, index)
 
   def compute(value:Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
     var idx = CastSupport.castOrFail[Number](index(ctx)).intValue()

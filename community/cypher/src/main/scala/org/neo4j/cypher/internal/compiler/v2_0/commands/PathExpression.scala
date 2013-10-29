@@ -57,7 +57,9 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
     }
   }
 
-  def children = pathPattern
+  override def children = pathPattern :+ predicate
+
+  def arguments: Seq[Expression] = Seq.empty
 
   def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewrite(f)))
 

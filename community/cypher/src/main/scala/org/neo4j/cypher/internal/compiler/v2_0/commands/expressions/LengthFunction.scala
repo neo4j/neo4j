@@ -37,7 +37,7 @@ case class LengthFunction(inner: Expression)
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
 
-  def children = Seq(inner)
+  def arguments = Seq(inner)
 
   def calculateType(symbols: SymbolTable): CypherType = LongType()
 

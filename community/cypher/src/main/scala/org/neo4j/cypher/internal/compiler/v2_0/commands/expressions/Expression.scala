@@ -29,7 +29,18 @@ import org.neo4j.cypher.CypherTypeException
 abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression
 
-  def subExpressions = filter( _ != this)
+  def subExpressions: Seq[Expression] = {
+    def expandAll(e: AstNode[_]): Seq[AstNode[_]] = e.children ++ e.children.flatMap(expandAll)
+    expandAll(this).collect {
+      case e:Expression => e
+    }
+  }
+
+  // Expressions that do not get anything in their context from this expression.
+  def arguments:Seq[Expression]
+
+  // Any expressions that this expression builds on
+  def children: Seq[AstNode[_]] = arguments
 
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
@@ -74,7 +85,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def children = Seq()
+  def arguments = Seq()
 
   def calculateType(symbols: SymbolTable) = typ
 
@@ -109,7 +120,7 @@ abstract class Arithmetics(left: Expression, right: Expression)
     NumberType()
   }
 
-  def children = Seq(left, right)
+  def arguments = Seq(left, right)
 }
 
 trait ExpressionWInnerExpression extends Expression {

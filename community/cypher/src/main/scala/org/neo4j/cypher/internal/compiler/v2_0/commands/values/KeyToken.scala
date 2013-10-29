@@ -39,7 +39,7 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 
   def resolve(tokenContext: TokenContext): KeyToken
 
-  def children = Seq.empty
+  def arguments = Seq.empty
 
   def rewrite(f: (Expression) => Expression): KeyToken = f(this).asInstanceOf[KeyToken]
 
@@ -78,5 +78,9 @@ object KeyToken {
 }
 
 object UnresolvedLabel {
-  def apply(name:String) = KeyToken.Unresolved(name, TokenType.Label)
+  def apply(name: String): KeyToken = KeyToken.Unresolved(name, TokenType.Label)
+}
+
+object UnresolvedProperty {
+  def apply(name: String): KeyToken = KeyToken.Unresolved(name, TokenType.PropertyKey)
 }

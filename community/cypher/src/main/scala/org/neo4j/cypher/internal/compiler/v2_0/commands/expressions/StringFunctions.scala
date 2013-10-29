@@ -32,7 +32,7 @@ import scala.collection.Map
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
   def innerExpectedType = StringType()
 
-  def children = Seq(arg)
+  def arguments = Seq(arg)
 
   def calculateType(symbols: SymbolTable) = StringType()
 
@@ -145,7 +145,7 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
   }
 
 
-  def children = Seq(orig, start) ++ length
+  def arguments = Seq(orig, start) ++ length
 
   def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
 
@@ -175,7 +175,7 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
     }
   }
 
-  def children = Seq(orig, search, replaceWith)
+  def arguments = Seq(orig, search, replaceWith)
 
   def rewrite(f: (Expression) => Expression) = f(ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
 
@@ -197,7 +197,7 @@ case class LeftFunction(orig: Expression, length: Expression)
     origVal.substring(startVal, startVal + lengthVal)
   }
 
-  def children = Seq(orig, length)
+  def arguments = Seq(orig, length)
 
   def rewrite(f: (Expression) => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
 
@@ -218,7 +218,7 @@ case class RightFunction(orig: Expression, length: Expression)
     origVal.substring(startVal, startVal + lengthVal)
   }
 
-  def children = Seq(orig, length)
+  def arguments = Seq(orig, length)
 
   def rewrite(f: (Expression) => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
 
