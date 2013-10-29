@@ -69,6 +69,70 @@ public class LabelsAcceptanceTest
         MY_OTHER_LABEL
     }
 
+    /** https://github.com/neo4j/neo4j/issues/1279 */
+    @Test
+    public void shouldInsertLabelsWithoutDuplicatingThem() throws Exception
+    {
+        final Node node = dbRule.executeAndCommit( new Function<GraphDatabaseService, Node>()
+        {
+            @Override
+            public Node apply( GraphDatabaseService db )
+            {
+                return db.createNode();
+            }
+        } );
+        // POST "FOOBAR"
+        dbRule.executeAndCommit( new Function<GraphDatabaseService, Void>()
+        {
+            @Override
+            public Void apply( GraphDatabaseService db )
+            {
+                node.addLabel( label( "FOOBAR" ) );
+                return null;
+            }
+        } );
+        // POST ["BAZQUX"]
+        dbRule.executeAndCommit( new Function<GraphDatabaseService, Void>()
+        {
+            @Override
+            public Void apply( GraphDatabaseService db )
+            {
+                node.addLabel( label( "BAZQUX" ) );
+                return null;
+            }
+        } );
+        // PUT ["BAZQUX"]
+        dbRule.executeAndCommit( new Function<GraphDatabaseService, Void>()
+        {
+            @Override
+            public Void apply( GraphDatabaseService db )
+            {
+                for ( Label label : node.getLabels() )
+                {
+                    node.removeLabel( label );
+                }
+                node.addLabel( label( "BAZQUX" ) );
+                return null;
+            }
+        } );
+        // GET
+        List<Label> labels = dbRule.executeAndCommit( new Function<GraphDatabaseService, List<Label>>()
+        {
+            @Override
+            public List<Label> apply( GraphDatabaseService db )
+            {
+                List<Label> labels = new ArrayList<>();
+                for ( Label label : node.getLabels() )
+                {
+                    labels.add( label );
+                }
+                return labels;
+            }
+        } );
+        assertEquals( labels.toString(), 1, labels.size() );
+        assertEquals( "BAZQUX", labels.get( 0 ).name() );
+    }
+
     @Test
     public void addingALabelUsingAValidIdentifierShouldSucceed() throws Exception
     {
