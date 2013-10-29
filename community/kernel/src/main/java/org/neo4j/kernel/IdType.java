@@ -33,7 +33,7 @@ public enum IdType
     LABEL_TOKEN( false ),
     LABEL_TOKEN_NAME( false ),
     NEOSTORE_BLOCK( false ),
-    SCHEMA( 35, true ),
+    SCHEMA( 35, false ),
     NODE_LABELS( 35, true );
 
     private final long max;
