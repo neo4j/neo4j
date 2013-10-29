@@ -17,26 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.perftest.enterprise.ccheck;
+package org.neo4j.consistency.checking.full;
 
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.consistency.checking.full.FullCheck;
-import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.api.scan.ScannableStores;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 
-enum CheckerVersion
+public class LabelScanStoreCheckTask implements StoppableRunnable
 {
-    NEW
-    {
-        @Override
-        void run( ProgressMonitorFactory progress, ScannableStores scannableStores, Config tuningConfiguration ) throws ConsistencyCheckIncompleteException
-        {
-            new FullCheck( tuningConfiguration, progress ).execute( scannableStores, StringLogger.DEV_NULL );
-        }
-    };
+    private final LabelScanStore labelScanStore;
 
-    abstract void run( ProgressMonitorFactory progress, ScannableStores scannableStores, Config tuningConfiguration )
-            throws ConsistencyCheckIncompleteException;
+    public LabelScanStoreCheckTask( ScannableStores stores )
+    {
+        this.labelScanStore = stores.labelScanStore();
+    }
+
+    @Override
+    public void run()
+    {
+    }
+
+
+    @Override
+    public void stopScanning()
+    {
+        throw new UnsupportedOperationException();
+    }
 }

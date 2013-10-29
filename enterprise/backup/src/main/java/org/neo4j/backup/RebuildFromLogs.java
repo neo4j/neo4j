@@ -38,6 +38,7 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.scan.SimpleScannableStores;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -64,7 +64,7 @@ class RebuildFromLogs
     /*
      * TODO: This process can be sped up if the target db doesn't have to write tx logs.
      */
-    private final XaDataSource nioneo;
+    private final NeoStoreXaDataSource nioneo;
     private final StoreAccess stores;
 
     RebuildFromLogs( GraphDatabaseAPI graphdb )
@@ -106,9 +106,9 @@ class RebuildFromLogs
         nioneo.applyCommittedTransaction( txId, txData );
     }
 
-    private static XaDataSource getDataSource( GraphDatabaseAPI graphdb, String name )
+    private static NeoStoreXaDataSource getDataSource( GraphDatabaseAPI graphdb, String name )
     {
-        XaDataSource datasource = graphdb.getXaDataSourceManager().getXaDataSource( name );
+        NeoStoreXaDataSource datasource = graphdb.getXaDataSourceManager().getNeoStoreDataSource();
         if ( datasource == null )
         {
             throw new NullPointerException( "Could not access " + name );
@@ -253,7 +253,7 @@ class RebuildFromLogs
         Config tuningConfiguration = new Config( stringMap(),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
-                .execute( stores, StringLogger.SYSTEM );
+                .execute( new SimpleScannableStores( stores, nioneo.getLabelScanStore() ), StringLogger.SYSTEM );
     }
 
     private static void printUsage( String... msgLines )

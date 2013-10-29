@@ -32,6 +32,7 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
+import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.PrimitiveRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -58,7 +59,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-import org.neo4j.test.GraphStoreFixture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -99,7 +99,7 @@ public class ExecutionOrderIntegrationTest
     public void shouldRunSameChecksInMultiPassAsInSingleSingleThreadedPass() throws Exception
     {
         // given
-        StoreAccess store = fixture.storeAccess();
+        StoreAccess store = fixture.nativeStores();
         DiffRecordAccess access = FullCheck.recordAccess( store );
 
         FullCheck singlePass = new FullCheck( config( TaskExecutionOrder.SINGLE_THREADED ),
@@ -114,9 +114,9 @@ public class ExecutionOrderIntegrationTest
         InvocationLog multiPassChecks = new InvocationLog();
 
         // when
-        singlePass.execute( store, new LogDecorator( singlePassChecks ), access,
+        singlePass.execute( fixture, new LogDecorator( singlePassChecks ), access,
                 new InconsistencyReport( logger, singlePassSummary ) );
-        multiPass.execute( store, new LogDecorator( multiPassChecks ), access,
+        multiPass.execute( fixture, new LogDecorator( multiPassChecks ), access,
                 new InconsistencyReport( logger, multiPassSummary ) );
 
         // then

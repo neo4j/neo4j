@@ -35,6 +35,7 @@ import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.api.scan.ScannableStores;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -66,14 +67,14 @@ public class FullCheck
         this.progressFactory = progressFactory;
     }
 
-    public ConsistencySummaryStatistics execute( StoreAccess store, StringLogger logger )
+    public ConsistencySummaryStatistics execute( ScannableStores stores, StringLogger logger )
             throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( logger ), summary );
 
         OwnerCheck ownerCheck = new OwnerCheck( checkPropertyOwners );
-        execute( store, ownerCheck, recordAccess( store ), report );
+        execute( stores, ownerCheck, recordAccess( stores.nativeStores() ), report );
         ownerCheck.scanForOrphanChains( progressFactory );
 
         if ( !summary.isConsistent() )
@@ -83,7 +84,7 @@ public class FullCheck
         return summary;
     }
 
-    void execute( StoreAccess store, CheckDecorator decorator, DiffRecordAccess recordAccess,
+    void execute( ScannableStores scannableStores, CheckDecorator decorator, DiffRecordAccess recordAccess,
                   InconsistencyReport report )
             throws ConsistencyCheckIncompleteException
     {
@@ -94,24 +95,25 @@ public class FullCheck
         List<StoppableRunnable> tasks = new ArrayList<>( 16 );
 
 
+        StoreAccess nativeStores = scannableStores.nativeStores();
         MultiPassStore.Factory processorFactory = new MultiPassStore.Factory(
-                decorator, totalMappedMemory, store, recordAccess, report );
+                decorator, totalMappedMemory, nativeStores, recordAccess, report );
 
         tasks.add( new StoreProcessorTask<>(
-                store.getNodeStore(), progress, order,
+                nativeStores.getNodeStore(), progress, order,
                 processEverything, processorFactory.createAll( PROPERTIES, RELATIONSHIPS ) ) );
 
         tasks.add( new StoreProcessorTask<>(
-                store.getRelationshipStore(), progress, order,
+                nativeStores.getRelationshipStore(), progress, order,
                 processEverything, processorFactory.createAll( NODES, PROPERTIES, RELATIONSHIPS ) ) );
         tasks.add( new StoreProcessorTask<>(
-                store.getPropertyStore(), progress, order,
+                nativeStores.getPropertyStore(), progress, order,
                 processEverything, processorFactory.createAll( PROPERTIES, STRINGS, ARRAYS ) ) );
         tasks.add( new StoreProcessorTask<>(
-                store.getStringStore(), progress, order,
+                nativeStores.getStringStore(), progress, order,
                 processEverything, processorFactory.createAll( STRINGS ) ) );
         tasks.add( new StoreProcessorTask<>(
-                store.getArrayStore(), progress, order,
+                nativeStores.getArrayStore(), progress, order,
                 processEverything, processorFactory.createAll( ARRAYS ) ) );
 
         // The schema store is verified in multiple passes that share state since it fits into memory
@@ -119,42 +121,45 @@ public class FullCheck
 
         // PASS 1: Dynamic record chains
         tasks.add( new StoreProcessorTask<>(
-                store.getSchemaStore(), progress, order,
+                nativeStores.getSchemaStore(), progress, order,
                 processEverything, processEverything ) );
 
         // PASS 2: Rule integrity and obligation build up
-        final SchemaRecordCheck schemaCheck = new SchemaRecordCheck( (SchemaStore) store.getSchemaStore() );
+        final SchemaRecordCheck schemaCheck = new SchemaRecordCheck( (SchemaStore) nativeStores.getSchemaStore() );
         tasks.add( new SchemaStoreProcessorTask<>(
-                store.getSchemaStore(), "check_rules", schemaCheck, progress, order,
+                nativeStores.getSchemaStore(), "check_rules", schemaCheck, progress, order,
                 processEverything, processEverything ) );
 
         // PASS 3: Obligation verification and semantic rule uniqueness
         tasks.add( new SchemaStoreProcessorTask<>(
-                store.getSchemaStore(), "check_obligations", schemaCheck.forObligationChecking(), progress, order,
+                nativeStores.getSchemaStore(), "check_obligations", schemaCheck.forObligationChecking(), progress, order,
                 processEverything, processEverything ) );
 
         tasks.add( new StoreProcessorTask<>(
-                store.getRelationshipTypeTokenStore(), progress, order,
+                nativeStores.getRelationshipTypeTokenStore(), progress, order,
                 processEverything, processEverything ) );
         tasks.add( new StoreProcessorTask<>(
-                store.getPropertyKeyTokenStore(), progress, order,
+                nativeStores.getPropertyKeyTokenStore(), progress, order,
                 processEverything, processEverything ) );
         tasks.add( new StoreProcessorTask<>(
-                store.getLabelTokenStore(), progress, order,
+                nativeStores.getLabelTokenStore(), progress, order,
                 processEverything, processEverything ) );
 
         tasks.add( new StoreProcessorTask<>(
-                store.getRelationshipTypeNameStore(), progress, order,
+                nativeStores.getRelationshipTypeNameStore(), progress, order,
                 processEverything, processEverything ) );
         tasks.add( new StoreProcessorTask<>(
-                store.getPropertyKeyNameStore(), progress, order,
+                nativeStores.getPropertyKeyNameStore(), progress, order,
                 processEverything, processEverything ) );
         tasks.add( new StoreProcessorTask<>(
-                store.getLabelNameStore(), progress, order,
+                nativeStores.getLabelNameStore(), progress, order,
                 processEverything, processEverything ) );
 
-        tasks.add( new StoreProcessorTask<>( store.getNodeDynamicLabelStore(), progress, order,
+        tasks.add( new StoreProcessorTask<>( nativeStores.getNodeDynamicLabelStore(), progress, order,
                 processEverything, processEverything ) );
+
+        // Get hold of label scan store
+        tasks.add( new LabelScanStoreCheckTask( scannableStores ) );
 
         order.execute( tasks, progress.build() );
     }

@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckingError;
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.test.GraphStoreFixture;
 
 import static java.util.Arrays.asList;
 
