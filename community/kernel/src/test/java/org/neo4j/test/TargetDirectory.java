@@ -61,7 +61,8 @@ public class TargetDirectory
         @Override
         public Statement apply( final Statement base, Description description )
         {
-            subdir = TargetDirectory.this.directory( description.getMethodName(), clean );
+            String cleanName = description.getMethodName().replaceAll( "[^A-Za-z0-9]+", "-" );
+            subdir = TargetDirectory.this.directory( cleanName, clean );
             return new Statement()
             {
                 @Override
