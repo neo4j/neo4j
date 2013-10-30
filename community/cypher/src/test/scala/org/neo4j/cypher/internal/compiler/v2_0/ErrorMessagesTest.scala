@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.expressions.StringHelper
-import org.neo4j.cypher.{CypherException, ExecutionEngineHelper, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineHelper, CypherException, SyntaxException}
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._

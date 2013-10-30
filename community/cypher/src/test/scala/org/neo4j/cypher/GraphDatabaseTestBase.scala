@@ -27,11 +27,11 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.kernel.ThreadToStatementContextBridge
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.spi.PlanContext
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.DataWriteOperations
+import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
+import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundPlanContext
 
 class GraphDatabaseTestBase extends GraphIcing with Assertions {
 

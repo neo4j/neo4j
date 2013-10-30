@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.internal
 
-import spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.cypher._
 import CypherVersion._
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.InternalAbstractGraphDatabase
+import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
+import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-
-trait CypherCompiler {
-  def prepare(query: String, context: TransactionBoundPlanContext): ExecutionPlan
-}
-
+import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
+import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
+import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
+import org.neo4j.kernel.api.Statement
+import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundExecutionContext, TransactionBoundPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_0.spi.ExceptionTranslatingQueryContext
+import org.neo4j.cypher.internal.spi.v1_9.GDSBackedQueryContext
 
 object CypherCompiler {
   def apply(graph: GraphDatabaseService) = VersionProxy(graph, CypherVersion.vDefault)
@@ -40,21 +42,28 @@ object CypherCompiler {
 
   val DEFAULT_QUERY_CACHE_SIZE: Int = 100
 
-  case class VersionProxy(graph: GraphDatabaseService, defaultVersion: CypherVersion) extends CypherCompiler {
+  case class VersionProxy(graph: GraphDatabaseService, defaultVersion: CypherVersion) {
     private val queryCache = new LRUCache[(CypherVersion, String), Object](getQueryCacheSize)
+    private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
+    private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
 
-    private val compilers = Map(
-      v1_9 -> new compiler.v1_9.CypherCompiler(graph, (q, f) => queryCache.getOrElseUpdate((v1_9, q), f)),
-      v2_0 -> new compiler.v2_0.CypherCompiler(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
-    )
 
     @throws(classOf[SyntaxException])
-    def prepare(query: String, context: TransactionBoundPlanContext): ExecutionPlan = {
+    def prepare(query: String, context: GraphDatabaseService, statement: Statement): ExecutionPlan = {
       val (version, remainingQuery) = query match {
         case hasVersionDefined(versionName, remainingQuery) => (CypherVersion(versionName), remainingQuery)
         case _ => (vDefault, query)
       }
-      compilers(version).prepare(remainingQuery, context)
+
+      version match {
+        case CypherVersion.v1_9 =>
+          val plan = compiler1_9.prepare(remainingQuery)
+          new ExecutionPlanWrapperForV1_9(plan)
+
+        case CypherVersion.v2_0 => 
+          val plan = compiler2_0.prepare(remainingQuery, new TransactionBoundPlanContext(statement, context))
+          new ExecutionPlanWrapperForV2_0(plan)
+      }
     }
 
     private def getQueryCacheSize : Int =
@@ -71,3 +80,28 @@ object CypherCompiler {
     case (db: T) => db
   }
 }
+
+class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
+
+  private def executionContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement) =
+    new ExceptionTranslatingQueryContext(new TransactionBoundExecutionContext(graph, tx, statement))
+
+  def profile(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
+    inner.profile(executionContext(graph, tx, statement), params)
+
+  def execute(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
+    inner.execute(executionContext(graph, tx, statement), params)
+}
+
+class ExecutionPlanWrapperForV1_9(inner: ExecutionPlan_v1_9) extends ExecutionPlan {
+
+  private def executionContext(graph: GraphDatabaseAPI) =
+    new GDSBackedQueryContext(graph)
+
+  def profile(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
+    inner.profile(executionContext(graph), tx, params)
+
+  def execute(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
+    inner.execute(executionContext(graph), tx, params)
+}
+

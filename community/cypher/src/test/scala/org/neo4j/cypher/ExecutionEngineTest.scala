@@ -1768,7 +1768,9 @@ RETURN x0.name""")
     relate(a,b)
     relate(a,c)
 
-    execute("CYPHER 1.9 start a=node(0) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").dumpToString()
+    graph.inTx {
+      execute("CYPHER 1.9 start a=node(0) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").size
+    }
   }
 
   @Test
