@@ -32,7 +32,7 @@ class ShortestPathBuilderTest extends BuilderTest {
   def should_not_accept_if_no_shortest_paths_exist() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false))))
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false, Map.empty))))
 
     val p = createPipe(nodes = Seq("l"))
 

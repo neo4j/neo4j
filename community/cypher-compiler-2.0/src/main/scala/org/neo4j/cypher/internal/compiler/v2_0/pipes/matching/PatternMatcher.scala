@@ -85,14 +85,9 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
     val current: MatchingPair = remaining.head
 
     val currentNodeId = current.entity.asInstanceOf[Node].getId
-    val expectedLabels: Seq[Option[Int]] = current.patternNode.labels.map(_.getOptId(state.query))
 
-    val nodeHasLabels = expectedLabels.forall {
-      case None          => false
-      case Some(labelId) => state.query.isLabelSetOnNode(labelId, currentNodeId)
-    }
-
-    nodeHasLabels && traverseNextSpecificNode(remaining, history, yielder, current, alreadyInExtraWork = false)
+    current.patternNode.canUseThis(currentNodeId, state, history.toMap) &&
+      traverseNextSpecificNode(remaining, history, yielder, current, alreadyInExtraWork = false)
   }
 
   private def traverseNextNodeFromRelationship[U](rel: GraphRelationship,
@@ -156,9 +151,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
 
     val relationships = currentNode.getGraphRelationships(currentRel, state.query)
 
-    val step1 = history.removeSeen(relationships)
-
-    val notVisitedRelationships: Seq[GraphRelationship] = step1.
+    val notVisitedRelationships: Seq[GraphRelationship] = history.
+      removeSeen(relationships).
       filter(x => alreadyPinned(currentRel, x))
 
     val nextPNode = currentRel.getOtherNode(pNode)

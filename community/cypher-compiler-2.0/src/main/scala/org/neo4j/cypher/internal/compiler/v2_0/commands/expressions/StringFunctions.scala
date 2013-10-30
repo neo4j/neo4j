@@ -48,11 +48,13 @@ trait StringHelper {
   }
 
   protected def props(x: PropertyContainer, qtx: QueryContext): String = {
-
-    val keyValStrings = x match {
-      case n: Node         => qtx.nodeOps.propertyKeyIds(n).map(pkId => qtx.getPropertyKeyName(pkId) + ":" + text(qtx.nodeOps.getProperty(n, pkId), qtx))
-      case r: Relationship => qtx.relationshipOps.propertyKeyIds(r).map(pkId => qtx.getPropertyKeyName(pkId) + ":" + text(qtx.relationshipOps.getProperty(r, pkId), qtx))
+    val (ops, id) = x match {
+      case n: Node => (qtx.nodeOps, n.getId)
+      case r: Relationship => (qtx.relationshipOps, r.getId)
     }
+
+    val keyValStrings = ops.propertyKeyIds(id).
+      map(pkId => qtx.getPropertyKeyName(pkId) + ":" + text(ops.getProperty(id, pkId), qtx))
 
     keyValStrings.mkString("{", ",", "}")
   }

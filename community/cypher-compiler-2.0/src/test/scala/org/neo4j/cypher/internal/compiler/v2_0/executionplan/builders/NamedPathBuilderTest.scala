@@ -33,7 +33,7 @@ class NamedPathBuilderTest extends BuilderTest {
   def should_not_accept_if_pattern_is_not_yet_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, optional = false))),
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, optional = false, Map.empty))),
       namedPaths = Seq(Unsolved(NamedPath("p", ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING))))
     )
 
@@ -47,7 +47,7 @@ class NamedPathBuilderTest extends BuilderTest {
     val namedPath = NamedPath("p", ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING))
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Solved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, optional = false))),
+      patterns = Seq(Solved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, optional = false, Map.empty))),
       namedPaths = Seq(Unsolved(namedPath))
     )
 
@@ -64,8 +64,8 @@ class NamedPathBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
       patterns = Seq(
-        Solved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, optional = false)),
-        Unsolved(RelatedTo(SingleNode("r"), SingleNode("x"), "rel2", Seq(), Direction.OUTGOING, optional = false))
+        Solved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, optional = false, Map.empty)),
+        Unsolved(RelatedTo(SingleNode("r"), SingleNode("x"), "rel2", Seq(), Direction.OUTGOING, optional = false, Map.empty))
       ),
       namedPaths = Seq(Unsolved(NamedPath("p",
         ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING),

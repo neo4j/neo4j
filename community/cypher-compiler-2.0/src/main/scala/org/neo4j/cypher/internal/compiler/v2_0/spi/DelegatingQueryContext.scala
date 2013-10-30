@@ -92,19 +92,19 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
     inner.delete(obj)
   }
 
-  def setProperty(obj: T, propertyKey: Int, value: Any) {
+  def setProperty(obj: Long, propertyKey: Int, value: Any) {
     inner.setProperty(obj, propertyKey, value)
   }
 
   def getById(id: Long) = inner.getById(id)
 
-  def getProperty(obj: T, propertyKeyId: Int) = inner.getProperty(obj, propertyKeyId)
+  def getProperty(obj: Long, propertyKeyId: Int) = inner.getProperty(obj, propertyKeyId)
 
-  def hasProperty(obj: T, propertyKeyId: Int) = inner.hasProperty(obj, propertyKeyId)
+  def hasProperty(obj: Long, propertyKeyId: Int) = inner.hasProperty(obj, propertyKeyId)
 
-  def propertyKeyIds(obj: T) = inner.propertyKeyIds(obj)
+  def propertyKeyIds(obj: Long) = inner.propertyKeyIds(obj)
 
-  def removeProperty(obj: T, propertyKeyId: Int) {
+  def removeProperty(obj: Long, propertyKeyId: Int) {
     inner.removeProperty(obj, propertyKeyId)
   }
 
@@ -113,4 +113,6 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   def indexQuery(name: String, query: Any): Iterator[T] = inner.indexQuery(name, query)
 
   def all: Iterator[T] = inner.all
+
+
 }

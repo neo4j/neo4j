@@ -39,14 +39,14 @@ case class PropertySetAction(prop: Property, e: Expression)
     mapExpr(context) match {
       case (n: Node) =>
         if ( null == value )
-          propertyKey.getOptId(qtx).foreach(qtx.nodeOps.removeProperty(n, _))
+          propertyKey.getOptId(qtx).foreach(qtx.nodeOps.removeProperty(n.getId, _))
         else
-          qtx.nodeOps.setProperty(n, propertyKey.getOrCreateId(qtx), value)
+          qtx.nodeOps.setProperty(n.getId, propertyKey.getOrCreateId(qtx), value)
       case (r: Relationship) =>
         if ( null == value )
-          propertyKey.getOptId(qtx).foreach(qtx.relationshipOps.removeProperty(r, _))
+          propertyKey.getOptId(qtx).foreach(qtx.relationshipOps.removeProperty(r.getId, _))
         else
-          qtx.relationshipOps.setProperty(r, propertyKey.getOrCreateId(qtx), value)
+          qtx.relationshipOps.setProperty(r.getId, propertyKey.getOrCreateId(qtx), value)
       case _ =>
         throw new ThisShouldNotHappenError("Stefan", "This should be a node or a relationship")
     }

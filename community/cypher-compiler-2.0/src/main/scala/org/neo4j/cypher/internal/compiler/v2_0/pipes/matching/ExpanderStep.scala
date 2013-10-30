@@ -105,8 +105,8 @@ abstract class MiniMapProperty(originalName: String, propertyKeyName: String) ex
         val pc = extract(m)
         try {
           pc match {
-            case n: Node         => qtx.nodeOps.getProperty(n, qtx.getPropertyKeyId(propertyKeyName))
-            case r: Relationship => qtx.relationshipOps.getProperty(r, qtx.getPropertyKeyId(propertyKeyName))
+            case n: Node         => qtx.nodeOps.getProperty(n.getId, qtx.getPropertyKeyId(propertyKeyName))
+            case r: Relationship => qtx.relationshipOps.getProperty(r.getId, qtx.getPropertyKeyId(propertyKeyName))
           }
         } catch {
           case x: NotFoundException =>

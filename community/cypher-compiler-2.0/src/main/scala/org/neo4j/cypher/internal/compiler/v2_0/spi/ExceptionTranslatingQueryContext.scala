@@ -117,23 +117,23 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
     override def delete(obj: T) =
       translateException(super.delete(obj))
 
-    override def setProperty(obj: T, propertyKey: Int, value: Any) =
-      translateException(super.setProperty(obj, propertyKey, value))
+    override def setProperty(id: Long, propertyKey: Int, value: Any) =
+      translateException(super.setProperty(id, propertyKey, value))
 
     override def getById(id: Long): T =
       translateException(super.getById(id))
 
-    override def getProperty(obj: T, propertyKeyId: Int): Any =
-      translateException(super.getProperty(obj, propertyKeyId))
+    override def getProperty(id: Long, propertyKeyId: Int): Any =
+      translateException(super.getProperty(id, propertyKeyId))
 
-    override def hasProperty(obj: T, propertyKeyId: Int): Boolean =
-      translateException(super.hasProperty(obj, propertyKeyId))
+    override def hasProperty(id: Long, propertyKeyId: Int): Boolean =
+      translateException(super.hasProperty(id, propertyKeyId))
 
-    override def propertyKeyIds(obj: T): Iterator[Int] =
-      translateException(super.propertyKeyIds(obj))
+    override def propertyKeyIds(id: Long): Iterator[Int] =
+      translateException(super.propertyKeyIds(id))
 
-    override def removeProperty(obj: T, propertyKeyId: Int) =
-      translateException(super.removeProperty(obj, propertyKeyId))
+    override def removeProperty(id: Long, propertyKeyId: Int) =
+      translateException(super.removeProperty(id, propertyKeyId))
 
     override def indexGet(name: String, key: String, value: Any): Iterator[T] =
       translateException(super.indexGet(name, key, value))

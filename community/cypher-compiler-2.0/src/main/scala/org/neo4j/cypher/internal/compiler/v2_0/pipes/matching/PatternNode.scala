@@ -19,14 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.pipes.matching
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.SingleNode
+import commands.expressions.Expression
+import commands.values.{UnresolvedProperty, KeyToken}
+import pipes.QueryState
+import spi.QueryContext
 import org.neo4j.graphdb.{Direction, Node}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.SingleNode
-import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
+import collection.Map
 
-class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty) extends PatternElement(key) {
+class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val properties: Map[KeyToken, Expression] = Map.empty)
+  extends PatternElement(key) {
 
-  def this(node: SingleNode) = this(node.name, node.labels)
+  def this(node: SingleNode) = {
+    this(node.name, node.labels, node.properties.map {
+      case (k, e) => (UnresolvedProperty(k), e)
+    })
+  }
+
+  def canUseThis(graphNodeId: Long, state: QueryState, ctx: ExecutionContext): Boolean =
+    nodeHasLabels(graphNodeId, state.query) &&
+      nodeHasProperties(graphNodeId, ctx)(state)
 
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
@@ -70,4 +83,27 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty) extends Pa
         foreach(r => r.traverse(shouldFollow, visitNode, visitRelationship, moreData, this, path :+ this))
     }
   }
+
+  private def nodeHasLabels(graphNodeId: Long, ctx: QueryContext): Boolean = {
+    val expectedLabels: Seq[Option[Int]] = labels.map(_.getOptId(ctx))
+
+    expectedLabels.forall {
+      case None          => false
+      case Some(labelId) => ctx.isLabelSetOnNode(labelId, graphNodeId)
+    }
+  }
+
+  private def nodeHasProperties(graphNodeId: Long, execCtx: ExecutionContext)(implicit state: QueryState): Boolean =
+    properties.forall {
+    case (token, expression) =>
+      val propertyId = token.getOptId(state.query)
+      if (propertyId.isEmpty) false // The property doesn't exist in the graph
+      else {
+        val value = state.query.nodeOps.getProperty(graphNodeId, propertyId.get)
+        val expectedValue = expression(execCtx)
+        value == expectedValue
+      }
+  }
+
+
 }

@@ -214,20 +214,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     )
   }
 
-  @Test def error_when_using_properties_on_relationships_in_match() {
-    expectError(
-      "START p=node(0) MATCH p-[r {a:'foo'}]->() RETURN r",
-      "Relationship properties cannot be specified in this context (line 1, column 28)"
-    )
-  }
-
-  @Test def error_when_using_properties_on_relationships_in_match2() {
-    expectError(
-      "START p=node(0) MATCH p-[r]->({a:'foo'}) RETURN r",
-      "Node properties cannot be specified in this context (line 1, column 31)"
-    )
-  }
-
   @Test def missing_something_to_delete() {
     expectError(
       "START p=node(0) DELETE x",

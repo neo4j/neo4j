@@ -25,6 +25,8 @@ import org.neo4j.graphdb.Direction
 import collection.Seq
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.GraphElementPropertyFunctions
+import collection.Map
 
 trait Pattern extends TypeSafe with AstNode[Pattern] {
   def optional: Boolean
@@ -47,10 +49,10 @@ object Pattern {
 
 object RelationshipPattern {
   def unapply(x: Any): Option[(RelationshipPattern, SingleNode, SingleNode)] = x match {
-    case pattern@RelatedTo(left, right, _, _, _, _)                   => Some((pattern, left, right))
-    case pattern@VarLengthRelatedTo(_, left, right, _, _, _, _, _, _) => Some((pattern, left, right))
-    case pattern@ShortestPath(_, left, right, _, _, _, _, _, _)       => Some((pattern, left, right))
-    case _                                                    => None
+    case pattern@RelatedTo(left, right, _, _, _, _, _)                   => Some((pattern, left, right))
+    case pattern@VarLengthRelatedTo(_, left, right, _, _, _, _, _, _, _) => Some((pattern, left, right))
+    case pattern@ShortestPath(_, left, right, _, _, _, _, _, _)          => Some((pattern, left, right))
+    case _                                                               => None
   }
 }
 
@@ -60,23 +62,10 @@ trait RelationshipPattern {
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): Pattern
 }
 
-
-object RelatedTo {
-  def apply(left: String, right: String, relName: String, relType: String, direction: Direction, optional: Boolean = false) =
-    new RelatedTo(SingleNode(left), SingleNode(right), relName, Seq(relType), direction, optional)
-
-  def apply(left: String, right: String, relName: String, types: Seq[String], direction: Direction) =
-    new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, false)
-
-  def optional(left: String, right: String, relName: String, types: Seq[String], direction: Direction) =
-    new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, true)
-}
-
-object SingleOptionalNode {
-  def apply(name:String, labels:Seq[KeyToken]=Seq.empty) = SingleNode(name, labels, optional = true)
-}
-
-case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, optional: Boolean = false) extends Pattern {
+case class SingleNode(name: String,
+                      labels: Seq[KeyToken] = Seq.empty,
+                      optional: Boolean = false,
+                      properties: Map[String, Expression]=Map.empty) extends Pattern with GraphElementPropertyFunctions {
   def possibleStartPoints = Seq(name -> NodeType())
 
   def predicate = True()
@@ -85,7 +74,7 @@ case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, optional:
 
   def relTypes = Seq.empty
 
-  def rewrite(f: (Expression) => Expression) = SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), optional)
+  def rewrite(f: (Expression) => Expression) = SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), optional, properties.rewrite(f))
 
   def children = Seq.empty
 
@@ -97,8 +86,24 @@ case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, optional:
     val namePart = if (notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
     val optPart = if(optional) "?" else ""
-    "(" + namePart + labelPart + optPart + ")"
+    val props = if (properties.isEmpty) "" else " " + toString(properties)
+    "(%s%s%s%s)".format(namePart, optPart, labelPart, props)
   }
+}
+
+object RelatedTo {
+  def apply(left: String, right: String, relName: String, relType: String, direction: Direction) =
+    new RelatedTo(SingleNode(left), SingleNode(right), relName, Seq(relType), direction, false, Map.empty)
+
+  def apply(left: String, right: String, relName: String, types: Seq[String], direction: Direction) =
+    new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, false, Map.empty)
+
+  def optional(left: String, right: String, relName: String, types: Seq[String], direction: Direction) =
+    new RelatedTo(SingleNode(left), SingleNode(right), relName, types, direction, true, Map.empty)
+}
+
+object SingleOptionalNode {
+  def apply(name:String, labels:Seq[KeyToken]=Seq.empty) = SingleNode(name, labels, optional = true)
 }
 
 case class RelatedTo(left: SingleNode,
@@ -106,20 +111,24 @@ case class RelatedTo(left: SingleNode,
                      relName: String,
                      relTypes: Seq[String],
                      direction: Direction,
-                     optional: Boolean) extends Pattern with RelationshipPattern {
+                     optional: Boolean = false,
+                     properties: Map[String, Expression])
+  extends Pattern with RelationshipPattern with GraphElementPropertyFunctions {
   override def toString = left + leftArrow(direction) + relInfo + rightArrow(direction) + right
 
   private def relInfo: String = {
     var info = relName
     if (optional) info = info + "?"
-    if (relTypes.nonEmpty) info = info + ":" + relTypes.mkString("|")
+    if (relTypes.nonEmpty) info += ":" + relTypes.mkString("|")
+    if (properties.nonEmpty) info += toString(properties)
+
     if (info == "") "" else "[" + info + "]"
   }
 
   val possibleStartPoints: Seq[(String, MapType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->RelationshipType()
 
   def rewrite(f: (Expression) => Expression) =
-    new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, optional)
+    new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, optional, properties.rewrite(f))
 
   def rels = Seq(relName)
 
@@ -145,7 +154,7 @@ abstract class PathPattern extends Pattern with RelationshipPattern {
 object VarLengthRelatedTo {
   def apply(pathName: String, left: String, right: String, minHops: Option[Int], maxHops: Option[Int], relTypes: String,
             direction: Direction, relIterator:Option[String]=None, optional: Boolean = false) =
-    new VarLengthRelatedTo(pathName, SingleNode(left), SingleNode(right), minHops, maxHops, Seq(relTypes), direction, relIterator, optional)
+    new VarLengthRelatedTo(pathName, SingleNode(left), SingleNode(right), minHops, maxHops, Seq(relTypes), direction, relIterator, optional, Map.empty)
 }
 
 case class VarLengthRelatedTo(pathName: String,
@@ -156,7 +165,8 @@ case class VarLengthRelatedTo(pathName: String,
                               relTypes: Seq[String],
                               direction: Direction,
                               relIterator: Option[String],
-                              optional: Boolean) extends PathPattern {
+                              optional: Boolean,
+                              properties: Map[String, Expression]) extends PathPattern with GraphElementPropertyFunctions {
 
   override def toString: String = pathName + "=" + left + leftArrow(direction) + relInfo + rightArrow(direction) + right
 
@@ -166,13 +176,14 @@ case class VarLengthRelatedTo(pathName: String,
 
   private def relInfo: String = {
     var info = if (optional) "?" else ""
-    if (relTypes.nonEmpty) info = info + ":" + relTypes.mkString("|")
+    if (relTypes.nonEmpty) info += ":" + relTypes.mkString("|")
     val hops = (minHops, maxHops) match {
-      case (None, None) => "*"
-      case (Some(min), None) => "*" + min + ".."
-      case (None, Some(max)) => "*" + ".." + max
+      case (None, None)           => "*"
+      case (Some(min), None)      => "*" + min + ".."
+      case (None, Some(max))      => "*" + ".." + max
       case (Some(min), Some(max)) => "*" + min + ".." + max
     }
+    if (properties.nonEmpty) info += toString(properties)
 
     val relName = relIterator.getOrElse("")
     info = relName + info + hops
@@ -182,7 +193,7 @@ case class VarLengthRelatedTo(pathName: String,
 
   def rewrite(f: (Expression) => Expression) =
     new VarLengthRelatedTo(pathName, left.rewrite(f), right.rewrite(f),
-      minHops, maxHops, relTypes, direction, relIterator, optional)
+      minHops, maxHops, relTypes, direction, relIterator, optional, properties.rewrite(f))
 
   lazy val possibleStartPoints: Seq[(String, AnyType)] =
     left.possibleStartPoints ++

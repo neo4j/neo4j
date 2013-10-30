@@ -57,25 +57,25 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   }
 
   @Test def set_property() {
-    context.nodeOps.setProperty(nodeA, 1, "value")
+    context.nodeOps.setProperty(nodeAId, 1, "value")
 
     assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
   }
 
   @Test def remove_property() {
-    context.nodeOps.removeProperty(nodeA, context.getPropertyKeyId("key"))
+    context.nodeOps.removeProperty(nodeAId, context.getPropertyKeyId("key"))
 
     assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
   }
 
   @Test def set_property_relationship() {
-    context.relationshipOps.setProperty(rel, 1, "value")
+    context.relationshipOps.setProperty(relId, 1, "value")
 
     assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
   }
 
   @Test def remove_property_relationship() {
-    context.relationshipOps.removeProperty(rel, context.getPropertyKeyId("key"))
+    context.relationshipOps.removeProperty(relId, context.getPropertyKeyId("key"))
 
     assert(context.getStatistics === QueryStatistics(propertiesSet = 1))
   }
@@ -120,7 +120,9 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   val inner = mock[QueryContext]
   val nodeA = mock[Node]
   val nodeB = mock[Node]
+  val nodeAId = 666
   val rel = mock[Relationship]
+  val relId = 42
   var context: UpdateCountingQueryContext = null
   val nodeOps = mock[Operations[Node]]
   val relOps = mock[Operations[Relationship]]

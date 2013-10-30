@@ -35,13 +35,13 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
       case Some(propertyKeyId) =>
         element(context)(state) match {
           case n: Node =>
-            if (state.query.nodeOps.hasProperty(n, propertyKeyId)) {
-              state.query.nodeOps.removeProperty(n, propertyKeyId)
+            if (state.query.nodeOps.hasProperty(n.getId, propertyKeyId)) {
+              state.query.nodeOps.removeProperty(n.getId, propertyKeyId)
             }
 
           case r: Relationship  =>
-            if (state.query.relationshipOps.hasProperty(r, propertyKeyId)) {
-              state.query.relationshipOps.removeProperty(r, propertyKeyId)
+            if (state.query.relationshipOps.hasProperty(r.getId, propertyKeyId)) {
+              state.query.relationshipOps.removeProperty(r.getId, propertyKeyId)
             }
 
           case _ =>

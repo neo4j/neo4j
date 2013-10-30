@@ -107,7 +107,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
       if (alreadyUsed(patternMatch)) {
         None
       } else {
-        val result: ExecutionContext = ctx.clone
+        val result: ExecutionContext = ctx.clone()
 
         patternNodes.foreach {
           case (key, pn) => val tuple = key -> patternMatch.getNodeFor(pn)
@@ -130,7 +130,7 @@ object SimplePatternMatcherBuilder {
     val b = !graph.patternRels.values.exists(pr => pr.isInstanceOf[VariableLengthPatternRelationship] || pr.startNode == pr.endNode || pr.relTypes.size > 1)
     val c = !graph.patternRels.keys.exists(graph.boundElements.contains)
     val d = !graph.patternNodes.values.exists(pn => pn.relationships.isEmpty )
-    val e = !graph.patternNodes.values.exists(_.labels.nonEmpty)
+    val e = !graph.patternNodes.values.exists(node => node.labels.nonEmpty || node.properties.nonEmpty)
     a && b && c && d && e
   }
 }

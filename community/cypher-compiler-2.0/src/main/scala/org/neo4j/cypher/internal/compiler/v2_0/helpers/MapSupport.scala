@@ -54,15 +54,22 @@ trait MapSupport {
 
     def -(key: String) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
 
-    def get(key: String) = ctx.getOptPropertyKeyId(key).flatMap( (pkId: Int) => Option(ops.getProperty(n, pkId)) )
+    def get(key: String) = ctx.getOptPropertyKeyId(key).flatMap( (pkId: Int) => Option(ops.getProperty(id(n), pkId)) )
 
     def iterator: Iterator[(String, Any)] =
-      ops.propertyKeyIds(n).map(id => ctx.getPropertyKeyName(id) -> ops.getProperty(n, id)).toIterator
+      ops.propertyKeyIds(id(n)).
+        map(propertyId => ctx.getPropertyKeyName(propertyId) -> ops.getProperty(id(n), propertyId)).
+        toIterator
 
-    override def contains(key: String) = ctx.getOptPropertyKeyId(key).exists(ops.hasProperty(n, _))
+    override def contains(key: String) = ctx.getOptPropertyKeyId(key).exists(ops.hasProperty(id(n), _))
 
     override def apply(key: String) =
       get(key).getOrElse(throw new EntityNotFoundException("The property '%s' does not exist on %s".format(key, n)))
+
+    private def id(x: PropertyContainer) = n match {
+      case n: Node         => n.getId
+      case r: Relationship => r.getId
+    }
   }
 }
 
