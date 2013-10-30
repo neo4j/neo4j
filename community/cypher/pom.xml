@@ -40,6 +40,7 @@
     <module>cypher-compiler-1.9</module>
     <module>cypher-compiler-2.0</module>
     <module>cypher</module>
+    <module>cypher-docs</module>
   </modules>
 
   <build>
