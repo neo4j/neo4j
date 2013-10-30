@@ -83,25 +83,25 @@ object CypherCompiler {
 
 class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
 
-  private def executionContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement) =
+  private def queryContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement) =
     new ExceptionTranslatingQueryContext(new TransactionBoundExecutionContext(graph, tx, statement))
 
   def profile(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
-    inner.profile(executionContext(graph, tx, statement), params)
+    inner.profile(queryContext(graph, tx, statement), params)
 
   def execute(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
-    inner.execute(executionContext(graph, tx, statement), params)
+    inner.execute(queryContext(graph, tx, statement), params)
 }
 
 class ExecutionPlanWrapperForV1_9(inner: ExecutionPlan_v1_9) extends ExecutionPlan {
 
-  private def executionContext(graph: GraphDatabaseAPI) =
+  private def queryContext(graph: GraphDatabaseAPI) =
     new GDSBackedQueryContext(graph)
 
   def profile(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
-    inner.profile(executionContext(graph), tx, params)
+    inner.profile(queryContext(graph), tx, params)
 
   def execute(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
-    inner.execute(executionContext(graph), tx, params)
+    inner.execute(queryContext(graph), tx, params)
 }
 
