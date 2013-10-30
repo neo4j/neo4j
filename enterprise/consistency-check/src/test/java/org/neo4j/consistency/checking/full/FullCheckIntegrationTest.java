@@ -76,6 +76,7 @@ import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromN
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyType.ARRAY;
 import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.prependNodeId;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
@@ -216,7 +217,7 @@ public class FullCheckIntegrationTest
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { nodeRecord.getLongId(), 42l },
+                Collection<DynamicRecord> newRecords = allocateFromNumbers( prependNodeId( nodeRecord.getLongId(), new long[]{42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
@@ -384,7 +385,8 @@ public class FullCheckIntegrationTest
 
                 NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { nodeRecord.getLongId(), 42l, 42l },
+                Collection<DynamicRecord> newRecords = allocateFromNumbers(
+                        prependNodeId( nodeRecord.getLongId(), new long[]{42l, 42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
@@ -413,7 +415,7 @@ public class FullCheckIntegrationTest
 
                 NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = allocateFromNumbers( new long[] { next.node(), 42l },
+                Collection<DynamicRecord> newRecords = allocateFromNumbers( prependNodeId( next.node(), new long[]{42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
