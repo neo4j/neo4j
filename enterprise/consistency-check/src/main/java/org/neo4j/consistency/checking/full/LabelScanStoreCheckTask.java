@@ -75,30 +75,40 @@ public class LabelScanStoreCheckTask implements StoppableRunnable,
     @Override
     public void run()
     {
-        if ( null != progress )
+        if ( progress == null )
         {
-            if ( null != scanSupport )
+            return;
+        }
+
+        try
+        {
+            if ( scanSupport == null )
             {
-                try ( NodeRangeReader reader = scanSupport.newRangeReader() )
+                return;
+            }
+
+            try ( NodeRangeReader reader = scanSupport.newRangeReader() )
+            {
+                for ( NodeLabelRange range : reader )
                 {
-                    for ( NodeLabelRange range : reader )
+                    if ( continueScanning )
                     {
-                        if ( continueScanning )
-                        {
-                            LabelScanDocument document = new LabelScanDocument( range.id(), range );
-                            reporter.forNodeLabelScan( document, this );
-                        }
-                        else
-                        {
-                            return;
-                        }
+                        LabelScanDocument document = new LabelScanDocument( range.id(), range );
+                        reporter.forNodeLabelScan( document, this );
+                    }
+                    else
+                    {
+                        return;
                     }
                 }
-                catch ( IOException e )
-                {
-                    progress.failed( e );
-                }
             }
+            catch ( IOException e )
+            {
+                progress.failed( e );
+            }
+        }
+        finally
+        {
             progress.done();
         }
     }
