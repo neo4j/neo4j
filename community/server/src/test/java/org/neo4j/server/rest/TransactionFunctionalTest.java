@@ -32,7 +32,6 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.repr.util.RFC1123;
@@ -41,23 +40,14 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
-import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
@@ -71,38 +61,21 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
-        long startOfTest = System.currentTimeMillis();
-
-        // This generous wait time is necessary to compensate for limited resolution of RFC 1123 timestamps
-        // and the fact that the system clock is allowed to run "backwards" between threads
-        // (cf. http://stackoverflow.com/questions/2978598)
-        //
-        Thread.sleep( 3000 );
-
         // begin
         Response begin = http.POST( "/db/data/transaction" );
 
         assertThat( begin.status(), equalTo( 201 ) );
         assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
 
-        long beginStamp = expirationTime( jsonToMap( begin.rawContent() ) );
-        long defaultTimeoutMillis =
-            SECONDS.toMillis( server().getConfiguration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT ) );
-        assertTrue( beginStamp > (defaultTimeoutMillis + startOfTest ) );
-
         String commitResource = begin.stringFromContent( "commit" );
         assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d+/commit" ) );
-
-        Thread.sleep( 3000 );
+        assertThat( begin.get("transaction").get("expires").asText(), isValidRFCTimestamp());
 
         // execute
         Response execute =
             http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
-
         assertThat( execute.status(), equalTo( 200 ) );
-        long executeStamp = expirationTime( jsonToMap( execute.rawContent() ) );
-        assertTrue( executeStamp > startOfTest );
-        assertTrue( executeStamp > beginStamp );
+        assertThat( execute.get("transaction").get("expires").asText(), isValidRFCTimestamp());
 
         // commit
         Response commit = http.POST( commitResource );
@@ -321,7 +294,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 
         // then
         assertThat( response.status(), equalTo( 200 ) );
-        JsonNode data = response.jsonContent().get( "results" ).get( 0 ).get( "data" );
+        JsonNode data = response.get( "results" ).get( 0 ).get( "data" );
         assertTrue( "data is a list", data.isArray() );
         assertEquals( "one entry", 1, data.size() );
         JsonNode entry = data.get( 0 );
@@ -353,13 +326,12 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         // then
         assertThat( response.status(), equalTo( 200 ) );
 
-        JsonNode jsonResponse = response.jsonContent();
-        JsonNode data = jsonResponse.get( "results" ).get(0);
+        JsonNode data = response.get( "results" ).get(0);
         assertThat( data.get( "columns" ).get( 0 ).asText(), equalTo( "COLLECT(n)" ) );
         assertThat( data.get( "data" ).get(0).get( "row" ).size(), equalTo(1));
         assertThat( data.get( "data" ).get( 0 ).get( "row" ).get( 0 ).get( 0 ).size(), equalTo( 0 ) );
 
-        assertThat( jsonResponse.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
     }
 
     @Test
@@ -371,8 +343,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         // then
         assertThat( response.status(), equalTo( 200 ) );
 
-        JsonNode jsonResponse = response.jsonContent();
-        JsonNode data = jsonResponse.get( "results" ).get(0);
+        JsonNode data = response.get( "results" ).get(0);
         JsonNode row = data.get( "data" ).get( 0 ).get( "row" );
         assertThat( row.size(), equalTo(1));
         JsonNode firstCell = row.get( 0 );
@@ -380,7 +351,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
         assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ));
 
-        assertThat(  jsonResponse.get( "errors" ).size(), equalTo(0));
+        assertThat( response.get( "errors" ).size(), equalTo(0));
     }
 
     @Test
@@ -392,8 +363,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         // then
         assertThat( response.status(), equalTo( 200 ) );
 
-        JsonNode jsonResponse = response.jsonContent();
-        JsonNode data = jsonResponse.get( "results" ).get( 0 );
+        JsonNode data = response.get( "results" ).get( 0 );
         JsonNode rest = data.get( "data" ).get( 0 ).get( "rest" );
         assertThat( rest.size(), equalTo( 1 ) );
         JsonNode firstCell = rest.get( 0 );
@@ -401,7 +371,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
         assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ) );
 
-        assertThat( jsonResponse.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
     }
 
     private HTTP.RawPayload singleStatement( String statement )
@@ -457,7 +427,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     private long countNodes()
     {
-        try ( Transaction transaction = graphdb().beginTx() )
+        try ( Transaction ignore = graphdb().beginTx() )
         {
             long count = 0;
             Iterator<Node> allNodes = GlobalGraphOperations.at( graphdb() ).getAllNodes().iterator();
@@ -485,14 +455,33 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "matching regex" ).appendValue( pattern );
+                description.appendText( "matching regex: " ).appendValue( pattern );
             }
         };
     }
 
-    private long expirationTime( Map<String, Object> entity ) throws ParseException
+    private static Matcher<String> isValidRFCTimestamp()
     {
-        String timestampString = (String) ( (Map<?, ?>) entity.get( "transaction" ) ).get( "expires" );
-        return RFC1123.parseTimestamp( timestampString ).getTime();
+        return new TypeSafeMatcher<String>()
+        {
+            @Override
+            protected boolean matchesSafely( String item )
+            {
+                try
+                {
+                    return RFC1123.parseTimestamp( item ).getTime() > 0;
+                }
+                catch ( ParseException e )
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "valid RFC1134 timestamp" );
+            }
+        };
     }
 }

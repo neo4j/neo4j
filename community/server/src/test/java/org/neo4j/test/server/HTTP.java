@@ -241,11 +241,6 @@ public class HTTP
                     "unable to provide location. Status code was: " + status() );
         }
 
-        public String firstHeader( String key )
-        {
-            return response.getHeaders().getFirst( key );
-        }
-
         @SuppressWarnings("unchecked")
         public <T> T content()
         {
@@ -264,14 +259,14 @@ public class HTTP
             return entity;
         }
 
-        public String stringFromContent( String key )
+        public String stringFromContent( String key ) throws JsonParseException
         {
-            return (String) ((Map<String, Object>) content()).get( key );
+            return get(key).asText();
         }
 
-        public JsonNode jsonContent() throws JsonParseException
+        public JsonNode get(String fieldName) throws JsonParseException
         {
-            return JsonHelper.jsonNode( entity );
+            return JsonHelper.jsonNode( entity ).get( fieldName );
         }
     }
 
