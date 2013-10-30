@@ -33,6 +33,7 @@ import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.scan.LabelScanReader;
 import org.neo4j.kernel.api.scan.LabelScanStore;
@@ -175,6 +176,19 @@ public class LuceneLabelScanStore
     {
         final IndexSearcher searcher = acquireSearcher();
         return strategy.newNodeLabelReader( searcher );
+    }
+
+    @Override public long getHighRangeId() throws IOException
+    {
+        final IndexSearcher searcher = acquireSearcher();
+        try
+        {
+            return searcher.maxDoc();
+        }
+        finally
+        {
+            releaseSearcher( searcher );
+        }
     }
 
 

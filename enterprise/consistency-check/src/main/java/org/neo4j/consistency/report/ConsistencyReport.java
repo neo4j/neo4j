@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -108,6 +109,9 @@ public interface ConsistencyReport
 
         void forDynamicLabelBlockChange( RecordType type, DynamicRecord oldRecord, DynamicRecord newRecord,
                                          RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker );
+
+        void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument,
+                               ConsistencyReport.LabelScanConsistencyReport> checker );
     }
 
     interface PrimitiveConsistencyReport extends ConsistencyReport
@@ -547,5 +551,20 @@ public interface ConsistencyReport
         /** This label record does not have an owning node record. */
         @Documented
         void orphanDynamicLabelRecord();
+    }
+
+    interface LabelScanConsistencyReport extends ConsistencyReport
+    {
+        /** This label scan document refers to a node record that is not in use. */
+        @Documented
+        void nodeNotInUse( NodeRecord referredNodeRecord );
+
+        /** This label scan document refers to a label record that is not in use. */
+        @Documented
+        void labelNotInUse( LabelTokenRecord referredLabelRecord );
+
+        /** This label scan document refers to a node that does not have the expected label. */
+        @Documented
+        void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, LabelTokenRecord expectedLabelRecord );
     }
 }

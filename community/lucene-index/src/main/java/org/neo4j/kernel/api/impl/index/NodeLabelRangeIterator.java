@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.IndexSearcher;
+
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
 import org.neo4j.kernel.api.scan.NodeLabelRange;
@@ -77,12 +78,15 @@ public class NodeLabelRangeIterator extends PrefetchingIterator<NodeLabelRange>
                     }
                 }
                 assert (rangeId >= 0);
-                id++;
-                return new LuceneNodeLabelRange( labelIds, getLongs( bitmaps, rangeId ) );
+                return LuceneNodeLabelRange.fromBitmapStructure( id, labelIds, getLongs( bitmaps, rangeId ) );
             }
             catch ( IOException e )
             {
                 throw new RuntimeException( e );
+            }
+            finally
+            {
+                id++;
             }
         }
         return null;

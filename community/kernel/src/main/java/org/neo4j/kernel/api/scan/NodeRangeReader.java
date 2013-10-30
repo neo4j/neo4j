@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.scan;
 
-public interface NodeRangeReader extends Iterable<NodeLabelRange>, AutoCloseable
+import java.io.Closeable;
+
+public interface NodeRangeReader extends Iterable<NodeLabelRange>, Closeable
 {
 }

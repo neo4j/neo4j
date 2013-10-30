@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.search.IndexSearcher;
+
 import org.neo4j.kernel.api.scan.NodeLabelRange;
 import org.neo4j.kernel.api.scan.NodeRangeReader;
 
@@ -43,7 +45,7 @@ public class LuceneNodeRangeReader implements NodeRangeReader
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
         searcher.close();
     }

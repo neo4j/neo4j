@@ -159,10 +159,10 @@ public class LuceneLabelScanStoreTest
         NodeLabelRange range = single( reader.iterator() );
 
         // THEN
-        assertArrayEquals( new long[]{labelId1, labelId2}, sorted( range.labels() ) );
+        assertArrayEquals( new long[]{nodeId1, nodeId2}, sorted( range.nodes() ) );
 
-        assertArrayEquals( new long[]{nodeId1, nodeId2}, sorted( range.nodes( labelId1 ) ) );
-        assertArrayEquals( new long[]{nodeId2}, sorted( range.nodes( labelId2 ) ) );
+        assertArrayEquals( new long[]{labelId1}, sorted( range.labels( nodeId1 ) ) );
+        assertArrayEquals( new long[]{labelId1, labelId2}, sorted( range.labels( nodeId2 ) ) );
     }
 
     @Test
@@ -184,14 +184,12 @@ public class LuceneLabelScanStoreTest
         assertFalse( iterator.hasNext() );
 
         // THEN
-        assertArrayEquals( new long[] { labelId1 }, sorted( range1.labels() ) );
-        assertArrayEquals( new long[] { labelId1, labelId2 }, sorted( range2.labels() ) );
+        assertArrayEquals( new long[] { nodeId1 }, sorted( range1.nodes() ) );
+        assertArrayEquals( new long[] { nodeId2 }, sorted( range2.nodes() ) );
 
-        assertArrayEquals( new long[] { nodeId1 }, sorted( range1.nodes( labelId1 ) ) );
-        assertArrayEquals( new long[] { }, sorted( range1.nodes( labelId2 ) ) );
+        assertArrayEquals( new long[] { labelId1 }, sorted( range1.labels( nodeId1 ) ) );
 
-        assertArrayEquals( new long[] { nodeId2 }, sorted( range2.nodes( labelId1 ) ) );
-        assertArrayEquals( new long[] { nodeId2 }, sorted( range2.nodes( labelId2 ) ) );
+        assertArrayEquals( new long[] { labelId1, labelId2 }, sorted( range2.labels( nodeId2 ) ) );
     }
 
     private long[] sorted( long[] input )

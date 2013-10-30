@@ -88,8 +88,8 @@ public class FullCheck
                   InconsistencyReport report )
             throws ConsistencyCheckIncompleteException
     {
-        StoreProcessor processEverything = new StoreProcessor( decorator,
-                new ConsistencyReporter( recordAccess, report ) );
+        ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report );
+        StoreProcessor processEverything = new StoreProcessor( decorator, reporter );
 
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full consistency check" );
         List<StoppableRunnable> tasks = new ArrayList<>( 16 );
@@ -159,7 +159,7 @@ public class FullCheck
                 processEverything, processEverything ) );
 
         // Get hold of label scan store
-        tasks.add( new LabelScanStoreCheckTask( scannableStores ) );
+        tasks.add( new LabelScanStoreCheckTask( scannableStores, progress, reporter ) );
 
         order.execute( tasks, progress.build() );
     }

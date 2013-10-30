@@ -19,37 +19,88 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.neo4j.kernel.api.scan.NodeLabelRange;
 
 public class LuceneNodeLabelRange implements NodeLabelRange
 {
-    private final static long[] NO_NODES = new long[0];
+    private final int id;
+    private final long[] nodeIds;
+    private final long[][] labelIds;
 
-    private final long[] labelIds;
-    private final long[][] nodeIds;
-
-    public LuceneNodeLabelRange( long[] labelIds, long[][] nodeIds )
+    public LuceneNodeLabelRange( int id, long[] nodeIds, long[][] labelIds )
     {
+        this.id = id;
         this.labelIds = labelIds;
         this.nodeIds = nodeIds;
     }
 
     @Override
-    public long[] labels()
+    public int id()
     {
-        return labelIds;
+        return id;
     }
 
     @Override
-    public long[] nodes( long labelId )
+    public long[] nodes()
     {
-        for ( int i = 0; i < labelIds.length; i++ )
+        return nodeIds;
+    }
+
+    @Override
+    public long[] labels( long nodeId )
+    {
+        for ( int i = 0; i < nodeIds.length; i++ )
         {
-            if ( labelId == labelIds[i] )
+            if ( nodeId == nodeIds[i] )
             {
-                return nodeIds[i];
+                return labelIds[i];
             }
         }
-        return NO_NODES;
+        throw new IllegalArgumentException( "Unknown nodeId: " + nodeId );
+    }
+
+    public static LuceneNodeLabelRange fromBitmapStructure( int id, long[] labelIds, long[][] nodeIdsByLabelIndex )
+    {
+        Map<Long, List<Long>> labelsForEachNode = new HashMap<>(  );
+        for ( int i = 0; i < labelIds.length; i++ )
+        {
+            long labelId = labelIds[i];
+            for ( int j = 0; j < nodeIdsByLabelIndex[i].length; j++ )
+            {
+                long nodeId = nodeIdsByLabelIndex[i][j];
+                List<Long> labelIdList = labelsForEachNode.get( nodeId );
+                if ( labelIdList == null )
+                {
+                    labelsForEachNode.put( nodeId, labelIdList = new ArrayList<>() );
+                }
+                labelIdList.add( labelId );
+            }
+        }
+
+        Set<Long> nodeIdSet = labelsForEachNode.keySet();
+        long[] nodeIds = new long[ nodeIdSet.size() ];
+        long[][] labelIdsByNodeIndex = new long[ nodeIdSet.size() ][];
+        int nodeIndex = 0;
+        for ( long nodeId : nodeIdSet )
+        {
+            nodeIds[ nodeIndex ] = nodeId;
+            List<Long> labelIdList = labelsForEachNode.get( nodeId );
+            long[] nodeLabelIds = new long[ labelIdList.size() ];
+            int labelIndex = 0;
+            for ( long labelId : labelIdList )
+            {
+                nodeLabelIds[ labelIndex ] = labelId;
+                labelIndex++;
+            }
+            labelIdsByNodeIndex[ nodeIndex ] = nodeLabelIds;
+            nodeIndex++;
+        }
+        return new LuceneNodeLabelRange( id, nodeIds, labelIdsByNodeIndex );
     }
 }
