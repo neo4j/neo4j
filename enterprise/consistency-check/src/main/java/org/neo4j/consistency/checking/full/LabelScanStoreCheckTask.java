@@ -93,7 +93,7 @@ public class LabelScanStoreCheckTask implements StoppableRunnable,
                 {
                     if ( continueScanning )
                     {
-                        LabelScanDocument document = new LabelScanDocument( range.id(), range );
+                        LabelScanDocument document = new LabelScanDocument( range );
                         reporter.forNodeLabelScan( document, this );
                     }
                     else
@@ -138,7 +138,7 @@ public class LabelScanStoreCheckTask implements StoppableRunnable,
         throw new UnsupportedOperationException();
     }
 
-    private class NodeRecordCheck implements
+    static class NodeRecordCheck implements
             ComparativeRecordChecker<LabelScanDocument, NodeRecord, ConsistencyReport.LabelScanConsistencyReport>
     {
         @Override

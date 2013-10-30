@@ -158,7 +158,6 @@ public class FullCheck
         tasks.add( new StoreProcessorTask<>( nativeStores.getNodeDynamicLabelStore(), progress, order,
                 processEverything, processEverything ) );
 
-        // Get hold of label scan store
         tasks.add( new LabelScanStoreCheckTask( scannableStores, progress, reporter ) );
 
         order.execute( tasks, progress.build() );

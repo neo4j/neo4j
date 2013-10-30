@@ -307,7 +307,7 @@ public class ConsistencyReporterTest
             }
             if ( type == LabelScanDocument.class )
             {
-                return new LabelScanDocument( 0, new LuceneNodeLabelRange( 0, new long[] {}, new long[][] {} ) );
+                return new LabelScanDocument( new LuceneNodeLabelRange( 0, new long[] {}, new long[][] {} ) );
             }
             if ( type == long.class )
             {

@@ -30,9 +30,9 @@ public class LabelScanDocument extends Abstract64BitRecord
 {
     private final NodeLabelRange nodeLabelRange;
 
-    public LabelScanDocument( long id, NodeLabelRange nodeLabelRange )
+    public LabelScanDocument( NodeLabelRange nodeLabelRange )
     {
-        super( id );
+        super( nodeLabelRange.id() );
         this.nodeLabelRange = nodeLabelRange;
         setInUse( true );
     }
