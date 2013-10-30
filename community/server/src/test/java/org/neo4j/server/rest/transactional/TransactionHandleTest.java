@@ -28,7 +28,8 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.mockito.InOrder;
-
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
@@ -38,20 +39,11 @@ import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 import static java.util.Arrays.asList;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.deserilizationErrors;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
@@ -265,8 +257,7 @@ public class TransactionHandleTest
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
-        TransitionalTxManagementKernelTransaction transactionContext =
-                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -295,8 +286,7 @@ public class TransactionHandleTest
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
-        TransitionalTxManagementKernelTransaction transactionContext =
-                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -381,6 +371,38 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.STATEMENT_SYNTAX_ERROR ) ) );
+        outputOrder.verify( output ).finish();
+        verifyNoMoreInteractions( output );
+    }
+
+    @Test
+    public void shouldHandleExecutionEngineThrowingUndeclaredCheckedExceptions() throws Exception
+    {
+        // given
+
+        ExecutionEngine executionEngine = mock( ExecutionEngine.class );
+        when( executionEngine.execute( "match (n) return n", map() ) ).thenAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable { throw new Exception("BOO"); }
+        });
+
+        TransactionRegistry registry = mock( TransactionRegistry.class );
+        when( registry.begin() ).thenReturn( 1337l );
+
+        TransactionHandle handle = new TransactionHandle( mockKernel(), executionEngine, registry, uriScheme,
+                mock( StringLogger.class ) );
+        ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
+
+        // when
+        handle.commit( statements( new Statement( "match (n) return n", map(), false, (ResultDataContent[])null ) ),
+                output );
+
+        // then
+        verify( registry ).forget( 1337l );
+
+        InOrder outputOrder = inOrder( output );
+        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
