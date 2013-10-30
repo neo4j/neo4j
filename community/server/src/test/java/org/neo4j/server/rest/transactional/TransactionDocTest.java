@@ -306,7 +306,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         while ( expected.hasNext() )
         {
             assertTrue( errors.hasNext() );
-            assertThat( (Integer) errors.next().get( "code" ), equalTo( expected.next().getCode() ) );
+            assertThat( (String)errors.next().get( "code" ), equalTo( expected.next().getCode() ) );
         }
         if ( errors.hasNext() )
         {

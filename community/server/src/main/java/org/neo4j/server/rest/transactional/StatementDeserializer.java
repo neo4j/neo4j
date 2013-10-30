@@ -166,7 +166,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         }
         catch ( Exception e)
         {
-            addError( new Neo4jError( StatusCode.INTERNAL_UNKNOWN_ERROR, e ) );
+            addError( new Neo4jError( StatusCode.INTERNAL_DATABASE_ERROR, e ) );
             return null;
         }
     }

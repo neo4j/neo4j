@@ -33,6 +33,7 @@ import java.util.Set;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -46,11 +47,13 @@ import org.neo4j.test.mocking.GraphMock;
 import org.neo4j.test.mocking.Link;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
@@ -144,7 +147,7 @@ public class ExecutionResultSerializerTest
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
-                      "\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}",
+                      "\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
                       result );
     }
 
@@ -168,7 +171,7 @@ public class ExecutionResultSerializerTest
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                       "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
-                      "\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}",
+                      "\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
                       result );
     }
 
@@ -186,8 +189,7 @@ public class ExecutionResultSerializerTest
 
         // then
         String result = output.toString( "UTF-8" );
-        assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[{\"code\":40001," +
-                      "\"status\":\"INVALID_REQUEST_FORMAT\"," +
+        assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[],\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\"," +
                       "\"message\":\"cause1\"}]}", result );
     }
 
@@ -205,7 +207,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals(
-                "{\"results\":[],\"errors\":[{\"code\":40001,\"status\":\"INVALID_REQUEST_FORMAT\",\"message\":\"cause1\"}]}",
+                "{\"results\":[],\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
                 result );
     }
 
@@ -356,7 +358,7 @@ public class ExecutionResultSerializerTest
         String result = output.toString( "UTF-8" );
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
-                "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
+                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailure\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
 
@@ -395,7 +397,7 @@ public class ExecutionResultSerializerTest
         String result = output.toString( "UTF-8" );
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
-                "\"errors\":[{\"code\":50001,\"status\":\"INTERNAL_STATEMENT_EXECUTION_ERROR\",\"message\":\"Stuff went wrong!\"," +
+                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailure\",\"message\":\"Stuff went wrong!\"," +
                 "\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }

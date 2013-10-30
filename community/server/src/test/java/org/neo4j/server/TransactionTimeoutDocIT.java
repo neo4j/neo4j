@@ -59,8 +59,9 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
         Map<String, Object> response = HTTP.POST( tx + "/commit" ).content();
 
         // Then
+        @SuppressWarnings("unchecked")
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
-        assertThat( ((Number) errors.get( 0 ).get( "code" )).intValue(), equalTo( INVALID_TRANSACTION_ID.getCode() ) );
+        assertThat( (String) errors.get( 0 ).get( "code" ), equalTo( INVALID_TRANSACTION_ID.getCode() ) );
     }
 
     private String txURI()

@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.transactional.error;
 
 import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -28,10 +29,10 @@ import static org.junit.Assert.assertEquals;
 public class StatusCodeTest
 {
     @Test
-    public void eachStatusCodeHasAUniqueNumber() throws Exception
+    public void eachStatusCodeHasAUniqueCode() throws Exception
     {
         // given
-        HashSet<Integer> numbers = new HashSet<Integer>();
+        Set<Object> numbers = new HashSet<>();
 
         // when
         for ( StatusCode statusCode : StatusCode.values() )
