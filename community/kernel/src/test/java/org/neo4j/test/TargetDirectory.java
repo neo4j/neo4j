@@ -23,12 +23,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 import static java.lang.String.format;
 
@@ -58,8 +60,9 @@ public class TargetDirectory
         @Override
         public Statement apply( final Statement base, Description description )
         {
-            String cleanName = description.getMethodName().replaceAll( "[^A-Za-z0-9]+", "-" );
-            subdir = TargetDirectory.this.directory( cleanName, clean );
+            String testName = description.getMethodName();
+            String dirName = DigestUtils.md5Hex( testName );
+            subdir = TargetDirectory.this.registeredDirectory( dirName, testName, clean );
             return new Statement()
             {
                 @Override
@@ -116,6 +119,19 @@ public class TargetDirectory
         }
         fileSystem.mkdir( dir );
         return dir;
+    }
+
+    public File registeredDirectory( String dirName, String testName, boolean clean )
+    {
+        try
+        {
+            FileUtils.writeToFile( new File( base(), ".register" ), format("%s=%s\n", dirName, testName), true );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return directory( dirName, clean );
     }
 
     public File file( String name )

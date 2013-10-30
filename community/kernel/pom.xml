@@ -437,6 +437,11 @@ public class ComponentVersion extends Version
       <artifactId>geronimo-spec-j2ee</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <distributionManagement>
