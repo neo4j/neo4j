@@ -22,19 +22,19 @@ package org.neo4j.test.server;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.core.MediaType;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import org.codehaus.jackson.JsonNode;
-
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -267,6 +267,24 @@ public class HTTP
         public JsonNode get(String fieldName) throws JsonParseException
         {
             return JsonHelper.jsonNode( entity ).get( fieldName );
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append( "HTTP " ).append( response.getStatus() ).append( "\n" );
+            for ( Map.Entry<String, List<String>> header : response.getHeaders().entrySet() )
+            {
+                for ( String headerEntry : header.getValue() )
+                {
+                    sb.append( header.getKey() + ": " ).append( headerEntry ).append( "\n" );
+                }
+            }
+            sb.append( "\n" );
+            sb.append( entity ).append( "\n" );
+
+            return sb.toString();
         }
     }
 
