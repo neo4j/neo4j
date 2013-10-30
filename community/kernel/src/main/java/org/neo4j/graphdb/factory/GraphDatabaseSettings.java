@@ -150,11 +150,6 @@ public abstract class GraphDatabaseSettings
     @Description("Integer value that sets the maximum number of open lucene index searchers.")
     public static Setting<Integer> lucene_searcher_cache_size = setting("lucene_searcher_cache_size",INTEGER, Integer.toString( Integer.MAX_VALUE ), min( 1 ));
 
-    @Description("NOTE: This no longer has any effect. Integer value that sets the maximum number of open lucene " +
-            "index writers.")
-    @Deprecated
-    public static Setting<Integer> lucene_writer_cache_size = setting("lucene_writer_cache_size", INTEGER, Integer.toString( Integer.MAX_VALUE), min(1) );
-
     // NeoStore settings
     @Description("Determines whether any TransactionInterceptors loaded will intercept prepared transactions before " +
             "they reach the logical log.")
@@ -221,10 +216,6 @@ public abstract class GraphDatabaseSettings
     @Description("How many relationships to read at a time during iteration")
     public static final Setting<Integer> relationship_grab_size = setting("relationship_grab_size", INTEGER, "100", min( 1 ));
 
-    @Description("Whether to grab locks on files or not.")
-    @Deprecated
-    public static final Setting<Boolean> grab_file_lock = setting("grab_file_lock", BOOLEAN, TRUE );
-
     @Description("Specifies the block size for storing strings. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
             "Note that each character in a string occupies two bytes, meaning that a block size of 120 (the default " +
@@ -261,41 +252,6 @@ public abstract class GraphDatabaseSettings
     @Description("The amount of time in ms the monitor thread has to be blocked before logging a message it was " +
             "blocked.")
     public static final Setting<Long> gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
-
-    // Old GCR size settings, using string values
-
-    /**
-     * Use GcrSettings.gcr_node_cache_size instead.
-     */
-    @Description("The amount of memory to use for the node cache (when using the 'gcr' cache).")
-    @Deprecated
-    public static final Setting<String> node_cache_size = setting("node_cache_size", STRING, NO_DEFAULT, matches( SIZE_FORMAT ) );
-
-    /**
-     * Use GcrSettings.gcr_relationship_cache_size instead.
-     */
-    @Description("The amount of memory to use for the relationship cache (when using the 'gcr' cache).")
-    @Deprecated
-    public static final Setting<String> relationship_cache_size = setting("relationship_cache_size", STRING, NO_DEFAULT, matches( SIZE_FORMAT ));
-
-    @Description("The fraction of the heap (1%-10%) to use for the base array in the node cache (when using the 'gcr'" +
-            " cache).")
-    @Deprecated
-    public static final Setting<Float> node_cache_array_fraction = setting("node_cache_array_fraction", FLOAT, "1.0", range( 1.0f, 10.0f ));
-
-    @Description("The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using " +
-            "the 'gcr' cache).")
-    @Deprecated
-    public static final Setting<Float> relationship_cache_array_fraction = setting("relationship_cache_array_fraction", FLOAT, "1.0", range( 1.0f, 10.0f ));
-
-    /**
-     * Use GcrSettings.gcr_cache_log_interval instead.
-     */
-    @Description("The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' " +
-            "cache).")
-    @Deprecated
-    public static final Setting<String> gcr_cache_min_log_interval = setting("gcr_cache_min_log_interval",STRING, "60s", matches( DURATION_FORMAT) );
-
 
     // TODO: Implement a good scheme for documenting individual options for option configs.
 //        @Description("Use weak reference cache.")
