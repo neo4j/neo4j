@@ -106,7 +106,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
                 return new ImpermanentGraphDatabase( storeDir, config,
-                        state.getIndexProviders(),
                         state.getKernelExtension(),
                         state.getCacheProviders(),
                         state.getTransactionInterceptorProviders() )

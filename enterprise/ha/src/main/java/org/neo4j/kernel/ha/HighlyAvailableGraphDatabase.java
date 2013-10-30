@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import javax.transaction.Transaction;
 
-import ch.qos.logback.classic.LoggerContext;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -45,7 +43,6 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -107,13 +104,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private Slaves slaves;
     private ClusterMembers members;
     private DelegateInvocationHandler masterDelegateInvocationHandler;
-    private LoggerContext loggerContext;
     private Master master;
     private final InstanceAccessGuard accessGuard;
     private HighAvailabilityMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
     private LastUpdateTime lastUpdateTime;
-    private HighAvailabilityMemberContext memberContext;
     private ClusterClient clusterClient;
     private ClusterMemberEvents clusterEvents;
     private ClusterMemberAvailability clusterMemberAvailability;
@@ -144,14 +139,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
-                                         Iterable<IndexProvider> indexProviders,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                          Iterable<CacheProvider> cacheProviders,
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
         super( storeDir, params,
                 Iterables.<Class<?>,Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,ClusterSettings.class ),
-                indexProviders, kernelExtensions,
+
+                kernelExtensions,
                 cacheProviders, txInterceptorProviders );
         accessGuard = new InstanceAccessGuard();
         run();
@@ -247,7 +242,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         clusterEvents = (ClusterMemberEvents) Proxy.newProxyInstance( ClusterMemberEvents.class.getClassLoader(),
                 new Class[]{ClusterMemberEvents.class, Lifecycle.class}, clusterEventsDelegateInvocationHandler );
-        memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
+        HighAvailabilityMemberContext memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
                 HighAvailabilityMemberContext.class.getClassLoader(),
                 new Class[]{HighAvailabilityMemberContext.class}, memberContextDelegateInvocationHandler );
         clusterMemberAvailability = (ClusterMemberAvailability) Proxy.newProxyInstance(
@@ -328,11 +323,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             clusterClient.getServerId(), clusterClient, clusterClient, logging, objectStreamFactory, objectStreamFactory );
 
         // Here we decide whether to start in compatibility mode or mode or not
+        //noinspection deprecation
         if ( !config.get( HaSettings.coordinators ).isEmpty() &&
             !config.get( HaSettings.coordinators ).get( 0 ).toString().trim().equals( "" ) )
         {
             compatibilityMode = true;
-            compatibilityLifecycle = new LinkedList<Lifecycle>();
+            compatibilityLifecycle = new LinkedList<>();
 
             Switchover switchover = new ZooToPaxosSwitchover( life, paxosLife, compatibilityLifecycle,
                 clusterEventsDelegateInvocationHandler, memberContextDelegateInvocationHandler,
@@ -389,7 +385,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         paxosLife.add( clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
-        DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<TxHook>();
+        DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<>();
         TxHook txHook = (TxHook) Proxy.newProxyInstance( TxHook.class.getClassLoader(), new Class[]{TxHook.class},
                 txHookDelegate );
         new TxHookModeSwitcher( memberStateMachine, txHookDelegate,
@@ -418,7 +414,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected TxIdGenerator createTxIdGenerator()
     {
-        DelegateInvocationHandler<TxIdGenerator> txIdGeneratorDelegate = new DelegateInvocationHandler<TxIdGenerator>();
+        DelegateInvocationHandler<TxIdGenerator> txIdGeneratorDelegate = new DelegateInvocationHandler<>();
         TxIdGenerator txIdGenerator =
                 (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
                         new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
@@ -462,7 +458,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected LockManager createLockManager()
     {
-        DelegateInvocationHandler<LockManager> lockManagerDelegate = new DelegateInvocationHandler<LockManager>();
+        DelegateInvocationHandler<LockManager> lockManagerDelegate = new DelegateInvocationHandler<>();
         LockManager lockManager =
                 (LockManager) Proxy.newProxyInstance( LockManager.class.getClassLoader(),
                         new Class[]{LockManager.class}, lockManagerDelegate );
@@ -475,7 +471,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected TokenCreator createRelationshipTypeCreator()
     {
         DelegateInvocationHandler<TokenCreator> relationshipTypeCreatorDelegate =
-                new DelegateInvocationHandler<TokenCreator>();
+                new DelegateInvocationHandler<>();
         TokenCreator relationshipTypeCreator =
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
@@ -488,7 +484,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected TokenCreator createPropertyKeyCreator()
     {
         DelegateInvocationHandler<TokenCreator> propertyKeyCreatorDelegate =
-                new DelegateInvocationHandler<TokenCreator>();
+                new DelegateInvocationHandler<>();
         TokenCreator propertyTokenCreator =
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
@@ -501,7 +497,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected TokenCreator createLabelIdCreator()
     {
         DelegateInvocationHandler<TokenCreator> labelIdCreatorDelegate =
-                new DelegateInvocationHandler<TokenCreator>();
+                new DelegateInvocationHandler<>();
         TokenCreator labelIdCreator =
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, labelIdCreatorDelegate );

@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.index.IndexIterable;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -82,7 +80,6 @@ public class GraphDatabaseFactory
                 if ( TRUE.equalsIgnoreCase( config.get( read_only.name() ) ) )
                 {
                     return new EmbeddedReadOnlyGraphDatabase( path, config,
-                            state.getIndexProviders(),
                             state.getKernelExtension(),
                             state.getCacheProviders(),
                             state.getTransactionInterceptorProviders() );
@@ -90,24 +87,12 @@ public class GraphDatabaseFactory
                 else
                 {
                     return new EmbeddedGraphDatabase( path, config,
-                            state.getIndexProviders(),
                             state.getKernelExtension(),
                             state.getCacheProviders(),
                             state.getTransactionInterceptorProviders() );
                 }
             }
         } );
-    }
-
-    public Iterable<IndexProvider> getIndexProviders()
-    {
-        return getCurrentState().getIndexProviders();
-    }
-
-    public GraphDatabaseFactory setIndexProviders( IndexIterable indexIterable )
-    {
-        getCurrentState().setIndexProviders( indexIterable );
-        return this;
     }
 
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()
