@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v1_9.parser
 import org.neo4j.cypher.internal.compiler.v1_9.commands._
 import expressions.{Identifier, Expression}
 import collection.Map
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.CastSupport.sift
+import org.neo4j.cypher.internal.helpers.CastSupport.sift
 
 trait MatchClause extends Base with ParserPattern {
 

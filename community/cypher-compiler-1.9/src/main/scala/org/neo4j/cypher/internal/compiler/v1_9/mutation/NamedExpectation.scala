@@ -23,10 +23,11 @@ import org.neo4j.cypher.internal.compiler.v1_9.commands.expressions.{Literal, Id
 import org.neo4j.cypher.internal.compiler.v1_9.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.{IsCollection, IsMap, CollectionSupport}
-import org.neo4j.cypher.internal.compiler.v1_9.spi.{Operations, QueryContext}
+import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
+import org.neo4j.cypher.internal.compiler.v1_9.spi.Operations
 import org.neo4j.cypher.internal.compiler.v1_9.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v1_9.helpers.IsMap
 
 object NamedExpectation {
   def apply(name: String): NamedExpectation = NamedExpectation(name, Map.empty)

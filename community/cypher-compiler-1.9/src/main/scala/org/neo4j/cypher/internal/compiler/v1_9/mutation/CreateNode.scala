@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v1_9.mutation
 
 import org.neo4j.cypher.internal.compiler.v1_9.commands.expressions.{Literal, Expression}
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v1_9.pipes.{QueryState}
+import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v1_9.symbols.{SymbolTable, NodeType}
 import collection.Map
 import org.neo4j.cypher.internal.compiler.v1_9.ExecutionContext

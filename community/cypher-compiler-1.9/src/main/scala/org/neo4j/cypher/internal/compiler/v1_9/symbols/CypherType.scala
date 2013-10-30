@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v1_9.symbols
 
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.{IsCollection, IsMap}
+import org.neo4j.cypher.internal.helpers.IsCollection
+import org.neo4j.cypher.internal.compiler.v1_9.helpers.IsMap
 
 
 trait CypherType {

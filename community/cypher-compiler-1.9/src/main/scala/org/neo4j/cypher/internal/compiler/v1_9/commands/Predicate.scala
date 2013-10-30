@@ -23,7 +23,7 @@ import expressions.{Literal, Expression}
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.compiler.v1_9.symbols._
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.{IsCollection, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v1_9.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
 

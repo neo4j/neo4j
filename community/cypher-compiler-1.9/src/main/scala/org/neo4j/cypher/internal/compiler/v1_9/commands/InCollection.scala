@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v1_9.commands
 import collection.Seq
 import expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.compiler.v1_9.symbols._
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.CollectionSupport
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v1_9.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
 

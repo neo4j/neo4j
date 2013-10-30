@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v1_9.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v1_9.symbols._
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.{TypeSafeMathSupport, IsCollection}
 import org.neo4j.cypher.internal.compiler.v1_9.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
+import org.neo4j.cypher.internal.helpers.{IsCollection, TypeSafeMathSupport}
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = {

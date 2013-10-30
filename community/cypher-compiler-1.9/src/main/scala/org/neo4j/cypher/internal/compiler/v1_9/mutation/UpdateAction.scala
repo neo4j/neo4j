@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
 import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
 import collection.Map
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.CollectionSupport
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v1_9.commands.expressions.Expression
 import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
 import org.neo4j.cypher.internal.compiler.v1_9.commands.AstNode

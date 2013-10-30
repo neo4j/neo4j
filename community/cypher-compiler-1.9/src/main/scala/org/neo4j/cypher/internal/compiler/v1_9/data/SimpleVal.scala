@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v1_9.data
 
 import scala.collection.JavaConverters._
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.StringRenderingSupport
+import org.neo4j.cypher.internal.helpers.StringRenderingSupport
 
 // Values we are willing to expose as arguments in Java-side PlanDescriptions
 //

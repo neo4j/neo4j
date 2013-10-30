@@ -28,7 +28,7 @@ import java.util
 import org.neo4j.cypher.internal.compiler.v1_9.{StringExtras, ClosingIterator}
 import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
 import org.neo4j.cypher.{QueryStatistics, EntityNotFoundException, ExecutionResult}
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.CollectionSupport
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v1_9.commands.expressions.StringHelper
 
 class PipeExecutionResult(result: ClosingIterator[Map[String, Any]],

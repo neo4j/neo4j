@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v1_9.mutation
 
 import org.neo4j.cypher.internal.compiler.v1_9.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.CollectionSupport
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v1_9.symbols.{AnyCollectionType, SymbolTable}
-import org.neo4j.cypher.internal.compiler.v1_9.pipes.{QueryState}
+import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v1_9.ExecutionContext
 
 case class ForeachAction(collection: Expression, id: String, actions: Seq[UpdateAction])

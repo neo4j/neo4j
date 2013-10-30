@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v1_9.commands
 import expressions.{Identifier, Literal, Expression}
 import org.neo4j.cypher.internal.compiler.v1_9.{ExecutionContext, Comparer}
 import org.neo4j.cypher.internal.compiler.v1_9.symbols._
-import org.neo4j.cypher.internal.compiler.v1_9.helpers.IsCollection
+import org.neo4j.cypher.internal.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
