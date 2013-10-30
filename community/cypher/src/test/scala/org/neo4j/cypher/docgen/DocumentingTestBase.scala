@@ -37,10 +37,10 @@ import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
 import org.neo4j.cypher.internal.helpers.{Materialized, GraphIcing}
 import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
 import org.neo4j.helpers.Settings
-import org.neo4j.cypher.internal.prettifier.Prettifier
 import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
 import org.neo4j.tooling.GlobalGraphOperations
 import scala.reflect.ClassTag
+import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -136,7 +136,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
       keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
       val result = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
       if (expectedException.isDefined) {
-        fail(s"Expected the test to throw an exception: ${expectedException}")
+        fail(s"Expected the test to throw an exception: $expectedException")
       }
       assertions.foreach(_.apply(result))
       tx1.failure()
@@ -145,7 +145,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
         expectedException match {
           case Some(expectedExceptionType) => e match {
             case expectedExceptionType(typedE) =>
-            case _ => fail(s"Expected an exception of type ${expectedException} but got ${e.getClass}", e)
+            case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
           }
           case None => throw e
         }
@@ -159,7 +159,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
       prepare.foreach { (prepareStep: () => Any) => prepareStep() }
       val result = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
       if (expectedException.isDefined) {
-        fail(s"Expected the test to throw an exception: ${expectedException}")
+        fail(s"Expected the test to throw an exception: $expectedException")
       }
       dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
       if (graphvizExecutedAfter) {
@@ -171,7 +171,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
           case Some(expectedExceptionType) => e match {
             case expectedExceptionType(typedE) =>
               dumpToFile(dir, writer, title, query, returns, text, typedE, consoleData)
-            case _ => fail(s"Expected an exception of type ${expectedException} but got ${e.getClass}", e)
+            case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
           }
           case None => throw e
         }
@@ -319,24 +319,24 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     val output = new StringBuilder(2048)
     output.append(".Query\n")
     output.append(createCypherSnippet(query))
-    writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".query", output.toString))
-    writer.println
+    writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".query", output.toString()))
+    writer.println()
     writer.println(returns)
-    writer.println
+    writer.println()
 
-    output.clear
+    output.clear()
     output.append(".Result\n")
     result match {
       case Left(failure) =>
         output.append(AsciidocHelper.createQueryFailureSnippet(s"${failure.getClass.getName}: ${failure.getMessage}"))
-      case Right(result) =>
-        output.append(AsciidocHelper.createQueryResultSnippet(result.dumpToString))
+      case Right(rightResult) =>
+        output.append(AsciidocHelper.createQueryResultSnippet(rightResult.dumpToString()))
     }
     output.append('\n')
-    writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".result", output.toString))
+    writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".result", output.toString()))
 
     if (generateConsole && parameters == null) {
-      output.clear
+      output.clear()
       writer.println(".Try this query live")
       output.append("[console]\n")
       output.append("----\n")
@@ -344,7 +344,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
       output.append("\n\n")
       output.append(query)
       output.append("\n----")
-      writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".console", output.toString))
+      writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".console", output.toString()))
     }
   }
 

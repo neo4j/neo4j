@@ -32,8 +32,8 @@ import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, Graph
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.cypher.internal.prettifier.Prettifier
 import org.neo4j.tooling.GlobalGraphOperations
+import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
 
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.

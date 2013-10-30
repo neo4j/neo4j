@@ -25,7 +25,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 
 public interface SubGraph
 {
-
     Iterable<Node> getNodes();
 
     Iterable<Relationship> getRelationships();
