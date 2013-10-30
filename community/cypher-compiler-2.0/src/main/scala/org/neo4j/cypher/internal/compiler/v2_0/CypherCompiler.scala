@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import org.neo4j.cypher.internal.compiler.v2_0.parser.CypherParser
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.verifiers.{OptionalPatternWithoutStartVerifier, HintVerifier}
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.verifiers.HintVerifier
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlanBuilder, ExecutionPlan}
@@ -30,7 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 
 case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => Object) => Object) {
   val parser = CypherParser()
-  val verifiers = Seq(HintVerifier, OptionalPatternWithoutStartVerifier)
+  val verifiers = Seq(HintVerifier)
 
   @throws(classOf[SyntaxException])
   def prepare(query: String, context: PlanContext): ExecutionPlan = {

@@ -44,8 +44,7 @@ object HintVerifier extends Verifier {
             false
         }
 
-        def hasLabelInPattern(node: SingleNode): Boolean =
-          !node.optional && node.name == identifier && node.labels.exists(_.name == label)
+        def hasLabelInPattern(node: SingleNode): Boolean = node.name == identifier && node.labels.exists(_.name == label)
 
         val existsInPattern = query.matching.exists {
           case node: SingleNode             => hasLabelInPattern(node)

@@ -79,31 +79,31 @@ class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
   @Test
   def should_resolve_label_keytoken_on_related_to_pattern() {
     val q = Query.
-      matches(RelatedTo(SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, optional = false, Map.empty)).
+      matches(RelatedTo(SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, Map.empty)).
       returns()
 
     val result = assertAccepts(q)
-    assert(result.query.patterns === Seq(Unsolved(RelatedTo(SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, optional = false, Map.empty))))
+    assert(result.query.patterns === Seq(Unsolved(RelatedTo(SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, Map.empty))))
   }
 
   @Test
   def should_resolve_label_keytoken_on_var_length_pattern() {
     val q = Query.
-      matches(VarLengthRelatedTo("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), None, None, Seq.empty, Direction.OUTGOING, None, optional = false, Map.empty)).
+      matches(VarLengthRelatedTo("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), None, None, Seq.empty, Direction.OUTGOING, None, Map.empty)).
       returns()
 
     val result = assertAccepts(q)
-    assert(result.query.patterns === Seq(Unsolved(VarLengthRelatedTo("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), None, None, Seq.empty, Direction.OUTGOING, None, optional = false, Map.empty))))
+    assert(result.query.patterns === Seq(Unsolved(VarLengthRelatedTo("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), None, None, Seq.empty, Direction.OUTGOING, None, Map.empty))))
   }
 
   @Test
   def should_resolve_label_keytoken_on_shortest_path_length_pattern() {
     val q = Query.
-      matches(ShortestPath("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), Seq.empty, Direction.OUTGOING, None, optional = false, single = false, relIterator = None)).
+      matches(ShortestPath("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), Seq.empty, Direction.OUTGOING, None, single = false, relIterator = None)).
       returns()
 
     val result = assertAccepts(q)
-    assert(result.query.patterns === Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, Direction.OUTGOING, None, optional = false, single = false, relIterator = None))))
+    assert(result.query.patterns === Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, Direction.OUTGOING, None, single = false, relIterator = None))))
   }
 
   @Test

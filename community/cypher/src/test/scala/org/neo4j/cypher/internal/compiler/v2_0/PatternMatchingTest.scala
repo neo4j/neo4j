@@ -66,19 +66,6 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
     assert(result === List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
   }
 
-  @Test def should_handle_a_single_optional_relationship_with_no_match() {
-    // Given
-    val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship.copy(optional = true)))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
-    val aNode = createNode()
-
-    // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), QueryStateHelper.queryStateFrom(graph)).toList
-
-    // Then
-    assert(result === List(Map("a" -> aNode, "b" -> null, "r" -> null)))
-  }
-
   @Test def should_handle_a_mandatory_labeled_node_with_no_matches() {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
@@ -107,35 +94,5 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
 
     // Then
     assert(result === List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
-  }
-
-  @Test def should_handle_a_optional_labeled_node_with_matches() {
-    // Given
-    val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship.copy(optional = true, right = rightNode.copy(optional = true))))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)), Set("a", "r", "b"))
-    val aNode = createNode()
-    val bNode = createLabeledNode("Person")
-    val relationship = relate(aNode, bNode)
-
-    // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), QueryStateHelper.queryStateFrom(graph)).toList
-
-    // Then
-    assert(result === List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
-  }
-
-  @Test def should_handle_an_optional_relationship_to_an_optional_labeled_node_with_no_matches() {
-    // Given
-    val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship.copy(optional = true, right = rightNode.copy(optional = true, labels = Seq(label)))))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
-    val aNode = createNode()
-    val bNode = createNode()
-    relate(aNode, bNode)
-
-    // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), QueryStateHelper.queryStateFrom(graph)).toList
-
-    // Then
-    assert(result === List(Map("a" -> aNode, "b" -> null, "r" -> null)))
   }
 }

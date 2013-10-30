@@ -169,7 +169,7 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
       case Some(Some(Range(None, Some(i), _))) => Some(i.value.toInt)
       case _                                   => None
     }
-    Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, maxDepth, rel.optional, single, None))
+    Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, maxDepth, single, None))
   }
 
   def toLegacyNamedPath(pathName: String) = None
@@ -389,10 +389,10 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
           case _                                  => None
         }
         commands.VarLengthRelatedTo(pathName, left.toLegacyNode, right.toLegacyNode, min, max,
-          types.map(_.name).distinct, dir, relIterator, optional, properties = toLegacyProperties)
+          types.map(_.name).distinct, dir, relIterator, properties = toLegacyProperties)
       }
       case None             => commands.RelatedTo(left.toLegacyNode, right.toLegacyNode, legacyName,
-        types.map(_.name).distinct, dir, optional, toLegacyProperties)
+        types.map(_.name).distinct, dir, toLegacyProperties)
     }
   }
 

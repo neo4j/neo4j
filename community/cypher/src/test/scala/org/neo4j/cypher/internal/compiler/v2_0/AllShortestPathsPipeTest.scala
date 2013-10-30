@@ -33,7 +33,7 @@ class AllShortestPathsPipeTest extends GraphDatabaseTestBase with Assertions {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a" -> NodeType(), "b" -> NodeType())
 
     val pipe = new ShortestPathPipe(source, ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH,
-      Some(15), optional = true, single = false, relIterator = None))
+      Some(15), single = false, relIterator = None))
     graph.inTx(pipe.createResults(QueryStateHelper.empty).toList.map(m => m("p").asInstanceOf[Path]))
   }
 
@@ -51,13 +51,5 @@ class AllShortestPathsPipeTest extends GraphDatabaseTestBase with Assertions {
       assert(resultPath.startNode() === a)
       assert(resultPath.endNode() === d)
     })
-  }
-
-  @Test def shouldReturnNullWhenOptional() {
-    val a = createNode("a")
-    val b = createNode("b")
-    // The secret is in what's not there - there is no relationship between a and b
-
-    assert(runThroughPipeAndGetPath(a, b) === List(null))
   }
 }

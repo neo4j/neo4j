@@ -38,7 +38,7 @@ import org.neo4j.graphdb.Direction
 
 class HintVerifierTest extends Assertions {
   val labeledA = SingleNode("a", Seq(UnresolvedLabel("Person")))
-  val relatedTo = RelatedTo(labeledA, SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, optional = false, Map.empty)
+  val relatedTo = RelatedTo(labeledA, SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, Map.empty)
 
   @Test
   def throws_when_the_predicate_is_not_usable_for_index_seek() {
@@ -88,18 +88,6 @@ class HintVerifierTest extends Assertions {
   }
 
   @Test
-  def throws_if_labeled_node_is_optional() {
-    //GIVEN  MATCH a?:Person-->b
-    val q = Query.
-      matches(relatedTo.copy(left = labeledA.copy(optional = true))).
-      using(NodeByLabel("a", "Person")).
-      returns()
-
-    //THEN
-    intercept[LabelScanHintException](HintVerifier.verify(q))
-  }
-
-  @Test
   def accepts_query_with_label_in_relationship_pattern() {
     //GIVEN  MATCH a:Person-->b
     val q = Query.
@@ -115,25 +103,12 @@ class HintVerifierTest extends Assertions {
   def accepts_query_with_label_on_the_right_side() {
     //GIVEN  MATCH b-->a:Person
     val q = Query.
-      matches(RelatedTo(SingleNode("b"), labeledA, "r", Seq.empty, Direction.OUTGOING, optional = false, Map.empty)).
+      matches(RelatedTo(SingleNode("b"), labeledA, "r", Seq.empty, Direction.OUTGOING, Map.empty)).
       using(NodeByLabel("a", "Person")).
       returns()
 
     //THEN does not throw
     HintVerifier.verify(q)
-  }
-
-  @Test
-  def throws_if_labeled_node_is_optional_and_index_hint_is_used() {
-    //GIVEN  MATCH a?:Person-->b USING INDEX ON a:Person(foo)
-    val q = Query.
-      matches(relatedTo.copy(left = labeledA.copy(optional = true))).
-      where(Equals(Property(Identifier("a"), PropertyKey("foo")), Literal("bar"))).
-      using(SchemaIndex("a", "Person", "foo", AnyIndex, None)).
-      returns()
-
-    //THEN
-    intercept[IndexHintException](HintVerifier.verify(q))
   }
 
   @Test

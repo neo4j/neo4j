@@ -35,18 +35,12 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
     val predicates = q.where.filter(!_.solved).map(_.token)
     val graph = buildPatternGraph(p.symbols, patterns)
 
-    val identifiersInClause = Pattern.identifiers(q.patterns.map(_.token))
-
-    val mandatoryGraph = graph.mandatoryGraph
-
-    val mandatoryPipe = if (mandatoryGraph.nonEmpty)
-      new MatchPipe(p, predicates, mandatoryGraph, identifiersInClause)
-    else
+    val newPipe = if (graph.isEmpty)
       p
-
-    // We'll create one MatchPipe per DoubleOptionalPattern we have
-    val newPipe = graph.doubleOptionalPatterns().
-      foldLeft(mandatoryPipe)((lastPipe, patternGraph) => new MatchPipe(lastPipe, predicates, patternGraph, identifiersInClause))
+    else {
+      val identifiersInClause = Pattern.identifiers(q.patterns.map(_.token))
+      new MatchPipe(p, predicates, graph, identifiersInClause)
+    }
 
     val donePatterns = graph.patternsContained.map(Unsolved.apply)
 

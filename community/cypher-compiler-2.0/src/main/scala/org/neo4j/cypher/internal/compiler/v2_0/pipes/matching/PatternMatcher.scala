@@ -27,7 +27,6 @@ import collection.Map
 
 class PatternMatcher(bindings: Map[String, MatchingPair],
                      predicates: Seq[Predicate],
-                     includeOptionals: Boolean,
                      source:ExecutionContext,
                      state:QueryState,
                      identifiersInClause: Set[String])
@@ -167,11 +166,6 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
       return true
     }
 
-    if (currentRel.optional && includeOptionals) {
-      debug("trying with null for " + currentRel)
-      return traverseNextNodeOrYield(remaining, history.add(currentNode).add(MatchingPair(currentRel, null)), yielder)
-    }
-
     debug("failed to find matching relationship")
     false
   }
@@ -201,7 +195,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
   }
 
   private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: History): List[PatternRelationship] =
-    history.removeSeen(patternNode.relationships, includeOptionals).toList
+    history.removeSeen(patternNode.relationships).toList
 
   protected val isDebugging = false
 

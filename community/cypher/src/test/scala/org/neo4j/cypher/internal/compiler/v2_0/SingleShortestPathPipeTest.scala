@@ -30,11 +30,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.pipes.{ShortestPathPipe, FakePipe
 
 class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
 
-  val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, Some(15), optional = true, single = true, relIterator = None)
+  val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, Some(15), single = true, relIterator = None)
 
   def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->NodeType(), "b"->NodeType())
-
 
     val pipe = new ShortestPathPipe(source, path)
     graph.inTx(pipe.createResults(QueryStateHelper.empty).next()("p").asInstanceOf[Path])
@@ -54,13 +53,5 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
     assert(resultPath.lastRelationship() === r)
     assert(resultPath.startNode() === a)
     assert(resultPath.endNode() === b)
-  }
-
-  @Test def shouldReturnNullWhenOptional() {
-    val a = createNode("a")
-    val b = createNode("b")
-    // The secret is in what's not there - there is no relationship between a and b
-
-    assert(runThroughPipeAndGetPath(a, b, path) === null)
   }
 }

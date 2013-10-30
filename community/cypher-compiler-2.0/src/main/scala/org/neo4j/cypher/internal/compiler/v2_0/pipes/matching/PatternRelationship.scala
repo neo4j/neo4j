@@ -31,8 +31,7 @@ class PatternRelationship(key: String,
                           val startNode: PatternNode,
                           val endNode: PatternNode,
                           val relTypes: Seq[String],
-                          val dir: Direction,
-                          val optional: Boolean)
+                          val dir: Direction)
   extends PatternElement(key) {
 
   def identifiers2: Map[String, CypherType] = Map(startNode.key -> NodeType(), endNode.key -> NodeType(), key -> RelationshipType())
@@ -102,9 +101,8 @@ class VariableLengthPatternRelationship(pathName: String,
                                         minHops: Option[Int],
                                         maxHops: Option[Int],
                                         relType: Seq[String],
-                                        dir: Direction,
-                                        optional: Boolean)
-  extends PatternRelationship(pathName, start, end, relType, dir, optional) {
+                                        dir: Direction)
+  extends PatternRelationship(pathName, start, end, relType, dir) {
 
 
   override def identifiers2: Map[String, CypherType] =

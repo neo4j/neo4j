@@ -32,7 +32,7 @@ class ShortestPathBuilderTest extends BuilderTest {
   def should_not_accept_if_no_shortest_paths_exist() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, false, Map.empty))))
+      patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, Map.empty))))
 
     val p = createPipe(nodes = Seq("l"))
 
@@ -43,7 +43,7 @@ class ShortestPathBuilderTest extends BuilderTest {
   def should_not_accept_if_both_start_and_end_have_not_been_solved_yet() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Unsolved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, false, true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
 
     val p = createPipe(nodes = Seq("a"))
 
@@ -54,12 +54,12 @@ class ShortestPathBuilderTest extends BuilderTest {
   def should_accept_if_both_start_and_end_have_been_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, false, true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
 
     val p = createPipe(nodes = Seq("a", "b"))
 
     val resultQ = assertAccepts(p, q).query
 
-    assert(resultQ.patterns == Seq(Solved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, false, true, None))))
+    assert(resultQ.patterns == Seq(Solved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
   }
 }

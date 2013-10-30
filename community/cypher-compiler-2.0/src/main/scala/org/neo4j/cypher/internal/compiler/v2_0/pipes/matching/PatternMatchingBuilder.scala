@@ -47,14 +47,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
         flatMap(relMap => createPatternMatcher(relMap ++ boundPairs, includeOptionals = false, sourceRow, state))
     }
 
-    if (patternGraph.containsOptionalElements)
-      mandatoryPattern.flatMap {
-        innerMatch =>
-          val pairs: Map[String, MatchingPair] = extractBoundMatchingPairs(innerMatch)
-          createPatternMatcher(pairs, includeOptionals = true, sourceRow, state)
-      }
-    else
-      mandatoryPattern
+    mandatoryPattern
   }
 
   private def createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships: Iterable[PatternRelationship], bindings: Map[String, Any]): Seq[Map[String, MatchingPair]] = {
@@ -88,17 +81,8 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
         result.flatMap(r => element.map(e => e :: r))
     ).toSeq
 
-  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
-    val patternMatcher = if (patternGraph.hasDoubleOptionals)
-      new DoubleOptionalPatternMatcher(boundPairs, predicates, includeOptionals, source, state, patternGraph.doubleOptionalPaths, identifiersInClause)
-    else
-      new PatternMatcher(boundPairs, predicates, includeOptionals, source, state, identifiersInClause)
-
-    if (includeOptionals)
-      patternMatcher.map(matchedGraph => matchedGraph ++ createNullValuesForOptionalElements(matchedGraph))
-    else
-      patternMatcher
-  }
+  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] =
+      new PatternMatcher(boundPairs, predicates, source, state, identifiersInClause)
 
   private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, MatchingPair] = bindings.flatMap {
 

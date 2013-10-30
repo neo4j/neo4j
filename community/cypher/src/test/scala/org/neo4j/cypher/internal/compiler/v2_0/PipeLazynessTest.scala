@@ -85,6 +85,7 @@ object PipeLazynessTest extends MockitoSugar {
     add(traversalMatcherPipe)
     add(unionPipe)
 
+    // TODO add test for NullInsertingPipe
     // constrainOperationPipe and indexOperationPipe do not take a source pipe, and so aren't covered by these tests
 
     list
@@ -143,16 +144,18 @@ object PipeLazynessTest extends MockitoSugar {
   }
 
   private def matchPipe = {
-    // Produces a MatchPipe for the pattern (x)-[r?]->(y)
+    // Produces a MatchPipe for the pattern (x)-[r]->(y)
 
-    val reference = mock[Node]
-    when(reference.getRelationships(Direction.OUTGOING)).thenReturn(Iterable[Relationship]().asJava)
+    val node1 = mock[Node]
+    val node2 = mock[Node]
+    val rel1 = mock[Relationship]
+    when(node1.getRelationships(Direction.OUTGOING)).thenReturn(Iterable[Relationship](rel1).asJava)
 
-    val iter = new LazyIterator[Map[String, Any]](10, (_, db) => Map("x" -> reference))
+    val iter = new LazyIterator[Map[String, Any]](10, (_, db) => Map("x" -> node1))
     val src = new FakePipe(iter, "x" -> NodeType())
     val x = new PatternNode("x")
     val y = new PatternNode("y")
-    val rel = x.relateTo("r", y, Seq.empty, Direction.OUTGOING, optional = true)
+    val rel = x.relateTo("r", y, Seq.empty, Direction.OUTGOING)
 
     val patternNodes = Map("x" -> x, "y" -> y)
     val patternRels = Map("r" -> rel)
@@ -163,7 +166,7 @@ object PipeLazynessTest extends MockitoSugar {
 
   private def shortestPathPipe = {
     val shortestPath = ShortestPath(pathName = "p", left = SingleNode("start"), right = SingleNode("end"), relTypes = Seq.empty,
-      dir = Direction.OUTGOING, maxDepth = None, optional = true, single = true, relIterator = None)
+      dir = Direction.OUTGOING, maxDepth = None, single = true, relIterator = None)
     val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("start" -> null, "end" -> null))
     val src = new FakePipe(iter, "start" -> NodeType(), "end" -> NodeType())
     val pipe = new ShortestPathPipe(src, shortestPath)
