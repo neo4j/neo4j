@@ -352,7 +352,7 @@ public class TestXa
 
                         {
                             @Override
-                            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+                            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
                             {
                                 return (T) config;
                             }

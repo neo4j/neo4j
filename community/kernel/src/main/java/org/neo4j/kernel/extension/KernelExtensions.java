@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.extension;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -41,6 +39,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
 
 public class KernelExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
@@ -192,11 +192,10 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         listeners = Listeners.removeListener( listener, listeners );
     }
 
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
     @Override
-    public <T> T resolveDependency( final Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
+    public <T> T resolveDependency( final Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
     {
-        return selector.select( type, filter( new Predicate()
+        return selector.select( type, (Iterable<T>)filter( new Predicate()
         {
             @Override
             public boolean accept( Object extension )

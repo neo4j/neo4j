@@ -586,7 +586,7 @@ public class ClusterMockTest
                 {
                     Cluster server = servers.get( serverDown - 1 ).newClient( Cluster.class );
                     network.getNetworkLatencyStrategy().getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
-                            .nodeIsDown( server.toString() );
+                            .nodeIsDown( "server"+server.toString() );
                     logger.getLogger().debug( server + " is down" );
                 }
             }, time );
@@ -602,8 +602,7 @@ public class ClusterMockTest
                     Cluster server = servers.get( serverUp - 1 ).newClient( Cluster.class );
                     network.getNetworkLatencyStrategy()
                             .getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
-                            .nodeIsUp( server
-                                    .toString() );
+                            .nodeIsUp( "server"+server.toString() );
                     logger.getLogger().debug( server + " is up" );
                 }
             }, time );

@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -31,7 +26,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -83,13 +80,17 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 /**
  * Performs the internal switches from pending to slave/master, by listening for
  * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
  * to the cluster it's new status.
  */
-public class
-        HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
+public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
 {
     // TODO solve this with lifecycle instance grouping or something
     @SuppressWarnings( "rawtypes" )
@@ -114,6 +115,7 @@ public class
     private URI availableMasterId;
 
     private final HighAvailabilityMemberStateMachine stateHandler;
+    private BindingNotifier bindingNotifier;
     private final DelegateInvocationHandler delegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final GraphDatabaseAPI graphDb;
@@ -124,12 +126,14 @@ public class
 
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Logging logging;
+    private volatile URI me;
 
-    public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
+    public HighAvailabilityModeSwitcher( BindingNotifier bindingNotifier, DelegateInvocationHandler delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
                                          HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging )
     {
+        this.bindingNotifier = bindingNotifier;
         this.delegateHandler = delegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.graphDb = graphDb;
@@ -147,6 +151,14 @@ public class
     public synchronized void init() throws Throwable
     {
         stateHandler.addHighAvailabilityMemberListener( this );
+        bindingNotifier.addBindingListener( new BindingListener()
+        {
+            @Override
+            public void listeningAt( URI myUri )
+            {
+                me = myUri;
+            }
+        } );
         life.init();
     }
 
@@ -252,7 +264,7 @@ public class
             idGeneratorFactory.switchToMaster();
             life.start();
 
-            URI haUri = URI.create( "ha://" + masterServer.getSocketAddress().getHostName() + ":" +
+            URI haUri = URI.create( "ha://" + (masterServer.getSocketAddress().getHostString().contains("0.0.0.0")?me.getHost():masterServer.getSocketAddress().getHostString()) + ":" +
                     masterServer.getSocketAddress().getPort() + "?serverId=" +
                     config.get( ClusterSettings.server_id ) );
             clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
@@ -332,7 +344,7 @@ public class
             life.add( server );
             life.start();
 
-            URI haUri = URI.create( "ha://" + server.getSocketAddress().getHostName() + ":" +
+            URI haUri = URI.create( "ha://" + (server.getSocketAddress().getHostString().contains("0.0.0.0")?me.getHost():server.getSocketAddress().getHostString()) + ":" +
                     server.getSocketAddress().getPort() + "?serverId=" +
                     config.get( ClusterSettings.server_id ) );
             clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );
