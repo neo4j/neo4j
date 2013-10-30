@@ -381,11 +381,11 @@ case "${!OPTIND}" in
     ;;
   install)
     echo "Legacy install now lives in the 'neo4j-installer' script"
-    exit 0
+    exit 1
     ;;
   remove)
     echo "Legacy remove now lives in the 'neo4j-installer' script"
-    exit 0
+    exit 1
     ;;
   *)
     echo "Usage: neo4j { console | start | start-no-wait | stop | restart | status | info | install | remove }"
