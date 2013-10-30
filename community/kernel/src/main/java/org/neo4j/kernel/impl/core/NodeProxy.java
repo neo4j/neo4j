@@ -35,7 +35,6 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
@@ -61,8 +60,6 @@ import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import static java.lang.String.format;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class NodeProxy implements Node
 {
@@ -288,26 +285,6 @@ public class NodeProxy implements Node
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( e );
-        }
-    }
-
-    @Override
-    public Iterable<Object> getPropertyValues()
-    {
-        try ( Statement statement = statementContextProvider.statement() )
-        {
-            return asSet( map( new Function<DefinedProperty, Object>()
-            {
-                @Override
-                public Object apply( DefinedProperty prop )
-                {
-                    return prop.value();
-                }
-            }, statement.readOperations().nodeGetAllProperties( getId() ) ) );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Node not found", e );
         }
     }
 

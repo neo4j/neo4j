@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
@@ -29,7 +30,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 public class TestProperties extends AbstractNeo4jTestCase
 {
@@ -237,25 +237,6 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void getPropertyValuesShouldReturnCorrectValues() throws Exception
-    {
-        String key = "title";
-        // value1 fits in an inlined record
-        String value1 = "123456789123456789123456789123456789123456789123456789";
-        // value2 requires a dynamic record
-        String value2 = "12345678912345678912345678912345678912345678912345678912";
-        Node node1 = getGraphDb().createNode();
-        node1.setProperty( key, value1 );
-        Node node2 = getGraphDb().createNode();
-        node2.setProperty( key, value2 );
-        newTransaction();
-        clearCache();
-        
-        assertEquals( value1, first( node1.getPropertyValues() ) );
-        assertEquals( value2, first( node2.getPropertyValues() ) );
-    }
-    
-    @Test
     public void name() throws Exception
     {
         Node node = getGraphDb().createNode();
@@ -271,6 +252,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         }
         finally
         {
+            //noinspection deprecation
             tx.finish();
         }
     }

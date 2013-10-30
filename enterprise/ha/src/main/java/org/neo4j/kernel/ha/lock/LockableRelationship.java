@@ -78,11 +78,6 @@ public class LockableRelationship implements Relationship
         throw new UnsupportedOperationException( "Lockable rel" );
     }
 
-    public Iterable<Object> getPropertyValues()
-    {
-        throw new UnsupportedOperationException( "Lockable rel" );
-    }
-
     public Node getStartNode()
     {
         throw new UnsupportedOperationException( "Lockable rel" );

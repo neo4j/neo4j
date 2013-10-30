@@ -121,11 +121,6 @@ public class PathImplTest
             return null;
         }
 
-        @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return null;
-        }
     }
 
     @SuppressWarnings("deprecation")

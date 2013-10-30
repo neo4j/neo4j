@@ -34,7 +34,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
@@ -1976,12 +1975,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
         @Override
         public Iterable<String> getPropertyKeys()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public Iterable<Object> getPropertyValues()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }

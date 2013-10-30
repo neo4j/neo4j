@@ -381,6 +381,9 @@ public class ComponentVersion extends Version
             <!-- IndexProvider replaced by KernelExtension -->
             <exclude>org/neo4j/graphdb/index/IndexProvider</exclude>
             <exclude>org/neo4j/graphdb/index/IndexIterable</exclude>
+
+            <!-- #getPropertyValues() deprecated in favour of #getPropertyKeys() + #getProperty() -->
+            <exclude>org/neo4j/graphdb/PropertyContainer</exclude>
           </excludes>
         </configuration>
       </plugin>

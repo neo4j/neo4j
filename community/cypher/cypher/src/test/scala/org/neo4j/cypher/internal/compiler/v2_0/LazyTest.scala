@@ -41,7 +41,6 @@ import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -346,8 +345,6 @@ class MonitoredNode(inner: Node, monitor: () => Unit) extends Node {
 
   def getPropertyKeys: JIterable[String] = null
 
-  def getPropertyValues: JIterable[AnyRef] = null
-
   override def toString = "°" + inner.toString + "°"
 
   def addLabel(label: Label) {
@@ -360,7 +357,7 @@ class MonitoredNode(inner: Node, monitor: () => Unit) extends Node {
 
   def hasLabel(label: Label) = ???
 
-  def getLabels() = ???
+  def getLabels = ???
 }
 
 

@@ -29,22 +29,18 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class RelationshipProxy implements Relationship
 {
@@ -172,26 +168,6 @@ public class RelationshipProxy implements Relationship
         {
             throw new ThisShouldNotHappenError( "Jake",
                                                 "Property key retrieved through kernel API should exist." );
-        }
-    }
-
-    @Override
-    public Iterable<Object> getPropertyValues()
-    {
-        try ( Statement statement = statementContextProvider.statement() )
-        {
-            return asSet( map( new Function<DefinedProperty, Object>()
-            {
-                @Override
-                public Object apply( DefinedProperty prop )
-                {
-                    return prop.value();
-                }
-            }, statement.readOperations().relationshipGetAllProperties( getId() ) ) );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Relationship has been deleted", e );
         }
     }
 

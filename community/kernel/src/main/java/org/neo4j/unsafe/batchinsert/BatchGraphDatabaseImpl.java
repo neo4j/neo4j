@@ -511,12 +511,6 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         }
 
         @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return properties.values();
-        }
-
-        @Override
         public boolean hasProperty( String key )
         {
             return properties.containsKey( key );
@@ -666,12 +660,6 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         public Iterable<String> getPropertyKeys()
         {
             return properties.keySet();
-        }
-
-        @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return properties.values();
         }
 
         @Override

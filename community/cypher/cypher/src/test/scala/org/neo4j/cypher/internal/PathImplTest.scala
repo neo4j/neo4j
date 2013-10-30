@@ -102,8 +102,6 @@ class PathImplTest extends Spec {
 
     def getPropertyKeys: Iterable[String] = null
 
-    def getPropertyValues: Iterable[AnyRef] = null
-
     override def toString: String = "Rel"
   }
 
@@ -156,8 +154,6 @@ class PathImplTest extends Spec {
 
     def getPropertyKeys: Iterable[String] = null
 
-    def getPropertyValues: Iterable[AnyRef] = null
-
     override def toString: String = "Node"
 
     def addLabel(label: Label) { ??? }
@@ -166,7 +162,7 @@ class PathImplTest extends Spec {
 
     def hasLabel(label: Label) = ???
 
-    def getLabels() = ???
+    def getLabels = ???
   }
 
 }

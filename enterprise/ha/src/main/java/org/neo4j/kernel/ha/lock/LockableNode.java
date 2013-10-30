@@ -77,12 +77,6 @@ public class LockableNode implements Node
     }
 
     @Override
-    public Iterable<Object> getPropertyValues()
-    {
-        throw new UnsupportedOperationException( "Lockable node" );
-    }
-
-    @Override
     public boolean hasProperty( String key )
     {
         throw new UnsupportedOperationException( "Lockable node" );
