@@ -245,7 +245,10 @@ public enum ClusterMessage
                 return "Change cluster config, leave:" + leave;
             }
 
-            return "Change cluster config, elected:" + winner + " as " + roleWon;
+            if (roleWon != null)
+                return "Change cluster config, elected:" + winner + " as " + roleWon;
+            else
+                return "Change cluster config, unelected:" + loser + " as " + roleWon;
         }
     }
 
