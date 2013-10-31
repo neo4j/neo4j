@@ -32,6 +32,7 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 
+import org.codehaus.jackson.map.JsonMappingException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.StatusCode;
@@ -117,12 +118,12 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
                             return null;
                         }
 
-                        input.nextToken();
+                        input.nextValue();
                         String currentName = input.getCurrentName();
                         switch ( currentName )
                         {
                         case "statement":
-                            statement = input.nextTextValue();
+                            statement = input.readValueAs( String.class );
                             break;
                         case "parameters":
                             parameters = readMap( input );
@@ -152,7 +153,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
             }
             return null;
         }
-        catch ( JsonParseException e )
+        catch ( JsonParseException | JsonMappingException e )
         {
             addError( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
                         new DeserializationException( "Unable to deserialize request", e ) ) );
@@ -161,6 +162,11 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         catch ( IOException e )
         {
             addError( new Neo4jError( StatusCode.NETWORK_ERROR, e ) );
+            return null;
+        }
+        catch ( Exception e)
+        {
+            addError( new Neo4jError( StatusCode.INTERNAL_UNKNOWN_ERROR, e ) );
             return null;
         }
     }

@@ -96,6 +96,23 @@ public class StatementDeserializerTest
     }
 
     @Test
+    public void shouldIgnoreUnknownFields() throws Exception
+    {
+        // Given
+        String json =  "{ \"statements\" : [ { \"a\" : \"\", \"b\" : { \"k\":1 }, \"statement\" : \"blah\" } ] }";
+
+        // When
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
+
+        // Then
+        assertThat( de.hasNext(), equalTo( true ) );
+
+        assertThat( de.next().statement(), equalTo( "blah" ) );
+        assertThat( de.hasNext(), equalTo( false ) );
+    }
+
+
+    @Test
     public void shouldTreatEmptyInputStreamAsEmptyStatementList() throws Exception
     {
         // Given
@@ -145,12 +162,37 @@ public class StatementDeserializerTest
                         "deserialize request. " +
                         "Expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
                         "found [START_OBJECT, END_OBJECT, null]." ) ) );
+
+
+        assertYieldsErrors( "{ \"statements\":\"WAIT WAT A STRING NOO11!\" }",
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new DeserializationException( "Unable to " +
+                        "deserialize request. Expected [START_OBJECT, FIELD_NAME, START_ARRAY], found [START_OBJECT, " +
+                        "FIELD_NAME, VALUE_STRING]." ) ) );
+
         assertYieldsErrors( "[{]}",
                 new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
                         new DeserializationException( "Unable to deserialize request: Unexpected close marker ']': " +
                                 "expected '}' " +
                                 "(for OBJECT starting at [Source: TestInputStream; line: 1, column: 1])\n " +
                                 "at [Source: TestInputStream; line: 1, column: 4]" ) ) );
+
+        assertYieldsErrors( "{ \"statements\" : \"ITS A STRING\" }",
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
+                        new DeserializationException( "Unable to deserialize request. " +
+                                "Expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
+                                "found [START_OBJECT, FIELD_NAME, VALUE_STRING]." ) ) );
+
+        assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : [\"dd\"] } ] }",
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
+                        new DeserializationException( "Unable to deserialize request: Can not deserialize instance of" +
+                                " java.lang.String out of START_ARRAY token\n at [Source: TestInputStream; line: 1, " +
+                                "column: 22]" ) ) );
+
+        assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : \"stmt\", \"parameters\" : [\"AN ARRAY!!\"] } ] }",
+                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT,
+                        new DeserializationException( "Unable to deserialize request: Can not deserialize instance of" +
+                                " java.util.LinkedHashMap out of START_ARRAY token\n at [Source: TestInputStream; " +
+                                "line: 1, column: 42]" ) ) );
     }
 
     private void assertYieldsErrors( String json, Neo4jError... expectedErrors ) throws UnsupportedEncodingException
@@ -165,7 +207,10 @@ public class StatementDeserializerTest
         } );
         while ( de.hasNext() )
         {
-            de.next();
+            Statement statement = de.next();
+            String stmt = statement.statement();
+            statement.includeStats();
+            statement.parameters();
         }
 
         Iterator<Neo4jError> actual = de.errors();
@@ -176,8 +221,8 @@ public class StatementDeserializerTest
             Neo4jError error = actual.next();
             Neo4jError expectedError = expected.next();
 
-            assertThat( error.getStatusCode(), equalTo( expectedError.getStatusCode() ) );
             assertThat( error.getMessage(), equalTo( expectedError.getMessage() ) );
+            assertThat( error.getStatusCode(), equalTo( expectedError.getStatusCode() ) );
         }
 
         assertFalse( expected.hasNext() );

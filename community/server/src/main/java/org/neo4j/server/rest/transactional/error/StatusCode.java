@@ -78,7 +78,11 @@ public enum StatusCode
             StackTraceStrategy.SEND_TO_CLIENT ),
     INTERNAL_COMMIT_TRANSACTION_ERROR(
             53012,
-            StackTraceStrategy.SEND_TO_CLIENT );
+            StackTraceStrategy.SEND_TO_CLIENT ),
+
+    INTERNAL_UNKNOWN_ERROR(
+            53013,
+            StackTraceStrategy.SEND_TO_CLIENT);
 
     private final int code;
     private final StackTraceStrategy stackTraceStrategy;
