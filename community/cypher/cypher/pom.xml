@@ -38,6 +38,11 @@
       </comments>
     </license>
   </licenses>
+  
+  <properties>
+    <maven.site.skip>false</maven.site.skip>
+    <maven.site.deploy.skip>false</maven.site.deploy.skip>
+  </properties>
 
   <dependencies>
 
@@ -103,9 +108,15 @@
     <dependency>
       <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
       <artifactId>concurrentlinkedhashmap-lru</artifactId>
-      <version>1.3.1</version>
     </dependency>
 
   </dependencies>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
 
 </project>

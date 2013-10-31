@@ -125,135 +125,6 @@
       </plugin>
 
     </plugins>
-
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <version>2.4</version>
-        </plugin>
-        <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <version>1.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>findbugs-maven-plugin</artifactId>
-          <version>2.5.2</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>2.0</version>
-          <!-- 2.1 ? -->
-        </plugin>
-        <plugin>
-          <groupId>com.voltvoodoo</groupId>
-          <artifactId>brew</artifactId>
-          <version>0.2.10</version>
-        </plugin>
-        <plugin>
-          <groupId>com.github.searls</groupId>
-          <artifactId>jasmine-maven-plugin</artifactId>
-          <version>1.2.0.0</version>
-        </plugin>
-        <plugin>
-          <groupId>pl.project13.maven</groupId>
-          <artifactId>git-commit-id-plugin</artifactId>
-          <version>2.1.5</version>
-          <executions>
-            <execution>
-              <id>generate-git-hash</id>
-              <goals>
-                <goal>revision</goal>
-              </goals>
-            </execution>
-          </executions>
-          <configuration>
-            <skipPoms>false</skipPoms>
-            <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
-            <gitDescribe>
-              <dirty>-dirty</dirty>
-              <abbrev>7</abbrev>
-              <forceLongFormat>true</forceLongFormat>
-            </gitDescribe>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
-          <artifactId>licensing-maven-plugin</artifactId>
-          <version>1.7.5</version>
-          <configuration>
-            <failIfDisliked>true</failIfDisliked>
-            <failIfMissing>true</failIfMissing>
-            <plainTextReport>true</plainTextReport>
-            <prependText>${licensing.prepend.text}</prependText>
-            <excludedGroups>
-              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$
-            </excludedGroups>
-            <includedScopes>compile</includedScopes>
-          </configuration>
-          <executions>
-            <execution>
-              <id>enforce-licensing-oss</id>
-              <phase>${licensing.phase}</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <configuration>
-                <licensingRequirementFiles>
-                  <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
-                  <licensingRequirementFile>licensing-requirements-oss.xml</licensingRequirementFile>
-                </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-oss.txt
-                </thirdPartyLicensingFilename>
-              </configuration>
-            </execution>
-            <execution>
-              <id>enforce-licensing-com</id>
-              <phase>${licensing.phase}</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <configuration>
-                <licensingRequirementFiles>
-                  <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
-                  <licensingRequirementFile>licensing-requirements-com.xml</licensingRequirementFile>
-                </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}.txt</thirdPartyLicensingFilename>
-              </configuration>
-            </execution>
-            <execution>
-              <id>list-all-licenses</id>
-              <phase>${licensing.phase}</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <configuration>
-                <licensingRequirementFiles>
-                  <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
-                </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-NOTICE.txt
-                </thirdPartyLicensingFilename>
-                <checkExistingNoticeFile>${project.build.directory}/../NOTICE.txt</checkExistingNoticeFile>
-                <listPrependText>list-prefix.txt</listPrependText>
-                <listReport>${project.artifactId}-${project.version}-LICENSES.txt</listReport>
-                <checkExistingLicensesFile>${project.build.directory}/../LICENSES.txt</checkExistingLicensesFile>
-              </configuration>
-            </execution>
-          </executions>
-          <dependencies>
-            <dependency>
-              <groupId>org.neo4j.build</groupId>
-              <artifactId>licensecheck-config</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
@@ -410,6 +281,31 @@
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-graph-algo</artifactId>
         <version>${project.version}</version>
+      </dependency>
+
+      <!-- other -->
+
+      <dependency>
+        <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+        <artifactId>concurrentlinkedhashmap-lru</artifactId>
+        <version>1.3.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-mapper-asl</artifactId>
+        <version>1.9.7</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.parboiled</groupId>
+        <artifactId>parboiled-scala_2.10</artifactId>
+        <version>1.1.6</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
     </dependencies>
