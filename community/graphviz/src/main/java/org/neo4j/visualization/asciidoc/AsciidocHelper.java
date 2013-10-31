@@ -166,8 +166,7 @@ public class AsciidocHelper
 
     public static String createQueryFailureSnippet( final String output )
     {
-        return "[queryfailure]\n----\n" + output
-                + (output.endsWith( "\n" ) ? "" : "\n") + "----\n";
+        return "[source]\n----\n" + output + "\n----\n";
     }
 
     public static String createCypherSnippet( final String query )

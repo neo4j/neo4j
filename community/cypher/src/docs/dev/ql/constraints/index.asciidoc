@@ -3,9 +3,6 @@
 Constraints
 ===========
 
-[WARNING]
-This feature is currently in active development, and is not guaranteed to work properly until this message is removed.
-
 Neo4j helps enforce data integrity with the use of constraints.
 
 You can use unique constraints to ensure that property values are unique for all nodes with a specific label.
@@ -18,4 +15,8 @@ You can have multiple unique constraints for a given label.
 include::create-uniqueness-constraint.asciidoc[]
 
 include::drop-uniqueness-constraint.asciidoc[]
+
+include::create-a-node-that-complies-with-constraints.asciidoc[]
+
+include::create-a-node-that-breaks-a-constraint.asciidoc[]
 

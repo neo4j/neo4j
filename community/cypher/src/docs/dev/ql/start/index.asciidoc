@@ -9,7 +9,7 @@ Note that trying to use an index that doesn't exist will throw an exception.
 
 [NOTE]
 +START+ is optional.
-If you do not specify explicit start points, Cypher will try and infer start points from your query.
+If you do not specify explicit starting points, Cypher will try and infer starting points from your query.
 This is done based on node labels and predicates contained in your query.
 Additionally, you can use index hints with the +USING+ clause to help Cypher pick an index to use to find starting points, see <<query-using>>.
 

@@ -22,6 +22,7 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import collection.JavaConverters._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.cypher.CypherExecutionException
 
 class ConstraintsTest extends DocumentingTestBase {
   def graphDescription: List[String] = List()
@@ -40,6 +41,7 @@ class ConstraintsTest extends DocumentingTestBase {
   }
 
   @Test def drop_unique_constraint() {
+    generateConsole = false
     engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
 
     testQuery(
@@ -51,6 +53,32 @@ class ConstraintsTest extends DocumentingTestBase {
     )
   }
 
+  @Test def play_nice_with_constraint() {
+    generateConsole = false
+    engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
+
+    testQuery(
+      title = "Create a node that complies with constraints",
+      text = "Create a `Book` node with an `isbn` that isn't already in the database.",
+      queryText = "CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})",
+      returns = "",
+      assertions = (p) => assertConstraintExist("Book", "isbn")
+    )
+  }
+
+  @Test def break_constraint() {
+    generateConsole = false
+    engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
+    engine.execute("CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})")
+
+    testFailingQuery[CypherExecutionException](
+      title = "Create a node that breaks a constraint",
+      text = "Create a `Book` node with an `isbn` that is already used in the database.",
+      queryText = "CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})",
+      returns = ""
+    )
+  }
+  
   private def assertConstraintDoesNotExist(labelName: String, propName: String) {
     assert(getConstraintIterator(labelName, propName).isEmpty, "Expected constraint iterator to be empty")
   }

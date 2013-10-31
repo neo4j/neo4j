@@ -325,11 +325,12 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     writer.println()
 
     output.clear()
-    output.append(".Result\n")
     result match {
       case Left(failure) =>
-        output.append(AsciidocHelper.createQueryFailureSnippet(s"${failure.getClass.getName}: ${failure.getMessage}"))
+        output.append(".Error message\n")
+        output.append(AsciidocHelper.createQueryFailureSnippet(failure.getMessage))
       case Right(rightResult) =>
+        output.append(".Result\n")
         output.append(AsciidocHelper.createQueryResultSnippet(rightResult.dumpToString()))
     }
     output.append('\n')

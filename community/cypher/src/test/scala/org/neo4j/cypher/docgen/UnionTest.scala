@@ -58,12 +58,12 @@ class UnionTest extends DocumentingTestBase with StatisticsChecker {
 
   @Test def union_between_two_queries_distinct() {
     testQuery(
-      title = "Combine two queries and removing duplicates",
+      title = "Combine two queries and remove duplicates",
       text = "By not including +ALL+ in the +UNION+, duplicates are removed from the combined result set",
       queryText =
         """match (n:Actor) return n.name as name
-           UNION
-           match (n:Movie) return n.title as name""",
+UNION
+match (n:Movie) return n.title as name""",
       returns = "The combined result is returned.",
       assertions = (p) => assert(p.toList === List(Map("name" -> "Lucy Liu"), Map("name" -> "Kevin Bacon"), Map("name" -> "Cypher")))
     )
