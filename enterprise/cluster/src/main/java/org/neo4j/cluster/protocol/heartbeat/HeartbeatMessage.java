@@ -63,6 +63,9 @@ public enum HeartbeatMessage
     public static class SuspicionsState
             implements Serializable
     {
+
+        private static final long serialVersionUID = 3152836192116904427L;
+
         private Set<InstanceId> suspicions;
 
         public SuspicionsState( Set<InstanceId> suspicions )
@@ -73,6 +76,12 @@ public enum HeartbeatMessage
         public Set<InstanceId> getSuspicions()
         {
             return suspicions;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Suspicions:"+suspicions;
         }
     }
 }

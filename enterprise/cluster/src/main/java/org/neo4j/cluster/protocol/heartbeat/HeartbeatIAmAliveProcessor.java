@@ -53,7 +53,7 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
             {
                 InstanceId id = clusterContext.getConfiguration().getServerId( URI.create( from ) );
 
-                if (id != null)
+                if (id != null && !clusterContext.isMe( id ))
                 {
                     output.offer( message.copyHeadersTo(
                             Message.internal( HeartbeatMessage.i_am_alive,
