@@ -20,6 +20,7 @@
 package org.neo4j.shell.impl;
 
 import java.io.File;
+import java.nio.file.Paths;
 
 import org.neo4j.shell.Console;
 import org.neo4j.shell.ShellClient;
@@ -54,9 +55,8 @@ public class JLineConsole implements Console
             Class<?> historyClass = Class.forName( "jline.History" );
             Object history = historyClass.newInstance();
             history.getClass().getMethod( "setHistoryFile", File.class ).invoke( history,
-                    new File( ".shell_history" ) );
-            consoleReader.getClass().getMethod( "setHistory", historyClass ).invoke(
-                    consoleReader, history );
+                    Paths.get( System.getProperty( "user.home" ), ".neo4j_shell_history" ).toFile() );
+            consoleReader.getClass().getMethod( "setHistory", historyClass ).invoke( consoleReader, history );
 
 			return new JLineConsole( consoleReader, client );
 		}
