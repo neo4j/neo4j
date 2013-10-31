@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -60,7 +61,11 @@ import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -144,6 +149,11 @@ public class SchemaIndexHaIT
             awaitIndexOnline( index, newMaster, data );
             tx.success();
         }
+        // FINALLY: let all db's finish
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        {
+            dbFactory.triggerFinish( db );
+        }
     }
 
     @Test @Ignore("JH: Temp to get builds running while I debug this, if you see this message and it's not tuesday the 29th of october, tell me.")
@@ -204,7 +214,7 @@ public class SchemaIndexHaIT
         }
     }
 
-    @Test @Ignore("JH: Temp to get builds running while I debug this, if you see this message and it's not tuesday the 29th of october, tell me.")
+    @Test
     public void onlineSchemaIndicesOnMasterShouldBeBroughtOnlineOnSlavesAfterStoreCopy() throws Throwable
     {
         /*
@@ -236,7 +246,7 @@ public class SchemaIndexHaIT
 
         // And the population finishes
         dbFactory.triggerFinish( master );
-        IndexDefinition index = null;
+        IndexDefinition index;
         try ( Transaction tx = master.beginTx())
         {
             index = single( master.schema().getIndexes() );
