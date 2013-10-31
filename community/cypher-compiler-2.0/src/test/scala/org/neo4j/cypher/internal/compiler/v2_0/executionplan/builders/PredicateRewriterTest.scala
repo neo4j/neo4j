@@ -23,21 +23,27 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import commands._
 import commands.expressions.{Literal, Property, Identifier}
 import commands.values.{UnresolvedProperty, UnresolvedLabel}
-import executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{Namer, ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.Direction
 import java.util
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.junit.Test
-import scala.util.Random
 
 @RunWith(value = classOf[Parameterized])
 class PredicateRewriterTest(name: String,
                             inputMatchPattern: Pattern,
                             expectedWhere: Seq[Predicate],
                             expectedPattern: Seq[Pattern]) extends BuilderTest {
-  def builder: PlanBuilder = new PredicateRewriter(new Random(42))
+  def builder: PlanBuilder = new PredicateRewriter(new Namer {
+    var count = 0
+
+    def nextName(): String = {
+      count = count + 1
+      count.toString
+    }
+  })
 
   @Test def should_rewrite_patterns_with_labels() {
     // Given
@@ -100,7 +106,8 @@ object PredicateRewriterTest {
   val predicateForPropertiedA = Equals(Property(Identifier("a"), prop), literal)
   val predicateForPropertiedB = Equals(Property(Identifier("b"), prop), literal)
   val predicateForPropertiedR = Equals(Property(Identifier("r"), prop), literal)
-  val predicateForPropertiedRelIterator = AllInCollection(Identifier("rels"), "  UNNAMEDR30", Equals(Property(Identifier("  UNNAMEDR30"), prop), literal))
+  def predicateForPropertiedRelIterator(collection: String, innerSymbol: String) =
+    AllInCollection(Identifier(collection), innerSymbol, Equals(Property(Identifier(innerSymbol), prop), literal))
 
   @Parameters(name = "{0}")
   def parameters: util.Collection[Array[AnyRef]] = {
@@ -203,9 +210,15 @@ object PredicateRewriterTest {
     )
 
     add("MATCH (a)-[rels* {foo:'bar'}]->(b) RETURN a => MATCH (a)-[rels*]->(b) WHERE ALL(x in rels | x.foo = 'bar')" ,
-      varlengthRelatedToWithProps.copy(relIterator = Some("rels")),
-      Seq(predicateForPropertiedRelIterator),
-      Seq(varlengthRelatedToNoLabels.copy(relIterator = Some("rels")))
+      varlengthRelatedToWithProps.copy(relIterator = Some("RELS")),
+      Seq(predicateForPropertiedRelIterator("RELS", "1")),
+      Seq(varlengthRelatedToNoLabels.copy(relIterator = Some("RELS")))
+    )
+
+    add("MATCH (a)-[* {foo:'bar'}]->(b) RETURN a => MATCH (a)-[*]->(b) WHERE ALL(x in UNNAMED | x.foo = 'bar')",
+      varlengthRelatedToWithProps,
+      Seq(predicateForPropertiedRelIterator("1", "2")),
+      Seq(varlengthRelatedToWithProps.copy(relIterator = Some("1"), properties = Map.empty))
     )
 
     list

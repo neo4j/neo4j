@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.prepare
 
-import scala.util.Random
-
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands._
 import commands.expressions.{Identifier, AggregationExpression, Expression}
 import commands.ReturnItem
-import executionplan.{PartiallySolvedQuery, ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{RandomNamer, PartiallySolvedQuery, ExecutionPlanInProgress, PlanBuilder}
 import executionplan.builders.{Unsolved, QueryToken}
 import spi.PlanContext
 
@@ -48,8 +46,7 @@ import spi.PlanContext
  * CacheNamer is there to make this class easy to test
  */
 case class AggregationPreparationRewriter(cacheNamer: Option[Expression => String] = None) extends PlanBuilder {
-  val rand = new Random()
-  val namer: Expression => String = cacheNamer.getOrElse(_ => "  _UNNAMEDC" + rand.nextString(5))
+  val namer: Expression => String = cacheNamer.getOrElse(new RandomNamer)
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
     val query: PartiallySolvedQuery = plan.query
