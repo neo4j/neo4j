@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.{ExecutionPlan, CypherCompiler, LRUCache}
-import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI, InternalAbstractGraphDatabase}
+import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.Statement
 import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
 import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
 

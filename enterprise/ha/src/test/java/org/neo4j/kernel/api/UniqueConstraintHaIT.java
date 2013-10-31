@@ -20,25 +20,29 @@
 package org.neo4j.kernel.api;
 
 import java.io.File;
-
 import javax.transaction.xa.XAException;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.kernel.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;

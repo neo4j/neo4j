@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.spi.v2_0
 
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.api.index.IndexDescriptor
-import org.neo4j.kernel.{GraphDatabaseAPI, ThreadToStatementContextBridge}
+import org.neo4j.kernel.{GraphDatabaseAPI}
 import collection.JavaConverters._
 import collection.mutable
 import scala.collection.Iterator
@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.operations.StatementTokenNameLookup
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.cypher.internal.compiler.v2_0.spi._
 import org.neo4j.cypher.internal.compiler.v2_0.spi.IdempotentResult
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge
 
 class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement)
   extends TransactionBoundTokenContext(statement) with QueryContext {
