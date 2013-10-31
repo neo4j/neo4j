@@ -19,28 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_0._
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryStateHelper
+import org.scalatest.Assertions
 import org.neo4j.cypher.IllegalValueException
 
-case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = {
-    val coll = makeTraversable(value)
-    if (coll.size == 0) 
-      throw new IllegalValueException("Cannot get the head of an empty collection.")
-    else 
-      coll.head
+class HeadFunctionTest extends Assertions {
+  @Test
+  def should_fail_on_empty_collection() {
+    val headExpr = HeadFunction(Collection())
+
+    intercept[IllegalValueException](headExpr(ExecutionContext.empty)(QueryStateHelper.empty))
   }
 
-  def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
+  @Test
+  def should_pass_on_the_null() {
+    val headExpr = HeadFunction(Literal(null))
 
-  def arguments = Seq(collection)
+    val result = headExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
-  def identifierDependencies(expectedType: CypherType) = null
-
-  def calculateType(symbols: SymbolTable) = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType
-
-  def symbolTableDependencies = collection.symbolTableDependencies
+    assert(result === null)
+  }
 }
