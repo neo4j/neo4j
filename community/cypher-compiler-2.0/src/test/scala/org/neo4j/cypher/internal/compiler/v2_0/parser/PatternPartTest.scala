@@ -35,7 +35,7 @@ class PatternPartTest extends ParserTest[ast.PatternPart, Seq[LegacyPattern]] wi
   @Test def label_literal_list_parsing() {
     parsing("(a)-[r:FOO|BAR]->(b)") or
     parsing("a-[r:FOO|:BAR]->b") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("FOO", "BAR"), Direction.OUTGOING, optional = false, Map.empty))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq("FOO", "BAR"), Direction.OUTGOING, Map.empty))
   }
 
   @Test def properties_in_node_patterns() {
@@ -54,15 +54,15 @@ class PatternPartTest extends ParserTest[ast.PatternPart, Seq[LegacyPattern]] wi
       Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, Direction.OUTGOING, properties = Map("foo" -> Literal("bar"))))
 
     parsing("(a)-[{}]->(b)") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, Direction.OUTGOING, optional = false, properties = Map.empty))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, Direction.OUTGOING, properties = Map.empty))
 
     parsing("(a)-[? {foo:'bar'}]->(b)") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, Direction.OUTGOING, optional = true, properties = Map("foo" -> Literal("bar"))))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED3", Seq.empty, Direction.OUTGOING, properties = Map("foo" -> Literal("bar"))))
 
     parsing("(a)-[r {foo:'bar'}]->(b)") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, optional = false, properties = Map("foo" -> Literal("bar"))))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, properties = Map("foo" -> Literal("bar"))))
 
     parsing("(a)-[r {foo:'bar', bar:'baz'}]->(b)") shouldGive
-      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, optional = false, properties = Map("foo" -> Literal("bar"), "bar" -> Literal("baz"))))
+      Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "r", Seq.empty, Direction.OUTGOING, properties = Map("foo" -> Literal("bar"), "bar" -> Literal("baz"))))
   }
 }

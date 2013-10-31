@@ -80,20 +80,20 @@ object PredicateRewriterTest {
   val bareB = SingleNode("b")
 
   // Relationships
-  val relationshipLabeledBoth = RelatedTo(labeledA, labeledB, "r", Seq.empty, Direction.OUTGOING, optional = false, Map.empty)
+  val relationshipLabeledBoth = RelatedTo(labeledA, labeledB, "r", Seq.empty, Direction.OUTGOING, Map.empty)
   val relationshipLabeledLeft = relationshipLabeledBoth.copy(right = bareB)
   val relationshipLabeledRight = relationshipLabeledBoth.copy(left = bareA)
   val relationshipBare = relationshipLabeledLeft.copy(left = bareA)
   val relationshipPropsOnBoth = relationshipBare.copy(left = propertiedA, right = propertiedB)
   val relationshipPropsOnLeft = relationshipBare.copy(left = propertiedA)
   val relationshipPropsOnRight = relationshipBare.copy(right = propertiedB)
-  val varlengthRelatedToNoLabels = VarLengthRelatedTo("p", bareA, bareB, None, None, Seq(), Direction.OUTGOING, None, optional = false, Map.empty)
+  val varlengthRelatedToNoLabels = VarLengthRelatedTo("p", bareA, bareB, None, None, Seq(), Direction.OUTGOING, None, Map.empty)
   val varlengthRelatedToWithProps = varlengthRelatedToNoLabels.copy(properties = properties)
 
 
   val predicateForLabelA = HasLabel(Identifier("a"), label)
   val predicateForLabelB = HasLabel(Identifier("b"), label)
-  val shortestPathNoLabels = ShortestPath("p", bareA, bareB, Seq.empty, Direction.OUTGOING, None, optional = false, single = false, None)
+  val shortestPathNoLabels = ShortestPath("p", bareA, bareB, Seq.empty, Direction.OUTGOING, None, single = false, None)
 
   val prop = UnresolvedProperty("foo")
 
@@ -136,12 +136,6 @@ object PredicateRewriterTest {
       Seq(relationshipBare)
     )
 
-    add("MATCH (a)-->(b?:Person) RETURN a => :(",
-      relationshipBare.copy(right = labeledB.copy(optional = true)),
-      Seq(),
-      Seq()
-    )
-
     add("MATCH p = a-[*]->b RETURN a => :(",
       varlengthRelatedToNoLabels,
       Seq(),
@@ -160,12 +154,6 @@ object PredicateRewriterTest {
       Seq(varlengthRelatedToNoLabels)
     )
 
-    add("MATCH p = a-[*]->b?:Person RETURN a => :(",
-      varlengthRelatedToNoLabels.copy(right = labeledB.copy(optional = true)),
-      Seq(),
-      Seq()
-    )
-
     add("MATCH p = shortestPath(a-[*]->b) RETURN a => :(",
       shortestPathNoLabels,
       Seq(),
@@ -182,12 +170,6 @@ object PredicateRewriterTest {
       shortestPathNoLabels.copy(right = labeledB),
       Seq(predicateForLabelB),
       Seq(shortestPathNoLabels)
-    )
-
-    add("MATCH p = shortestPath(a-[*]->b?:Person) RETURN a => :(",
-      shortestPathNoLabels.copy(right = labeledB.copy(optional = true)),
-      Seq(),
-      Seq()
     )
 
     add("MATCH (a {foo:'bar'}) RETURN a => MATCH a WHERE a.foo='bar'",

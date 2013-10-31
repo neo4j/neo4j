@@ -47,8 +47,8 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
 
   def getGraphRelationships(node: Node, pRel: PatternRelationship, ctx:QueryContext): Seq[GraphRelationship] = pRel.getGraphRelationships(this, node, ctx)
 
-  def relateTo(key: String, other: PatternNode, relType: Seq[String], dir: Direction, optional: Boolean): PatternRelationship = {
-    val rel = new PatternRelationship(key, this, other, relType, dir, optional)
+  def relateTo(key: String, other: PatternNode, relType: Seq[String], dir: Direction): PatternRelationship = {
+    val rel = new PatternRelationship(key, this, other, relType, dir)
     relationships.add(rel)
     other.relationships.add(rel)
     rel
@@ -60,9 +60,8 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
                                     maxHops: Option[Int],
                                     relType: Seq[String],
                                     dir: Direction,
-                                    collectionOfRels: Option[String],
-                                    optional: Boolean): PatternRelationship = {
-    val rel = new VariableLengthPatternRelationship(pathName, this, end, collectionOfRels, minHops, maxHops, relType, dir, optional)
+                                    collectionOfRels: Option[String]): PatternRelationship = {
+    val rel = new VariableLengthPatternRelationship(pathName, this, end, collectionOfRels, minHops, maxHops, relType, dir)
     relationships.add(rel)
     end.relationships.add(rel)
     rel

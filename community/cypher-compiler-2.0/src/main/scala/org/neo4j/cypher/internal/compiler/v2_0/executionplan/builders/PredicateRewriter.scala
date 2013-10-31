@@ -49,38 +49,38 @@ class PredicateRewriter(random: Random = new Random) extends PlanBuilder {
 
   private def findNodeWithLabels(tokens: Seq[QueryToken[Pattern]]): Option[LabelExtraction] =
     tokens.collectFirst {
-      case node@Unsolved(pattern@SingleNode(name, labels, false, _)) if labels.nonEmpty =>
+      case node@Unsolved(pattern@SingleNode(name, labels, _)) if labels.nonEmpty =>
       LabelExtraction(node, labels, Unsolved(pattern.copy(labels = Seq())), name)
 
-      case relationship@Unsolved(RelationshipPattern(pattern, left@SingleNode(name, labels, false, _), _))
+      case relationship@Unsolved(RelationshipPattern(pattern, left@SingleNode(name, labels, _), _))
         if labels.nonEmpty =>
         LabelExtraction(relationship, labels, Unsolved(pattern.changeEnds(left = left.copy(labels = Seq.empty))), name)
 
-      case relationship@Unsolved(RelationshipPattern(pattern, _, right@SingleNode(name, labels, false, _)))
+      case relationship@Unsolved(RelationshipPattern(pattern, _, right@SingleNode(name, labels, _)))
         if labels.nonEmpty =>
         LabelExtraction(relationship, labels, Unsolved(pattern.changeEnds(right = right.copy(labels = Seq.empty))), name)
     }
 
   private def findPatternWithProperties(tokens: Seq[QueryToken[Pattern]]): Option[PropertyExtraction] =
     tokens.collectFirst {
-      case node@Unsolved(pattern@SingleNode(name, _, false, props)) if props.nonEmpty =>
+      case node@Unsolved(pattern@SingleNode(name, _, props)) if props.nonEmpty =>
         PropertyExtraction(node, props, Unsolved(pattern.copy(properties = Map())), name)
 
-      case relationship@Unsolved(RelationshipPattern(pattern, left@SingleNode(name, _, false, props), _))
+      case relationship@Unsolved(RelationshipPattern(pattern, left@SingleNode(name, _, props), _))
         if props.nonEmpty =>
         PropertyExtraction(relationship, props, Unsolved(pattern.changeEnds(left = left.copy(properties = Map.empty))), name)
 
-      case relationship@Unsolved(RelationshipPattern(pattern, _, right@SingleNode(name, _, false, props)))
+      case relationship@Unsolved(RelationshipPattern(pattern, _, right@SingleNode(name, _, props)))
         if props.nonEmpty =>
         PropertyExtraction(relationship, props, Unsolved(pattern.changeEnds(right = right.copy(properties = Map.empty))), name)
 
-      case relationship@Unsolved(rel@RelatedTo(_, _, relName, _, _, false, props)) if props.nonEmpty =>
+      case relationship@Unsolved(rel@RelatedTo(_, _, relName, _, _, props)) if props.nonEmpty =>
         PropertyExtraction(relationship, props, Unsolved(rel.copy(properties = Map.empty)), relName)
     }
 
   private def findVarlengthPatternWithProperties(tokens: Seq[QueryToken[Pattern]]): Option[(VarLengthRelatedTo, Predicate)] = {
     val relationShip: Option[VarLengthRelatedTo] = tokens.collectFirst {
-      case relationship@Unsolved(rel@VarLengthRelatedTo(_, _, _, _, _, _, _, _, false, props)) if props.nonEmpty =>
+      case relationship@Unsolved(rel@VarLengthRelatedTo(_, _, _, _, _, _, _, _, props)) if props.nonEmpty =>
         rel
     }
 

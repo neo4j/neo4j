@@ -33,9 +33,9 @@ trait PathExtractor {
     val firstNode: String = getFirstNode
 
     val p: Seq[PropertyContainer] = pathPattern.foldLeft(get(firstNode) :: Nil)((soFar, p) => p match {
-      case SingleNode(name, _, _, _)                => soFar :+ get(name)
-      case RelatedTo(_, right, relName, _, _, _, _) => soFar :+ get(relName) :+ get(right.name)
-      case path: PathPattern                        => getPath(ctx, path.pathName, soFar)
+      case SingleNode(name, _, _)                => soFar :+ get(name)
+      case RelatedTo(_, right, relName, _, _, _) => soFar :+ get(relName) :+ get(right.name)
+      case path: PathPattern                     => getPath(ctx, path.pathName, soFar)
     })
 
     buildPath(p)
@@ -43,9 +43,9 @@ trait PathExtractor {
 
   private def getFirstNode[U]: String =
     pathPattern.head match {
-      case RelatedTo(left, _, _, _, _, _, _) => left.name
-      case SingleNode(name, _, _, _)         => name
-      case path: PathPattern                 => path.left.name
+      case RelatedTo(left, _, _, _, _, _) => left.name
+      case SingleNode(name, _, _)         => name
+      case path: PathPattern              => path.left.name
     }
 
   private def buildPath(pieces: Seq[PropertyContainer]): Path =

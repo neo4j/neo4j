@@ -30,13 +30,13 @@ import collection.Set
  * It's also used to emit the subgraph when the whole pattern has been matched (that's the toMap method)
  */
 abstract class History {
-  def removeSeen(relationships: Set[PatternRelationship], includeOptionals : Boolean): Set[PatternRelationship] =
-    relationships.filterNot(r => !includeOptionals && r.optional || hasSeen(r))
+  def removeSeen(relationships: Set[PatternRelationship]): Set[PatternRelationship] =
+    relationships.filterNot(r => hasSeen(r))
 
-  def removeSeen(relationships: Seq[GraphRelationship]): Seq[GraphRelationship] = relationships.filterNot(gr => gr match {
-    case SingleGraphRelationship(r) => hasSeen(r)
+  def removeSeen(relationships: Seq[GraphRelationship]): Seq[GraphRelationship] = relationships.filterNot {
+    case SingleGraphRelationship(r)         => hasSeen(r)
     case VariableLengthGraphRelationship(p) => hasSeen(p)
-  })
+  }
 
   def hasSeen(p : Any): Boolean
 

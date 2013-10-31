@@ -33,12 +33,12 @@ class HistoryTest extends Assertions with MockitoSugar {
   @Test def excludingPatternRelsWorksAsExpected() {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
-    val pr: PatternRelationship = a.relateTo("r", b, Seq(), Direction.BOTH, optional = false)
+    val pr: PatternRelationship = a.relateTo("r", b, Seq(), Direction.BOTH)
     val r: Relationship = mock[Relationship]
     val mp = new MatchingPair(pr, r)
     val history = new InitialHistory(ExecutionContext.empty, Seq.empty).add(mp)
 
-    assert(history.removeSeen(Set[PatternRelationship](pr), includeOptionals = false) === Set())
+    assert(history.removeSeen(Set[PatternRelationship](pr)) === Set())
   }
 
   @Test def should_known_that_it_has_seen_a_relationship() {

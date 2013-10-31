@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.pipes.matching
+package org.neo4j.cypher.internal.compiler.v2_0
 
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.internal.compiler.v2_0.commands.True
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.{MatchingPair, PatternNode}
 
 class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
   @Test def returnsPatternRelationships() {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
 
-    val r = a.relateTo("r", b, Seq(), Direction.BOTH, false)
+    val r = a.relateTo("r", b, Seq(), Direction.BOTH)
 
     val rels = a.getPRels(Seq())
 
@@ -45,7 +45,7 @@ class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
     val pA = new PatternNode("a")
     val pB = new PatternNode("b")
 
-    val pRel = pA.relateTo("r", pB, Seq(), Direction.BOTH, false)
+    val pRel = pA.relateTo("r", pB, Seq(), Direction.BOTH)
 
     val rels = pA.getPRels(Seq(MatchingPair(pRel, rel)))
 

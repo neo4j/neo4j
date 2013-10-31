@@ -53,14 +53,14 @@ trait PatternGraphBuilder {
         throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(relName))
       }
 
-      patternRelMap(relName) = leftNode.relateTo(relName, rightNode, r.relTypes, r.direction, r.optional)
+      patternRelMap(relName) = leftNode.relateTo(relName, rightNode, r.relTypes, r.direction)
       true
     }
 
     def takeOnVarlengthRel(r: VarLengthRelatedTo) = {
       val startNode: PatternNode = patternNodeMap.getOrElseUpdate(r.left.name, new PatternNode(r.left.name))
       val endNode: PatternNode = patternNodeMap.getOrElseUpdate(r.right.name, new PatternNode(r.right.name))
-      patternRelMap(r.pathName) = startNode.relateViaVariableLengthPathTo(r.pathName, endNode, r.minHops, r.maxHops, r.relTypes, r.direction, r.relIterator, r.optional)
+      patternRelMap(r.pathName) = startNode.relateViaVariableLengthPathTo(r.pathName, endNode, r.minHops, r.maxHops, r.relTypes, r.direction, r.relIterator)
       true
     }
 

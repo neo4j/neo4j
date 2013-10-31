@@ -30,26 +30,17 @@ import org.neo4j.graphdb.Path
  * Shortest pipe inserts a single shortest path between two already found nodes
  */
 class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) with CollectionSupport {
-  private def optional = ast.optional
   private def pathName = ast.pathName
   private val expression = ShortestPathExpression(ast)
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = input.flatMap(ctx => {
     val result: Stream[Path] = expression(ctx)(state) match {
-      case in: Stream[_]      => CastSupport.castOrFail[Stream[Path]](in)
-      case null               => Stream()
-      case path:Path          => Stream(path)
+      case in: Stream[_] => CastSupport.castOrFail[Stream[Path]](in)
+      case null          => Stream()
+      case path: Path    => Stream(path)
     }
 
-    if (result.isEmpty) {
-      if (optional)
-        Seq(ctx.newWith(pathName -> null))
-      else
-        Seq()
-    } else {
-      result.map(x => ctx.newWith(pathName -> x))
-    }
-
+    result.map(x => ctx.newWith(pathName -> x))
   })
 
   val symbols = source.symbols.add(pathName, PathType())

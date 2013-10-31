@@ -25,7 +25,6 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Path, Direction}
 import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.compiler.v2_0.commands.NonEmpty
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.ShortestPathExpression
@@ -49,7 +48,6 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
       relTypes = Seq(),
       dir = Direction.OUTGOING,
       maxDepth = None,
-      optional = false,
       single = true,
       relIterator = None)
 
@@ -71,7 +69,7 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
 
     relate(a, b)
 
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false, Map.empty)
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern)))
     val m = createExecutionContext(Map("a" -> a))
 
@@ -89,7 +87,7 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
 
     relate(a, b)
 
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, false, Map.empty)
+    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, Direction.OUTGOING, Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern)))
     val m = createExecutionContext(Map("a" -> a))
 
