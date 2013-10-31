@@ -10,7 +10,7 @@ First, let's add some data.
 
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaQuery.java
 tag=addData
 classifier=test-sources
@@ -20,7 +20,7 @@ Execute a query:
 
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaQuery.java
 tag=execute
 classifier=test-sources
@@ -38,7 +38,7 @@ You can get a list of the columns in the result:
 
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaQuery.java
 tag=columns
 classifier=test-sources
@@ -52,7 +52,7 @@ To fetch the result items from a single column, do like this:
 
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaQuery.java
 tag=items
 classifier=test-sources
@@ -66,7 +66,7 @@ To get all columns, do like this instead:
 
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaQuery.java
 tag=rows
 classifier=test-sources

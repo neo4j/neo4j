@@ -8,7 +8,7 @@ Below follows example of how to use parameters when executing Cypher queries fro
 .Node id
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=exampleWithParameterForNodeId
 classifier=test-sources
@@ -17,7 +17,7 @@ classifier=test-sources
 .Node object
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=exampleWithParameterForNodeObject
 classifier=test-sources
@@ -26,7 +26,7 @@ classifier=test-sources
 .Multiple node ids
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=exampleWithParameterForMultipleNodeIds
 classifier=test-sources
@@ -35,7 +35,7 @@ classifier=test-sources
 .String literal
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=exampleWithStringLiteralAsParameter
 classifier=test-sources
@@ -44,7 +44,7 @@ classifier=test-sources
 .Index value
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=exampleWithParameterForIndexValue
 classifier=test-sources
@@ -53,7 +53,7 @@ classifier=test-sources
 .Index query
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=exampleWithParametersForQuery
 classifier=test-sources
@@ -62,7 +62,7 @@ classifier=test-sources
 .Numeric parameters for +SKIP+ and +LIMIT+
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=exampleWithParameterForSkipLimit
 classifier=test-sources
@@ -71,7 +71,7 @@ classifier=test-sources
 .Regular expression
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=exampleWithParameterRegularExpression
 classifier=test-sources
@@ -80,7 +80,7 @@ classifier=test-sources
 .Create node with properties
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=create_node_from_map
 classifier=test-sources
@@ -89,7 +89,7 @@ classifier=test-sources
 .Create multiple nodes with properties
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=create_multiple_nodes_from_map
 classifier=test-sources
@@ -98,7 +98,7 @@ classifier=test-sources
 .Setting all properties on node
 [snippet,java]
 ----
-component=neo4j-cypher
+component=neo4j-cypher-docs
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
 tag=set_properties_on_a_node_from_a_map
 classifier=test-sources
