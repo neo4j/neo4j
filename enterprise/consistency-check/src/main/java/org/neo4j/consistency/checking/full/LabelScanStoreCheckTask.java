@@ -33,11 +33,9 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
-import org.neo4j.kernel.api.direct.NodeRangeReader;
-import org.neo4j.kernel.api.direct.NodeRangeScanSupport;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels;
@@ -50,7 +48,7 @@ import static java.util.Arrays.sort;
 public class LabelScanStoreCheckTask implements StoppableRunnable,
         RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
 {
-    private final NodeRangeScanSupport scanSupport;
+    private final AllEntriesLabelScanReader reader;
     private final ConsistencyReporter reporter;
     private final ProgressListener progress;
 
@@ -60,18 +58,16 @@ public class LabelScanStoreCheckTask implements StoppableRunnable,
                                     ConsistencyReporter reporter )
     {
         this.reporter = reporter;
-        LabelScanStore labelScanStore = stores.labelScanStore();
-        this.scanSupport =
-                labelScanStore instanceof NodeRangeScanSupport ? (NodeRangeScanSupport) labelScanStore : null;
-        this.progress = buildProgressListener( builder, scanSupport );
+        this.reader = stores.labelScanStore().newAllEntriesReader();
+        this.progress = buildProgressListener( builder, reader );
     }
 
     private static ProgressListener buildProgressListener( ProgressMonitorFactory.MultiPartBuilder builder,
-                                                           NodeRangeScanSupport scanSupport )
+                                                           AllEntriesLabelScanReader reader )
     {
         try
         {
-            return builder.progressForPart( "LabelScanStore", scanSupport.getHighRangeId() );
+            return builder.progressForPart( "LabelScanStore", reader.getHighRangeId() );
         }
         catch ( IOException e )
         {
@@ -91,33 +87,27 @@ public class LabelScanStoreCheckTask implements StoppableRunnable,
 
         try
         {
-            if ( scanSupport == null )
+            for ( NodeLabelRange range : reader )
             {
-                return;
-            }
-
-            try ( NodeRangeReader reader = scanSupport.newRangeReader() )
-            {
-                for ( NodeLabelRange range : reader )
+                // TODO: report progress
+                if ( !continueScanning )
                 {
-                    if ( continueScanning )
-                    {
-                        LabelScanDocument document = new LabelScanDocument( range );
-                        reporter.forNodeLabelScan( document, this );
-                    }
-                    else
-                    {
-                        return;
-                    }
+                    return;
                 }
+                LabelScanDocument document = new LabelScanDocument( range );
+                reporter.forNodeLabelScan( document, this );
+            }
+        }
+        finally
+        {
+            try
+            {
+                reader.close();
             }
             catch ( IOException e )
             {
                 progress.failed( e );
             }
-        }
-        finally
-        {
             progress.done();
         }
     }

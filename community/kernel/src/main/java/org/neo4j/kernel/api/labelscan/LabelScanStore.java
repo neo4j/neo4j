@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -67,6 +68,8 @@ public interface LabelScanStore extends Lifecycle
      * @return a {@link LabelScanReader} capable of retrieving nodes for labels.
      */
     LabelScanReader newReader();
+
+    AllEntriesLabelScanReader newAllEntriesReader();
 
     ResourceIterator<File> snapshotStoreFiles() throws IOException;
 

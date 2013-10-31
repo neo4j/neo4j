@@ -41,8 +41,8 @@ import org.junit.runners.Parameterized;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
-import org.neo4j.kernel.api.direct.NodeRangeReader;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
@@ -155,7 +155,7 @@ public class LuceneLabelScanStoreTest
         ) );
 
         // WHEN
-        NodeRangeReader reader = store.newRangeReader();
+        AllEntriesLabelScanReader reader = store.newAllEntriesReader();
         NodeLabelRange range = single( reader.iterator() );
 
         // THEN
@@ -177,7 +177,7 @@ public class LuceneLabelScanStoreTest
         ) );
 
         // WHEN
-        NodeRangeReader reader = store.newRangeReader();
+        AllEntriesLabelScanReader reader = store.newAllEntriesReader();
         Iterator<NodeLabelRange> iterator = reader.iterator();
         NodeLabelRange range1 = iterator.next();
         NodeLabelRange range2 = iterator.next();

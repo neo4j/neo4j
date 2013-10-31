@@ -37,6 +37,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.KernelTransactionImplementation;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -769,6 +770,12 @@ public class WriteTransactionTest
         public LabelScanReader newReader()
         {
             return LabelScanReader.EMPTY;
+        }
+
+        @Override
+        public AllEntriesLabelScanReader newAllEntriesReader()
+        {
+            return null;
         }
 
         @Override

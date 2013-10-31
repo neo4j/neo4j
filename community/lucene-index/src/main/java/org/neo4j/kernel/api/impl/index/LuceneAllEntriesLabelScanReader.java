@@ -22,32 +22,37 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
 
-public interface LabelScanStorageStrategy
+public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 {
-    void applyUpdates( StorageService storage, Iterator<NodeLabelUpdate> updates ) throws IOException;
+    private final IndexSearcher searcher;
+    private final BitmapDocumentFormat format;
 
-    PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId );
-
-    AllEntriesLabelScanReader newNodeLabelReader( IndexSearcher searcher );
-
-    interface StorageService
+    public LuceneAllEntriesLabelScanReader( IndexSearcher searcher, BitmapDocumentFormat format )
     {
-        void updateDocument( Term documentTerm, Document document ) throws IOException;
+        this.searcher = searcher;
+        this.format = format;
+    }
 
-        void deleteDocuments( Term documentTerm ) throws IOException;
+    @Override
+    public Iterator<NodeLabelRange> iterator()
+    {
+        return new NodeLabelRangeIterator( searcher, format);
+    }
 
-        IndexSearcher acquireSearcher();
+    @Override
+    public void close() throws IOException
+    {
+        searcher.close();
+    }
 
-        void releaseSearcher( IndexSearcher searcher ) throws IOException;
-
-        void refreshSearcher() throws IOException;
+    @Override
+    public long getHighRangeId() throws IOException
+    {
+        return searcher.maxDoc();
     }
 }

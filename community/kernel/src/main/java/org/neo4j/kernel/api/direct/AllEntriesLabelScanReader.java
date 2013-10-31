@@ -17,36 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.direct;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.search.IndexSearcher;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
-import org.neo4j.kernel.api.direct.NodeLabelRange;
-import org.neo4j.kernel.api.direct.NodeRangeReader;
-
-public class LuceneNodeRangeReader implements NodeRangeReader
+public interface AllEntriesLabelScanReader extends Iterable<NodeLabelRange>, Closeable
 {
-    private final IndexSearcher searcher;
-    private final BitmapDocumentFormat format;
+    long getHighRangeId() throws IOException;
 
-    public LuceneNodeRangeReader( IndexSearcher searcher, BitmapDocumentFormat format )
+    AllEntriesLabelScanReader EMPTY = new AllEntriesLabelScanReader()
     {
-        this.searcher = searcher;
-        this.format = format;
-    }
+        @Override public long getHighRangeId() throws IOException
+        {
+            return 0;
+        }
 
-    @Override
-    public Iterator<NodeLabelRange> iterator()
-    {
-        return new NodeLabelRangeIterator( searcher, format);
-    }
+        @Override public void close() throws IOException
+        {
+        }
 
-    @Override
-    public void close() throws IOException
-    {
-        searcher.close();
-    }
+        @Override public Iterator<NodeLabelRange> iterator()
+        {
+            return emptyIterator();
+        }
+    };
+
 }
