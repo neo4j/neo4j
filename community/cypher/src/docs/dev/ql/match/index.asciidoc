@@ -70,4 +70,6 @@ include::named-path.asciidoc[]
 
 include::matching-on-a-bound-relationship.asciidoc[]
 
+include::match-with-properties-on-a-variable-length-path.asciidoc[]
+
 

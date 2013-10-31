@@ -45,28 +45,26 @@ class PatternTest extends ArticleTest {
 Patterns
 ========
 
-Patterns and pattern-matching are at the very heart of Cypher, and so it's very important to understand patterns,
-to be able to be effective with Cypher.
+Patterns and pattern-matching are at the very heart of Cypher, and so it's important to understand patterns to
+be effective with Cypher.
 
-For instance, using patterns, you describe the shape of the data you're looking for in the `MATCH` clause. You describe
+Using patterns, you describe the shape of the data you're looking for in the `MATCH` clause. You describe
 the pattern, and Cypher will figure out how to get that data for you. The idea is for you to draw your
 query on a whiteboard, naming the interesting parts of the pattern, so you can then use values from these parts
 to create the result set you are looking for.
 
-
-
-Patterns have bound points, or starting points. They are the parts of the pattern that are already ``bound'' to a set of
-graph nodes or relationships. All parts of the pattern must be directly or indirectly connected to a starting point -- a pattern
-where parts of the pattern are not reachable from any starting point will be rejected.
+Patterns can have bound points, or starting points. They are the parts of the pattern that are already ``bound'' to a
+set of graph nodes or relationships. All parts of the pattern must be directly or indirectly connected to a starting
+point -- a pattern where parts of the pattern are not reachable from any starting point will be rejected.
 
 [options="header", cols=">s,^,^,^,^", width="100%"]
-|===================
-|Clause        |Multiple rel. types  |Varlength |Paths |Maps
-|Match         |Yes                  |Yes       |Yes   |-
-|Create        |-                    |-         |Yes   |Yes
-|Create Unique |-                    |-         |Yes   |Yes
-|Expressions   |Yes                  |Yes       |-     |-
-|===================
+      |===================
+      |Clause        |Multiple rel. types  |Varlength |Paths |Maps
+      |Match         |Yes                  |Yes       |Yes   |-
+      |Create        |-                    |-         |Yes   |Yes
+      |Create Unique |-                    |-         |Yes   |Yes
+      |Expressions   |Yes                  |Yes       |-     |-
+      |===================
 
 == Patterns for related nodes ==
 
@@ -104,22 +102,46 @@ Or that it should have multiple labels:
 
 If you need to work with the relationship between two nodes, you can name it.
 
-+`a-[r]->b`+
++`(a)-[r]->(b)`+
 
 If you don't care about the direction of the relationship, you can omit the arrow at either end of the relationship, like this:
 
-+`a--b`+
++`(a)--(b)`+
 
 Relationships have types. When you are only interested in a specific relationship type, you can specify this like so:
 
-+`a-[:REL_TYPE]->b`+
++`(a)-[:REL_TYPE]->(b)`+
 
 If multiple relationship types are acceptable, you can list them, separating them with the pipe symbol `|` like this:
 
-+`a-[r:TYPE1|TYPE2]->b`+
++`(a)-[r:TYPE1|TYPE2]->(b)`+
 
 This pattern matches a relationship of type +TYPE1+ or +TYPE2+, going from `a` to `b`. The relationship is named `r`.
 Multiple relationship types can not be used with `CREATE` or `CREATE UNIQUE`.
+
+== Properties ==
+
+Both nodes and relationships can have properties on them. Cypher allows specifying properties in the pattern, by using
+the literal map syntax - `{ key: value }`. The value can be any expression.
+
+A node with properties is expressed like so:
+
++`(a {name:'Joe'})`+
+
+A relationship with properties is written out like so:
+
++`(a)-[ {blocked:false} ]->(b)`+
+
+A variable length relationship with properties defined on in it means that all relationships in the path must have
+the property set to the given value. E.g.
+
++`(a)-[*2..5 {blocked:false} ]->(b)`+
+
+In the query above, all relationships between a and b must have the property blocked set to the boolean value false.
+
+When combining with other qualifiers, properties go last, e.g.
+
++`(a)-[r:REL_TYPE*2..5 {blocked:false} ]->(b)`+
 
 == Controlling depth ==
 
@@ -144,7 +166,7 @@ As a simple example, let's take the query below:
 
 ###
 START me=node(%F%)
-MATCH me-[:KNOWS*1..2]-remote_friend
+MATCH (me)-[:KNOWS*1..2]-(remote_friend)
 RETURN remote_friend###
 
 This query starts from one node, and follows `KNOWS` relationships two or three steps out, and then stops.
@@ -162,10 +184,10 @@ three in a single query:
 
 ###no-results
 START me=node(%F%)
-MATCH p1 = me-[*2]-friendOfFriend
-CREATE p2 = me-[:MARRIED_TO]->(wife {name:"Gunhild"})
-CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend
-RETURN p1,p2,p3###
+MATCH p1 = (me)-[*2]-(friendOfFriend)
+CREATE p2 = (me)-[:MARRIED_TO]->(wife {name:"Gunhild"})
+CREATE UNIQUE p3 = (wife)-[:KNOWS]-(friendOfFriend)
+RETURN p1, p2, p3###
 
 == Setting properties ==
 
