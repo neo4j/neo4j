@@ -565,6 +565,6 @@ public interface ConsistencyReport
 
         /** This label scan document refers to a node that does not have the expected label. */
         @Documented
-        void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, LabelTokenRecord expectedLabelRecord );
+        void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
     }
 }

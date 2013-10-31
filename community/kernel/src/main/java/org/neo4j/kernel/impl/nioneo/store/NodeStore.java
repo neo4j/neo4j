@@ -31,6 +31,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -329,7 +330,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
                                                                       Iterator<DynamicRecord> useFirst )
     {
-        long[] storedLongs = withNodeId( nodeId, labels );
+        long[] storedLongs = LabelIdArray.prependNodeId( nodeId, labels );
         return dynamicLabelStore.allocateRecords( storedLongs, useFirst );
     }
 
@@ -337,7 +338,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     {
         long[] storedLongs = (long[])
             DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) );
-        return withoutNodeId( storedLongs );
+        return LabelIdArray.stripNodeId( storedLongs );
     }
 
 
@@ -345,7 +346,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     {
         long[] storedLongs = (long[])
                 DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY ) );
-        return Pair.of(storedLongs[0], withoutNodeId(storedLongs));
+        return Pair.of(storedLongs[0], LabelIdArray.stripNodeId( storedLongs ));
     }
 
 
@@ -356,20 +357,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             dynamicLabelStore.updateRecord( record );
         }
     }
-
-    private long[] withoutNodeId( long[] storedLongs )
-    {
-        return Arrays.copyOfRange( storedLongs, 1, storedLongs.length );
-    }
-
-    private long[] withNodeId( long nodeId, long[] labelIds )
-    {
-        long[] result = new long[ labelIds.length + 1 ];
-        System.arraycopy( labelIds, 0, result, 1, labelIds.length );
-        result[0] = nodeId;
-        return result;
-    }
-
 
     @Override
     protected void setRecovered()

@@ -19,10 +19,6 @@
  */
 package org.neo4j.consistency.checking;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
@@ -30,18 +26,13 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 
-import static java.util.Arrays.copyOfRange;
 import static java.util.Arrays.sort;
-
-import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
 
 class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {
@@ -143,7 +134,9 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                     DynamicNodeLabels dynamicNodeLabels = (DynamicNodeLabels) nodeLabels;
                     long firstRecordId = dynamicNodeLabels.getFirstDynamicRecordId();
                     RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
-                    engine.comparativeCheck( firstRecordReference, new NodeLabelsComparativeRecordChecker() );
+                    engine.comparativeCheck( firstRecordReference,
+                            new LabelChainWalker<NodeRecord, ConsistencyReport.NodeConsistencyReport>(
+                                    new NodeLabelsComparativeRecordChecker() ) );
                 }
                 else
                 {
@@ -195,59 +188,26 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
             }
 
             class NodeLabelsComparativeRecordChecker implements
-                    ComparativeRecordChecker<NodeRecord, DynamicRecord, ConsistencyReport.NodeConsistencyReport>
+                    LabelChainWalker.Validator<NodeRecord, ConsistencyReport.NodeConsistencyReport>
             {
-                private HashMap<Long, DynamicRecord> recordIds = new HashMap<>();
-                private List<DynamicRecord> recordList = new ArrayList<>();
-                private boolean allInUse = true;
-
                 @Override
-                public void checkReference( NodeRecord record, DynamicRecord dynamicRecord,
-                                            CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-                                            RecordAccess records )
+                public void onRecordNotInUse( DynamicRecord dynamicRecord, CheckerEngine<NodeRecord,
+                        ConsistencyReport.NodeConsistencyReport> engine )
                 {
-                    recordIds.put( dynamicRecord.getId(), dynamicRecord );
-
-                    if ( dynamicRecord.inUse() )
-                    {
-                        if ( allInUse )
-                        {
-                            recordList.add( dynamicRecord );
-                        }
-                    }
-                    else
-                    {
-                        allInUse = false;
-                        engine.report().dynamicLabelRecordNotInUse( dynamicRecord );
-                    }
-
-                    long nextBlock = dynamicRecord.getNextBlock();
-                    if ( Record.NO_NEXT_BLOCK.is( nextBlock ) )
-                    {
-                        if ( allInUse )
-                        {
-                            // only validate label ids if all dynamic records seen were in use
-                            validateLabelIds( labelIds( recordList ), engine, records );
-                        }
-                    }
-                    else
-                    {
-                        if ( recordIds.containsKey( nextBlock ) )
-                        {
-                            engine.report().dynamicRecordChainCycle( recordIds.get( nextBlock ) );
-                        }
-                        else
-                        {
-                            engine.comparativeCheck( records.nodeLabels( nextBlock ), this );
-                        }
-                    }
+                    engine.report().dynamicLabelRecordNotInUse( dynamicRecord );
                 }
 
-                private long[] labelIds( List<DynamicRecord> recordList )
+                @Override
+                public void onRecordChainCycle( DynamicRecord record, CheckerEngine<NodeRecord, ConsistencyReport
+                        .NodeConsistencyReport> engine )
                 {
-                    long[] idArray =
-                        (long[]) getRightArray( readFullByteArrayFromHeavyRecords( recordList, PropertyType.ARRAY ) );
-                    return copyOfRange( idArray, 1, idArray.length );
+                    engine.report().dynamicRecordChainCycle( record );
+                }
+
+                @Override
+                public void onWellFormedChain( long[] labelIds, CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine, RecordAccess records )
+                {
+                    validateLabelIds( labelIds, engine, records );
                 }
             }
         }
