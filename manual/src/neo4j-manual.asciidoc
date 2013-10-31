@@ -22,7 +22,7 @@ include::tutorials/index.asciidoc[]
 
 :leveloffset: 0
 
-include::{importdir}/neo4j-cypher-docs-jar/dev/index.asciidoc[]
+include::{importdir}/neo4j-cypher-docs-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 0
 

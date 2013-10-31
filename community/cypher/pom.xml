@@ -1,5 +1,8 @@
-<?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
@@ -7,169 +10,42 @@
     <relativePath>../..</relativePath>
   </parent>
 
+  <artifactId>cypher-parent</artifactId>
+  <version>2.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Neo4j Community Cypher Build</name>
+  <description>Project that builds the Neo4j Cypher modules as part of the Community distribution.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
   <properties>
     <bundle.namespace>org.neo4j.cypher</bundle.namespace>
     <scala.version>2.10.2</scala.version>
-    <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html</docs.url>
+    <short-name>community-cypher-build</short-name>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+    <docs-plugin.skip>true</docs-plugin.skip>
+    <maven.site.skip>true</maven.site.skip>
+    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
 
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-cypher</artifactId>
-  <packaging>jar</packaging>
-  <version>2.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher</name>
-  <description>Neo4j query language</description>
-  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/community/cypher</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j/tree/master/community/cypher</url>
   </scm>
 
-  <licenses>
-    <license>
-      <name>GNU General Public License, Version 3</name>
-      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
-      <comments>The software ("Software") developed and owned by Network Engine for
-        Objects in Lund AB (referred to in this notice as "Neo Technology") is
-        licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
-        parties and that license is included below.
+  <modules>
+    <module>cypher-commons</module>
+    <module>cypher-compiler-1.9</module>
+    <module>cypher-compiler-2.0</module>
+    <module>cypher</module>
+    <module>cypher-docs</module>
+  </modules>
 
-        However, if you have executed an End User Software License and Services
-        Agreement or an OEM Software License and Support Services Agreement, or
-        another commercial license agreement with Neo Technology or one of its
-        affiliates (each, a "Commercial Agreement"), the terms of the license in
-        such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
-        Version 3 and you may use the Software solely pursuant to the terms of
-        the relevant Commercial Agreement.
-      </comments>
-    </license>
-  </licenses>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
-      <version>2.0.RC1-SNAP4</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graphviz</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-matching</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-commons</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-1.9</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.0</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.0</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-      <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
-      <version>1.9.7</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.10</artifactId>
-      <version>1.1.6</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-  </dependencies>
   <build>
     <plugins>
+
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
@@ -216,7 +92,7 @@
               </reports>
             </plugin>
             <!-- Scala API Documentation if we want it -->
-            <!-- 
+            <!--
             <plugin>
               <groupId>org.scala-tools</groupId>
               <artifactId>maven-scala-plugin</artifactId>
@@ -247,37 +123,11 @@
           <skip>true</skip>
         </configuration>
       </plugin>
+
     </plugins>
   </build>
-  
-  <profiles>
-    <profile>
-      <id>neo-docs-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>docsBuild</name>
-        </property>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <includes>
-                  <include>**/DocTest*.java</include>
-                  <include>**/*DocTest.java</include>
-                  <include>**/docgen/**</include>
-                </includes>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
 
+  <profiles>
     <profile>
       <id>neo-scala-style</id>
 
@@ -319,6 +169,147 @@
       </build>
     </profile>
   </profiles>
+
+  <!-- inherited dependencies, versions are set in dependencyManagement -->
+
+  <dependencies>
+
+    <!-- scala -->
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.10</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- testing -->
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+  </dependencies>
+
+  <!-- Required versions for each dependency, inherited dependencies are set in dependencies -->
+
+  <dependencyManagement>
+    <dependencies>
+
+      <!-- scala -->
+
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-library</artifactId>
+        <version>${scala.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_2.10</artifactId>
+        <version>2.0.RC1-SNAP4</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <!-- neo4j -->
+
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-kernel</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-kernel</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graphviz</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-lucene-index</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graph-matching</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graph-algo</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- other -->
+
+      <dependency>
+        <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+        <artifactId>concurrentlinkedhashmap-lru</artifactId>
+        <version>1.3.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-mapper-asl</artifactId>
+        <version>1.9.7</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.parboiled</groupId>
+        <artifactId>parboiled-scala_2.10</artifactId>
+        <version>1.1.6</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
 
   <distributionManagement>
     <site>
