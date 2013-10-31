@@ -32,17 +32,6 @@ import java.util.Map;
 public class Message<MESSAGETYPE extends MessageType>
         implements Serializable
 {
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> broadcast( MESSAGETYPE messageType )
-    {
-        return broadcast( messageType, null );
-    }
-
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> broadcast( MESSAGETYPE messageType,
-                                                                                    Object payload )
-    {
-        return new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, BROADCAST );
-    }
-
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, URI to )
     {
         return to( messageType, to, null );
@@ -92,8 +81,6 @@ public class Message<MESSAGETYPE extends MessageType>
     public static final String FROM = "from";
     public static final String TO = "to";
 
-    public static final String BROADCAST = "*";
-
     final private MESSAGETYPE messageType;
     final private Object payload;
     final private Map<String, String> headers = new HashMap<String, String>();
@@ -133,11 +120,6 @@ public class Message<MESSAGETYPE extends MessageType>
     public boolean isInternal()
     {
         return !headers.containsKey( Message.TO );
-    }
-
-    public boolean isBroadcast()
-    {
-        return !isInternal() && getHeader( Message.TO ).equals( BROADCAST );
     }
 
     public String getHeader( String name )

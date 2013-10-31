@@ -298,6 +298,12 @@ public class ClusterClient extends LifecycleAdapter
             {
                 return 5001;
             }
+
+            @Override
+            public int port()
+            {
+                return config.getAddress().getPort();
+            }
         }, receiver, logging);
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
@@ -315,11 +321,17 @@ public class ClusterClient extends LifecycleAdapter
 
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
+            volatile private StateTransitionLogger logger = null;
+
             @Override
             public void listeningAt( URI me )
             {
                 server.listeningAt( me );
-                server.addStateTransitionListener( new StateTransitionLogger( logging ) );
+                if (logger == null)
+                {
+                    logger = new StateTransitionLogger( logging );
+                    server.addStateTransitionListener( logger );
+                }
             }
 
             @Override

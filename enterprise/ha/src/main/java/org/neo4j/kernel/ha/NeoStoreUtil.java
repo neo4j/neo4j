@@ -28,20 +28,36 @@ import java.nio.channels.FileChannel;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
+import static java.lang.String.format;
+
 public class NeoStoreUtil
 {
     private final long creationTime;
-    private final long storeId;
+    private final long randomId;
     private final long txId;
     private final long logVersion;
     private final long storeVersion;
+    private final long firstGraphProp;
+    private File file;
+    
+    public static void main( String[] args )
+    {
+        if ( args.length < 1 )
+        {
+            System.err.println( "Supply one argument which is the store directory of a neo4j graph database" );
+            System.exit( 1 );
+        }
+        System.out.println( new NeoStoreUtil( new File( args[0] ) ) );
+    }
     
     public NeoStoreUtil( File storeDir )
     {
+        RandomAccessFile randomAccessFile = null;
         try
         {
-            FileChannel fileChannel = new RandomAccessFile( neoStoreFile( storeDir ), "r" ).getChannel();
-            int recordsToRead = 5;
+            randomAccessFile = new RandomAccessFile( file = neoStoreFile( storeDir ), "r" );
+            FileChannel fileChannel = randomAccessFile.getChannel();
+            int recordsToRead = 6;
             ByteBuffer buf = ByteBuffer.allocate( recordsToRead*NeoStore.RECORD_SIZE );
             if ( fileChannel.read( buf ) != recordsToRead*NeoStore.RECORD_SIZE )
             {
@@ -49,15 +65,29 @@ public class NeoStoreUtil
             }
             buf.flip();
             creationTime = nextRecord( buf );
-            storeId = nextRecord( buf );
+            randomId = nextRecord( buf );
             logVersion = nextRecord( buf );
             txId = nextRecord( buf );
             storeVersion = nextRecord( buf );
-            fileChannel.close();
+            firstGraphProp = nextRecord( buf );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            if ( randomAccessFile != null )
+            {
+                try
+                {
+                    randomAccessFile.close();
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
         }
     }
     
@@ -74,7 +104,7 @@ public class NeoStoreUtil
     
     public long getStoreId()
     {
-        return storeId;
+        return randomId;
     }
     
     public long getLastCommittedTx()
@@ -94,7 +124,28 @@ public class NeoStoreUtil
     
     public StoreId asStoreId()
     {
-        return new StoreId( creationTime, storeId, storeVersion );
+        return new StoreId( creationTime, randomId, storeVersion );
+    }
+    
+    @Override
+    public String toString()
+    {
+        return format( "Neostore contents of " + this.file + ":%n" +
+                "0: creation time: %s%n" +
+                "1: random id: %s%n" +
+                "2: log version: %s%n" +
+                "3: tx id: %s%n" +
+                "4: store version: %s%n" +
+                "5: first graph prop: %s%n" +
+                " => store id: %s",
+
+                creationTime,
+                randomId,
+                logVersion,
+                txId,
+                storeVersion,
+                firstGraphProp,
+                new StoreId( creationTime, randomId, storeVersion ) );
     }
 
     public static boolean storeExists( File storeDir )

@@ -30,7 +30,7 @@ import org.neo4j.cluster.BindingListener;
 public class ServerIdElectionCredentialsProvider
         implements ElectionCredentialsProvider, BindingListener
 {
-    URI me;
+    private volatile URI me;
 
     @Override
     public void listeningAt( URI me )

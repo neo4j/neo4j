@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static java.util.Collections.emptyMap;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -67,20 +65,29 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 
+import static java.util.Collections.emptyMap;
+
 class BackupService
 {
     class BackupOutcome
     {
         private final Map<String, Long> lastCommittedTxs;
+        private final boolean consistent;
 
-        BackupOutcome( Map<String, Long> lastCommittedTxs )
+        BackupOutcome( Map<String, Long> lastCommittedTxs, boolean consistent )
         {
             this.lastCommittedTxs = lastCommittedTxs;
+            this.consistent = consistent;
         }
 
         public Map<String, Long> getLastCommittedTxs()
         {
             return Collections.unmodifiableMap( lastCommittedTxs );
+        }
+        
+        public boolean isConsistent()
+        {
+            return consistent;
         }
     }
 
@@ -96,6 +103,7 @@ class BackupService
         client.start();
         long timestamp = System.currentTimeMillis();
         Map<String, Long> lastCommittedTxs = emptyMap();
+        boolean consistent = !checkConsistency; // default to true if we're not checking consistency
         try
         {
             Response<Void> response = client.fullBackup( decorateWithProgressIndicator(
@@ -215,7 +223,7 @@ class BackupService
                 StringLogger logger = StringLogger.SYSTEM;
                 try
                 {
-                    new ConsistencyCheckService().runFullConsistencyCheck(
+                    consistent = new ConsistencyCheckService().runFullConsistencyCheck(
                             targetDirectory,
                             tuningConfiguration,
                             ProgressMonitorFactory.textual( System.err ),
@@ -242,7 +250,7 @@ class BackupService
                 throw new RuntimeException( throwable );
             }
         }
-        return new BackupOutcome( lastCommittedTxs );
+        return new BackupOutcome( lastCommittedTxs, consistent );
     }
 
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
@@ -383,12 +391,14 @@ class BackupService
                 targetDb.getStoreId() );
         client.start();
         Map<String, Long> lastCommittedTxs;
+        boolean consistent = false;
         try
         {
             lastCommittedTxs = unpackResponse( client.incrementalBackup( context ),
                     targetDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ),
                     new ProgressTxHandler() );
             trimLogicalLogCount( targetDb );
+            consistent = true;
         }
         finally
         {
@@ -401,7 +411,7 @@ class BackupService
                 throw new RuntimeException( throwable );
             }
         }
-        return new BackupOutcome( lastCommittedTxs );
+        return new BackupOutcome( lastCommittedTxs, consistent );
     }
 
     private void trimLogicalLogCount( GraphDatabaseAPI targetDb )

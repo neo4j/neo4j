@@ -131,13 +131,11 @@ public class TestPullUpdatesApplied
         dbToKill.shutdown();
 
         if (!latch1.await(60, TimeUnit.SECONDS))
-            throw new IllegalStateException( "Timeout waiting for first latch" );
+            throw new IllegalStateException( "Timeout waiting for instance to leave cluster" );
 
         addNode( master ); // this will be pulled by tne next start up, applied
                            // but not written to log.
         File targetDirectory = dir.directory( "" + toKill, false );
-
-        dbToKill.shutdown();
 
         // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
         // through the heartbeat and not through the cluster change as above.
@@ -154,10 +152,12 @@ public class TestPullUpdatesApplied
             }
         });
 
+        dbToKill.shutdown();
+
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
 
-        if (!latch1.await(60, TimeUnit.SECONDS))
-            throw new IllegalStateException( "Timeout waiting for second latch" );
+        if (!latch2.await(60, TimeUnit.SECONDS))
+            throw new IllegalStateException( "Timeout waiting for instance to fail" );
 
         start( toKill, false ); // recovery and branching.
         boolean hasBranchedData = new File( targetDirectory, "branched" ).listFiles().length > 0;

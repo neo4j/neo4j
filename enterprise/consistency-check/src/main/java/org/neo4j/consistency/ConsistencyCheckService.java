@@ -42,7 +42,7 @@ public class ConsistencyCheckService
 {
     private final Date timestamp = new Date();
 
-    public void runFullConsistencyCheck( String storeDir,
+    public boolean runFullConsistencyCheck( String storeDir,
                                          Config tuningConfiguration,
                                          ProgressMonitorFactory progressFactory,
                                          StringLogger logger ) throws ConsistencyCheckIncompleteException
@@ -72,6 +72,7 @@ public class ConsistencyCheckService
         }
         finally
         {
+            report.close();
             neoStore.close();
         }
 
@@ -79,6 +80,7 @@ public class ConsistencyCheckService
         {
             logger.logMessage( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
         }
+        return summary.isConsistent();
     }
 
     private File chooseReportPath( Config tuningConfiguration )
@@ -93,8 +95,11 @@ public class ConsistencyCheckService
             if ( reportPath.isDirectory() )
             {
                 reportFile = new File( reportPath, defaultLogFileName() );
-            } else
+            }
+            else
+            {
                 reportFile = reportPath;
+            }
         }
         return reportFile;
     }

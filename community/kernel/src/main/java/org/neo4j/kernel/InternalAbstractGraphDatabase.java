@@ -230,7 +230,7 @@ public abstract class InternalAbstractGraphDatabase
 
         kernelExtensions = Iterables.concat( kernelExtensions, indexProviderKernelExtensions );
 
-        this.kernelExtensions = new KernelExtensions( kernelExtensions, config, dependencyResolver );
+        this.kernelExtensions = new KernelExtensions( kernelExtensions, config, getDependencyResolver() );
         this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
                 dependencyResolver );
 
@@ -1332,7 +1332,7 @@ public abstract class InternalAbstractGraphDatabase
         }
         
         @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+        public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
         {
             // Try known single dependencies
             T result = resolveKnownSingleDependency( type );

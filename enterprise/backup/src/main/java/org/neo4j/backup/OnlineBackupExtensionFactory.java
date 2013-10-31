@@ -19,6 +19,7 @@
  */
 package org.neo4j.backup;
 
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
