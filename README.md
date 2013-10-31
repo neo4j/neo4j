@@ -1,3 +1,5 @@
+[![Dependency Status](http://www.versioneye.com/java/org.neo4j:neo4j/1.9.4/badge.png)](http://www.versioneye.com/java/org.neo4j:neo4j/1.9.4)
+
 Neo4j - The World's Leading Graph Database
 ==========================================
 
@@ -26,7 +28,7 @@ Building Neo4j
 
 Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.0.x and a recent version of Java 7.
 
-* A plain `mvn clean install` will only build the individual jar files. 
+* A plain `mvn clean install` will only build the individual jar files.
 * Test execution is, of course, part of the build.
 * To add execution of integration tests, use: `mvn clean install -DrunITs`
 * In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`
@@ -37,5 +39,5 @@ Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.0.x and 
 
 Licensing
 ---------
-             
+
 Neo4j is an open source product. We support a Community edition under the GPLv3 license. Advanced and Enterprise editions are available under the AGPLv3 license for open source projects otherwise under a commercial license from [Neo Technology](http://info.neotechnology.com/contactus.html).
