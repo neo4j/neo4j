@@ -37,22 +37,16 @@ public class BaseConstraintCreator implements ConstraintCreator
     }
 
     @Override
-    public ConstraintCreator on( String propertyKey )
+    public ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        return new PropertyConstraintCreator( actions, label, propertyKey );
-    }
-
-    @Override
-    public ConstraintCreator unique()
-    {
-        return new PropertyUniqueConstraintCreator( actions, label, null );
+        return new PropertyUniqueConstraintCreator( actions, label, propertyKey );
     }
 
     @Override
     public ConstraintDefinition create()
     {
         assertInTransaction();
-        throw new IllegalStateException( "Not constraint assertions specified" );
+        throw new IllegalStateException( "No constraint assertions specified" );
     }
 
     protected final void assertInTransaction()

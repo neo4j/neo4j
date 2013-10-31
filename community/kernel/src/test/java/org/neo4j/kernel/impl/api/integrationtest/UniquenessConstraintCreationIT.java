@@ -206,7 +206,7 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
             // when
             try( Transaction tx = gdb.beginTx() )
             {
-                gdb.schema().constraintFor( label("User") ).on( "name" ).unique().create();
+                gdb.schema().constraintFor( label("User") ).assertPropertyIsUnique( "name" ).create();
                 tx.success();
             }
 

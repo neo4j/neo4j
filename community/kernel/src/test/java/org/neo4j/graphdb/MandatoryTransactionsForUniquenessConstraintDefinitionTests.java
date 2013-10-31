@@ -20,30 +20,26 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
-
-import static org.neo4j.graphdb.UniquenessConstraintDefinitionFacadeMethods
-        .ALL_UNIQUENESS_CONSTRAINT_DEFINITION_FACADE_METHODS;
+import static org.neo4j.graphdb.ConstraintDefinitionFacadeMethods.ALL_CONSTRAINT_DEFINITION_FACADE_METHODS;
 
 public class MandatoryTransactionsForUniquenessConstraintDefinitionTests
-    extends AbstractMandatoryTransactionsTest<UniquenessConstraintDefinition>
+    extends AbstractMandatoryTransactionsTest<ConstraintDefinition>
 {
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnUniquenessConstraintDefinitions() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_UNIQUENESS_CONSTRAINT_DEFINITION_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
     @Override
-    protected UniquenessConstraintDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected ConstraintDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
         return graphDatabaseService
                 .schema()
                 .constraintFor( DynamicLabel.label( "Label" ) )
-                .on( "property" )
-                .unique()
-                .create()
-                .asUniquenessConstraint();
+                .assertPropertyIsUnique( "property" )
+                .create();
     }
 }

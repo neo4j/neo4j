@@ -94,7 +94,7 @@ public class ConstraintIndexFailureIT
             Transaction tx = db.beginTx();
             try
             {
-                db.schema().constraintFor( label( "Label1" ) ).unique().on( "key1" ).create();
+                db.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
 
                 tx.success();
             }

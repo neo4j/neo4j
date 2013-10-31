@@ -28,9 +28,6 @@ import org.neo4j.helpers.collection.Iterables;
  */
 public enum ConstraintType
 {
-    /**
-     * @see ConstraintDefinition#asUniquenessConstraint()
-     */
     UNIQUENESS( "Uniqueness" );
 
     private final String prettyName;
@@ -40,7 +37,7 @@ public enum ConstraintType
         this.prettyName = prettyName;
     }
 
-    public String prettyName()
+    public String simpleName()
     {
         return prettyName;
     }

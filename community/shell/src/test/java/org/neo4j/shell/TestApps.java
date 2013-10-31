@@ -842,7 +842,7 @@ public class TestApps extends AbstractShellTest
         // GIVEN
         Label label = label( "Person" );
         beginTx();
-        db.schema().constraintFor( label ).unique().on( "name" ).create();
+        db.schema().constraintFor( label ).assertPropertyIsUnique( "name" ).create();
         finishTx();
 
         // WHEN / THEN
@@ -855,7 +855,7 @@ public class TestApps extends AbstractShellTest
         // GIVEN
         Label label1 = label( "Person" );
         beginTx();
-        db.schema().constraintFor( label1 ).unique().on( "name" ).create();
+        db.schema().constraintFor( label1 ).assertPropertyIsUnique( "name" ).create();
         finishTx();
 
         // WHEN / THEN
@@ -868,7 +868,7 @@ public class TestApps extends AbstractShellTest
         // GIVEN
         Label label1 = label( "Person" );
         beginTx();
-        db.schema().constraintFor( label1 ).unique().on( "name" ).create();
+        db.schema().constraintFor( label1 ).assertPropertyIsUnique( "name" ).create();
         finishTx();
 
         // WHEN / THEN

@@ -45,7 +45,7 @@ public class ConstraintsInHAIT
         try
         {
             ConstraintCreator constraintCreator = slave.schema()
-                    .constraintFor( DynamicLabel.label( "LabelName" ) ).on( "PropertyName" ).unique();
+                    .constraintFor( DynamicLabel.label( "LabelName" ) ).assertPropertyIsUnique( "PropertyName" );
 
             // when
             constraintCreator.create();

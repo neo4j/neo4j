@@ -28,6 +28,10 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 /**
  * Interface for managing the schema of your graph database. This currently includes
  * the indexing support added in Neo4j 2.0. Please see the Neo4j manual for details.
+ *
+ * Compatibility note: New methods may be added to this interface without notice,
+ * backwards compatibility is only guaranteed for clients of this interface, not for
+ * implementors.
  */
 public interface Schema
 {

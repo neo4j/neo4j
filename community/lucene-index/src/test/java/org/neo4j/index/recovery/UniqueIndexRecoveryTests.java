@@ -145,7 +145,7 @@ public class UniqueIndexRecoveryTests
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( LABEL ).on( PROPERTY_KEY ).unique().create();
+            db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
             tx.success();
         }
     }

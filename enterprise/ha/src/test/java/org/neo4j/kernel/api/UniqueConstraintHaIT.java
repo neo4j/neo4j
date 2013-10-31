@@ -20,14 +20,14 @@
 package org.neo4j.kernel.api;
 
 import java.io.File;
+
 import javax.transaction.xa.XAException;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -36,13 +36,9 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -66,7 +62,7 @@ public class UniqueConstraintHaIT
         // when
         try ( Transaction tx = master.beginTx() )
         {
-            master.schema().constraintFor( label( "Label1" ) ).on( "key1" ).unique().create();
+            master.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
             tx.success();
         }
 
@@ -77,9 +73,8 @@ public class UniqueConstraintHaIT
         {
             try ( Transaction tx = clusterMember.beginTx() )
             {
-                UniquenessConstraintDefinition constraint =
-                        single( clusterMember.schema().getConstraints( label( "Label1" ) ) )
-                        .asUniquenessConstraint();
+                ConstraintDefinition constraint =
+                        single( clusterMember.schema().getConstraints( label( "Label1" ) ) );
                 assertEquals( "key1", single( constraint.getPropertyKeys() ) );
                 tx.success();
             }
@@ -96,7 +91,7 @@ public class UniqueConstraintHaIT
         // when
         try ( Transaction ignored = slave.beginTx() )
         {
-            slave.schema().constraintFor( label( "Label1" ) ).on( "key1" ).unique().create();
+            slave.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
             fail( "We expected to not be able to create a constraint on a slave in a cluster." );
         }
         catch ( Exception e )
@@ -114,7 +109,7 @@ public class UniqueConstraintHaIT
 
         try ( Transaction tx = master.beginTx() )
         {
-            master.schema().constraintFor( label( "User" ) ).on( "name" ).unique().create();
+            master.schema().constraintFor( label( "User" ) ).assertPropertyIsUnique( "name" ).create();
             tx.success();
         }
         cluster.sync();
@@ -165,7 +160,7 @@ public class UniqueConstraintHaIT
         // When I create a constraint for unique user names
         try(Transaction tx = master.beginTx())
         {
-            master.schema().constraintFor( label("User") ).on( "name" ).unique().create();
+            master.schema().constraintFor( label("User") ).assertPropertyIsUnique( "name" ).create();
             tx.success();
         }
 
@@ -209,7 +204,7 @@ public class UniqueConstraintHaIT
 
         try(Transaction tx = master.beginTx())
         {
-            master.schema().constraintFor( label("User") ).on( "name" ).unique().create();
+            master.schema().constraintFor( label("User") ).assertPropertyIsUnique( "name" ).create();
             tx.success();
         }
 

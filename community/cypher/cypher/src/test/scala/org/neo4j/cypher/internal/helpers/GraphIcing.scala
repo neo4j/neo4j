@@ -45,7 +45,7 @@ trait GraphIcing {
 
     def createConstraint(label:String, property: String) {
       inTx {
-        graph.schema().constraintFor(DynamicLabel.label(label)).on(property).unique().create()
+        graph.schema().constraintFor(DynamicLabel.label(label)).assertPropertyIsUnique(property).create()
       }
     }
 

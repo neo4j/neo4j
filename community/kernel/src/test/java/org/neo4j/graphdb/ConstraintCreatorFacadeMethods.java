@@ -26,23 +26,13 @@ import static java.util.Collections.unmodifiableCollection;
 
 public class ConstraintCreatorFacadeMethods
 {
-    private static final FacadeMethod<ConstraintCreator> ON =
-        new FacadeMethod<ConstraintCreator>( "ConstraintCreator on( String propertyKey )")
-        {
-            @Override
-            public void call( ConstraintCreator self )
-            {
-                self.on( "property" );
-            }
-        };
-
     private static final FacadeMethod<ConstraintCreator> UNIQUE =
         new FacadeMethod<ConstraintCreator>( "ConstraintCreator unique()")
         {
             @Override
             public void call( ConstraintCreator self )
             {
-                self.unique();
+                self.assertPropertyIsUnique( "property" );
             }
         };
 
@@ -58,7 +48,6 @@ public class ConstraintCreatorFacadeMethods
 
     static final Iterable<FacadeMethod<ConstraintCreator>> ALL_CONSTRAINT_CREATOR_FACADE_METHODS =
             unmodifiableCollection( asList(
-                    ON,
                     UNIQUE,
                     CREATE
             ) );

@@ -24,23 +24,18 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.Neo4jMatchers.contains;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
@@ -341,9 +336,8 @@ public class SchemaAcceptanceTest
         {
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
 
-            UniquenessConstraintDefinition uniquenessConstraint = constraint.asUniquenessConstraint();
-            assertEquals( label.name(), uniquenessConstraint.getLabel().name() );
-            assertEquals( asSet( propertyKey ), asSet( uniquenessConstraint.getPropertyKeys() ) );
+            assertEquals( label.name(), constraint.getLabel().name() );
+            assertEquals( asSet( propertyKey ), asSet( constraint.getPropertyKeys() ) );
             tx.success();
         }
         finally
@@ -519,7 +513,7 @@ public class SchemaAcceptanceTest
         Transaction tx = db.beginTx();
         try
         {
-            ConstraintDefinition constraint = db.schema().constraintFor( label ).on( prop ).unique().create();
+            ConstraintDefinition constraint = db.schema().constraintFor( label ).assertPropertyIsUnique( prop ).create();
             tx.success();
             return constraint;
         }
