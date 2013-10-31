@@ -35,11 +35,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.scan.LabelScanReader;
-import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.api.scan.NodeLabelUpdate;
-import org.neo4j.kernel.api.scan.NodeRangeReader;
-import org.neo4j.kernel.api.scan.NodeRangeScanSupport;
+import org.neo4j.kernel.api.direct.NodeRangeReader;
+import org.neo4j.kernel.api.direct.NodeRangeScanSupport;
+import org.neo4j.kernel.api.labelscan.LabelScanReader;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;

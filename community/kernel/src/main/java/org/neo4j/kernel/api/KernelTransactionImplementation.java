@@ -21,7 +21,6 @@ package org.neo4j.kernel.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.transaction.RollbackException;
 
 import org.neo4j.helpers.Exceptions;
@@ -34,8 +33,8 @@ import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.api.scan.LabelScanStore;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.LockHolder;
 import org.neo4j.kernel.impl.api.PersistenceCache;

@@ -28,9 +28,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.scan.LabelScanReader;
-import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.api.scan.NodeLabelUpdate;
+import org.neo4j.kernel.api.labelscan.LabelScanReader;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 import static java.util.Arrays.binarySearch;

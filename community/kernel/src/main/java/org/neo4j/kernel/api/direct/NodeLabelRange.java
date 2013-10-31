@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.scan;
+package org.neo4j.kernel.api.direct;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-
-public interface ScannableStores
+public interface NodeLabelRange
 {
-    StoreAccess nativeStores();
+    int id();
 
-    LabelScanStore labelScanStore();
+    long[] nodes();
+    long[] labels( long nodeId );
 }
+

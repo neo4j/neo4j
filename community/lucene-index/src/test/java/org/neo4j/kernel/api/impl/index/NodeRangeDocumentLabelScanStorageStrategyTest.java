@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import org.neo4j.kernel.api.scan.NodeLabelUpdate;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 import static java.util.Arrays.asList;
 
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.impl.index.PageOfRangesIteratorTest.docs;
 import static org.neo4j.kernel.api.impl.index.PageOfRangesIteratorTest.document;
-import static org.neo4j.kernel.api.scan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
 /**
  * Tests updating the label scan store through a {@link NodeRangeDocumentLabelScanStorageStrategy}.

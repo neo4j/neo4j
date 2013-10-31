@@ -24,8 +24,8 @@ import java.util.Iterator;
 
 import org.apache.lucene.search.IndexSearcher;
 
-import org.neo4j.kernel.api.scan.NodeLabelRange;
-import org.neo4j.kernel.api.scan.NodeRangeReader;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.direct.NodeRangeReader;
 
 public class LuceneNodeRangeReader implements NodeRangeReader
 {

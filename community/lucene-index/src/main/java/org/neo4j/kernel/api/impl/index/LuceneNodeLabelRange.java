@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.kernel.api.scan.NodeLabelRange;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
 
 public class LuceneNodeLabelRange implements NodeLabelRange
 {

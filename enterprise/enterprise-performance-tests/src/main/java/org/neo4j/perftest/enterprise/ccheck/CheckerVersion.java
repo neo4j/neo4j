@@ -22,7 +22,7 @@ package org.neo4j.perftest.enterprise.ccheck;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.scan.ScannableStores;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -31,12 +31,12 @@ enum CheckerVersion
     NEW
     {
         @Override
-        void run( ProgressMonitorFactory progress, ScannableStores scannableStores, Config tuningConfiguration ) throws ConsistencyCheckIncompleteException
+        void run( ProgressMonitorFactory progress, DirectStoreAccess directStoreAccess, Config tuningConfiguration ) throws ConsistencyCheckIncompleteException
         {
-            new FullCheck( tuningConfiguration, progress ).execute( scannableStores, StringLogger.DEV_NULL );
+            new FullCheck( tuningConfiguration, progress ).execute( directStoreAccess, StringLogger.DEV_NULL );
         }
     };
 
-    abstract void run( ProgressMonitorFactory progress, ScannableStores scannableStores, Config tuningConfiguration )
+    abstract void run( ProgressMonitorFactory progress, DirectStoreAccess directStoreAccess, Config tuningConfiguration )
             throws ConsistencyCheckIncompleteException;
 }

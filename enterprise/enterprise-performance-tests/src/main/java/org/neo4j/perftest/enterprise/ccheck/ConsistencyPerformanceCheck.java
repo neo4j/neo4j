@@ -32,8 +32,8 @@ import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.api.scan.ScannableStores;
-import org.neo4j.kernel.api.scan.SimpleScannableStores;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.direct.SimpleDirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -119,16 +119,16 @@ public class ConsistencyPerformanceCheck
         }
 
         Config tuningConfiguration = buildTuningConfiguration( configuration );
-        ScannableStores scannableStores = createScannableStores( configuration.get( DataGenerator.store_dir ),
+        DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),
                 tuningConfiguration );
 
         JsonReportWriter reportWriter = new JsonReportWriter( configuration, tuningConfiguration );
         TimingProgress progressMonitor = new TimingProgress( new TimeLogger( reportWriter ), progress );
 
-        configuration.get( checker_version ).run( progressMonitor, scannableStores, tuningConfiguration );
+        configuration.get( checker_version ).run( progressMonitor, directStoreAccess, tuningConfiguration );
     }
 
-    private static ScannableStores createScannableStores( String storeDir, Config tuningConfiguration )
+    private static DirectStoreAccess createScannableStores( String storeDir, Config tuningConfiguration )
     {
         StringLogger logger = StringLogger.DEV_NULL;
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -141,7 +141,7 @@ public class ConsistencyPerformanceCheck
 
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
 
-        return new SimpleScannableStores( new StoreAccess( neoStore ),
+        return new SimpleDirectStoreAccess( new StoreAccess( neoStore ),
                 new LuceneLabelScanStoreBuilder( storeDir, neoStore, fileSystem, logger ).build() );
     }
 

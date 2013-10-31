@@ -35,7 +35,7 @@ import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.scan.ScannableStores;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -67,7 +67,7 @@ public class FullCheck
         this.progressFactory = progressFactory;
     }
 
-    public ConsistencySummaryStatistics execute( ScannableStores stores, StringLogger logger )
+    public ConsistencySummaryStatistics execute( DirectStoreAccess stores, StringLogger logger )
             throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
@@ -84,7 +84,7 @@ public class FullCheck
         return summary;
     }
 
-    void execute( ScannableStores scannableStores, CheckDecorator decorator, DiffRecordAccess recordAccess,
+    void execute( DirectStoreAccess directStoreAccess, CheckDecorator decorator, DiffRecordAccess recordAccess,
                   InconsistencyReport report )
             throws ConsistencyCheckIncompleteException
     {
@@ -95,7 +95,7 @@ public class FullCheck
         List<StoppableRunnable> tasks = new ArrayList<>( 16 );
 
 
-        StoreAccess nativeStores = scannableStores.nativeStores();
+        StoreAccess nativeStores = directStoreAccess.nativeStores();
         MultiPassStore.Factory processorFactory = new MultiPassStore.Factory(
                 decorator, totalMappedMemory, nativeStores, recordAccess, report );
 
@@ -158,7 +158,7 @@ public class FullCheck
         tasks.add( new StoreProcessorTask<>( nativeStores.getNodeDynamicLabelStore(), progress, order,
                 processEverything, processEverything ) );
 
-        tasks.add( new LabelScanStoreCheckTask( scannableStores, progress, reporter ) );
+        tasks.add( new LabelScanStoreCheckTask( directStoreAccess, progress, reporter ) );
 
         order.execute( tasks, progress.build() );
     }

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
 
-import org.neo4j.kernel.api.scan.NodeLabelUpdate;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public interface CacheAccessBackDoor

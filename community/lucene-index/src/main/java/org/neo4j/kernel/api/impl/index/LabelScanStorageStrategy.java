@@ -26,8 +26,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 
-import org.neo4j.kernel.api.scan.NodeLabelUpdate;
-import org.neo4j.kernel.api.scan.NodeRangeReader;
+import org.neo4j.kernel.api.direct.NodeRangeReader;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 public interface LabelScanStorageStrategy

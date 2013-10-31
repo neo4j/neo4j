@@ -33,11 +33,11 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.api.scan.NodeLabelRange;
-import org.neo4j.kernel.api.scan.NodeRangeReader;
-import org.neo4j.kernel.api.scan.NodeRangeScanSupport;
-import org.neo4j.kernel.api.scan.ScannableStores;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.direct.NodeRangeReader;
+import org.neo4j.kernel.api.direct.NodeRangeScanSupport;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels;
@@ -56,7 +56,7 @@ public class LabelScanStoreCheckTask implements StoppableRunnable,
 
     private volatile boolean continueScanning = true;
 
-    public LabelScanStoreCheckTask( ScannableStores stores, ProgressMonitorFactory.MultiPartBuilder builder,
+    public LabelScanStoreCheckTask( DirectStoreAccess stores, ProgressMonitorFactory.MultiPartBuilder builder,
                                     ConsistencyReporter reporter )
     {
         this.reporter = reporter;

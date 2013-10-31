@@ -17,30 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.scan;
+package org.neo4j.kernel.api.direct;
 
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
-public class SimpleScannableStores implements ScannableStores
+public interface DirectStoreAccess
 {
-    private final StoreAccess nativeStores;
-    private final LabelScanStore labelScanStore;
+    StoreAccess nativeStores();
 
-    public SimpleScannableStores( StoreAccess nativeStores, LabelScanStore labelScanStore )
-    {
-        this.nativeStores = nativeStores;
-        this.labelScanStore = labelScanStore;
-    }
-
-    @Override
-    public StoreAccess nativeStores()
-    {
-        return nativeStores;
-    }
-
-    @Override
-    public LabelScanStore labelScanStore()
-    {
-        return labelScanStore;
-    }
+    LabelScanStore labelScanStore();
 }
