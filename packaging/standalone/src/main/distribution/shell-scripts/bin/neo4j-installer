@@ -1,7 +1,5 @@
 #!/bin/bash
-
-set -x 
-
+set -x
 
 source $(dirname $0)/utils
 installservice() {
@@ -109,7 +107,6 @@ choose_user() {
   fi
 }
 
-set +x
 WAIT=true
 SERVICE_NAME='neo4j-service'
 NEO4J_HOME=`(cd  $(dirname $0)/.. && pwd)`
@@ -121,14 +118,18 @@ HEADLESS=false
 DEFAULT_USER='neo4j'
 LAUNCHD_DIR=~/Library/LaunchAgents/
 LAUNCHD_NAME="org.neo4j.server"
-set -x
 
-getconfig "${NEO4J_CONFIG}/neo4j-wrapper.conf"
-choose_user
-
-
-installservice
-read -p 'ready?'
-getconfig "${NEO4J_CONFIG}/neo4j-wrapper.conf"
-removeservice
-
+case $1 in
+  install)
+    getconfig "${NEO4J_CONFIG}/neo4j-wrapper.conf"
+    choose_user
+    installservice
+  ;;
+  remove)
+    getconfig "${NEO4J_CONFIG}/neo4j-wrapper.conf"
+    removeservice
+  ;;
+  *)
+  echo "Usage: $0 <install|remove>"
+  ;;
+esac
