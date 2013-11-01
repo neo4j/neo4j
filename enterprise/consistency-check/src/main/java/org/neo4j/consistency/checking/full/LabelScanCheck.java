@@ -36,7 +36,8 @@ class LabelScanCheck implements RecordCheck<LabelScanDocument, ConsistencyReport
         NodeLabelRange range = record.getNodeLabelRange();
         for ( long nodeId : range.nodes() )
         {
-            engine.comparativeCheck( records.node( nodeId ), new LabelScanDocumentToNodeRecordCheck() );
+            engine.comparativeCheck( records.node( nodeId ), new NodeInUseWithCorrectLabelsCheck<LabelScanDocument,ConsistencyReport.LabelScanConsistencyReport>(
+                    record.getNodeLabelRange().labels( nodeId ) ) );
         }
     }
 

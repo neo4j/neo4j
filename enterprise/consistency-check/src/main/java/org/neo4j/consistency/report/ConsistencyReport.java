@@ -557,7 +557,14 @@ public interface ConsistencyReport
         void orphanDynamicLabelRecord();
     }
 
-    interface LabelScanConsistencyReport extends ConsistencyReport
+    interface NodeInUseWithCorrectLabelsReport extends ConsistencyReport
+    {
+        void nodeNotInUse( NodeRecord referredNodeRecord );
+
+        void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
+    }
+
+    interface LabelScanConsistencyReport extends NodeInUseWithCorrectLabelsReport
     {
         /** This label scan document refers to a node record that is not in use. */
         @Documented
@@ -568,10 +575,14 @@ public interface ConsistencyReport
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
     }
 
-    interface IndexConsistencyReport extends ConsistencyReport
+    interface IndexConsistencyReport extends NodeInUseWithCorrectLabelsReport
     {
         /** This index entry refers to a node record that is not in use. */
         @Documented
         void nodeNotInUse( NodeRecord referredNodeRecord );
+
+        /** This index entry refers to a node that does not have the expected label. */
+        @Documented
+        void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
     }
 }

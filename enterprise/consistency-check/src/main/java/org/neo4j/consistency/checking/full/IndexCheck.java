@@ -25,13 +25,22 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport>
 {
+    private final IndexRule indexRule;
+
+    public IndexCheck( IndexRule indexRule )
+    {
+        this.indexRule = indexRule;
+    }
+
     @Override
     public void check( IndexEntry record, CheckerEngine<IndexEntry, ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
     {
-        engine.comparativeCheck( records.node( record.getId() ), new IndexEntryToNodeRecordCheck() );
+        engine.comparativeCheck( records.node( record.getId() ),
+                new NodeInUseWithCorrectLabelsCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport>(new long[] {indexRule.getLabel()}) );
     }
 
     @Override

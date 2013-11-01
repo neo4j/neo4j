@@ -25,7 +25,7 @@ import org.neo4j.consistency.checking.LabelChainWalker;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels;
@@ -35,18 +35,23 @@ import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.sort;
 
-class LabelScanDocumentToNodeRecordCheck implements
-        ComparativeRecordChecker<LabelScanDocument, NodeRecord, ConsistencyReport.LabelScanConsistencyReport>
+class NodeInUseWithCorrectLabelsCheck
+        <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport.NodeInUseWithCorrectLabelsReport>
+        implements ComparativeRecordChecker<RECORD, NodeRecord, REPORT>
 {
+    private final long[] expectedLabels;
+
+    NodeInUseWithCorrectLabelsCheck( long[] expectedLabels )
+    {
+        this.expectedLabels = expectedLabels;
+    }
+
     @Override
-    public void checkReference( LabelScanDocument record, NodeRecord nodeRecord, CheckerEngine<LabelScanDocument,
-            ConsistencyReport.LabelScanConsistencyReport> engine, RecordAccess records )
+    public void checkReference( RECORD record, NodeRecord nodeRecord,
+                                CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
     {
         if ( nodeRecord.inUse() )
         {
-            long[] expectedLabels = record.getNodeLabelRange().labels( nodeRecord.getId() );
-            // assert that node has expected labels
-
             NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( nodeRecord );
             if ( nodeLabels instanceof DynamicNodeLabels )
             {
@@ -54,15 +59,15 @@ class LabelScanDocumentToNodeRecordCheck implements
                 long firstRecordId = dynamicNodeLabels.getFirstDynamicRecordId();
                 RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
                 engine.comparativeCheck( firstRecordReference,
-                        new LabelChainWalker<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
-                                (new ExpectedNodeLabelsChecker( nodeRecord, expectedLabels )) );
+                        new LabelChainWalker<RECORD, REPORT>
+                                (new ExpectedNodeLabelsChecker( nodeRecord )) );
                 nodeRecord.getDynamicLabelRecords(); // I think this is empty in production
             }
             else
             {
                 long[] actualLabels = nodeLabels.get( null );
-                ConsistencyReport.LabelScanConsistencyReport report = engine.report();
-                validateLabelIds( nodeRecord, expectedLabels, actualLabels, report );
+                REPORT report = engine.report();
+                validateLabelIds( nodeRecord, actualLabels, report );
             }
         }
         else
@@ -71,7 +76,7 @@ class LabelScanDocumentToNodeRecordCheck implements
         }
     }
 
-    private void validateLabelIds( NodeRecord nodeRecord, long[] expectedLabels, long[] actualLabels, ConsistencyReport.LabelScanConsistencyReport report )
+    private void validateLabelIds( NodeRecord nodeRecord, long[] actualLabels, REPORT report )
     {
         sort(actualLabels);
         for ( long expectedLabel : expectedLabels )
@@ -85,36 +90,31 @@ class LabelScanDocumentToNodeRecordCheck implements
     }
 
     private class ExpectedNodeLabelsChecker implements
-            LabelChainWalker.Validator<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
+            LabelChainWalker.Validator<RECORD, REPORT>
     {
         private final NodeRecord nodeRecord;
-        private final long[] expectedLabels;
 
-        public ExpectedNodeLabelsChecker( NodeRecord nodeRecord, long[] expectedLabels )
+        public ExpectedNodeLabelsChecker( NodeRecord nodeRecord )
         {
             this.nodeRecord = nodeRecord;
-            this.expectedLabels = expectedLabels;
         }
 
         @Override
-        public void onRecordNotInUse( DynamicRecord dynamicRecord, CheckerEngine<LabelScanDocument,
-                ConsistencyReport.LabelScanConsistencyReport> engine )
+        public void onRecordNotInUse( DynamicRecord dynamicRecord, CheckerEngine<RECORD, REPORT> engine )
         {
             // checked elsewhere
         }
 
         @Override
-        public void onRecordChainCycle( DynamicRecord record, CheckerEngine<LabelScanDocument,
-                ConsistencyReport.LabelScanConsistencyReport> engine )
+        public void onRecordChainCycle( DynamicRecord record, CheckerEngine<RECORD, REPORT> engine )
         {
             // checked elsewhere
         }
 
         @Override
-        public void onWellFormedChain( long[] labelIds, CheckerEngine<LabelScanDocument,
-                ConsistencyReport.LabelScanConsistencyReport> engine, RecordAccess records )
+        public void onWellFormedChain( long[] labelIds, CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
         {
-            validateLabelIds( nodeRecord, expectedLabels, labelIds, engine.report() );
+            validateLabelIds( nodeRecord, labelIds, engine.report() );
         }
     }
 }

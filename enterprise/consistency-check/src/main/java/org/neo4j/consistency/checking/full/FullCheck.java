@@ -164,7 +164,7 @@ public class FullCheck
 
         for ( IndexRule indexRule : loadAllIndexRules( directStoreAccess.nativeStores().getSchemaStore() ) )
         {
-            tasks.add( new IndexCheckTask( indexRule, directStoreAccess.indexes(), progress, reporter, new IndexCheck() ) );
+            tasks.add( new IndexCheckTask( indexRule, directStoreAccess.indexes(), progress, reporter, new IndexCheck(indexRule) ) );
         }
 
         order.execute( tasks, progress.build() );
