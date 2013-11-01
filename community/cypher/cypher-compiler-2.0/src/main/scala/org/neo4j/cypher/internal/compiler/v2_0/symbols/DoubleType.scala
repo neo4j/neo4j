@@ -20,38 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 object DoubleType {
-  lazy val instance = new DoubleType()
+  private val instance = new DoubleType() {
+    val parentType = NumberType()
+    override def toString = "Double"
+  }
 
   def apply() = instance
 }
 
-class DoubleType extends NumberType {
-  override def parentType:CypherType = NumberType()
-  override def toString = "Double"
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sealed abstract class DoubleType extends CypherType

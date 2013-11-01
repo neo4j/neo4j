@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 object PathType {
-  lazy val instance = new PathType()
+  private val instance = new PathType() {
+    val parentType = AnyType()
+    override def toString = "Path"
+  }
   def apply() = instance
 }
 
-class PathType extends AnyType {
-  override def parentType:CypherType = AnyType()
-  override def toString = "Path"
-}
+sealed abstract class PathType extends CypherType

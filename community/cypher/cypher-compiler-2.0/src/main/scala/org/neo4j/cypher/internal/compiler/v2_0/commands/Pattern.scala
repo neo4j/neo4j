@@ -111,7 +111,7 @@ case class RelatedTo(left: SingleNode,
     if (info == "") "" else "[" + info + "]"
   }
 
-  val possibleStartPoints: Seq[(String, MapType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->RelationshipType()
+  val possibleStartPoints: Seq[(String, CypherType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->RelationshipType()
 
   def rewrite(f: (Expression) => Expression) =
     new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, properties.rewrite(f))
@@ -176,7 +176,7 @@ case class VarLengthRelatedTo(pathName: String,
     new VarLengthRelatedTo(pathName, left.rewrite(f), right.rewrite(f),
       minHops, maxHops, relTypes, direction, relIterator, properties.rewrite(f))
 
-  lazy val possibleStartPoints: Seq[(String, AnyType)] =
+  lazy val possibleStartPoints: Seq[(String, CypherType)] =
     left.possibleStartPoints ++
       right.possibleStartPoints :+
       pathName -> PathType()

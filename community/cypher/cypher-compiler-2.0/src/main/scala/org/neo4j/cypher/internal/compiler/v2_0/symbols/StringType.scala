@@ -19,37 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
-object StringType
-{
-  val instance = new StringType()
+object StringType {
+  private val instance = new StringType() {
+    val parentType = AnyType()
+    override def toString = "String"
+  }
 
   def apply() = instance
 }
 
-class StringType extends AnyType {
-  override def parentType: CypherType = AnyType()
-  override def toString = "String"
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sealed trait StringType extends CypherType
