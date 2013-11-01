@@ -1470,7 +1470,7 @@ public class DatabaseActionsTest
         try
         {
             Iterable<ConstraintDefinition> defs = graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey );
-            assertEquals( asSet( propertyKey ), asSet( single( defs ).asUniquenessConstraint().getPropertyKeys() ) );
+            assertEquals( asSet( propertyKey ), asSet( single( defs ).getPropertyKeys() ) );
             tx.success();
         }
         finally

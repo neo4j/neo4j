@@ -24,7 +24,6 @@ import scala.collection.JavaConverters._
 import collection.Map
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
-import org.neo4j.kernel.ThreadToStatementContextBridge
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.scalatest.Assertions
@@ -32,6 +31,7 @@ import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.DataWriteOperations
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundPlanContext
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge
 
 class GraphDatabaseTestBase extends GraphIcing with Assertions {
 

@@ -17,30 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 
 import static java.util.Collections.singletonList;
 
-public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition implements
-        UniquenessConstraintDefinition
+public class PropertyUniqueConstraintDefinition implements ConstraintDefinition
 {
+    private final InternalSchemaActions actions;
+    private final Label label;
     private final String propertyKey;
 
     public PropertyUniqueConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
     {
-        super( actions, label );
+        this.actions = actions;
+        this.label = label;
         this.propertyKey = propertyKey;
-    }
-
-    @Override
-    public ConstraintType getConstraintType()
-    {
-        assertInTransaction();
-        return ConstraintType.UNIQUENESS;
     }
 
     @Override
@@ -58,49 +53,64 @@ public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition
     }
 
     @Override
-    public UniquenessConstraintDefinition asUniquenessConstraint()
+    public Label getLabel()
     {
         assertInTransaction();
-        return this;
+        return label;
+    }
+
+    @Override
+    public ConstraintType getConstraintType()
+    {
+        assertInTransaction();
+        return ConstraintType.UNIQUENESS;
+    }
+
+    @Override
+    public boolean isConstraintType( ConstraintType type )
+    {
+        assertInTransaction();
+        return getConstraintType().equals( type );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        PropertyUniqueConstraintDefinition that = (PropertyUniqueConstraintDefinition) o;
+
+        if ( !actions.equals( that.actions ) )
+        {
+            return false;
+        }
+        if ( !label.equals( that.label ) )
+        {
+            return false;
+        }
+        if ( !propertyKey.equals( that.propertyKey ) )
+        {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + ((propertyKey == null) ? 0 : propertyKey.hashCode());
-        return result;
-    }
+        int result = actions.hashCode();
+        result = 31 * result + label.name().hashCode();
+        result = 31 * result + propertyKey.hashCode();
 
-    @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
-            return true;
-        }
-        if ( !super.equals( obj ) )
-        {
-            return false;
-        }
-        if ( getClass() != obj.getClass() )
-        {
-            return false;
-        }
-        PropertyUniqueConstraintDefinition other = (PropertyUniqueConstraintDefinition) obj;
-        if ( propertyKey == null )
-        {
-            if ( other.propertyKey != null )
-            {
-                return false;
-            }
-        }
-        else if ( !propertyKey.equals( other.propertyKey ) )
-        {
-            return false;
-        }
-        return true;
+        return result;
     }
 
     @Override
@@ -108,5 +118,10 @@ public class PropertyUniqueConstraintDefinition extends BaseConstraintDefinition
     {
         // using label name as a good identifier name
         return String.format( "%s.%s IS UNIQUE", label.name().toLowerCase(), propertyKey );
+    }
+
+    private final void assertInTransaction()
+    {
+        actions.assertInTransaction();
     }
 }

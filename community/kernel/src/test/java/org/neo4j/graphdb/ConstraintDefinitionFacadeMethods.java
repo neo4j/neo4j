@@ -48,16 +48,6 @@ public class ConstraintDefinitionFacadeMethods
                 }
             };
 
-    private static final FacadeMethod<ConstraintDefinition> AS_UNIQUENESS_CONSTRAINT =
-            new FacadeMethod<ConstraintDefinition>( "UniquenessConstraintDefinition asUniquenessConstraint();" )
-            {
-                @Override
-                public void call( ConstraintDefinition self )
-                {
-                    self.asUniquenessConstraint();
-                }
-            };
-
     private static final FacadeMethod<ConstraintDefinition> IS_CONSTRAINT_TYPE =
             new FacadeMethod<ConstraintDefinition>( "boolean isConstraintType( ConstraintType type )" )
             {
@@ -68,11 +58,21 @@ public class ConstraintDefinitionFacadeMethods
                 }
             };
 
+    private static final FacadeMethod<ConstraintDefinition> GET_PROPERTY_KEYS =
+            new FacadeMethod<ConstraintDefinition>( "Iterable<String> getPropertyKeys()" )
+            {
+                @Override
+                public void call( ConstraintDefinition self )
+                {
+                    self.getPropertyKeys();
+                }
+            };
+
     static final Iterable<FacadeMethod<ConstraintDefinition>> ALL_CONSTRAINT_DEFINITION_FACADE_METHODS =
             unmodifiableCollection( asList(
                     GET_LABEL,
+                    GET_PROPERTY_KEYS,
                     DROP,
-                    AS_UNIQUENESS_CONSTRAINT,
                     IS_CONSTRAINT_TYPE
             ) );
 }

@@ -1533,10 +1533,10 @@ public class DatabaseActions
     public ConstraintDefinitionRepresentation createPropertyUniquenessConstraint( String labelName,
                                                                                   Iterable<String> propertyKeys )
     {
-        ConstraintCreator constraintCreator = graphDb.schema().constraintFor( label( labelName ) ).unique();
+        ConstraintCreator constraintCreator = graphDb.schema().constraintFor( label( labelName ) );
         for ( String key : propertyKeys )
         {
-            constraintCreator = constraintCreator.on( key );
+            constraintCreator = constraintCreator.assertPropertyIsUnique( key );
         }
         ConstraintDefinition constraintDefinition = constraintCreator.create();
         return new ConstraintDefinitionRepresentation( constraintDefinition );
@@ -1593,7 +1593,7 @@ public class DatabaseActions
             public boolean accept( ConstraintDefinition item )
             {
                 return item.isConstraintType( ConstraintType.UNIQUENESS ) &&
-                        propertyKeysSet.equals( asSet( item.asUniquenessConstraint().getPropertyKeys() ) );
+                        propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
             }
         };
     }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -37,22 +37,16 @@ public class BaseConstraintCreator implements ConstraintCreator
     }
 
     @Override
-    public ConstraintCreator on( String propertyKey )
+    public ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        return new PropertyConstraintCreator( actions, label, propertyKey );
-    }
-
-    @Override
-    public ConstraintCreator unique()
-    {
-        return new PropertyUniqueConstraintCreator( actions, label, null );
+        return new PropertyUniqueConstraintCreator( actions, label, propertyKey );
     }
 
     @Override
     public ConstraintDefinition create()
     {
         assertInTransaction();
-        throw new IllegalStateException( "Not constraint assertions specified" );
+        throw new IllegalStateException( "No constraint assertions specified" );
     }
 
     protected final void assertInTransaction()

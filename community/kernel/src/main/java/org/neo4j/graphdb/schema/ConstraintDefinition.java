@@ -30,18 +30,17 @@ public interface ConstraintDefinition
      * @return the {@link Label} this constraint is associated with.
      */
     Label getLabel();
+
+    /**
+     * @return the property keys this constraint is about.
+     */
+    Iterable<String> getPropertyKeys();
     
     /**
      * Drops this constraint.
      */
     void drop();
-    
-    /**
-     * @return access to details about uniqueness.
-     * @throws IllegalStateException if this constraint is of an invalid type.
-     */
-    UniquenessConstraintDefinition asUniquenessConstraint();
-    
+
     /**
      * @return the {@link ConstraintType} of constraint.
      */

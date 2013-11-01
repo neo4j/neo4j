@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;

@@ -130,7 +130,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             @Override
             public Void apply( GraphDatabaseService db )
             {
-                db.schema().constraintFor( label( label ) ).unique().on( propertyKey ).create();
+                db.schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
                 return null;
             }
         };

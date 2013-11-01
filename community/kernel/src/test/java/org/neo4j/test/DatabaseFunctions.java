@@ -87,7 +87,7 @@ public class DatabaseFunctions
             @Override
             public Void apply( GraphDatabaseService graphDb )
             {
-                graphDb.schema().constraintFor( label ).unique().on( propertyKey ).create();
+                graphDb.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
                 return null;
             }
         };

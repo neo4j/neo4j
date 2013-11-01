@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.test.ImpermanentGraphDatabase;

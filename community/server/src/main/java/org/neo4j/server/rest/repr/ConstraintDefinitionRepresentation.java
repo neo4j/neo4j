@@ -21,11 +21,8 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 
-import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
 
@@ -46,18 +43,10 @@ public class ConstraintDefinitionRepresentation extends MappingRepresentation
 
         ConstraintType type = constraintDefinition.getConstraintType();
         serializer.putString( "type", type.name() );
-        switch ( type )
-        {
-            case UNIQUENESS:
-                serialize( constraintDefinition.asUniquenessConstraint(), serializer );
-                break;
-            default:
-                throw new ThisShouldNotHappenError( "Stefan",
-                    format( "Attempt to serialize constraint of unsupported/unknown constraint type %s", type ) );
-        }
+        serialize( constraintDefinition, serializer );
     }
 
-    protected void serialize( UniquenessConstraintDefinition constraintDefinition, MappingSerializer serializer )
+    protected void serialize( ConstraintDefinition constraintDefinition, MappingSerializer serializer )
     {
         Function<String, Representation> converter = new Function<String, Representation>()
         {

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.{ExecutionPlan, LRUCache}
 import org.neo4j.cypher._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.Traverser.Order
-import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{Statement, OperationsFacade, ReadOperations}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.tooling.GlobalGraphOperations
@@ -41,6 +41,7 @@ import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 

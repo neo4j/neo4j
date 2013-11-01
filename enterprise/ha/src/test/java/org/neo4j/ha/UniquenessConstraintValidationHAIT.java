@@ -201,7 +201,7 @@ public class UniquenessConstraintValidationHAIT
             Transaction tx = graphDb.beginTx();
             try
             {
-                graphDb.schema().constraintFor( label( label ) ).unique().on( propertyKey ).create();
+                graphDb.schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
 
                 tx.success();
             }

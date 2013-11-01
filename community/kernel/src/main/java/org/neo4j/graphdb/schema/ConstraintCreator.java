@@ -30,26 +30,21 @@ import org.neo4j.graphdb.Label;
  * All methods except {@link #create()} will return an {@link ConstraintCreator} which should be
  * used for further interaction.
  *
+ * Compatibility note: New methods may be added to this interface without notice,
+ * backwards compatibility is only guaranteed for clients of this interface, not for
+ * implementors.
+ *
  * @see Schema
  */
 public interface ConstraintCreator
 {
     /**
-     * Specifies that this constraint will be for the given property key. Specifying a
-     * property key requires further details to be given, such as {@link #unique() uniqueness}.
-     *
-     * @param propertyKey the property key this constraint is about.
-     * @return a {@link ConstraintCreator} instance to be used for further interaction.
-     */
-    ConstraintCreator on( String propertyKey );
-
-    /**
-     * Imposes a uniqueness constraint for the {@link #on(String) given property}, such that
+     * Imposes a uniqueness constraint for the given property, such that
      * there can be at most one node, having the given label, for any set value of that property key.
      *
      * @return a {@link ConstraintCreator} instance to be used for further interaction.
      */
-    ConstraintCreator unique();
+    ConstraintCreator assertPropertyIsUnique( String propertyKey );
 
     /**
      * Creates a constraint with the details specified by the other methods in this interface.

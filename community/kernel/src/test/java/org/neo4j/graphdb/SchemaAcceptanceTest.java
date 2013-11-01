@@ -29,7 +29,6 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.schema.UniquenessConstraintDefinition;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.lang.String.format;
@@ -326,29 +325,21 @@ public class SchemaAcceptanceTest
         assertThat( getIndexes( db, label ), contains( index ) );
         assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
     }
-    
+
     @Test
     public void shouldCreateUniquenessConstraint() throws Exception
     {
-        // GIVEN
-
         // WHEN
         ConstraintDefinition constraint = createConstraint( label, propertyKey );
 
         // THEN
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
 
-            UniquenessConstraintDefinition uniquenessConstraint = constraint.asUniquenessConstraint();
-            assertEquals( label.name(), uniquenessConstraint.getLabel().name() );
-            assertEquals( asSet( propertyKey ), asSet( uniquenessConstraint.getPropertyKeys() ) );
+            assertEquals( label.name(), constraint.getLabel().name() );
+            assertEquals( asSet( propertyKey ), asSet( constraint.getPropertyKeys() ) );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
     
@@ -519,7 +510,7 @@ public class SchemaAcceptanceTest
         Transaction tx = db.beginTx();
         try
         {
-            ConstraintDefinition constraint = db.schema().constraintFor( label ).on( prop ).unique().create();
+            ConstraintDefinition constraint = db.schema().constraintFor( label ).assertPropertyIsUnique( prop ).create();
             tx.success();
             return constraint;
         }

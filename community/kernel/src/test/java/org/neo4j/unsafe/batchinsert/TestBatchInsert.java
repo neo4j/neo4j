@@ -950,12 +950,12 @@ public class TestBatchInsert
 
         // WHEN
         ConstraintDefinition definition =
-                inserter.createDeferredConstraint( label( "Hacker" ) ).on( "handle" ).unique().create();
+                inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
 
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
         assertEquals( ConstraintType.UNIQUENESS, definition.getConstraintType() );
-        assertEquals( asSet( "handle" ), asSet( definition.asUniquenessConstraint().getPropertyKeys() ) );
+        assertEquals( asSet( "handle" ), asSet( definition.getPropertyKeys() ) );
     }
 
     @Test
@@ -1003,7 +1003,7 @@ public class TestBatchInsert
         BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
                 singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
-        inserter.createDeferredConstraint( label("Hacker") ).on( "handle" ).unique().create();
+        inserter.createDeferredConstraint( label("Hacker") ).assertPropertyIsUnique( "handle" ).create();
 
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
 

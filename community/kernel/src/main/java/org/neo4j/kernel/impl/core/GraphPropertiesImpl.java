@@ -32,7 +32,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 import static org.neo4j.kernel.api.properties.Property.property;

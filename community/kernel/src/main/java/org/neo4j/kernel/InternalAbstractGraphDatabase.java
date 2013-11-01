@@ -111,6 +111,8 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;

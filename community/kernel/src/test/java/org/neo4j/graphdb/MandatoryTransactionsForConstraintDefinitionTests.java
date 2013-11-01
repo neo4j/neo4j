@@ -41,8 +41,7 @@ public class MandatoryTransactionsForConstraintDefinitionTests
         return graphDatabaseService
                .schema()
                .constraintFor( DynamicLabel.label( "Label" ) )
-               .on( "property" )
-               .unique()
+               .assertPropertyIsUnique( "property" )
                .create();
     }
 }

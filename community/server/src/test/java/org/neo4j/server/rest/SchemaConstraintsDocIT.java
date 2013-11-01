@@ -256,8 +256,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         try ( Transaction tx = graphdb().beginTx() )
         {
-            ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( label( labelName ) ).unique
-                    ().on( propertyKey ).create();
+            ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( label( labelName ) )
+                    .assertPropertyIsUnique( propertyKey ).create();
             tx.success();
             return constraintDefinition;
         }

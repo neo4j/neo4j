@@ -497,7 +497,7 @@ public class GraphDbHelper
                 {
                     if ( item.isConstraintType( ConstraintType.UNIQUENESS ) )
                     {
-                        Iterable<String> keys = item.asUniquenessConstraint().getPropertyKeys();
+                        Iterable<String> keys = item.getPropertyKeys();
                         return single( keys ).equals( propertyKey );
                     }
                     else
@@ -519,9 +519,9 @@ public class GraphDbHelper
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) ).unique();
+            ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) );
             for ( String propertyKey : propertyKeys )
-                creator = creator.on( propertyKey );
+                creator = creator.assertPropertyIsUnique( propertyKey );
             ConstraintDefinition result = creator.create();
             tx.success();
             return result;

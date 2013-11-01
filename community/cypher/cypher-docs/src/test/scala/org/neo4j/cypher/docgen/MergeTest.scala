@@ -53,8 +53,8 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
   )
 
   @Before def setup_constraint() {
-    RichGraph(db).inTx( db.schema().constraintFor(DynamicLabel.label("Person")).on("name").unique().create())
-    RichGraph(db).inTx( db.schema().constraintFor(DynamicLabel.label("Person")).on("role").unique().create())
+    RichGraph(db).inTx( db.schema().constraintFor(DynamicLabel.label("Person")).assertPropertyIsUnique("name").create())
+    RichGraph(db).inTx( db.schema().constraintFor(DynamicLabel.label("Person")).assertPropertyIsUnique("role").create())
   }
 
   @Test def merge_single_node_with_label() {
