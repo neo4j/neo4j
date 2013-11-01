@@ -61,4 +61,6 @@ case class NullInsertingPipe(in: Pipe, builder: Pipe => Pipe) extends Pipe {
     val listener = state.listener
     new NullInsertingIterator(listener, innerResult, nullF)
   }
+
+  def exists(pred: Pipe => Boolean) = pred(this) || in.exists(pred) || innerPipe.exists(pred)
 }

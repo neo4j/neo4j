@@ -45,9 +45,6 @@ class ShortestPathBuilder extends PlanBuilder {
     case _ => false
   }
 
-  def priority: Int = PlanBuilder.ShortestPath
-
-
   override def missingDependencies(plan: ExecutionPlanInProgress) = {
     val querySoFar = plan.query
     val symbols = plan.pipe.symbols

@@ -41,38 +41,7 @@ trait PlanBuilder {
 
   def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = Seq()
 
-  def priority: Int
-
-
   implicit class SeqWithReplace[A](inSeq: Seq[A]) {
     def replace(remove: A, replaceWith: A) = inSeq.filterNot(_ == remove) :+ replaceWith
   }
-}
-
-// The priorities are all here, to make it easy to change and compare
-// Lower priority wins
-object PlanBuilder extends Enumeration {
-  val Lowest = -1000
-
-  val QueryRewriting = -101
-  val CachedExpressions = -100
-  val IndexLookup = -100
-  val TraversalMatcher = -11
-  val Filter = -10
-  val NamedPath = -9
-  val Mutation = -1
-  val NodeById = -1
-  val RelationshipById = -1
-  val IndexQuery = 0
-  val Extraction = 0
-  val TopX = -1
-  val Slice = 0
-  val ColumnFilter = 0
-  val GlobalStart = 1
-  val Match = 10
-  val ShortestPath = 20
-  val SortedAggregation = 30
-  val Distinct = 29
-  val Aggregation = 31
-  val Sort = 40
 }

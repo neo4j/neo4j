@@ -36,8 +36,6 @@ class KeyTokenResolver extends PlanBuilder {
     plan.copy(query = rewrittenQuery)
   }
 
-  def priority: Int = PlanBuilder.QueryRewriting
-
   def resolveExpressions(expr: Expression, ctx: TokenContext) = expr match {
     case (keyToken: KeyToken) => keyToken.resolve(ctx)
     case _                    => expr

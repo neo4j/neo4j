@@ -31,4 +31,6 @@ class UnionPipe(in: Seq[Pipe], columns:List[String]) extends Pipe {
   def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> AnyType()).toMap)
 
   override val sources: Seq[Pipe] = in
+
+  def exists(pred: Pipe => Boolean) = pred(this) || in.exists(_.exists(pred))
 }

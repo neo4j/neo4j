@@ -55,4 +55,6 @@ class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
   def symbols = new SymbolTable()
 
   def executionPlanDescription = PlanDescription(this, indexOp.toString)
+
+  def exists(pred: Pipe => Boolean) = pred(this)
 }

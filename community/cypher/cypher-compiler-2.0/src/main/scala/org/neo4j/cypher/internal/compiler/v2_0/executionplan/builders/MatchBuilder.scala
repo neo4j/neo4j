@@ -69,6 +69,4 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
     }
     case _                         => false
   }
-
-  def priority = PlanBuilder.Match
 }

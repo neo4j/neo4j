@@ -46,6 +46,4 @@ class EmptyResultBuilder extends PlanBuilder {
       isLastPipe &&
       nothingToReturnButPipeNotEmpty
   }
-
-  def priority = PlanBuilder.ColumnFilter
 }

@@ -107,8 +107,6 @@ class AggregationBuilder extends PlanBuilder  {
 
     q.aggregateToDo && q.readyToAggregate
   }
-
-  def priority: Int = PlanBuilder.Aggregation
 }
 
 case class ExtractedExpressions(keys: Map[String, Expression],

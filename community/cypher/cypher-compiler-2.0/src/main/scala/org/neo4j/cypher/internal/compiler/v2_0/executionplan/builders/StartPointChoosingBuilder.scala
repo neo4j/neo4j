@@ -111,6 +111,4 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
     !plan.query.extracted && plan != apply(plan, ctx) // TODO: This can be optimized
-
-  def priority = PlanBuilder.IndexLookup
 }

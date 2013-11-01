@@ -29,8 +29,6 @@ import collection.Seq
 import GetGraphElements.getElements
 
 class RelationshipByIdBuilder extends PlanBuilder {
-  def priority = PlanBuilder.RelationshipById
-
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val p = plan.pipe

@@ -80,7 +80,4 @@ class StartPointBuilder extends PlanBuilder {
     }
     result
   }
-
-
-  def priority = PlanBuilder.IndexQuery
 }

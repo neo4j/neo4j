@@ -66,6 +66,4 @@ class FilterBuilder extends PlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
     plan.query.where.exists(pred => yesOrNo(pred, plan.pipe))
-
-  def priority: Int = PlanBuilder.Filter
 }

@@ -132,8 +132,6 @@ class BadBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = plan
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = true
-
-  def priority = 0
 }
 
 class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
@@ -147,8 +145,6 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
 
       plan.copy(pipe = new ExplodingPipe, query = psq)
     }
-
-  def priority: Int = 0
 
   class ExplodingPipe extends Pipe {
     def internalCreateResults(state: QueryState) = throw new ExplodingException

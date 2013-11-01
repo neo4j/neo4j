@@ -59,8 +59,6 @@ class ColumnFilterBuilder extends PlanBuilder {
     }
   }
 
-  def priority = PlanBuilder.ColumnFilter
-
   private def handleReturnClause(q: PartiallySolvedQuery, inPipe: Pipe, plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {
     val returnItems: Seq[ReturnItem] = getReturnItems(q.returns, inPipe.symbols)
     val outPipe = new ColumnFilterPipe(inPipe, returnItems)

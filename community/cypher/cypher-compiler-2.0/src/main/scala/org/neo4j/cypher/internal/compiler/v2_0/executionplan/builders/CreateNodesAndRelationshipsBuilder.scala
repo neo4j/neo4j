@@ -63,8 +63,6 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService)
   }.map("Unknown identifier `%s`".format(_))
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = plan.query.start.exists(applicableTo(plan.pipe))
-
-  def priority = PlanBuilder.Mutation
 }
 
 trait UpdateCommandExpander {

@@ -63,7 +63,5 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
 
     extracted && unsolvedOrdering && limited
   }
-
-  def priority: Int = PlanBuilder.TopX
 }
 

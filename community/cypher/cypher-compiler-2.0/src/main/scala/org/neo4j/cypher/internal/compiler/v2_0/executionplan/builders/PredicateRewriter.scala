@@ -130,6 +130,4 @@ class PredicateRewriter(namer: Namer = new RandomNamer) extends PlanBuilder {
   def mapPropertiesToPredicates(props: Map[String, Expression], name: String): Seq[Unsolved[Predicate]] = props.toSeq.map {
     case (prop, value) => Unsolved(Equals(Property(Identifier(name), UnresolvedProperty(prop)), value).asInstanceOf[Predicate])
   }
-
-  def priority = PlanBuilder.QueryRewriting
 }

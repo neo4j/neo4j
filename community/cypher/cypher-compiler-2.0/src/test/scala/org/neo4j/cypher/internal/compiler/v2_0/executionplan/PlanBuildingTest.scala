@@ -19,29 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan
 
-import org.neo4j.cypher.InternalException
+import org.scalatest.Assertions
+import org.junit.Test
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_0.parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.DistinctPipe
 
-trait Phase {
+class PlanBuildingTest extends Assertions {
+  val gds: GraphDatabaseService = null
+  val planContext: PlanContext = null
+  val parser = CypherParser()
+  val planBuilder = new ExecutionPlanBuilder(gds)
 
-  def myBuilders: Seq[PlanBuilder]
+  @Test def should_use_distinct_pipe_for_distinct() {
+    val abstractQuery = parser.parseToQuery("MATCH n RETURN DISTINCT n")
+    val (pipe, _) = planBuilder.buildPipes(planContext, abstractQuery)
 
-  def apply(inPlan: ExecutionPlanInProgress, context: PlanContext): ExecutionPlanInProgress = {
-    var plan = inPlan
-    while (myBuilders.exists(_.canWorkWith(plan, context))) {
-      val matchingBuilders = myBuilders.filter(_.canWorkWith(plan, context))
-
-      val builder = matchingBuilders.head
-
-      val newPlan = builder(plan, context)
-
-      if (plan == newPlan)
-        throw new InternalException("Something went wrong trying to build your query. The offending builder was: "
-          + builder.getClass.getSimpleName)
-
-      plan = newPlan
-    }
-
-    plan
+    assert(pipe.exists(_.isInstanceOf[DistinctPipe]), "Expected a DistinctPipe but didn't find any")
   }
 }

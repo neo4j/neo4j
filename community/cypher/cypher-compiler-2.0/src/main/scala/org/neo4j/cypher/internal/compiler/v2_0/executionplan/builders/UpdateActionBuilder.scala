@@ -62,8 +62,6 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with Upd
     uas.nonEmpty || sitems.nonEmpty
   }
 
-  def priority = PlanBuilder.Mutation
-
   override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = {
     val updateDeps = plan.query.updates.flatMap {
       case Unsolved(cmd) => plan.pipe.symbols.missingSymbolTableDependencies(cmd)

@@ -35,6 +35,4 @@ class SliceBuilder extends PlanBuilder {
     val q = plan.query
     q.extracted && !q.sort.exists(_.unsolved) && q.slice.exists(_.unsolved)
   }
-
-  def priority: Int = PlanBuilder.Slice
 }

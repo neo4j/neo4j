@@ -191,10 +191,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {
-    val errors = builders.flatMap(builder => builder.missingDependencies(plan).map(builder ->)).toList.
-      sortBy {
-      case (builder, _) => builder.priority
-    }
+    val errors = builders.flatMap(builder => builder.missingDependencies(plan).map(builder ->)).toList
 
     if (errors.isEmpty) {
       throw new SyntaxException( """Somehow, Cypher was not able to construct a valid execution plan from your query.
@@ -204,10 +201,7 @@ Thank you!
 The Neo4j Team""")
     }
 
-    val prio = errors.head._1.priority
-    val errorsOfHighestPrio = errors.filter(_._1.priority == prio).distinct.map(_._2)
-
-    val errorMessage = errorsOfHighestPrio.mkString("\n")
+    val errorMessage = errors.distinct.map(_._2).mkString("\n")
     throw new SyntaxException(errorMessage)
   }
 
@@ -223,52 +217,54 @@ The Neo4j Team""")
 
   lazy val builders = phases.flatMap(_.myBuilders).distinct
 
+  /*
+  The order of the plan builders here is important. It decides which PlanBuilder gets to go first.
+   */
   def prepare = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
-      new IndexLookupBuilder,
-      new StartPointChoosingBuilder,
-      new PredicateRewriter,
-      new KeyTokenResolver,
-      new MergeStartPointBuilder,
-      new AggregationPreparationRewriter()
+      new PredicateRewriter, 
+      new KeyTokenResolver,  
+      new AggregationPreparationRewriter(), 
+      new IndexLookupBuilder, 
+      new StartPointChoosingBuilder, 
+      new MergeStartPointBuilder    
     )
   }
 
   def matching = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
+      new TraversalMatcherBuilder, 
+      new FilterBuilder, 
+      new NamedPathBuilder, 
       new StartPointBuilder,
-      new MatchBuilder,
-      new TraversalMatcherBuilder,
-      new ShortestPathBuilder,
-      new NamedPathBuilder,
-      new FilterBuilder
+      new MatchBuilder, 
+      new ShortestPathBuilder 
     )
   }
 
   def updates = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
-      new CreateNodesAndRelationshipsBuilder(graph),
-      new UpdateActionBuilder(graph),
-      new NamedPathBuilder
+      new NamedPathBuilder,
+      new CreateNodesAndRelationshipsBuilder(graph), 
+      new UpdateActionBuilder(graph)
     )
   }
 
   def extract = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
-      new ExtractBuilder,
-      new SortBuilder,
-      new SliceBuilder,
       new TopPipeBuilder,
-      new AggregationBuilder
+      new ExtractBuilder,
+      new SliceBuilder,
+      new DistinctBuilder,
+      new AggregationBuilder, 
+      new SortBuilder
     )
   }
 
   def finish = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new ColumnFilterBuilder,
-      new EmptyResultBuilder,
-      new DistinctBuilder
+      new EmptyResultBuilder
     )
   }
-
 }

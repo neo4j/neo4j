@@ -57,8 +57,6 @@ case class AggregationPreparationRewriter(cacheNamer: Option[Expression => Strin
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean =
     plan.query.returns.exists(rc => returnColumnToRewrite(rc.token))
 
-  def priority: Int = PlanBuilder.QueryRewriting
-
   private def returnColumnToRewrite: ReturnColumn => Boolean = {
     case ReturnItem(e, _, _) => !e.isInstanceOf[AggregationExpression] && e.containsAggregate
     case _                   => false

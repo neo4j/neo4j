@@ -42,8 +42,6 @@ class SortBuilder extends PlanBuilder with SortingPreparations {
     plan.query.extracted &&
     plan.query.sort.filter(x => x.unsolved && !x.token.expression.containsAggregate).nonEmpty
 
-  def priority: Int = PlanBuilder.Sort
-
   override def missingDependencies(plan: ExecutionPlanInProgress) = if (!plan.query.extracted) {
     Seq()
   } else {

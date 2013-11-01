@@ -21,26 +21,20 @@ package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.DistinctPipe
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{CachedExpression, Expression}
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{SymbolTable, CypherType, AnyType}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
 
 class DistinctBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(p: ExecutionPlanInProgress, ctx: PlanContext) = {
+    val plan = ExtractBuilder.extractIfNecessary(p, getExpressions(p))
 
-    //Extract expressions from return items
-    val expressions: Map[String, Expression] =
-      plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)).toMap
+    val expressions = getExpressions(plan)
 
     val pipe = new DistinctPipe(plan.pipe, expressions)
 
-
-    val newQuery = cacheExpressions(plan, expressions, plan.pipe.symbols)
-
-
     //Mark stuff as done
-    val query = newQuery.copy(
+    val query = plan.query.copy(
       aggregateToDo = false,
       extracted = true,
       returns = plan.query.returns.map(_.solve)
@@ -49,22 +43,8 @@ class DistinctBuilder extends PlanBuilder {
     plan.copy(pipe = pipe, query = query)
   }
 
-
-  private def cacheExpressions(plan: ExecutionPlanInProgress, expressions: Map[String, Expression], symbols: SymbolTable) =
-    plan.query.rewrite    {
-      inputExpression =>
-        val found: Option[(String, Expression)] = expressions.find {
-          case (key, exp) => exp == inputExpression
-        }
-
-        if ( found.isEmpty ) {
-          inputExpression
-        } else        {
-          val calculatedType: CypherType = inputExpression.evaluateType(AnyType(), symbols)
-          val key: String = found.get._1
-          CachedExpression(key, calculatedType)
-        }
-    }
+  private def getExpressions(plan:ExecutionPlanInProgress): Map[String, Expression] =
+    plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)).toMap
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
 
@@ -79,6 +59,4 @@ class DistinctBuilder extends PlanBuilder {
         case _                => false
       }
   }
-
-  def priority = PlanBuilder.Distinct
 }

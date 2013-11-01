@@ -74,6 +74,4 @@ class IndexLookupBuilder extends PlanBuilder {
     case Unsolved(SchemaIndex(_, _, _, _, None)) => true
     case _                                       => false
   }
-
-  def priority = PlanBuilder.IndexLookup
 }

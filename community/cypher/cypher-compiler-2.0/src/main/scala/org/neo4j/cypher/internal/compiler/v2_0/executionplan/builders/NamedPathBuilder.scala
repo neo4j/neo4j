@@ -47,5 +47,4 @@ class NamedPathBuilder extends PlanBuilder {
 
     case _                       => false
   }
-  def priority: Int = PlanBuilder.NamedPath
 }

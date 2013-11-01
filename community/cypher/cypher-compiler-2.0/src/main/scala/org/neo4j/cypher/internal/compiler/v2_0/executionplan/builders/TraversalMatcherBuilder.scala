@@ -158,7 +158,5 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
 
     TrailBuilder.findLongestTrail(pattern, startPoints, preds)
   }
-
-  def priority = PlanBuilder.TraversalMatcher
 }
 

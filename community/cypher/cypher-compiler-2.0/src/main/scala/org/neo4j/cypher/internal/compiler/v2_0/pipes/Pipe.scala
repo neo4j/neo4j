@@ -48,6 +48,11 @@ trait Pipe {
   def isLazy:Boolean = true
 
   def sources: Seq[Pipe] = Seq.empty
+
+  /*
+  Runs the predicate on all the inner Pipe until no pipes are left, or one returns true.
+   */
+  def exists(pred: Pipe => Boolean):Boolean
 }
 
 object NullPipe extends Pipe {
@@ -56,6 +61,8 @@ object NullPipe extends Pipe {
   val symbols: SymbolTable = SymbolTable()
 
   val executionPlanDescription = NullPlanDescription
+
+  def exists(pred: Pipe => Boolean) = pred(this)
 }
 
 abstract class PipeWithSource(source: Pipe) extends Pipe {
@@ -77,4 +84,6 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
 
   override val sources: Seq[Pipe] = Seq(source)
+
+  def exists(pred: Pipe => Boolean) = pred(this) || source.exists(pred)
 }

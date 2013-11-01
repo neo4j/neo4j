@@ -59,8 +59,6 @@ class ExtractBuilder extends PlanBuilder {
     a && b && c && unsolvedReturnItems.nonEmpty
   }
 
-  def priority: Int = PlanBuilder.Extraction
-
   override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] =
     if (plan.query.patterns.exists(_.unsolved))
       Seq.empty
