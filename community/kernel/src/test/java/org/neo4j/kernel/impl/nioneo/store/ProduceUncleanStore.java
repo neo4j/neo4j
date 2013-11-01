@@ -19,11 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.util.HashMap;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 
@@ -33,7 +40,10 @@ public class ProduceUncleanStore
     {
         String storeDir = args[0];
         boolean setGraphProperty = args.length > 1 ? Boolean.parseBoolean( args[1] ) : false;
-        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir )
+            GraphDatabaseService db = new EmbeddedGraphDatabase(
+                    storeDir, new HashMap<String, String>(), Iterables.<KernelExtensionFactory<?>,
+                    KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
+                    Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) )
         {
             @Override
             protected Logging createLogging()
