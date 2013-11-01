@@ -27,10 +27,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -61,11 +59,7 @@ import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -156,7 +150,7 @@ public class SchemaIndexHaIT
         }
     }
 
-    @Test @Ignore("JH: Temp to get builds running while I debug this, if you see this message and it's not tuesday the 29th of october, tell me.")
+    @Test
     public void populatingSchemaIndicesOnMasterShouldBeBroughtOnlineOnSlavesAfterStoreCopy() throws Throwable
     {
         /*
@@ -175,7 +169,7 @@ public class SchemaIndexHaIT
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
         // All slaves in the cluster, except the one I care about, proceed as normal
-        dontBlockIndexPopulationOnAllSlavesExcept( dbFactory, cluster, slave );
+        proceedAsNormalWithIndexPopulationOnAllSlavesExcept( dbFactory, cluster, slave );
 
         // A slave is offline, and has no store files
         ClusterManager.RepairKit slaveDown = bringSlaveOfflineAndRemoveStoreFiles( cluster, slave );
@@ -228,12 +222,12 @@ public class SchemaIndexHaIT
         );
 
         ManagedCluster cluster = clusterRule.startCluster( dbFactory );
-        cluster.await( allSeesAllAsAvailable() );
+        cluster.await( allSeesAllAsAvailable(), 120 );
 
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
         // All slaves in the cluster, except the one I care about, proceed as normal
-        dontBlockIndexPopulationOnAllSlavesExcept( dbFactory, cluster, slave );
+        proceedAsNormalWithIndexPopulationOnAllSlavesExcept( dbFactory, cluster, slave );
 
         // A slave is offline, and has no store files
         ClusterManager.RepairKit slaveDown = bringSlaveOfflineAndRemoveStoreFiles( cluster, slave );
@@ -270,10 +264,17 @@ public class SchemaIndexHaIT
         }
     }
 
-    private void dontBlockIndexPopulationOnAllSlavesExcept( ControlledGraphDatabaseFactory dbFactory, ManagedCluster cluster, HighlyAvailableGraphDatabase slave )
+    private void proceedAsNormalWithIndexPopulationOnAllSlavesExcept( ControlledGraphDatabaseFactory dbFactory,
+                                                                      ManagedCluster cluster,
+                                                                      HighlyAvailableGraphDatabase slaveToIgnore )
     {
-        HighlyAvailableGraphDatabase irrelevantSlave = cluster.getAnySlave(slave);
-        dbFactory.triggerFinish( irrelevantSlave );
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        {
+            if( db != slaveToIgnore && db.getInstanceState().equals( "SLAVE" ) )
+            {
+                dbFactory.triggerFinish( db );
+            }
+        }
     }
 
     private ClusterManager.RepairKit bringSlaveOfflineAndRemoveStoreFiles( ManagedCluster cluster, HighlyAvailableGraphDatabase slave ) throws IOException
@@ -347,7 +348,7 @@ public class SchemaIndexHaIT
         {
             IndexDefinition index = reHomedIndexDefinition( db, requestedIndex );
 
-            long timeout = System.currentTimeMillis() + SECONDS.toMillis( 60 );
+            long timeout = System.currentTimeMillis() + SECONDS.toMillis( 120 );
             while( !indexOnline( index, db ) )
             {
                 Thread.sleep( 1 );
