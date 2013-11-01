@@ -28,9 +28,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.api.scan.ScannableStores;
-import org.neo4j.kernel.api.scan.SimpleScannableStores;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.direct.SimpleDirectStoreAccess;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -54,7 +54,7 @@ public class FullDiffCheck extends DiffCheck
         LabelScanStore labelScanStore =
             new LuceneLabelScanStoreBuilder( storeDir, diffs.getRawNeoStore(), fileSystem, logger ).build();
 
-        ScannableStores stores = new SimpleScannableStores( diffs, labelScanStore );
+        DirectStoreAccess stores = new SimpleDirectStoreAccess( diffs, labelScanStore );
         return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( stores, logger );
     }
 }

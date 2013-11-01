@@ -17,12 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.scan;
+package org.neo4j.kernel.api.labelscan;
 
-import java.io.IOException;
+import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
-public interface NodeRangeScanSupport
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
+
+public interface LabelScanReader
 {
-    NodeRangeReader newRangeReader();
-    long getHighRangeId() throws IOException;
+    PrimitiveLongIterator nodesWithLabel( int labelId );
+
+    void close();
+
+    LabelScanReader EMPTY = new LabelScanReader()
+    {
+        @Override
+        public PrimitiveLongIterator nodesWithLabel( int labelId )
+        {
+            return emptyPrimitiveLongIterator();
+        }
+
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
+    };
 }

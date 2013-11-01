@@ -34,6 +34,7 @@ import java.util.Set;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,12 +52,13 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.scan.LabelScanReader;
-import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.api.scan.NodeLabelUpdate;
+import org.neo4j.kernel.api.labelscan.LabelScanReader;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -81,6 +83,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -143,14 +146,14 @@ public class TestBatchInsert
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider )
     {
-        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList(
+        List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 provider, new InMemoryLabelScanStoreExtension() );
         return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
     }
 
     private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider )
     {
-        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList(
+        List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 new InMemoryIndexProviderFactory(), provider );
         return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
     }
@@ -395,21 +398,21 @@ public class TestBatchInsert
 
         for ( String key : properties.keySet() )
         {
-            if ( key.equals( "key0" ) )
+            switch ( key )
             {
-                assertFalse( inserter.nodeHasProperty( theNode, key ) );
-                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
-            }
-            else if ( key.equals( "key1" ) )
-            {
-                assertTrue( inserter.nodeHasProperty( theNode, key ) );
-                assertFalse( inserter.relationshipHasProperty( relationship,
-                        key ) );
-            }
-            else
-            {
-                assertTrue( inserter.nodeHasProperty( theNode, key ) );
-                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                case "key0":
+                    assertFalse( inserter.nodeHasProperty( theNode, key ) );
+                    assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                    break;
+                case "key1":
+                    assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                    assertFalse( inserter.relationshipHasProperty( relationship,
+                            key ) );
+                    break;
+                default:
+                    assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                    assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                    break;
             }
         }
         inserter.shutdown();
@@ -417,21 +420,21 @@ public class TestBatchInsert
 
         for ( String key : properties.keySet() )
         {
-            if ( key.equals( "key0" ) )
+            switch ( key )
             {
-                assertFalse( inserter.nodeHasProperty( theNode, key ) );
-                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
-            }
-            else if ( key.equals( "key1" ) )
-            {
-                assertTrue( inserter.nodeHasProperty( theNode, key ) );
-                assertFalse( inserter.relationshipHasProperty( relationship,
-                        key ) );
-            }
-            else
-            {
-                assertTrue( inserter.nodeHasProperty( theNode, key ) );
-                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                case "key0":
+                    assertFalse( inserter.nodeHasProperty( theNode, key ) );
+                    assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                    break;
+                case "key1":
+                    assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                    assertFalse( inserter.relationshipHasProperty( relationship,
+                            key ) );
+                    break;
+                default:
+                    assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                    assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+                    break;
             }
         }
         inserter.shutdown();
@@ -537,8 +540,8 @@ public class TestBatchInsert
         }
 
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( graphDb );
-        Transaction transaction = db.beginTx();
-        try
+
+        try ( Transaction ignored = db.beginTx() )
         {
             Node realStartNode = db.getNodeById( startNode );
             Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
@@ -548,21 +551,15 @@ public class TestBatchInsert
             assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships() ) );
         }
         finally {
-            transaction.finish();
             db.shutdown();
         }
     }
 
     private Node getNodeInTx( long nodeId, GraphDatabaseService db )
     {
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction ignored = db.beginTx() )
         {
             return db.getNodeById( nodeId );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -768,15 +765,18 @@ public class TestBatchInsert
 
         // Delete node and all its relationships
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
-        Transaction tx = db.beginTx();
-        Node node = db.getNodeById( nodeId );
-        for ( Relationship relationship : node.getRelationships() )
+
+        try ( Transaction tx = db.beginTx() )
         {
-            relationship.delete();
+            Node node = db.getNodeById( nodeId );
+            for ( Relationship relationship : node.getRelationships() )
+            {
+                relationship.delete();
+            }
+            node.delete();
+            tx.success();
         }
-        node.delete();
-        tx.success();
-        tx.finish();
+
         db.shutdown();
     }
 
@@ -1153,6 +1153,12 @@ public class TestBatchInsert
 
         @Override
         public LabelScanReader newReader()
+        {
+            return null;
+        }
+
+        @Override
+        public AllEntriesLabelScanReader newAllEntriesReader()
         {
             return null;
         }

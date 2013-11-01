@@ -17,10 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.scan;
+package org.neo4j.kernel.api.direct;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.util.Iterator;
 
-public interface NodeRangeReader extends Iterable<NodeLabelRange>, Closeable
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+
+public interface AllEntriesLabelScanReader extends Iterable<NodeLabelRange>, Closeable
 {
+    long getHighRangeId() throws IOException;
+
+    AllEntriesLabelScanReader EMPTY = new AllEntriesLabelScanReader()
+    {
+        @Override public long getHighRangeId() throws IOException
+        {
+            return 0;
+        }
+
+        @Override public void close() throws IOException
+        {
+        }
+
+        @Override public Iterator<NodeLabelRange> iterator()
+        {
+            return emptyIterator();
+        }
+    };
+
 }

@@ -27,8 +27,8 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.IndexSearcher;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
-import org.neo4j.kernel.api.scan.NodeLabelRange;
 
 public class NodeLabelRangeIterator extends PrefetchingIterator<NodeLabelRange>
 {

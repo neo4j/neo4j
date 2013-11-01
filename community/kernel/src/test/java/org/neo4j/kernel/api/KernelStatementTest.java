@@ -21,8 +21,8 @@ package org.neo4j.kernel.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.scan.LabelScanReader;
-import org.neo4j.kernel.api.scan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanReader;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 
 import static org.junit.Assert.assertEquals;

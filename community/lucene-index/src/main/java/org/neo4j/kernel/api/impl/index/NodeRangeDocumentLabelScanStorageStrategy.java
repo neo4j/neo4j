@@ -32,16 +32,17 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
-import org.neo4j.kernel.api.scan.NodeLabelUpdate;
-import org.neo4j.kernel.api.scan.NodeRangeReader;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.flatten;
 
 /**
- * {@link org.neo4j.kernel.api.scan.LabelScanStore} implemented using Lucene. There's only one big index for all labels
+ * {@link org.neo4j.kernel.api.labelscan.LabelScanStore} implemented using Lucene. There's only one big index for all labels
  * because the Lucene document structure handles that quite efficiently.
  *
  * With {@link BitmapFormat#_32 32bit bitmaps} it would look as follows:
@@ -93,9 +94,9 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     }
 
     @Override
-    public NodeRangeReader newNodeLabelReader( final IndexSearcher searcher )
+    public AllEntriesLabelScanReader newNodeLabelReader( final IndexSearcher searcher )
     {
-        return new LuceneNodeRangeReader( searcher, format );
+        return new LuceneAllEntriesLabelScanReader( searcher, format );
     }
 
     @Override

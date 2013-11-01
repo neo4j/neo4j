@@ -98,7 +98,7 @@ public abstract class ProgressMonitorFactory
 
     protected abstract Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution );
 
-    public static final class MultiPartBuilder
+    public static class MultiPartBuilder
     {
         private Aggregator aggregator;
         private Set<String> parts = new HashSet<String>();

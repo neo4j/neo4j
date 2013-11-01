@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.scan;
+package org.neo4j.kernel.api.labelscan;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -67,6 +68,8 @@ public interface LabelScanStore extends Lifecycle
      * @return a {@link LabelScanReader} capable of retrieving nodes for labels.
      */
     LabelScanReader newReader();
+
+    AllEntriesLabelScanReader newAllEntriesReader();
 
     ResourceIterator<File> snapshotStoreFiles() throws IOException;
 

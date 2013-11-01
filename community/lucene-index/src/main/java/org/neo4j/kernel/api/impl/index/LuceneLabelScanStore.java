@@ -35,11 +35,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.scan.LabelScanReader;
-import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.api.scan.NodeLabelUpdate;
-import org.neo4j.kernel.api.scan.NodeRangeReader;
-import org.neo4j.kernel.api.scan.NodeRangeScanSupport;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.labelscan.LabelScanReader;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -48,7 +47,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 public class LuceneLabelScanStore
-        implements LabelScanStore, LabelScanStorageStrategy.StorageService, NodeRangeScanSupport
+        implements LabelScanStore, LabelScanStorageStrategy.StorageService
 {
     private final LabelScanStorageStrategy strategy;
     private final DirectoryFactory directoryFactory;
@@ -172,25 +171,11 @@ public class LuceneLabelScanStore
         searcherManager.maybeRefresh();
     }
 
-    public NodeRangeReader newRangeReader()
+    public AllEntriesLabelScanReader newAllEntriesReader()
     {
         final IndexSearcher searcher = acquireSearcher();
         return strategy.newNodeLabelReader( searcher );
     }
-
-    @Override public long getHighRangeId() throws IOException
-    {
-        final IndexSearcher searcher = acquireSearcher();
-        try
-        {
-            return searcher.maxDoc();
-        }
-        finally
-        {
-            releaseSearcher( searcher );
-        }
-    }
-
 
     @Override
     public void recover( Iterator<NodeLabelUpdate> updates ) throws IOException

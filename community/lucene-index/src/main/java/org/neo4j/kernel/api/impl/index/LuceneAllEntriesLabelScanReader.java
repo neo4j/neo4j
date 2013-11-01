@@ -24,15 +24,15 @@ import java.util.Iterator;
 
 import org.apache.lucene.search.IndexSearcher;
 
-import org.neo4j.kernel.api.scan.NodeLabelRange;
-import org.neo4j.kernel.api.scan.NodeRangeReader;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
 
-public class LuceneNodeRangeReader implements NodeRangeReader
+public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 {
     private final IndexSearcher searcher;
     private final BitmapDocumentFormat format;
 
-    public LuceneNodeRangeReader( IndexSearcher searcher, BitmapDocumentFormat format )
+    public LuceneAllEntriesLabelScanReader( IndexSearcher searcher, BitmapDocumentFormat format )
     {
         this.searcher = searcher;
         this.format = format;
@@ -48,5 +48,11 @@ public class LuceneNodeRangeReader implements NodeRangeReader
     public void close() throws IOException
     {
         searcher.close();
+    }
+
+    @Override
+    public long getHighRangeId() throws IOException
+    {
+        return searcher.maxDoc();
     }
 }

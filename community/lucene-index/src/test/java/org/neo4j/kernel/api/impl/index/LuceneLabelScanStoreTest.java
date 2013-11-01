@@ -41,10 +41,10 @@ import org.junit.runners.Parameterized;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.scan.LabelScanReader;
-import org.neo4j.kernel.api.scan.NodeLabelRange;
-import org.neo4j.kernel.api.scan.NodeLabelUpdate;
-import org.neo4j.kernel.api.scan.NodeRangeReader;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.labelscan.LabelScanReader;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -67,7 +67,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterat
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
-import static org.neo4j.kernel.api.scan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 @RunWith(Parameterized.class)
@@ -155,7 +155,7 @@ public class LuceneLabelScanStoreTest
         ) );
 
         // WHEN
-        NodeRangeReader reader = store.newRangeReader();
+        AllEntriesLabelScanReader reader = store.newAllEntriesReader();
         NodeLabelRange range = single( reader.iterator() );
 
         // THEN
@@ -177,7 +177,7 @@ public class LuceneLabelScanStoreTest
         ) );
 
         // WHEN
-        NodeRangeReader reader = store.newRangeReader();
+        AllEntriesLabelScanReader reader = store.newAllEntriesReader();
         Iterator<NodeLabelRange> iterator = reader.iterator();
         NodeLabelRange range1 = iterator.next();
         NodeLabelRange range2 = iterator.next();

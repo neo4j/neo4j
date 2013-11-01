@@ -34,9 +34,9 @@ import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.api.scan.ScannableStores;
-import org.neo4j.kernel.api.scan.SimpleScannableStores;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.direct.SimpleDirectStoreAccess;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -78,7 +78,7 @@ public class ConsistencyCheckService
 
                 labelScanStore =
                     new LuceneLabelScanStoreBuilder( storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
-                ScannableStores stores = new SimpleScannableStores( store, labelScanStore );
+                DirectStoreAccess stores = new SimpleDirectStoreAccess( store, labelScanStore );
                 summary = new FullCheck( tuningConfiguration, progressFactory )
                         .execute( stores, StringLogger.tee( logger, report ) );
             }

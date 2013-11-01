@@ -19,164 +19,97 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.Iterator;
 
 import org.junit.Test;
 
-import org.neo4j.consistency.checking.CheckerEngine;
-import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.RecordAccessStub;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.kernel.api.impl.index.LuceneNodeLabelRange;
-import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
-import org.neo4j.kernel.impl.nioneo.store.labels.InlineNodeLabels;
+import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.direct.SimpleDirectStoreAccess;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
-import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
-import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
-import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.prependNodeId;
 
 public class LabelScanStoreCheckTaskTest
 {
     @Test
-    public void shouldReportNodeNotInUse() throws Exception
+    public void shouldUpdateProgress() throws Exception
     {
         // given
-        int nodeId = 42;
+        ProgressMonitorFactory.MultiPartBuilder progressBuilder = mock( ProgressMonitorFactory.MultiPartBuilder.class );
+        ProgressListener progressListener = mock( ProgressListener.class );
+        when( progressBuilder.progressForPart( anyString(), anyLong() ) ).thenReturn( progressListener );
 
-        ConsistencyReport.LabelScanConsistencyReport report =
-                mock( ConsistencyReport.LabelScanConsistencyReport.class );
-        LabelScanStoreCheckTask.NodeRecordCheck check = new LabelScanStoreCheckTask.NodeRecordCheck();
-        NodeRecord node = notInUse( new NodeRecord( nodeId, 0, 0 ) );
-
-        // when
-        check.checkReference( null, node, engineFor( report ), null );
-
-        // then
-        verify( report ).nodeNotInUse( node );
-    }
-
-    @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInline() throws Exception
-    {
-        // given
-        int nodeId = 42;
-        int documentId = 13;
-        int labelId1 = 7;
-        int labelId2 = 9;
-
-        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId, 0, 0 ), labelId1 ) );
-        LabelScanDocument document = document( documentId, new long[]{nodeId}, new long[][]{{labelId1, labelId2}} );
-
-        ConsistencyReport.LabelScanConsistencyReport report =
-                mock( ConsistencyReport.LabelScanConsistencyReport.class );
-        LabelScanStoreCheckTask.NodeRecordCheck check = new LabelScanStoreCheckTask.NodeRecordCheck();
-
-        // when
-        check.checkReference( document, node, engineFor( report ), null );
-
-        // then
-        verify( report ).nodeDoesNotHaveExpectedLabel( node, labelId2 );
-    }
-
-    @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamic() throws Exception
-    {
-        // given
-        int nodeId = 42;
-        int documentId = 13;
-        long[] expectedLabelIds = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        long[] presentLabelIds = {1, 2, 3, 4, 5, 6, 8, 9, 10};
-        long missingLabelId = 7;
-
-        RecordAccessStub recordAccess = new RecordAccessStub();
-        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId, 0, 0 ), presentLabelIds ) );
-        LabelScanDocument document = document( documentId, new long[]{nodeId}, new long[][] {expectedLabelIds} );
-
-        ConsistencyReport.LabelScanConsistencyReport report =
-                mock( ConsistencyReport.LabelScanConsistencyReport.class );
-        LabelScanStoreCheckTask.NodeRecordCheck check = new LabelScanStoreCheckTask.NodeRecordCheck();
-
-        // when
-        CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( document, report );
-        check.checkReference( document, node, engine, recordAccess );
-        recordAccess.checkDeferred();
-
-        // then
-        verify( report ).nodeDoesNotHaveExpectedLabel( node, missingLabelId );
-    }
-
-    @Test
-    public void shouldRemainSilentWhenEverythingIsInOrder() throws Exception
-    {
-        // given
-        int nodeId = 42;
-        int documentId = 13;
-        int labelId = 7;
-
-        NodeRecord node = withInlineLabels( inUse( new NodeRecord( nodeId, 0, 0 ) ), labelId );
-        LabelScanDocument document = document( documentId, new long[]{nodeId}, new long[][]{{labelId}} );
-
-        ConsistencyReport.LabelScanConsistencyReport report =
-                mock( ConsistencyReport.LabelScanConsistencyReport.class );
-        LabelScanStoreCheckTask.NodeRecordCheck check = new LabelScanStoreCheckTask.NodeRecordCheck();
-
-        // when
-        check.checkReference( document, node, engineFor( report ), null );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    private LabelScanDocument document( int documentId, long[] nodeIds, long[][] labelIds )
-    {
-        return new LabelScanDocument( new LuceneNodeLabelRange( documentId, nodeIds, labelIds ) );
-    }
-
-    private NodeRecord withInlineLabels( NodeRecord nodeRecord, long... labelIds )
-    {
-        new InlineNodeLabels( nodeRecord.getLabelField(), nodeRecord ).put( labelIds, null );
-        return nodeRecord;
-    }
-
-    private NodeRecord withDynamicLabels( RecordAccessStub recordAccess, NodeRecord nodeRecord, long... labelIds )
-    {
-        List<DynamicRecord> preAllocatedRecords = new ArrayList<>();
-        for ( int i = 0; i < 10; i++ )
+        LabelScanStore labelScanStore = mock( LabelScanStore.class );
+        when(labelScanStore.newAllEntriesReader()).thenReturn( new AllEntriesLabelScanReader()
         {
-            preAllocatedRecords.add( inUse( new DynamicRecord( i ) ) );
-        }
-        Collection<DynamicRecord> dynamicRecords =
-                DynamicArrayStore.allocateFromNumbers( prependNodeId( nodeRecord.getId(), labelIds ),
-                        preAllocatedRecords.iterator(), new PreAllocatedRecords( 4 ) );
-        for ( DynamicRecord dynamicRecord : dynamicRecords )
+            @Override
+            public long getHighRangeId() throws IOException
+            {
+                return 2;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+            }
+
+            @Override
+            public Iterator<NodeLabelRange> iterator()
+            {
+                ArrayList<NodeLabelRange> ranges = new ArrayList<NodeLabelRange>() {{
+                    add(new StubNodeLabelRange(0));
+                    add(new StubNodeLabelRange(1));
+                    add(new StubNodeLabelRange(2));
+                }};
+                return ranges.iterator();
+            }
+        } );
+
+        LabelScanStoreCheckTask task = new LabelScanStoreCheckTask(
+                new SimpleDirectStoreAccess( null, labelScanStore ),
+                progressBuilder, new NullReporter(), null);
+
+        // when
+        task.run();
+
+        // then
+        verify( progressListener ).set( 0 );
+        verify( progressListener ).set( 1 );
+        verify( progressListener ).set( 2 );
+        verify( progressListener ).done();
+    }
+
+    private static class StubNodeLabelRange implements NodeLabelRange
+    {
+        private final int id;
+
+        public StubNodeLabelRange( int id )
         {
-            recordAccess.addNodeDynamicLabels( dynamicRecord );
+            this.id = id;
         }
 
-        nodeRecord.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
-        return nodeRecord;
-    }
+        @Override public int id()
+        {
+            return id;
+        }
 
-    @SuppressWarnings("unchecked")
-    private Engine engineFor( ConsistencyReport.LabelScanConsistencyReport report )
-    {
-        Engine engine = mock( Engine.class );
-        when( engine.report() ).thenReturn( report );
-        return engine;
-    }
+        @Override public long[] nodes()
+        {
+            return new long[0];
+        }
 
-    interface Engine extends CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
-    {
+        @Override public long[] labels( long nodeId )
+        {
+            return new long[0];
+        }
     }
 }

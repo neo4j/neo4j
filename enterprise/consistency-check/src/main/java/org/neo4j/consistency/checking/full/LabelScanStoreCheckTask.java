@@ -21,57 +21,38 @@ package org.neo4j.consistency.checking.full;
 
 import java.io.IOException;
 
-import org.neo4j.consistency.checking.CheckerEngine;
-import org.neo4j.consistency.checking.ComparativeRecordChecker;
-import org.neo4j.consistency.checking.LabelChainWalker;
-import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.consistency.store.DiffRecordAccess;
-import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.scan.LabelScanStore;
-import org.neo4j.kernel.api.scan.NodeLabelRange;
-import org.neo4j.kernel.api.scan.NodeRangeReader;
-import org.neo4j.kernel.api.scan.NodeRangeScanSupport;
-import org.neo4j.kernel.api.scan.ScannableStores;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels;
-import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
-import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
 
-import static java.util.Arrays.binarySearch;
-import static java.util.Arrays.sort;
-
-public class LabelScanStoreCheckTask implements StoppableRunnable,
-        RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
+public class LabelScanStoreCheckTask implements StoppableRunnable
 {
-    private final NodeRangeScanSupport scanSupport;
-    private final ConsistencyReporter reporter;
+    private final AllEntriesLabelScanReader reader;
+    private final ConsistencyReport.Reporter reporter;
     private final ProgressListener progress;
+    private final LabelScanCheck check;
 
     private volatile boolean continueScanning = true;
 
-    public LabelScanStoreCheckTask( ScannableStores stores, ProgressMonitorFactory.MultiPartBuilder builder,
-                                    ConsistencyReporter reporter )
+    public LabelScanStoreCheckTask( DirectStoreAccess stores, ProgressMonitorFactory.MultiPartBuilder builder,
+                                    ConsistencyReport.Reporter reporter, LabelScanCheck check )
     {
         this.reporter = reporter;
-        LabelScanStore labelScanStore = stores.labelScanStore();
-        this.scanSupport =
-                labelScanStore instanceof NodeRangeScanSupport ? (NodeRangeScanSupport) labelScanStore : null;
-        this.progress = buildProgressListener( builder, scanSupport );
+        this.reader = stores.labelScanStore().newAllEntriesReader();
+        this.progress = buildProgressListener( builder, reader );
+        this.check = check;
     }
 
     private static ProgressListener buildProgressListener( ProgressMonitorFactory.MultiPartBuilder builder,
-                                                           NodeRangeScanSupport scanSupport )
+                                                           AllEntriesLabelScanReader reader )
     {
         try
         {
-            return builder.progressForPart( "LabelScanStore", scanSupport.getHighRangeId() );
+            return builder.progressForPart( "LabelScanStore", reader.getHighRangeId() );
         }
         catch ( IOException e )
         {
@@ -91,33 +72,27 @@ public class LabelScanStoreCheckTask implements StoppableRunnable,
 
         try
         {
-            if ( scanSupport == null )
+            for ( NodeLabelRange range : reader )
             {
-                return;
-            }
-
-            try ( NodeRangeReader reader = scanSupport.newRangeReader() )
-            {
-                for ( NodeLabelRange range : reader )
+                if ( !continueScanning )
                 {
-                    if ( continueScanning )
-                    {
-                        LabelScanDocument document = new LabelScanDocument( range );
-                        reporter.forNodeLabelScan( document, this );
-                    }
-                    else
-                    {
-                        return;
-                    }
+                    return;
                 }
+                LabelScanDocument document = new LabelScanDocument( range );
+                reporter.forNodeLabelScan( document, check );
+                progress.set(range.id());
+            }
+        }
+        finally
+        {
+            try
+            {
+                reader.close();
             }
             catch ( IOException e )
             {
                 progress.failed( e );
             }
-        }
-        finally
-        {
             progress.done();
         }
     }
@@ -126,108 +101,5 @@ public class LabelScanStoreCheckTask implements StoppableRunnable,
     public void stopScanning()
     {
         continueScanning = false;
-    }
-
-    @Override
-    public void check( LabelScanDocument record, CheckerEngine<LabelScanDocument,
-            ConsistencyReport.LabelScanConsistencyReport> engine, RecordAccess records )
-    {
-        NodeLabelRange range = record.getNodeLabelRange();
-        for ( long nodeId : range.nodes() )
-        {
-            engine.comparativeCheck( records.node( nodeId ), new NodeRecordCheck() );
-        }
-    }
-
-    @Override
-    public void checkChange( LabelScanDocument oldRecord, LabelScanDocument newRecord,
-                             CheckerEngine<LabelScanDocument,
-                                     ConsistencyReport.LabelScanConsistencyReport> engine, DiffRecordAccess records )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    static class NodeRecordCheck implements
-            ComparativeRecordChecker<LabelScanDocument, NodeRecord, ConsistencyReport.LabelScanConsistencyReport>
-    {
-        @Override
-        public void checkReference( LabelScanDocument record, NodeRecord nodeRecord, CheckerEngine<LabelScanDocument,
-                ConsistencyReport.LabelScanConsistencyReport> engine, RecordAccess records )
-        {
-            if ( nodeRecord.inUse() )
-            {
-                long[] expectedLabels = record.getNodeLabelRange().labels( nodeRecord.getId() );
-                // assert that node has expected labels
-
-                NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( nodeRecord );
-                if ( nodeLabels instanceof DynamicNodeLabels )
-                {
-                    DynamicNodeLabels dynamicNodeLabels = (DynamicNodeLabels) nodeLabels;
-                    long firstRecordId = dynamicNodeLabels.getFirstDynamicRecordId();
-                    RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
-                    engine.comparativeCheck( firstRecordReference,
-                            new LabelChainWalker<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
-                                    (new ExpectedNodeLabelsChecker( nodeRecord, expectedLabels )) );
-                    nodeRecord.getDynamicLabelRecords(); // I think this is empty in production
-                }
-                else
-                {
-                    long[] actualLabels = nodeLabels.get( null );
-                    ConsistencyReport.LabelScanConsistencyReport report = engine.report();
-                    validateLabelIds( nodeRecord, expectedLabels, actualLabels, report );
-                }
-            }
-            else
-            {
-                engine.report().nodeNotInUse( nodeRecord );
-            }
-        }
-
-        private void validateLabelIds( NodeRecord nodeRecord, long[] expectedLabels, long[] actualLabels, ConsistencyReport.LabelScanConsistencyReport report )
-        {
-            sort(actualLabels);
-            for ( long expectedLabel : expectedLabels )
-            {
-                int labelIndex = binarySearch( actualLabels, expectedLabel );
-                if (labelIndex < 0)
-                {
-                    report.nodeDoesNotHaveExpectedLabel( nodeRecord, expectedLabel );
-                }
-            }
-        }
-
-        private class ExpectedNodeLabelsChecker implements
-                LabelChainWalker.Validator<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
-        {
-            private final NodeRecord nodeRecord;
-            private final long[] expectedLabels;
-
-            public ExpectedNodeLabelsChecker( NodeRecord nodeRecord, long[] expectedLabels )
-            {
-                this.nodeRecord = nodeRecord;
-                this.expectedLabels = expectedLabels;
-            }
-
-            @Override
-            public void onRecordNotInUse( DynamicRecord dynamicRecord, CheckerEngine<LabelScanDocument,
-                    ConsistencyReport.LabelScanConsistencyReport> engine )
-            {
-                // checked elsewhere
-            }
-
-            @Override
-            public void onRecordChainCycle( DynamicRecord record, CheckerEngine<LabelScanDocument,
-                    ConsistencyReport.LabelScanConsistencyReport> engine )
-            {
-                // checked elsewhere
-            }
-
-            @Override
-            public void onWellFormedChain( long[] labelIds, CheckerEngine<LabelScanDocument,
-                    ConsistencyReport.LabelScanConsistencyReport> engine, RecordAccess records )
-            {
-                validateLabelIds( nodeRecord, expectedLabels, labelIds, engine.report() );
-            }
-        }
     }
 }

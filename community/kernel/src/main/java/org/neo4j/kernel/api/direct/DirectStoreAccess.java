@@ -17,29 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.scan;
+package org.neo4j.kernel.api.direct;
 
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
-
-public interface LabelScanReader
+public interface DirectStoreAccess
 {
-    PrimitiveLongIterator nodesWithLabel( int labelId );
+    StoreAccess nativeStores();
 
-    void close();
-
-    LabelScanReader EMPTY = new LabelScanReader()
-    {
-        @Override
-        public PrimitiveLongIterator nodesWithLabel( int labelId )
-        {
-            return emptyPrimitiveLongIterator();
-        }
-
-        @Override
-        public void close()
-        {   // Nothing to close
-        }
-    };
+    LabelScanStore labelScanStore();
 }
