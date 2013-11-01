@@ -325,28 +325,21 @@ public class SchemaAcceptanceTest
         assertThat( getIndexes( db, label ), contains( index ) );
         assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
     }
-    
+
     @Test
     public void shouldCreateUniquenessConstraint() throws Exception
     {
-        // GIVEN
-
         // WHEN
         ConstraintDefinition constraint = createConstraint( label, propertyKey );
 
         // THEN
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
 
             assertEquals( label.name(), constraint.getLabel().name() );
             assertEquals( asSet( propertyKey ), asSet( constraint.getPropertyKeys() ) );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
     

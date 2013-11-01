@@ -107,8 +107,9 @@ public class PropertyUniqueConstraintDefinition implements ConstraintDefinition
     public int hashCode()
     {
         int result = actions.hashCode();
-        result = 31 * result + label.hashCode();
+        result = 31 * result + label.name().hashCode();
         result = 31 * result + propertyKey.hashCode();
+
         return result;
     }
 
