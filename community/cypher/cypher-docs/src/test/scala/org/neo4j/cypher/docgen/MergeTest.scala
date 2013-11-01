@@ -147,8 +147,9 @@ return keanu""",
   }
 
   @Test def merge_node_and_match_many_with_unique_constraint_fails_for_partial_matches() {
+    generateConsole = false
     testFailingQuery[MergeConstraintConflictException](
-      title = "Merge using unique constraints fails when finding partial matches",
+      title = "Merge with unique constraints and partial matches",
       text = "Merge using unique constraints fails when finding partial matches.",
       queryText = """merge (michael:Person {name:'Michael Douglas', role:'Gordon Gekko'}) return michael""",
       returns = "While there is a matching unique michael node with the name 'Michael Douglas', there is no " +
@@ -157,8 +158,9 @@ return keanu""",
   }
 
   @Test def merge_node_and_match_many_with_unique_constraint_fails_for_conflicting_matches() {
+    generateConsole = false
     testFailingQuery[MergeConstraintConflictException](
-      title = "Merge using unique constraints fails when finding conflicting matches",
+      title = "Merge with unique constraints and conflicting matches",
       text = "Merge using unique constraints fails when finding conflicting matches.",
       queryText = """merge (oliver:Person {name:'Oliver Stone', role:'Gordon Gekko'}) return oliver""",
       returns = "While there is a matching unique oliver node with the name 'Oliver Stone', there is also another " +

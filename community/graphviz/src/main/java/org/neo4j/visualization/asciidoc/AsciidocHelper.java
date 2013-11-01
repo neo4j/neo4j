@@ -40,6 +40,10 @@ public class AsciidocHelper
      */
     private static final int MAX_CHARS_PER_LINE = 123;
     /**
+     * Cut text message line length for readability.
+     */
+    private static final int MAX_TEXT_LINE_LENGTH = 80;
+    /**
      * Characters to remove from the title.
      */
     private static final String ILLEGAL_STRINGS = "[:\\(\\)\t;&/\\\\]";
@@ -166,7 +170,54 @@ public class AsciidocHelper
 
     public static String createQueryFailureSnippet( final String output )
     {
-        return "[source]\n----\n" + output + "\n----\n";
+        return "[source]\n----\n" + wrapText( output ) + "\n----\n";
+    }
+
+    private static String wrapText( final String text )
+    {
+        StringBuffer out = new StringBuffer( text.length() + 10 );
+        for ( String line : text.split( "\n" ) )
+        {
+            if ( line.length() < MAX_TEXT_LINE_LENGTH )
+            {
+                out.append( line )
+                        .append( '\n' );
+            }
+            else
+            {
+                int currentLength = 0;
+                for ( String word : line.split( " " ) )
+                {
+                    if ( word.length() > MAX_TEXT_LINE_LENGTH )
+                    {
+                        if ( currentLength != 0 )
+                        {
+                            out.append( '\n' );
+                            currentLength = 0;
+                        }
+                        out.append( word )
+                                .append( '\n' );
+                    }
+                    else if ( currentLength + word.length() > MAX_TEXT_LINE_LENGTH )
+                    {
+                        out.append( '\n' )
+                                .append( word );
+                        currentLength = word.length();
+                    }
+                    else
+                    {
+                        if ( currentLength != 0 )
+                        {
+                            out.append( ' ' );
+                            currentLength++;
+                        }
+                        out.append( word );
+                        currentLength += word.length();
+                    }
+                }
+            }
+        }
+        return out.toString();
     }
 
     public static String createCypherSnippet( final String query )

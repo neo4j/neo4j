@@ -35,7 +35,6 @@ include::merge-with-on-match.asciidoc[]
 
 include::merge-with-on-create-and-on-match.asciidoc[]
 
-
 == Using unique constraints with MERGE ==
 
 Cypher prevents getting conflicting results from +MERGE+ when using patterns that involve uniqueness constrains.
@@ -50,9 +49,17 @@ Note that the following examples assume the existence of uniqueness constraints 
 have been created using `CREATE CONSTRAINT ON (n:Person) ASSERT n.name IS UNIQUE` and
 `CREATE CONSTRAINT ON (n:Person) ASSERT n.role IS UNIQUE`:
 
+:leveloffset: 3
+
 include::merge-using-unique-constraints-creates-a-new-node-if-no-node-is-found.asciidoc[]
 
 include::merge-using-unique-constraints-matches-an-existing-node.asciidoc[]
+
+include::merge-with-unique-constraints-and-partial-matches.asciidoc[]
+
+include::merge-with-unique-constraints-and-conflicting-matches.asciidoc[]
+
+:leveloffset: 2
 
 include::using-map-parameters-with-merge.asciidoc[]
 
