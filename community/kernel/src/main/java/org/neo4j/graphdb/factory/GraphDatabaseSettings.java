@@ -36,13 +36,10 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
-import static org.neo4j.helpers.Settings.DURATION_FORMAT;
 import static org.neo4j.helpers.Settings.FALSE;
-import static org.neo4j.helpers.Settings.FLOAT;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.PATH;
-import static org.neo4j.helpers.Settings.SIZE_FORMAT;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.basePath;
@@ -51,7 +48,6 @@ import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
-import static org.neo4j.helpers.Settings.range;
 import static org.neo4j.helpers.Settings.setting;
 
 /**
@@ -68,7 +64,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> read_only = setting( "read_only", BOOLEAN, FALSE );
 
     @Description("The type of cache to use for nodes and relationships. "
-            + "Note that the Neo4j Enterprise Edition has the additional 'gcr' cache type. "
+                  + "Note that the Neo4j Enterprise Edition has the additional 'gcr' cache type (High-Performance Cache). "
             + "See the chapter on caches in the manual for more information.")
     public static final Setting<String> cache_type = setting( "cache_type", options( availableCaches() ), availableCaches()[0] );
 
