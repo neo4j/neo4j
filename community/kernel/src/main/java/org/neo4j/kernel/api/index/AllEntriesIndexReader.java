@@ -17,17 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.direct;
+package org.neo4j.kernel.api.index;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Iterator;
 
-public interface DirectStoreAccess
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+
+public interface AllEntriesIndexReader extends Iterable<Long>, Closeable
 {
-    StoreAccess nativeStores();
+    long approximateSize();
 
-    LabelScanStore labelScanStore();
+    AllEntriesIndexReader EMPTY = new AllEntriesIndexReader()
+    {
+        @Override
+        public long approximateSize()
+        {
+            return 0;
+        }
 
-    SchemaIndexProvider indexes();
+        @Override public void close() throws IOException
+        {
+        }
+
+        @Override public Iterator<Long> iterator()
+        {
+            return emptyIterator();
+        }
+    };
 }

@@ -29,8 +29,10 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.index.AllEntriesIndexReader;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -76,7 +78,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
             default:
                 throw new ThisShouldNotHappenError( "Stefan", "Unsupported update mode" );
         }
-    };
+    }
 
     @Override
     public void drop() throws IOException
@@ -108,6 +110,12 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     public IndexReader newReader()
     {
         return new LuceneIndexAccessorReader( searcherManager, documentStructure );
+    }
+
+    @Override
+    public AllEntriesIndexReader newAllEntriesReader()
+    {
+        return new LuceneAllEntriesIndexAccessorReader( searcherManager, documentStructure );
     }
 
     @Override

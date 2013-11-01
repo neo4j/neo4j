@@ -32,11 +32,16 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.impl.index.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -50,16 +55,20 @@ import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
+import static java.util.Collections.singletonMap;
+
 public abstract class GraphStoreFixture implements TestRule, DirectStoreAccess
 {
     private StoreAccess storeAccess;
     private LabelScanStore labelScanStore;
+    private SchemaIndexProvider indexes;
 
     public void apply( Transaction transaction ) throws IOException
     {
         applyTransaction( write( transaction, null ) );
     }
 
+    @Override
     public StoreAccess nativeStores()
     {
         if (storeAccess == null)
@@ -69,6 +78,7 @@ public abstract class GraphStoreFixture implements TestRule, DirectStoreAccess
         return storeAccess;
     }
 
+    @Override
     public LabelScanStore labelScanStore()
     {
         if ( labelScanStore == null )
@@ -81,6 +91,19 @@ public abstract class GraphStoreFixture implements TestRule, DirectStoreAccess
             ).build();
         }
         return labelScanStore;
+    }
+
+    @Override
+    public SchemaIndexProvider indexes()
+    {
+        if ( indexes == null )
+        {
+            Config config = new Config( singletonMap( GraphDatabaseSettings.store_dir.name(),
+                    directory().getAbsolutePath() ) );
+            indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config );
+        }
+
+        return indexes;
     }
 
     public File directory()
@@ -362,8 +385,13 @@ public abstract class GraphStoreFixture implements TestRule, DirectStoreAccess
         // allow for override
     }
 
-    protected void stop() throws IOException
+    protected void stop() throws Throwable
     {
+        if ( indexes != null )
+        {
+            indexes.shutdown();
+            indexes = null;
+        }
         if ( labelScanStore != null )
         {
             labelScanStore.shutdown();

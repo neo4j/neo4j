@@ -253,7 +253,7 @@ class RebuildFromLogs
         Config tuningConfiguration = new Config( stringMap(),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
-                .execute( new SimpleDirectStoreAccess( stores, nioneo.getLabelScanStore() ), StringLogger.SYSTEM );
+                .execute( new SimpleDirectStoreAccess( stores, nioneo.getLabelScanStore(), nioneo.getIndexProvider() ), StringLogger.SYSTEM );
     }
 
     private static void printUsage( String... msgLines )

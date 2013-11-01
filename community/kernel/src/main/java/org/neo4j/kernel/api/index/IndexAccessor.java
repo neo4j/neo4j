@@ -74,6 +74,8 @@ public interface IndexAccessor
      */
     IndexReader newReader();
 
+    AllEntriesIndexReader newAllEntriesReader();
+
     /**
      * Should return a full listing of all files needed by this index accessor to work with the index. The files
      * need to remain available until the resource iterator returned here is closed. This is used to duplicate created
@@ -108,6 +110,12 @@ public interface IndexAccessor
         public IndexReader newReader()
         {
             return IndexReader.EMPTY;
+        }
+
+        @Override
+        public AllEntriesIndexReader newAllEntriesReader()
+        {
+            return AllEntriesIndexReader.EMPTY;
         }
 
         @Override

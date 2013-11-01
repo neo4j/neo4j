@@ -21,73 +21,68 @@ package org.neo4j.consistency.checking.full;
 
 import java.io.IOException;
 
+import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.direct.NodeLabelRange;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.index.AllEntriesIndexReader;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-public class LabelScanStoreCheckTask implements StoppableRunnable
+public class IndexCheckTask implements StoppableRunnable
 {
-    private final AllEntriesLabelScanReader reader;
-    private final ConsistencyReport.Reporter reporter;
+    private final IndexAccessor indexAccessor;
+    private final AllEntriesIndexReader indexReader;
     private final ProgressListener progress;
-    private final LabelScanCheck check;
+    private final ConsistencyReport.Reporter reporter;
+    private final RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> indexCheck;
 
     private volatile boolean continueScanning = true;
 
-    public LabelScanStoreCheckTask( LabelScanStore labelScanStore, ProgressMonitorFactory.MultiPartBuilder builder,
-                                    ConsistencyReport.Reporter reporter, LabelScanCheck check )
+    public IndexCheckTask( IndexRule indexRule, SchemaIndexProvider indexProvider, ProgressMonitorFactory.MultiPartBuilder builder,
+                           ConsistencyReport.Reporter reporter, RecordCheck<IndexEntry,
+            ConsistencyReport.IndexConsistencyReport> indexCheck )
     {
         this.reporter = reporter;
-        this.reader = labelScanStore.newAllEntriesReader();
-        this.progress = buildProgressListener( builder, reader );
-        this.check = check;
-    }
-
-    private static ProgressListener buildProgressListener( ProgressMonitorFactory.MultiPartBuilder builder,
-                                                           AllEntriesLabelScanReader reader )
-    {
+        this.indexCheck = indexCheck;
         try
         {
-            return builder.progressForPart( LabelScanStoreCheckTask.class.getSimpleName(), reader.getHighRangeId() );
+            IndexConfiguration indexConfiguration = new IndexConfiguration( indexRule.isConstraintIndex() );
+            indexAccessor = indexProvider.getOnlineAccessor( indexRule.getId(), indexConfiguration );
+            indexReader = indexAccessor.newAllEntriesReader();
         }
         catch ( IOException e )
         {
-            ProgressListener listener = builder.progressForPart( "LabelScanStore", 0 );
-            listener.failed( e );
-            return null;
+            throw new RuntimeException( e );
         }
+        this.progress = builder.progressForPart( IndexCheckTask.class.getSimpleName() + indexRule.getId(), indexReader.approximateSize() );
     }
 
     @Override
     public void run()
     {
-        if ( progress == null )
-        {
-            return;
-        }
-
         try
         {
-            for ( NodeLabelRange range : reader )
+            int entryCount = 0;
+            for ( Long nodeId : indexReader )
             {
                 if ( !continueScanning )
                 {
                     return;
                 }
-                LabelScanDocument document = new LabelScanDocument( range );
-                reporter.forNodeLabelScan( document, check );
-                progress.set(range.id());
+                reporter.forIndexEntry( new IndexEntry( nodeId ), indexCheck );
+                progress.set( entryCount++ );
             }
         }
         finally
         {
             try
             {
-                reader.close();
+                indexReader.close();
+                indexAccessor.close();
             }
             catch ( IOException e )
             {

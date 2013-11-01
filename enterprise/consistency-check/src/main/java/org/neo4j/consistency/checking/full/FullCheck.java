@@ -38,6 +38,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
@@ -51,6 +52,7 @@ import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
 import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTIES;
 import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
+import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules;
 
 public class FullCheck
 {
@@ -158,7 +160,12 @@ public class FullCheck
         tasks.add( new StoreProcessorTask<>( nativeStores.getNodeDynamicLabelStore(), progress, order,
                 processEverything, processEverything ) );
 
-        tasks.add( new LabelScanStoreCheckTask( directStoreAccess, progress, reporter, new LabelScanCheck() ) );
+        tasks.add( new LabelScanStoreCheckTask( directStoreAccess.labelScanStore(), progress, reporter, new LabelScanCheck() ) );
+
+        for ( IndexRule indexRule : loadAllIndexRules( directStoreAccess.nativeStores().getSchemaStore() ) )
+        {
+            tasks.add( new IndexCheckTask( indexRule, directStoreAccess.indexes(), progress, reporter, new IndexCheck() ) );
+        }
 
         order.execute( tasks, progress.build() );
     }

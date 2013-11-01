@@ -46,6 +46,7 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.impl.index.LuceneNodeLabelRange;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
@@ -309,6 +310,10 @@ public class ConsistencyReporterTest
             {
                 return new LabelScanDocument( new LuceneNodeLabelRange( 0, new long[] {}, new long[][] {} ) );
             }
+            if ( type == IndexEntry.class )
+            {
+                return new IndexEntry( 0 );
+            }
             if ( type == long.class )
             {
                 return 12L;
@@ -317,7 +322,7 @@ public class ConsistencyReporterTest
             {
                 return SchemaRule.Kind.INDEX_RULE;
             }
-            throw new IllegalArgumentException( type.getName() );
+            throw new IllegalArgumentException( format( "Don't know how to provide parameter of type %s", type.getName() ) );
         }
 
         @SuppressWarnings("unchecked")
