@@ -70,7 +70,7 @@ public class ClusterJoin
     private final StringLogger logger;
     private final ConsoleLogger console;
     private Cluster cluster;
-    private URI serverUri;
+//    private URI serverUri;
 
     public ClusterJoin( Configuration config, ProtocolServer protocolServer, Logging logger )
     {
@@ -90,9 +90,7 @@ public class ClusterJoin
     public void start() throws Throwable
     {
         cluster = protocolServer.newClient( Cluster.class );
-        acquireServerUri();
 
-        // Now that we have our own id, do cluster join
         joinByConfig();
     }
 
@@ -127,34 +125,6 @@ public class ClusterJoin
         }
     }
 
-    private void acquireServerUri() throws RuntimeException
-    {
-        final Semaphore semaphore = new Semaphore( 0 );
-
-        protocolServer.addBindingListener( new BindingListener()
-        {
-            @Override
-            public void listeningAt( URI me )
-            {
-                serverUri = me;
-                semaphore.release();
-                protocolServer.removeBindingListener( this );
-            }
-        } );
-        try
-        {
-            if ( !semaphore.tryAcquire( 1, TimeUnit.MINUTES ) )
-            {
-                throw new RuntimeException( "Unable to acquire server URI, timed out" );
-            }
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw new RuntimeException( "Unable to acquire server URI, interrupted", e );
-        }
-    }
-
     private void joinByConfig() throws TimeoutException
     {
         List<HostnamePort> hosts = config.getInitialHosts();
@@ -169,14 +139,6 @@ public class ClusterJoin
         else
         {
             URI[] memberURIs = Iterables.toArray(URI.class,
-                    Iterables.filter( new Predicate<URI>()
-                    {
-                        @Override
-                        public boolean accept( URI uri )
-                        {
-                            return !serverUri.equals( uri );
-                        }
-                    },
                     Iterables.map( new Function<HostnamePort, URI>()
                     {
                         @Override
@@ -184,7 +146,7 @@ public class ClusterJoin
                         {
                             return URI.create( "cluster://" + resolvePortOnlyHost( member ) );
                         }
-                    }, hosts)));
+                    }, hosts));
 
             while( true )
             {
@@ -291,7 +253,7 @@ public class ClusterJoin
                     return;
                 }
             }
-            logger.info( "Member " + member + " joined cluster but was not part of initial hosts (" +
+            logger.info( "Member " + member + "("+uri+") joined cluster but was not part of initial hosts (" +
                     initialHosts + ")" );
         }
 

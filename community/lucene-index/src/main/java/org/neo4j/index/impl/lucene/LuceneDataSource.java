@@ -265,7 +265,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         DependencyResolver dummy = new DependencyResolver.Adapter()
         {
             @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
             {
                 return (T) LuceneDataSource.this.config;
             }

@@ -216,7 +216,7 @@ public class TestNeoStore
                     new LabelScanStoreProvider( new InMemoryLabelScanStore(), 10 );
 
             @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
             {
                 if ( SchemaIndexProvider.class.isAssignableFrom( type ) )
                 {
@@ -240,7 +240,7 @@ public class TestNeoStore
         return new DependencyResolver.Adapter()
       {
          @Override
-         public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+         public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
          {
             return type.cast( config );
          }

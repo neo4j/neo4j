@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
@@ -73,16 +74,12 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-
 import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
-import ch.qos.logback.classic.LoggerContext;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 
@@ -501,20 +498,23 @@ public class ClusterManager
             {
                 initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
             }
+            File parent = new File( root, name );
+            URI clusterUri = new URI( "cluster://" + member.getHost() );
             if ( member.isFullHaMember() )
             {
-                int haPort = new URI( "cluster://" + member.getHost() ).getPort() + 3000;
-                File storeDir = new File( new File( root, name ), "server" + serverId );
+                int clusterPort = clusterUri.getPort();
+                int haPort = clusterUri.getPort() + 3000;
+                File storeDir = new File( parent, "server" + serverId );
                 if ( storeDirInitializer != null)
                 {
                     storeDirInitializer.initializeStoreDir( serverId, storeDir );
                 }
-                GraphDatabaseBuilder graphDatabaseBuilder = dbFactory
-                        .newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() ).
+                GraphDatabaseBuilder graphDatabaseBuilder = dbFactory.newHighlyAvailableDatabaseBuilder(
+                            storeDir.getAbsolutePath() ).
                                 setConfig( ClusterSettings.cluster_name, name ).
                                 setConfig( ClusterSettings.initial_hosts, initialHosts.toString() ).
                                 setConfig( ClusterSettings.server_id, serverId + "" ).
-                                setConfig( ClusterSettings.cluster_server, member.getHost() ).
+                                setConfig( ClusterSettings.cluster_server, "0.0.0.0:"+clusterPort).
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
                                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                                 setConfig( commonConfig );
@@ -545,7 +545,8 @@ public class ClusterManager
                         ClusterSettings.cluster_name.name(), name,
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.server_id.name(), serverId + "",
-                        ClusterSettings.cluster_server.name(), member.getHost() );
+                        ClusterSettings.cluster_server.name(), "0.0.0.0:"+clusterUri.getPort(),
+                        GraphDatabaseSettings.store_dir.name(), new File( parent, "arbiter" + serverId ).getAbsolutePath() );
                 Config config1 = new Config( config );
                 Logging clientLogging =life.add( new LogbackService(
                         config1, (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory() ) );

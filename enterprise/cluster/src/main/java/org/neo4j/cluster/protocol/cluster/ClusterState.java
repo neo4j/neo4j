@@ -220,11 +220,10 @@ public enum ClusterState
                             {
                                 /*
                                  * No responses. Check if we picked up any other instances' requests during this phase.
-                                 * If we did, or we are the only instance in the configuration (remember,
-                                 * joiningInstances does not contain us, ever) we can go ahead and try to start the
+                                 * If we did, or we are the only instance in the configuration we can go ahead and try to start the
                                  * cluster.
                                  */
-                                if ( !discoveredInstances.isEmpty() || count( context.getJoiningInstances() ) == 0 )
+                                if ( !discoveredInstances.isEmpty() || count( context.getJoiningInstances() ) == 1 )
                                 {
                                     Collections.sort( discoveredInstances );
                                     /*
@@ -237,9 +236,11 @@ public enum ClusterState
                                      * does not contain us, ever.
                                      */
                                     if (    // No one to join with
-                                            count( context.getJoiningInstances() ) == 0
+                                            (count( context.getJoiningInstances() ) == 1 &&
+                                             discoveredInstances.contains( new ClusterMessage.ConfigurationRequestState( context.getMyId(), context.boundAt() ) )
+                                            && discoveredInstances.size() == 1)
                                             // enough instances discovered (half or more - i don't count myself here)
-                                            || ( discoveredInstances.size() >= count( context.getJoiningInstances() ) / 2
+                                            || ( discoveredInstances.size() > count( context.getJoiningInstances() ) / 2
                                             /*
                                              * I am supposed to create the cluster (i am before the first in the list
                                              * of the discovered instances). This won't run if there are no discovered
@@ -290,8 +291,9 @@ public enum ClusterState
                             // We're listening for existing clusters, but if all instances start up at the same time
                             // and look for each other, this allows us to pick that up
                             ClusterMessage.ConfigurationRequestState configurationRequested = message.getPayload();
-                            if ( !discoveredInstances.contains( configurationRequested )
-                                    && !configurationRequested.getJoiningUri().equals( context.boundAt() ) )
+                            configurationRequested = new ClusterMessage.ConfigurationRequestState( configurationRequested.getJoiningId(), URI.create(message.getHeader( Message.FROM ) ));
+
+                            if ( !discoveredInstances.contains( configurationRequested ))
                             {
                                 for ( ClusterMessage.ConfigurationRequestState discoveredInstance :
                                         discoveredInstances )
@@ -307,16 +309,7 @@ public enum ClusterState
                                         return start;
                                     }
                                 }
-                                if ( configurationRequested.getJoiningId().equals( context.getMyId() ) )
-                                {
-                                    StringBuffer errorMessage = new StringBuffer( "Failed to join cluster because I saw two instances with the same ServerId" );
-                                    errorMessage.append( "One is me ( " ).append( context.getMyId());
-                                    errorMessage.append( " ) The other is " ).append( configurationRequested );
-                                    outgoing.offer( internal( ClusterMessage.joinFailure,
-                                            new IllegalStateException( errorMessage.toString() ) ) );
-                                    return start;
-                                }
-                                discoveredInstances.add( message.<ClusterMessage.ConfigurationRequestState>getPayload() );
+                                discoveredInstances.add( configurationRequested );
                             }
                             break;
                         }
@@ -427,11 +420,12 @@ public enum ClusterState
                         case configurationRequest:
                         {
                             ClusterMessage.ConfigurationRequestState request = message.getPayload();
+                            request = new ClusterMessage.ConfigurationRequestState( request.getJoiningId(), URI.create(message.getHeader( Message.FROM ) ));
+
                             InstanceId joiningId = request.getJoiningId();
                             boolean isInCluster = context.configuration.getMembers().containsKey( joiningId );
                             boolean isCurrentlyAlive = !context.heartbeatContext.getFailed().contains( joiningId );
-                            boolean messageComesFromSameHost = URI.create( message.getHeader( Message.FROM ) ).equals(
-                                    context.getConfiguration().getUriForId( joiningId ) );
+                            boolean messageComesFromSameHost = request.getJoiningId().equals( context.getMyId() );
 
                             boolean somethingIsWrong =
                                     isInCluster && !messageComesFromSameHost && isCurrentlyAlive ;

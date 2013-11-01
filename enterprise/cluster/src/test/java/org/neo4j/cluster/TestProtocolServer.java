@@ -47,11 +47,13 @@ public class TestProtocolServer
 
     protected ProtocolServer server;
     private final DelayedDirectExecutor stateMachineExecutor;
+    private URI serverUri;
 
     public TestProtocolServer( TimeoutStrategy timeoutStrategy, ProtocolServerFactory factory, URI serverUri,
                                InstanceId instanceId, AcceptorInstanceStore acceptorInstanceStore,
                                ElectionCredentialsProvider electionCredentialsProvider )
     {
+        this.serverUri = serverUri;
         this.receiver = new TestMessageSource();
         this.sender = new TestMessageSender();
 
@@ -125,6 +127,7 @@ public class TestProtocolServer
         @Override
         public boolean process( Message<? extends MessageType> message )
         {
+            message.setHeader( Message.FROM, serverUri.toASCIIString() );
             messages.add( message );
             return true;
         }

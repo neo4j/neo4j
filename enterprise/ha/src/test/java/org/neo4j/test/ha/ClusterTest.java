@@ -19,11 +19,15 @@
  */
 package org.neo4j.test.ha;
 
+import java.net.InetAddress;
+
 import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.client.Clusters;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -35,9 +39,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 public class ClusterTest
@@ -85,7 +87,94 @@ public class ClusterTest
         }
     }
 
-//    @Test
+    @Test
+    public void testClusterWithHostnames() throws Throwable
+    {
+        String hostName = InetAddress.getLocalHost().getHostName();
+        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
+        for ( int i = 0; i < 3; i++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( hostName +":"+(5001 + i), true ) );
+        }
+
+        final Clusters clusters = new Clusters();
+        clusters.getClusters().add( cluster );
+
+        ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
+                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
+                MapUtil.stringMap( HaSettings.ha_server.name(), hostName+":6001-6005",
+                        HaSettings.tx_push_factor.name(), "2" ));
+        try
+        {
+            clusterManager.start();
+
+            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+
+            GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
+            Transaction tx = master.beginTx();
+            Node node = master.createNode();
+            long nodeId = node.getId();
+            node.setProperty( "foo", "bar" );
+            tx.success();
+            tx.finish();
+
+            HighlyAvailableGraphDatabase anySlave = clusterManager.getDefaultCluster().getAnySlave();
+            try(Transaction ignore = anySlave.beginTx())
+            {
+                node = anySlave.getNodeById( nodeId );
+                Assert.assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
+            }
+        }
+        finally
+        {
+            clusterManager.stop();
+        }
+    }
+
+    @Test
+    public void testClusterWithWildcardIP() throws Throwable
+    {
+        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
+        for ( int i = 0; i < 3; i++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( (5001 + i), true ) );
+        }
+
+        final Clusters clusters = new Clusters();
+        clusters.getClusters().add( cluster );
+
+        ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
+                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
+                MapUtil.stringMap( HaSettings.ha_server.name(), "0.0.0.0:6001-6005",
+                        HaSettings.tx_push_factor.name(), "2" ));
+        try
+        {
+            clusterManager.start();
+
+            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+
+            GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
+            Transaction tx = master.beginTx();
+            Node node = master.createNode();
+            long nodeId = node.getId();
+            node.setProperty( "foo", "bar" );
+            tx.success();
+            tx.finish();
+
+            HighlyAvailableGraphDatabase anySlave = clusterManager.getDefaultCluster().getAnySlave();
+            try(Transaction ignore = anySlave.beginTx())
+            {
+                node = anySlave.getNodeById( nodeId );
+                Assert.assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
+            }
+        }
+        finally
+        {
+            clusterManager.stop();
+        }
+    }
+
+    @Test @Ignore("JH: Ignored for by CG in March 2013, needs revisit. I added @ignore instead of commenting out to list this in static analysis.")
     public void testArbiterStartsFirstAndThenTwoInstancesJoin() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),

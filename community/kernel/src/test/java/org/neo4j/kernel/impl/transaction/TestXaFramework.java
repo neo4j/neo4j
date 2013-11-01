@@ -277,7 +277,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                         new DependencyResolver.Adapter()
                         {
                             @Override
-                            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+                            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
                             {
                                 return type.cast( new Config( MapUtil.stringMap(
                                         GraphDatabaseSettings.intercept_committing_transactions.name(),

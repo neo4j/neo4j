@@ -218,8 +218,7 @@ public class SchemaIndexHaIT
          */
 
         // GIVEN
-        ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory(
-        );
+        ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
 
         ManagedCluster cluster = clusterRule.startCluster( dbFactory );
         cluster.await( allSeesAllAsAvailable(), 120 );

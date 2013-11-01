@@ -1352,7 +1352,7 @@ public class BatchInserterImpl implements BatchInserter
     private class DependencyResolverImpl extends DependencyResolver.Adapter
     {
         @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
+        public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
         {
             if ( type.isInstance( fileSystem ) )
             {

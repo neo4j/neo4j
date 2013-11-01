@@ -56,7 +56,7 @@ public class ClusterSettings
 
     @Description( "Host & port to bind the cluster management communication." )
     public static final Setting<HostnamePort> cluster_server = setting( "ha.cluster_server", HOSTNAME_PORT,
-            ":5001-5099" );
+            "0.0.0.0:5001-5099" );
 
     @Description( "Whether to allow this instance to create a cluster if unable to join." )
     public static final Setting<Boolean> allow_init_cluster = setting( "ha.allow_init_cluster", BOOLEAN, TRUE );

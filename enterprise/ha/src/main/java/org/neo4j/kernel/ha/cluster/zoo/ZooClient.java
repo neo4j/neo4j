@@ -158,7 +158,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         this.storeDir = conf.get( GraphDatabaseSettings.store_dir );
         machineId = conf.get( server_id );
         backupPort = conf.get( OnlineBackupSettings.online_backup_server );
-        clusterServer = NetworkReceiver.URI_PROTOCOL + "://" +
+        clusterServer = NetworkReceiver.CLUSTER_SCHEME + "://" +
                 conf.get( ClusterSettings.cluster_server ).getHost( defaultServer() ) + ":" +
                 conf.get( ClusterSettings.cluster_server ).getPort();
         haServer = "ha://" + conf.get( HaSettings.ha_server ).getHost( defaultServer() ) + ":" +
