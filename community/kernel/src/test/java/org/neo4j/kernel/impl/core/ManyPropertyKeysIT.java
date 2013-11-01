@@ -63,8 +63,8 @@ public class ManyPropertyKeysIT
     {
         // GIVEN
         GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        OtherThreadExecutor<WorkerState> worker1 = new OtherThreadExecutor<WorkerState>( "w1", new WorkerState( db ) );
-        OtherThreadExecutor<WorkerState> worker2 = new OtherThreadExecutor<WorkerState>( "w2", new WorkerState( db ) );
+        OtherThreadExecutor<WorkerState> worker1 = new OtherThreadExecutor<>( "w1", new WorkerState( db ) );
+        OtherThreadExecutor<WorkerState> worker2 = new OtherThreadExecutor<>( "w2", new WorkerState( db ) );
         worker1.execute( new BeginTx() );
         worker2.execute( new BeginTx() );
 
@@ -92,18 +92,13 @@ public class ManyPropertyKeysIT
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )
     {
         GraphDatabaseAPI db = database();
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             for ( int i = 0; i < propertyKeyCount; i++ )
                 node.setProperty( key( i ), true );
             tx.success();
             return db;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
     
@@ -114,22 +109,18 @@ public class ManyPropertyKeysIT
 
     private Node createNodeWithProperty( GraphDatabaseService db, String key, Object value )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             node.setProperty( key, value );
             tx.success();
             return node;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private int propertyKeyCount( GraphDatabaseAPI db )
     {
+        //noinspection deprecation
         return (int) db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore().getPropertyStore().getPropertyKeyTokenStore().getHighId();
     }
     
@@ -178,6 +169,7 @@ public class ManyPropertyKeysIT
         public Void doWork( WorkerState state )
         {
             state.tx.success();
+            //noinspection deprecation
             state.tx.finish();
             return null;
         }

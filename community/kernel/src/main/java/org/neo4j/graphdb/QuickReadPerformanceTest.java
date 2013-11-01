@@ -141,6 +141,7 @@ public class QuickReadPerformanceTest
                             }
                         }
                     }
+                    tx.success();
                 }
             }
 

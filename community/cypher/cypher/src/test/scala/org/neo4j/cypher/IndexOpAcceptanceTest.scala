@@ -54,7 +54,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
       intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
     } finally {
       graph.shutdown()
-      new File("target/test-data/impermanent-db").deleteAll
+      new File("target/test-data/impermanent-db").deleteAll()
     }
   }
 
@@ -95,7 +95,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
   }
 
   implicit class FileHelper(file: File) {
-    def deleteAll: Unit = {
+    def deleteAll(): Unit = {
       def deleteFile(dfile: File): Unit = {
         if (dfile.isDirectory)
           dfile.listFiles.foreach {

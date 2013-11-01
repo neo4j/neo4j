@@ -61,9 +61,9 @@ import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEn
 public class LabelScanStoreProvider extends LifecycleAdapter implements Comparable<LabelScanStoreProvider>
 {
     /**
-     * SelectionStrategy for {@link KernelExtensions kernel extensions loading} where the one with
-     * highest {@link #kernelExtensionPriority() priority} will be selected. If there are no such stores
-     * then an {@link IllegalStateException} will be thrown.
+     * SelectionStrategy for {@link KernelExtensions kernel extensions loading} where the one with highest
+     * {@link #priority} will be selected. If there are no such stores  then an {@link IllegalStateException} will be
+     * thrown.
      */
     public static SelectionStrategy<LabelScanStoreProvider> HIGHEST_PRIORITIZED =
             new SelectionStrategy<LabelScanStoreProvider>()
