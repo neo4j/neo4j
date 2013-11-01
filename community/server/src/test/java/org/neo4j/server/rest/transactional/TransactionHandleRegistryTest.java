@@ -37,6 +37,7 @@ import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class TransactionHandleRegistryTest
 {
+
     @Test
     public void shouldGenerateTransactionId() throws Exception
     {
@@ -159,5 +160,33 @@ public class TransactionHandleRegistryTest
         }
 
         log.assertExactly( info( "Transaction with id 1 has been automatically rolled back." ) );
+    }
+
+    @Test
+    public void expiryTimeShouldBeSetToCurrentTimePlusTimeout() throws Exception
+    {
+        // Given
+        TestLogger log = new TestLogger();
+        FakeClock clock = new FakeClock();
+        int timeoutLength = 123;
+
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, log );
+        TransactionHandle handle = mock( TransactionHandle.class );
+
+        long id = registry.begin();
+
+        // When
+        long timesOutAt = registry.release( id, handle );
+
+        // Then
+        assertThat( timesOutAt, equalTo( clock.currentTimeMillis() + timeoutLength ) );
+
+        // And when
+        clock.forward( 1337, TimeUnit.MILLISECONDS );
+        registry.acquire( id );
+        timesOutAt = registry.release( id, handle );
+
+        // Then
+        assertThat( timesOutAt, equalTo( clock.currentTimeMillis() + timeoutLength ) );
     }
 }
