@@ -20,6 +20,7 @@
 package org.neo4j.index.recovery;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,11 +29,11 @@ import java.util.Random;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -47,8 +48,10 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.single;
 
@@ -58,7 +61,6 @@ import static org.neo4j.helpers.collection.Iterables.single;
 @RunWith(Parameterized.class)
 public class UniqueIndexRecoveryTests
 {
-    @Ignore
     @Test
     public void shouldRecoverWhenCommandsTemporarilyViolateConstraints() throws Exception
     {
@@ -89,10 +91,26 @@ public class UniqueIndexRecoveryTests
         }
     }
 
-    private File snapshot( String path ) throws IOException
+    private File snapshot( final String path ) throws IOException
     {
         File snapshotDir = new File( path, "snapshot-" + new Random().nextInt() );
-        FileUtils.copyRecursively(new File(path), snapshotDir );
+        FileUtils.copyRecursively( new File( path ), snapshotDir, new FileFilter()
+        {
+            @Override
+            public boolean accept( File pathName )
+            {
+                String subPath = pathName.getAbsolutePath().substring( path.length() ).replace( File.separatorChar, '/' );
+                if ( "/lock".equals( subPath ) )
+                {
+                    return false; // since the db is running, exclude the 'lock' file
+                }
+                if ( subPath.startsWith( "/schema/index/lucene/" ) || subPath.startsWith( "/schema/label/lucene/" ) )
+                {
+                    return !subPath.endsWith( "/write.lock" ); // since the db is running, exclude lucene lock files
+                }
+                return true;
+            }
+        } );
         return snapshotDir;
     }
 
