@@ -28,6 +28,7 @@ import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
+import org.neo4j.com.ServerUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -144,7 +145,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                     try
                     {
                         ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
-                        backupUri = URI.create( "backup://" + (server.getSocketAddress().getHostString().contains("0.0.0.0")?me.getHost():server.getSocketAddress().getHostString()) + ":" + server.getSocketAddress().getPort() );
+                        backupUri = URI.create( "backup://" + (ServerUtil.getHostString(server.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(server.getSocketAddress())) + ":" + server.getSocketAddress().getPort() );
                         ha.memberIsAvailable( BACKUP, backupUri );
                     }
                     catch ( Throwable t )
@@ -166,7 +167,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                     try
                     {
                         ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
-                        backupUri = URI.create( "backup://" + (server.getSocketAddress().getHostString().contains("0.0.0.0")?me.getHost():server.getSocketAddress().getHostString()) + ":" + server.getSocketAddress().getPort() );
+                        backupUri = URI.create( "backup://" + (ServerUtil.getHostString(server.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(server.getSocketAddress())) + ":" + server.getSocketAddress().getPort() );
                         ha.memberIsUnavailable( BACKUP );
                     }
                     catch ( Throwable t )
