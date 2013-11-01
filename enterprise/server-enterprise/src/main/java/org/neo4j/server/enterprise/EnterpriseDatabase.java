@@ -49,18 +49,6 @@ public class EnterpriseDatabase extends CommunityDatabase
                     public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                                                             Map<String, String> databaseProperties )
                     {
-//                        List<IndexProvider> indexProviders = Iterables.toList( Service.load( IndexProvider.class ) );
-//                        List<KernelExtensionFactory<?>> kernelExtensions = Iterables.toList( Iterables
-//                                .<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
-//                                        KernelExtensionFactory
-//                                .class ) ) );
-//                        List<CacheProvider> cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
-//                        List<TransactionInterceptorProvider> txInterceptorProviders =
-//                                Iterables.toList( Service.load( TransactionInterceptorProvider.class ) );
-//                        List<SchemaIndexProvider> schemaIndexProviders =
-//                                Iterables.toList( Service.load( SchemaIndexProvider.class ) );
-//                        return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties,
-//                                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
                         return (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory().
                                 newHighlyAvailableDatabaseBuilder( databaseStoreDirectory ).
                                 setConfig( databaseProperties ).newGraphDatabase();

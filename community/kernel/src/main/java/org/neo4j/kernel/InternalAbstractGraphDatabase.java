@@ -48,14 +48,11 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.graphdb.index.IndexProviderKernelExtensionFactory;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.DaemonThreadFactory;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
@@ -250,7 +247,6 @@ public abstract class InternalAbstractGraphDatabase
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
                                              Iterable<Class<?>> settingsClasses,
-                                             @SuppressWarnings("deprecation") Iterable<IndexProvider> indexProviders,
                                              Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                              Iterable<CacheProvider> cacheProviders,
                                              Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
@@ -265,20 +261,6 @@ public abstract class InternalAbstractGraphDatabase
         // SPI - provided services
         this.cacheProviders = mapCacheProviders( cacheProviders );
         config = new Config( params, getSettingsClasses( settingsClasses, kernelExtensions, cacheProviders ) );
-
-        // Convert IndexProviders into KernelExtensionFactories
-        // Remove this when the deprecated IndexProvider is removed
-        @SuppressWarnings("deprecation")
-        Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = map( new Function<IndexProvider, KernelExtensionFactory<?>>()
-        {
-            @Override
-            public KernelExtensionFactory<?> apply( @SuppressWarnings("deprecation") IndexProvider from )
-            {
-                return new IndexProviderKernelExtensionFactory( from );
-            }
-        }, indexProviders );
-
-        kernelExtensions = Iterables.concat( kernelExtensions, indexProviderKernelExtensions );
 
         this.kernelExtensions = new KernelExtensions( kernelExtensions, config, dependencyResolver,
                 UnsatisfiedDependencyStrategies.fail() );

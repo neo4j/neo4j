@@ -34,7 +34,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -63,7 +62,7 @@ public class BigJumpingStoreIT
         protected TestDatabase( String storeDir, Map<String, String> params )
         {
             super( storeDir, params, Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class )
-                    , Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
+                    , Iterables.<KernelExtensionFactory<?>,
                     KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
                     Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
             run();
@@ -143,6 +142,7 @@ public class BigJumpingStoreIT
         }
 
         tx.success();
+        //noinspection deprecation
         tx.finish();
 
         // Verify
@@ -161,6 +161,7 @@ public class BigJumpingStoreIT
             db.getNodeManager().clearCache();
         }
         assertEquals( numberOfRels, relCount );
+        //noinspection deprecation
         tx.finish();
 
         // Remove stuff
@@ -218,6 +219,7 @@ public class BigJumpingStoreIT
             }
         }
         tx.success();
+        //noinspection deprecation
         tx.finish();
 
         // Verify again
@@ -272,6 +274,7 @@ public class BigJumpingStoreIT
             }
             db.getNodeManager().clearCache();
         }
+        //noinspection deprecation
         tx.finish();
     }
 

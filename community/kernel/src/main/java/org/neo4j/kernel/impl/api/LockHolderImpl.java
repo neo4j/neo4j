@@ -255,13 +255,6 @@ public class LockHolderImpl implements LockHolder
         }
 
         @Override
-        @Deprecated
-        public Iterable<Object> getPropertyValues()
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
         public int hashCode()
         {
             return (int) ((id >>> 32) ^ id);

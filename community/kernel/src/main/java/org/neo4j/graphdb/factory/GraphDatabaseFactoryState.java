@@ -22,8 +22,6 @@ package org.neo4j.graphdb.factory;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.graphdb.index.IndexIterable;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -32,14 +30,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 
 public class GraphDatabaseFactoryState
 {
-    private List<IndexProvider> indexProviders;
     private List<KernelExtensionFactory<?>> kernelExtensions;
     private List<CacheProvider> cacheProviders;
     private List<TransactionInterceptorProvider> txInterceptorProviders;
 
     public GraphDatabaseFactoryState() {
-        indexProviders = Iterables.toList( Service.load( IndexProvider.class ) );
-        kernelExtensions = new ArrayList<KernelExtensionFactory<?>>();
+        kernelExtensions = new ArrayList<>();
         for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
         {
             kernelExtensions.add( factory );
@@ -50,32 +46,9 @@ public class GraphDatabaseFactoryState
 
     public GraphDatabaseFactoryState( GraphDatabaseFactoryState previous )
     {
-        indexProviders = new ArrayList<IndexProvider>( previous.indexProviders );
-        kernelExtensions = new ArrayList<KernelExtensionFactory<?>>( previous.kernelExtensions );
-        cacheProviders = new ArrayList<CacheProvider>( previous.cacheProviders );
-        txInterceptorProviders = new ArrayList<TransactionInterceptorProvider>( previous.txInterceptorProviders );
-    }
-
-    public Iterable<IndexProvider> getIndexProviders()
-    {
-        return indexProviders;
-    }
-
-    /**
-     * Sets an {@link org.neo4j.graphdb.index.IndexProvider} iterable source.
-     * {@link org.neo4j.kernel.ListIndexIterable} is a flexible provider that works well with
-     * dependency injection.
-     *
-     * @param indexIterable It's actually Iterable<IndexProvider>, but internally typecasted
-     *                      to workaround bug https://issues.apache.org/jira/browse/ARIES-834 .
-     */
-    public void setIndexProviders( IndexIterable indexIterable )
-    {
-        indexProviders.clear();
-        for ( IndexProvider indexProvider : indexIterable )
-        {
-            this.indexProviders.add( indexProvider );
-        }
+        kernelExtensions = new ArrayList<>( previous.kernelExtensions );
+        cacheProviders = new ArrayList<>( previous.cacheProviders );
+        txInterceptorProviders = new ArrayList<>( previous.txInterceptorProviders );
     }
 
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()

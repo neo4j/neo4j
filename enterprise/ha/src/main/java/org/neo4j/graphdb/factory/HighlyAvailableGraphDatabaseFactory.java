@@ -45,7 +45,6 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
             {
                 config.put( "ephemeral", "false" );
                 return new HighlyAvailableGraphDatabase( path, config,
-                        state.getIndexProviders(),
                         state.getKernelExtension(),
                         state.getCacheProviders(),
                         state.getTransactionInterceptorProviders() );

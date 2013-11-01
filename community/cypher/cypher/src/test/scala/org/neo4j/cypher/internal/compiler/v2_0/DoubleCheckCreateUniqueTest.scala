@@ -68,7 +68,7 @@ class DoubleCheckCreateUniqueTest extends Assertions {
     try {
       val n = db.createNode()
       tx.success()
-      return n
+      n
     } finally {
       tx.finish()
     }
@@ -156,8 +156,6 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
 
   def getPropertyKeys: Iterable[String] = ???
 
-  def getPropertyValues: Iterable[AnyRef] = ???
-
   def addLabel(label: Label) {
     ???
   }
@@ -168,5 +166,5 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
 
   def hasLabel(label: Label) = ???
 
-  def getLabels() = ???
+  def getLabels = ???
 }

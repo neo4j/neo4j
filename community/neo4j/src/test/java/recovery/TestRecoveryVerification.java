@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -64,7 +63,7 @@ public class TestRecoveryVerification
         TestGraphDatabase( String dir, RecoveryVerifier recoveryVerifier )
         {
             super( dir, stringMap(), Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class )
-                    , Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
+                    , Iterables.<KernelExtensionFactory<?>,
                     KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
                     Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
             this.verifier = recoveryVerifier;
@@ -141,11 +140,7 @@ public class TestRecoveryVerification
                 if ( entry instanceof TwoPhaseCommit )
                 {
                     long txId = ((TwoPhaseCommit) entry).getTxId();
-                    if ( lastOne == -1 )
-                    {
-                        lastOne = txId;
-                    }
-                    else
+                    if ( lastOne != -1 )
                     {
                         assertEquals( lastOne + 1, txId );
                     }

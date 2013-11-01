@@ -21,7 +21,6 @@ package org.neo4j.kernel;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -40,17 +39,17 @@ public class HighlyAvailableGraphDatabase
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config)
     {
         this(storeDir, config,
-                Service.load( IndexProvider.class ),
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast(Service.load( KernelExtensionFactory.class )),
                 Service.load( CacheProvider.class ),
                 Service.load( TransactionInterceptorProvider.class ) );
     }
 
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
-            Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders,
-            Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
+                                         Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders,
+
+                                         Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, params, indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
+        super( storeDir, params, kernelExtensions, cacheProviders, txInterceptorProviders );
     }
 
     @Deprecated

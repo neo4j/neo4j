@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -100,7 +99,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
     {
         this( storeDir, withForcedInMemoryConfiguration( params ),
-                Service.load( IndexProvider.class ),
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
                         KernelExtensionFactory.class ) ),
                 Service.load( CacheProvider.class ),
@@ -111,12 +109,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
     @Deprecated
-    public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
+    public ImpermanentGraphDatabase( Map<String, String> params,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                      Iterable<CacheProvider> cacheProviders,
                                      Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( PATH, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
+        super( PATH, withForcedInMemoryConfiguration( params ), kernelExtensions, cacheProviders,
                 transactionInterceptorProviders );
         trackUnclosedUse( PATH );
     }
@@ -125,12 +123,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
     @Deprecated
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
-                                        Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                        Iterable<CacheProvider> cacheProviders,
-                                        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params,
+                                     Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                     Iterable<CacheProvider> cacheProviders,
+                                     Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( storeDir, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
+        super( storeDir, withForcedInMemoryConfiguration( params ), kernelExtensions, cacheProviders,
                 transactionInterceptorProviders );
         trackUnclosedUse( storeDir );
     }
@@ -206,6 +204,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
         finally
         {
+            //noinspection deprecation
             tx.finish();
         }
     }

@@ -377,6 +377,13 @@ public class ComponentVersion extends Version
             <!-- Batch inserter indexing interfaces moved to org.neo4j.unsafe.batchinsert -->
             <exclude>org/neo4j/graphdb/index/BatchInserterIndex</exclude>
             <exclude>org/neo4j/graphdb/index/BatchInserterIndexProvider</exclude>
+
+            <!-- IndexProvider replaced by KernelExtension -->
+            <exclude>org/neo4j/graphdb/index/IndexProvider</exclude>
+            <exclude>org/neo4j/graphdb/index/IndexIterable</exclude>
+
+            <!-- #getPropertyValues() deprecated in favour of #getPropertyKeys() + #getProperty() -->
+            <exclude>org/neo4j/graphdb/PropertyContainer</exclude>
           </excludes>
         </configuration>
       </plugin>

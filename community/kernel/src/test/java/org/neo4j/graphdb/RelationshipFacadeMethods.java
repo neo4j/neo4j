@@ -91,20 +91,6 @@ public class RelationshipFacadeMethods
         }
     };
 
-    private static final FacadeMethod<Relationship> GET_PROPERTY_VALUES =
-        new FacadeMethod<Relationship>( "Iterable<Object> getPropertyValues()" )
-    {
-        @SuppressWarnings("UnusedDeclaration")
-        @Override
-        public void call( Relationship relationship )
-        {
-            for ( Object value : relationship.getPropertyValues() )
-            {
-
-            }
-        }
-    };
-
     private static final FacadeMethod<Relationship> DELETE = new FacadeMethod<Relationship>( "void delete()" )
 
     {
@@ -184,7 +170,6 @@ public class RelationshipFacadeMethods
         SET_PROPERTY,
         REMOVE_PROPERTY,
         GET_PROPERTY_KEYS,
-        GET_PROPERTY_VALUES,
         DELETE,
         GET_START_NODE,
         GET_END_NODE,

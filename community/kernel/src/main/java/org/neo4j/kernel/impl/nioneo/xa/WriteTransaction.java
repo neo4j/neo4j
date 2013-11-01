@@ -1980,12 +1980,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
 
         @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
         public Node getStartNode()
         {
             throw new UnsupportedOperationException( "Lockable rel" );

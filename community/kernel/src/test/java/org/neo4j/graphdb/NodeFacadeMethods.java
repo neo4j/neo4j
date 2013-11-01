@@ -100,16 +100,6 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final FacadeMethod<Node> GET_PROPERTY_VALUES = new FacadeMethod<Node>( "Iterable<Object> " +
-            "getPropertyValues()" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            consume( node.getPropertyValues() );
-        }
-    };
-
     private static final FacadeMethod<Node> DELETE = new FacadeMethod<Node>( "void delete()" )
     {
         @Override
@@ -248,6 +238,7 @@ public class NodeFacadeMethods
         @Override
         public void call( Node node )
         {
+            //noinspection deprecation
             node.traverse( BREADTH_FIRST, DEPTH_ONE, ALL, FOO, BOTH );
         }
     };
@@ -261,6 +252,7 @@ public class NodeFacadeMethods
         @Override
         public void call( Node node )
         {
+            //noinspection deprecation
             node.traverse( BREADTH_FIRST, DEPTH_ONE, ALL, FOO, BOTH, BAR, OUTGOING );
         }
     };
@@ -273,6 +265,7 @@ public class NodeFacadeMethods
         @Override
         public void call( Node node )
         {
+            //noinspection deprecation
             node.traverse( BREADTH_FIRST, DEPTH_ONE, ALL, FOO, BOTH, BAR, OUTGOING, BAZ, INCOMING );
         }
     };
@@ -320,7 +313,6 @@ public class NodeFacadeMethods
         SET_PROPERTY,
         REMOVE_PROPERTY,
         GET_PROPERTY_KEYS,
-        GET_PROPERTY_VALUES,
         DELETE, GET_RELATIONSHIPS,
         HAS_RELATIONSHIP,
         GET_RELATIONSHIPS_BY_TYPE,

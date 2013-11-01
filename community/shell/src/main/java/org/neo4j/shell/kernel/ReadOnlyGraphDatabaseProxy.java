@@ -495,12 +495,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return actual.getPropertyValues();
-        }
-
-        @Override
         public boolean hasProperty( String key )
         {
             return actual.hasProperty( key );
@@ -616,12 +610,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public Iterable<String> getPropertyKeys()
         {
             return actual.getPropertyKeys();
-        }
-
-        @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return actual.getPropertyValues();
         }
 
         @Override
