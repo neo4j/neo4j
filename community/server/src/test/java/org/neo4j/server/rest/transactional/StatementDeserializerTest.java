@@ -111,6 +111,25 @@ public class StatementDeserializerTest
         assertThat( de.hasNext(), equalTo( false ) );
     }
 
+    @Test
+    public void shouldTakeParametersBeforeStatement() throws Exception
+    {
+        // Given
+        String json =  "{ \"statements\" : [ { \"a\" : \"\", \"parameters\" : { \"k\":1 }, \"statement\" : \"blah\"}]}";
+
+        // When
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( json.getBytes( "UTF-8" ) ) );
+
+        // Then
+        assertThat( de.hasNext(), equalTo( true ) );
+
+        Statement stmt = de.next();
+        assertThat( stmt.statement(), equalTo( "blah" ) );
+        assertThat( stmt.parameters(), equalTo( map("k", 1) ) );
+
+        assertThat( de.hasNext(), equalTo( false ) );
+    }
+
 
     @Test
     public void shouldTreatEmptyInputStreamAsEmptyStatementList() throws Exception
