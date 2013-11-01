@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest;
+package org.neo4j.server.rest.transactional;
 
 import java.text.ParseException;
 import java.util.Iterator;
@@ -27,6 +27,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.server.rest.web.PropertyValueException;

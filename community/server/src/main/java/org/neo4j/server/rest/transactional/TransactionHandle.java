@@ -248,13 +248,6 @@ public class TransactionHandle
                 try
                 {
                     result = engine.execute( statement.statement(), statement.parameters() );
-                    // NOTE: The TransactionContext et cetera used up until this method, and then blatantly ignored,
-                    // is meant to be passed on to a new internal cypher API, like so:
-
-                    // ctx = tx.newStatement()
-                    // cypher.execute( ctx, statement, resultVisitor );
-                    // ctx.close()
-
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                 }
                 catch ( CypherException e )
@@ -267,7 +260,7 @@ public class TransactionHandle
                     errors.add( new Neo4jError( StatusCode.NETWORK_ERROR, e ) );
                     break;
                 }
-                catch ( RuntimeException e )
+                catch ( Exception e )
                 {
                     errors.add( new Neo4jError( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR, e ) );
                     break;
@@ -280,7 +273,7 @@ public class TransactionHandle
                 errors.add( deserializationErrors.next() );
             }
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             errors.add( new Neo4jError( StatusCode.INTERNAL_DATABASE_ERROR, e ) );
         }

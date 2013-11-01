@@ -39,7 +39,7 @@ import static java.lang.String.format;
 public class TransactionHandleRegistry implements TransactionRegistry
 {
     private final AtomicLong idGenerator = new AtomicLong( 0l );
-    private final ConcurrentHashMap<Long, TransactionMarker> registry = new ConcurrentHashMap<Long, TransactionMarker>( 64 );
+    private final ConcurrentHashMap<Long, TransactionMarker> registry = new ConcurrentHashMap<>( 64 );
 
     private final Clock clock;
 

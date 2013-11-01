@@ -24,15 +24,12 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Test;
-
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;

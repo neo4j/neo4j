@@ -17,52 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest;
+package org.neo4j.server.rest.transactional.integration;
 
-import java.text.ParseException;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.codehaus.jackson.JsonNode;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
-
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.server.rest.repr.util.RFC1123;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.transactional.error.StatusCode;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
-import org.neo4j.tooling.GlobalGraphOperations;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
-import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-import static org.neo4j.test.server.HTTP.POST;
+import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
+import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
+import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.isValidRFCTimestamp;
+import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.matches;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
-public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
+public class TransactionIT extends AbstractRestFunctionalTestBase
 {
     private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
 
@@ -71,38 +52,22 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
-        long startOfTest = System.currentTimeMillis();
-
-        // This generous wait time is necessary to compensate for limited resolution of RFC 1123 timestamps
-        // and the fact that the system clock is allowed to run "backwards" between threads
-        // (cf. http://stackoverflow.com/questions/2978598)
-        //
-        Thread.sleep( 3000 );
-
         // begin
         Response begin = http.POST( "/db/data/transaction" );
 
         assertThat( begin.status(), equalTo( 201 ) );
         assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
 
-        long beginStamp = expirationTime( jsonToMap( begin.rawContent() ) );
-        long defaultTimeoutMillis =
-            SECONDS.toMillis( server().getConfiguration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT ) );
-        assertTrue( beginStamp > (defaultTimeoutMillis + startOfTest ) );
-
         String commitResource = begin.stringFromContent( "commit" );
-        assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d+/commit" ) );
-
-        Thread.sleep( 3000 );
+        assertThat( commitResource, matches( "http://localhost:\\d+/db/data/transaction/\\d" +
+                "+/commit" ) );
+        assertThat( begin.get("transaction").get("expires").asText(), isValidRFCTimestamp());
 
         // execute
         Response execute =
             http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
-
         assertThat( execute.status(), equalTo( 200 ) );
-        long executeStamp = expirationTime( jsonToMap( execute.rawContent() ) );
-        assertTrue( executeStamp > startOfTest );
-        assertTrue( executeStamp > beginStamp );
+        assertThat( execute.get("transaction").get("expires").asText(), isValidRFCTimestamp());
 
         // commit
         Response commit = http.POST( commitResource );
@@ -148,7 +113,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 
         // execute and commit
         Response commit = http.POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
-        assertNoErrors( (Map<String, Object>) commit.content() );
+        assertThat( commit, containsNoErrors());
 
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
@@ -190,7 +155,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
             http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         assertThat( execute.status(), equalTo( 404 ) );
-        assertErrorCodes( execute, StatusCode.INVALID_TRANSACTION_ID );
+        assertThat(execute, hasErrors( StatusCode.INVALID_TRANSACTION_ID ));
     }
 
     @Test
@@ -219,7 +184,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' }, { 'statement': 'CREATE n' } ] }" ) );
 
         // commit
-        assertNoErrors( http.POST( commitResource ) );
+        assertThat( http.POST( commitResource ), containsNoErrors() );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 2 ) );
     }
@@ -246,45 +211,6 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 2 ) );
     }
 
-    @Test
-    public void begin__commit_with_invalid_cypher() throws Exception
-    {
-        long nodesInDatabaseBeforeTransaction = countNodes();
-
-        // begin
-        Response response = POST( getDataUri() + "transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
-        String commitResource = response.stringFromContent( "commit" );
-
-        // commit with invalid cypher
-        response = POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE ;;' } ] }" ) );
-
-        // System.out.println( "begin.rawContent() = " + response.rawContent() );
-
-        assertThat( response.status(), is( 200 ) );
-        assertErrorCodes( response, StatusCode.STATEMENT_SYNTAX_ERROR );
-        assertNoStackTrace( response );
-
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
-    }
-
-    @Test
-    public void begin__commit_with_malformed_json() throws Exception
-    {
-        long nodesInDatabaseBeforeTransaction = countNodes();
-
-        // begin
-        Response begin = POST( getDataUri() + "transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
-        String commitResource = begin.stringFromContent( "commit" );
-
-        // commit with malformed json
-        Response response = POST( commitResource, rawPayload( "[{asd,::}]" ) );
-
-        assertThat( response.status(), is( 200 ) );
-        assertErrorCodes( response, StatusCode.INVALID_REQUEST_FORMAT );
-
-        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
-    }
-    
     @Test
     public void begin_create_two_nodes_delete_one() throws Exception
     {
@@ -321,7 +247,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
 
         // then
         assertThat( response.status(), equalTo( 200 ) );
-        JsonNode data = response.jsonContent().get( "results" ).get( 0 ).get( "data" );
+        JsonNode data = response.get( "results" ).get( 0 ).get( "data" );
         assertTrue( "data is a list", data.isArray() );
         assertEquals( "one entry", 1, data.size() );
         JsonNode entry = data.get( 0 );
@@ -353,13 +279,12 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         // then
         assertThat( response.status(), equalTo( 200 ) );
 
-        JsonNode jsonResponse = response.jsonContent();
-        JsonNode data = jsonResponse.get( "results" ).get(0);
+        JsonNode data = response.get( "results" ).get(0);
         assertThat( data.get( "columns" ).get( 0 ).asText(), equalTo( "COLLECT(n)" ) );
         assertThat( data.get( "data" ).get(0).get( "row" ).size(), equalTo(1));
         assertThat( data.get( "data" ).get( 0 ).get( "row" ).get( 0 ).get( 0 ).size(), equalTo( 0 ) );
 
-        assertThat( jsonResponse.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
     }
 
     @Test
@@ -371,8 +296,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         // then
         assertThat( response.status(), equalTo( 200 ) );
 
-        JsonNode jsonResponse = response.jsonContent();
-        JsonNode data = jsonResponse.get( "results" ).get(0);
+        JsonNode data = response.get( "results" ).get(0);
         JsonNode row = data.get( "data" ).get( 0 ).get( "row" );
         assertThat( row.size(), equalTo(1));
         JsonNode firstCell = row.get( 0 );
@@ -380,7 +304,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
         assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ));
 
-        assertThat(  jsonResponse.get( "errors" ).size(), equalTo(0));
+        assertThat( response.get( "errors" ).size(), equalTo(0));
     }
 
     @Test
@@ -392,8 +316,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         // then
         assertThat( response.status(), equalTo( 200 ) );
 
-        JsonNode jsonResponse = response.jsonContent();
-        JsonNode data = jsonResponse.get( "results" ).get( 0 );
+        JsonNode data = response.get( "results" ).get( 0 );
         JsonNode rest = data.get( "data" ).get( 0 ).get( "rest" );
         assertThat( rest.size(), equalTo( 1 ) );
         JsonNode firstCell = rest.get( 0 );
@@ -401,7 +324,7 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
         assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ) );
 
-        assertThat( jsonResponse.get( "errors" ).size(), equalTo( 0 ) );
+        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
     }
 
     private HTTP.RawPayload singleStatement( String statement )
@@ -409,90 +332,10 @@ public class TransactionFunctionalTest extends AbstractRestFunctionalTestBase
         return rawPayload( "{\"statements\":[{\"statement\":\"" + statement + "\"}]}" );
     }
 
-    private void assertNoErrors( Response response )
-    {
-        assertErrorCodes( response.<Map<String, Object>>content() );
-    }
-
-    private void assertNoErrors( Map<String, Object> response )
-    {
-        assertErrorCodes( response );
-    }
-
-    private void assertNoStackTrace( Response response )
-    {
-        Map<String, Object> content = response.content();
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> errors = ((List<Map<String, Object>>) content.get( "errors" ));
-
-        for ( Map<String, Object> error : errors )
-        {
-            assertFalse( error.containsKey( "stackTrace" ) );
-        }
-    }
-
-    private void assertErrorCodes( Response response, StatusCode... expectedErrors )
-    {
-        assertErrorCodes( response.<Map<String, Object>>content(), expectedErrors );
-    }
-
-    @SuppressWarnings("unchecked")
-    private void assertErrorCodes( Map<String, Object> response, StatusCode... expectedErrors )
-    {
-        Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
-        Iterator<StatusCode> expected = iterator( expectedErrors );
-
-        while ( expected.hasNext() )
-        {
-            assertTrue( errors.hasNext() );
-            assertThat( (Integer) errors.next().get( "code" ), equalTo( expected.next().getCode() ) );
-        }
-        if ( errors.hasNext() )
-        {
-            Map<String, Object> error = errors.next();
-            fail( "Expected no more errors, but got " + error.get( "code" ) + " - '" + error.get( "message" ) + "'." );
-        }
-    }
-
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     private long countNodes()
     {
-        try ( Transaction transaction = graphdb().beginTx() )
-        {
-            long count = 0;
-            Iterator<Node> allNodes = GlobalGraphOperations.at( graphdb() ).getAllNodes().iterator();
-            while ( allNodes.hasNext() )
-            {
-                allNodes.next();
-                count++;
-            }
-            return count;
-        }
+        return TransactionMatchers.countNodes( graphdb() );
     }
 
-    private static Matcher<String> matches( final String pattern )
-    {
-        final Pattern regex = Pattern.compile( pattern );
-
-        return new TypeSafeMatcher<String>()
-        {
-            @Override
-            protected boolean matchesSafely( String item )
-            {
-                return regex.matcher( item ).matches();
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "matching regex" ).appendValue( pattern );
-            }
-        };
-    }
-
-    private long expirationTime( Map<String, Object> entity ) throws ParseException
-    {
-        String timestampString = (String) ( (Map<?, ?>) entity.get( "transaction" ) ).get( "expires" );
-        return RFC1123.parseTimestamp( timestampString ).getTime();
-    }
 }
