@@ -62,8 +62,16 @@ public enum HeartbeatState
 
                         case join:
                         {
-                            // Setup heartbeat timeouts
-                            context.startHeartbeatTimers( message );
+                            for ( InstanceId instanceId : context.getClusterContext().getOtherInstances() )
+                            {
+                                // Setup heartbeat timeouts for the other instance
+                                context.getClusterContext().timeouts.setTimeout( HeartbeatMessage.i_am_alive + "-" + instanceId,
+                                        timeout( HeartbeatMessage.timed_out, message, instanceId ) );
+
+                                // Send first heartbeat immediately
+                                outgoing.offer( timeout( HeartbeatMessage.sendHeartbeat, message, instanceId) );
+                            }
+
                             return heartbeat;
                         }
                     }
