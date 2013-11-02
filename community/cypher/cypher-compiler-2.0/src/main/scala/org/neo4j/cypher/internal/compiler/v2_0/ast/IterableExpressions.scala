@@ -46,12 +46,12 @@ trait FilteringExpression extends Expression {
       SemanticError(s"${name}(...) should not contain a WHERE predicate", token)
     }
 
-  protected def iteratedType : TypeGenerator = expression.types(_).collect { case c: CollectionType => c.iteratedType }
+  protected def possibleInnerTypes : TypeGenerator = expression.types(_).collect { case c: CollectionType => c.innerType }
 
   private def checkInnerPredicate : SemanticCheck = {
     innerPredicate match {
       case Some(e) => withScopedState {
-        identifier.declare(iteratedType) then e.semanticCheck(SemanticContext.Simple)
+        identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
       }
       case None    => SemanticCheckResult.success
     }
@@ -111,7 +111,7 @@ case class ExtractExpression(
   private def checkInnerExpression : SemanticCheck =
     extractExpression.fold(SemanticCheckResult.success) {
       e => withScopedState {
-        identifier.declare(iteratedType) then e.semanticCheck(SemanticContext.Simple)
+        identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
       } then {
         val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
         this.specifyType(outerTypes)
@@ -141,7 +141,7 @@ case class ListComprehension(
     extractExpression match {
       case Some(e) =>
         withScopedState {
-          identifier.declare(iteratedType) then e.semanticCheck(SemanticContext.Simple)
+          identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
         } then {
           val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
           this.specifyType(outerTypes)
@@ -213,7 +213,7 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, id: Ident
       collection.semanticCheck(ctx) then
       collection.constrainType(CollectionType(AnyType())) then
       withScopedState {
-        val indexType: TypeGenerator = collection.types(_).collect { case c: CollectionType => c.iteratedType }
+        val indexType: TypeGenerator = collection.types(_).collect { case c: CollectionType => c.innerType }
         val accType: TypeGenerator = init.types
         id.declare(indexType) then
         accumulator.declare(accType) then

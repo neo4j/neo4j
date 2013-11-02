@@ -45,7 +45,7 @@ abstract class CypherType {
 
   def isCoercibleFrom(other: CypherType): Boolean = isAssignableFrom(other)
 
-  def iteratedType: CypherType = this
+  def legacyIteratedType: CypherType = this
 
   def mergeDown(other: CypherType): CypherType =
     if (this.isAssignableFrom(other)) this

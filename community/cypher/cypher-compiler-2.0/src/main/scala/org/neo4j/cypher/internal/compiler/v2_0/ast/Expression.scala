@@ -247,7 +247,7 @@ case class CollectionIndex(collection: Expression, idx: Expression, token: Input
       collection.constrainType(CollectionType(AnyType())) then
       idx.semanticCheck(ctx) then
       idx.constrainType(IntegerType(), LongType()) then
-      specifyType(collection.types(_).collect { case c: CollectionType => c.iteratedType })
+      specifyType(collection.types(_).collect { case c: CollectionType => c.innerType })
 
   def toCommand = commandexpressions.CollectionIndex(collection.toCommand, idx.toCommand)
 }
