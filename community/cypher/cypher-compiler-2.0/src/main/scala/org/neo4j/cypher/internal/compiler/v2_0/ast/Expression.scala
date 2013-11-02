@@ -199,7 +199,7 @@ case class HasLabels(expression: Expression, labels: Seq[Identifier], token: Inp
 case class Collection(expressions: Seq[Expression], token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then specifyType(possibleTypes)
 
-  private def possibleTypes: SemanticState => TypeSet = state => expressions match {
+  private def possibleTypes: TypeGenerator = state => expressions match {
     case Seq() => Set(CollectionType(AnyType()))
     case _     => expressions.mergeDownTypes(state).map(CollectionType.apply)
   }
@@ -247,7 +247,7 @@ case class CollectionIndex(collection: Expression, idx: Expression, token: Input
       collection.constrainType(CollectionType(AnyType())) then
       idx.semanticCheck(ctx) then
       idx.constrainType(IntegerType(), LongType()) then
-      specifyType(collection.types(_).map(_.iteratedType))
+      specifyType(collection.types(_).collect { case c: CollectionType => c.iteratedType })
 
   def toCommand = commandexpressions.CollectionIndex(collection.toCommand, idx.toCommand)
 }

@@ -46,11 +46,12 @@ trait FilteringExpression extends Expression {
       SemanticError(s"${name}(...) should not contain a WHERE predicate", token)
     }
 
+  protected def iteratedType : TypeGenerator = expression.types(_).collect { case c: CollectionType => c.iteratedType }
+
   private def checkInnerPredicate : SemanticCheck = {
     innerPredicate match {
       case Some(e) => withScopedState {
-        val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
-        identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+        identifier.declare(iteratedType) then e.semanticCheck(SemanticContext.Simple)
       }
       case None    => SemanticCheckResult.success
     }
@@ -110,8 +111,7 @@ case class ExtractExpression(
   private def checkInnerExpression : SemanticCheck =
     extractExpression.fold(SemanticCheckResult.success) {
       e => withScopedState {
-        val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
-        identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+        identifier.declare(iteratedType) then e.semanticCheck(SemanticContext.Simple)
       } then {
         val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
         this.specifyType(outerTypes)
@@ -139,9 +139,9 @@ case class ListComprehension(
 
   private def checkInnerExpression : SemanticCheck = {
     extractExpression match {
-      case Some(e) => withScopedState {
-          val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
-          identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+      case Some(e) =>
+        withScopedState {
+          identifier.declare(iteratedType) then e.semanticCheck(SemanticContext.Simple)
         } then {
           val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
           this.specifyType(outerTypes)
@@ -213,7 +213,7 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, id: Ident
       collection.semanticCheck(ctx) then
       collection.constrainType(CollectionType(AnyType())) then
       withScopedState {
-        val indexType: TypeGenerator = collection.types(_).map(_.iteratedType)
+        val indexType: TypeGenerator = collection.types(_).collect { case c: CollectionType => c.iteratedType }
         val accType: TypeGenerator = init.types
         id.declare(indexType) then
         accumulator.declare(accType) then

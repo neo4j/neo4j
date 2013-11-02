@@ -20,45 +20,39 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 object TypeSet {
-  def apply(types: CypherType*): TypeSet = new Proxy(types.toSet)
-  def apply[T <: CypherType](traversable: TraversableOnce[T]): TypeSet = new Proxy(traversable.toSet)
+  def apply(types: CypherType*): TypeSet = new SetBackedTypeSet(types.toSet)
+  def apply[T <: CypherType](traversable: TraversableOnce[T]): TypeSet = new SetBackedTypeSet(traversable.toSet)
 
-  def empty: TypeSet = new Proxy(Set.empty[CypherType])
+  def empty: TypeSet = new SetBackedTypeSet(Set.empty[CypherType])
 
-  class Proxy(set: Set[CypherType]) extends TypeSet {
+  class SetBackedTypeSet(set: Set[CypherType]) extends TypeSet {
     def contains(elem: CypherType): Boolean = set.contains(elem)
-    def +(elem: CypherType): TypeSet = new Proxy(set.+(elem))
-    def -(elem: CypherType): TypeSet = new Proxy(set.-(elem))
+    def +(elem: CypherType): TypeSet = new SetBackedTypeSet(set.+(elem))
+    def -(elem: CypherType): TypeSet = new SetBackedTypeSet(set.-(elem))
     def iterator: Iterator[CypherType] = set.iterator
     override def equals(that: Any) = set.equals(that)
     override def hashCode(): Int = set.hashCode()
   }
-
 }
 
 
 trait TypeSet extends Set[CypherType] {
 
-  def mergeDown(other: TypeSet): TypeSet = {
-    TypeSet(foldLeft(Vector.empty[CypherType])((ts, t) => {
-      val dt = other.mergeDown(t)
-      ts.filter(_.mergeUp(dt) != Some(dt)) :+ dt
-    }))
+  def constrain(other: TypeSet): TypeSet = {
+    TypeSet(filter {
+      t => other.exists(_.isAssignableFrom(t))
+    })
   }
 
-  def mergeDown(other: CypherType): CypherType = {
-    map {
-      _.mergeDown(other)
-    } reduce {
-      (t1, t2) => (t1 mergeUp t2).get
-    }
+  def mergeDown(other: TypeSet): TypeSet = {
+    TypeSet(flatMap {
+      t => other.map(_ mergeDown t)
+    })
   }
 
   def mergeUp(other: TypeSet): TypeSet = {
     TypeSet(flatMap {
-      t => other.flatMap {
-        _ mergeUp t
-      }
+      t => other.flatMap(_ mergeUp t)
     })
   }
 
