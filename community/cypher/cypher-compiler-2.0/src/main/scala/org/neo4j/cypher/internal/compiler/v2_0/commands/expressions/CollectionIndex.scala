@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.internal.helpers._
-import org.neo4j.cypher.OutOfBoundsException
+import org.neo4j.cypher.{CypherTypeException, OutOfBoundsException}
 
 case class CollectionIndex(collection: Expression, index: Expression) extends NullInNullOutExpression(collection)
 with CollectionSupport {
@@ -33,9 +33,8 @@ with CollectionSupport {
     var idx = CastSupport.castOrFail[Number](index(ctx)).intValue()
     val collectionValue = makeTraversable(value).toList
 
-    if (idx < 0) {
+    if (idx < 0)
       idx = collectionValue.size + idx
-    }
 
     if(idx>=collectionValue.size)
       throw new OutOfBoundsException(s"Passed the end of the collection ${collection.toString()}")
@@ -44,10 +43,13 @@ with CollectionSupport {
   }
 
   protected def calculateType(symbols: SymbolTable): CypherType = {
-    val myType = collection.evaluateType(CollectionType(AnyType()), symbols).asInstanceOf[CollectionType].iteratedType
     index.evaluateType(NumberType(), symbols)
 
-    myType
+    collection.evaluateType(CollectionType(AnyType()), symbols) match {
+      case collectionType: CollectionType => collectionType.iteratedType
+      case x if x.isInstanceOf[AnyType]   => AnyType()
+      case x                              => throw new CypherTypeException("Expected a collection, but was " + x)
+    }
   }
 
   def rewrite(f: (Expression) => Expression): Expression = f(CollectionIndex(collection.rewrite(f), index.rewrite(f)))

@@ -5,6 +5,7 @@ o Remove question mark symbol from patterns in Cypher
 o Fixes 1313
 o Changes behaviour of LAST/HEAD/TAIL -
   they now all throw exceptions for empty collections
+o Fixes problem with collection index types
 
 2.0.0-M06
 ---------
