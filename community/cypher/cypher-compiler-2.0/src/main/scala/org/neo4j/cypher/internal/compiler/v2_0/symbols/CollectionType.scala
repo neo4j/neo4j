@@ -31,9 +31,12 @@ object CollectionType {
 
     override def toString = s"Collection<$iteratedType>"
 
-    override def isAssignableFrom(other: CypherType): Boolean =
-      (other.isInstanceOf[CollectionType] || super.isAssignableFrom(other)) &&
-      iteratedType.isAssignableFrom(other.asInstanceOf[CollectionType].iteratedType)
+    override def isAssignableFrom(other: CypherType): Boolean = other match {
+      case otherCollection: CollectionType =>
+        iteratedType isAssignableFrom otherCollection.iteratedType
+      case _ =>
+        super.isAssignableFrom(other)
+    }
 
     override def isCoercibleFrom(other: CypherType): Boolean =
       super.isCoercibleFrom(other) ||
@@ -41,19 +44,19 @@ object CollectionType {
 
     override def mergeDown(other: CypherType) = other match {
       case otherCollection: CollectionType =>
-        CollectionType(iteratedType mergeDown otherCollection.iteratedType)
+        copy(iteratedType mergeDown otherCollection.iteratedType)
       case _ =>
         super.mergeDown(other)
     }
 
     override def mergeUp(other: CypherType) = other match {
       case otherCollection: CollectionType =>
-        for (ctype <- iteratedType mergeUp otherCollection.iteratedType) yield CollectionType(ctype)
+        (iteratedType mergeUp otherCollection.iteratedType).map(copy)
       case _ =>
         super.mergeUp(other)
     }
 
-    override def rewrite(f: CypherType => CypherType) = f(CollectionType(this.iteratedType.rewrite(f)))
+    override def rewrite(f: CypherType => CypherType) = f(copy(iteratedType.rewrite(f)))
   }
 }
 

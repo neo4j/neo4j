@@ -84,7 +84,7 @@ class ReduceExpressionTest extends Assertions {
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(filter.types(result.state) === TypeSet(NumberType()))
+    assert(filter.types(result.state) === TypeSet(AnyType(), NumberType()))
   }
 
   @Test
