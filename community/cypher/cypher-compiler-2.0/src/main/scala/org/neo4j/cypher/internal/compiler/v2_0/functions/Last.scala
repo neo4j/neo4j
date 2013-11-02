@@ -29,11 +29,11 @@ case object Last extends Function {
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
       invocation.arguments(0).constrainType(CollectionType(AnyType())) then
-        invocation.specifyType(iteratedTypes(invocation.arguments(0)))
+      invocation.specifyType(possibleInnerTypes(invocation.arguments(0)))
     }
 
-  private def iteratedTypes(expression: ast.Expression) : TypeGenerator =
-    expression.types(_).collect { case c: CollectionType => c.iteratedType }
+  private def possibleInnerTypes(expression: ast.Expression) : TypeGenerator =
+    expression.types(_).collect { case c: CollectionType => c.innerType }
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.CollectionIndex(

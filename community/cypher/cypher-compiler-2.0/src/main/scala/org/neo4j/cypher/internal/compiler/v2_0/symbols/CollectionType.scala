@@ -24,16 +24,17 @@ object CollectionType {
 
   def apply(iteratedType: CypherType) = if (iteratedType == AnyType()) anyCollectionTypeInstance else new CollectionTypeImpl(iteratedType)
 
-  final case class CollectionTypeImpl(override val iteratedType: CypherType) extends CollectionType {
+  final case class CollectionTypeImpl(innerType: CypherType) extends CollectionType {
     val parentType = AnyType()
+    override val legacyIteratedType = innerType
 
-    override def parents = iteratedType.parents.map(copy) ++ super.parents
+    override def parents = innerType.parents.map(copy) ++ super.parents
 
-    override def toString = s"Collection<$iteratedType>"
+    override def toString = s"Collection<$innerType>"
 
     override def isAssignableFrom(other: CypherType): Boolean = other match {
       case otherCollection: CollectionType =>
-        iteratedType isAssignableFrom otherCollection.iteratedType
+        innerType isAssignableFrom otherCollection.innerType
       case _ =>
         super.isAssignableFrom(other)
     }
@@ -44,20 +45,22 @@ object CollectionType {
 
     override def mergeDown(other: CypherType) = other match {
       case otherCollection: CollectionType =>
-        copy(iteratedType mergeDown otherCollection.iteratedType)
+        copy(innerType mergeDown otherCollection.innerType)
       case _ =>
         super.mergeDown(other)
     }
 
     override def mergeUp(other: CypherType) = other match {
       case otherCollection: CollectionType =>
-        (iteratedType mergeUp otherCollection.iteratedType).map(copy)
+        (innerType mergeUp otherCollection.innerType).map(copy)
       case _ =>
         super.mergeUp(other)
     }
 
-    override def rewrite(f: CypherType => CypherType) = f(copy(iteratedType.rewrite(f)))
+    override def rewrite(f: CypherType => CypherType) = f(copy(innerType.rewrite(f)))
   }
 }
 
-sealed abstract class CollectionType extends CypherType
+sealed abstract class CollectionType extends CypherType {
+  def innerType: CypherType
+}

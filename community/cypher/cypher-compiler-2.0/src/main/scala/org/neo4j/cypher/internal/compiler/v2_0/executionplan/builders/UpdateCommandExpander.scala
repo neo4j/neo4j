@@ -79,7 +79,7 @@ trait UpdateCommandExpander {
 
     val missingCreateNodeActions = commands.flatMap {
       case ForeachAction(coll, id, actions) =>
-        val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(CollectionType(AnyType()), symbols).iteratedType))
+        val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(CollectionType(AnyType()), symbols).legacyIteratedType))
         Seq(ForeachAction(coll, id, expandedCommands))
 
       case createRel: CreateRelationship =>
