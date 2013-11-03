@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.direct;
 
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
@@ -26,11 +27,14 @@ public class SimpleDirectStoreAccess implements DirectStoreAccess
 {
     private final StoreAccess nativeStores;
     private final LabelScanStore labelScanStore;
+    private final SchemaIndexProvider indexes;
 
-    public SimpleDirectStoreAccess( StoreAccess nativeStores, LabelScanStore labelScanStore )
+    public SimpleDirectStoreAccess( StoreAccess nativeStores, LabelScanStore labelScanStore, SchemaIndexProvider
+            indexes )
     {
         this.nativeStores = nativeStores;
         this.labelScanStore = labelScanStore;
+        this.indexes = indexes;
     }
 
     @Override
@@ -43,5 +47,10 @@ public class SimpleDirectStoreAccess implements DirectStoreAccess
     public LabelScanStore labelScanStore()
     {
         return labelScanStore;
+    }
+
+    @Override public SchemaIndexProvider indexes()
+    {
+        return indexes;
     }
 }

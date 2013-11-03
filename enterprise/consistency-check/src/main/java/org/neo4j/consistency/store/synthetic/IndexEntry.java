@@ -17,30 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.consistency;
+package org.neo4j.consistency.store.synthetic;
 
-public enum RecordType
+import org.neo4j.kernel.impl.nioneo.store.Abstract64BitRecord;
+
+/**
+ * Synthetic record type that stands in for a real record to fit in conveniently
+ * with consistency checking
+ */
+public class IndexEntry extends Abstract64BitRecord
 {
-    NEO_STORE, SCHEMA,
-    NODE,
-
-    PROPERTY,
-    PROPERTY_KEY,
-    PROPERTY_KEY_NAME,
-    STRING_PROPERTY,
-    ARRAY_PROPERTY,
-
-    RELATIONSHIP,
-    RELATIONSHIP_TYPE,
-    RELATIONSHIP_TYPE_NAME,
-
-    LABEL,
-    LABEL_NAME,
-
-    NODE_DYNAMIC_LABEL,
-
-    // Below are non-native records
-
-    LABEL_SCAN_DOCUMENT,
-    INDEX
+    public IndexEntry( long nodeId )
+    {
+        super( nodeId );
+        setInUse( true );
+    }
 }

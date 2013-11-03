@@ -157,7 +157,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
     private NeoStore neoStore;
     private IndexingService indexingService;
-    private DefaultSchemaIndexProviderMap providerMap;
+    private SchemaIndexProvider indexProvider;
     private XaContainer xaContainer;
     private ArrayMap<Class<?>,Store> idGenerators;
     private IntegrityValidator integrityValidator;
@@ -340,11 +340,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
         try
         {
-            final SchemaIndexProvider indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
+            indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                     SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
 
             // TODO: Build a real provider map
-            providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
+            DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
 
             indexingService = life.add(
                     new IndexingService(
@@ -430,6 +430,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     public IndexingService getIndexService()
     {
         return indexingService;
+    }
+
+    public SchemaIndexProvider getIndexProvider()
+    {
+        return indexProvider;
     }
 
     public LabelScanStore getLabelScanStore()

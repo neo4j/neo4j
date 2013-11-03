@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -137,6 +138,12 @@ public class NullReporter implements ConsistencyReport.Reporter
 
     @Override
     public void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker )
+    {
+    }
+
+    @Override
+    public void forIndexEntry( IndexEntry entry, RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport>
+            checker )
     {
     }
 }

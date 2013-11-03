@@ -29,7 +29,6 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
-import org.neo4j.kernel.api.direct.SimpleDirectStoreAccess;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 
 import static org.mockito.Matchers.anyLong;
@@ -74,9 +73,8 @@ public class LabelScanStoreCheckTaskTest
             }
         } );
 
-        LabelScanStoreCheckTask task = new LabelScanStoreCheckTask(
-                new SimpleDirectStoreAccess( null, labelScanStore ),
-                progressBuilder, new NullReporter(), null);
+        LabelScanStoreCheckTask task = new LabelScanStoreCheckTask( labelScanStore, progressBuilder, new NullReporter(),
+                null);
 
         // when
         task.run();

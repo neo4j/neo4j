@@ -33,8 +33,6 @@ import org.junit.Test;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.UTF8;
@@ -68,6 +66,8 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -88,23 +88,24 @@ public class FullCheckIntegrationTest
         @Override
         protected void generateInitialData( GraphDatabaseService graphDb )
         {
-            org.neo4j.graphdb.Transaction tx = graphDb.beginTx();
-            try
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx())
             {
-                Node node1 = set( graphDb.createNode() );
-                node1.addLabel( DynamicLabel.label( "label1" ) );
-                Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
-                node2.addLabel( DynamicLabel.label( "label2" ) );
-                node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "C" ) );
+                graphDb.schema().indexFor( label("label3") ).on( "key" ).create();
                 tx.success();
             }
-            finally
+
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx())
             {
-                tx.finish();
+                Node node1 = set( graphDb.createNode( label( "label1" ) ) );
+                Node node2 = set( graphDb.createNode( label( "label2" ) ), property( "key", "value" ) );
+                node1.createRelationshipTo( node2, withName( "C" ) );
+                indexedNodes.add( set( graphDb.createNode( label( "label3" ) ), property( "key", "value" ) ).getId() );
+                tx.success();
             }
         }
     };
     private final StringWriter log = new StringWriter();
+    private final List<Long> indexedNodes = new ArrayList<>();
 
     private ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException
     {
@@ -295,6 +296,30 @@ public class FullCheckIntegrationTest
 
         // then
         verifyInconsistency( RecordType.LABEL_SCAN_DOCUMENT, result );
+    }
+
+    @Test
+    public void shouldReportIndexInconsistencies() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                for ( Long indexedNodeId : indexedNodes )
+                {
+                    tx.delete( new NodeRecord( indexedNodeId, -1, -1 ) );
+                }
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( RecordType.INDEX, stats );
     }
 
     @Test
@@ -530,7 +555,7 @@ public class FullCheckIntegrationTest
                         new SchemaIndexProvider.Descriptor( "lucene", "1.0" ) );
                 schema.setData( new RecordSerializer().append( rule ).serialize() );
 
-                tx.createSchema( asList(schemaBefore), asList( schema ) );
+                tx.createSchema( asList( schemaBefore ), asList( schema ) );
             }
         } );
 
@@ -553,7 +578,7 @@ public class FullCheckIntegrationTest
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
-                int labelId = (int) next.label();
+                int labelId = next.label();
                 int propertyKeyId = next.propertyKey();
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );
@@ -600,7 +625,7 @@ public class FullCheckIntegrationTest
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
-                int labelId = (int) next.label();
+                int labelId = next.label();
                 int propertyKeyId = next.propertyKey();
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );

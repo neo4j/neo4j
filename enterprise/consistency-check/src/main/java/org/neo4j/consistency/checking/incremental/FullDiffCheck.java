@@ -30,6 +30,9 @@ import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.direct.SimpleDirectStoreAccess;
+import org.neo4j.kernel.api.impl.index.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -54,7 +57,8 @@ public class FullDiffCheck extends DiffCheck
         LabelScanStore labelScanStore =
             new LuceneLabelScanStoreBuilder( storeDir, diffs.getRawNeoStore(), fileSystem, logger ).build();
 
-        DirectStoreAccess stores = new SimpleDirectStoreAccess( diffs, labelScanStore );
+        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
+        DirectStoreAccess stores = new SimpleDirectStoreAccess( diffs, labelScanStore, indexes );
         return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( stores, logger );
     }
 }

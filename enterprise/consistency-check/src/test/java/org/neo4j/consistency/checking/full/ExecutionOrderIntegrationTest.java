@@ -112,6 +112,8 @@ public class ExecutionOrderIntegrationTest
         // when
         singlePass.execute( fixture, new LogDecorator( singlePassChecks ), access,
                 new InconsistencyReport( logger, singlePassSummary ) );
+        singlePass.execute( fixture, new LogDecorator( singlePassChecks ), access,
+                new InconsistencyReport( logger, singlePassSummary ) );
         multiPass.execute( fixture, new LogDecorator( multiPassChecks ), access,
                 new InconsistencyReport( logger, multiPassSummary ) );
 

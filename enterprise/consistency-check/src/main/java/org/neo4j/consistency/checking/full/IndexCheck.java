@@ -24,28 +24,28 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.consistency.store.synthetic.IndexEntry;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-class LabelScanCheck implements RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
+public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport>
 {
-    @Override
-    public void check( LabelScanDocument record, CheckerEngine<LabelScanDocument,
-            ConsistencyReport.LabelScanConsistencyReport> engine, RecordAccess records )
+    private final IndexRule indexRule;
+
+    public IndexCheck( IndexRule indexRule )
     {
-        NodeLabelRange range = record.getNodeLabelRange();
-        for ( long nodeId : range.nodes() )
-        {
-            engine.comparativeCheck( records.node( nodeId ), new NodeInUseWithCorrectLabelsCheck<LabelScanDocument,ConsistencyReport.LabelScanConsistencyReport>(
-                    record.getNodeLabelRange().labels( nodeId ) ) );
-        }
+        this.indexRule = indexRule;
     }
 
     @Override
-    public void checkChange( LabelScanDocument oldRecord, LabelScanDocument newRecord,
-                             CheckerEngine<LabelScanDocument,
-                                     ConsistencyReport.LabelScanConsistencyReport> engine, DiffRecordAccess records )
+    public void check( IndexEntry record, CheckerEngine<IndexEntry, ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
     {
-        throw new UnsupportedOperationException();
+        engine.comparativeCheck( records.node( record.getId() ),
+                new NodeInUseWithCorrectLabelsCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport>(new long[] {indexRule.getLabel()}) );
+    }
+
+    @Override
+    public void checkChange( IndexEntry oldRecord, IndexEntry newRecord, CheckerEngine<IndexEntry, ConsistencyReport
+            .IndexConsistencyReport> engine, DiffRecordAccess records )
+    {
     }
 }

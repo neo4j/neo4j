@@ -32,6 +32,7 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
@@ -71,6 +72,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.DynamicLabelConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.LabelScanConsistencyReport> LABEL_SCAN_REPORT =
             ProxyFactory.create( ConsistencyReport.LabelScanConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.IndexConsistencyReport> INDEX =
+            ProxyFactory.create( ConsistencyReport.IndexConsistencyReport.class );
 
     private final DiffRecordAccess records;
     private final InconsistencyReport report;
@@ -408,17 +411,24 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord,
-                              ConsistencyReport.LabelTokenConsistencyReport> checker )
+    public void forLabelName( LabelTokenRecord label,
+                              RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
         dispatch( RecordType.LABEL, LABEL_KEY_REPORT, label, checker );
     }
 
     @Override
-    public void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument,
-                                  ConsistencyReport.LabelScanConsistencyReport> checker )
+    public void forNodeLabelScan( LabelScanDocument document,
+                                  RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker )
     {
         dispatch( RecordType.LABEL_SCAN_DOCUMENT, LABEL_SCAN_REPORT, document, checker );
+    }
+
+    @Override
+    public void forIndexEntry( IndexEntry entry,
+                               RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker )
+    {
+        dispatch( RecordType.INDEX, INDEX, entry, checker );
     }
 
     @Override
