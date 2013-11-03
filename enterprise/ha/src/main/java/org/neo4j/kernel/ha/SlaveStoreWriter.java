@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
+import org.neo4j.backup.OnlineBackupExtensionFactory;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -33,7 +34,9 @@ import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;

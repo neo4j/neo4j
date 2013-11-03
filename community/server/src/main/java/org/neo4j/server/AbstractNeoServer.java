@@ -97,9 +97,11 @@ public abstract class AbstractNeoServer implements NeoServer
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
+
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
     private Logging logging;
+
     private static final boolean SUCCESS = true;
     private static final boolean FAILURE = ! SUCCESS;
 
@@ -669,7 +671,7 @@ public abstract class AbstractNeoServer implements NeoServer
         }
 
         @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+        public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
         {
             return selector.select( type, option( resolveKnownSingleDependency( type ) ) );
         }

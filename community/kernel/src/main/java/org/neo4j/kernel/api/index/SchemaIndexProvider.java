@@ -123,21 +123,21 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         }
     };
 
-    public static final SelectionStrategy<SchemaIndexProvider> HIGHEST_PRIORITIZED_OR_NONE =
-            new SelectionStrategy<SchemaIndexProvider>()
+    public static final SelectionStrategy HIGHEST_PRIORITIZED_OR_NONE =
+            new SelectionStrategy()
     {
         @Override
-        public SchemaIndexProvider select( Class<SchemaIndexProvider> type, Iterable<SchemaIndexProvider> candidates )
+        public <T> T select( Class<T> type, Iterable<T> candidates )
                 throws IllegalArgumentException
         {
-            List<SchemaIndexProvider> all = addToCollection( candidates, new ArrayList<SchemaIndexProvider>() );
+            List<Comparable> all = (List<Comparable>) addToCollection( candidates, new ArrayList<T>() );
             if ( all.isEmpty() )
             {
                 throw new IllegalArgumentException( "No schema index provider " +
                         SchemaIndexProvider.class.getName() + " found. " + servicesClassPathEntryInformation() );
             }
             Collections.sort( all );
-            return all.get( all.size()-1 );
+            return (T) all.get( all.size()-1 );
         }
     };
 

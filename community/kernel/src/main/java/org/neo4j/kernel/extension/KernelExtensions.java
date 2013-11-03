@@ -197,14 +197,12 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         listeners = Listeners.removeListener( listener, listeners );
     }
 
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
     @Override
-    public <T> T resolveDependency( final Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
+    public <T> T resolveDependency( final Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
     {
-        Iterable<Lifecycle> lifecycleInstances = life.getLifecycleInstances();
-        Iterable<Lifecycle> filteredInstances = filter( new TypeFilter( type ), lifecycleInstances );
-        Iterable<T> mappedInstances = map( new CastFunction( type ), filteredInstances );
-        return selector.select( type, mappedInstances );
+        Iterable<Lifecycle> filtered = filter( new TypeFilter( type ), life.getLifecycleInstances() );
+        Iterable<T> casted = map( new CastFunction( type ), filtered );
+        return selector.select( type, casted );
     }
 
     private Object getKernelExtensionDependencies( KernelExtensionFactory<?> factory )

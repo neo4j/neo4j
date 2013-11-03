@@ -1399,7 +1399,7 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+        public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
         {
             // Try known single dependencies
             T result = resolveKnownSingleDependency( type );

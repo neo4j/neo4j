@@ -47,12 +47,12 @@ public interface DependencyResolver
      * @return the resolved dependency for the given type.
      * @throws IllegalArgumentException if no matching dependency was found.
      */
-    <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException;
+    <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException;
     
     /**
      * Responsible for making the choice between available candidates. 
      */
-    interface SelectionStrategy<T>
+    interface SelectionStrategy
     {
         /**
          * Given a set of candidates, select an appropriate one. Even if there are candidates this
@@ -64,7 +64,7 @@ public interface DependencyResolver
          * @return a suitable candidate among all available.
          * @throws IllegalArgumentException if no suitable candidate was found.
          */
-        T select( Class<T> type, Iterable<T> candidates ) throws IllegalArgumentException;
+        <T> T select( Class<T> type, Iterable<T> candidates ) throws IllegalArgumentException;
     }
     
     /**
@@ -77,25 +77,19 @@ public interface DependencyResolver
         private static final SelectionStrategy FIRST = new SelectionStrategy()
         {
             @Override
-            public Object select( Class type, Iterable candidates ) throws IllegalArgumentException
+            public <T> T select( Class<T> type, Iterable<T> candidates ) throws IllegalArgumentException
             {
-                Iterator iterator = candidates.iterator();
+                Iterator<T> iterator = candidates.iterator();
                 if ( !iterator.hasNext() )
                     throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );
                 return iterator.next();
             }
         };
-        
-        @SuppressWarnings( "unchecked" )
-        private static <T> SelectionStrategy<T> first()
-        {
-            return FIRST;
-        }
-        
+
         @Override
         public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
         {
-            return resolveDependency( type, Adapter.<T>first() );
+            return resolveDependency( type, FIRST );
         }
     }
 }

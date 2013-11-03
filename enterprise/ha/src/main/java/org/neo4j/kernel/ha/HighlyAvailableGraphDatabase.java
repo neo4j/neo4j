@@ -30,6 +30,7 @@ import javax.transaction.Transaction;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
@@ -430,7 +431,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
         idGeneratorFactory = new HaIdGeneratorFactory( master, logging );
-        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( masterDelegateInvocationHandler,
+        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, logging, updateableSchemaState, kernelExtensions.listFactories() );
         /*
@@ -616,12 +617,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return new DependencyResolver.Adapter()
         {
             @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
             {
                 T result;
                 try
                 {
-                    result = dependencyResolver.resolveDependency( type );
+                    result = dependencyResolver.resolveDependency( type, selector );
                 }
                 catch ( IllegalArgumentException e )
                 {
@@ -642,6 +643,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         result = type.cast( slaves );
                     }
                     else if ( ClusterClient.class.isAssignableFrom( type ) )
+                    {
+                        result = type.cast( clusterClient );
+                    }
+                    else if ( BindingNotifier.class.isAssignableFrom( type ) )
                     {
                         result = type.cast( clusterClient );
                     }

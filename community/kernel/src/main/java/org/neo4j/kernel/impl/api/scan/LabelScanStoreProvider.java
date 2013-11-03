@@ -65,21 +65,21 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
      * highest {@link #kernelExtensionPriority() priority} will be selected. If there are no such stores
      * then an {@link IllegalStateException} will be thrown.
      */
-    public static SelectionStrategy<LabelScanStoreProvider> HIGHEST_PRIORITIZED =
-            new SelectionStrategy<LabelScanStoreProvider>()
+    public static SelectionStrategy HIGHEST_PRIORITIZED =
+            new SelectionStrategy()
     {
         @Override
-        public LabelScanStoreProvider select( Class<LabelScanStoreProvider> type, Iterable<LabelScanStoreProvider> candidates )
+        public <T> T select( Class<T> type, Iterable<T> candidates )
                 throws IllegalArgumentException
         {
-            List<LabelScanStoreProvider> all = addToCollection( candidates, new ArrayList<LabelScanStoreProvider>() );
+            List<Comparable> all = (List<Comparable>) addToCollection( candidates, new ArrayList<T>() );
             if ( all.isEmpty() )
             {
                 throw new IllegalArgumentException( "No label scan store provider " +
                         LabelScanStoreProvider.class.getName() + " found. " + servicesClassPathEntryInformation() );
             }
             Collections.sort( all );
-            return all.get( all.size()-1 );
+            return (T) all.get( all.size()-1 );
         }
     };
 

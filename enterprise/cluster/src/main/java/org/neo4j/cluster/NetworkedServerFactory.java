@@ -92,6 +92,12 @@ public class NetworkedServerFactory
             {
                 return 5001;
             }
+
+            @Override
+            public int port()
+            {
+                return config.get( ClusterSettings.cluster_server ).getPort();
+            }
         }, receiver, logging);
 
 /*
@@ -126,11 +132,17 @@ public class NetworkedServerFactory
                 objectOutputStreamFactory );
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
+            private StateTransitionLogger logger;
+
             @Override
             public void listeningAt( URI me )
             {
                 protocolServer.listeningAt( me );
-                protocolServer.addStateTransitionListener( new StateTransitionLogger( logging ) );
+                if (logger == null)
+                {
+                    logger = new StateTransitionLogger( logging );
+                    protocolServer.addStateTransitionListener( logger );
+                }
             }
 
             @Override
