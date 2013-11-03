@@ -160,51 +160,63 @@ public class SchemaIndexHaIT
         We want to observe that the slave builds an index that eventually comes online.
          */
 
+
         // GIVEN
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
 
         ManagedCluster cluster = clusterRule.startCluster( dbFactory );
-        cluster.await( allSeesAllAsAvailable() );
 
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-
-        // All slaves in the cluster, except the one I care about, proceed as normal
-        proceedAsNormalWithIndexPopulationOnAllSlavesExcept( dbFactory, cluster, slave );
-
-        // A slave is offline, and has no store files
-        ClusterManager.RepairKit slaveDown = bringSlaveOfflineAndRemoveStoreFiles( cluster, slave );
-
-        // And I create an index on the master, and wait for population to start
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
-        Map<Object, Node> data = createSomeData(master);
-        createIndex( master );
-        dbFactory.awaitPopulationStarted( master );
-
-
-        // WHEN the slave comes online before population has finished on the master
-        slave = slaveDown.repair();
-        cluster.await( allSeesAllAsAvailable(), 120 );
-        cluster.sync();
-
-
-        // THEN, population should finish successfully on both master and slave
-        dbFactory.triggerFinish( master );
-        dbFactory.triggerFinish( slave );
-
-        // Check master
-        IndexDefinition index;
-        try ( Transaction tx = master.beginTx())
+        try
         {
-            index = single( master.schema().getIndexes() );
-            awaitIndexOnline( index, master, data );
-            tx.success();
+            cluster.await( allSeesAllAsAvailable() );
+
+            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
+            // All slaves in the cluster, except the one I care about, proceed as normal
+            proceedAsNormalWithIndexPopulationOnAllSlavesExcept( dbFactory, cluster, slave );
+
+            // A slave is offline, and has no store files
+            ClusterManager.RepairKit slaveDown = bringSlaveOfflineAndRemoveStoreFiles( cluster, slave );
+
+            // And I create an index on the master, and wait for population to start
+            HighlyAvailableGraphDatabase master = cluster.getMaster();
+            Map<Object, Node> data = createSomeData(master);
+            createIndex( master );
+            dbFactory.awaitPopulationStarted( master );
+
+
+            // WHEN the slave comes online before population has finished on the master
+            slave = slaveDown.repair();
+            cluster.await( allSeesAllAsAvailable(), 180 );
+            cluster.sync();
+
+
+            // THEN, population should finish successfully on both master and slave
+            dbFactory.triggerFinish( master );
+            dbFactory.triggerFinish( slave );
+
+            // Check master
+            IndexDefinition index;
+            try ( Transaction tx = master.beginTx())
+            {
+                index = single( master.schema().getIndexes() );
+                awaitIndexOnline( index, master, data );
+                tx.success();
+            }
+
+            // Check slave
+            try ( Transaction tx = slave.beginTx() )
+            {
+                awaitIndexOnline( index, slave, data );
+                tx.success();
+            }
         }
-
-        // Check slave
-        try ( Transaction tx = slave.beginTx() )
+        finally
         {
-            awaitIndexOnline( index, slave, data );
-            tx.success();
+            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+            {
+                dbFactory.triggerFinish( db );
+            }
         }
     }
 
