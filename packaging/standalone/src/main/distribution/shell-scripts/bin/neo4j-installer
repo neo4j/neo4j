@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 
 source $(dirname $0)/utils
 installservice() {
@@ -107,6 +106,12 @@ choose_user() {
   fi
 }
 
+warning() {
+  echo "WARNING: this installer is deprecated and may not be the optimal way to install Neo4j on your system.
+  Please see http://docs.neo4j.org/chunked/milestone/server.html for up to date information on installing Neo4j."
+  read -p 'Press any key to continue'
+}
+
 WAIT=true
 SERVICE_NAME='neo4j-service'
 NEO4J_HOME=`(cd  $(dirname $0)/.. && pwd)`
@@ -121,6 +126,7 @@ LAUNCHD_NAME="org.neo4j.server"
 
 case $1 in
   install)
+    warning
     getconfig "${NEO4J_CONFIG}/neo4j-wrapper.conf"
     choose_user
     installservice
