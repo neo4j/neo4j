@@ -29,15 +29,12 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.cluster.com.message.Message.timeout;
 
 /**
  * Context used by the {@link HeartbeatState} state machine.

@@ -22,9 +22,6 @@ package org.neo4j.cluster;
 import java.net.URI;
 
 import org.neo4j.cluster.com.BindingNotifier;
-import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
-import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateMachineConversations;
 import org.neo4j.cluster.statemachine.StateMachineProxyFactory;
@@ -52,12 +49,6 @@ public class ProtocolServer implements BindingNotifier
         this.me = me;
         this.stateMachines = stateMachines;
         this.msgLog = logging.getMessagesLog( getClass() );
-
-/*
-        FromHeaderMessageProcessor fromHeaderMessageProcessor = new FromHeaderMessageProcessor();
-        addBindingListener( fromHeaderMessageProcessor );
-        stateMachines.addMessageProcessor( fromHeaderMessageProcessor );
-*/
 
         StateMachineConversations conversations = new StateMachineConversations(me);
         proxyFactory = new StateMachineProxyFactory( stateMachines, conversations, me );
@@ -145,28 +136,4 @@ public class ProtocolServer implements BindingNotifier
     {
         return boundAt;
     }
-
-/*
-    private class FromHeaderMessageProcessor
-            implements MessageProcessor, BindingListener
-    {
-        private String me;
-
-        @Override
-        public void listeningAt( URI me )
-        {
-            this.me = me.toString();
-        }
-
-        @Override
-        public boolean process( Message<? extends MessageType> message )
-        {
-            if ( message.hasHeader( Message.TO ) && me != null )
-            {
-                message.setHeader( Message.FROM, me );
-            }
-            return true;
-        }
-    }
-*/
 }

@@ -77,12 +77,6 @@ public class NetworkedServerFactory
             {
                 return config.get( ClusterSettings.cluster_server );
             }
-
-            @Override
-            public int defaultPort()
-            {
-                return 5001;
-            }
         }, logging);
 
         final NetworkSender sender = new NetworkSender(new NetworkSender.Configuration()
@@ -99,23 +93,6 @@ public class NetworkedServerFactory
                 return config.get( ClusterSettings.cluster_server ).getPort();
             }
         }, receiver, logging);
-
-/*
-        final NetworkInstance node = new NetworkInstance( new NetworkInstance.Configuration()
-        {
-            @Override
-            public HostnamePort clusterServer()
-            {
-                return config.get( ClusterSettings.cluster_server );
-            }
-
-            @Override
-            public int defaultPort()
-            {
-                return 5001;
-            }
-        }, logging );
-*/
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
         {

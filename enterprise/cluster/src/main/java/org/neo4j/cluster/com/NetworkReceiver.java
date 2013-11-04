@@ -58,17 +58,17 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 
 /**
- * TCP version of a Networked Instance. This handles receiving messages to be consumed by local statemachines and
+ * TCP version of a Networked Instance. This handles receiving messages to be consumed by local state-machines and
  * sending outgoing messages
  */
 public class NetworkReceiver
         implements MessageSource, Lifecycle
 {
+
+
     public interface Configuration
     {
         HostnamePort clusterServer();
-
-        int defaultPort();
     }
 
     public interface NetworkChannelsListener
@@ -81,6 +81,7 @@ public class NetworkReceiver
     }
 
     public static final String CLUSTER_SCHEME = "cluster";
+    public static final String INADDR_ANY = "0.0.0.0";
 
     private ChannelGroup channels;
 
@@ -91,7 +92,6 @@ public class NetworkReceiver
 
     private Configuration config;
     private StringLogger msgLog;
-    private URI me;
 
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
@@ -162,7 +162,7 @@ public class NetworkReceiver
                 InetAddress host;
                 String address = config.clusterServer().getHost();
                 InetSocketAddress localAddress;
-                if ( address == null || address.equals( "0.0.0.0" ))
+                if ( address == null || address.equals( INADDR_ANY ))
                 {
                     localAddress = new InetSocketAddress( checkPort );
                 }
@@ -223,8 +223,6 @@ public class NetworkReceiver
 
     public void listeningAt( final URI me )
     {
-        this.me = me;
-
         Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
         {
             @Override
@@ -267,11 +265,6 @@ public class NetworkReceiver
         } );
     }
 
-    public Channel getChannel( URI uri )
-    {
-        return connections.get( uri );
-    }
-
     public void addNetworkChannelsListener( NetworkChannelsListener listener )
     {
         listeners = Listeners.addListener( listener, listeners );
@@ -284,7 +277,6 @@ public class NetworkReceiver
         public ChannelPipeline getPipeline() throws Exception
         {
             ChannelPipeline pipeline = Channels.pipeline();
-//            pipeline.addFirst( "log", new LoggingHandler() );
             pipeline.addLast( "frameDecoder",new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
             pipeline.addLast( "serverHandler", new MessageReceiver() );
             return pipeline;
@@ -294,11 +286,6 @@ public class NetworkReceiver
     private class MessageReceiver
             extends SimpleChannelHandler
     {
-        private MessageReceiver()
-        {
-//            System.out.println("CREATE RECEIVER");
-        }
-
         @Override
         public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
         {

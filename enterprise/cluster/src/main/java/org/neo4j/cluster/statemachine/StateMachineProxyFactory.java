@@ -89,8 +89,8 @@ public class StateMachineProxyFactory
 
         try
         {
-            MessageType typeAsEnum = (MessageType) Enum.valueOf( (Class<? extends Enum>) stateMachine.getMessageType
-                    (), method.getName() );
+            Class<? extends MessageType> messageType = stateMachine.getMessageType();
+            MessageType typeAsEnum = (MessageType) Enum.valueOf( (Class<? extends Enum>) messageType, method.getName() );
             Message<?> message = Message.internal( typeAsEnum, arg );
             if ( me != null )
             {

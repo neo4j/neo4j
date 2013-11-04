@@ -22,7 +22,6 @@ package org.neo4j.com;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -91,6 +90,7 @@ import static org.neo4j.com.Protocol.writeString;
 public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
 {
     private InetSocketAddress socketAddress;
+    private static final String INADDR_ANY = "0.0.0.0";
     private final Clock clock;
 
     public interface Configuration
@@ -186,7 +186,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
 
         for ( int port = ports[0]; port <= ports[1]; port++ )
         {
-            if ( config.getServerAddress().getHost() == null || config.getServerAddress().getHost().equals( "0.0.0.0" ))
+            if ( config.getServerAddress().getHost() == null || config.getServerAddress().getHost().equals( INADDR_ANY ))
             {
                 socketAddress = new InetSocketAddress( port );
             }
@@ -445,7 +445,6 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
                 {
                     // It's ok, there is nothing to finish anyway, since this is thrown when the transaction was not
                     // found
-                    return;
                 }
                 catch ( Throwable e )
                 {

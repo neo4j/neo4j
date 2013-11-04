@@ -50,9 +50,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 
-/**
- * TODO
- */
 public class NetworkSenderReceiverTest
 {
     public enum TestMessage implements MessageType
@@ -131,12 +128,6 @@ public class NetworkSenderReceiverTest
                 public HostnamePort clusterServer()
                 {
                     return new HostnamePort( "127.0.0.1:1235" );
-                }
-
-                @Override
-                public int defaultPort()
-                {
-                    return 5001;
                 }
             }, new DevNullLoggingService() )
             {
@@ -261,12 +252,6 @@ public class NetworkSenderReceiverTest
                 public HostnamePort clusterServer()
                 {
                     return conf.get( ClusterSettings.cluster_server );
-                }
-
-                @Override
-                public int defaultPort()
-                {
-                    return 5001;
                 }
             }, new DevNullLoggingService()));
 

@@ -283,12 +283,6 @@ public class ClusterClient extends LifecycleAdapter
             {
                 return config.getAddress();
             }
-
-            @Override
-            public int defaultPort()
-            {
-                return 5001;
-            }
         }, logging );
 
         NetworkSender sender = new NetworkSender(new NetworkSender.Configuration()
