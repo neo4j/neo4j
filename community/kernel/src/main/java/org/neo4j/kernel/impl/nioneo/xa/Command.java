@@ -1187,6 +1187,10 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
+            if ( schemaRule != null )
+            {
+                return getMode() + ":" + schemaRule.toString();
+            }
             return "SchemaRule" + recordsAfter;
         }
 
@@ -1205,7 +1209,9 @@ public abstract class Command extends XaCommand
         public void execute()
         {
             for ( DynamicRecord record : recordsAfter )
+            {
                 store.updateRecord( record );
+            }
 
             if ( schemaRule instanceof IndexRule )
             {
