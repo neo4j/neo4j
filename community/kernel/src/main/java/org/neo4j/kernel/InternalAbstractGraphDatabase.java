@@ -126,7 +126,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
@@ -1058,12 +1057,6 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
-    public KernelData getKernelData()
-    {
-        return extensions;
-    }
-
-    @Override
     public IndexManager index()
     {
         // TODO: txManager.assertInTransaction();
@@ -1111,30 +1104,6 @@ public abstract class InternalAbstractGraphDatabase
     public RelationshipTypeTokenHolder getRelationshipTypeTokenHolder()
     {
         return relationshipTypeTokenHolder;
-    }
-
-    @Override
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
-        return idGeneratorFactory;
-    }
-
-    @Override
-    public DiagnosticsManager getDiagnosticsManager()
-    {
-        return diagnosticsManager;
-    }
-
-    @Override
-    public PersistenceSource getPersistenceSource()
-    {
-        return persistenceSource;
-    }
-
-    @Override
-    public final StringLogger getMessageLog()
-    {
-        return msgLog;
     }
 
     @Override
@@ -1397,6 +1366,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( NeoStoreProvider.class.isAssignableFrom( type ) )
             {
                 return type.cast( neoDataSource );
+            }
+            else if ( IdGeneratorFactory.class.isAssignableFrom( type ) )
+            {
+                return type.cast( idGeneratorFactory );
             }
             else if ( DependencyResolver.class.equals( type ) )
             {
