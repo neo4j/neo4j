@@ -34,7 +34,6 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -60,7 +59,7 @@ public class ClusterContext
     private Executor executor;
     private Logging logging;
     private List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage.ConfigurationRequestState>();
-    private String joiningClusterName;
+    private String joiningClusterName; // for debugging
     private Iterable<URI> joiningInstances;
     URI boundAt;
     private boolean joinDenied;
@@ -223,11 +222,6 @@ public class ClusterContext
         return me.equals( server );
     }
 
-    public boolean isElectedAs( String roleName )
-    {
-        return me.equals( configuration.getElected( roleName ) );
-    }
-
     public boolean isInCluster()
     {
         return Iterables.count( configuration.getMemberURIs() ) != 0;
@@ -237,11 +231,6 @@ public class ClusterContext
     {
         return joiningInstances;
     }
-
-//    public VersionMapper getVersionMapper()
-//    {
-//        return versionMapper;
-//    }
 
     public ObjectOutputStreamFactory getObjectOutputStreamFactory() {
         return objectOutputStreamFactory;

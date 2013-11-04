@@ -55,7 +55,6 @@ import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
@@ -196,18 +195,7 @@ public class NetworkSender
     {
         if ( message.hasHeader( Message.TO ) )
         {
-            String to = message.getHeader( Message.TO );
-
-/*
-            if ( to.equals( me.toString() ) )
-            {
-                receiver.receive( message );
-            }
-            else
-*/
-            {
-                send( message );
-            }
+            send( message );
         }
         else
         {
@@ -356,6 +344,7 @@ public class NetworkSender
 
     private Channel openChannel( URI clusterUri )
     {
+        // TODO refactor the creation of InetSocketAddress'es into HostnamePort, so we can be rid of this defaultPort method and simplify code a couple of places
         SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() == -1 ? config
                 .defaultPort() : clusterUri.getPort() );
 

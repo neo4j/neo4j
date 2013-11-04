@@ -38,12 +38,12 @@ public class OnlineBackupKernelExtension implements Lifecycle
 {
     // This is the role used to announce that a cluster member can handle backups
     public static final String BACKUP = "backup";
+    // In this context, the IPv4 zero-address is understood as "any address on this host."
+    public static final String INADDR_ANY = "0.0.0.0";
 
     private Config config;
     private GraphDatabaseAPI graphDatabaseAPI;
-    private BindingNotifier bindingNotifier;
     private BackupServer server;
-    private URI backupUri;
     private volatile URI me;
 
     public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI)
@@ -89,7 +89,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 {
                     // Not running HA
                 }
-                catch ( IllegalArgumentException e )
+                catch ( IllegalArgumentException e ) // NOPMD
                 {
                     // HA available, but not used
                 }
@@ -112,14 +112,14 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
             try
             {
-                ClusterMemberAvailability client = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+                ClusterMemberAvailability client = getClusterMemberAvailability();
                 client.memberIsUnavailable( BACKUP );
             }
             catch ( NoClassDefFoundError e )
             {
                 // Not running HA
             }
-            catch ( IllegalArgumentException e )
+            catch ( IllegalArgumentException e ) // NOPMD
             {
                 // HA available, but not used
             }
@@ -144,8 +144,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 {
                     try
                     {
-                        ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
-                        backupUri = URI.create( "backup://" + (ServerUtil.getHostString(server.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(server.getSocketAddress())) + ":" + server.getSocketAddress().getPort() );
+                        URI backupUri = createBackupURI();
+                        ClusterMemberAvailability ha = getClusterMemberAvailability();
                         ha.memberIsAvailable( BACKUP, backupUri );
                     }
                     catch ( Throwable t )
@@ -166,8 +166,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 {
                     try
                     {
-                        ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
-                        backupUri = URI.create( "backup://" + (ServerUtil.getHostString(server.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(server.getSocketAddress())) + ":" + server.getSocketAddress().getPort() );
+                        ClusterMemberAvailability ha = getClusterMemberAvailability();
                         ha.memberIsUnavailable( BACKUP );
                     }
                     catch ( Throwable t )
@@ -177,5 +176,16 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 }
             }
         }
+    }
+
+    private ClusterMemberAvailability getClusterMemberAvailability() {
+        return graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+    }
+
+    private URI createBackupURI() {
+        String hostString = ServerUtil.getHostString( server.getSocketAddress() );
+        String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
+        int port = server.getSocketAddress().getPort();
+        return URI.create("backup://" + host + ":" + port);
     }
 }

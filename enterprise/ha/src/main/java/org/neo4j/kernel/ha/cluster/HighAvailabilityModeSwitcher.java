@@ -115,6 +115,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     public static final String MASTER = "master";
     public static final String SLAVE = "slave";
+    public static final String INADDR_ANY = "0.0.0.0";
 
     public static int getServerId( URI haUri )
     {
@@ -283,9 +284,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             idGeneratorFactory.switchToMaster();
             life.start();
 
-            URI haUri = URI.create( "ha://" + (ServerUtil.getHostString(masterServer.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(masterServer.getSocketAddress())) + ":" +
-                    masterServer.getSocketAddress().getPort() + "?serverId=" +
-                    config.get( ClusterSettings.server_id ) );
+            URI haUri = createHaURI(masterServer);
             clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
             msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
                     ", successfully moved to master" );
@@ -294,6 +293,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         {
             msgLog.logMessage( "Failed to switch to master", e );
         }
+    }
+
+    private URI createHaURI(Server server) {
+        String hostString = ServerUtil.getHostString(server.getSocketAddress());
+        int port = server.getSocketAddress().getPort();
+        Integer serverId = config.get(ClusterSettings.server_id);
+        String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
+        return URI.create("ha://" + host + ":" + port + "?serverId=" + serverId);
     }
 
     private void switchToSlave()
@@ -366,9 +373,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             life.add( server );
             life.start();
 
-            URI haUri = URI.create( "ha://" + (ServerUtil.getHostString(server.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(server.getSocketAddress())) + ":" +
-                    server.getSocketAddress().getPort() + "?serverId=" +
-                    config.get( ClusterSettings.server_id ) );
+            URI haUri = createHaURI( server );
             clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );
             return true;
         }
