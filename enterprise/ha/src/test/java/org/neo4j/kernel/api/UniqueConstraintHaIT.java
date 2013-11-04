@@ -48,13 +48,12 @@ import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class UniqueConstraintHaIT
 {
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass(), clusterOfSize( 3 ) );
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
 
     @Test
     public void shouldCreateUniqueConstraintOnMaster() throws Exception

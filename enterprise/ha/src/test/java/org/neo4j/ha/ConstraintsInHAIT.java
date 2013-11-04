@@ -21,6 +21,7 @@ package org.neo4j.ha;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -29,8 +30,8 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class ConstraintsInHAIT
 {
@@ -59,5 +60,5 @@ public class ConstraintsInHAIT
     }
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass(), clusterOfSize( 3 ) );
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
 }

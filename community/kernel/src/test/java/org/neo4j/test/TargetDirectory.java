@@ -60,9 +60,7 @@ public class TargetDirectory
         @Override
         public Statement apply( final Statement base, Description description )
         {
-            String testName = description.getMethodName();
-            String dirName = DigestUtils.md5Hex( testName );
-            subdir = TargetDirectory.this.registeredDirectory( dirName, testName, clean );
+            subdir = directoryForDescription( description, clean );
             return new Statement()
             {
                 @Override
@@ -121,7 +119,14 @@ public class TargetDirectory
         return dir;
     }
 
-    public File registeredDirectory( String dirName, String testName, boolean clean )
+    public File directoryForDescription( Description description, boolean clean )
+    {
+        String testName = description.getMethodName();
+        String dirName = DigestUtils.md5Hex( testName );
+        return TargetDirectory.this.registeredDirectory( dirName, testName, clean );
+    }
+
+    private File registeredDirectory( String dirName, String testName, boolean clean )
     {
         try
         {
@@ -232,6 +237,7 @@ public class TargetDirectory
         }
         catch ( URISyntaxException e )
         {
+            // ignored
         }
         return new File( "target" );
     }

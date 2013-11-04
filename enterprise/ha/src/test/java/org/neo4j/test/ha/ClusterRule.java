@@ -23,6 +23,9 @@ import java.io.File;
 import java.util.Map;
 
 import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 
@@ -33,14 +36,15 @@ import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class ClusterRule extends ExternalResource
 {
-    private final File storeDirectory;
-    private final ClusterManager.Provider provider;
-    private ClusterManager clusterManager;
+    private final Class<?> testClass;
 
-    public ClusterRule(Class<?> testClass, ClusterManager.Provider provider )
+    private ClusterManager clusterManager;
+    private File storeDirectory;
+    private Description description;
+
+    public ClusterRule( Class<?> testClass )
     {
-        this.storeDirectory = TargetDirectory.forTest( testClass ).directory( "cluster", true );
-        this.provider = provider;
+        this.testClass = testClass;
     }
 
     public ClusterManager.ManagedCluster startCluster() throws Exception
@@ -78,6 +82,20 @@ public class ClusterRule extends ExternalResource
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
         cluster.await( masterAvailable() );
         return cluster;
+    }
+
+    @Override
+    public Statement apply( Statement base, Description description )
+    {
+        this.description = description;
+        return super.apply( base, description );
+    }
+
+
+    @Override
+    protected void before() throws Throwable
+    {
+        this.storeDirectory = TargetDirectory.forTest( testClass ).directoryForDescription( description, true );
     }
 
     @Override

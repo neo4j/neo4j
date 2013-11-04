@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -60,14 +61,17 @@ import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class SchemaIndexHaIT
@@ -289,6 +293,7 @@ public class SchemaIndexHaIT
         }
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private ClusterManager.RepairKit bringSlaveOfflineAndRemoveStoreFiles( ManagedCluster cluster, HighlyAvailableGraphDatabase slave ) throws IOException
     {
         ClusterManager.RepairKit slaveDown = cluster.shutdown(slave);
@@ -300,7 +305,7 @@ public class SchemaIndexHaIT
     }
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass(), clusterOfSize( 3 ) );
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
 
     private final String key = "key";
     private final Label label = label( "label" );
