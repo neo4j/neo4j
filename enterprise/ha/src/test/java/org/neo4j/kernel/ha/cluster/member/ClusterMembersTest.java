@@ -44,6 +44,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ClusterMembersTest
 {
@@ -306,7 +307,7 @@ public class ClusterMembersTest
 
     private ClusterConfiguration clusterConfiguration( URI... uris )
     {
-        ClusterConfiguration toReturn = new ClusterConfiguration( "neo4j.ha", asList( uris ) );
+        ClusterConfiguration toReturn = new ClusterConfiguration( "neo4j.ha", StringLogger.SYSTEM, asList( uris ) );
         toReturn.joined( clusterId1, clusterUri1 );
         toReturn.joined( clusterId2, clusterUri2 );
         if ( uris.length == 3 )
