@@ -102,7 +102,6 @@ public enum SnapshotState
                             SnapshotMessage.SnapshotState state = message.getPayload();
 
                             // If we have already delivered everything that is rolled into this snapshot, ignore it
-                            System.out.println(context.getClusterContext().getMyId()+":"+state.getLastDeliveredInstanceId()+"/"+context.getLearnerContext().getLastDeliveredInstanceId());
                             state.setState( context.getSnapshotProvider(), context.getClusterContext().getObjectInputStreamFactory() );
 
                             return ready;
