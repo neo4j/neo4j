@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -553,5 +554,21 @@ public class ServerUtil
                 return item.getScheme().equals( scheme );
             }
         }, uris ) );
+    }
+
+    /**
+     * Figure out the host string of a given socket address, similar to the Java 7 InetSocketAddress.getHostString().
+     *
+     * Calls to this should be replace once Neo4j is Java 7 only.
+     *
+     * @param socketAddress
+     * @return
+     */
+    public static String getHostString(InetSocketAddress socketAddress )
+    {
+        if (socketAddress.isUnresolved())
+            return socketAddress.getHostName();
+        else
+            return socketAddress.getAddress().getHostAddress();
     }
 }

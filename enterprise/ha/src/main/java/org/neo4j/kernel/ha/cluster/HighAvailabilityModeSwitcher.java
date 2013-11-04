@@ -34,6 +34,7 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
+import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.HostnamePort;
@@ -268,7 +269,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             idGeneratorFactory.switchToMaster();
             life.start();
 
-            URI haUri = URI.create( "ha://" + (masterServer.getSocketAddress().getHostString().contains("0.0.0.0")?me.getHost():masterServer.getSocketAddress().getHostString()) + ":" +
+            URI haUri = URI.create( "ha://" + (ServerUtil.getHostString(masterServer.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(masterServer.getSocketAddress())) + ":" +
                     masterServer.getSocketAddress().getPort() + "?serverId=" +
                     config.get( ClusterSettings.server_id ) );
             clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
@@ -348,7 +349,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             life.add( server );
             life.start();
 
-            URI haUri = URI.create( "ha://" + (server.getSocketAddress().getHostString().contains("0.0.0.0")?me.getHost():server.getSocketAddress().getHostString()) + ":" +
+            URI haUri = URI.create( "ha://" + (ServerUtil.getHostString(server.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(server.getSocketAddress())) + ":" +
                     server.getSocketAddress().getPort() + "?serverId=" +
                     config.get( ClusterSettings.server_id ) );
             clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );

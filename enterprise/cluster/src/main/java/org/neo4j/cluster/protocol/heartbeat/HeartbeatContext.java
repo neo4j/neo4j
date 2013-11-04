@@ -198,21 +198,6 @@ public class HeartbeatContext
         listeners = Listeners.removeListener( listener, listeners );
     }
 
-    public void startHeartbeatTimers( Message<?> message )
-    {
-        // Start timers for sending and receiving heartbeats
-        for ( InstanceId server : clusterContext.getConfiguration().getMemberIds() )
-        {
-            if ( !clusterContext.isMe( server ) )
-            {
-                clusterContext.timeouts.setTimeout( HeartbeatMessage.i_am_alive + "-" + server,
-                        timeout( HeartbeatMessage.timed_out, message, server ) );
-                clusterContext.timeouts.setTimeout( HeartbeatMessage.sendHeartbeat + "-" + server,
-                        timeout( HeartbeatMessage.sendHeartbeat, message, server ) );
-            }
-        }
-    }
-
     public void serverLeftCluster( InstanceId node )
     {
         failed.remove( node );
