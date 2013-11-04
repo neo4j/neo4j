@@ -85,7 +85,7 @@ public class MultiPaxosNetworkTest
 
         NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
                 new MultiPaxosServerFactory(
-                        new ClusterConfiguration( "default",
+                        new ClusterConfiguration( "default", logging.getMessagesLog( ClusterConfiguration.class ),
                                 "cluster://localhost:5001",
                                 "cluster://localhost:5002",
                                 "cluster://localhost:5003" ),
