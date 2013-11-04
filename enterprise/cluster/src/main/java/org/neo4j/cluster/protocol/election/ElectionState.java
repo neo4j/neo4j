@@ -31,6 +31,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * State machine that implements the {@link Election} API.
@@ -74,12 +75,16 @@ public enum ElectionState
                 )
                         throws Throwable
                 {
+                    StringLogger logger = context.getClusterContext().getLogger( ElectionState.class );
                     switch ( message.getMessageType() )
                     {
                         case demote:
                         {
                             if ( !context.electionOk() )
                             {
+                                logger.warn( "Context says election is not OK -> Failed: " +
+                                        context.getHeartbeatContext().getFailed() + ", Total: " +
+                                        context.getClusterContext().getConfiguration().getMembers()  );
                                 break;
                             }
 
@@ -88,20 +93,23 @@ public enum ElectionState
                             context.nodeFailed( demoteNode );
                             if ( context.getClusterContext().isInCluster() )
                             {
+                                logger.warn( "I am in cluster, continuing with election" );
                                 // Only the first alive server should try elections. Everyone else waits
                                 List<InstanceId> aliveInstances = Iterables.toList(context.getHeartbeatContext().getAlive());
                                 Collections.sort( aliveInstances );
+                                logger.warn( "Found and ordered alive instances as " + aliveInstances );
                                 boolean isElector = aliveInstances.indexOf( context.getClusterContext().getMyId() ) == 0;
 
                                 if ( isElector )
                                 {
+                                    logger.warn( "I am the elector, continuing..." );
                                     // Start election process for all roles that are currently unassigned
                                     Iterable<String> rolesRequiringElection = context.getRolesRequiringElection();
                                     for ( String role : rolesRequiringElection )
                                     {
                                         if ( !context.isElectionProcessInProgress( role ) )
                                         {
-                                            context.getClusterContext().getLogger( ElectionState.class ).debug(
+                                            logger.debug(
                                                     "Starting election process for role " + role );
 
                                             context.startDemotionProcess( role, demoteNode );
@@ -123,7 +131,7 @@ public enum ElectionState
                                         }
                                         else
                                         {
-                                            context.getClusterContext().getLogger( ElectionState.class ).debug(
+                                            logger.debug(
                                                     "Election already in progress for role " + role );
                                         }
                                     }
@@ -194,7 +202,7 @@ public enum ElectionState
                                         }
                                         else
                                         {
-                                            context.getClusterContext().getLogger( ElectionState.class ).debug(
+                                            ((StringLogger) logger).debug(
                                                     "Election already in progress for role " + roleName );
                                         }
                                     }
@@ -271,7 +279,7 @@ public enum ElectionState
 
                                 if ( winner != null )
                                 {
-                                    context.getClusterContext().getLogger( ElectionState.class ).debug( "Elected " +
+                                    ((StringLogger) logger).debug( "Elected " +
                                             winner + " as " + data.getRole() );
 
                                     // Broadcast this
@@ -283,7 +291,7 @@ public enum ElectionState
                                 }
                                 else
                                 {
-                                    context.getClusterContext().getLogger( ElectionState.class ).warn( "Election " +
+                                    ((StringLogger) logger).warn( "Election " +
                                             "could not pick a winner" );
                                     if ( currentElected != null )
                                     {
@@ -312,8 +320,8 @@ public enum ElectionState
                         {
                             // Election failed - try again
                             ElectionTimeoutData electionTimeoutData = (ElectionTimeoutData) message.getPayload();
-                            context.getClusterContext().getLogger( ElectionState.class ).warn( String.format(
-                                    "Election timed out for '%s'- trying again", electionTimeoutData.getRole() ));
+                            ((StringLogger) logger).warn( String.format(
+                                    "Election timed out for '%s'- trying again", electionTimeoutData.getRole() ) );
                             context.cancelElection( electionTimeoutData.getRole() );
                             outgoing.offer( electionTimeoutData.getMessage() );
                             break;
