@@ -37,7 +37,10 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 
 /**
  * This API can be used to get access to services.
+ *
+ * @deprecated This will be moved to internal packages in the next major release.
  */
+@Deprecated
 // TODO: The methods exposing internal services directly should go away. It
 // indicates lack of abstractions somewhere.
 // DO NOT ADD MORE USAGE OF THESE!

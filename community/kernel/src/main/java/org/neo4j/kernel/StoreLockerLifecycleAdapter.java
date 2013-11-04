@@ -23,6 +23,10 @@ import java.io.File;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public class StoreLockerLifecycleAdapter extends LifecycleAdapter
 {
     private final StoreLocker storeLocker;

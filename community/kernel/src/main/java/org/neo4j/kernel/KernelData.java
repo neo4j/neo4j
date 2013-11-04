@@ -26,6 +26,10 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public abstract class KernelData
 {
     public static final Setting<String> forced_id = GraphDatabaseSettings.forced_kernel_id;

@@ -43,9 +43,12 @@ import org.neo4j.graphdb.Transaction;
  * }
  * Transaction tx = txBuilder.begin();
  * </pre>
- * 
+ *
+ * @deprecated This will be moved to internal packages in the next major release.
+ *
  * @author Mattias Persson
  */
+@Deprecated
 public interface TransactionBuilder
 {
     /**

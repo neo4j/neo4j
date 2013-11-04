@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.coreapi;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -30,7 +30,7 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeManager;
 
-class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
+public class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
         implements RelationshipAutoIndexer
 {
     public static abstract class Configuration

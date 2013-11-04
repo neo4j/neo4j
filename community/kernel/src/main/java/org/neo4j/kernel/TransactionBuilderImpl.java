@@ -22,6 +22,10 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 class TransactionBuilderImpl implements TransactionBuilder
 {
     private final InternalAbstractGraphDatabase db;

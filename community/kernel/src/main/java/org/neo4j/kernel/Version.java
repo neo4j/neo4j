@@ -24,6 +24,10 @@ import java.util.NoSuchElementException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.ComponentVersion;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public class Version extends Service
 {
     protected static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";

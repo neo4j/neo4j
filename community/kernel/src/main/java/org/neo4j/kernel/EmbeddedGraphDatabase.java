@@ -45,7 +45,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
  * </pre>
  * <p/>
  * For more information, see {@link GraphDatabaseService}.
+ *
+ * @deprecated This will be moved to internal packages in the next major release.
  */
+@Deprecated
 public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
 {
     /**

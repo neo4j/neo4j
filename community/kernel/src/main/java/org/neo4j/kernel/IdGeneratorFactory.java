@@ -24,6 +24,10 @@ import java.io.File;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public interface IdGeneratorFactory
 {
     IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId );

@@ -49,7 +49,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
  *         .newGraphDatabase();
  * </code>
  * </pre>
+ * @deprecated This will be moved to internal packages in the next major release.
  */
+@Deprecated
 public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDatabase
 {
     private static Map<String, String> readOnlyParams = new HashMap<>();

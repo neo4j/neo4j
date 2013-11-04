@@ -21,6 +21,10 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.PropertyContainer;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public interface PropertyTracker<T extends PropertyContainer>
 {
     void propertyAdded( T primitive, String propertyName, Object propertyValue );

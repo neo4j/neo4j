@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.coreapi;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.config.Setting;
@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
  * names and a wrapper for adapting read write indexes to read only
  * ones so that they are safe to return.
  */
-class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
+public class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
 {
     public static abstract class Configuration
     {
