@@ -492,17 +492,14 @@ public class DatabaseActions
     private AutoIndexer<? extends PropertyContainer> getAutoIndexerForType( String type )
     {
         final IndexManager indexManager = graphDb.index();
-        if ( "node".equals( type ) )
+        switch ( type )
         {
-            return indexManager.getNodeAutoIndexer();
-        }
-        else if ( "relationship".equals( type ) )
-        {
-            return indexManager.getRelationshipAutoIndexer();
-        }
-        else
-        {
-            throw new IllegalArgumentException( "invalid type " + type );
+            case "node":
+                return indexManager.getNodeAutoIndexer();
+            case "relationship":
+                return indexManager.getRelationshipAutoIndexer();
+            default:
+                throw new IllegalArgumentException( "invalid type " + type );
         }
     }
 
@@ -658,31 +655,6 @@ public class DatabaseActions
         if ( relationship.removeProperty( key ) == null )
         {
             throw new NoSuchPropertyException( relationship, key );
-        }
-    }
-
-    // Index
-
-    public enum IndexType
-    {
-        node( "index" )
-                {
-                },
-        relationship( "index" )
-                {
-                };
-        private final String pathPrefix;
-
-        private IndexType( String pathPrefix )
-        {
-            this.pathPrefix = pathPrefix;
-        }
-
-        @SuppressWarnings("boxing")
-        String path( String indexName, String key, String value, long id )
-        {
-            return String.format( "%s/%s/%s/%s/%s", pathPrefix, indexName, key,
-                    value, id );
         }
     }
 
@@ -903,8 +875,8 @@ public class DatabaseActions
                 UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
                 UniqueEntity<Node> entity = factory.getOrCreateWithOutcome( key, value );
                 // when given a node id, return as created if that node was newly added to the index
-                created = entity.entity().getId() == node.getId() || entity.wasCreated();
-                result = entity.entity();
+                created = entity.single().getId() == node.getId() || entity.wasCreated();
+                result = entity.single();
             }
         }
         else
@@ -918,7 +890,7 @@ public class DatabaseActions
             }
             UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
             UniqueEntity<Node> entity = factory.getOrCreateWithOutcome( key, value );
-            result = entity.entity();
+            result = entity.single();
             created = entity.wasCreated();
         }
         return Pair.of( new IndexedEntityRepresentation( result, key, value,
@@ -952,8 +924,8 @@ public class DatabaseActions
                     new UniqueRelationshipFactory( indexName, relationship.getStartNode(), relationship.getEndNode(), relationship.getType().name(), properties );
                 UniqueEntity<Relationship> entity = factory.getOrCreateWithOutcome( key, value );
                 // when given a relationship id, return as created if that relationship was newly added to the index
-                created = entity.entity().getId() == relationship.getId() || entity.wasCreated();
-                result = entity.entity();
+                created = entity.single().getId() == relationship.getId() || entity.wasCreated();
+                result = entity.single();
             }
         }
         else if ( startNode == null || type == null || endNode == null )
@@ -966,7 +938,7 @@ public class DatabaseActions
             UniqueRelationshipFactory factory =
                 new UniqueRelationshipFactory( indexName, node( startNode ), node( endNode ), type, properties );
             UniqueEntity<Relationship> entity = factory.getOrCreateWithOutcome( key, value );
-            result = entity.entity();
+            result = entity.single();
             created = entity.wasCreated();
         }
         return Pair.of( new IndexedEntityRepresentation( result, key, value,

@@ -38,4 +38,7 @@ public interface Statement extends Resource
 
     SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException,
             ReadOnlyDatabaseKernelException;
+
+    void assertOpen();
+    void close();
 }

@@ -17,32 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.kernel.impl.api;
 
-/**
- * Thrown when attempting to modify the graph outside of a transaction.
- * 
- * @see Transaction
- */
-public class NotInTransactionException extends IllegalStateException
+public interface ReleasableLock extends AutoCloseable
 {
-    public NotInTransactionException()
-    {
-        super();
-    }
+    /**
+     * Immediately release this lock
+     */
+    void release();
 
-    public NotInTransactionException( String message )
-    {
-        super( message );
-    }
+    /**
+     * Register this lock for delayed release with the current transaction
+     */
+    void registerWithTransaction();
 
-    public NotInTransactionException( Throwable cause )
-    {
-        super( cause );
-    }
-
-    public NotInTransactionException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
+    /**
+     * If neither {@link #release()} nor {@link #registerWithTransaction()} has been called prior to calling this
+     * method, it will behave the same as {@link #registerWithTransaction()}, otherwise it is a no-op.
+     */
+    @Override
+    void close();
 }

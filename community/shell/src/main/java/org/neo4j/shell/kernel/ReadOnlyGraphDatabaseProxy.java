@@ -36,6 +36,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Merger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -241,6 +242,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public Iterable<Node> getAllNodes()
     {
         return nodes( actual.getAllNodes() );
+    }
+
+    @Override
+    public Merger<Node> getOrCreateNode( Label label, Label... labels )
+    {
+        return readOnly();
     }
 
     @Override

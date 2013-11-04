@@ -4,9 +4,26 @@
 This section is about how to ensure uniqueness of a property when creating nodes.
 For an overview of the topic, see <<transactions-unique-nodes>>.
 
-
 [[tutorials-java-embedded-unique-get-or-create]]
-== Get or create unique node ==
+== Get or create unique node using constraints ==
+
+Constraints allow to enforce that there is always at most a single, unique node for a given label and property.
+Any transaction that tries to create a second, conflicting node is aborted by the database. Sometimes it is more useful
+to instead either retrieve such a node if it already exists or create a new one otherwise (get-or-create). For this
+purpose, neo4j provides http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Merger.html
+functionality.
+
+.Use a merger for a constraint to get or create a node
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateDocIT.java
+classifier=test-sources
+tag=getOrCreateWithMerger
+----
+
+[[tutorials-java-embedded-unique-legacy-get-or-create]]
+== Get or create unique node using legacy indexing ==
 
 By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
 entity uniqueness can be guaranteed using an index.
@@ -28,7 +45,7 @@ tag=prepareUniqueFactory
 component=neo4j-examples
 source=org/neo4j/examples/GetOrCreateDocIT.java
 classifier=test-sources
-tag=getOrCreate
+tag=getOrCreateWithFactory
 ----
 
 [[tutorials-java-embedded-unique-pessimistic]]

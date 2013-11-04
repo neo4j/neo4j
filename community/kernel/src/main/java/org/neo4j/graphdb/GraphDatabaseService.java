@@ -97,6 +97,44 @@ public interface GraphDatabaseService
     Iterable<Node> getAllNodes();
 
     /**
+     * Build a {@link org.neo4j.graphdb.Merger merger} for getting nodes that are unique with regard to the provided
+     * label(s) and property value(s) {@link org.neo4j.graphdb.Merger#withProperty(String, Object) given to the merger}.
+     *
+     * If a uniqueness constraint is defined for any of the specified label and property combinations, the node is
+     * guaranteed to be unique with regards to that label and property.
+     *
+     * For other label and property combinations, the database might return more than one node. Even if it returns one
+     * node, it is not guaranteed to be unique.
+     *
+     * Calling {@link org.neo4j.graphdb.Merger#merge() merge()} on the returned {@link org.neo4j.graphdb.Merger merger}
+     * will block when called in parallel by multiple transactions for the same constraint and value until
+     * other transactions have finished.
+     *
+     * Here's an example of intended use that shows how to create a unique node for the graph database book:
+     *
+     * <pre><code>
+     * try ( Transaction tx = graph.beginTx() )
+     * {
+     *     Label bookLabel =  DynamicLabel.from("Book" );
+     *     Merger<Node> nodeCreator = graph.getOrCreateNode( bookLabel.withProperty( "isbn", "978-1-449-35626-2" );
+     *     try ( MergeResult<Node> result = nodeCreator.merge() )
+     *     {
+     *        // Assuming there is a uniqueness constraint on :Book(isbn), uniqueNode is unique at this point
+     *        Node uniqueNode = result.single();
+     *        node.setProperty( "title", "Graph Databases");
+     *     }
+     *     tx.success();
+     * }
+     * </code></pre>
+     *
+     * @param label a label that requested nodes must have.
+     * @param labels (optional) additional labels that the requested nodes must have.
+     * @return a {@link org.neo4j.graphdb.Merger} for getting either (when using constraints) the unique node found
+     * or created, or (when not using constraints) all matching nodes or a newly created node.
+     */
+    Merger<Node> getOrCreateNode( Label label, Label... labels );
+
+    /**
      * Returns all nodes having the label, and the wanted property value.
      * If an online index is found, it will be used to look up the requested
      * nodes.

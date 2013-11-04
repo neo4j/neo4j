@@ -39,10 +39,8 @@ package org.neo4j.cypher.internal.compiler.v1_9.executionplan.builders
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.scalatest.Assertions
 import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v1_9.pipes.NullPipe
-import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{PartiallySolvedQuery}
+import org.neo4j.cypher.internal.compiler.v1_9.executionplan.PartiallySolvedQuery
 import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v1_9.commands._
 import expressions.Literal
@@ -73,7 +71,7 @@ class IndexQueryBuilderTest extends BuilderTest {
 
     val remaining = builder(plan(q)).query
 
-    assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
+    assertEquals("No more than 1 startitem should be solved", 1, remaining.start.count(_.solved))
     assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
   }
 
@@ -171,4 +169,6 @@ class Fake_Database_That_Has_All_Indexes extends GraphDatabaseService with Index
   def traversalDescription() = ???
 
   def bidirectionalTraversalDescription() = ???
+
+  def getOrCreateNode(label: Label, labels: Label*): Merger[Node] = ???
 }

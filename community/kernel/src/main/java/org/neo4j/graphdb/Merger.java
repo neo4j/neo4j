@@ -20,29 +20,27 @@
 package org.neo4j.graphdb;
 
 /**
- * Thrown when attempting to modify the graph outside of a transaction.
- * 
- * @see Transaction
+ * A utility interface for getting or creating entities (with regard to given indexes or constraints).
+ *
+ * @see org.neo4j.graphdb.GraphDatabaseService#getOrCreateNode(Label, Label...)
+ * @see org.neo4j.graphdb.index.UniqueFactory#asMerger()
+ *
+ * @param <ENTITY> the type of entity created by this {@link Merger}.
  */
-public class NotInTransactionException extends IllegalStateException
+public interface Merger<ENTITY> extends ResourceIterable<ENTITY>
 {
-    public NotInTransactionException()
-    {
-        super();
-    }
+    Merger<ENTITY> withProperty( String key, Object value );
 
-    public NotInTransactionException( String message )
-    {
-        super( message );
-    }
+    /**
+     * This method is an alias for merge() that exists for convenient iteration.
+     *
+     * @return The result of merging
+     */
+    @Override
+    MergeResult<ENTITY> iterator();
 
-    public NotInTransactionException( Throwable cause )
-    {
-        super( cause );
-    }
-
-    public NotInTransactionException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
+    /**
+     * @return The result of merging
+     */
+    MergeResult<ENTITY> merge();
 }

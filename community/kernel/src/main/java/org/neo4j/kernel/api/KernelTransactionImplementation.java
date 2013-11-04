@@ -150,11 +150,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 dropCreatedConstraintIndexes();
             }
-            catch ( IllegalStateException e )
-            {
-                throw new TransactionFailureException( e );
-            }
-            catch ( SecurityException e )
+            catch ( IllegalStateException | SecurityException e )
             {
                 throw new TransactionFailureException( e );
             }
@@ -410,7 +406,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void assertOpen()
+    public void assertOpen()
     {
         if ( closed )
         {

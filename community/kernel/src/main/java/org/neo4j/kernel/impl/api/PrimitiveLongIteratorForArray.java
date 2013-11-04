@@ -23,6 +23,8 @@ import java.util.NoSuchElementException;
 
 public class PrimitiveLongIteratorForArray implements PrimitiveLongIterator
 {
+    public static final PrimitiveLongIteratorForArray EMPTY = new PrimitiveLongIteratorForArray();
+
     private final long[] values;
 
     int i = 0;

@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.Is.is;
@@ -137,12 +138,17 @@ public class BitmapFormatTest
     @Test
     public void shouldBeAbleToCheckIfASingleNodeIdIsSet() throws Exception
     {
-        Bitmap bitmap = new Bitmap();
         // when
-        int input = new Random(  ).nextInt();
-        BitmapFormat._32.set( bitmap, input % 32, true );
+        for ( int nodeId = 0; nodeId < 32; nodeId++ )
+        {
+            Bitmap bitmap = new Bitmap();
+            BitmapFormat._32.set( bitmap, nodeId, true );
 
-        assertThat( BitmapFormat._32.peek( bitmap.bitmap(), input ), is( true ) );
-        assertThat( BitmapFormat._32.peek( bitmap.bitmap(), (input + 1) % 32 ), is( false ) );
+            for ( int offsetId = 1; offsetId < 32; offsetId++ )
+            {
+                assertThat( BitmapFormat._32.peek( bitmap.bitmap(), nodeId ), is( true ) );
+                assertThat( BitmapFormat._32.peek( bitmap.bitmap(), (nodeId + offsetId) % 32 ), is( false ) );
+            }
+        }
     }
 }
