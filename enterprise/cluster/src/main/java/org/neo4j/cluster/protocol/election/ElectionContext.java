@@ -44,11 +44,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class ElectionContext
 {
-    private List<ElectionRole> roles = new ArrayList<ElectionRole>();
-    private ClusterContext clusterContext;
-    private HeartbeatContext heartbeatContext;
+    private final List<ElectionRole> roles = new ArrayList<ElectionRole>();
+    private final ClusterContext clusterContext;
+    private final HeartbeatContext heartbeatContext;
 
-    private Map<String, Election> elections = new HashMap<String, Election>();
+    private final Map<String, Election> elections = new HashMap<String, Election>();
     private ElectionCredentialsProvider electionCredentialsProvider;
 
     public ElectionContext( Iterable<ElectionRole> roles, ClusterContext clusterContext,
