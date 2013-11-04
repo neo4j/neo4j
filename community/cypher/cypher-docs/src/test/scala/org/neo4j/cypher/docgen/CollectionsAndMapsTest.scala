@@ -65,6 +65,14 @@ RETURN range(0,10)[-5..]###
 ###
 RETURN range(0,10)[..4]###
 
+Note: Asking for ranges or elements outside the bounds of a collection will return null and not an error.
+
+###
+RETURN range(0,10)[100]###
+
+###
+RETURN range(0,10)[90..100]###
+
 == List comprehension ==
 
 List comprehension is a syntactic construct available in Cypher for creating a collection based on existing collections.
@@ -89,6 +97,6 @@ you will get JSON objects.
 
 ###
 RETURN { key : "Value", collectionKey: [ { inner: "Map1" }, { inner: "Map2" } ] }###
-"""
+    """
 }
 

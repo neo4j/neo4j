@@ -1882,20 +1882,6 @@ RETURN x0.name""")
   }
 
   @Test
-  def head_on_empty_coll_should_throw_exception() {
-    val result = execute("RETURN head([])")
-
-    intercept[IllegalValueException](result.toList)
-  }
-
-  @Test
-  def tail_on_empty_coll_should_throw_exception() {
-    val result = execute("RETURN tail([])")
-
-    intercept[IllegalValueException](result.toList)
-  }
-
-  @Test
   def nodes_named_r_should_not_pose_a_problem() {
     val a = createNode()
     val r = createNode("foo"->"bar")

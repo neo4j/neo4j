@@ -42,41 +42,56 @@ case class CollectionSliceExpression(collection: Expression, from: Option[Expres
     val fromValue = asInt(from, ctx, state)
     val toValue = asInt(to, ctx, state)
 
+    val size = collectionValue.size
+
+    def extract(start:Int, end:Int) =
+      if( start >= size || end >= size || start < 0 || end < 0 ) null
+      else collectionValue.slice( start, end )
+
     if (fromValue >= 0 && toValue >= 0)
-      collectionValue.slice(fromValue, toValue)
+      extract(fromValue, toValue)
     else if (fromValue >= 0) {
-      val end = collectionValue.size + toValue
-      collectionValue.slice(fromValue, end)
+      val end = size + toValue
+      extract(fromValue, end)
     } else if (toValue >= 0) {
-      val start = collectionValue.size + fromValue
-      collectionValue.slice(start, toValue)
+      val start = size + fromValue
+      extract(start, toValue)
     } else {
-      val size = collectionValue.size
       val start = size + fromValue
       val end = size + toValue
-      collectionValue.slice(start, end)
+      extract(start, end)
     }
   }
 
   private def fromSlice(from: Expression)(collectionValue: Iterable[Any], ctx: ExecutionContext, state: QueryState) = {
     val fromValue = asInt(from, ctx, state)
-
+    val size = collectionValue.size
+    
+    def extract( start:Int ) =
+      if( start >= size || start < 0 ) null
+      else collectionValue.drop(start)
+    
     if (fromValue >= 0)
-      collectionValue.drop(fromValue)
+      extract(fromValue)
     else {
-      val end = collectionValue.size + fromValue
-      collectionValue.drop(end)
+      val end = size + fromValue
+      extract(end)
     }
   }
 
   private def toSlice(from: Expression)(collectionValue: Iterable[Any], ctx: ExecutionContext, state: QueryState) = {
     val toValue = asInt(from, ctx, state)
+    val size = collectionValue.size
+
+    def extract( end:Int ) =
+      if( end >= size || end < 0 ) null
+      else collectionValue.take(end)
 
     if (toValue >= 0)
-      collectionValue.take(toValue)
+      extract(toValue)
     else {
-      val end = collectionValue.size + toValue
-      collectionValue.take(end)
+      val end = size + toValue
+      extract(end)
     }
   }
 

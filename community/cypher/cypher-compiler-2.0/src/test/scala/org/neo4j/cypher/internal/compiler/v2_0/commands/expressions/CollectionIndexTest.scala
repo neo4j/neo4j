@@ -30,25 +30,33 @@ class CollectionIndexTest extends Assertions {
 
   implicit val state = QueryStateHelper.empty
   val ctx = ExecutionContext.empty
-  val collection = Literal(Seq(1, 2, 3, 4))
 
   @Test def tests() {
+    implicit val collection = Literal(Seq(1, 2, 3, 4))
+
     assert(idx(0) === 1)
     assert(idx(1) === 2)
     assert(idx(2) === 3)
     assert(idx(3) === 4)
     assert(idx(-1) === 4)
-    intercept[OutOfBoundsException](idx(4))
-  }
-  
-  @Test def shouldHandleNulls() {
-    val inValue = null
-    val result = CollectionIndex(Literal(inValue), Literal(2))(ctx)(state)
-    
-    assert(result === null)
+    assert(idx(100) === null)
   }
 
-  @Test def typeWhenCollectionIsAnyTypeIsCollectionOfAnyt() {
+  @Test def empty_collection_tests() {
+    implicit val collection = Collection()
+
+    assert(idx(0) === null)
+    assert(idx(-1) === null)
+    assert(idx(100) === null)
+  }
+
+  @Test def shouldHandleNulls() {
+    implicit val collection = Literal(null)
+
+    assert(idx(0) === null)
+  }
+
+  @Test def typeWhenCollectionIsAnyTypeIsCollectionOfAnyType() {
     val collection = new FakeExpression(AnyType())
     val symbols = new SymbolTable()
     val result = CollectionIndex(collection, Literal(2)).evaluateType(CollectionType(AnyType()), symbols)
@@ -56,6 +64,6 @@ class CollectionIndexTest extends Assertions {
     assert(result === AnyType())
   }
 
-  private def idx(value: Int) =
+  private def idx(value: Int)(implicit collection:Expression) =
     CollectionIndex(collection, Literal(value))(ctx)(state)
 }

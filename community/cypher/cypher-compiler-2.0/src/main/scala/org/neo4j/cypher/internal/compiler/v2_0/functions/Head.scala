@@ -26,19 +26,20 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commande
 case object Head extends Function {
   def name = "head"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
-    checkArgs(invocation, 1) ifOkThen  {
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+    checkArgs(invocation, 1) ifOkThen {
       invocation.arguments(0).constrainType(CollectionType(AnyType())) then
-      invocation.specifyType(iteratedTypes(invocation.arguments(0)))
+        invocation.specifyType(iteratedTypes(invocation.arguments(0)))
     }
 
-  private def iteratedTypes(expression: ast.Expression) : SemanticState => TypeSet = {
+  private def iteratedTypes(expression: ast.Expression): SemanticState => TypeSet = {
     expression.types(_).flatMap {
       case t if t.isCollection => Some(t.iteratedType)
-      case _ => None
+      case _                   => None
     }
   }
 
   def toCommand(invocation: ast.FunctionInvocation) =
-    commandexpressions.HeadFunction(invocation.arguments(0).toCommand)
+    commandexpressions.CollectionIndex(
+      invocation.arguments(0).toCommand, commandexpressions.Literal(0))
 }
