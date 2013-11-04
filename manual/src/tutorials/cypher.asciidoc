@@ -1,8 +1,6 @@
 [[tutorials-cypher]]
 = Getting started with Cypher =
 
-NOTE: This chapter is currently work in progress. Feedback is very welcome!
-
 This chapter will guide you through your first steps with <<cypher-query-lang,Cypher>>.
 
 If you are reading the online edition of this manual, all queries in this section can be executed interactively without installing Neo4j on your computer.

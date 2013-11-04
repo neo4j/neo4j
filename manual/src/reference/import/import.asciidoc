@@ -2,17 +2,7 @@
 Data Import
 ===========
 
-For high-performance data import, the batch insert facilities described in this chapter are recommended.
+For importing data into Neo4j, see http://www.neo4j.org/develop/import.
 
-Other ways to import data into Neo4j include using the Geoff notation (see http://nigelsmall.com/geoff ).
-
-
-:leveloffset: 2
-
-include::{importdir}/neo4j-kernel-docs-jar/dev/batchinsert.asciidoc[]
-
-:leveloffset: 3
-
-include::{importdir}/neo4j-lucene-index-docs-jar/dev/batchinsertindex.asciidoc[]
-
+For high-performance data import, see <<batchinsert>>.
 

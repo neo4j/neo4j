@@ -47,11 +47,6 @@
       </listitem>
       <listitem>
         <para>
-          <link linkend="tutorials-java-embedded">Using Neo4j embedded in Java applications</link>
-        </para>
-      </listitem>
-      <listitem>
-        <para>
           <link linkend="languages">Languages / Remote Client Libraries</link>
         </para>
       </listitem>

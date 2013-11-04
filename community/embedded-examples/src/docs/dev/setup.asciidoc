@@ -27,11 +27,30 @@ NetBeans::
  * You can also handle libraries from the project node, see http://netbeans.org/kb/docs/java/project-setup.html#projects-classpath[Managing a Project's Classpath].
 
 
+[[editions]]
+== Editions == 
+
+The following table outlines the available editions and their names for use with dependency management tools.
+
+TIP: Follow the links in the table for details on dependency configuration with Apache Maven, Apache Buildr, Apache Ivy, Groovy Grape, Grails, Scala SBT!
+
+.Neo4j editions
+[options="header"]
+|=======================
+|Edition     |Dependency      |Description  |License
+|Community   |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j%22[org.neo4j:neo4j] |a high performance, fully ACID transactional graph database |GPLv3
+|Advanced    |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-advanced%22[org.neo4j:neo4j-advanced] |adding advanced monitoring |AGPLv3
+|Enterprise  |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-enterprise%22[org.neo4j:neo4j-enterprise] |adding online backup and High Availability clustering |AGPLv3
+|=======================
+
+NOTE: The listed dependencies do not contain the implementation, but pulls it in transitively.
+
+For more information regarding licensing, see the http://www.neo4j.org/learn/licensing[Licensing Guide].
+
 == Add Neo4j as a dependency ==
 
-For an overview of the main Neo4j artifacts, see <<editions>>.
-The artifacts listed there are top-level artifacts that will transitively include the actual Neo4j implementation.
-You can either go with the top-level artifact or include the individual components directly.
+
+You can either go with the top-level artifact from the table above or include the individual components directly.
 The examples included here use the top-level artifact approach.
 
 === Maven ===
@@ -52,7 +71,7 @@ The examples included here use the top-level artifact approach.
 ...
 </project>
 --------------------------------------------
-_Where the +artifactId+ is found in <<editions>>._
+_Where the +artifactId+ is found in the editions table._
 
 === Eclipse and Maven ===
 
@@ -90,7 +109,7 @@ With that in place you can add Neo4j to the mix by having something along these 
 </dependencies>
 ..
 ----
-_Where the +name+ is found in <<editions>>._
+_Where the +name+ is found in the editions table above_
 
 === Gradle ===
 
@@ -107,7 +126,7 @@ dependencies {
    compile "org.neo4j:neo4j:$\{neo4jVersion}"
 }
 ----
-_Where the coordinates (+org.neo4j:neo4j+ in the example) are found in <<editions>>._
+_Where the coordinates (+org.neo4j:neo4j+ in the example) are found in the editions table above._
 
 
 [[tutorials-java-embedded-setup-startstop]]
