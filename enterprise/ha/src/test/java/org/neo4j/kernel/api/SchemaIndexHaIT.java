@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -40,6 +39,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -72,6 +73,7 @@ import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class SchemaIndexHaIT
 {
+
     @Test
     public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell() throws Throwable
     {
@@ -151,7 +153,7 @@ public class SchemaIndexHaIT
         }
     }
 
-    @Test @Ignore("JH: Admitting defeat for the weekend, revisiting tomorrow, monday 4th of november")
+    @Test
     public void populatingSchemaIndicesOnMasterShouldBeBroughtOnlineOnSlavesAfterStoreCopy() throws Throwable
     {
         /*
@@ -161,9 +163,8 @@ public class SchemaIndexHaIT
         We want to observe that the slave builds an index that eventually comes online.
          */
 
-
         // GIVEN
-        ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
+        ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory( IS_MASTER );
 
         ManagedCluster cluster = clusterRule.startCluster( dbFactory );
 
@@ -172,9 +173,6 @@ public class SchemaIndexHaIT
             cluster.await( allSeesAllAsAvailable() );
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-
-            // All slaves in the cluster, except the one I care about, proceed as normal
-            proceedAsNormalWithIndexPopulationOnAllSlavesExcept( dbFactory, cluster, slave );
 
             // A slave is offline, and has no store files
             ClusterManager.RepairKit slaveDown = bringSlaveOfflineAndRemoveStoreFiles( cluster, slave );
@@ -194,7 +192,6 @@ public class SchemaIndexHaIT
 
             // THEN, population should finish successfully on both master and slave
             dbFactory.triggerFinish( master );
-            dbFactory.triggerFinish( slave );
 
             // Check master
             IndexDefinition index;
@@ -299,6 +296,15 @@ public class SchemaIndexHaIT
         storeDir.mkdir();
         return slaveDown;
     }
+
+    public static final Predicate<GraphDatabaseService> IS_MASTER = new Predicate<GraphDatabaseService>()
+    {
+        @Override
+        public boolean accept( GraphDatabaseService item )
+        {
+            return item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
+        }
+    };
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass(), clusterOfSize( 3 ) );
@@ -500,21 +506,30 @@ public class SchemaIndexHaIT
     {
 
         private final Map<GraphDatabaseService, SchemaIndexProvider> perDbIndexProvider;
+        private final Predicate<GraphDatabaseService> injectLatchPredicate;
 
-        public ControllingIndexProviderFactory( Map<GraphDatabaseService, SchemaIndexProvider> perDbIndexProvider )
+        public ControllingIndexProviderFactory( Map<GraphDatabaseService, SchemaIndexProvider> perDbIndexProvider,
+                                                Predicate<GraphDatabaseService> injectLatchPredicate)
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR.getKey() );
             this.perDbIndexProvider = perDbIndexProvider;
+            this.injectLatchPredicate = injectLatchPredicate;
         }
 
         @Override
         public Lifecycle newKernelExtension( SchemaIndexHaIT.IndexProviderDependencies deps ) throws Throwable
         {
-
-            ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
-                    new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, deps.config() ) );
-            perDbIndexProvider.put( deps.db(), provider );
-            return provider;
+            if(injectLatchPredicate.accept( deps.db() ))
+            {
+                ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
+                        new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, deps.config() ) );
+                perDbIndexProvider.put( deps.db(), provider );
+                return provider;
+            }
+            else
+            {
+                return new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, deps.config() );
+            }
         }
     }
 
@@ -525,7 +540,12 @@ public class SchemaIndexHaIT
 
         public ControlledGraphDatabaseFactory()
         {
-            factory = new ControllingIndexProviderFactory(perDbIndexProvider);
+            factory = new ControllingIndexProviderFactory(perDbIndexProvider, Predicates.<GraphDatabaseService>TRUE());
+        }
+
+        private ControlledGraphDatabaseFactory( Predicate<GraphDatabaseService> dbsToControlIndexingOn )
+        {
+            factory = new ControllingIndexProviderFactory(perDbIndexProvider, dbsToControlIndexingOn);
         }
 
         @Override
@@ -537,14 +557,14 @@ public class SchemaIndexHaIT
         
         void awaitPopulationStarted( GraphDatabaseService db )
         {
-            DoubleLatch latch = ((ControlledSchemaIndexProvider)perDbIndexProvider.get( db )).latch;
-            latch.awaitStart();
+            ControlledSchemaIndexProvider provider = (ControlledSchemaIndexProvider) perDbIndexProvider.get( db );
+            if(provider != null ) provider.latch.awaitStart();
         }
 
         void triggerFinish( GraphDatabaseService db )
         {
             ControlledSchemaIndexProvider provider = (ControlledSchemaIndexProvider) perDbIndexProvider.get( db );
-            provider.latch.finish();
+            if(provider != null ) provider.latch.finish();
         }
     }
  }
