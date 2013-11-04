@@ -142,8 +142,7 @@ public enum ClusterState
                             }
 
                             HashMap<InstanceId, URI> memberList = new HashMap<InstanceId, URI>( state.getMembers() );
-                            context.learnerContext.setLastDeliveredInstanceId( state.getLatestReceivedInstanceId
-                                    ().getId() );
+                            context.learnerContext.setLastDeliveredInstanceId( state.getLatestReceivedInstanceId().getId() );
                             context.learnerContext.learnedInstanceId( state.getLatestReceivedInstanceId().getId() );
                             context.proposerContext.nextInstanceId = state.getLatestReceivedInstanceId().getId()
                                     + 1;
@@ -219,7 +218,7 @@ public enum ClusterState
                             else
                             {
                                 /*
-                                 * No responses. Check if we picked up any other instances' requests during this phase.
+                                 * No configuration responses. Check if we picked up any other instances' requests during this phase.
                                  * If we did, or we are the only instance in the configuration we can go ahead and try to start the
                                  * cluster.
                                  */
@@ -278,8 +277,7 @@ public enum ClusterState
                                 {
                                      context.timeouts.setTimeout( "join",
                                     timeout( ClusterMessage.configurationTimeout, message,
-                                            new ClusterMessage.ConfigurationTimeoutState(
-                                                    4 ) ) );
+                                            new ClusterMessage.ConfigurationTimeoutState( 4 ) ) );
                                 }
                             }
 

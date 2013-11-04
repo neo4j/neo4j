@@ -356,6 +356,11 @@ public class ElectionContext
         return clusterContext.getLogger( ElectionState.class );
     }
 
+    public boolean hasCurrentlyElectedVoted( String role, InstanceId currentElected )
+    {
+        return elections.containsKey( role ) && elections.get(role).getVotes().containsKey( currentElected );
+    }
+
     private static class Vote
             implements Comparable<Vote>
     {
