@@ -24,6 +24,7 @@ import pipes.QueryStateHelper
 import org.neo4j.cypher.OutOfBoundsException
 import org.scalatest.Assertions
 import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.{SymbolTable, CollectionType, AnyType, FakeExpression}
 
 class CollectionIndexTest extends Assertions {
 
@@ -45,6 +46,14 @@ class CollectionIndexTest extends Assertions {
     val result = CollectionIndex(Literal(inValue), Literal(2))(ctx)(state)
     
     assert(result === null)
+  }
+
+  @Test def typeWhenCollectionIsAnyTypeIsCollectionOfAnyt() {
+    val collection = new FakeExpression(AnyType())
+    val symbols = new SymbolTable()
+    val result = CollectionIndex(collection, Literal(2)).evaluateType(CollectionType(AnyType()), symbols)
+
+    assert(result === AnyType())
   }
 
   private def idx(value: Int) =
