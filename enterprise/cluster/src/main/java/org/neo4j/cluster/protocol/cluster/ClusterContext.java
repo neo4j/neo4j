@@ -19,6 +19,10 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.collection.Iterables.filter;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,14 +38,9 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.collection.Iterables.filter;
 
 /**
  * Context for cluster API state machine
@@ -101,7 +100,7 @@ public class ClusterContext
     // Implementation
     public void created( String name )
     {
-        configuration = new ClusterConfiguration( name, Collections.singleton( boundAt ) );
+        configuration = new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ), Collections.singleton( boundAt ) );
         joined();
     }
 

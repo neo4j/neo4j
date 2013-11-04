@@ -270,7 +270,7 @@ public class ClusterClient extends LifecycleAdapter
 
         MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory(
                 new ClusterConfiguration( config
-                .getClusterName() ), logging );
+                .getClusterName(), logging.getMessagesLog( ClusterConfiguration.class ) ), logging );
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 
