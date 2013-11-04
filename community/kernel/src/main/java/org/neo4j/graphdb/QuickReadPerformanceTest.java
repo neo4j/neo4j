@@ -24,7 +24,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
 
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -39,7 +39,7 @@ public class QuickReadPerformanceTest
         {
             FileUtils.deleteRecursively(storeDir);
         }
-        final GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir.getAbsolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
 
         try
         {
@@ -141,6 +141,7 @@ public class QuickReadPerformanceTest
                             }
                         }
                     }
+                    tx.success();
                 }
             }
 

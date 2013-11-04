@@ -19,15 +19,11 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import java.io.File;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -48,6 +44,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.ProcessStreamHandler;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests.
@@ -140,7 +142,7 @@ public class TestRecovery
 
         // I would like to do this, but there's no exception propagated out from the constructor
         // if the recovery fails.
-        // new EmbeddedGraphDatabase( getDbPath() ).shutdown();
+        // new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
 
         // Instead I have to do this
         FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();

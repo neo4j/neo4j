@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher
 
+import org.hamcrest.CoreMatchers._
 import org.neo4j.graphdb._
-import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
+import org.neo4j.kernel.{EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.Assert._
 import scala.collection.JavaConverters._
-import org.junit.matchers.JUnitMatchers._
 import org.junit.{Ignore, Test}
 import util.Random
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
 
 class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker {
 
@@ -1438,7 +1439,7 @@ RETURN x0.name""")
   @Test def tests_that_filterfunction_works_as_expected() {
     val a = createNode("foo" -> 1)
     val b = createNode("foo" -> 3)
-    val r = relate(a, b, "rel", Map("foo" -> 2))
+    relate(a, b, "rel", Map("foo" -> 2))
 
     val result = execute("start a=node(0) match p=a-->() return filter(x in nodes(p) WHERE x.foo > 2) as n").toList
 
@@ -2204,7 +2205,7 @@ RETURN x0.name""")
   }
 
   private def createReadOnlyEngine(): ExecutionEngine = {
-    val old = new EmbeddedGraphDatabase("target/readonly")
+    val old = new GraphDatabaseFactory().newEmbeddedDatabase("target/readonly")
     old.shutdown()
     val db = new EmbeddedReadOnlyGraphDatabase("target/readonly")
     new ExecutionEngine(db)

@@ -22,9 +22,10 @@ package org.neo4j.cypher
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.kernel.api.exceptions.schema.{NoSuchIndexException, DropIndexFailureException}
-import org.neo4j.kernel.EmbeddedGraphDatabase
 import java.util.concurrent.TimeUnit
 import java.io.{FileOutputStream, File}
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.graphdb.GraphDatabaseService
 
 class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions {
   @Test def createIndex() {
@@ -47,24 +48,27 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
 
   @Test def secondIndexCreationShouldFailIfIndexesHasFailed() {
     // GIVEN
+    val graph = createDbWithFailedIndex
     try {
-      createDbWithFailedIndex()
-
       // WHEN THEN
       intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
     } finally {
       graph.shutdown()
-      new File("target/test-data/impermanent-db").deleteAll
+      new File("target/test-data/impermanent-db").deleteAll()
     }
   }
 
-  private def createDbWithFailedIndex() {
-    graph = new EmbeddedGraphDatabase("target/test-data/impermanent-db") with Snitch
+  private def createDbWithFailedIndex: GraphDatabaseService = {
+    var graph = new GraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
     engine = new ExecutionEngine(graph)
     execute("CREATE INDEX ON :Person(name)")
     execute("create (:Person {name:42})")
-    graph.inTx {
+    val tx = graph.beginTx()
+    try {
       graph.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)
+      tx.success()
+    } finally {
+      tx.close()
     }
     graph.shutdown()
 
@@ -72,8 +76,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
     stream.write(65)
     stream.close()
 
-    graph = new EmbeddedGraphDatabase("target/test-data/impermanent-db") with Snitch
+    graph = new GraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
     engine = new ExecutionEngine(graph)
+    graph
   }
 
   @Test def dropIndex() {
@@ -95,7 +100,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
   }
 
   implicit class FileHelper(file: File) {
-    def deleteAll: Unit = {
+    def deleteAll(): Unit = {
       def deleteFile(dfile: File): Unit = {
         if (dfile.isDirectory)
           dfile.listFiles.foreach {
