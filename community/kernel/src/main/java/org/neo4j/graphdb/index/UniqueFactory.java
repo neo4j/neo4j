@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.UniqueEntities;
 
 /**
  * A utility class for creating unique (with regard to a given index) entities.
@@ -39,25 +40,11 @@ import org.neo4j.graphdb.Transaction;
  */
 public abstract class UniqueFactory<T extends PropertyContainer>
 {
-    public static class UniqueEntity<T extends PropertyContainer>
+    public static class UniqueEntity<T extends PropertyContainer> extends UniqueEntities.Result<T>
     {
-        private final T entity;
-        private final boolean created;
-        
-        UniqueEntity( T entity, boolean created )
+        public UniqueEntity( T entity, boolean wasCreated )
         {
-            this.entity = entity;
-            this.created = created;
-        }
-        
-        public T entity()
-        {
-            return this.entity;
-        }
-        
-        public boolean wasCreated()
-        {
-            return this.created;
+            super( entity, wasCreated );
         }
     }
     
@@ -248,7 +235,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
                 tx.success();
             }
         }
-        return new UniqueEntity<T>( result, wasCreated );
+        return new UniqueEntity<>( result, wasCreated );
     }
 
     /**
