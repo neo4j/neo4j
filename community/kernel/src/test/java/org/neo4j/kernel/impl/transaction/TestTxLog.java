@@ -19,19 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.junit.Test;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+
+import javax.transaction.xa.Xid;
 
 public class TestTxLog
 {
@@ -60,6 +68,13 @@ public class TestTxLog
     private File txFile()
     {
         return file( "tx_test_log.tx" );
+    }
+
+    private File tmpFile() throws IOException
+    {
+        File file = File.createTempFile( "tx_test_log.tx.", ".tmp", path() );
+        file.deleteOnExit();
+        return file;
     }
     
     @Test
@@ -187,6 +202,38 @@ public class TestTxLog
                 file.delete();
             }
         }
+    }
+
+    @Test
+    public void logFilesInflatedWithZerosShouldStillBeAbleToRotate() throws IOException
+    {
+        File logFile = tmpFile();
+        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        FileChannel ch = fileSystem.open(logFile, "rw");
+        ch.write(ByteBuffer.allocate(TxLog.SCAN_WINDOW_SIZE / 2));
+        ch.force(false);
+        ch.close();
+
+        TxLog log = new TxLog( logFile, fileSystem);
+
+        ByteBuffer tmp = ByteBuffer.allocate( Xid.MAXGTRIDSIZE );
+
+        for (int i = 0; i < 2000; i++)
+        {
+            tmp.putInt(0, i);
+            byte[] bytes = new byte[ Xid.MAXGTRIDSIZE ];
+            tmp.position( 0 );
+            tmp.get( bytes );
+            log.txStart( bytes );
+        }
+        log.force();
+
+        File rotationTarget = tmpFile();
+
+        // Asserting that this does not throw an exception:
+        log.switchToLogFile( rotationTarget );
+        // ... and that the rotated log has all our started transactions:
+        assertThat( log.getRecordCount(), is( 2000 ) );
     }
 
     @Test
