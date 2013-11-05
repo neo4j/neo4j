@@ -348,7 +348,8 @@ checkjvmcompatibility() {
   # Shut down if java version < 1.7
   JAVAVERSION=$("$JAVACMD" -version 2>&1 | awk -F '"' '/version/ {print $2}')
   if [[ "$JAVAVERSION" < "1.7" ]]; then
-    echo "ERROR! Neo4j cannot be started using java version $JAVAVERSION. Please use Oracle(R) Java(TM) Runtime Environment 7."
+    echo "ERROR! Neo4j cannot be started using java version $JAVAVERSION. Please use Oracle(R) Java(TM) 7."
+    echo "Download \"Java Platform (JDK) 7\" from http://www.oracle.com/technetwork/java/javase/downloads/index.html"
     exit 1
   fi
 
