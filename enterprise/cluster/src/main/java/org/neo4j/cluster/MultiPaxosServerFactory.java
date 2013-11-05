@@ -110,7 +110,8 @@ public class MultiPaxosServerFactory
         ProposerContext proposerContext = new ProposerContext();
 
         final ClusterContext clusterContext = new ClusterContext( me, proposerContext, learnerContext,
-                new ClusterConfiguration( initialConfig.getName(), initialConfig.getMemberURIs() ), timeouts, executor,
+                new ClusterConfiguration( initialConfig.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
+                        initialConfig.getMemberURIs() ), timeouts, executor,
                 logging, objectInputStreamFactory, objectOutputStreamFactory);
         final HeartbeatContext heartbeatContext = new HeartbeatContext( clusterContext, learnerContext, executor );
         clusterContext.setHeartbeatContext( heartbeatContext );

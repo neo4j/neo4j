@@ -31,6 +31,7 @@ import java.util.List;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.slf4j.impl.StaticLoggerBinder;
 
 import org.neo4j.cluster.BindingListener;
@@ -89,7 +90,7 @@ public class MultiPaxosServer
                     .timeout( HeartbeatMessage.sendHeartbeat, 200 );
 
             NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new ClusterConfiguration( "default" ),
+                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", StringLogger.SYSTEM ),
                             new LogbackService( null, null ) ),
                     timeoutStrategy, new LogbackService( null, null ), new ObjectStreamFactory(), new ObjectStreamFactory() );
 

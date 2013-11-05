@@ -30,6 +30,7 @@ import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.junit.After;
 import org.junit.Ignore;
@@ -68,6 +69,7 @@ public class HaBeanIT
     private static final TargetDirectory dir = TargetDirectory.forTest( HaBeanIT.class );
     private ManagedCluster cluster;
     private ClusterManager clusterManager;
+    private final Random r = new Random(  );
 
     public void startCluster( int size ) throws Throwable
     {
@@ -78,7 +80,7 @@ public class HaBeanIT
             {
                 builder.setConfig( "jmx.port", "" + ( 9912 + serverId ) );
                 builder.setConfig( HaSettings.ha_server, ":" + ( 1136 + serverId ) );
-                builder.setConfig( GraphDatabaseSettings.forced_kernel_id, testName.getMethodName() + serverId );
+                builder.setConfig( GraphDatabaseSettings.forced_kernel_id, testName.getMethodName() + serverId + r.nextInt(10000) );
 
             }
         };
@@ -97,6 +99,20 @@ public class HaBeanIT
     {
         return new Neo4jManager( db.getDependencyResolver().resolveDependency( JmxKernelExtension
                 .class ).getSingleManagementBean( Kernel.class ) );
+    }
+
+
+    @Test
+    @Ignore
+    public void loop() throws Throwable
+    {
+        int i = 1;
+        while( true )
+        {
+            System.out.println("Running #" + i++);
+            testAfterGentleMasterSwitchClusterInfoIsCorrect();
+            stopCluster();
+        }
     }
 
     public HighAvailability ha( HighlyAvailableGraphDatabase db )
