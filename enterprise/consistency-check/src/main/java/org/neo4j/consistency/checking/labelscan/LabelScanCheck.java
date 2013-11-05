@@ -47,6 +47,6 @@ public class LabelScanCheck implements RecordCheck<LabelScanDocument, Consistenc
                              CheckerEngine<LabelScanDocument,
                                      ConsistencyReport.LabelScanConsistencyReport> engine, DiffRecordAccess records )
     {
-        throw new UnsupportedOperationException();
+        check( newRecord, engine, records );
     }
 }
