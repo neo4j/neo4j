@@ -18,6 +18,7 @@
 
   <properties>
     <short-name>server-api</short-name>
+    <version-package>server.impl.api</version-package>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/server-extending.html</docs.url>

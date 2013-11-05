@@ -15,6 +15,10 @@
   <description>Compiler for Cypher 1.9</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+  <properties>
+    <version-package>cypher.internal.compiler.v1_9</version-package>
+  </properties>
+
   <scm>
 	  <url>https://github.com/neo4j/neo4j/tree/master/community/cypher/cypher-compiler-1.9</url>
   </scm>

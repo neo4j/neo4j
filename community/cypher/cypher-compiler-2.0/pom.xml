@@ -20,6 +20,10 @@
 	  <url>https://github.com/neo4j/neo4j/tree/master/community/cypher/cypher-compiler-2.0</url>
   </scm>
 
+  <properties>
+    <version-package>cypher.internal.compiler.v2_0</version-package>
+  </properties>
+
   <licenses>
     <license>
       <name>GNU General Public License, Version 3</name>

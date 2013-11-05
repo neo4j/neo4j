@@ -18,6 +18,7 @@
   <properties>
     <bundle.namespace>org.neo4j.jmx</bundle.namespace>
     <short-name>jmx</short-name>
+    <version-package>jmx.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-jmx.html</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>

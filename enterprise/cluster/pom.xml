@@ -17,6 +17,7 @@
   <properties>
     <bundle.namespace>org.neo4j.cluster</bundle.namespace>
     <short-name>backup</short-name>
+    <version-package>cluster.impl</version-package>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/ha.html</docs.url>
   </properties>
 

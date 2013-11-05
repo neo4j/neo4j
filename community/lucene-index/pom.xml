@@ -18,6 +18,7 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
   <properties>
     <bundle.namespace>org.neo4j.index</bundle.namespace>
     <short-name>lucene-index</short-name>
+    <version-package>index.impl.lucene</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs-plugin.filter>true</docs-plugin.filter>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/indexing.html</docs.url>

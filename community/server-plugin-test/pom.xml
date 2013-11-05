@@ -15,6 +15,7 @@
   <description>Tests the server plugin registration functionality.</description>
 
   <properties>
+    <version-package>server.plugins.test</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs-plugin.skip>true</docs-plugin.skip>
     <maven.site.skip>true</maven.site.skip>

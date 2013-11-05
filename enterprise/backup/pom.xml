@@ -17,6 +17,7 @@
   <properties>
     <bundle.namespace>org.neo4j.backup</bundle.namespace>
     <short-name>backup</short-name>
+    <version-package>backup.impl</version-package>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-backup.html</docs.url>
   </properties>
 

@@ -10,6 +10,7 @@
   <properties>
     <bundle.namespace>org.neo4j.graphmatching</bundle.namespace>
     <short-name>graph-matching</short-name>
+    <version-package>graphmatching.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>

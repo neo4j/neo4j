@@ -42,6 +42,7 @@
   <properties>
     <bundle.namespace>org.neo4j</bundle.namespace>
     <short-name>kernel</short-name>
+    <version-package>kernel.impl</version-package>
     <git.executable>git</git.executable>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
@@ -142,37 +143,6 @@ the relevant Commercial Agreement.
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <id>generate-version</id>
-            <phase>generate-sources</phase>
-            <configuration>
-              <property environment="env" />
-              <target>
-                <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/" />
-                <property name="build.number" value="${env.BUILD_NUMBER}" />
-                <property name="git.describe" value="${git.commit.id.describe}" />
-                <property name="git.branch" value="${git.commit.id.branch}" />
-                <property name="git.commit" value="${git.commit.id}" />
-                <echo file="target/generated-sources/version/org/neo4j/${short-name}/impl/ComponentVersion.java">package org.neo4j.${short-name}.impl;
-
-import org.neo4j.kernel.Version;
-import org.neo4j.helpers.Service;
-
-@Service.Implementation(Version.class)
-public class ComponentVersion extends Version
-{
-    public ComponentVersion() { super("${project.artifactId}", "${project.version}"); }
-    public @Override String getReleaseVersion() { return "${project.version}"; }
-    protected @Override String getBuildNumber() { return "${build.number}"; }
-    protected @Override String getCommitId() { return "${git.commit}"; }
-    protected @Override String getBranchName() { return "${git.branch}"; }
-    protected @Override String getCommitDescription() { return "${git.describe}"; }
-}
-</echo>
-              </target>
-            </configuration>
-            <goals><goal>run</goal></goals>
-          </execution>
-          <execution>
             <id>generate-source-based-documentation</id>
             <phase>process-classes</phase>
             <configuration>
@@ -193,21 +163,6 @@ public class ComponentVersion extends Version
             <version>1.8.4</version>
           </dependency>
         </dependencies>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>generate-sources</phase>
-            <goals><goal>add-source</goal></goals>
-            <configuration>
-              <sources>
-                <source>target/generated-sources/version</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-site-plugin</artifactId>

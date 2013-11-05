@@ -18,6 +18,7 @@
 
   <properties>
     <short-name>neo4j</short-name>
+    <version-package>impl.neo4j</version-package>
     <bundle.namespace>org.neo4j</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <javadoc.skip>false</javadoc.skip>

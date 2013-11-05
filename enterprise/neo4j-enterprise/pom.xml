@@ -20,6 +20,7 @@
 
   <properties>
     <short-name>neo4j-enterprise</short-name>
+    <version-package>enterprise.impl</version-package>
     <bundle.namespace>org.neo4j</bundle.namespace>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/deployment-installation.html#editions</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>

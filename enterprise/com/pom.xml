@@ -14,6 +14,7 @@
 
   <properties>
     <short-name>com</short-name>
+    <version-package>com.impl</version-package>
     <bundle.namespace>org.neo4j.com</bundle.namespace>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/ha.html</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
