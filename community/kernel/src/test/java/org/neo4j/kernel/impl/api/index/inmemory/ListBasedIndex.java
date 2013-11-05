@@ -67,7 +67,7 @@ class ListBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public long approximateSize()
+    public long maxCount()
     {
         return data.size();
     }

@@ -161,7 +161,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
         return new AllEntriesLabelScanReader()
         {
             @Override
-            public long getHighRangeId() throws IOException
+            public long maxCount()
             {
                 return 0;
             }

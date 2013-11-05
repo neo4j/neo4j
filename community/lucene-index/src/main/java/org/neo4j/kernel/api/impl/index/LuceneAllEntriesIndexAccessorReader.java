@@ -43,7 +43,7 @@ public class LuceneAllEntriesIndexAccessorReader implements AllEntriesIndexReade
     }
 
     @Override
-    public long approximateSize()
+    public long maxCount()
     {
         return searcher.maxDoc();
     }
@@ -56,7 +56,7 @@ public class LuceneAllEntriesIndexAccessorReader implements AllEntriesIndexReade
 
             @Override protected Long fetchNextOrNull()
             {
-                if ( nextId >= approximateSize() )
+                if ( nextId >= maxCount() )
                 {
                     return null;
                 }

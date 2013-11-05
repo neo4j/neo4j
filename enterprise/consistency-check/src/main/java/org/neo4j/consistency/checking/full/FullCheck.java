@@ -26,6 +26,10 @@ import java.util.List;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.SchemaRecordCheck;
+import org.neo4j.consistency.checking.index.IndexEntryProcessor;
+import org.neo4j.consistency.checking.index.IndexIterator;
+import org.neo4j.consistency.checking.labelscan.LabelScanCheck;
+import org.neo4j.consistency.checking.labelscan.LabelScanDocumentProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
@@ -36,6 +40,7 @@ import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.direct.NodeLabelRange;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -160,11 +165,13 @@ public class FullCheck
         tasks.add( new StoreProcessorTask<>( nativeStores.getNodeDynamicLabelStore(), progress, order,
                 processEverything, processEverything ) );
 
-        tasks.add( new LabelScanStoreCheckTask( directStoreAccess.labelScanStore(), progress, reporter, new LabelScanCheck() ) );
+        tasks.add( new RecordScanner<NodeLabelRange>( directStoreAccess.labelScanStore().newAllEntriesReader(),
+                "LabelScanStore", progress, new LabelScanDocumentProcessor(reporter, new LabelScanCheck() ) ) );
 
         for ( IndexRule indexRule : loadAllIndexRules( directStoreAccess.nativeStores().getSchemaStore() ) )
         {
-            tasks.add( new IndexCheckTask( indexRule, directStoreAccess.indexes(), progress, reporter, new IndexCheck(indexRule) ) );
+            tasks.add( new RecordScanner<Long>( new IndexIterator(indexRule, directStoreAccess.indexes()),
+                    "Index_" + indexRule.getId(), progress, new IndexEntryProcessor(reporter, new IndexCheck(indexRule) ) ) );
         }
 
         order.execute( tasks, progress.build() );
