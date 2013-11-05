@@ -54,6 +54,7 @@ import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -526,8 +527,11 @@ public class IndexingService extends LifecycleAdapter
         IndexProxy index = getProxyForRule( indexId );
         try
         {
-            index.awaitStoreScanCompleted();
-            index.activate();
+            if ( serviceRunning ) // don't do this during recovery.
+            {
+                index.awaitStoreScanCompleted();
+                index.activate();
+            }
         }
         catch ( InterruptedException e )
         {

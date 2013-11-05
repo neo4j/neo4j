@@ -63,7 +63,7 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
             logger.logMessage( "Neo4j component versions:" );
             for ( Version componentVersion : Service.load( Version.class ) )
             {
-                logger.logMessage( "  " + componentVersion );
+                logger.logMessage( "  " + componentVersion + "; revision: " + componentVersion.getRevision() );
             }
         }
     }

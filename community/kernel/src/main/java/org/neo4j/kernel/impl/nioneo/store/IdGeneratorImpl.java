@@ -115,7 +115,7 @@ public class IdGeneratorImpl implements IdGenerator
      * {@link #nextId()}.
      * @param aggressiveReuse will reuse ids during the same session, not requiring
      * a restart to be able reuse ids freed with {@link #freeId(long)}.
-     * @param highId2 
+     * @param highId the highest id in use.
      * @throws UnderlyingStorageException
      *             If no such file exist or if the id generator is sticky
      */
@@ -186,7 +186,7 @@ public class IdGeneratorImpl implements IdGenerator
             if ( id != null )
             {
                 defraggedIdCount--;
-                return id.longValue();
+                return id;
             }
         }
 
@@ -278,8 +278,6 @@ public class IdGeneratorImpl implements IdGenerator
      *
      * @param id
      *            The id to be made available again
-     * @throws IOException
-     *             If id is negative or greater than the highest returned id
      */
     @Override
     public synchronized void freeId( long id )
@@ -313,9 +311,6 @@ public class IdGeneratorImpl implements IdGenerator
      * An invoke to the <CODE>nextId</CODE> or <CODE>freeId</CODE> after
      * this method has been invoked will result in an <CODE>IOException</CODE>
      * since the highest returned id has been set to a negative value.
-     *
-     * @throws IOException
-     *             If unable to close this id generator
      */
     @Override
     public synchronized void close()
@@ -381,7 +376,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             long writePosition = HEADER_SIZE;
             long position = Math.min( readPosition, maxReadPosition );
-            int bytesRead = -1;
+            int bytesRead;
             do
             {
                 writeBuffer.clear();
@@ -416,8 +411,6 @@ public class IdGeneratorImpl implements IdGenerator
      *
      * @param fileName
      *            The name of the id generator
-     * @throws IOException
-     *             If unable to create the id generator
      */
     public static void createGenerator( FileSystemAbstraction fs, File fileName, long highId )
     {
@@ -584,9 +577,6 @@ public class IdGeneratorImpl implements IdGenerator
      * console. Do not call while running store using this id generator since it
      * could corrupt the id generator (not thread safe). This method will close
      * the id generator after being invoked.
-     *
-     * @throws IOException
-     *             If problem dumping free ids
      */
     public synchronized void dumpFreeIds()
     {
@@ -594,10 +584,9 @@ public class IdGeneratorImpl implements IdGenerator
         {
             readIdBatch();
         }
-        java.util.Iterator<Long> itr = idsReadFromFile.iterator();
-        while ( itr.hasNext() )
+        for ( Long id : idsReadFromFile )
         {
-            System.out.print( " " + itr.next() );
+            System.out.print( " " + id );
         }
         System.out.println( "\nNext free id: " + highId );
         close();

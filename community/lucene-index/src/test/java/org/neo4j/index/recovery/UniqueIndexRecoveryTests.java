@@ -37,6 +37,7 @@ import org.junit.runners.Parameterized;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -51,6 +52,7 @@ import static java.util.Arrays.asList;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertFalse;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -61,6 +63,36 @@ import static org.neo4j.helpers.collection.Iterables.single;
 @RunWith(Parameterized.class)
 public class UniqueIndexRecoveryTests
 {
+    @Test
+    public void shouldRecoverCreationOfUniquenessConstraintFollowedByDeletionOfThatSameConstraint() throws Exception
+    {
+        // given
+        createUniqueConstraint();
+        dropConstraints();
+
+        // when - perform recovery
+        restart( snapshot( storeDir.absolutePath() ) );
+
+        // then - just make sure the constraint is gone
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertFalse( db.schema().getConstraints( LABEL ).iterator().hasNext() );
+            tx.success();
+        }
+    }
+
+    private void dropConstraints()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( ConstraintDefinition constraint : db.schema().getConstraints( LABEL ) )
+            {
+                constraint.drop();
+            }
+            tx.success();
+        }
+    }
+
     @Test
     public void shouldRecoverWhenCommandsTemporarilyViolateConstraints() throws Exception
     {
@@ -75,20 +107,23 @@ public class UniqueIndexRecoveryTests
         flushAll(); // persist - recovery will do everything since last log rotate
 
         // WHEN recovery is triggered
-        File newStore = snapshot(storeDir.absolutePath());
-        db.shutdown();
-
-        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( newStore.getAbsolutePath() );
+        restart( snapshot( storeDir.absolutePath() ) );
 
         // THEN
         // it should just not blow up!
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             assertThat(
                     single( db.findNodesByLabelAndProperty( LABEL, PROPERTY_KEY, PROPERTY_VALUE ) ),
                     equalTo( unLabeledNode ) );
             tx.success();
         }
+    }
+
+    private void restart( File newStore )
+    {
+        db.shutdown();
+        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( newStore.getAbsolutePath() );
     }
 
     private File snapshot( final String path ) throws IOException
