@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.traversal;
 
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 
-abstract class AbstractTraverserIterator extends PrefetchingResourceIterator<Path>
-        implements TraversalContext
+abstract class AbstractTraverserIterator extends PrefetchingResourceIterator<Path> implements TraverserIterator
 {
     protected int numberOfPathsReturned;
     protected int numberOfRelationshipsTraversed;

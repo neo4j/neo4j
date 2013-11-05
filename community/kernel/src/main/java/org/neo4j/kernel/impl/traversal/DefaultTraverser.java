@@ -26,11 +26,19 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 
-public abstract class AbstractTraverser implements Traverser
+public class DefaultTraverser implements Traverser
 {
-    TraversalMetadata lastIterator;
+    private final Factory<TraverserIterator> traverserIteratorFactory;
+
+    private TraversalMetadata lastIterator;
+
+    DefaultTraverser(Factory<TraverserIterator> traverserIteratorFactory )
+    {
+        this.traverserIteratorFactory = traverserIteratorFactory;
+    }
 
     @Override
     public ResourceIterable<Node> nodes()
@@ -89,12 +97,10 @@ public abstract class AbstractTraverser implements Traverser
     @Override
     public ResourceIterator<Path> iterator()
     {
-        ResourceIterator<Path> iterator = instantiateIterator();
-        lastIterator = (TraversalMetadata) iterator;
-        return iterator;
+        TraverserIterator traverserIterator = traverserIteratorFactory.newInstance();
+        lastIterator = traverserIterator;
+        return traverserIterator;
     }
-
-    protected abstract ResourceIterator<Path> instantiateIterator();
 
     @Override
     public TraversalMetadata metadata()

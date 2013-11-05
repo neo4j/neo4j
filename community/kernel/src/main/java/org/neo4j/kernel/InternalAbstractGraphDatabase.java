@@ -143,7 +143,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
-import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
+import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -1652,7 +1652,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public TraversalDescription traversalDescription()
     {
-        return new TraversalDescriptionImpl(statementContextProvider);
+        return new MonoDirectionalTraversalDescription(statementContextProvider);
     }
 
     @Override

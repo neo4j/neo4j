@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.traversal;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -29,24 +30,19 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 
-class SortingTraverserIterator extends PrefetchingResourceIterator<Path>
-        implements TraversalContext
+class SortingTraverserIterator extends PrefetchingResourceIterator<Path> implements TraverserIterator
 {
-    /**
-     *
-     */
-    private final TraverserImpl traverserImpl;
-    private final TraverserIterator source;
-    private Iterator<Path> sortedResultIterator;
+    private final Comparator<? super Path> sortingStrategy;
+    private final MonoDirectionalTraverserIterator source;
     private final Resource resource;
+    private Iterator<Path> sortedResultIterator;
 
-    SortingTraverserIterator( Resource resource, TraverserImpl traverserImpl, TraverserIterator source )
+    SortingTraverserIterator( Resource resource, Comparator<? super Path> sortingStrategy, MonoDirectionalTraverserIterator source )
     {
         this.resource = resource;
-        this.traverserImpl = traverserImpl;
+        this.sortingStrategy = sortingStrategy;
         this.source = source;
     }
 
@@ -109,7 +105,7 @@ class SortingTraverserIterator extends PrefetchingResourceIterator<Path>
         {
             result.add( source.next() );
         }
-        Collections.sort( result, this.traverserImpl.description.sorting );
+        Collections.sort( result, sortingStrategy );
         return result.iterator();
     }
 

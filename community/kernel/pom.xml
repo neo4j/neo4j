@@ -347,7 +347,7 @@ public class ComponentVersion extends Version
            need to fix that.
            OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
             -->
-          <comparisonVersion>1.9.4</comparisonVersion>
+          <comparisonVersion>1.9.M05</comparisonVersion>
           <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
           <includes>
             <include>org/neo4j/graphdb/**</include>

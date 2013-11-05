@@ -32,7 +32,9 @@ import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.SideSelector;
+import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.graphdb.traversal.UniquenessFilter;
@@ -57,21 +59,23 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
 
     private static class Side
     {
-        private final TraversalDescriptionImpl description;
+        private final MonoDirectionalTraversalDescription description;
 
-        public Side( TraversalDescriptionImpl description )
+        public Side( MonoDirectionalTraversalDescription description )
         {
             this.description = description;
         }
     }
 
-    BidirectionalTraverserIterator( Resource resource, BidirectionalTraversalDescriptionImpl description,
+    BidirectionalTraverserIterator( Resource resource,
+                                    MonoDirectionalTraversalDescription start,
+                                    MonoDirectionalTraversalDescription end,
+                                    SideSelectorPolicy sideSelector,
+                                    org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy,
+                                    PathEvaluator collisionEvaluator, int maxDepth,
                                     Iterable<Node> startNodes, Iterable<Node> endNodes )
     {
         super( resource );
-        // TODO Don't assume TraversalDescriptionImpl
-        TraversalDescriptionImpl start = (TraversalDescriptionImpl) description.start;
-        TraversalDescriptionImpl end = (TraversalDescriptionImpl) description.end;
         this.sides.put( Direction.OUTGOING, new Side( start ) );
         this.sides.put( Direction.INCOMING, new Side( end ) );
         this.uniqueness = makeSureStartAndEndHasSameUniqueness( start, end );
@@ -85,12 +89,12 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         BranchSelector endSelector = end.branchOrdering.create(
                 new AsOneStartBranch( this, endNodes, end.initialState ), end.expander );
 
-        this.selector = description.sideSelector.create( startSelector, endSelector, description.maxDepth );
-        this.collisionDetector = description.collisionPolicy.create( description.collisionEvaluator );
+        this.selector = sideSelector.create( startSelector, endSelector, maxDepth );
+        this.collisionDetector = collisionPolicy.create( collisionEvaluator );
     }
 
-    private BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness( TraversalDescriptionImpl start,
-                                                                   TraversalDescriptionImpl end )
+    private BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness( MonoDirectionalTraversalDescription start,
+                                                                   MonoDirectionalTraversalDescription end )
     {
         if ( !start.uniqueness.equals( end.uniqueness ) )
         {
