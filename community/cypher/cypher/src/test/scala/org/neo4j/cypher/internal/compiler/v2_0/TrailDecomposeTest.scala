@@ -26,8 +26,9 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.scalatest.Assertions
+import org.scalautils.LegacyTripleEquals
 
-class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
+class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with LegacyTripleEquals {
   @Test def decompose_simple_path() {
     val nodeA = createNode("A")
     val nodeB = createNode("B")

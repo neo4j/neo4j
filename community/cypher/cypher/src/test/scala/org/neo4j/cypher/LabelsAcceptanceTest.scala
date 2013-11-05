@@ -24,8 +24,10 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.graphdb.Node
+import org.scalautils.LegacyTripleEquals
 
-class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
+class LabelsAcceptanceTest extends ExecutionEngineHelper
+  with StatisticsChecker with Assertions with CollectionSupport with LegacyTripleEquals {
 
   @Test def Adding_single_literal_label() {
     assertThat("create (n {}) set n:FOO", List("FOO"))

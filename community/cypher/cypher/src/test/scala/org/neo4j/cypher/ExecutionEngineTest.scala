@@ -30,8 +30,9 @@ import util.Random
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.scalautils.LegacyTripleEquals
 
-class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker {
+class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker with LegacyTripleEquals {
 
   @Ignore
   @Test def assignToPathInsideForeachShouldWork() {

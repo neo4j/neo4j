@@ -43,6 +43,14 @@
     <module>cypher-docs</module>
   </modules>
 
+  <repositories>
+    <repository>
+      <id>oss.sonatype.org</id>
+      <name>releases</name>
+      <url>http://oss.sonatype.org/content/repositories/releases</url>
+    </repository>
+  </repositories>
+
   <build>
     <plugins>
 
@@ -181,6 +189,8 @@
       <artifactId>scala-library</artifactId>
     </dependency>
 
+    <!-- testing -->
+
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.10</artifactId>
@@ -192,10 +202,23 @@
         </exclusion>
       </exclusions>
     </dependency>
-
-    <!-- testing -->
-
     <dependency>
+      <groupId>org.scalautils</groupId>
+      <artifactId>scalautils_2.10</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_2.10</artifactId>
+      <scope>test</scope>
+    </dependency>
+   <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <exclusions>
@@ -234,10 +257,13 @@
         <artifactId>scala-library</artifactId>
         <version>${scala.version}</version>
       </dependency>
+
+      <!-- testing -->
+
       <dependency>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest_2.10</artifactId>
-        <version>2.0.RC1-SNAP4</version>
+        <version>2.0</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -245,6 +271,24 @@
             <groupId>org.scala-lang</groupId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalautils</groupId>
+        <artifactId>scalautils_2.10</artifactId>
+        <version>2.0</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalacheck</groupId>
+        <artifactId>scalacheck_2.10</artifactId>
+        <version>1.11.0</version>
+        <scope>test</scope>
       </dependency>
 
       <!-- neo4j -->

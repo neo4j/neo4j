@@ -235,7 +235,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """Returns all nodes in a path.""",
       queryText = """match p=a-->b-->c where a.name='Alice' and c.name='Eskil' return NODES(p)""",
       returns = """All the nodes in the path `p` are returned by the example query.""",
-      assertions = (p) => assert(List(node("A"), node("B"), node("E")) === p.columnAs[List[Node]]("NODES(p)").toList.head)
+      assertions = (p) => assert(List(node("A"), node("B"), node("E")) === p.columnAs[Seq[Node]]("NODES(p)").toList.head)
     )
   }
 

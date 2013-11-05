@@ -26,8 +26,11 @@ import java.util.concurrent.TimeUnit
 import java.io.{FileOutputStream, File}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.GraphDatabaseService
+import org.scalautils.LegacyTripleEquals
 
-class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions {
+class IndexOpAcceptanceTest extends ExecutionEngineHelper
+  with StatisticsChecker with Assertions with LegacyTripleEquals {
+
   @Test def createIndex() {
     // WHEN
     execute("CREATE INDEX ON :Person(name)")
