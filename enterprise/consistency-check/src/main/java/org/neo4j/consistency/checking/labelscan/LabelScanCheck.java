@@ -17,17 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.consistency.checking.full;
+package org.neo4j.consistency.checking.labelscan;
 
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.checking.full.NodeInUseWithCorrectLabelsCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
 
-class LabelScanCheck implements RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
+public class LabelScanCheck implements RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
 {
     @Override
     public void check( LabelScanDocument record, CheckerEngine<LabelScanDocument,
@@ -46,6 +47,6 @@ class LabelScanCheck implements RecordCheck<LabelScanDocument, ConsistencyReport
                              CheckerEngine<LabelScanDocument,
                                      ConsistencyReport.LabelScanConsistencyReport> engine, DiffRecordAccess records )
     {
-        throw new UnsupportedOperationException();
+        check( newRecord, engine, records );
     }
 }

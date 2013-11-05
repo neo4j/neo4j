@@ -47,5 +47,6 @@ public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.Ind
     public void checkChange( IndexEntry oldRecord, IndexEntry newRecord, CheckerEngine<IndexEntry, ConsistencyReport
             .IndexConsistencyReport> engine, DiffRecordAccess records )
     {
+        check( newRecord, engine, records );
     }
 }

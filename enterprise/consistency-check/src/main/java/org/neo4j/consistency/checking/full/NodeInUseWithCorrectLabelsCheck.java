@@ -35,13 +35,13 @@ import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.sort;
 
-class NodeInUseWithCorrectLabelsCheck
+public class NodeInUseWithCorrectLabelsCheck
         <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport.NodeInUseWithCorrectLabelsReport>
         implements ComparativeRecordChecker<RECORD, NodeRecord, REPORT>
 {
     private final long[] expectedLabels;
 
-    NodeInUseWithCorrectLabelsCheck( long[] expectedLabels )
+    public NodeInUseWithCorrectLabelsCheck( long[] expectedLabels )
     {
         this.expectedLabels = expectedLabels;
     }

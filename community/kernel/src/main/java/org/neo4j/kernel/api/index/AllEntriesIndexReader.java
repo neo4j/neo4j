@@ -27,12 +27,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 public interface AllEntriesIndexReader extends Iterable<Long>, Closeable
 {
-    long approximateSize();
+    long maxCount();
 
     AllEntriesIndexReader EMPTY = new AllEntriesIndexReader()
     {
         @Override
-        public long approximateSize()
+        public long maxCount()
         {
             return 0;
         }

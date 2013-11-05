@@ -51,7 +51,7 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
     }
 
     @Override
-    public long getHighRangeId() throws IOException
+    public long maxCount()
     {
         return searcher.maxDoc();
     }

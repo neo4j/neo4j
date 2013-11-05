@@ -77,7 +77,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public long approximateSize()
+    public long maxCount()
     {
         return ids().size();
     }
