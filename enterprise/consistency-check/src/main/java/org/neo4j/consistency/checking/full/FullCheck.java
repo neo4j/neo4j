@@ -52,6 +52,8 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.lang.String.format;
+
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
 import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTIES;
@@ -103,25 +105,25 @@ public class FullCheck
 
 
         StoreAccess nativeStores = directStoreAccess.nativeStores();
-        MultiPassStore.Factory processorFactory = new MultiPassStore.Factory(
+        MultiPassStore.Factory multiPass = new MultiPassStore.Factory(
                 decorator, totalMappedMemory, nativeStores, recordAccess, report );
 
         tasks.add( new StoreProcessorTask<>(
                 nativeStores.getNodeStore(), progress, order,
-                processEverything, processorFactory.createAll( PROPERTIES, RELATIONSHIPS ) ) );
+                processEverything, multiPass.processors( PROPERTIES, RELATIONSHIPS ) ) );
 
         tasks.add( new StoreProcessorTask<>(
                 nativeStores.getRelationshipStore(), progress, order,
-                processEverything, processorFactory.createAll( NODES, PROPERTIES, RELATIONSHIPS ) ) );
+                processEverything, multiPass.processors( NODES, PROPERTIES, RELATIONSHIPS ) ) );
         tasks.add( new StoreProcessorTask<>(
                 nativeStores.getPropertyStore(), progress, order,
-                processEverything, processorFactory.createAll( PROPERTIES, STRINGS, ARRAYS ) ) );
+                processEverything, multiPass.processors( PROPERTIES, STRINGS, ARRAYS ) ) );
         tasks.add( new StoreProcessorTask<>(
                 nativeStores.getStringStore(), progress, order,
-                processEverything, processorFactory.createAll( STRINGS ) ) );
+                processEverything, multiPass.processors( STRINGS ) ) );
         tasks.add( new StoreProcessorTask<>(
                 nativeStores.getArrayStore(), progress, order,
-                processEverything, processorFactory.createAll( ARRAYS ) ) );
+                processEverything, multiPass.processors( ARRAYS ) ) );
 
         // The schema store is verified in multiple passes that share state since it fits into memory
         // and we care about the consistency of back references (cf. SemanticCheck)
@@ -165,13 +167,20 @@ public class FullCheck
         tasks.add( new StoreProcessorTask<>( nativeStores.getNodeDynamicLabelStore(), progress, order,
                 processEverything, processEverything ) );
 
-        tasks.add( new RecordScanner<NodeLabelRange>( directStoreAccess.labelScanStore().newAllEntriesReader(),
-                "LabelScanStore", progress, new LabelScanDocumentProcessor(reporter, new LabelScanCheck() ) ) );
-
-        for ( IndexRule indexRule : loadAllIndexRules( directStoreAccess.nativeStores().getSchemaStore() ) )
+        int iPass = 0;
+        for ( ConsistencyReporter filteredReporter : multiPass.reporters( order, NODES ) )
         {
-            tasks.add( new RecordScanner<Long>( new IndexIterator(indexRule, directStoreAccess.indexes()),
-                    "Index_" + indexRule.getId(), progress, new IndexEntryProcessor(reporter, new IndexCheck(indexRule) ) ) );
+            tasks.add( new RecordScanner<NodeLabelRange>( directStoreAccess.labelScanStore().newAllEntriesReader(),
+                    format( "LabelScanStore_%d", iPass ), progress, new LabelScanDocumentProcessor( filteredReporter,
+                    new LabelScanCheck() ) ) );
+
+            for ( IndexRule indexRule : loadAllIndexRules( directStoreAccess.nativeStores().getSchemaStore() ) )
+            {
+                tasks.add( new RecordScanner<Long>( new IndexIterator( indexRule, directStoreAccess.indexes() ),
+                        format( "Index_%d_%d", indexRule.getId(), iPass ), progress, new IndexEntryProcessor( filteredReporter,
+                        new IndexCheck( indexRule ) ) ) );
+            }
+            iPass++;
         }
 
         order.execute( tasks, progress.build() );
