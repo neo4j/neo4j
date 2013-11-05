@@ -22,12 +22,159 @@ package org.neo4j.kernel;
 import java.util.NoSuchElementException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.ComponentVersion;
 
 public class Version extends Service
 {
-    protected static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
+    public static Version getKernel()
+    {
+        return KERNEL_VERSION;
+    }
+
+    public static String getKernelRevision()
+    {
+        return getKernel().getRevision();
+    }
+
+    private final String artifactId;
+    private final String title;
+    private final String vendor;
+    private final String version;
+
+    @Override
+    public String toString()
+    {
+        StringBuilder result = new StringBuilder();
+        if ( title != null )
+        {
+            result.append( title );
+            if ( artifactId == null || !artifactId.equals( title ) )
+            {
+                result.append( " (" ).append( artifactId ).append( ')' );
+            }
+        }
+        else if ( artifactId != null )
+        {
+            result.append( artifactId );
+        }
+        else
+        {
+            result.append( "Unknown Component" );
+        }
+        result.append( ", " );
+        if ( title == null )
+        {
+            result.append( "unpackaged " );
+        }
+        result.append( "version: " ).append( getVersion() );
+        return result.toString();
+    }
+
+    /**
+     * Gets the version of the running neo4j kernel.
+     *
+     * @return the version of the neo4j kernel
+     */
+    public final String getVersion()
+    {
+        if ( version == null || version.equals( "" ) )
+        {
+            return "revision: " + getRevision();
+        }
+        else if ( version.endsWith( "-SNAPSHOT" ) )
+        {
+            return version + " (revision: " + getRevision() + ")";
+        }
+        else
+        {
+            return version;
+        }
+    }
+
+    public String getReleaseVersion()
+    {
+        return version;
+    }
+
+    /**
+     * Returns the build revision of the running neo4j kernel.
+     *
+     * @return build revision
+     */
+    public final String getRevision()
+    {
+        StringBuilder result = new StringBuilder( getReleaseVersion() );
+        result.append( ':' ).append( getBranchName() ).append( ':' );
+        String build = getBuildNumber();
+        if ( !(build.startsWith( "${" ) || build.startsWith( "{" )) )
+        {
+            result.append( build ).append( '/' );
+        }
+        result.append( getCommitId() );
+        if ( getCommitDescription().endsWith( "-dirty" ) )
+        {
+            result.append( "-dirty" );
+        }
+        return result.toString();
+    }
+
+    protected String getCommitDescription()
+    {
+        return "{CommitDescription}";
+    }
+
+    protected String getBuildNumber()
+    {
+        return "{BuildNumber}";
+    }
+
+    protected String getCommitId()
+    {
+        return "{CommitId}";
+    }
+
+    protected String getBranchName()
+    {
+        return "{BranchName}";
+    }
+
+    protected Version( String artifactId, String version )
+    {
+        super( artifactId );
+        this.artifactId = artifactId;
+        Package pkg = getClass().getPackage();
+        this.title = defaultValue( pkg.getImplementationTitle(), artifactId );
+        this.vendor = defaultValue( pkg.getImplementationVendor(), "Neo Technology" );
+        this.version = defaultValue( pkg.getImplementationVersion(), version );
+    }
+
+    private static String defaultValue( String preferred, String fallback )
+    {
+        return (preferred == null || preferred.equals( "" )) ? fallback : preferred;
+    }
+
+    /**
+     * A very nice to have main-method for quickly checking the version of a neo4j kernel,
+     * for example given a kernel jar file.
+     */
+    public static void main( String[] args )
+    {
+        Version kernelVersion = getKernel();
+        System.out.println( kernelVersion );
+        System.out.println( "Title: " + kernelVersion.title );
+        System.out.println( "Vendor: " + kernelVersion.vendor );
+        System.out.println( "ArtifactId: " + kernelVersion.artifactId );
+        System.out.println( "Version: " + kernelVersion.getVersion() );
+        System.out.println( "ReleaseVersion: " + kernelVersion.getReleaseVersion() );
+        System.out.println( "Revision: " + kernelVersion.getRevision() );
+        System.out.println( "CommitDescription: " + kernelVersion.getCommitDescription() );
+        System.out.println( "BuildNumber: " + kernelVersion.getBuildNumber() );
+        System.out.println( "BranchName: " + kernelVersion.getBranchName() );
+        System.out.println( "CommitId: " + kernelVersion.getCommitId() );
+    }
+
+    static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
     private static final Version KERNEL_VERSION;
+
     static
     {
         Version kernelVersion;
@@ -37,99 +184,23 @@ public class Version extends Service
         }
         catch ( NoSuchElementException ex )
         {
-            kernelVersion = null; // Be explicit about what we want.
+            kernelVersion = null;
         }
-        if ( kernelVersion == null ) kernelVersion = new Version( KERNEL_ARTIFACT_ID, "" );
+        if ( kernelVersion == null )
+        {
+            try
+            {
+                kernelVersion = (Version) Class.forName( "org.neo4j.kernel.impl.ComponentVersion" ).newInstance();
+            }
+            catch ( Exception e )
+            {
+                kernelVersion = null;
+            }
+        }
+        if ( kernelVersion == null )
+        {
+            kernelVersion = new Version( KERNEL_ARTIFACT_ID, "" );
+        }
         KERNEL_VERSION = kernelVersion;
-    }
-    private final String title;
-    @SuppressWarnings( "unused" )
-    private final String vendor;
-    private final String version;
-
-    @Override
-    public String toString()
-    {
-        if ( title == null )
-        {
-            return "Neo4j Kernel, unpackaged version " + getVersion();
-        }
-        return title + " " + getVersion();
-    }
-
-    /**
-     * Gets the version of the running neo4j kernel.
-     *
-     * @return the version of the neo4j kernel
-     */
-    public String getVersion()
-    {
-        if ( version == null || version.equals( "" ) )
-        {
-            String revision = getRevision();
-            if ( revision == null || revision.equals( "" ) ) return "unknown";
-            return "revision: " + getRevision();
-        }
-        else if ( version.contains( "SNAPSHOT" ) )
-        {
-            String revision = getRevision();
-            if ( revision == null || revision.equals( "" ) ) return version;
-            return version + " (revision: " + getRevision() + ")";
-        }
-        else
-        {
-            return version;
-        }
-    }
-
-    public String getReleaseVersion() {
-        return version;
-    }
-
-
-    /**
-     * Returns the build revision of the running neo4j kernel.
-     *
-     * @return build revision
-     */
-    public String getRevision()
-    {
-        return "";
-    }
-
-    protected Version( String atrifactId, String version )
-    {
-        super( atrifactId );
-        Package pkg = getClass().getPackage();
-        this.title = defaultValue( pkg.getImplementationTitle(), atrifactId );
-        this.vendor = defaultValue( pkg.getImplementationVendor(), "Neo Technology" );
-        this.version = defaultValue( pkg.getImplementationVersion(), version );
-    }
-
-    private static String defaultValue( String preferred, String fallback )
-    {
-        return ( preferred == null || preferred.equals( "" ) ) ? fallback : preferred;
-    }
-
-    public static Version getKernel()
-    {
-        return KERNEL_VERSION;
-    }
-
-    public static String getKernelRevision()
-    {
-        return KERNEL_VERSION.getRevision();
-    }
-    
-    /**
-     * A very nice to have main-method for quickly checking the version of a neo4j kernel,
-     * for example given a kernel jar file.
-     */
-    public static void main( String[] args )
-    {
-        ComponentVersion componentVersion = new ComponentVersion();
-        System.out.println( "Release version: " + componentVersion.getReleaseVersion() );
-        System.out.println( "Version: " + componentVersion.getVersion() );
-        System.out.println( "Revision: " + componentVersion.getRevision() );
     }
 }
