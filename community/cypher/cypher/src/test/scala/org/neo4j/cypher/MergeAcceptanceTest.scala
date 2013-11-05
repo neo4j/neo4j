@@ -22,9 +22,10 @@ package org.neo4j.cypher
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Node
+import org.scalautils.LegacyTripleEquals
 
 class MergeAcceptanceTest
-  extends ExecutionEngineHelper with Assertions with StatisticsChecker {
+  extends ExecutionEngineHelper with Assertions with StatisticsChecker with LegacyTripleEquals {
 
   @Test
   def merge_node_when_no_nodes_exist() {

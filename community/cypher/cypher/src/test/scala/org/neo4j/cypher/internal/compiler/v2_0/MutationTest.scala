@@ -28,8 +28,9 @@ import org.scalatest.Assertions
 import org.junit.Test
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.{QueryState, ExecuteUpdateCommandsPipe, NullPipe}
+import org.scalautils.LegacyTripleEquals
 
-class MutationTest extends ExecutionEngineHelper with Assertions {
+class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTripleEquals {
 
   def createQueryState = QueryStateHelper.queryStateFrom(graph)
 

@@ -28,8 +28,10 @@ import org.neo4j.graphdb._
 import java.util.HashMap
 import org.neo4j.graphdb.Neo4jMatchers._
 import org.neo4j.tooling.GlobalGraphOperations
+import org.scalautils.LegacyTripleEquals
 
-class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with StatisticsChecker {
+class MutatingIntegrationTest extends ExecutionEngineHelper
+  with Assertions with StatisticsChecker with LegacyTripleEquals {
 
   val stats = QueryStatistics()
 

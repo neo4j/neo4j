@@ -23,8 +23,10 @@ import org.junit.Test
 import collection.JavaConverters._
 import org.scalatest.Assertions
 import org.neo4j.graphdb.{Path, Node, Relationship}
+import org.scalautils.LegacyTripleEquals
 
-class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions with StatisticsChecker {
+class CreateUniqueAcceptanceTest
+  extends ExecutionEngineHelper with Assertions with StatisticsChecker with LegacyTripleEquals {
 
   val stats = QueryStatistics()
 
