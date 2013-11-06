@@ -29,14 +29,13 @@ case class CollectionSliceExpression(collection: Expression, from: Option[Expres
   extends NullInNullOutExpression(collection) with CollectionSupport {
   def arguments: Seq[Expression] = from.toSeq ++ to.toSeq :+ collection
 
-  private val function: (Iterable[Any], ExecutionContext, QueryState) => Any = {
+  private val function: (Iterable[Any], ExecutionContext, QueryState) => Any =
     (from, to) match {
       case (Some(f), Some(n)) => fullSlice(f, n)
       case (Some(f), None)    => fromSlice(f)
       case (None, Some(f))    => toSlice(f)
       case (None, None)       => (coll, _, _) => coll
     }
-  }
 
   private def fullSlice(from: Expression, to: Expression)(collectionValue: Iterable[Any], ctx: ExecutionContext, state: QueryState) = {
     val fromValue = asInt(from, ctx, state)
@@ -44,38 +43,30 @@ case class CollectionSliceExpression(collection: Expression, from: Option[Expres
 
     val size = collectionValue.size
 
-    def extract(start:Int, end:Int) =
-      if( start >= size || end >= size || start < 0 || end < 0 ) null
-      else collectionValue.slice( start, end )
-
     if (fromValue >= 0 && toValue >= 0)
-      extract(fromValue, toValue)
+      collectionValue.slice(fromValue, toValue)
     else if (fromValue >= 0) {
       val end = size + toValue
-      extract(fromValue, end)
+      collectionValue.slice(fromValue, end)
     } else if (toValue >= 0) {
       val start = size + fromValue
-      extract(start, toValue)
+      collectionValue.slice(start, toValue)
     } else {
       val start = size + fromValue
       val end = size + toValue
-      extract(start, end)
+      collectionValue.slice(start, end)
     }
   }
 
   private def fromSlice(from: Expression)(collectionValue: Iterable[Any], ctx: ExecutionContext, state: QueryState) = {
     val fromValue = asInt(from, ctx, state)
     val size = collectionValue.size
-    
-    def extract( start:Int ) =
-      if( start >= size || start < 0 ) null
-      else collectionValue.drop(start)
-    
+
     if (fromValue >= 0)
-      extract(fromValue)
+      collectionValue.drop(fromValue)
     else {
       val end = size + fromValue
-      extract(end)
+      collectionValue.drop(end)
     }
   }
 
@@ -83,15 +74,11 @@ case class CollectionSliceExpression(collection: Expression, from: Option[Expres
     val toValue = asInt(from, ctx, state)
     val size = collectionValue.size
 
-    def extract( end:Int ) =
-      if( end >= size || end < 0 ) null
-      else collectionValue.take(end)
-
     if (toValue >= 0)
-      extract(toValue)
+      collectionValue.take(toValue)
     else {
       val end = size + toValue
-      extract(end)
+      collectionValue.take(end)
     }
   }
 
