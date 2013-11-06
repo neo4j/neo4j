@@ -28,8 +28,9 @@ import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 
 /**
-* TODO
-*/
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public class DefaultIdGeneratorFactory
     implements IdGeneratorFactory
 {

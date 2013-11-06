@@ -35,6 +35,10 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 abstract class KernelDiagnostics implements DiagnosticsProvider
 {
     static void register( DiagnosticsManager manager, InternalAbstractGraphDatabase graphdb, NeoStoreXaDataSource ds )

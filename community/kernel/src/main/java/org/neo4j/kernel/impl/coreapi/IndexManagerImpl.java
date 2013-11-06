@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.coreapi;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +42,7 @@ import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.index.IndexXaConnection;
@@ -49,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
-class IndexManagerImpl implements IndexManager, IndexProviders
+public class IndexManagerImpl implements IndexManager, IndexProviders
 {
     private final IndexStore indexStore;
     private final Map<String, IndexImplementation> indexProviders = new HashMap<String, IndexImplementation>();
@@ -61,9 +62,9 @@ class IndexManagerImpl implements IndexManager, IndexProviders
     private final AbstractTransactionManager txManager;
     private final GraphDatabaseAPI graphDatabaseAPI;
 
-    IndexManagerImpl( Config config, IndexStore indexStore,
-                      XaDataSourceManager xaDataSourceManager, AbstractTransactionManager txManager,
-                      GraphDatabaseAPI graphDatabaseAPI
+    public IndexManagerImpl( Config config, IndexStore indexStore,
+                             XaDataSourceManager xaDataSourceManager, AbstractTransactionManager txManager,
+                             GraphDatabaseAPI graphDatabaseAPI
     )
     {
         this.graphDatabaseAPI = graphDatabaseAPI;

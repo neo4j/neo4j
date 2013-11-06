@@ -42,7 +42,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.BridgingCacheAccess;
+import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.KernelAPI;

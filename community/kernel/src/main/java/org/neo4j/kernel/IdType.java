@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public enum IdType
 {
     NODE( 35, false ),

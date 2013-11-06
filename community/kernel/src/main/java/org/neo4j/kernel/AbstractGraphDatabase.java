@@ -21,6 +21,10 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public abstract class AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI
 {
     /**

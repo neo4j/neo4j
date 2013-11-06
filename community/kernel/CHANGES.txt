@@ -1,6 +1,11 @@
 2.0.0-SNAPSHOT
 --------------
 o BREAKING CHANGE: Reference node has been removed.
+o BREAKING CHANGE: All classes under the org.neo4j.kernel package space, except
+  those related to the traversal frameworks, are now deprecated and due to be moved
+  into internal packages. This includes well-known classes such as EmbeddedGraphDatabase
+  and HighlyAvailableGraphDatabase, both of which are replaced by GraphDatabaseFactory
+  and HighlyAvailableGraphDatabaseFactory, respectively.
 
 2.0.0-M05
 ---------

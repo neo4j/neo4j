@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.coreapi;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,13 +29,14 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableIndex;
+import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Default implementation of the AutoIndexer, binding to the beforeCommit hook
  * as a TransactionEventHandler
  *
- * @param <T> The database primitive type auto indexed
+ * @param <T> The database primitive type auto indexed/**
  */
 abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         PropertyTracker<T>, AutoIndexer<T>, Lifecycle

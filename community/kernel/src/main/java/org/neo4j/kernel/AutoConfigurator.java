@@ -29,6 +29,10 @@ import java.util.Map;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.logging.ConsoleLogger;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public class AutoConfigurator
 {
     private final int totalPhysicalMemMb;
