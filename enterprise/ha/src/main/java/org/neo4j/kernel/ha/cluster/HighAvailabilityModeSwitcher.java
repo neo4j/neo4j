@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
@@ -254,7 +255,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
         try
         {
-            MasterImpl masterImpl = new MasterImpl( graphDb, logging, config );
+            final TransactionManager txManager = graphDb.getDependencyResolver().resolveDependency( TransactionManager.class );
+            MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
+
+            MasterImpl masterImpl = new MasterImpl( spi, logging, config );
             
             MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
                     new BranchDetectingTxVerifier( graphDb ) );
@@ -628,4 +632,5 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         msgLog.logMessage( "Master id for last committed tx ok with highestTxId=" +
                 myLastCommittedTx + " with masterId=" + myMaster, true );
     }
+
 }

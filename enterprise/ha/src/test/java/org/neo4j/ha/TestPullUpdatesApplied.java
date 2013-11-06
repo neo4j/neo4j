@@ -19,9 +19,6 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -34,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -46,6 +44,10 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertFalse;
+
+import static org.neo4j.test.TargetDirectory.forTest;
 
 /**
  * This test case ensures that updates in HA are first written out to the log

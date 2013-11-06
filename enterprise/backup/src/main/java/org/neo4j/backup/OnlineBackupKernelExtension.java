@@ -31,6 +31,9 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 
@@ -41,15 +44,21 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
     private Config config;
     private GraphDatabaseAPI graphDatabaseAPI;
-    private BindingNotifier bindingNotifier;
+    private XaDataSourceManager xaDataSourceManager;
+    private KernelPanicEventGenerator kpeg;
+    private Logging logging;
     private BackupServer server;
     private URI backupUri;
     private volatile URI me;
 
-    public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI)
+    public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, XaDataSourceManager
+            xaDataSourceManager, KernelPanicEventGenerator kpeg, Logging logging )
     {
         this.config = config;
         this.graphDatabaseAPI = graphDatabaseAPI;
+        this.xaDataSourceManager = xaDataSourceManager;
+        this.kpeg = kpeg;
+        this.logging = logging;
     }
 
     @Override
@@ -62,12 +71,24 @@ public class OnlineBackupKernelExtension implements Lifecycle
     {
         if ( config.<Boolean>get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            TheBackupInterface backup = new BackupImpl( graphDatabaseAPI );
+            TheBackupInterface backup = new BackupImpl( logging.getMessagesLog( BackupImpl.class ), new BackupImpl.SPI()
+            {
+                @Override
+                public String getStoreDir()
+                {
+                    return graphDatabaseAPI.getStoreDir();
+                }
+
+                @Override
+                public StoreId getStoreId()
+                {
+                    return graphDatabaseAPI.getStoreId();
+                }
+            }, xaDataSourceManager, kpeg );
             try
             {
                 server = new BackupServer( backup,
-                        config.get( OnlineBackupSettings.online_backup_server ),
-                        graphDatabaseAPI.getDependencyResolver().resolveDependency( Logging.class ) );
+                        config.get( OnlineBackupSettings.online_backup_server ), logging );
                 server.init();
                 server.start();
 

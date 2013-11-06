@@ -66,7 +66,7 @@ public class TestInstanceJoin
             long nodeId = createNode( master, key, value );
             createNode( master, "something", "unimportant" );
             // Rotating, moving the above transactions away so they are removed on shutdown.
-            rotateLogs( master );
+            rotateLogs( master.getXaDataSourceManager(), master.getKernelPanicGenerator(), master.getMessageLog() );
 
             /*
              * We need to shutdown - rotating is not enough. The problem is that log positions are cached and they
