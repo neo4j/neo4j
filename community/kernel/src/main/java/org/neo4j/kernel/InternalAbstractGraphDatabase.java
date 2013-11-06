@@ -147,7 +147,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
-import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
+import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -973,7 +973,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode()
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             return nodeManager.newNodeProxyById( statement.dataWriteOperations().nodeCreate() );
         }
@@ -990,7 +990,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode( Label... labels )
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             long nodeId = statement.dataWriteOperations().nodeCreate();
             for ( Label label : labels )
@@ -1516,7 +1516,7 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
-        Statement statement = statementContextProvider.statement();
+        Statement statement = statementContextProvider.instance();
 
         ReadOperations readOps = statement.readOperations();
         int propertyId = readOps.propertyKeyGetForName( key );
@@ -1659,12 +1659,12 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public TraversalDescription traversalDescription()
     {
-        return new TraversalDescriptionImpl();
+        return new MonoDirectionalTraversalDescription(statementContextProvider);
     }
 
     @Override
     public BidirectionalTraversalDescription bidirectionalTraversalDescription()
     {
-        return new BidirectionalTraversalDescriptionImpl();
+        return new BidirectionalTraversalDescriptionImpl(statementContextProvider);
     }
 }

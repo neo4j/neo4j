@@ -60,7 +60,7 @@ trait GraphIcing {
       }
     }
 
-    def statement: Statement = txBridge.statement()
+    def statement: Statement = txBridge.instance()
 
     def inTx[T](f: => T): T = {
       val tx = graph.beginTx()

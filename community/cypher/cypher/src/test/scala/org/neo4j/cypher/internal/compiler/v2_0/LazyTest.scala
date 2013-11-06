@@ -183,7 +183,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val fakeStatement = mock[Statement]
 
     when(nodeManager.getAllNodes).thenReturn(counter)
-    when(bridge.statement()).thenReturn(fakeStatement)
+    when(bridge.instance()).thenReturn(fakeStatement)
     when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
     when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)
     when(fakeReadStatement.schemaStateGetOrCreate[ExecutionEngine,LRUCache[String, ExecutionPlan]](anyObject(), anyObject())).thenReturn(new LRUCache[String, ExecutionPlan](1))

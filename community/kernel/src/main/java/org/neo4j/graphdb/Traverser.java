@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.Traversal;
 
 /**
  * A traversal in the graph. A Traverser is an {@link Iterable} that
@@ -68,7 +67,7 @@ import org.neo4j.kernel.Traversal;
  * {@link Node}. Also because of the introduction of a new traversal framework
  * and the usage of it. The new way of doing traversals is by creating a
  * new {@link TraversalDescription} from
- * {@link Traversal#description()}, add rules and
+ * {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription()}, add rules and
  * behaviours to it and then calling
  * {@link TraversalDescription#traverse(Node...)}.
  */

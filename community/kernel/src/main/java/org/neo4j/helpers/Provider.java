@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0
+package org.neo4j.helpers;
 
-import org.neo4j.kernel.{GraphDatabaseAPI}
-import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.{NullDecorator, QueryState}
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge
-
-object QueryStateHelper {
-  def empty = new QueryState(null, null, Map.empty, NullDecorator)
-
-  def queryStateFrom(db: GraphDatabaseAPI) = {
-    val tx = db.beginTx()
-    val statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
-    new QueryState(db, new TransactionBoundExecutionContext(db, tx, statement), Map.empty, NullDecorator)
-  }
+/**
+ * Similar to a {@link Factory factory}, but with a different contract. Implementors of this interface do not have to
+ * create a new instance for every invocation, but are free to return the same instance as they please. How the
+ * the specific semantics work is up to the implementor.
+ *
+ * @param <TYPE>
+ */
+public interface Provider<TYPE>
+{
+    TYPE instance();
 }

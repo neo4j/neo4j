@@ -30,29 +30,36 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
-import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
+import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.InitialStateFactory;
 import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
+import org.neo4j.helpers.Factory;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
-public final class TraversalDescriptionImpl implements TraversalDescription
+public final class MonoDirectionalTraversalDescription implements TraversalDescription
 {
-    public TraversalDescriptionImpl()
+    final static Provider<Resource> NO_STATEMENT = new Provider<Resource>()
     {
-        this( Traversal.emptyPathExpander(), Uniqueness.NODE_GLOBAL, null,
-                Evaluators.all(), InitialBranchState.NO_STATE, Traversal.preorderDepthFirst(), null, null );
-    }
+        @Override
+        public Resource instance()
+        {
+            return Resource.EMPTY;
+        }
+    };
 
     final PathExpander expander;
     final InitialBranchState initialState;
+    final Provider<? extends Resource> statementFactory;
     final UniquenessFactory uniqueness;
     final Object uniquenessParameter;
     final PathEvaluator evaluator;
@@ -60,10 +67,29 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     final Comparator<? super Path> sorting;
     final Collection<Node> endNodes;
 
-    private TraversalDescriptionImpl( PathExpander expander,
-            UniquenessFactory uniqueness, Object uniquenessParameter,
-            PathEvaluator evaluator, InitialBranchState initialState, BranchOrderingPolicy branchOrdering,
-            Comparator<? super Path> sorting, Collection<Node> endNodes )
+    public MonoDirectionalTraversalDescription()
+    {
+        /*
+         * Use one statement per operation performed, rather than a global statement for the whole traversal. This is
+         * significantly less performant, and only used when accessing the traversal framework via the legacy access
+         * methods (eg. Traversal.description()).
+         */
+        this(NO_STATEMENT);
+    }
+
+    public MonoDirectionalTraversalDescription( Provider<? extends Resource> statementProvider )
+    {
+        this( Traversal.emptyPathExpander(), Uniqueness.NODE_GLOBAL, null,
+                Evaluators.all(), InitialBranchState.NO_STATE, Traversal.preorderDepthFirst(), null, null,
+                statementProvider );
+    }
+
+    private MonoDirectionalTraversalDescription( PathExpander expander,
+                                                 UniquenessFactory uniqueness, Object uniquenessParameter,
+                                                 PathEvaluator evaluator, InitialBranchState initialState,
+                                                 BranchOrderingPolicy branchOrdering,
+                                                 Comparator<? super Path> sorting, Collection<Node> endNodes,
+                                                 Provider<? extends Resource> statementFactory )
     {
         this.expander = expander;
         this.uniqueness = uniqueness;
@@ -73,16 +99,30 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         this.sorting = sorting;
         this.endNodes = endNodes;
         this.initialState = initialState;
+        this.statementFactory = statementFactory;
     }
     
     public Traverser traverse( Node startNode )
     {
-        return new TraverserImpl( this, Arrays.asList( startNode ) );
+        return traverse( new Node[]{startNode} );
     }
 
     public Traverser traverse( Node... startNodes )
     {
-        return new TraverserImpl( this, Arrays.asList( startNodes ) );
+        final Iterable<Node> iterableStartNodes = Arrays.asList( startNodes );
+        return new DefaultTraverser( new Factory<TraverserIterator>(){
+            @Override
+            public TraverserIterator newInstance()
+            {
+                Resource statement = statementFactory.instance();
+                MonoDirectionalTraverserIterator iterator = new MonoDirectionalTraverserIterator(
+                        statement,
+                        uniqueness.create( uniquenessParameter ),
+                        expander, branchOrdering, evaluator,
+                        iterableStartNodes, initialState );
+                return sorting != null ? new SortingTraverserIterator( statement, sorting, iterator ) : iterator;
+            }
+        });
     }
 
     /* (non-Javadoc)
@@ -90,8 +130,8 @@ public final class TraversalDescriptionImpl implements TraversalDescription
      */
     public TraversalDescription uniqueness( UniquenessFactory uniqueness )
     {
-        return new TraversalDescriptionImpl( expander, uniqueness, null,
-                evaluator, initialState, branchOrdering, sorting, endNodes );
+        return new MonoDirectionalTraversalDescription( expander, uniqueness, null,
+                evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
 
     /* (non-Javadoc)
@@ -106,8 +146,8 @@ public final class TraversalDescriptionImpl implements TraversalDescription
             return this;
         }
 
-        return new TraversalDescriptionImpl( expander, uniqueness, parameter,
-                evaluator, initialState, branchOrdering, sorting, endNodes );
+        return new MonoDirectionalTraversalDescription( expander, uniqueness, parameter,
+                evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
     
     public TraversalDescription evaluator( Evaluator evaluator )
@@ -122,8 +162,9 @@ public final class TraversalDescriptionImpl implements TraversalDescription
             return this;
         }
         nullCheck( evaluator, Evaluator.class, "RETURN_ALL" );
-        return new TraversalDescriptionImpl( expander, uniqueness, uniquenessParameter,
-                addEvaluator( this.evaluator, evaluator ), initialState, branchOrdering, sorting, endNodes );
+        return new MonoDirectionalTraversalDescription( expander, uniqueness, uniquenessParameter,
+                addEvaluator( this.evaluator, evaluator ), initialState, branchOrdering, sorting, endNodes,
+                statementFactory );
     }
     
     protected static PathEvaluator addEvaluator( PathEvaluator existing, PathEvaluator toAdd )
@@ -160,8 +201,8 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         {
             return this;
         }
-        return new TraversalDescriptionImpl( expander, uniqueness, uniquenessParameter,
-                evaluator, initialState, order, sorting, endNodes );
+        return new MonoDirectionalTraversalDescription( expander, uniqueness, uniquenessParameter,
+                evaluator, initialState, order, sorting, endNodes, statementFactory );
     }
 
     public TraversalDescription depthFirst()
@@ -204,33 +245,34 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         {
             return this;
         }
-        return new TraversalDescriptionImpl( expander, uniqueness,
-                uniquenessParameter, evaluator, initialState, branchOrdering, sorting, endNodes );
+        return new MonoDirectionalTraversalDescription( expander, uniqueness,
+                uniquenessParameter, evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
     
     public <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialBranchState<STATE> initialState )
     {
-        return new TraversalDescriptionImpl( expander, uniqueness,
-                uniquenessParameter, evaluator, initialState, branchOrdering, sorting, endNodes );
+        return new MonoDirectionalTraversalDescription( expander, uniqueness,
+                uniquenessParameter, evaluator, initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
     
     public <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialStateFactory<STATE> initialState )
     {
-        return new TraversalDescriptionImpl( expander, uniqueness,
-                uniquenessParameter, evaluator, new InitialStateFactory.AsInitialBranchState<STATE>( initialState ), branchOrdering, sorting, endNodes );
+        return new MonoDirectionalTraversalDescription( expander, uniqueness,
+                uniquenessParameter, evaluator, new InitialStateFactory.AsInitialBranchState<>( initialState ),
+                branchOrdering, sorting, endNodes, statementFactory );
     }
     
     @Override
     public TraversalDescription sort( Comparator<? super Path> sorting )
     {
-        return new TraversalDescriptionImpl( expander, uniqueness, uniquenessParameter, evaluator,
-                initialState, branchOrdering, sorting, endNodes );
+        return new MonoDirectionalTraversalDescription( expander, uniqueness, uniquenessParameter, evaluator,
+                initialState, branchOrdering, sorting, endNodes, statementFactory );
     }
     
     @Override
     public TraversalDescription reverse()
     {
-        return new TraversalDescriptionImpl( expander.reverse(), uniqueness, uniquenessParameter,
-                evaluator, initialState.reverse(), branchOrdering, sorting, endNodes );
+        return new MonoDirectionalTraversalDescription( expander.reverse(), uniqueness, uniquenessParameter,
+                evaluator, initialState.reverse(), branchOrdering, sorting, endNodes, statementFactory );
     }
 }

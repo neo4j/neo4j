@@ -97,7 +97,7 @@ public class SchemaImpl implements Schema
     {
         assertInTransaction();
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
             int labelId = statement.readOperations().labelGetForName( label.name() );
@@ -116,7 +116,7 @@ public class SchemaImpl implements Schema
     {
         assertInTransaction();
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
             addDefinitions( definitions, statement.readOperations(), statement.readOperations().indexesGetAll(), false );
@@ -208,7 +208,7 @@ public class SchemaImpl implements Schema
         assertInTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
@@ -250,7 +250,7 @@ public class SchemaImpl implements Schema
         assertInTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
@@ -288,7 +288,7 @@ public class SchemaImpl implements Schema
     {
         assertInTransaction();
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             Iterator<UniquenessConstraint> constraints = statement.readOperations().constraintsGetAll();
             return asConstraintDefinitions( statement.readOperations(), constraints );
@@ -300,7 +300,7 @@ public class SchemaImpl implements Schema
     {
         assertInTransaction();
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
@@ -358,7 +358,7 @@ public class SchemaImpl implements Schema
         @Override
         public IndexDefinition createIndexDefinition( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 try
                 {
@@ -406,7 +406,7 @@ public class SchemaImpl implements Schema
         @Override
         public void dropIndexDefinitions( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 int labelId = statement.readOperations().labelGetForName( label.name() );
                 int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
@@ -435,7 +435,7 @@ public class SchemaImpl implements Schema
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 try
                 {
@@ -484,7 +484,7 @@ public class SchemaImpl implements Schema
         @Override
         public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                 int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
@@ -508,7 +508,7 @@ public class SchemaImpl implements Schema
         @Override
         public String getUserMessage( KernelException e )
         {
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 return e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) );
             }

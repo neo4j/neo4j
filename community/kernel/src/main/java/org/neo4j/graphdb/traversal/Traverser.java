@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphdb.traversal;
 
-import java.util.Iterator;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 
 /**
  * This interface represents the traverser which is used to step through the
@@ -32,33 +32,36 @@ import org.neo4j.graphdb.Relationship;
  * derived from, i.e {@link Node} or {@link Relationship}. Each step
  * can also be represented in one of those representations directly.
  */
-public interface Traverser extends Iterable<Path>
+public interface Traverser extends ResourceIterable<Path>
 {
     /**
      * Represents the traversal in the form of {@link Node}s. This is a
      * convenient way to iterate over {@link Path}s and get the
      * {@link Path#endNode()} for each position.
-     * 
+     *
      * @return the traversal in the form of {@link Node} objects.
      */
-    Iterable<Node> nodes();
+    ResourceIterable<Node> nodes();
 
     /**
      * Represents the traversal in the form of {@link Relationship}s. This is a
      * convenient way to iterate over {@link Path}s and get the
      * {@link Path#lastRelationship()} for each position.
-     * 
+     *
      * @return the traversal in the form of {@link Relationship} objects.
      */
-    Iterable<Relationship> relationships();
+    ResourceIterable<Relationship> relationships();
 
     /**
      * Represents the traversal in the form of {@link Path}s.
+     * When a traversal is done and haven't been fully iterated through,
+     * it should be {@link ResourceIterator#close() closed}.
      *
      * @return the traversal in the form of {@link Path} objects.
      */
-    Iterator<Path> iterator();
-    
+    @Override
+    ResourceIterator<Path> iterator();
+
     /**
      * @return the {@link TraversalMetadata} from the last traversal performed,
      * or being performed by this traverser.

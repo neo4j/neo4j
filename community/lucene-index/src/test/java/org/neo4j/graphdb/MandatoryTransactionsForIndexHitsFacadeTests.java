@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -45,28 +46,27 @@ public class MandatoryTransactionsForIndexHitsFacadeTests
     @Test
     public void shouldMandateTransactionsForUsingIterator() throws Exception
     {
-        ResourceIterator<Node> iterator = indexHits.iterator();
-
-        try
+        try ( ResourceIterator<Node> iterator = indexHits.iterator() )
         {
-            iterator.hasNext();
+            try
+            {
+                iterator.hasNext();
 
-            fail( "Transactions are mandatory, also for reads" );
-        }
-        catch ( NotInTransactionException e )
-        {
+                fail( "Transactions are mandatory, also for reads" );
+            }
+            catch ( NotInTransactionException e )
+            {   // Expected
+            }
 
-        }
+            try
+            {
+                iterator.next();
 
-        try
-        {
-            iterator.next();
-
-            fail( "Transactions are mandatory, also for reads" );
-        }
-        catch ( NotInTransactionException e )
-        {
-
+                fail( "Transactions are mandatory, also for reads" );
+            }
+            catch ( NotInTransactionException e )
+            {   // Expected
+            }
         }
     }
 
@@ -80,38 +80,27 @@ public class MandatoryTransactionsForIndexHitsFacadeTests
             fail( "Transactions are mandatory, also for reads" );
         }
         catch ( NotInTransactionException e )
-        {
-
+        {   // Expected
         }
     }
 
     private Index<Node> createIndex()
     {
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
-        Transaction transaction = graphDatabaseService.beginTx();
-        try
+        try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
             Index<Node> index = graphDatabaseService.index().forNodes( "foo" );
             transaction.success();
             return index;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
     private IndexHits<Node> queryIndex( Index<Node> index )
     {
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
-        Transaction transaction = graphDatabaseService.beginTx();
-        try
+        try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
             return index.get( "foo", 42 );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 }

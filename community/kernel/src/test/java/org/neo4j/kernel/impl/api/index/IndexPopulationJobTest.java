@@ -499,7 +499,7 @@ public class IndexPopulationJobTest
         stateHolder = new KernelSchemaStateStore();
 
         Transaction tx = db.beginTx();
-        Statement statement = ctxProvider.statement();
+        Statement statement = ctxProvider.instance();
         labelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
 
         statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
@@ -539,7 +539,7 @@ public class IndexPopulationJobTest
         IndexDescriptor descriptor;
         try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations statement = ctxProvider.statement().readOperations();
+            ReadOperations statement = ctxProvider.instance().readOperations();
             descriptor = new IndexDescriptor( statement.labelGetForName( label.name() ),
                     statement.propertyKeyGetForName( propertyKey ) );
             tx.success();
@@ -572,7 +572,7 @@ public class IndexPopulationJobTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            int result = ctxProvider.statement().readOperations().propertyKeyGetForName( name );
+            int result = ctxProvider.instance().readOperations().propertyKeyGetForName( name );
             tx.success();
             return result;
         }

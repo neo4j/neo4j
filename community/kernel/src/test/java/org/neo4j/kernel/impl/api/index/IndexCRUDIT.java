@@ -81,7 +81,7 @@ public class IndexCRUDIT
         // Then, for now, this should trigger two NodePropertyUpdates
         try ( Transaction tx = db.beginTx() )
         {
-            DataWriteOperations statement = ctxProvider.statement().dataWriteOperations();
+            DataWriteOperations statement = ctxProvider.instance().dataWriteOperations();
             int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updatesCommitted, equalTo( asSet(
@@ -120,7 +120,7 @@ public class IndexCRUDIT
         // THEN
         try ( Transaction tx = db.beginTx() )
         {
-            DataWriteOperations statement = ctxProvider.statement().dataWriteOperations();
+            DataWriteOperations statement = ctxProvider.instance().dataWriteOperations();
             int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updatesCommitted, equalTo( asSet(
@@ -195,7 +195,7 @@ public class IndexCRUDIT
         @Override
         public void add( long nodeId, Object propertyValue )
         {
-            ReadOperations statement = ctxProvider.statement().readOperations();
+            ReadOperations statement = ctxProvider.instance().readOperations();
             updatesCommitted.add( NodePropertyUpdate.add(
                     nodeId, statement.propertyKeyGetForName( propertyKey ),
                     propertyValue, new long[]{statement.labelGetForName( myLabel.name() )} ) );

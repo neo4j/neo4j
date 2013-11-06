@@ -37,7 +37,7 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
-import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
+import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 
 /**
  * A factory for objects regarding traversal of the graph. F.ex. it has a
@@ -67,7 +67,7 @@ public class Traversal
     @Deprecated
     public static TraversalDescription description()
     {
-        return new TraversalDescriptionImpl();
+        return new MonoDirectionalTraversalDescription();
     }
 
     /**
@@ -79,7 +79,7 @@ public class Traversal
     @Deprecated
     public static TraversalDescription traversal()
     {
-        return new TraversalDescriptionImpl();
+        return new MonoDirectionalTraversalDescription();
     }
 
     /**
@@ -88,7 +88,7 @@ public class Traversal
     @Deprecated
     public static TraversalDescription traversal( UniquenessFactory uniqueness )
     {
-        return new TraversalDescriptionImpl().uniqueness( uniqueness );
+        return new MonoDirectionalTraversalDescription().uniqueness( uniqueness );
     }
 
     /**
@@ -97,7 +97,7 @@ public class Traversal
     @Deprecated
     public static TraversalDescription traversal( UniquenessFactory uniqueness, Object optionalUniquenessParameter )
     {
-        return new TraversalDescriptionImpl().uniqueness( uniqueness, optionalUniquenessParameter );
+        return new MonoDirectionalTraversalDescription().uniqueness( uniqueness, optionalUniquenessParameter );
     }
 
     /**

@@ -301,7 +301,7 @@ public class IndexRecoveryIT
         {
             ThreadToStatementContextBridge ctxProvider = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 for ( int number : new int[] {4, 10} )
                 {

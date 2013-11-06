@@ -171,6 +171,7 @@ public class LuceneLabelScanStore
         searcherManager.maybeRefresh();
     }
 
+    @Override
     public AllEntriesLabelScanReader newAllEntriesReader()
     {
         final IndexSearcher searcher = acquireSearcher();

@@ -202,11 +202,7 @@ public class RestfulGraphDatabase
         {
             return Long.parseLong( uri.substring( uri.lastIndexOf( "/" ) + 1 ) );
         }
-        catch ( NumberFormatException ex )
-        {
-            throw new BadInputException( ex );
-        }
-        catch ( NullPointerException ex )
+        catch ( NumberFormatException | NullPointerException ex )
         {
             throw new BadInputException( ex );
         }

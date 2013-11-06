@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.domain;
 
-import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +28,8 @@ import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.server.scripting.ScriptExecutor;
 import org.neo4j.server.scripting.ScriptExecutorFactoryRepository;
 import org.neo4j.server.scripting.javascript.JavascriptExecutor;
+
+import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 
 /**
  * This factory can instantiate or get {@link Evaluator}s from a description.
@@ -47,7 +47,7 @@ public class EvaluatorFactory
 
     public EvaluatorFactory( boolean enableSandboxing )
     {
-        Map<String,ScriptExecutor.Factory> languages = new HashMap<String, ScriptExecutor.Factory>();
+        Map<String,ScriptExecutor.Factory> languages = new HashMap<>();
         languages.put( "javascript", new JavascriptExecutor.Factory( enableSandboxing ) );
 
         factoryRepo = new ScriptExecutorFactoryRepository( languages );
@@ -126,7 +126,7 @@ public class EvaluatorFactory
     private static abstract class ScriptedEvaluator
     {
         private final ScriptExecutor executor;
-        private final Map<String, Object> scriptContext = new HashMap<String, Object>(1);
+        private final Map<String, Object> scriptContext = new HashMap<>(1);
 
         ScriptedEvaluator( ScriptExecutor executor )
         {

@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray;
 
 import static java.util.EnumSet.allOf;
+
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**

@@ -17,30 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.traversal;
+package org.neo4j.graphdb;
 
-import java.util.Iterator;
-
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-
-class BidirectionalTraverserImpl extends AbstractTraverser
+/**
+ * Resource that should be closed when not needed anymore. Extends {@link AutoCloseable}
+ * with {@link #close()} not throwing any checked exception.
+ */
+public interface Resource extends AutoCloseable
 {
-    private final BidirectionalTraversalDescriptionImpl description;
-    private final Iterable<Node> startNodes;
-    private final Iterable<Node> endNodes;
-
-    BidirectionalTraverserImpl( BidirectionalTraversalDescriptionImpl description, Iterable<Node> startNodes,
-            Iterable<Node> endNodes )
-    {
-        this.description = description;
-        this.startNodes = startNodes;
-        this.endNodes = endNodes;
-    }
-
     @Override
-    protected Iterator<Path> instantiateIterator()
+    public void close();
+
+    /**
+     * Empty resource that doesn't {@link #close() close} anything.
+     */
+    public static final Resource EMPTY = new Resource()
     {
-        return new BidirectionalTraverserIterator( description, startNodes, endNodes );
-    }
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
+    };
 }

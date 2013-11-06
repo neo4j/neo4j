@@ -41,7 +41,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
     val (plan, tx) = prepare(query)
-    plan.profile(graphAPI, tx, txBridge.statement(), params)
+    plan.profile(graphAPI, tx, txBridge.instance(), params)
   }
 
   @throws(classOf[SyntaxException])
@@ -58,7 +58,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
     val (plan, tx) = prepare(query)
-    plan.execute(graphAPI, tx, txBridge.statement(), params)
+    plan.execute(graphAPI, tx, txBridge.instance(), params)
   }
 
   @throws(classOf[SyntaxException])
@@ -72,7 +72,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       // create transaction and query context
       var touched = false
       val tx = graph.beginTx()
-      val statement = txBridge.statement()
+      val statement = txBridge.instance()
       val plan = try {
         // fetch plan cache
         val planCache = getOrCreateFromSchemaState(statement, new LRUCache[String, ExecutionPlan](getPlanCacheSize))

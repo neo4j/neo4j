@@ -79,9 +79,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
-import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 
@@ -713,13 +711,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     @Override
     public TraversalDescription traversalDescription()
     {
-        return new TraversalDescriptionImpl();
+        return actual.traversalDescription();
     }
 
     @Override
     public BidirectionalTraversalDescription bidirectionalTraversalDescription()
     {
-        return new BidirectionalTraversalDescriptionImpl();
+        return actual.bidirectionalTraversalDescription();
     }
 
     @Override
