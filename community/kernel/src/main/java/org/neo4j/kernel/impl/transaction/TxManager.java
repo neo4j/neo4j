@@ -285,7 +285,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         if ( !tmOk )
         {
             SystemException ex = new SystemException( "TM has encountered some problem, "
-                    + "please perform neccesary action (tx recovery/restart)" );
+                    + "please perform necessary action (tx recovery/restart)" );
             if(tmNotOkCause != null)
             {
                 ex = Exceptions.withCause( ex, tmNotOkCause );
