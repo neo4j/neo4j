@@ -124,22 +124,25 @@ public class TestPullUpdatesApplied
         final HighlyAvailableGraphDatabase masterDb = dbs[master];
         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener(
                 new ClusterListener.Adapter()
-        {
-            @Override
-            public void leftCluster( InstanceId member )
-            {
-                latch1.countDown();
-                masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeClusterListener( this );
-            }
-        } );
+                {
+                    @Override
+                    public void leftCluster( InstanceId member )
+                    {
+                        latch1.countDown();
+                        masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )
+                                .removeClusterListener( this );
+                    }
+                } );
 
         dbToKill.shutdown();
 
-        if (!latch1.await(60, TimeUnit.SECONDS))
+        if ( !latch1.await( 60, TimeUnit.SECONDS ) )
+        {
             throw new IllegalStateException( "Timeout waiting for instance to leave cluster" );
+        }
 
         addNode( master ); // this will be pulled by tne next start up, applied
-                           // but not written to log.
+        // but not written to log.
         File targetDirectory = dir.directory( "" + toKill, false );
 
         // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
@@ -153,7 +156,8 @@ public class TestPullUpdatesApplied
                     public void failed( InstanceId server )
                     {
                         latch2.countDown();
-                        masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeHeartbeatListener( this );
+                        masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )
+                                .removeHeartbeatListener( this );
                     }
                 } );
 
@@ -161,8 +165,10 @@ public class TestPullUpdatesApplied
 
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
 
-        if (!latch2.await(60, TimeUnit.SECONDS))
+        if ( !latch2.await( 60, TimeUnit.SECONDS ) )
+        {
             throw new IllegalStateException( "Timeout waiting for instance to fail" );
+        }
 
         // This is to allow other instances to mark the dead instance as failed, otherwise on startup it will be denied.
         Thread.sleep( 15000 );

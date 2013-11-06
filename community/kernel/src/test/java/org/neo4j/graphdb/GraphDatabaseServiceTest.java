@@ -48,7 +48,8 @@ public class GraphDatabaseServiceTest
         catch ( Exception e )
         {
             // Then
-            Assert.assertThat( e.getClass().getName(), CoreMatchers.equalTo( TransactionFailureException.class.getName() ));
+            Assert.assertThat( e.getClass().getName(), CoreMatchers.equalTo( TransactionFailureException.class
+                    .getName() ) );
         }
     }
 
@@ -65,14 +66,14 @@ public class GraphDatabaseServiceTest
             @Override
             public void run()
             {
-                System.out.println("Do tx");
+                System.out.println( "Do tx" );
                 final Transaction tx = db.beginTx();
 
                 started.countDown();
 
                 try
                 {
-                    Thread.sleep(2000);
+                    Thread.sleep( 2000 );
                 }
                 catch ( InterruptedException e )
                 {
@@ -81,17 +82,17 @@ public class GraphDatabaseServiceTest
 
                 db.createNode().setProperty( "foo", "bar" );
                 tx.success();
-                System.out.println("Doing tx");
+                System.out.println( "Doing tx" );
                 tx.finish();
-                System.out.println("Done tx");
+                System.out.println( "Done tx" );
                 System.out.flush();
             }
-        });
+        } );
 
         started.await();
-        System.out.println("Shutting down");
+        System.out.println( "Shutting down" );
         db.shutdown();
-        System.out.println("Shut down");
+        System.out.println( "Shut down" );
 
 
     }
@@ -104,20 +105,20 @@ public class GraphDatabaseServiceTest
 
         // When
         final CountDownLatch started = new CountDownLatch( 1 );
-        final AtomicReference result = new AtomicReference(  );
+        final AtomicReference result = new AtomicReference();
         Executors.newSingleThreadExecutor().submit( new Runnable()
         {
             @Override
             public void run()
             {
-                System.out.println("Do tx");
+                System.out.println( "Do tx" );
                 final Transaction tx = db.beginTx();
 
                 started.countDown();
 
                 try
                 {
-                    Thread.sleep(2000);
+                    Thread.sleep( 2000 );
                 }
                 catch ( InterruptedException e )
                 {
@@ -126,7 +127,7 @@ public class GraphDatabaseServiceTest
 
                 db.createNode().setProperty( "foo", "bar" );
                 tx.success();
-                System.out.println("Doing tx");
+                System.out.println( "Doing tx" );
 
                 Executors.newSingleThreadExecutor().submit( new Runnable()
                 {
@@ -136,7 +137,7 @@ public class GraphDatabaseServiceTest
                         try
                         {
                             db.beginTx();
-                            result.set(Boolean.TRUE);
+                            result.set( Boolean.TRUE );
                         }
                         catch ( Exception e )
                         {
@@ -151,23 +152,23 @@ public class GraphDatabaseServiceTest
                 } );
 
                 tx.finish();
-                System.out.println("Done tx");
+                System.out.println( "Done tx" );
             }
-        });
+        } );
 
         started.await();
-        System.out.println("Shutting down");
+        System.out.println( "Shutting down" );
         db.shutdown();
-        System.out.println("Shut down");
+        System.out.println( "Shut down" );
 
-        while (result.get() == null)
+        while ( result.get() == null )
         {
             synchronized ( result )
             {
-                result.wait(100);
+                result.wait( 100 );
             }
         }
 
-        Assert.assertThat(result.get().getClass(), CoreMatchers.<Object>equalTo( TransactionFailureException.class ));
+        Assert.assertThat( result.get().getClass(), CoreMatchers.<Object>equalTo( TransactionFailureException.class ) );
     }
 }

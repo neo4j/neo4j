@@ -29,9 +29,10 @@ import static org.neo4j.helpers.Listeners.notifyListeners;
 /**
  * The availability guard is what ensures that the database will only take calls when it is in an ok state. It allows
  * query handling to easily determine if it is ok to call the database by calling {@link #isAvailable(long)}.
- *
- * The implementation uses an atomic integer that is initialized to the nr of conditions that must be met for the database
- * to be available. Each such condition will then call grant/deny accordingly, and if the integer becomes 0 access is granted.
+ * <p/>
+ * The implementation uses an atomic integer that is initialized to the nr of conditions that must be met for the
+ * database to be available. Each such condition will then call grant/deny accordingly,
+ * and if the integer becomes 0 access is granted.
  */
 public class AvailabilityGuard
 {
@@ -41,6 +42,7 @@ public class AvailabilityGuard
     public interface AvailabilityListener
     {
         void available();
+
         void unavailable();
     }
 
@@ -59,14 +61,14 @@ public class AvailabilityGuard
         {
             val = available.get();
 
-            if (val == -1)
+            if ( val == -1 )
             {
                 return;
             }
 
-        } while (!available.compareAndSet( val, val + 1 ));
+        } while ( !available.compareAndSet( val, val + 1 ) );
 
-        if (val == 0)
+        if ( val == 0 )
         {
             notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
             {
@@ -86,14 +88,14 @@ public class AvailabilityGuard
         {
             val = available.get();
 
-            if (val == -1)
+            if ( val == -1 )
             {
                 return;
             }
 
-        } while (!available.compareAndSet( val, val - 1 ));
+        } while ( !available.compareAndSet( val, val - 1 ) );
 
-        if (val == 1)
+        if ( val == 1 )
         {
             notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
             {
@@ -109,7 +111,7 @@ public class AvailabilityGuard
     public void shutdown()
     {
         int val = available.getAndSet( -1 );
-        if (val == 0)
+        if ( val == 0 )
         {
             notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
             {
@@ -131,23 +133,29 @@ public class AvailabilityGuard
     public boolean isAvailable( long millis )
     {
         int val = available.get();
-        if (val == 0)
+        if ( val == 0 )
         {
             return true;
-        } else if (val == -1)
+        }
+        else if ( val == -1 )
         {
             return false;
-        } else
+        }
+        else
         {
             long start = clock.currentTimeMillis();
 
-            while (clock.currentTimeMillis() < start + millis)
+            while ( clock.currentTimeMillis() < start + millis )
             {
                 val = available.get();
-                if ( val == 0)
+                if ( val == 0 )
+                {
                     return true;
-                else if (val == -1)
+                }
+                else if ( val == -1 )
+                {
                     return false;
+                }
 
 
                 Thread.yield();
@@ -157,12 +165,12 @@ public class AvailabilityGuard
         }
     }
 
-    public void addListener(AvailabilityListener listener)
+    public void addListener( AvailabilityListener listener )
     {
         listeners = Listeners.addListener( listener, listeners );
     }
 
-    public void removeListener(AvailabilityListener listener)
+    public void removeListener( AvailabilityListener listener )
     {
         listeners = Listeners.removeListener( listener, listeners );
     }

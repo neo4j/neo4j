@@ -33,7 +33,7 @@ import org.neo4j.kernel.logging.ConsoleLogger;
  * are issued.
  */
 public class HighAvailabilityConsoleLogger
-    implements ClusterMemberListener, ClusterListener, AvailabilityGuard.AvailabilityListener
+        implements ClusterMemberListener, ClusterListener, AvailabilityGuard.AvailabilityListener
 {
     private ConsoleLogger console;
     private InstanceId myId;
@@ -45,6 +45,7 @@ public class HighAvailabilityConsoleLogger
     }
 
     // Cluster events
+
     /**
      * Logged when the instance itself joins or rejoins a cluster
      *
@@ -53,7 +54,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void enteredCluster( ClusterConfiguration clusterConfiguration )
     {
-        console.log( String.format("Instance %d (this server) joined the cluster", myId.toIntegerIndex() ));
+        console.log( String.format( "Instance %d (this server) joined the cluster", myId.toIntegerIndex() ) );
     }
 
     /**
@@ -62,7 +63,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void leftCluster()
     {
-        console.log(String.format("Instance %d (this server) left the cluster", myId.toIntegerIndex() ));
+        console.log( String.format( "Instance %d (this server) left the cluster", myId.toIntegerIndex() ) );
     }
 
     /**
@@ -74,7 +75,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void joinedCluster( InstanceId instanceId, URI member )
     {
-        console.log("Instance "+instanceId+" joined the cluster");
+        console.log( "Instance " + instanceId + " joined the cluster" );
     }
 
     /**
@@ -85,7 +86,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void leftCluster( InstanceId instanceId )
     {
-        console.log("Instance "+instanceId+" has left the cluster");
+        console.log( "Instance " + instanceId + " has left the cluster" );
     }
 
     /**
@@ -98,7 +99,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void elected( String role, InstanceId instanceId, URI electedMember )
     {
-        console.log("Instance "+printId(instanceId)+"was elected as "+role);
+        console.log( "Instance " + printId( instanceId ) + "was elected as " + role );
     }
 
     /**
@@ -111,7 +112,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void unelected( String role, InstanceId instanceId, URI electedMember )
     {
-        console.log("Instance "+printId(instanceId)+"was demoted as "+role);
+        console.log( "Instance " + printId( instanceId ) + "was demoted as " + role );
     }
 
     // HA events
@@ -125,24 +126,25 @@ public class HighAvailabilityConsoleLogger
      *
      * @param role
      * @param availableId the role connection information for the new role holder
-     * @param atUri the URI at which the instance is available at
+     * @param atUri       the URI at which the instance is available at
      */
     @Override
     public void memberIsAvailable( String role, InstanceId availableId, URI atUri )
     {
-        console.log("Instance "+printId(availableId)+"is available as "+role+" at "+atUri.toASCIIString());
+        console.log( "Instance " + printId( availableId ) + "is available as " + role + " at " + atUri.toASCIIString
+                () );
     }
 
     /**
      * Logged when a member becomes unavailable as a role, such as MASTER or SLAVE.
      *
-     * @param role The role for which the member is unavailable
+     * @param role          The role for which the member is unavailable
      * @param unavailableId The id of the member which became unavailable for that role
      */
     @Override
     public void memberIsUnavailable( String role, InstanceId unavailableId )
     {
-        console.log("Instance "+printId(unavailableId)+"is unavailable as "+role);
+        console.log( "Instance " + printId( unavailableId ) + "is unavailable as " + role );
     }
 
     /**
@@ -153,7 +155,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsFailed( InstanceId instanceId )
     {
-        console.log("Instance "+printId(instanceId)+"has failed");
+        console.log( "Instance " + printId( instanceId ) + "has failed" );
     }
 
     /**
@@ -164,7 +166,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsAlive( InstanceId instanceId )
     {
-        console.log("Instance "+printId(instanceId)+"is alive");
+        console.log( "Instance " + printId( instanceId ) + "is alive" );
     }
 
     // InstanceAccessGuard events
@@ -189,6 +191,6 @@ public class HighAvailabilityConsoleLogger
 
     private String printId( InstanceId id )
     {
-        return id+(id.equals(myId)?" (this server) ":" ");
+        return id + (id.equals( myId ) ? " (this server) " : " ");
     }
 }

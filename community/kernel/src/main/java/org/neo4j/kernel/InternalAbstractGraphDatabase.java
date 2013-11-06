@@ -140,7 +140,7 @@ public abstract class InternalAbstractGraphDatabase
         public static final GraphDatabaseSettings.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
         public static final Setting<Boolean> load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
         public static final Setting<Boolean> ephemeral = new GraphDatabaseSetting.BooleanSetting(
-                Settings.setting("ephemeral", Settings.BOOLEAN, Settings.FALSE ) );
+                Settings.setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE ) );
 
         public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
         public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
@@ -196,7 +196,7 @@ public abstract class InternalAbstractGraphDatabase
     protected Caches caches;
 
     protected final LifeSupport life = new LifeSupport();
-    private final Map<String,CacheProvider> cacheProviders;
+    private final Map<String, CacheProvider> cacheProviders;
     protected TransactionStateFactory stateFactory;
     protected AvailabilityGuard availabilityGuard;
     protected long accessTimeout;
@@ -206,7 +206,7 @@ public abstract class InternalAbstractGraphDatabase
                                              Iterable<IndexProvider> indexProviders,
                                              Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                              Iterable<CacheProvider> cacheProviders,
-                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders)
+                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
         this.params = params;
 
@@ -221,7 +221,8 @@ public abstract class InternalAbstractGraphDatabase
 
         // Convert IndexProviders into KernelExtensionFactories
         // Remove this when the deprecated IndexProvider is removed
-        Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = Iterables.map( new Function<IndexProvider, KernelExtensionFactory<?>>()
+        Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = Iterables.map( new
+                                                                                                   Function<IndexProvider, KernelExtensionFactory<?>>()
         {
             @Override
             public KernelExtensionFactory<?> apply( IndexProvider from )
@@ -237,7 +238,7 @@ public abstract class InternalAbstractGraphDatabase
                 dependencyResolver );
 
         this.storeDir = config.get( Configuration.store_dir );
-        accessTimeout = 1*1000; // TODO make configurable
+        accessTimeout = 1 * 1000; // TODO make configurable
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -267,10 +268,10 @@ public abstract class InternalAbstractGraphDatabase
         }
         catch ( final Throwable throwable )
         {
-            StringBuilder msg = new StringBuilder(  );
+            StringBuilder msg = new StringBuilder();
             msg.append( "Startup failed" );
             Throwable temporaryThrowable = throwable;
-            while (temporaryThrowable != null)
+            while ( temporaryThrowable != null )
             {
                 msg.append( ": " ).append( temporaryThrowable.getMessage() );
                 temporaryThrowable = temporaryThrowable.getCause();
@@ -344,8 +345,9 @@ public abstract class InternalAbstractGraphDatabase
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
                 config.get( NeoStoreXaDataSource.Configuration.store_dir ),
                 GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap(
-                        config.get( Configuration.use_memory_mapped_buffers ) ), logging.getConsoleLog( AutoConfigurator.class ) );
-        if (config.get( GraphDatabaseSettings.dump_configuration ))
+                        config.get( Configuration.use_memory_mapped_buffers ) ),
+                logging.getConsoleLog( AutoConfigurator.class ) );
+        if ( config.get( GraphDatabaseSettings.dump_configuration ) )
         {
             System.out.println( autoConfigurator.getNiceMemoryInformation() );
         }
@@ -367,10 +369,10 @@ public abstract class InternalAbstractGraphDatabase
 
         config.setLogger( msgLog );
 
-        this.storeLocker = life.add(new StoreLockerLifecycleAdapter(
-                new StoreLocker( fileSystem ), storeDir ));
+        this.storeLocker = life.add( new StoreLockerLifecycleAdapter(
+                new StoreLocker( fileSystem ), storeDir ) );
 
-        new JvmChecker(msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
+        new JvmChecker( msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         // Instantiate all services - some are overridable by subclasses
         boolean readOnly = config.get( Configuration.read_only );
@@ -547,12 +549,14 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager,
+                    persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
         }
 
-        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager,
+                persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
     }
@@ -562,7 +566,8 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager,
+                    persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
             {
@@ -611,7 +616,8 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager,
+                persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
         {
@@ -848,8 +854,11 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Transaction beginTx( ForceMode forceMode )
     {
-        if (!availabilityGuard.isAvailable( accessTimeout ))
-            throw new TransactionFailureException( "Database is currently not available "+availabilityGuard.hashCode() );
+        if ( !availabilityGuard.isAvailable( accessTimeout ) )
+        {
+            throw new TransactionFailureException( "Database is currently not available " + availabilityGuard
+                    .hashCode() );
+        }
 
         if ( transactionRunning() )
         {
@@ -955,7 +964,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
-            throw new NotFoundException( format("Relationship %d not found", id));
+            throw new NotFoundException( format( "Relationship %d not found", id ) );
         }
         return nodeManager.getRelationshipById( id );
     }
@@ -1255,7 +1264,7 @@ public abstract class InternalAbstractGraphDatabase
         public TransactionEventsSyncHook create()
         {
             return transactionEventHandlers.hasHandlers() ?
-                   new TransactionEventsSyncHook( transactionEventHandlers, txManager) : null;
+                    new TransactionEventsSyncHook( transactionEventHandlers, txManager ) : null;
         }
     }
 
@@ -1288,7 +1297,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) lockManager;
             }
-            else if( StoreFactory.class.isAssignableFrom( type ) )
+            else if ( StoreFactory.class.isAssignableFrom( type ) )
             {
                 return (T) storeFactory;
             }
@@ -1374,7 +1383,7 @@ public abstract class InternalAbstractGraphDatabase
             }
             return null;
         }
-        
+
         @Override
         public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
         {
@@ -1384,7 +1393,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return selector.select( type, Iterables.option( result ) );
             }
-            
+
             // Try with kernel extensions
             return kernelExtensions.resolveDependency( type, selector );
         }

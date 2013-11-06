@@ -113,7 +113,7 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     };
     private static final boolean SUCCESS = true;
-    private static final boolean FAILURE = ! SUCCESS;
+    private static final boolean FAILURE = !SUCCESS;
 
     protected abstract PreFlightTasks createPreflightTasks();
 

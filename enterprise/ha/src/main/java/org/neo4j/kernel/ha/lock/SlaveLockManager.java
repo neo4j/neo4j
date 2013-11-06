@@ -89,7 +89,8 @@ public class SlaveLockManager implements LockManager
     }
 
     @Override
-    public void getReadLock( Object resource, Transaction tx ) throws DeadlockDetectedException, IllegalResourceException
+    public void getReadLock( Object resource, Transaction tx ) throws DeadlockDetectedException,
+            IllegalResourceException
     {
         if ( getReadLockOnMaster( resource ) )
         {
@@ -103,12 +104,14 @@ public class SlaveLockManager implements LockManager
         if ( resource instanceof Node )
         {
             makeSureTxHasBeenInitialized();
-            response = master.acquireNodeReadLock( requestContextFactory.newRequestContext(), ((Node)resource).getId() );
+            response = master.acquireNodeReadLock( requestContextFactory.newRequestContext(),
+                    ((Node) resource).getId() );
         }
         else if ( resource instanceof Relationship )
         {
             makeSureTxHasBeenInitialized();
-            response = master.acquireRelationshipReadLock( requestContextFactory.newRequestContext(), ((Relationship)resource).getId() );
+            response = master.acquireRelationshipReadLock( requestContextFactory.newRequestContext(),
+                    ((Relationship) resource).getId() );
         }
         else if ( resource instanceof GraphProperties )
         {
@@ -119,7 +122,8 @@ public class SlaveLockManager implements LockManager
         {
             makeSureTxHasBeenInitialized();
             IndexLock indexLock = (IndexLock) resource;
-            response = master.acquireIndexReadLock( requestContextFactory.newRequestContext(), indexLock.getIndex(), indexLock.getKey() );
+            response = master.acquireIndexReadLock( requestContextFactory.newRequestContext(), indexLock.getIndex(),
+                    indexLock.getKey() );
         }
         else
         {
@@ -133,14 +137,14 @@ public class SlaveLockManager implements LockManager
         LockResult result = xaDsm.applyTransactions( response );
         switch ( result.getStatus() )
         {
-        case DEAD_LOCKED:
-            throw new DeadlockDetectedException( result.getDeadlockMessage() );
-        case NOT_LOCKED:
-            throw new UnsupportedOperationException();
-        case OK_LOCKED:
-            break;
-        default:
-            throw new UnsupportedOperationException( result.toString() );
+            case DEAD_LOCKED:
+                throw new DeadlockDetectedException( result.getDeadlockMessage() );
+            case NOT_LOCKED:
+                throw new UnsupportedOperationException();
+            case OK_LOCKED:
+                break;
+            default:
+                throw new UnsupportedOperationException( result.toString() );
         }
 
         return true;
@@ -156,7 +160,8 @@ public class SlaveLockManager implements LockManager
     }
 
     @Override
-    public void getWriteLock( Object resource, Transaction tx ) throws DeadlockDetectedException, IllegalResourceException
+    public void getWriteLock( Object resource, Transaction tx ) throws DeadlockDetectedException,
+            IllegalResourceException
     {
         if ( getWriteLockOnMaster( resource ) )
         {
@@ -170,12 +175,14 @@ public class SlaveLockManager implements LockManager
         if ( resource instanceof Node )
         {
             makeSureTxHasBeenInitialized();
-            response = master.acquireNodeWriteLock( requestContextFactory.newRequestContext(), ((Node)resource).getId() );
+            response = master.acquireNodeWriteLock( requestContextFactory.newRequestContext(),
+                    ((Node) resource).getId() );
         }
         else if ( resource instanceof Relationship )
         {
             makeSureTxHasBeenInitialized();
-            response = master.acquireRelationshipWriteLock( requestContextFactory.newRequestContext(), ((Relationship)resource).getId() );
+            response = master.acquireRelationshipWriteLock( requestContextFactory.newRequestContext(),
+                    ((Relationship) resource).getId() );
         }
         else if ( resource instanceof GraphProperties )
         {
@@ -186,16 +193,17 @@ public class SlaveLockManager implements LockManager
         {
             makeSureTxHasBeenInitialized();
             IndexLock indexLock = (IndexLock) resource;
-            response = master.acquireIndexWriteLock( requestContextFactory.newRequestContext(), indexLock.getIndex(), indexLock.getKey() );
+            response = master.acquireIndexWriteLock( requestContextFactory.newRequestContext(), indexLock.getIndex(),
+                    indexLock.getKey() );
         }
         else
         {
             return true;
         }
-        
+
         return receiveLockResponse( response );
     }
-    
+
     @Override
     public void releaseReadLock( Object resource, Transaction tx ) throws LockNotFoundException,
             IllegalResourceException

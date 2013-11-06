@@ -128,7 +128,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
      * paxosLife holds stuff that must be added in global life if we are not in compatibility mode. If in compatibility
      * mode they will be started only on switchover.
      */
-     private final LifeSupport paxosLife = new LifeSupport();
+    private final LifeSupport paxosLife = new LifeSupport();
     /*
      * compatibilityMode is true if we are in ZK compatibility mode. If false, paxosLife is added to the global life.
      */
@@ -211,7 +211,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Logging createLogging()
     {
-        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, NEW_LOGGER_CONTEXT, DEFAULT_TO_CLASSIC ) );
+        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, NEW_LOGGER_CONTEXT,
+                DEFAULT_TO_CLASSIC ) );
     }
 
     @Override
@@ -232,7 +233,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected XaDataSourceManager createXaDataSourceManager()
     {
-        XaDataSourceManager toReturn = new HaXaDataSourceManager( logging.getMessagesLog( HaXaDataSourceManager.class ) );
+        XaDataSourceManager toReturn = new HaXaDataSourceManager( logging.getMessagesLog( HaXaDataSourceManager.class
+        ) );
         requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ), toReturn,
                 dependencyResolver );
         return toReturn;
@@ -252,7 +254,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 new Class[]{HighAvailabilityMemberContext.class}, memberContextDelegateInvocationHandler );
         clusterMemberAvailability = (ClusterMemberAvailability) Proxy.newProxyInstance(
                 ClusterMemberAvailability.class.getClassLoader(),
-        new Class[]{ClusterMemberAvailability.class}, clusterMemberAvailabilityDelegateInvocationHandler );
+                new Class[]{ClusterMemberAvailability.class}, clusterMemberAvailabilityDelegateInvocationHandler );
 
         /*
          *  We need to create these anyway since even in compatibility mode we'll use them for switchover. If it turns
@@ -275,7 +277,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
 
 
-        clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider, objectStreamFactory, objectStreamFactory );
+        clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider,
+                objectStreamFactory, objectStreamFactory );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
@@ -289,7 +292,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ) ==
                                 config.get( ClusterSettings.server_id ) )
                         {
-                            msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not join this cluster",
+                            msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not " +
+                                    "join this cluster",
                                     member.getRoleUri(), config.get( ClusterSettings.server_id ) ) );
                             return true;
                         }
@@ -303,7 +307,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // and when that election is finished refresh the snapshot
         clusterClient.addClusterListener( new ClusterListener.Adapter()
         {
-            boolean hasRequestedElection = false; // This ensures that the election result is (at least) from our request or thereafter
+            boolean hasRequestedElection = false; // This ensures that the election result is (at least) from our
+            // request or thereafter
 
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
@@ -321,26 +326,28 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     clusterClient.removeClusterListener( this );
                 }
             }
-        });
+        } );
 
-        HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient.getServerId() );
+        HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient
+                .getServerId() );
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
-            clusterClient.getServerId(), clusterClient, clusterClient, logging, objectStreamFactory, objectStreamFactory );
+                clusterClient.getServerId(), clusterClient, clusterClient, logging, objectStreamFactory,
+                objectStreamFactory );
 
         // Here we decide whether to start in compatibility mode or mode or not
         if ( !config.get( HaSettings.coordinators ).isEmpty() &&
-            !config.get( HaSettings.coordinators ).get( 0 ).toString().trim().equals( "" ) )
+                !config.get( HaSettings.coordinators ).get( 0 ).toString().trim().equals( "" ) )
         {
             compatibilityMode = true;
             compatibilityLifecycle = new LinkedList<Lifecycle>();
 
             Switchover switchover = new ZooToPaxosSwitchover( life, paxosLife, compatibilityLifecycle,
-                clusterEventsDelegateInvocationHandler, memberContextDelegateInvocationHandler,
-                clusterMemberAvailabilityDelegateInvocationHandler, localClusterEvents,
-                localMemberContext, localClusterMemberAvailability );
+                    clusterEventsDelegateInvocationHandler, memberContextDelegateInvocationHandler,
+                    clusterMemberAvailabilityDelegateInvocationHandler, localClusterEvents,
+                    localMemberContext, localClusterMemberAvailability );
 
             ZooKeeperHighAvailabilityEvents zkEvents =
-                new ZooKeeperHighAvailabilityEvents( logging, config, switchover );
+                    new ZooKeeperHighAvailabilityEvents( logging, config, switchover );
             compatibilityLifecycle.add( zkEvents );
             memberContextDelegateInvocationHandler.setDelegate(
                     new SimpleHighAvailabilityMemberContext( zkEvents.getInstanceId() ) );
@@ -358,10 +365,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
                 new InstanceId( config.get( ClusterSettings.server_id ) ) );
-        memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members, clusterEvents,
+        memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
+                clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
 
-        HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging.getConsoleLog( HighAvailabilityConsoleLogger.class), new InstanceId(config.get(ClusterSettings.server_id) ));
+        HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging
+                .getConsoleLog( HighAvailabilityConsoleLogger.class ), new InstanceId( config.get( ClusterSettings
+                .server_id ) ) );
         availabilityGuard.addListener( highAvailabilityConsoleLogger );
         clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
         clusterClient.addClusterListener( highAvailabilityConsoleLogger );
@@ -426,8 +436,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         idGeneratorFactory = new HaIdGeneratorFactory( master, logging );
         highAvailabilityModeSwitcher =
                 new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
-                clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory, config,
-                logging );
+                        clusterMemberAvailability, memberStateMachine, this,
+                        (HaIdGeneratorFactory) idGeneratorFactory, config,
+                        logging );
         /*
          * We always need the mode switcher and we need it to restart on switchover. So:
          * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover
@@ -622,7 +633,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     {
                         result = type.cast( members );
                     }
-                    else if ( RequestContextFactory.class.isAssignableFrom( type ))
+                    else if ( RequestContextFactory.class.isAssignableFrom( type ) )
                     {
                         result = type.cast( requestContextFactory );
                     }

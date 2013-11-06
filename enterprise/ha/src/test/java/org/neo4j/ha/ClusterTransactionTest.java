@@ -44,10 +44,11 @@ public class ClusterTransactionTest
     public void givenClusterWhenShutdownMasterThenCannotStartTransactionOnSlave() throws Throwable
     {
         // Given
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" )
+                .toURI() ),
                 TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
                 MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
-                        HaSettings.tx_push_factor.name(), "2" ));
+                        HaSettings.tx_push_factor.name(), "2" ) );
         try
         {
             clusterManager.start();
@@ -55,10 +56,10 @@ public class ClusterTransactionTest
             clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            final GraphDatabaseAPI slave = clusterManager.getDefaultCluster().getAnySlave(  );
+            final GraphDatabaseAPI slave = clusterManager.getDefaultCluster().getAnySlave();
 
             // When
-            final FutureTask<Boolean> result = new FutureTask<Boolean>(new Callable()
+            final FutureTask<Boolean> result = new FutureTask<Boolean>( new Callable()
             {
                 @Override
                 public Boolean call() throws Exception
@@ -77,13 +78,15 @@ public class ClusterTransactionTest
                         return true;
                     }
                 }
-            });
-            master.getDependencyResolver().resolveDependency( LifeSupport.class ).addLifecycleListener( new LifecycleListener()
+            } );
+            master.getDependencyResolver().resolveDependency( LifeSupport.class ).addLifecycleListener( new
+                                                                                                                LifecycleListener()
             {
                 @Override
                 public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
                 {
-                    if (instance.getClass().getName().contains( "DatabaseAvailability" ) && to == LifecycleStatus.STOPPED )
+                    if ( instance.getClass().getName().contains( "DatabaseAvailability" ) && to == LifecycleStatus
+                            .STOPPED )
                     {
                         result.run();
                     }
@@ -93,7 +96,7 @@ public class ClusterTransactionTest
             master.shutdown();
 
             // Then
-            Assert.assertThat(result.get(), CoreMatchers.equalTo( true ));
+            Assert.assertThat( result.get(), CoreMatchers.equalTo( true ) );
         }
         finally
         {

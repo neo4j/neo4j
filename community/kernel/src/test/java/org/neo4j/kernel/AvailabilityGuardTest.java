@@ -34,7 +34,7 @@ public class AvailabilityGuardTest
     public void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse() throws Exception
     {
         // Given
-        TickingClock clock = new TickingClock(0, 100);
+        TickingClock clock = new TickingClock( 0, 100 );
         AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
 
         // When
@@ -48,7 +48,7 @@ public class AvailabilityGuardTest
     public void givenAccessGuardWith2ConditionsWhenAwaitThenActuallyWaitGivenTimeout() throws Exception
     {
         // Given
-        TickingClock clock = new TickingClock(0, 100);
+        TickingClock clock = new TickingClock( 0, 100 );
         AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
 
         // When
@@ -59,14 +59,14 @@ public class AvailabilityGuardTest
         // Then
         long waitTime = end - start;
         assertThat( result, equalTo( false ) );
-        assertThat( waitTime, equalTo( 1200L ));
+        assertThat( waitTime, equalTo( 1200L ) );
     }
 
     @Test
     public void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitThenTimeoutAndReturnFalse() throws Exception
     {
         // Given
-        TickingClock clock = new TickingClock(0, 100);
+        TickingClock clock = new TickingClock( 0, 100 );
         AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
 
         // When
@@ -78,7 +78,7 @@ public class AvailabilityGuardTest
         // Then
         long waitTime = end - start;
         assertThat( result, equalTo( false ) );
-        assertThat( waitTime, equalTo( 1200L ));
+        assertThat( waitTime, equalTo( 1200L ) );
 
     }
 
@@ -86,7 +86,7 @@ public class AvailabilityGuardTest
     public void givenAccessGuardWith2ConditionsWhenGrantTwiceAndAwaitThenTrue() throws Exception
     {
         // Given
-        TickingClock clock = new TickingClock(0, 100);
+        TickingClock clock = new TickingClock( 0, 100 );
         AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
 
         // When
@@ -100,15 +100,16 @@ public class AvailabilityGuardTest
         // Then
         long waitTime = end - start;
         assertThat( result, equalTo( true ) );
-        assertThat( waitTime, equalTo( 100L ));
+        assertThat( waitTime, equalTo( 100L ) );
 
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantTwiceAndDenyOnceAndAwaitThenTimeoutAndReturnFalse() throws Exception
+    public void givenAccessGuardWith2ConditionsWhenGrantTwiceAndDenyOnceAndAwaitThenTimeoutAndReturnFalse() throws
+            Exception
     {
         // Given
-        TickingClock clock = new TickingClock(0, 100);
+        TickingClock clock = new TickingClock( 0, 100 );
         AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
 
         // When
@@ -123,14 +124,15 @@ public class AvailabilityGuardTest
         // Then
         long waitTime = end - start;
         assertThat( result, equalTo( false ) );
-        assertThat( waitTime, equalTo( 1200L ));
+        assertThat( waitTime, equalTo( 1200L ) );
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitAndGrantAgainDuringAwaitThenReturnTrue() throws Exception
+    public void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitAndGrantAgainDuringAwaitThenReturnTrue() throws
+            Exception
     {
         // Given
-        TickingClock clock = new TickingClock(0, 100);
+        TickingClock clock = new TickingClock( 0, 100 );
         final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
 
         // When
@@ -151,16 +153,16 @@ public class AvailabilityGuardTest
         // Then
         long waitTime = end - start;
         assertThat( result, equalTo( true ) );
-        assertThat( waitTime, equalTo( 600L ));
+        assertThat( waitTime, equalTo( 600L ) );
     }
 
     @Test
     public void givenAccessGuardWithConditionWhenGrantThenNotifyListeners() throws Exception
     {
         // Given
-        TickingClock clock = new TickingClock(0, 100);
+        TickingClock clock = new TickingClock( 0, 100 );
         final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 1 );
-        final AtomicBoolean notified = new AtomicBoolean(  );
+        final AtomicBoolean notified = new AtomicBoolean();
         AvailabilityGuard.AvailabilityListener availabilityListener = new AvailabilityGuard.AvailabilityListener()
         {
             @Override
@@ -181,16 +183,16 @@ public class AvailabilityGuardTest
         availabilityGuard.grant();
 
         // Then
-        assertThat(notified.get(), equalTo( true ) );
+        assertThat( notified.get(), equalTo( true ) );
     }
 
     @Test
     public void givenAccessGuardWithConditionWhenGrantAndDenyThenNotifyListeners() throws Exception
     {
         // Given
-        TickingClock clock = new TickingClock(0, 100);
+        TickingClock clock = new TickingClock( 0, 100 );
         final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 1 );
-        final AtomicBoolean notified = new AtomicBoolean(  );
+        final AtomicBoolean notified = new AtomicBoolean();
         AvailabilityGuard.AvailabilityListener availabilityListener = new AvailabilityGuard.AvailabilityListener()
         {
             @Override
@@ -212,14 +214,14 @@ public class AvailabilityGuardTest
         availabilityGuard.deny();
 
         // Then
-        assertThat(notified.get(), equalTo( true ) );
+        assertThat( notified.get(), equalTo( true ) );
     }
 
     @Test
     public void givenAccessGuardWithConditionWhenShutdownThenInstantlyDenyAccess() throws Exception
     {
         // Given
-        TickingClock clock = new TickingClock(0, 100);
+        TickingClock clock = new TickingClock( 0, 100 );
         final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 1 );
 
         // When
@@ -228,7 +230,7 @@ public class AvailabilityGuardTest
         // Then
         boolean result = availabilityGuard.isAvailable( 1000 );
 
-        assertThat(result, equalTo( false) );
-        assertThat(clock.currentTimeMillis(), equalTo( 0L ));
+        assertThat( result, equalTo( false ) );
+        assertThat( clock.currentTimeMillis(), equalTo( 0L ) );
     }
 }

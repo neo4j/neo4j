@@ -35,7 +35,7 @@ public class HaKernelPanicHandler implements KernelEventHandler
     private final AvailabilityGuard availabilityGuard;
 
     public HaKernelPanicHandler( XaDataSourceManager dataSourceManager, TxManager txManager,
-            AvailabilityGuard availabilityGuard )
+                                 AvailabilityGuard availabilityGuard )
     {
         this.dataSourceManager = dataSourceManager;
         this.txManager = txManager;
@@ -59,8 +59,10 @@ public class HaKernelPanicHandler implements KernelEventHandler
                 synchronized ( dataSourceManager )
                 {
                     if ( myEpoch != epoch.get() )
+                    {
                         return;
-                    
+                    }
+
                     availabilityGuard.deny();
                     try
                     {
@@ -77,11 +79,12 @@ public class HaKernelPanicHandler implements KernelEventHandler
                     }
                 }
             }
-            catch (Throwable t)
+            catch ( Throwable t )
             {
                 throw new RuntimeException( "error while handling kernel panic for TX_MANAGER_NOT_OK", t );
             }
-        } else if (error == ErrorState.STORAGE_MEDIA_FULL)
+        }
+        else if ( error == ErrorState.STORAGE_MEDIA_FULL )
         {
             // Fatal error - Permanently unavailable
             availabilityGuard.shutdown();

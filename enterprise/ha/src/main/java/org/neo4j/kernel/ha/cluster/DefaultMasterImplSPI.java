@@ -73,7 +73,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     public void acquireLock( MasterImpl.LockGrabber grabber, Object... entities )
     {
         LockManager lockManager = graphDb.getLockManager();
-        TransactionState state = ((AbstractTransactionManager)graphDb.getTxManager()).getTransactionState();
+        TransactionState state = ((AbstractTransactionManager) graphDb.getTxManager()).getTransactionState();
         for ( Object entity : entities )
         {
             grabber.grab( lockManager, state, entity );
@@ -123,7 +123,8 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         catch ( IllegalStateException e )
         {
             throw new UnableToResumeTransactionException( e );
-        } catch (Throwable e)
+        }
+        catch ( Throwable e )
         {
             throw Exceptions.launderedException( e );
         }
@@ -186,12 +187,14 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter )
     {
-        return ServerUtil.packResponse( graphDb.getStoreId(), graphDb.getXaDataSourceManager(), context, response, filter );
+        return ServerUtil.packResponse( graphDb.getStoreId(), graphDb.getXaDataSourceManager(), context, response,
+                filter );
     }
 
     @Override
     public void pushTransaction( String resourceName, int eventIdentifier, long tx, int machineId )
     {
-        graphDb.getTxIdGenerator().committed( graphDb.getXaDataSourceManager().getXaDataSource( resourceName ), eventIdentifier, tx, machineId );
+        graphDb.getTxIdGenerator().committed( graphDb.getXaDataSourceManager().getXaDataSource( resourceName ),
+                eventIdentifier, tx, machineId );
     }
 }

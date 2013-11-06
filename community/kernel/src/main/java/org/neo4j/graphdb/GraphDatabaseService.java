@@ -30,18 +30,18 @@ import org.neo4j.tooling.GlobalGraphOperations;
  * implementation is the {@link EmbeddedGraphDatabase} class, which is used to
  * embed Neo4j in an application. Typically, you would create an
  * <code>EmbeddedGraphDatabase</code> instance as follows:
- * 
+ * <p/>
  * <pre>
  * <code>GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "var/graphDb" );
  * // ... use Neo4j
  * graphDb.{@link #shutdown() shutdown()};</code>
  * </pre>
- * 
+ * <p/>
  * GraphDatabaseService provides operations to {@link #createNode() create
  * nodes}, {@link #getNodeById(long) get nodes given an id}, get the
  * {@link #getReferenceNode() reference node} and ultimately {@link #shutdown()
  * shutdown Neo4j}.
- * <p>
+ * <p/>
  * Please note that all operations that write to the graph must be invoked in a
  * {@link Transaction transactional context}. Failure to do so will result in a
  * {@link NotInTransactionException} being thrown.
@@ -50,7 +50,7 @@ public interface GraphDatabaseService
 {
     /**
      * Creates a new node.
-     * 
+     *
      * @return the created node.
      */
     public Node createNode();
@@ -59,7 +59,7 @@ public interface GraphDatabaseService
      * Looks up a node by id. Please note: Neo4j reuses its internal ids when
      * nodes and relationships are deleted, which means it's bad practice to
      * refer to them this way. Instead, use application generated ids.
-     * 
+     *
      * @param id the id of the node
      * @return the node with id <code>id</code> if found
      * @throws NotFoundException if not found
@@ -70,7 +70,7 @@ public interface GraphDatabaseService
      * Looks up a relationship by id. Please note: Neo4j reuses its internal ids
      * when nodes and relationships are deleted, which means it's bad practice
      * to refer to them this way. Instead, use application generated ids.
-     * 
+     *
      * @param id the id of the relationship
      * @return the relationship with id <code>id</code> if found
      * @throws NotFoundException if not found
@@ -85,19 +85,19 @@ public interface GraphDatabaseService
      * @return the reference node
      * @throws NotFoundException if unable to get the reference node
      * @deprecated The reference node concept is obsolete - indexes are the
-     *              canonical way of getting hold of entry points in the graph.
+     *             canonical way of getting hold of entry points in the graph.
      */
     @Deprecated
     public Node getReferenceNode();
-    
+
     /**
      * Returns all nodes in the graph.
-     * 
+     *
      * @return all nodes in the graph.
      * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
     public Iterable<Node> getAllNodes();
-    
+
     /**
      * Returns all relationship types currently in the underlying store.
      * Relationship types are added to the underlying store the first time they
@@ -107,15 +107,17 @@ public interface GraphDatabaseService
      * won't return <i>more</i> than that (e.g. it can return "historic"
      * relationship types that no longer have any relationships in the node
      * space).
-     * 
+     *
      * @return all relationship types in the underlying store
      * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
     public Iterable<RelationshipType> getRelationshipTypes();
 
     /**
-     * Use this method to check if the database is in a usable state. If the database is currently not in a usable state,
-     * you can provide a timeout to wait for it to become so. If the database has been shutdown this immediately returns false.
+     * Use this method to check if the database is in a usable state. If the database is currently not in a usable
+     * state,
+     * you can provide a timeout to wait for it to become so. If the database has been shutdown this immediately
+     * returns false.
      */
     public boolean isAvailable( long timeout );
 
@@ -128,11 +130,11 @@ public interface GraphDatabaseService
 
     /**
      * Starts a new transaction and associates it with the current thread.
-     * 
+     *
      * @return a new transaction instance
      */
     public Transaction beginTx();
-    
+
     /**
      * Registers {@code handler} as a handler for transaction events which
      * are generated from different places in the lifecycle of each
@@ -140,16 +142,16 @@ public interface GraphDatabaseService
      * it shouldn't be registered when the application is running (i.e. in the
      * middle of one or more transactions). If the specified handler instance
      * has already been registered this method will do nothing.
-     * 
-     * @param <T> the type of state object used in the handler, see more
-     * documentation about it at {@link TransactionEventHandler}.
+     *
+     * @param <T>     the type of state object used in the handler, see more
+     *                documentation about it at {@link TransactionEventHandler}.
      * @param handler the handler to receive events about different states
-     * in transaction lifecycles.
+     *                in transaction lifecycles.
      * @return the handler passed in as the argument.
      */
     public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler );
-    
+
     /**
      * Unregisters {@code handler} from the list of transaction event handlers.
      * If {@code handler} hasn't been registered with
@@ -157,27 +159,27 @@ public interface GraphDatabaseService
      * to calling this method an {@link IllegalStateException} will be thrown.
      * After a successful call to this method the {@code handler} will no
      * longer receive any transaction events.
-     * 
-     * @param <T> the type of state object used in the handler, see more
-     * documentation about it at {@link TransactionEventHandler}.
+     *
+     * @param <T>     the type of state object used in the handler, see more
+     *                documentation about it at {@link TransactionEventHandler}.
      * @param handler the handler to receive events about different states
-     * in transaction lifecycles.
+     *                in transaction lifecycles.
      * @return the handler passed in as the argument.
      * @throws IllegalStateException if {@code handler} wasn't registered prior
-     * to calling this method.
+     *                               to calling this method.
      */
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler );
-    
+
     /**
      * Registers {@code handler} as a handler for kernel events which
      * are generated from different places in the lifecycle of the kernel.
      * To guarantee proper behaviour the handler should be registered right
      * after the graph database has been started. If the specified handler
      * instance has already been registered this method will do nothing.
-     * 
+     *
      * @param handler the handler to receive events about different states
-     * in the kernel lifecycle.
+     *                in the kernel lifecycle.
      * @return the handler passed in as the argument.
      */
     public KernelEventHandler registerKernelEventHandler(
@@ -190,19 +192,20 @@ public interface GraphDatabaseService
      * this method an {@link IllegalStateException} will be thrown.
      * After a successful call to this method the {@code handler} will no
      * longer receive any kernel events.
-     * 
+     *
      * @param handler the handler to receive events about different states
-     * in the kernel lifecycle.
+     *                in the kernel lifecycle.
      * @return the handler passed in as the argument.
      * @throws IllegalStateException if {@code handler} wasn't registered prior
-     * to calling this method.
+     *                               to calling this method.
      */
     public KernelEventHandler unregisterKernelEventHandler(
             KernelEventHandler handler );
-    
+
     /**
      * Returns the {@link IndexManager} paired with this graph database service
      * and is the entry point for managing indexes coupled with this database.
+     *
      * @return the {@link IndexManager} for this database.
      */
     public IndexManager index();

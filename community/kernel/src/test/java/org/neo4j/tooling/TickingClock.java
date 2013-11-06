@@ -28,12 +28,12 @@ import java.util.Map;
  * Test implementation of Clock that increments time by given amount on each call to currentTimeMillis.
  */
 public class TickingClock
-    implements Clock
+        implements Clock
 {
     private long current;
     private long tick;
 
-    private Map<Long, List<Runnable>> actions = new HashMap<Long, List<Runnable>>(  );
+    private Map<Long, List<Runnable>> actions = new HashMap<Long, List<Runnable>>();
 
     public TickingClock( long current, long tick )
     {
@@ -41,16 +41,16 @@ public class TickingClock
         this.tick = tick;
     }
 
-    public TickingClock at(long time, Runnable action)
+    public TickingClock at( long time, Runnable action )
     {
-        List<Runnable> actionList = actions.get(time);
-        if (actionList == null)
+        List<Runnable> actionList = actions.get( time );
+        if ( actionList == null )
         {
-            actionList = new ArrayList<Runnable>(  );
-            actions.put(time, actionList);
+            actionList = new ArrayList<Runnable>();
+            actions.put( time, actionList );
         }
 
-        actionList.add(action);
+        actionList.add( action );
 
         return this;
     }
@@ -58,8 +58,8 @@ public class TickingClock
     @Override
     public long currentTimeMillis()
     {
-        List<Runnable> actionList = actions.get(current);
-        if (actionList != null)
+        List<Runnable> actionList = actions.get( current );
+        if ( actionList != null )
         {
             for ( Runnable runnable : actionList )
             {

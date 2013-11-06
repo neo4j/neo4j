@@ -86,7 +86,7 @@ public class ServerBuilder
 
     public CommunityNeoServer build() throws IOException
     {
-        if ( dbDir == null && persistent)
+        if ( dbDir == null && persistent )
         {
             throw new IllegalStateException( "Must specify path" );
         }
@@ -158,8 +158,10 @@ public class ServerBuilder
         Map<String, String> properties = MapUtil.stringMap(
                 Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
                 Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
-        if (dbDir != null)
-            properties.put(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir);
+        if ( dbDir != null )
+        {
+            properties.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir );
+        }
 
         if ( portNo != null )
         {

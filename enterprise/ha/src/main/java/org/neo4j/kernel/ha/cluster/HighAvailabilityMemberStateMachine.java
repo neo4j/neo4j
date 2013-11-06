@@ -50,7 +50,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private final ClusterMembers members;
     private final Election election;
 
-    public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context, AvailabilityGuard availabilityGuard,
+    public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context,
+                                               AvailabilityGuard availabilityGuard,
                                                ClusterMembers members, ClusterMemberEvents events, Election election,
                                                StringLogger logger )
     {
@@ -86,8 +87,10 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             }
         } );
 
-        if (oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState.SLAVE)
+        if ( oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState.SLAVE )
+        {
             availabilityGuard.deny();
+        }
 
         context.setAvailableHaMasterId( null );
     }
@@ -101,7 +104,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     {
         memberListeners = Listeners.removeListener( toRemove, memberListeners );
     }
-    
+
     public HighAvailabilityMemberState getCurrentState()
     {
         return state;
@@ -118,12 +121,13 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 InstanceId previousElected = context.getElectedMasterId();
 
                 // Check if same coordinator was elected
-                if (!coordinatorId.equals( previousElected ))
+                if ( !coordinatorId.equals( previousElected ) )
                 {
                     state = state.masterIsElected( context, coordinatorId );
 
                     context.setElectedMasterId( coordinatorId );
-                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state, coordinatorId,
+                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
+                            state, coordinatorId,
                             null );
                     Listeners.notifyListeners( memberListeners,
                             new Listeners.Notification<HighAvailabilityMemberListener>()
@@ -136,8 +140,11 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                             } );
                     context.setAvailableHaMasterId( null );
 
-                    if ((oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState.SLAVE) && oldState != state)
+                    if ( (oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState
+                            .SLAVE) && oldState != state )
+                    {
                         availabilityGuard.deny();
+                    }
 
                     logger.debug( "Got masterIsElected(" + coordinatorId + "), changed " + oldState + " -> " +
                             state + ". Previous elected master is " + previousElected );
@@ -175,8 +182,11 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                                     }
                                 } );
 
-                        if (oldState == HighAvailabilityMemberState.TO_MASTER && state == HighAvailabilityMemberState.MASTER)
+                        if ( oldState == HighAvailabilityMemberState.TO_MASTER && state ==
+                                HighAvailabilityMemberState.MASTER )
+                        {
                             availabilityGuard.grant();
+                        }
                     }
                 }
                 else if ( role.equals( HighAvailabilityModeSwitcher.SLAVE ) )
@@ -197,8 +207,11 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                                 }
                             } );
 
-                    if (oldState == HighAvailabilityMemberState.TO_SLAVE && state == HighAvailabilityMemberState.SLAVE)
+                    if ( oldState == HighAvailabilityMemberState.TO_SLAVE && state == HighAvailabilityMemberState
+                            .SLAVE )
+                    {
                         availabilityGuard.grant();
+                    }
                 }
             }
             catch ( Throwable throwable )
@@ -212,7 +225,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         {
             if ( getAliveCount() <= getTotalCount() / 2 )
             {
-                if (state == HighAvailabilityMemberState.MASTER || state == HighAvailabilityMemberState.SLAVE)
+                if ( state == HighAvailabilityMemberState.MASTER || state == HighAvailabilityMemberState.SLAVE )
                 {
                     try
                     {

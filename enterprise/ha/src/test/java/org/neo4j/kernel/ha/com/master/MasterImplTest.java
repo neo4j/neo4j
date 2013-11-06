@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.transaction.Transaction;
 
-import junit.framework.Assert;
 import org.junit.Test;
 
 import org.neo4j.com.RequestContext;
@@ -45,9 +44,9 @@ public class MasterImplTest
         // Given
         MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
         Logging logging = new DevNullLoggingService();
-        Map<String, String> params = new HashMap<String, String>(  );
+        Map<String, String> params = new HashMap<String, String>();
         params.put( HaSettings.lock_read_timeout.name(), "20s" );
-        Config config = new Config(params, HaSettings.class);
+        Config config = new Config( params, HaSettings.class );
 
         when( spi.isAccessible() ).thenReturn( false );
 
@@ -72,12 +71,12 @@ public class MasterImplTest
         // Given
         MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
         Logging logging = new DevNullLoggingService();
-        Map<String, String> params = new HashMap<String, String>(  );
+        Map<String, String> params = new HashMap<String, String>();
         params.put( HaSettings.lock_read_timeout.name(), "20s" );
-        Config config = new Config(params, HaSettings.class);
+        Config config = new Config( params, HaSettings.class );
 
         when( spi.isAccessible() ).thenReturn( true );
-        when(spi.beginTx()).thenReturn( mock(Transaction.class) );
+        when( spi.beginTx() ).thenReturn( mock( Transaction.class ) );
 
         MasterImpl instance = new MasterImpl( spi, logging, config );
         instance.start();

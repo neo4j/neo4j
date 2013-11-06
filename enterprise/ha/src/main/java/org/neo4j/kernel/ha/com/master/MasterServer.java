@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.jboss.netty.channel.Channel;
+
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
@@ -50,7 +51,8 @@ public class MasterServer extends Server<Master, Void>
     public MasterServer( Master requestTarget, Logging logging, Configuration config,
                          TxChecksumVerifier txVerifier ) throws IOException
     {
-        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, txVerifier, Clock.REAL_CLOCK );
+        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, txVerifier,
+                Clock.REAL_CLOCK );
     }
 
     @Override

@@ -81,7 +81,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
             }
         };
 
-        return new SlaveLockManager(txManager, txHook, availabilityGuard, slaveConfig, new RagManager( txManager ),
+        return new SlaveLockManager( txManager, txHook, availabilityGuard, slaveConfig, new RagManager( txManager ),
                 requestContextFactory, master, xaDsm );
     }
 }

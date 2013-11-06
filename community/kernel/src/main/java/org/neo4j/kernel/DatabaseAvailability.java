@@ -71,7 +71,8 @@ public class DatabaseAvailability
             long start = Clock.REAL_CLOCK.currentTimeMillis();
 
             TxManager realTxManager = (TxManager) txManager;
-            while (realTxManager.getActiveTxCount() > 0 && Clock.REAL_CLOCK.currentTimeMillis() < start + 20*1000) // TODO make configurable
+            while ( realTxManager.getActiveTxCount() > 0 && Clock.REAL_CLOCK.currentTimeMillis() < start + 20 * 1000
+                    ) // TODO make configurable
             {
                 Thread.yield();
             }
