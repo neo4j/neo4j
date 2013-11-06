@@ -53,22 +53,22 @@ class CollectionSliceExpressionTest extends Assertions {
   }
   
   @Test def should_handle_out_of_bounds_by_returning_null() {
-    implicit val collection = Collection()
+    val fullSeq = Seq(1, 2, 3, 4)
+    implicit val collection = Literal(fullSeq)
     
-    assert(slice(from = 0, to = 2) === null, "[][0..2]")
+    assert(slice(from = 2, to = 10) === Seq(3,4), "[1,2,3,4][2..10]")
 
-    assert(slice(to = -2) === null, "[][..-2]")
+    assert(slice(to = -10) === Seq.empty, "[1,2,3,4][..-10]")
 
-    assert(slice(from = 0, to = -1) === null, "[][0..-1]")
+    assert(slice(from = 5, to = -1) === Seq.empty, "[1,2,3,4][5..-1]")
 
-    assert(slice(from = 2) === null, "[][2..]")
+    assert(slice(from = 5) === Seq.empty, "[1,2,3,4][5..]")
 
-    assert(slice(from = -3) === null, "[][-3..]")
+    assert(slice(from = -10) === fullSeq, "[1,2,3,4][-10..]")
 
-    assert(slice(to = 2) === null, "[][..2]")
+    assert(slice(to = 10) === fullSeq, "[1,2,3,4][..10]")
 
-    assert(slice(from = -3, to = -1) === null, "[][-3..-1]")
-
+    assert(slice(from = -10, to = -1) === Seq(1,2,3), "[1,2,3,4][-3..-1]")
   }
 
   private val ctx = ExecutionContext.empty

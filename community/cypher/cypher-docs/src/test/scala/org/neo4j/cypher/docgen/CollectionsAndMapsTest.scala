@@ -65,13 +65,13 @@ RETURN range(0,10)[-5..]###
 ###
 RETURN range(0,10)[..4]###
 
-Note: Asking for ranges or elements outside the bounds of a collection will return null and not an error.
+Note: Out-of-bound slices are simply truncated, but out-of-bound single elements return null.
 
 ###
-RETURN range(0,10)[100]###
+RETURN range(0,10)[15]###
 
 ###
-RETURN range(0,10)[90..100]###
+RETURN range(0,10)[5..15]###
 
 == List comprehension ==
 
