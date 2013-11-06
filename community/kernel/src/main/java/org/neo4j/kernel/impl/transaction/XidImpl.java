@@ -81,8 +81,8 @@ public class XidImpl implements Xid
     {
         if ( globalId.length > Xid.MAXGTRIDSIZE )
         {
-            throw new IllegalArgumentException( "GlobalId length to long, "
-                + globalId.length );
+            throw new IllegalArgumentException(
+                    "GlobalId length to long: " + globalId.length + ". Max is " + Xid.MAXGTRIDSIZE );
         }
         if ( resourceId.length > Xid.MAXBQUALSIZE )
         {

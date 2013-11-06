@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,7 +34,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.transaction.xa.Xid;
 
@@ -55,17 +55,21 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
  */
 public class TxLog
 {
-    private File name = null;
-    private LogBuffer logBuffer;
-    private int recordCount = 0;
-    private final Set<ByteArrayKey> activeTransactions = new HashSet<ByteArrayKey>();
-
+    public static final int MAX_RECORD_SIZE = 3 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE;
+    public static final int LOG_ROTATION_THRESHOLD = 1000; // As a count of records
+    public static final int SCAN_WINDOW_SIZE = MAX_RECORD_SIZE * LOG_ROTATION_THRESHOLD;
     public static final byte TX_START = 1;
     public static final byte BRANCH_ADD = 2;
     public static final byte MARK_COMMIT = 3;
     public static final byte TX_DONE = 4;
+
+    private final Collection<ByteArrayKey> activeTransactions = new HashSet<>();
     private final FileSystemAbstraction fileSystem;
-    
+
+    private File name = null;
+    private LogBuffer logBuffer;
+    private int recordCount = 0;
+
     private static final class ByteArrayKey
     {
         private final byte[] bytes;
@@ -84,7 +88,7 @@ public class TxLog
         @Override
         public boolean equals( Object obj )
         {
-            return obj != null && Arrays.equals( bytes, ((ByteArrayKey)obj).bytes );
+            return obj instanceof ByteArrayKey && Arrays.equals( bytes, ((ByteArrayKey)obj).bytes );
         }
     }
 
@@ -95,7 +99,8 @@ public class TxLog
      * 
      * @param fileName
      *            Filename of file to use
-     * @param msgLog 
+     * @param fileSystem
+     *            The concrete FileSystemAbstraction to use.
      * @throws IOException
      *             If unable to open file
      */
@@ -117,9 +122,15 @@ public class TxLog
     private void recreateActiveTransactionState() throws IOException
     {
         for ( List<Record> tx : getDanglingRecords() )
+        {
             for ( Record record : tx )
+            {
                 if ( record.getType() == TX_START )
+                {
                     activeTransactions.add( new ByteArrayKey( record.getGlobalId() ) );
+                }
+            }
+        }
     }
 
     /**
@@ -182,14 +193,17 @@ public class TxLog
     {
         assertNotNull( globalId, "global id" );
         if ( !activeTransactions.add( new ByteArrayKey( globalId ) ) )
+        {
             throw new IllegalStateException( "Global ID " + Arrays.toString( globalId ) + " already started" );
-        logBuffer.put( TX_START ).put( (byte) globalId.length ).put( globalId );
+        }
+        byte globalIdSize = (byte) globalId.length;
+        logBuffer.put( TX_START ).put( globalIdSize ).put( globalId );
         recordCount++;
     }
 
-    private void assertNotNull( Object globalId, String name )
+    private void assertNotNull( Object obj, String name )
     {
-        if ( globalId == null )
+        if ( obj == null )
         {
             throw new IllegalArgumentException( "Null " + name );
         }
@@ -212,15 +226,18 @@ public class TxLog
         assertNotNull( globalId, "global id" );
         assertNotNull( branchId, "branch id" );
         assertActive( globalId );
-        logBuffer.put( BRANCH_ADD ).put( (byte) globalId.length ).put(
-            (byte) branchId.length ).put( globalId ).put( branchId );
+        byte globalIdSize = (byte) globalId.length;
+        byte branchIdSize = (byte) branchId.length;
+        logBuffer.put( BRANCH_ADD ).put( globalIdSize ).put( branchIdSize ).put( globalId ).put( branchId );
         recordCount++;
     }
 
     private void assertActive( byte[] globalId )
     {
         if ( !activeTransactions.contains( new ByteArrayKey( globalId ) ) )
+        {
             throw new IllegalStateException( "Global ID " + Arrays.toString( globalId ) + " not active" );
+        }
     }
 
     /**
@@ -234,13 +251,13 @@ public class TxLog
      */
     // mark_committing(byte)|gid_length(byte)|globalId
     // forces
-    public synchronized void markAsCommitting( byte globalId[], ForceMode forceMode )
-        throws IOException
+    public synchronized void markAsCommitting( byte globalId[], ForceMode forceMode ) throws IOException
     {
         assertNotNull( globalId, "global id" );
         assertActive( globalId );
-        
-        logBuffer.put( MARK_COMMIT ).put( (byte) globalId.length ).put( globalId );
+
+        byte globalIdSize = (byte) globalId.length;
+        logBuffer.put( MARK_COMMIT ).put( globalIdSize ).put( globalId );
         forceMode.force( logBuffer );
         recordCount++;
     }
@@ -258,9 +275,12 @@ public class TxLog
     {
         assertNotNull( globalId, "global id" );
         if ( !activeTransactions.remove( new ByteArrayKey( globalId ) ) )
+        {
             throw new IllegalStateException( "Global ID " + Arrays.toString( globalId ) + " not active" );
-        
-        logBuffer.put( TX_DONE ).put( (byte) globalId.length ).put( globalId );
+        }
+
+        byte globalIdSize = (byte) globalId.length;
+        logBuffer.put( TX_DONE ).put( globalIdSize ).put( globalId );
         recordCount++;
     }
 
@@ -310,9 +330,9 @@ public class TxLog
 
         public String toString()
         {
-            XidImpl xid = new XidImpl( globalId, branchId == null ? new byte[0]
-                : branchId );
-            return "TxLogRecord[" + typeName() + "," + xid + "," + seqNr + "," + (1+sizeOf( globalId )+sizeOf( branchId )) + "]";
+            XidImpl xid = new XidImpl( globalId, branchId == null ? new byte[0] : branchId );
+            int size = 1 + sizeOf( globalId ) + sizeOf( branchId );
+            return "TxLogRecord[" + typeName() + "," + xid + "," + seqNr + "," + size + "]";
         }
 
         private int sizeOf( byte[] id )
@@ -320,9 +340,11 @@ public class TxLog
             // If id is null it means this record type doesn't have it. TX_START/MARK_COMMIT/TX_DONE
             // only has the global id, whereas BRANCH_ADD has got both the global and branch ids.
             if ( id == null )
+            {
                 return 0;
+            }
             // The length of the array (1 byte) + the actual array
-            return 1+id.length;
+            return 1 + id.length;
         }
 
         String typeName()
@@ -345,163 +367,208 @@ public class TxLog
 
     void writeRecord( Record record, ForceMode forceMode ) throws IOException
     {
-        if ( record.getType() == TX_START )
+        switch ( record.getType() )
         {
-            txStart( record.getGlobalId() );
-        }
-        else if ( record.getType() == BRANCH_ADD )
-        {
-            addBranch( record.getGlobalId(), record.getBranchId() );
-        }
-        else if ( record.getType() == MARK_COMMIT )
-        {
-            markAsCommitting( record.getGlobalId(), forceMode );
-        }
-        else
-        {
-            // TX_DONE should never be passed in here
-            throw new IOException( "Illegal record type[" + record.getType()
-                + "]" );
+            case TX_START:
+                txStart( record.getGlobalId() );
+                break;
+            case BRANCH_ADD:
+                addBranch( record.getGlobalId(), record.getBranchId() );
+                break;
+            case MARK_COMMIT:
+                markAsCommitting( record.getGlobalId(), forceMode );
+                break;
+            default:
+                // TX_DONE should never be passed in here
+                throw new IOException( "Illegal record type[" + record.getType() + "]" );
         }
     }
 
     /**
      * Returns an array of lists, each list contains dangling records
-     * (transactions that han't been completed yet) grouped after global by
+     * (transactions that hasn't been completed yet) grouped after global by
      * transaction id.
      */
     public synchronized Iterable<List<Record>> getDanglingRecords()
         throws IOException
     {
         FileChannel fileChannel = logBuffer.getFileChannel();
-        ByteBuffer buffer = ByteBuffer
-                .allocateDirect( (3 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE) * 1000 );
+        ByteBuffer buffer = ByteBuffer.allocateDirect(SCAN_WINDOW_SIZE);
         fileChannel.position( 0 );
         buffer.clear();
         fileChannel.read( buffer );
         buffer.flip();
+
         // next record position
         long nextPosition = 0;
         // holds possible dangling records
         int seqNr = 0;
-        Map<Xid,List<Record>> recordMap = new HashMap<Xid,List<Record>>();
+        Map<Xid,List<Record>> recordMap = new HashMap<>();
+
         while ( buffer.hasRemaining() )
         {
             byte recordType = buffer.get();
-            if ( recordType == TX_START )
+
+            if ( recordType == 0)
             {
-                if ( !buffer.hasRemaining() )
-                {
-                    break;
-                }
-                byte globalId[] = new byte[buffer.get()];
-                if ( buffer.limit() - buffer.position() < globalId.length )
-                {
-                    break;
-                }
-                buffer.get( globalId );
-                Xid xid = new XidImpl( globalId, new byte[0] );
-                if ( recordMap.containsKey( xid ) )
-                {
-                    throw new IOException( "Tx start for same xid[" + xid
-                        + "] found twice" );
-                }
-                List<Record> recordList = new LinkedList<Record>();
-                recordList.add( new Record( recordType, globalId, null, 
-                    seqNr++ ) );
-                recordMap.put( xid, recordList );
-                nextPosition += 2 + globalId.length;
-            }
-            else if ( recordType == BRANCH_ADD )
-            {
-                if ( buffer.limit() - buffer.position() < 2 )
-                {
-                    break;
-                }
-                byte globalId[] = new byte[buffer.get()];
-                byte branchId[] = new byte[buffer.get()];
-                if ( buffer.limit() - buffer.position() < 
-                    globalId.length + branchId.length )
-                {
-                    break;
-                }
-                buffer.get( globalId );
-                buffer.get( branchId );
-                Xid xid = new XidImpl( globalId, new byte[0] );
-                if ( !recordMap.containsKey( xid ) )
-                {
-                    throw new IOException( "Branch[" + UTF8.decode( branchId )
-                        + "] found for [" + xid
-                        + "] but no record list found in map" );
-                }
-                recordMap.get( xid ).add(
-                    new Record( recordType, globalId, branchId, seqNr++ ) );
-                nextPosition += 3 + globalId.length + branchId.length;
-            }
-            else if ( recordType == MARK_COMMIT )
-            {
-                if ( !buffer.hasRemaining() )
-                {
-                    break;
-                }
-                byte globalId[] = new byte[buffer.get()];
-                if ( buffer.limit() - buffer.position() < globalId.length )
-                {
-                    break;
-                }
-                buffer.get( globalId );
-                Xid xid = new XidImpl( globalId, new byte[0] );
-                if ( !recordMap.containsKey( xid ) )
-                {
-                    throw new IOException( "Committing xid[" + xid
-                        + "] mark found but no record list found in map" );
-                }
-                List<Record> recordList = recordMap.get( xid );
-                recordList.add( new Record( recordType, globalId, null, 
-                    seqNr++ ) );
-                recordMap.put( xid, recordList );
-                nextPosition += 2 + globalId.length;
-            }
-            else if ( recordType == TX_DONE )
-            {
-                if ( !buffer.hasRemaining() )
-                {
-                    break;
-                }
-                byte globalId[] = new byte[buffer.get()];
-                if ( buffer.limit() - buffer.position() < globalId.length )
-                {
-                    break;
-                }
-                buffer.get( globalId );
-                Xid xid = new XidImpl( globalId, new byte[0] );
-                if ( !recordMap.containsKey( xid ) )
-                {
-                    throw new IOException( "Committing xid[" + xid
-                        + "] mark found but no record list found in map" );
-                }
-                recordMap.remove( xid );
-                nextPosition += 2 + globalId.length;
-            }
-            else if ( recordType == 0 )
-            {
+                // We accept and ignore arbitrary null-bytes in between records.
+                // I'm not sure where they come from, though. A challenge for another day.
+                // For now we just make sure to increment nextPosition, so we skip over
+                // them in case we want to move our buffer window.
+                nextPosition++;
                 continue;
             }
-            else
+
+            seqNr++;
+            int recordSize = 0;
+
+            switch ( recordType )
             {
-                throw new IOException( "Unknown type: " + recordType );
+                case TX_START:
+                    recordSize = readTxStartRecordInto( recordMap, buffer, seqNr );
+                    break;
+                case BRANCH_ADD:
+                    recordSize = readBranchAddRecordInto( recordMap, buffer, seqNr );
+                    break;
+                case MARK_COMMIT:
+                    recordSize = readMarkCommitRecordInto( recordMap, buffer, seqNr );
+                    break;
+                case TX_DONE:
+                    recordSize = readTxDoneAndRemoveTransactionFrom( recordMap, buffer );
+                    break;
+                default:
+                    throw new IOException( "Unknown type: " + recordType );
             }
-            if ( (buffer.limit() - buffer.position()) < 
-                (3 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE) )
+            if ( recordSize == 0 )
+            {
+                // Getting a record size of 0 means that read* methods found an incomplete or empty byte stream.
+                break;
+            }
+            nextPosition += recordSize;
+
+
+            if ( buffer.remaining() < MAX_RECORD_SIZE )
             {
                 // make sure we don't try to read non full entry
                 buffer.clear();
-                fileChannel.position( nextPosition );
+                fileChannel.position(nextPosition);
                 fileChannel.read( buffer );
                 buffer.flip();
             }
         }
         return recordMap.values();
+    }
+
+    /**
+     * Read a TX_START record from the buffer, attach the given sequence number and store it in the recordMap.
+     * Returns the size of the record in bytes, or 0 if the byte stream is incomplete or empty.
+     */
+    private static int readTxStartRecordInto(Map<Xid, List<Record>> recordMap, ByteBuffer buffer, int seqNr)
+            throws IOException
+    {
+        if ( !buffer.hasRemaining() )
+        {
+            return 0;
+        }
+        byte globalId[] = new byte[buffer.get()];
+        if ( buffer.remaining() < globalId.length )
+        {
+            return 0;
+        }
+        buffer.get(globalId);
+        Xid xid = new XidImpl( globalId, new byte[0] );
+        if ( recordMap.containsKey( xid ) )
+        {
+            throw new IOException( "Tx start for same xid[" + xid + "] found twice" );
+        }
+        List<Record> recordList = new LinkedList<>();
+        recordList.add( new Record( TX_START, globalId, null, seqNr ) );
+        recordMap.put(xid, recordList);
+        return 2 + globalId.length;
+    }
+
+    /**
+     * Same as {@link #readTxStartRecordInto}, but for BRANCH_ADD records.
+     */
+    private static int readBranchAddRecordInto( Map<Xid, List<Record>> recordMap, ByteBuffer buffer, int seqNr)
+            throws IOException
+    {
+        if ( buffer.remaining() < 2 )
+        {
+            return 0;
+        }
+        byte globalId[] = new byte[buffer.get()];
+        byte branchId[] = new byte[buffer.get()];
+        if ( buffer.remaining() < globalId.length + branchId.length )
+        {
+            return 0;
+        }
+        buffer.get( globalId );
+        buffer.get( branchId );
+        Xid xid = new XidImpl( globalId, new byte[0] );
+        if ( !recordMap.containsKey( xid ) )
+        {
+            throw new IOException( String.format(
+                    "Branch[%s] found for [%s] but no record list found in map",
+                    UTF8.decode( branchId ), xid ) );
+        }
+        recordMap.get( xid ).add( new Record( BRANCH_ADD, globalId, branchId, seqNr ) );
+        return 3 + globalId.length + branchId.length;
+    }
+
+    /**
+     * Same as {@link #readTxStartRecordInto}, but for MARK_COMMIT records.
+     */
+    private static int readMarkCommitRecordInto( Map<Xid, List<Record>> recordMap, ByteBuffer buffer, int seqNr)
+            throws IOException
+    {
+        if ( !buffer.hasRemaining() )
+        {
+            return 0;
+        }
+        byte globalId[] = new byte[buffer.get()];
+        if ( buffer.remaining() < globalId.length )
+        {
+            return 0;
+        }
+        buffer.get( globalId );
+        Xid xid = new XidImpl( globalId, new byte[0] );
+        if ( !recordMap.containsKey( xid ) )
+        {
+            throw new IOException(
+                    "Committing xid[" + xid + "] mark found but no record list found in map" );
+        }
+        List<Record> recordList = recordMap.get( xid );
+        recordList.add( new Record( MARK_COMMIT, globalId, null, seqNr ) );
+        recordMap.put(xid, recordList);
+        return 2 + globalId.length;
+    }
+
+    /**
+     * Read a TX_DONE record from the given buffer, and removes the associated transaction from the given recordMap.
+     * Returns the size of the TX_DONE record in bytes, or 0 if the byte stream is incomplete of empty.
+     */
+    private static int readTxDoneAndRemoveTransactionFrom( Map<Xid, List<Record>> recordMap, ByteBuffer buffer )
+            throws IOException
+    {
+        if ( !buffer.hasRemaining() )
+        {
+            return 0;
+        }
+        byte globalId[] = new byte[buffer.get()];
+        if ( buffer.remaining() < globalId.length )
+        {
+            return 0;
+        }
+        buffer.get( globalId );
+        Xid xid = new XidImpl( globalId, new byte[0] );
+        if ( !recordMap.containsKey( xid ) )
+        {
+            throw new IOException(
+                    "Committing xid[" + xid + "] mark found but no record list found in map" );
+        }
+        recordMap.remove( xid );
+        return 2 + globalId.length;
     }
 
     /**
@@ -524,7 +591,7 @@ public class TxLog
         force();
         Iterable<List<Record>> itr = getDanglingRecords();
         close();
-        List<Record> records = new ArrayList<Record>();
+        List<Record> records = new ArrayList<>();
         for ( List<Record> tx : itr )
         {
             records.addAll( tx );
