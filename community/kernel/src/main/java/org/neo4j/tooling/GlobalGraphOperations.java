@@ -143,7 +143,7 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<Label> iterator()
             {
-                Statement statement = statementCtxProvider.statement();
+                Statement statement = statementCtxProvider.instance();
                 return cleanupService.resourceIterator( map( new Function<Token, Label>()
                 {
 
@@ -175,7 +175,7 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<String> iterator()
             {
-                Statement statement = statementCtxProvider.statement();
+                Statement statement = statementCtxProvider.instance();
                 return cleanupService.resourceIterator( map( new Function<Token, String>() {
 
                     @Override
@@ -212,7 +212,7 @@ public class GlobalGraphOperations
 
     private ResourceIterator<Node> allNodesWithLabel( String label )
     {
-        Statement statement = statementCtxProvider.statement();
+        Statement statement = statementCtxProvider.instance();
 
         int labelId = statement.readOperations().labelGetForName( label );
         if ( labelId == KeyReadOperations.NO_SUCH_LABEL )

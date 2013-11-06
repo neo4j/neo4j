@@ -38,7 +38,7 @@ public class KernelTest
         ThreadToStatementContextBridge stmtBridge =
                 db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         db.beginTx();
-        Statement statement = stmtBridge.statement();
+        Statement statement = stmtBridge.instance();
 
         try
         {

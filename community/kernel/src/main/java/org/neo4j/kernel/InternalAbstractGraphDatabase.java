@@ -966,7 +966,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode()
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             return nodeManager.newNodeProxyById( statement.dataWriteOperations().nodeCreate() );
         }
@@ -983,7 +983,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode( Label... labels )
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             long nodeId = statement.dataWriteOperations().nodeCreate();
             for ( Label label : labels )
@@ -1509,7 +1509,7 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
-        Statement statement = statementContextProvider.statement();
+        Statement statement = statementContextProvider.instance();
 
         ReadOperations readOps = statement.readOperations();
         int propertyId = readOps.propertyKeyGetForName( key );

@@ -108,7 +108,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             return false;
         }
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().graphGetProperty( propertyId ).isDefined();
@@ -123,7 +123,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
@@ -146,7 +146,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
@@ -161,7 +161,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     public void setProperty( String key, Object value )
     {
         boolean success = false;
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             statement.dataWriteOperations().graphSetProperty( property( propertyKeyId, value ) );
@@ -192,7 +192,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public Object removeProperty( String key )
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().graphRemoveProperty( propertyId ).value( null );
@@ -215,7 +215,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             List<String> keys = new ArrayList<>();
             Iterator<DefinedProperty> properties = statement.readOperations().graphGetAllProperties();

@@ -58,7 +58,7 @@ public class NeoStoreFileListing
         Collection<File> files = new ArrayList<>();
         gatherNeoStoreFiles( includeLogicalLogs, files );
         Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
-        Resource schemaIndexSnapshots = gatherSchemaIndexFiles(files);
+        Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
 
         return new StoreSnapshot( files.iterator(), labelScanStoreSnapshot, schemaIndexSnapshots );
     }

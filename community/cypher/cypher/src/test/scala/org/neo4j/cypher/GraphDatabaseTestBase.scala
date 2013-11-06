@@ -204,7 +204,7 @@ class GraphDatabaseTestBase extends GraphIcing with Assertions {
     (a, b, c, d)
   }
 
-  def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).statement()
+  def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
 
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
 }

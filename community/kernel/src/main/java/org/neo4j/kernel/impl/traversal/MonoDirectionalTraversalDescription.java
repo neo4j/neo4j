@@ -41,16 +41,17 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.helpers.Factory;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
 public final class MonoDirectionalTraversalDescription implements TraversalDescription
 {
-    final static Factory<Resource> NO_STATEMENT = new Factory<Resource>()
+    final static Provider<Resource> NO_STATEMENT = new Provider<Resource>()
     {
         @Override
-        public Resource newInstance()
+        public Resource instance()
         {
             return Resource.EMPTY;
         }
@@ -58,7 +59,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
 
     final PathExpander expander;
     final InitialBranchState initialState;
-    final Factory<? extends Resource> statementFactory;
+    final Provider<? extends Resource> statementFactory;
     final UniquenessFactory uniqueness;
     final Object uniquenessParameter;
     final PathEvaluator evaluator;
@@ -76,18 +77,19 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         this(NO_STATEMENT);
     }
 
-    public MonoDirectionalTraversalDescription( Factory<? extends Resource> statementFactory )
+    public MonoDirectionalTraversalDescription( Provider<? extends Resource> statementProvider )
     {
         this( Traversal.emptyPathExpander(), Uniqueness.NODE_GLOBAL, null,
                 Evaluators.all(), InitialBranchState.NO_STATE, Traversal.preorderDepthFirst(), null, null,
-                statementFactory );
+                statementProvider );
     }
 
     private MonoDirectionalTraversalDescription( PathExpander expander,
                                                  UniquenessFactory uniqueness, Object uniquenessParameter,
                                                  PathEvaluator evaluator, InitialBranchState initialState,
                                                  BranchOrderingPolicy branchOrdering,
-                                                 Comparator<? super Path> sorting, Collection<Node> endNodes, Factory<? extends Resource> statementFactory )
+                                                 Comparator<? super Path> sorting, Collection<Node> endNodes,
+                                                 Provider<? extends Resource> statementFactory )
     {
         this.expander = expander;
         this.uniqueness = uniqueness;
@@ -112,7 +114,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
             @Override
             public TraverserIterator newInstance()
             {
-                Resource statement = statementFactory.newInstance();
+                Resource statement = statementFactory.instance();
                 MonoDirectionalTraverserIterator iterator = new MonoDirectionalTraverserIterator(
                         statement,
                         uniqueness.create( uniquenessParameter ),
@@ -256,7 +258,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
     public <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialStateFactory<STATE> initialState )
     {
         return new MonoDirectionalTraversalDescription( expander, uniqueness,
-                uniquenessParameter, evaluator, new InitialStateFactory.AsInitialBranchState<STATE>( initialState ),
+                uniquenessParameter, evaluator, new InitialStateFactory.AsInitialBranchState<>( initialState ),
                 branchOrdering, sorting, endNodes, statementFactory );
     }
     

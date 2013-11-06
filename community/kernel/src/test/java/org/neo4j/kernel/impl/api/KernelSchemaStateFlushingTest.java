@@ -136,7 +136,7 @@ public class KernelSchemaStateFlushingTest
         try ( Transaction tx = db.beginTx() )
         {
             UniquenessConstraint descriptor;
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 descriptor = statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
             }
@@ -149,7 +149,7 @@ public class KernelSchemaStateFlushingTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 statement.schemaWriteOperations().constraintDrop( descriptor );
             }
@@ -162,7 +162,7 @@ public class KernelSchemaStateFlushingTest
         try ( Transaction tx = db.beginTx() )
         {
             IndexDescriptor descriptor;
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 descriptor = statement.schemaWriteOperations().indexCreate( 1, 1 );
             }
@@ -175,7 +175,7 @@ public class KernelSchemaStateFlushingTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 statement.schemaWriteOperations().indexDrop( descriptor );
             }
@@ -187,7 +187,7 @@ public class KernelSchemaStateFlushingTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = ctxProvider.statement() )
+            try ( Statement statement = ctxProvider.instance() )
             {
                 SchemaIndexTestHelper.awaitIndexOnline( statement.readOperations(), descriptor );
             }

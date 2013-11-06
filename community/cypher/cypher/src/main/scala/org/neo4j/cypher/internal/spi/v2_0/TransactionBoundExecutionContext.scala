@@ -73,7 +73,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
       val tx = graph.beginTx()
       try {
         val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-        val otherStatement = bridge.statement()
+        val otherStatement = bridge.instance()
         val result = try {
           work(new TransactionBoundExecutionContext(graph, tx, otherStatement))
         }

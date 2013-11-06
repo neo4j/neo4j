@@ -50,28 +50,28 @@ public abstract class KernelIntegrationTest
     protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
     {
         beansTx = db.beginTx();
-        statement = statementContextProvider.statement();
+        statement = statementContextProvider.instance();
         return statement.tokenWriteOperations();
     }
 
     protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException
     {
         beansTx = db.beginTx();
-        statement = statementContextProvider.statement();
+        statement = statementContextProvider.instance();
         return statement.dataWriteOperations();
     }
 
     protected SchemaWriteOperations schemaWriteOperationsInNewTransaction() throws KernelException
     {
         beansTx = db.beginTx();
-        statement = statementContextProvider.statement();
+        statement = statementContextProvider.instance();
         return statement.schemaWriteOperations();
     }
 
     protected ReadOperations readOperationsInNewTransaction()
     {
         beansTx = db.beginTx();
-        statement = statementContextProvider.statement();
+        statement = statementContextProvider.instance();
         return statement.readOperations();
     }
 

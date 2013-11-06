@@ -102,7 +102,7 @@ public class NodeProxy implements Node
     @Override
     public void delete()
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             statement.dataWriteOperations().nodeDelete( getId() );
         }
@@ -204,7 +204,7 @@ public class NodeProxy implements Node
     public void setProperty( String key, Object value )
     {
         boolean requireRollback = true; // TODO: this seems like the wrong level to do this on...
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
@@ -246,7 +246,7 @@ public class NodeProxy implements Node
     @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
@@ -277,7 +277,7 @@ public class NodeProxy implements Node
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).value( defaultValue );
@@ -291,7 +291,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             List<String> keys = new ArrayList<>();
             Iterator<DefinedProperty> properties = statement.readOperations().nodeGetAllProperties( getId() );
@@ -320,7 +320,7 @@ public class NodeProxy implements Node
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
@@ -343,7 +343,7 @@ public class NodeProxy implements Node
             return false;
         }
 
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).isDefined();
@@ -403,7 +403,7 @@ public class NodeProxy implements Node
         //{
         //    throw new IllegalArgumentException( "Nodes do not belong to same graph database." );
         //}
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             long relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
             return nodeLookup.getNodeManager().newRelationshipProxyById(
@@ -465,7 +465,7 @@ public class NodeProxy implements Node
     @Override
     public void addLabel( Label label )
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             try
             {
@@ -501,7 +501,7 @@ public class NodeProxy implements Node
     @Override
     public void removeLabel( Label label )
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             if ( labelId != KeyReadOperations.NO_SUCH_LABEL )
@@ -526,7 +526,7 @@ public class NodeProxy implements Node
     @Override
     public boolean hasLabel( Label label )
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             return statement.readOperations().nodeHasLabel( getId(), labelId );
@@ -540,7 +540,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<Label> getLabels()
     {
-        try ( Statement statement = statementContextProvider.statement() )
+        try ( Statement statement = statementContextProvider.instance() )
         {
             PrimitiveIntIterator labels = statement.readOperations().nodeGetLabels( getId() );
             List<Label> keys = new ArrayList<>();

@@ -31,6 +31,7 @@ import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.Factory;
+import org.neo4j.helpers.Provider;
 
 import static org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD;
 import static org.neo4j.graphdb.traversal.SideSelectorPolicies.ALTERNATING;
@@ -45,14 +46,14 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     final PathEvaluator collisionEvaluator;
     final SideSelectorPolicy sideSelector;
     final org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy;
-    final Factory<? extends Resource> statementFactory;
+    final Provider<? extends Resource> statementFactory;
     final int maxDepth;
 
     private BidirectionalTraversalDescriptionImpl( MonoDirectionalTraversalDescription start,
                                                    MonoDirectionalTraversalDescription end,
                                                    org.neo4j.graphdb.traversal.BranchCollisionPolicy collisionPolicy,
                                                    PathEvaluator collisionEvaluator, SideSelectorPolicy sideSelector,
-                                                   Factory<? extends Resource> statementFactory, int maxDepth )
+                                                   Provider<? extends Resource> statementFactory, int maxDepth )
     {
         this.start = start;
         this.end = end;
@@ -63,7 +64,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
         this.maxDepth = maxDepth;
     }
 
-    public BidirectionalTraversalDescriptionImpl(Factory<? extends Resource> statementFactory)
+    public BidirectionalTraversalDescriptionImpl(Provider<? extends Resource> statementFactory)
     {
         // TODO Proper defaults.
         this( new MonoDirectionalTraversalDescription(), new MonoDirectionalTraversalDescription(), STANDARD, Evaluators.all(), ALTERNATING,
@@ -78,7 +79,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     @Override
     public BidirectionalTraversalDescription startSide( TraversalDescription startSideDescription )
     {
-        assertIsMonoDirectional(startSideDescription);
+        assertIsMonoDirectional( startSideDescription );
         return new BidirectionalTraversalDescriptionImpl( (MonoDirectionalTraversalDescription)startSideDescription,
                 this.end, this.collisionPolicy, this.collisionEvaluator, this.sideSelector, statementFactory,
                 this.maxDepth );
@@ -87,7 +88,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     @Override
     public BidirectionalTraversalDescription endSide( TraversalDescription endSideDescription )
     {
-        assertIsMonoDirectional(endSideDescription);
+        assertIsMonoDirectional( endSideDescription );
         return new BidirectionalTraversalDescriptionImpl( this.start,
                 (MonoDirectionalTraversalDescription)endSideDescription,
                 this.collisionPolicy, this.collisionEvaluator, this.sideSelector, statementFactory, this.maxDepth );
@@ -96,7 +97,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     @Override
     public BidirectionalTraversalDescription mirroredSides( TraversalDescription sideDescription )
     {
-        assertIsMonoDirectional(sideDescription);
+        assertIsMonoDirectional( sideDescription );
         return new BidirectionalTraversalDescriptionImpl(
                 (MonoDirectionalTraversalDescription)sideDescription,
                 (MonoDirectionalTraversalDescription)sideDescription.reverse(),
@@ -152,7 +153,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
             public TraverserIterator newInstance()
             {
                 return new BidirectionalTraverserIterator(
-                        statementFactory.newInstance(),
+                        statementFactory.instance(),
                         start, end, sideSelector, collisionPolicy, collisionEvaluator, maxDepth, startNodes, endNodes);
             }
         });
@@ -164,7 +165,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
      */
     private void assertIsMonoDirectional( TraversalDescription traversal )
     {
-        if(!(traversal instanceof MonoDirectionalTraversalDescription))
+        if( !( traversal instanceof MonoDirectionalTraversalDescription ) )
         {
             throw new IllegalArgumentException( "The bi-directional traversals currently do not support using " +
                     "anything but mono-directional traversers as start and stop points. Please provide a regular " +
