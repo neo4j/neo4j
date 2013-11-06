@@ -29,17 +29,15 @@ case class CollectionIndex(collection: Expression, index: Expression) extends Nu
 with CollectionSupport {
   def arguments = Seq(collection, index)
 
-  def compute(value:Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
     var idx = CastSupport.castOrFail[Number](index(ctx)).intValue()
     val collectionValue = makeTraversable(value).toList
 
     if (idx < 0)
       idx = collectionValue.size + idx
 
-    if(idx>=collectionValue.size)
-      throw new OutOfBoundsException(s"Passed the end of the collection ${collection.toString()}")
-
-    collectionValue.apply(idx)
+    if (idx >= collectionValue.size || idx < 0) null
+    else collectionValue.apply(idx)
   }
 
   protected def calculateType(symbols: SymbolTable): CypherType = {

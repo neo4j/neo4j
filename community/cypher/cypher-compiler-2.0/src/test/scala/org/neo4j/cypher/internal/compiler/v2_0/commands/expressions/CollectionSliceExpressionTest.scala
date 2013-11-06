@@ -26,10 +26,9 @@ import org.scalatest.Assertions
 
 class CollectionSliceExpressionTest extends Assertions {
 
-  val collection = Literal(Seq(1, 2, 3, 4))
-
-
   @Test def tests() {
+    implicit val collection = Literal(Seq(1, 2, 3, 4))
+
     assert(slice(from = 0, to = 2) === Seq(1, 2), "[1,2,3,4][0..2]")
 
     assert(slice(to = -2) === Seq(1, 2), "[1,2,3,4][..-2]")
@@ -47,17 +46,42 @@ class CollectionSliceExpressionTest extends Assertions {
     assert(sliceValue(null) === null)
   }
 
+  @Test def should_handle_null() {
+    implicit val collection = Literal(null)
+
+    assert(slice(from = -3, to = -1) === null, "null[-3..-1]")
+  }
+  
+  @Test def should_handle_out_of_bounds_by_returning_null() {
+    implicit val collection = Collection()
+    
+    assert(slice(from = 0, to = 2) === null, "[][0..2]")
+
+    assert(slice(to = -2) === null, "[][..-2]")
+
+    assert(slice(from = 0, to = -1) === null, "[][0..-1]")
+
+    assert(slice(from = 2) === null, "[][2..]")
+
+    assert(slice(from = -3) === null, "[][-3..]")
+
+    assert(slice(to = 2) === null, "[][..2]")
+
+    assert(slice(from = -3, to = -1) === null, "[][-3..-1]")
+
+  }
+
   private val ctx = ExecutionContext.empty
   private implicit val state = QueryStateHelper.empty
   private val NO_VALUE = -666
 
-  private def slice(from: Int = NO_VALUE, to: Int = NO_VALUE) = {
+  private def slice(from: Int = NO_VALUE, to: Int = NO_VALUE)(implicit collection: Expression) = {
     val f = if (from == NO_VALUE) None else Some(Literal(from))
     val t = if (to == NO_VALUE) None else Some(Literal(to))
     CollectionSliceExpression(collection, f, t)(ctx)(state)
   }
 
-  private def sliceValue(in:Any) = {
+  private def sliceValue(in: Any) = {
     CollectionSliceExpression(Literal(in), Some(Literal(0)), Some(Literal(1)))(ctx)(state)
   }
 }

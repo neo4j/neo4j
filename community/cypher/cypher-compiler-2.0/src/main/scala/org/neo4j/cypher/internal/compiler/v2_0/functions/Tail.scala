@@ -33,5 +33,6 @@ case object Tail extends Function {
     }
 
   def toCommand(invocation: ast.FunctionInvocation) =
-    commandexpressions.TailFunction(invocation.arguments(0).toCommand)
+  commandexpressions.CollectionSliceExpression(
+    invocation.arguments(0).toCommand, Some(commandexpressions.Literal(1)), None)
 }

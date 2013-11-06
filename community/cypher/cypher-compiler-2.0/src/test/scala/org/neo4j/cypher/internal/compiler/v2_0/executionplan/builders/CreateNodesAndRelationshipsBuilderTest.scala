@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PartiallySolvedQuery
 import org.junit.Test
-import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import expressions.{Collection, HeadFunction, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Literal, CollectionSliceExpression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.{RelationshipEndpoint, CreateRelationship, CreateNode}
 
 class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
@@ -76,7 +75,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   def single_relationship_missing_nodes_with_expression() {
     val q = PartiallySolvedQuery().copy(updates = Seq(
       Unsolved(CreateRelationship("r",
-        RelationshipEndpoint(HeadFunction(Identifier("p")), Map(), Seq.empty, true),
+        RelationshipEndpoint(CollectionSliceExpression(Identifier("p"), Some(Literal(0)), Some(Literal(1))), Map(), Seq.empty, true),
         RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, true), "LOVES", Map()))))
 
     assertRejects(q)
