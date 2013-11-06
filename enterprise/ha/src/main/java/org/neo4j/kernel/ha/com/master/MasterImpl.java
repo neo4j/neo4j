@@ -123,6 +123,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     public MasterImpl( SPI spi, Logging logging, Config config )
     {
+        this.spi = spi;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.config = config;
     }
