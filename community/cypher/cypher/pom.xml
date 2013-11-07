@@ -40,6 +40,7 @@
   </licenses>
   
   <properties>
+    <version-package>cypher.internal</version-package>
     <maven.site.skip>false</maven.site.skip>
     <maven.site.deploy.skip>false</maven.site.deploy.skip>
   </properties>

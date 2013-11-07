@@ -18,6 +18,7 @@
   <properties>
     <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>management</short-name>
+    <version-package>management.impl</version-package>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-monitoring.html</docs.url>
   </properties>
 

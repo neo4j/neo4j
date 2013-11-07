@@ -15,6 +15,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
+    <version-package>consistency.checking.impl</version-package>
     <neo4j.version>2.0-SNAPSHOT</neo4j.version>
     <bundle.namespace>org.neo4j.consistency</bundle.namespace>
     <short-name>consistency-check</short-name>

@@ -28,6 +28,7 @@
     <jline.main.version>0.9.94</jline.main.version>
     <bundle.namespace>org.neo4j.shell</bundle.namespace>
     <short-name>shell</short-name>
+    <version-package>shell.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/shell.html</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>

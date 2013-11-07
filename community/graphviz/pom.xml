@@ -15,6 +15,7 @@
   <description>Utility component to generate Graphviz .dot notation from Neo4j graphs.</description>
   
   <properties>
+    <version-package>visualization.graphviz.impl</version-package>
     <bundle.namespace>org.neo4j.visualization</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>

@@ -16,6 +16,10 @@
     <description>Common code shared between all Neo4j Cypher modules</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+    <properties>
+      <version-package>cypher.internal.helpers</version-package>
+    </properties>
+
     <scm>
         <url>https://github.com/neo4j/neo4j/tree/master/community/cypher/cypher-commons</url>
     </scm>

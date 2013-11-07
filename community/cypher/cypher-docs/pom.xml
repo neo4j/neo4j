@@ -40,6 +40,7 @@
   </licenses>
   
   <properties>
+    <version-package>cypher.internal.docs</version-package>
     <docs-plugin.skip>false</docs-plugin.skip>
   </properties>
 
