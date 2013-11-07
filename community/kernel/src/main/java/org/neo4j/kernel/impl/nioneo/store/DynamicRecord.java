@@ -28,6 +28,25 @@ public class DynamicRecord extends Abstract64BitRecord
     private int type;
     private boolean startRecord = true;
 
+    public static DynamicRecord dynamicRecord( long id, boolean inUse )
+    {
+        DynamicRecord record = new DynamicRecord( id );
+        record.setInUse( inUse );
+        return record;
+    }
+
+    public static DynamicRecord dynamicRecord( long id, boolean inUse, boolean isStartRecord, long nextBlock, int type,
+                                               byte [] data )
+    {
+        DynamicRecord record = new DynamicRecord( id );
+        record.setInUse( inUse );
+        record.setStartRecord( isStartRecord );
+        record.setNextBlock( nextBlock );
+        record.setType( type );
+        record.setData( data );
+        return record;
+    }
+
     public DynamicRecord( long id )
     {
         super( id );

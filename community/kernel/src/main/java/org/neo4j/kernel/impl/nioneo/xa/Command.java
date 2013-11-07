@@ -382,11 +382,11 @@ public abstract class Command extends XaCommand
             buffer.put( NODE_COMMAND );
             buffer.putLong( after.getId() );
             
-            writeToFile( buffer, before );
-            writeToFile( buffer, after );
+            writeNodeRecord( buffer, before );
+            writeNodeRecord( buffer, after );
         }
         
-        private void writeToFile( LogBuffer buffer, NodeRecord record ) throws IOException
+        private void writeNodeRecord( LogBuffer buffer, NodeRecord record ) throws IOException
         {
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
                     : Record.NOT_IN_USE.byteValue();
@@ -397,8 +397,9 @@ public abstract class Command extends XaCommand
                 
                 // labels
                 buffer.putLong( record.getLabelField() );
-                writeDynamicRecords( buffer, record.getDynamicLabelRecords() );
             }
+
+            writeDynamicRecords( buffer, record.getDynamicLabelRecords() );
         }
 
         public static Command readFromFile( NeoStore neoStore, ReadableByteChannel byteChannel, ByteBuffer buffer )
@@ -409,7 +410,16 @@ public abstract class Command extends XaCommand
             long id = buffer.getLong();
             
             NodeRecord before = readNodeRecord( id, byteChannel, buffer );
+            if( before == null )
+            {
+                return null;
+            }
+
             NodeRecord after = readNodeRecord( id, byteChannel, buffer );
+            if( after == null )
+            {
+                return null;
+            }
             
             if ( !before.inUse() && after.inUse() )
             {
@@ -434,7 +444,9 @@ public abstract class Command extends XaCommand
             {
                 throw new IOException( "Illegal in use flag: " + inUseFlag );
             }
+
             NodeRecord record;
+            long labelField = 0;
             if ( inUse )
             {
                 if ( !readAndFlip( byteChannel, buffer, 8*3 ) )
@@ -442,14 +454,19 @@ public abstract class Command extends XaCommand
                 record = new NodeRecord( id, buffer.getLong(), buffer.getLong() );
                 
                 // labels
-                long labelField = buffer.getLong();
-                Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
-                readDynamicRecords( byteChannel, buffer, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
-                record.setLabelField( labelField, dynamicLabelRecords );
+                labelField = buffer.getLong();
             }
             else
+            {
                 record = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(),
                         Record.NO_NEXT_PROPERTY.intValue() );
+            }
+
+            // Dynamic labels
+            Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
+            readDynamicRecords( byteChannel, buffer, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
+            record.setLabelField( labelField, dynamicLabelRecords );
+
             record.setInUse( inUse );
             return record;
         }

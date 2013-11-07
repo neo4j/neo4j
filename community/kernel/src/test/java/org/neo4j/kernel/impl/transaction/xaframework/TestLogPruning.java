@@ -34,19 +34,19 @@ public class TestLogPruning
 {
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
-    
+
     @After
     public void after() throws Exception
     {
         if ( db != null )
             db.shutdown();
     }
-    
+
     @Test
     public void noPruning() throws Exception
     {
         newDb( "true" );
-        
+
         for ( int i = 0; i < 100; i++ )
         {
             doTransaction();
@@ -54,7 +54,7 @@ public class TestLogPruning
             assertEquals( i+1, logCount() );
         }
     }
-    
+
     @Test
     public void pruneByFileSize() throws Exception
     {
@@ -66,25 +66,25 @@ public class TestLogPruning
         rotate();
         long sizeOfOneLog = fs.getFileSize( db.getXaDataSourceManager().getNeoStoreDataSource()
                 .getXaContainer().getLogicalLog().getFileName( 0 ) );
-        int filesToExceedSize = (int) Math.round( (double)size/(double)sizeOfOneLog );
+        int filesNeededToExceedPruneLimit = (int) Math.ceil( (double)size/(double)sizeOfOneLog );
 
         // When
-        for ( int i = 1; i < filesToExceedSize*2; i++ )
+        for ( int i = 1; i < filesNeededToExceedPruneLimit*2; i++ )
         {
             doTransaction();
             rotate();
 
             // Then
-            assertEquals( Math.min( i+1, filesToExceedSize ), logCount() );
+            assertEquals( Math.min( i+1, filesNeededToExceedPruneLimit ), logCount() );
         }
     }
-    
+
     @Test
     public void pruneByFileCount() throws Exception
     {
         int logsToKeep = 5;
         newDb( logsToKeep + " files" );
-        
+
         for ( int i = 0; i < logsToKeep*2; i++ )
         {
             doTransaction();
@@ -92,14 +92,14 @@ public class TestLogPruning
             assertEquals( Math.min( i+1, logsToKeep ), logCount() );
         }
     }
-    
+
     @Test
     public void pruneByTransactionCount() throws Exception
     {
         int transactionsToKeep = 100;
         int txsPerLog = transactionsToKeep/10;
         newDb( transactionsToKeep + " txs" );
-        
+
         for ( int i = 0; i < transactionsToKeep/txsPerLog*3; i++ )
         {
             for ( int j = 0; j < txsPerLog; j++ )
@@ -108,7 +108,7 @@ public class TestLogPruning
             assertEquals( Math.min( i+1, transactionsToKeep/txsPerLog ), logCount() );
         }
     }
-    
+
     private GraphDatabaseAPI newDb( String logPruning )
     {
         GraphDatabaseAPI db = new ImpermanentGraphDatabase( stringMap( keep_logical_logs.name(), logPruning ) )
@@ -141,7 +141,7 @@ public class TestLogPruning
     {
         db.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
     }
-    
+
     private int logCount()
     {
         XaLogicalLog log = db.getXaDataSourceManager().getNeoStoreDataSource().getXaContainer().getLogicalLog();

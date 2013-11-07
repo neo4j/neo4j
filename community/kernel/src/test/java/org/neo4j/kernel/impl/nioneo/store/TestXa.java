@@ -712,6 +712,7 @@ public class TestXa
     @Test
     public void testBrokenCommand() throws Exception
     {
+        // Given
         Xid xid = new XidImpl( new byte[4], new byte[4] );
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
@@ -721,7 +722,11 @@ public class TestXa
         xaRes.prepare( xid );
         copyClearRename();
         truncateLogicalLog( 102 );
+
+        // When
         ds = newNeoStore();
+
+        // Then
         xaCon = ds.getXaConnection();
         xaRes = xaCon.getXaResource();
         assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );

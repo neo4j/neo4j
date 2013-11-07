@@ -26,6 +26,8 @@ import java.util.List;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.kernel.impl.nioneo.store.labels.InlineNodeLabels.parseInlined;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsBody;
 
 public class NodeRecord extends PrimitiveRecord
 {
@@ -96,8 +98,15 @@ public class NodeRecord extends PrimitiveRecord
                 .append( ",used=" ).append( inUse() )
                 .append( ",rel=" ).append( nextRel )
                 .append( ",prop=" ).append( getNextProp() )
-                .append( ",labels=" ).append( Arrays.toString(parseInlined( getLabelField() )) )
                 .append( "," ).append( isLight ? "light" : "heavy" );
+        if( fieldPointsToDynamicRecordOfLabels( labels ))
+        {
+            builder.append( ",firstLabelRecord=" ).append( parseLabelsBody( labels ) );
+        }
+        else
+        {
+            builder.append( ",inlinedLabels=" ).append( Arrays.toString(parseInlined( labels )) );
+        }
         if ( !isLight && !dynamicLabelRecords.isEmpty() )
         {
             builder.append( ",dynlabels=" ).append( dynamicLabelRecords );
