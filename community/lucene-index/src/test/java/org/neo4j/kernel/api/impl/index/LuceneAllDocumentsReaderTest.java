@@ -20,10 +20,12 @@
 package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ReferenceManager;
@@ -33,37 +35,35 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LuceneAllEntriesIndexAccessorReaderTest
+public class LuceneAllDocumentsReaderTest
 {
     @Test
     public void shouldIterateOverAllLuceneDocumentsWhereNoDocumentsHaveBeenDeleted() throws Exception
     {
         // given
-        Long[] nodeIds = {12L, 34L, 567L};
+        String[] elements = {"A", "B", "C"};
 
         IndexReader indexReader = mock( IndexReader.class );
         when( indexReader.isDeleted( anyInt() ) ).thenReturn( false );
 
-        LuceneAllEntriesIndexAccessorReader reader =
-                new LuceneAllEntriesIndexAccessorReader(
-                        new SearcherManagerStub( new SearcherStub( indexReader, nodeIds ) ),
-                        new LuceneDocumentStructure() );
+        LuceneAllDocumentsReader reader =
+                new LuceneAllDocumentsReader(
+                        new SearcherManagerStub( new SearcherStub( indexReader, elements ) ) );
 
         // when
-        Iterator<Long> iterator = reader.iterator();
-        Collection<Long> actualNodeIds = IteratorUtil.asCollection( iterator );
+        Iterator<Document> iterator = reader.iterator();
+        List<Document> actualDocuments = new ArrayList<>( IteratorUtil.asCollection( iterator ) );
 
         // then
-        for ( int i = 0; i < nodeIds.length; i++ )
+        for ( int i = 0; i < elements.length; i++ )
         {
-            assertThat( actualNodeIds, hasItem( nodeIds[i] ) );
+            assertEquals( elements[i], actualDocuments.get( i ).get( "element" ) );
         }
     }
 
@@ -71,7 +71,7 @@ public class LuceneAllEntriesIndexAccessorReaderTest
     public void shouldFindNoDocumentsIfTheyHaveAllBeenDeleted() throws Exception
     {
         // given
-        final Long[] nodeIds = {12L, 34L, 567L};
+        final String[] elements = {"A", "B", "C"};
 
         final IndexReader indexReader = mock( IndexReader.class );
         when( indexReader.isDeleted( anyInt() ) ).thenAnswer( new Answer<Boolean>()
@@ -79,7 +79,7 @@ public class LuceneAllEntriesIndexAccessorReaderTest
             @Override
             public Boolean answer( InvocationOnMock invocation ) throws Throwable
             {
-                if ( (int) invocation.getArguments()[0] >= nodeIds.length )
+                if ( (int) invocation.getArguments()[0] >= elements.length )
                 {
                     throw new IllegalArgumentException( "Doc id out of range" );
                 }
@@ -87,39 +87,39 @@ public class LuceneAllEntriesIndexAccessorReaderTest
             }
         } );
 
-        LuceneAllEntriesIndexAccessorReader reader =
-                new LuceneAllEntriesIndexAccessorReader(
-                        new SearcherManagerStub( new SearcherStub( indexReader, nodeIds ) ),
-                        new LuceneDocumentStructure() );
+        LuceneAllDocumentsReader reader =
+                new LuceneAllDocumentsReader(
+                        new SearcherManagerStub( new SearcherStub( indexReader, elements ) ) );
 
         // when
-        Iterator<Long> iterator = reader.iterator();
-        Collection<Long> actualNodeIds = IteratorUtil.asCollection( iterator );
+        Iterator<Document> iterator = reader.iterator();
 
         // then
-        assertTrue( actualNodeIds.isEmpty() );
+        assertFalse( iterator.hasNext() );
     }
 
     private static class SearcherStub extends IndexSearcher
     {
-        private final Long[] nodeIds;
+        private final String[] elements;
 
-        public SearcherStub( IndexReader r, Long[] nodeIds )
+        public SearcherStub( IndexReader r, String[] elements )
         {
             super( r );
-            this.nodeIds = nodeIds;
+            this.elements = elements;
         }
 
         @Override
         public Document doc( int docID ) throws IOException
         {
-            return new LuceneDocumentStructure().newDocument( nodeIds[docID] );
+            Document document = new Document();
+            document.add( new Field( "element", elements[docID], Field.Store.YES, Field.Index.NO ) );
+            return document;
         }
 
         @Override
         public int maxDoc()
         {
-            return nodeIds.length;
+            return elements.length;
         }
     }
 

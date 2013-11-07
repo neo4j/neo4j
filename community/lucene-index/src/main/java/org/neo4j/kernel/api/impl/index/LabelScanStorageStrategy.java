@@ -25,6 +25,7 @@ import java.util.Iterator;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SearcherManager;
 
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -36,7 +37,7 @@ public interface LabelScanStorageStrategy
 
     PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId );
 
-    AllEntriesLabelScanReader newNodeLabelReader( IndexSearcher searcher );
+    AllEntriesLabelScanReader newNodeLabelReader( SearcherManager searcher );
 
     interface StorageService
     {

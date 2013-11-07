@@ -21,8 +21,10 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 
@@ -74,7 +76,7 @@ public interface IndexAccessor
      */
     IndexReader newReader();
 
-    AllEntriesIndexReader newAllEntriesReader();
+    BoundedIterable<Long> newAllEntriesReader();
 
     /**
      * Should return a full listing of all files needed by this index accessor to work with the index. The files
@@ -113,9 +115,25 @@ public interface IndexAccessor
         }
 
         @Override
-        public AllEntriesIndexReader newAllEntriesReader()
+        public BoundedIterable<Long> newAllEntriesReader()
         {
-            return AllEntriesIndexReader.EMPTY;
+            return new BoundedIterable<Long>()
+            {
+                @Override
+                public long maxCount()
+                {
+                    return 0;
+                }
+
+                @Override public void close() throws IOException
+                {
+                }
+
+                @Override public Iterator<Long> iterator()
+                {
+                    return emptyIterator();
+                }
+            };
         }
 
         @Override

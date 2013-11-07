@@ -22,93 +22,59 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ReferenceManager;
+import org.apache.lucene.document.Document;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.index.AllEntriesIndexReader;
+import org.neo4j.kernel.api.direct.BoundedIterable;
 
-public class LuceneAllEntriesIndexAccessorReader implements AllEntriesIndexReader
+public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long>
 {
-    private final IndexSearcher searcher;
+    private final BoundedIterable<Document> documents;
     private final LuceneDocumentStructure documentLogic;
-    private final ReferenceManager<IndexSearcher> searcherManager;
 
-    public LuceneAllEntriesIndexAccessorReader(
-            ReferenceManager<IndexSearcher> searcherManager, LuceneDocumentStructure documentLogic )
+    public LuceneAllEntriesIndexAccessorReader( BoundedIterable<Document> documents, LuceneDocumentStructure documentLogic )
     {
-        this.searcherManager = searcherManager;
-        this.searcher = searcherManager.acquire();
+        this.documents = documents;
         this.documentLogic = documentLogic;
     }
 
     @Override
     public long maxCount()
     {
-        return maxDocIdBoundary();
+        return documents.maxCount();
     }
 
     @Override
     public Iterator<Long> iterator()
     {
-        return new PrefetchingIterator<Long>()
+        final Iterator<Document> iterator = documents.iterator();
+        return new Iterator<Long>()
         {
-            private int docId;
-
-            @Override
-            protected Long fetchNextOrNull()
+            public boolean hasNext()
             {
-                Long node = null;
-                while ( node == null && isPossibleDocId( docId ) )
-                {
-                    if ( ! deleted( docId ) )
-                    {
-                        node = getNode( docId );
-                    }
-                    docId++;
-                }
-                return node;
+                return iterator.hasNext();
+            }
+
+            public Long next()
+            {
+                return parse( iterator.next() );
+            }
+
+            public void remove()
+            {
+                iterator.remove();
             }
         };
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
-        try
-        {
-            searcherManager.release( searcher );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        documents.close();
     }
 
-    private Long getNode( int docId )
+    private Long parse( Document document )
     {
-        try
-        {
-            return documentLogic.getNodeId( searcher.doc( docId ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return documentLogic.getNodeId( document );
     }
 
-    private boolean deleted( int docId )
-    {
-        return searcher.getIndexReader().isDeleted( docId );
-    }
-
-    private boolean isPossibleDocId( int docId )
-    {
-        return docId < maxDocIdBoundary();
-    }
-
-    private int maxDocIdBoundary()
-    {
-        return searcher.maxDoc();
-    }
 }

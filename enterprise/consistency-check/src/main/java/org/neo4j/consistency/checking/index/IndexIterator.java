@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.direct.BoundedIterable;
-import org.neo4j.kernel.api.index.AllEntriesIndexReader;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -32,7 +31,7 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 public class IndexIterator implements BoundedIterable<Long>
 {
     private final IndexAccessor indexAccessor;
-    private final AllEntriesIndexReader indexReader;
+    private final BoundedIterable<Long> indexReader;
 
     public IndexIterator( IndexRule indexRule, SchemaIndexProvider indexes )
     {

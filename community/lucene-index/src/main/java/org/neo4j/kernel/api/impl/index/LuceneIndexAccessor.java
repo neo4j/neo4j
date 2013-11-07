@@ -32,7 +32,7 @@ import org.apache.lucene.store.Directory;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.index.AllEntriesIndexReader;
+import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -113,9 +113,9 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public AllEntriesIndexReader newAllEntriesReader()
+    public BoundedIterable<Long> newAllEntriesReader()
     {
-        return new LuceneAllEntriesIndexAccessorReader( searcherManager, documentStructure );
+        return new LuceneAllEntriesIndexAccessorReader( new LuceneAllDocumentsReader( searcherManager ), documentStructure );
     }
 
     @Override

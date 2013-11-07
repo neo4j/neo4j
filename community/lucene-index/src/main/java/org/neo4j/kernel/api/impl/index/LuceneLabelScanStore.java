@@ -174,8 +174,7 @@ public class LuceneLabelScanStore
     @Override
     public AllEntriesLabelScanReader newAllEntriesReader()
     {
-        final IndexSearcher searcher = acquireSearcher();
-        return strategy.newNodeLabelReader( searcher );
+        return strategy.newNodeLabelReader( searcherManager );
     }
 
     @Override

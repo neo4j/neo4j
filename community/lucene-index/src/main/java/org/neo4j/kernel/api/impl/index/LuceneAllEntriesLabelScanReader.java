@@ -21,38 +21,97 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
 
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
 
 public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 {
-    private final IndexSearcher searcher;
     private final BitmapDocumentFormat format;
+    private final BoundedIterable<Document> documents;
 
-    public LuceneAllEntriesLabelScanReader( IndexSearcher searcher, BitmapDocumentFormat format )
+    public LuceneAllEntriesLabelScanReader( BoundedIterable<Document> documents, BitmapDocumentFormat format )
     {
-        this.searcher = searcher;
+        this.documents = documents;
         this.format = format;
     }
 
     @Override
     public Iterator<NodeLabelRange> iterator()
     {
-        return new NodeLabelRangeIterator( searcher, format);
+        final Iterator<Document> iterator = documents.iterator();
+        return new Iterator<NodeLabelRange>()
+        {
+            private int id = 0;
+
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            public LuceneNodeLabelRange next()
+            {
+                return parse( id++, iterator.next() );
+            }
+
+            public void remove()
+            {
+                iterator.remove();
+            }
+        };
     }
 
     @Override
     public void close() throws IOException
     {
-        searcher.close();
+        documents.close();
     }
 
     @Override
     public long maxCount()
     {
-        return searcher.maxDoc();
+        return documents.maxCount();
+    }
+
+    private LuceneNodeLabelRange parse( int id, Document document )
+    {
+        List<Fieldable> fields = document.getFields();
+
+        long[] labelIds = new long[fields.size() - 1];
+        Bitmap[] bitmaps = new Bitmap[fields.size() - 1];
+
+        int i = 0;
+        long rangeId = -1;
+        for ( Fieldable field : fields )
+        {
+            if ( format.isRangeField( field ) )
+            {
+                rangeId = format.rangeOf( field );
+            }
+            else
+            {
+                labelIds[i] = format.labelId( field );
+                bitmaps[i] = format.readBitmap( field );
+                i++;
+            }
+        }
+        assert (rangeId >= 0);
+        return LuceneNodeLabelRange.fromBitmapStructure( id, labelIds, getLongs( bitmaps, rangeId ) );
+    }
+
+    private long[][] getLongs( Bitmap[] bitmaps, long rangeId )
+    {
+        long[][] nodeIds = new long[bitmaps.length][];
+        for ( int k = 0; k < nodeIds.length; k++ )
+        {
+            nodeIds[k] = format.bitmapFormat().convertRangeAndBitmapToArray( rangeId, bitmaps[k].bitmap() );
+        }
+        return nodeIds;
     }
 }

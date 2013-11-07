@@ -30,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
@@ -94,9 +95,9 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     }
 
     @Override
-    public AllEntriesLabelScanReader newNodeLabelReader( final IndexSearcher searcher )
+    public AllEntriesLabelScanReader newNodeLabelReader( SearcherManager searcherManager )
     {
-        return new LuceneAllEntriesLabelScanReader( searcher, format );
+        return new LuceneAllEntriesLabelScanReader( new LuceneAllDocumentsReader( searcherManager ), format );
     }
 
     @Override

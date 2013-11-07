@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.index.AllEntriesIndexReader;
+import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -161,7 +161,7 @@ class InMemoryIndex
             return indexData;
         }
 
-        @Override public AllEntriesIndexReader newAllEntriesReader()
+        @Override public BoundedIterable<Long> newAllEntriesReader()
         {
             return indexData;
         }
