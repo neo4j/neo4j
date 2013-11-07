@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Clock;
@@ -43,6 +42,7 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
@@ -61,6 +61,7 @@ import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.rrd.RrdDbProvider;
+import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.security.KeyStoreFactory;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslCertificateFactory;
@@ -72,7 +73,6 @@ import org.neo4j.server.web.WebServerProvider;
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
@@ -98,12 +98,12 @@ public abstract class AbstractNeoServer implements NeoServer
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
 
+    private RoundRobinJobScheduler rrdDbScheduler = new RoundRobinJobScheduler();
+    private RrdDbWrapper rrdDbWrapper;
+
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
     private Logging logging;
-
-    private static final boolean SUCCESS = true;
-    private static final boolean FAILURE = ! SUCCESS;
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -149,6 +149,10 @@ public abstract class AbstractNeoServer implements NeoServer
                 diagnosticsLog.info( "--- SERVER STARTED START ---" );
     
                 databaseActions = createDatabaseActions();
+
+                // TODO: RrdDb is not needed once we remove the old webadmin
+                rrdDbWrapper = new RrdFactory( configurator.configuration() )
+                        .createRrdDbAndSampler( database, new RoundRobinJobScheduler() );
     
                 transactionFacade = createTransactionalActions();
     
@@ -295,7 +299,7 @@ public abstract class AbstractNeoServer implements NeoServer
             }
             catch ( Exception e )
             {
-                log.error( e );
+                log.error( "Unable to stop module.", e );
             }
         }
     }
@@ -332,7 +336,7 @@ public abstract class AbstractNeoServer implements NeoServer
         int sslPort = getHttpsPort();
         boolean sslEnabled = getHttpsEnabled();
 
-        log.info( "Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads );
+        log.info( String.format("Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads));
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
         webServer.setMaxThreads( maxThreads );
@@ -346,7 +350,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( sslEnabled )
         {
-            log.info( "Enabling HTTPS on port :%s", sslPort );
+            log.info( String.format("Enabling HTTPS on port :%s", sslPort) );
             webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
         }
     }
@@ -388,15 +392,15 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 logger.logMessage( "Server started on: " + baseUri() );
             }
-            log.info( "Remote interface ready and available at [%s]", baseUri() );
+            log.info( String.format("Remote interface ready and available at [%s]", baseUri()) );
         }
         catch ( RuntimeException e )
         {
-            log.error( "Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage() );
+            log.error( String.format("Failed to start Neo Server on port [%d], reason [%s]",
+                    getWebServerPort(), e.getMessage()) );
             throw e;
         }
     }
-
 
     private boolean httpLoggingProperlyConfigured()
     {
@@ -479,38 +483,20 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         try
         {
-            stopServerOnly();
+            stopWebServer();
+            stopModules();
+
+            rrdDbScheduler.stopJobs();
+            rrdDbWrapper.close();
+
+            log.info( "Successfully shutdown Neo4j Server." );
+
             stopDatabase();
             log.info( "Successfully shutdown database." );
         }
         catch ( Exception e )
         {
             log.warn( "Failed to cleanly shutdown database." );
-        }
-    }
-
-    /**
-     * Stops everything but the database.
-     * <p/>
-     * This is deprecated. If you would like to disconnect the database
-     * life cycle from server control, then use {@link WrappingNeoServer}.
-     * <p/>
-     * To stop the server, please use {@link #stop()}.
-     * <p/>
-     * This will be removed in 1.10
-     */
-    @Deprecated
-    public void stopServerOnly()
-    {
-        try
-        {
-            stopWebServer();
-            stopModules();
-            log.info( "Successfully shutdown Neo4j Server." );
-        }
-        catch ( Exception e )
-        {
-            log.warn( "Failed to cleanly shutdown Neo4j Server." );
         }
     }
 
@@ -596,7 +582,7 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new NeoServerProvider( this ) );
         singletons.add( new ConfigurationProvider( getConfiguration() ) );
 
-        singletons.add( new RrdDbProvider( database ) );
+        singletons.add( new RrdDbProvider( rrdDbWrapper ) );
 
         singletons.add( new WebServerProvider( getWebServer() ) );
 

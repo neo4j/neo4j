@@ -28,13 +28,13 @@ import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.DiscoveryModule;
 import org.neo4j.server.modules.ManagementApiModule;
+import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.SecurityRulesModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.StatisticModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
-import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
 import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
@@ -58,7 +58,7 @@ public class CommunityNeoServer extends AbstractNeoServer
         init();
     }
 
-	@Override
+    @Override
 	protected PreFlightTasks createPreflightTasks()
     {
 		return new PreFlightTasks(
@@ -79,7 +79,7 @@ public class CommunityNeoServer extends AbstractNeoServer
         		new RESTApiModule(webServer, database, configurator.configuration()), 
         		new ManagementApiModule(webServer, configurator.configuration()),
                 new ThirdPartyJAXRSModule(webServer, configurator, this),
-                new WebAdminModule(webServer, configurator.configuration(), database),
+                new WebAdminModule(webServer ),
                 new Neo4jBrowserModule(webServer, configurator.configuration(), database),
                 new StatisticModule(webServer, statisticsCollector, configurator.configuration()),
                 new SecurityRulesModule(webServer, configurator.configuration()));

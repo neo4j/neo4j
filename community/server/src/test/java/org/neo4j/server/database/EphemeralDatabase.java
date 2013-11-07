@@ -49,9 +49,9 @@ public class EphemeralDatabase extends CommunityDatabase
     @Override
     public void shutdown()
     {
-        if ( this.graph != null )
+        if ( this.getGraph() != null )
         {
-            this.graph.shutdown();
+            this.getGraph().shutdown();
         }
     }
 }
