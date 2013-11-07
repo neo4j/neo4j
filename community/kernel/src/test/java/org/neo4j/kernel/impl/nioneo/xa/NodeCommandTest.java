@@ -132,8 +132,12 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeDynamicRecordsRemoved() throws Exception
+    public void shouldSerializeDynamicRecordsWhenWholeNodeIsRemoved() throws Exception
     {
+        // Note: This is in relation to a bug where serialization would skip the dynamic records if the node was not in
+        // use. In the HA and in the recovery case, that meant that slaves would not update their dynamic label records
+        // appropriately when a node was deleted.
+
         // Given
         NodeRecord before = new NodeRecord( 12, 1, 2 );
         before.setInUse( true );
@@ -141,7 +145,7 @@ public class NodeCommandTest
         before.setLabelField( dynamicPointer( beforeDyn ), beforeDyn );
 
         NodeRecord after = new NodeRecord( 12, 2, 1 );
-        after.setInUse( true );
+        after.setInUse( false );
         List<DynamicRecord> dynamicRecords = asList( dynamicRecord( 0, false, true, -1l, LONG.intValue(), new byte[]{1,2,3,4,5,6,7,8}));
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
 

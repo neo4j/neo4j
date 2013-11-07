@@ -538,7 +538,7 @@ public class TestApps extends AbstractShellTest
         }
         catch ( ShellException e )
         {
-            assertThat( e.getStackTraceAsString(), containsString( "Node record Node[0,used=false,rel=0,prop=-1,labels=[],light] still has relationships" ) );
+            assertThat( e.getStackTraceAsString(), containsString( "still has relationships" ) );
         }
     }
 
