@@ -104,7 +104,7 @@ public class HeartbeatContext
 
         if ( isFailed( node ) && !failed.contains( node ) )
         {
-            logger.info( "Notifying listeners that node " + node + " is failed" );
+            logger.info( "Notifying listeners that instance " + node + " is failed" );
             failed.add( node );
             Listeners.notifyListeners( listeners, executor, new Listeners.Notification<HeartbeatListener>()
             {
