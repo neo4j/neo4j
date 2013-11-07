@@ -57,7 +57,7 @@ public class InlineNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore )
     {
-        if ( tryInlineInNodeRecord( labelIds, Collections.<DynamicRecord>emptyList() ) )
+        if ( tryInlineInNodeRecord( labelIds, node.getDynamicLabelRecords() ) )
         {
             return Collections.emptyList();
         }
@@ -80,7 +80,7 @@ public class InlineNodeLabels implements NodeLabels
     public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore )
     {
         long[] newLabelIds = filter( parseInlined( labelField ), labelId );
-        boolean inlined = tryInlineInNodeRecord( newLabelIds, Collections.<DynamicRecord>emptyList() );
+        boolean inlined = tryInlineInNodeRecord( newLabelIds, node.getDynamicLabelRecords() );
         assert inlined;
         return Collections.emptyList();
     }

@@ -52,12 +52,12 @@ public class NodeLabelsField
         }
     }
 
-    static long parseLabelsBody( long labelsField )
+    public static long parseLabelsBody( long labelsField )
     {
         return labelsField & 0xFFFFFFFFFL;
     }
 
-    private static boolean fieldPointsToDynamicRecordOfLabels( long labelField )
+    public static boolean fieldPointsToDynamicRecordOfLabels( long labelField )
     {
         return (labelField & 0x8000000000L) != 0;
     }

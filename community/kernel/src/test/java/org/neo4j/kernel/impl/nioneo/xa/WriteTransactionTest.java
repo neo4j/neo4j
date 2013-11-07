@@ -31,7 +31,6 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -68,16 +67,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -156,6 +149,59 @@ public class WriteTransactionTest
 
         // THEN
         verify( cacheAccessBackDoor ).removeSchemaRuleFromCache( ruleId );
+    }
+
+    @Test
+    public void shouldMarkDynamicLabelRecordsAsNotInUseWhenLabelsAreReInlined() throws Exception
+    {
+        // GIVEN
+        final long nodeId = neoStore.getNodeStore().nextId();
+
+        // A transaction that creates labels that just barely fit to be inlined
+        WriteTransaction writeTransaction = newWriteTransaction( mockIndexing );
+        writeTransaction.nodeCreate( nodeId );
+
+        writeTransaction.addLabelToNode( 7, nodeId );
+        writeTransaction.addLabelToNode( 11, nodeId );
+        writeTransaction.addLabelToNode( 12, nodeId );
+        writeTransaction.addLabelToNode( 15, nodeId );
+        writeTransaction.addLabelToNode( 23, nodeId );
+        writeTransaction.addLabelToNode( 27, nodeId );
+        writeTransaction.addLabelToNode( 50, nodeId );
+
+        writeTransaction.prepare();
+        writeTransaction.commit();
+
+        // And given that I now start recording the commands in the log
+        CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
+
+        // WHEN
+        // I then remove multiple labels
+        writeTransaction = newWriteTransaction( mockIndexing, commandCapture);
+
+        writeTransaction.removeLabelFromNode( 11, nodeId );
+        writeTransaction.removeLabelFromNode( 23, nodeId );
+
+        writeTransaction.prepare();
+        writeTransaction.commit();
+
+        // THEN
+        // The dynamic label record should be part of what is logged, and it should be set to not in use anymore.
+        commandCapture.visitCapturedCommands( new Visitor<XaCommand, RuntimeException>()
+        {
+            @Override
+            public boolean visit( XaCommand element ) throws RuntimeException
+            {
+                if( element instanceof Command.NodeCommand )
+                {
+                    Command.NodeCommand cmd = (Command.NodeCommand)element;
+                    Collection<DynamicRecord> beforeDynLabels = cmd.getAfter().getDynamicLabelRecords();
+                    assertThat( beforeDynLabels.size(), equalTo(1) );
+                    assertThat( beforeDynLabels.iterator().next().inUse(), equalTo(false) );
+                }
+                return true;
+            }
+        });
     }
 
     @Test
@@ -656,6 +702,15 @@ public class WriteTransactionTest
             {
                 tx.injectCommand( command );
             }
+        }
+
+        public void visitCapturedCommands( Visitor<XaCommand, RuntimeException> visitor )
+        {
+            for ( XaCommand command : commands )
+            {
+                visitor.visit( command );
+            }
+
         }
     }
 
