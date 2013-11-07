@@ -21,10 +21,12 @@ package org.neo4j.kernel.impl.api.scan;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,11 +40,11 @@ import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Collections.singletonList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 public class InMemoryLabelScanStore implements LabelScanStore
 {
+    // LabelId --> Set<NodeId>
     private final Map<Long, Set<Long>> data = new HashMap<>();
 
     @Override
@@ -138,6 +140,20 @@ public class InMemoryLabelScanStore implements LabelScanStore
             @Override
             public void close()
             {   // Nothing to close
+            }
+
+            @Override
+            public Iterator<Long> labelsForNode( long nodeId )
+            {
+                List<Long> nodes = new ArrayList<>();
+                for ( Map.Entry<Long, Set<Long>> entry : data.entrySet() )
+                {
+                    if ( entry.getValue().contains( nodeId ) )
+                    {
+                        nodes.add( entry.getKey() );
+                    }
+                }
+                return nodes.iterator();
             }
         };
     }

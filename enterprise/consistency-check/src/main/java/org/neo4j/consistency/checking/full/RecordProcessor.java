@@ -22,4 +22,6 @@ package org.neo4j.consistency.checking.full;
 public interface RecordProcessor<RECORD>
 {
     void process( RECORD record );
+
+    void close();
 }

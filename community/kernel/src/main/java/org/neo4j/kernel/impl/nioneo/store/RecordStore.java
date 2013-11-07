@@ -145,7 +145,8 @@ public interface RecordStore<R extends AbstractBaseRecord>
                                                      + type.getSimpleName().replace( "Record", "" ) + " records" );
         }
 
-        public <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
+        @SafeVarargs
+        public final <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
                 final Predicate<? super R>... filters )
         {
             return new Iterable<R>()

@@ -20,12 +20,15 @@
 package org.neo4j.kernel.api.impl.index.bitmaps;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 import org.junit.Test;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class BitmapFormatTest
 {
@@ -129,5 +132,17 @@ public class BitmapFormatTest
         }
         // then
         assertEquals( "each value is unique", 64, bitmaps.size() );
+    }
+
+    @Test
+    public void shouldBeAbleToCheckIfASingleNodeIdIsSet() throws Exception
+    {
+        Bitmap bitmap = new Bitmap();
+        // when
+        int input = new Random(  ).nextInt();
+        BitmapFormat._32.set( bitmap, input % 32, true );
+
+        assertThat( BitmapFormat._32.peek( bitmap.bitmap(), input ), is( true ) );
+        assertThat( BitmapFormat._32.peek( bitmap.bitmap(), (input + 1) % 32 ), is( false ) );
     }
 }

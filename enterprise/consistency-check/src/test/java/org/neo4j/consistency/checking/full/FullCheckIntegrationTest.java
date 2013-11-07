@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Ignore;
@@ -35,6 +36,7 @@ import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -56,6 +58,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
+import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.util.Arrays.asList;
@@ -77,6 +80,7 @@ import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray
 import static org.neo4j.kernel.impl.nioneo.store.PropertyType.ARRAY;
 import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.prependNodeId;
+import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
@@ -242,7 +246,7 @@ public class FullCheckIntegrationTest
     public void shouldNotReportAnythingForNodeWithConsistentChainOfDynamicRecordsWithLabels() throws Exception
     {
         // given
-        assertEquals( 3, chainOfDynamicRecordsWithLabelsForANode( 130 ).size() );
+        assertEquals( 3, chainOfDynamicRecordsWithLabelsForANode( 130 ).first().size() );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -255,7 +259,7 @@ public class FullCheckIntegrationTest
     public void shouldReportOrphanNodeDynamicLabelAsInconsistency() throws Exception
     {
         // given
-        final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 130 );
+        final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 130 ).first();
         assertEquals( 3, chain.size() );
         fixture.apply( new GraphStoreFixture.Transaction()
         {
@@ -293,7 +297,7 @@ public class FullCheckIntegrationTest
         long labelId = idGenerator.label() - 1;
 
         fixture.labelScanStore().updateAndCommit( asIterable(
-            labelChanges( nodeId1, new long[] {}, new long[] { labelId } )
+                labelChanges( nodeId1, new long[]{}, new long[]{labelId} )
         ).iterator() );
 
         // when
@@ -320,10 +324,103 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportMismatchedLabels() throws Exception
+    {
+        final List<Integer> labels = new ArrayList<>();
+
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                NodeRecord node = new NodeRecord( 42, -1, -1 );
+                node.setInUse( true );
+                List<DynamicRecord> dynamicRecords;
+                try
+                {
+                    Pair<List<DynamicRecord>, List<Integer>> pair = self.chainOfDynamicRecordsWithLabelsForANode( 3 );
+                    dynamicRecords = pair.first();
+                    labels.addAll( pair.other() );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                node.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
+                tx.create( node );
+
+            }
+        } );
+
+        long[] before = asArray( labels );
+        labels.remove( 1 );
+        long[] after = asArray( labels );
+
+        fixture.labelScanStore().updateAndCommit( asList( labelChanges( 42, before, after ) ).iterator() );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( stats, RecordType.NODE );
+    }
+
+    private FullCheckIntegrationTest self = this;
+
+    private long[] asArray(List<Integer> in){
+        long[] longs = new long[in.size()];
+        for ( int i = 0; i<in.size(); i++)
+        {
+            longs[i] = in.get( i ).longValue();
+        }
+        return longs;
+    }
+
+    @Test
+    public void shouldReportMismatchedInlinedLabels() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                NodeRecord node = new NodeRecord( 42, -1, -1 );
+                node.setInUse( true );
+                node.setLabelField( inlinedLabelsLongRepresentation( 1, 2 ), Collections.<DynamicRecord>emptySet() );
+                tx.create( node );
+            }
+        } );
+
+        fixture.labelScanStore().updateAndCommit( asList( labelChanges( 42, new long[]{1L, 2L}, new long[]{1L} ) ).iterator() );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( stats, RecordType.NODE );
+    }
+
+    private long inlinedLabelsLongRepresentation( long... labelIds )
+    {
+        long header = (long)labelIds.length << 36;
+        byte bitsPerLabel = (byte) (36/labelIds.length);
+        Bits bits = bits( 5 );
+        for ( long labelId : labelIds )
+        {
+            bits.put( labelId, bitsPerLabel );
+        }
+        return header|bits.getLongs()[0];
+    }
+
+    @Test
     public void shouldReportCyclesInDynamicRecordsWithLabels() throws Exception
     {
         // given
-        final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 176/*3 full records*/ );
+        final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 176/*3 full records*/ ).first();
         assertEquals( "number of records in chain", 3, chain.size() );
         assertEquals( "all records full", chain.get( 0 ).getLength(),  chain.get( 2 ).getLength() );
         fixture.apply( new GraphStoreFixture.Transaction()
@@ -353,9 +450,10 @@ public class FullCheckIntegrationTest
         verifyInconsistency( stats, RecordType.NODE );
     }
 
-    private List<DynamicRecord> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws IOException
+    private Pair<List<DynamicRecord>, List<Integer>> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws IOException
     {
         final long[] labels = new long[labelCount+1]; // allocate enough labels to need three records
+        final List<Integer> createdLabels = new ArrayList<>(  );
         for ( int i = 1/*leave space for the node id*/; i < labels.length; i++ )
         {
             final int offset = i;
@@ -365,7 +463,9 @@ public class FullCheckIntegrationTest
                 protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                                 GraphStoreFixture.IdGenerator next )
                 {
-                    tx.nodeLabel( (int) (labels[offset] = next.label()), "label:" + offset );
+                    Integer label = next.label();
+                    tx.nodeLabel( (int) (labels[offset] = label), "label:" + offset );
+                    createdLabels.add( label );
                 }
             } );
         }
@@ -390,7 +490,7 @@ public class FullCheckIntegrationTest
                 tx.create( nodeRecord );
             }
         } );
-        return chain;
+        return Pair.of( chain, createdLabels );
     }
 
     @Test

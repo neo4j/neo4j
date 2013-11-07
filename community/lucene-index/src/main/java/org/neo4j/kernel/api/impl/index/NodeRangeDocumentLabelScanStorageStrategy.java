@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.flatten;
 
 /**
@@ -98,6 +100,52 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     public AllEntriesLabelScanReader newNodeLabelReader( SearcherManager searcherManager )
     {
         return new LuceneAllEntriesLabelScanReader( new LuceneAllDocumentsReader( searcherManager ), format );
+    }
+
+    @Override
+    public Iterator<Long> labelsForNode( IndexSearcher searcher, long nodeId )
+    {
+        try
+        {
+            TopDocs topDocs = searcher.search( format.rangeQuery( format.bitmapFormat().rangeOf( nodeId ) ), 1 );
+
+            if ( topDocs.scoreDocs.length < 1 )
+            {
+                return emptyIterator();
+            }
+            else if ( topDocs.scoreDocs.length > 1 )
+            {
+                throw new RuntimeException( "This label scan store is corrupted" );
+            }
+
+            int doc = topDocs.scoreDocs[0].doc;
+
+            List<Long> labels = new ArrayList<>();
+
+            for ( Fieldable fields : searcher.doc( doc ).getFields() )
+            {
+                if ( "range".equals( fields.name() ) )
+                {
+                    continue;
+                }
+
+                if ( fields instanceof NumericField )
+                {
+                    NumericField labelField = (NumericField) fields;
+                    Long bitmap = Long.decode( labelField.stringValue() );
+                    if ( format.bitmapFormat().peek( bitmap, nodeId ) )
+                    {
+                        labels.add( Long.decode( labelField.name() ) );
+                    }
+                }
+            }
+
+            return labels.iterator();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -228,5 +276,4 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
         }
         return fields;
     }
-
 }

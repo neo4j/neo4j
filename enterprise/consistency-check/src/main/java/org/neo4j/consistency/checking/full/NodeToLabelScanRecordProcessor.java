@@ -17,32 +17,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.consistency.checking.index;
+package org.neo4j.consistency.checking.full;
 
-import org.neo4j.consistency.checking.full.IndexCheck;
-import org.neo4j.consistency.checking.full.RecordProcessor;
+import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.consistency.store.synthetic.IndexEntry;
+import org.neo4j.kernel.api.labelscan.LabelScanReader;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 
-public class IndexEntryProcessor implements RecordProcessor<Long>
+public class NodeToLabelScanRecordProcessor implements RecordProcessor<NodeRecord>
 {
     private final ConsistencyReporter reporter;
-    private final IndexCheck indexCheck;
+    private final RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> nodeLabelCheck;
+    private final LabelScanReader reader;
 
-    public IndexEntryProcessor( ConsistencyReporter reporter, IndexCheck indexCheck )
+    public NodeToLabelScanRecordProcessor(
+            ConsistencyReporter reporter, LabelScanStore labelScanStore )
     {
         this.reporter = reporter;
-        this.indexCheck = indexCheck;
+        this.reader = labelScanStore.newReader();
+        this.nodeLabelCheck = new LabelsMatchCheck( reader );
     }
 
     @Override
-    public void process( Long nodeId )
+    public void process( NodeRecord nodeRecord )
     {
-        reporter.forIndexEntry( new IndexEntry( nodeId ), indexCheck );
+        reporter.forNodeLabelMatch( nodeRecord, nodeLabelCheck );
     }
 
     @Override
     public void close()
     {
+        reader.close();
     }
 }

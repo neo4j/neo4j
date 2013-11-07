@@ -146,4 +146,9 @@ public class NullReporter implements ConsistencyReport.Reporter
             checker )
     {
     }
+
+    @Override
+    public void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> nodeLabelCheck )
+    {
+    }
 }

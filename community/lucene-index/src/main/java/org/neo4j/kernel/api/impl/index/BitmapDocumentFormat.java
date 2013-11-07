@@ -93,10 +93,15 @@ public enum BitmapDocumentFormat
         return new TermQuery( new Term( LABEL, Long.toString( labelId ) ) );
     }
 
+    public Query rangeQuery( long range )
+    {
+        return new TermQuery( new Term( RANGE, Long.toString( range) ) );
+    }
+
     public Fieldable rangeField( long range )
     {
         // TODO: figure out what flags to set on the field
-        Field field = new Field( "range", Long.toString( range ), Field.Store.YES, Field.Index.NOT_ANALYZED );
+        Field field = new Field( RANGE, Long.toString( range ), Field.Store.YES, Field.Index.NOT_ANALYZED );
         field.setOmitNorms( true );
         field.setIndexOptions( FieldInfo.IndexOptions.DOCS_ONLY );
         return field;

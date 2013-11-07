@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.api.labelscan;
 
+import java.util.Iterator;
+
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 
 public interface LabelScanReader
 {
     PrimitiveLongIterator nodesWithLabel( int labelId );
+
+    Iterator<Long> labelsForNode( long nodeId );
 
     void close();
 
@@ -35,6 +40,12 @@ public interface LabelScanReader
         public PrimitiveLongIterator nodesWithLabel( int labelId )
         {
             return emptyPrimitiveLongIterator();
+        }
+
+        @Override
+        public Iterator<Long> labelsForNode( long nodeId )
+        {
+            return emptyIterator();
         }
 
         @Override
