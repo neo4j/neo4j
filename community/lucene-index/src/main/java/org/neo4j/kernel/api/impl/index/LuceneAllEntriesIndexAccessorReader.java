@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.ReferenceManager;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.index.AllEntriesIndexReader;
@@ -32,10 +32,10 @@ public class LuceneAllEntriesIndexAccessorReader implements AllEntriesIndexReade
 {
     private final IndexSearcher searcher;
     private final LuceneDocumentStructure documentLogic;
-    private final SearcherManager searcherManager;
+    private final ReferenceManager<IndexSearcher> searcherManager;
 
     public LuceneAllEntriesIndexAccessorReader(
-            SearcherManager searcherManager, LuceneDocumentStructure documentLogic )
+            ReferenceManager<IndexSearcher> searcherManager, LuceneDocumentStructure documentLogic )
     {
         this.searcherManager = searcherManager;
         this.searcher = searcherManager.acquire();
@@ -45,33 +45,29 @@ public class LuceneAllEntriesIndexAccessorReader implements AllEntriesIndexReade
     @Override
     public long maxCount()
     {
-        return searcher.maxDoc();
+        return maxDocIdBoundary();
     }
 
-    @Override public Iterator<Long> iterator()
+    @Override
+    public Iterator<Long> iterator()
     {
         return new PrefetchingIterator<Long>()
         {
-            private int nextId;
+            private int docId;
 
-            @Override protected Long fetchNextOrNull()
+            @Override
+            protected Long fetchNextOrNull()
             {
-                if ( nextId >= maxCount() )
+                Long node = null;
+                while ( node == null && isPossibleDocId( docId ) )
                 {
-                    return null;
+                    if ( ! deleted( docId ) )
+                    {
+                        node = getNode( docId );
+                    }
+                    docId++;
                 }
-                while ( searcher.getIndexReader().isDeleted( nextId ) )
-                {
-                    nextId++;
-                }
-                try
-                {
-                    return documentLogic.getNodeId( searcher.doc( nextId++ ) );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                return node;
             }
         };
     }
@@ -87,5 +83,32 @@ public class LuceneAllEntriesIndexAccessorReader implements AllEntriesIndexReade
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private Long getNode( int docId )
+    {
+        try
+        {
+            return documentLogic.getNodeId( searcher.doc( docId ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private boolean deleted( int docId )
+    {
+        return searcher.getIndexReader().isDeleted( docId );
+    }
+
+    private boolean isPossibleDocId( int docId )
+    {
+        return docId < maxDocIdBoundary();
+    }
+
+    private int maxDocIdBoundary()
+    {
+        return searcher.maxDoc();
     }
 }
