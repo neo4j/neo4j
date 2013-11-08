@@ -54,7 +54,7 @@ public class ConfigurationValidator
     @SuppressWarnings("rawtypes")
     private Map<String, Setting<?>> getSettingsFrom( Iterable<Class<?>> settingsClasses )
     {
-        Map<String, Setting<?>> settings = new HashMap<String, Setting<?>>();
+        Map<String, Setting<?>> settings = new HashMap<>();
         for ( Class<?> clazz : settingsClasses )
         {
             for ( Pair<Field, Setting> field : fieldHarvester.findStatic( clazz, Setting.class ) )

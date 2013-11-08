@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.DiscoveryModule;
 import org.neo4j.server.modules.ManagementApiModule;
@@ -46,16 +45,19 @@ import org.neo4j.server.webadmin.rest.JmxService;
 import org.neo4j.server.webadmin.rest.MonitorService;
 import org.neo4j.server.webadmin.rest.console.ConsoleService;
 
+import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
+import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
+
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    public CommunityNeoServer()
-    {
-    }
-
     public CommunityNeoServer( Configurator configurator )
     {
-        this.configurator = configurator;
-        init();
+        this( configurator, lifecycleManagingDatabase( EMBEDDED ) );
+    }
+
+    public CommunityNeoServer( Configurator configurator, Database.Factory dbFactory )
+    {
+        super( configurator, dbFactory );
     }
 
     @Override
@@ -86,12 +88,6 @@ public class CommunityNeoServer extends AbstractNeoServer
 	}
 
 	@Override
-	protected Database createDatabase()
-    {
-        return new CommunityDatabase( configurator );
-	}
-
-	@Override
 	protected WebServer createWebServer()
     {
 		return new Jetty9WebServer();
@@ -100,7 +96,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     @Override
     public Iterable<AdvertisableService> getServices()
     {
-        List<AdvertisableService> toReturn = new ArrayList<AdvertisableService>( 3 );
+        List<AdvertisableService> toReturn = new ArrayList<>( 3 );
         toReturn.add( new ConsoleService( null, null, null ) );
         toReturn.add( new JmxService( null, null ) );
         toReturn.add( new MonitorService( null, null ) );

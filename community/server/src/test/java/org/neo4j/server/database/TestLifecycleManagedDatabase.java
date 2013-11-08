@@ -21,60 +21,55 @@ package org.neo4j.server.database;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import org.neo4j.helpers.Settings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.StoreLockException;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.server.logging.InMemoryAppender;
-import org.neo4j.shell.ShellException;
-import org.neo4j.shell.ShellLobby;
-import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.Mute;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
-
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.test.Mute.muteAll;
 
-public class TestCommunityDatabase
+public class TestLifecycleManagedDatabase
 {
     @Rule
     public Mute mute = muteAll();
     private File databaseDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;
+    private LifecycleManagingDatabase.GraphFactory dbFactory;
 
     @Before
     public void setup() throws Exception
     {
         databaseDirectory = createTempDir();
-        theDatabase = new CommunityDatabase( configuratorWithServerProperties( stringMap(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
+
+        dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
+        when(dbFactory.newGraphDatabase( any( Config.class ), any(Function.class), any( Iterable.class ),
+                any( Iterable.class ), any( Iterable.class ) )).thenReturn( mock( GraphDatabaseAPI.class) );
+        theDatabase = newDatabase();
     }
 
-    private static Configurator configuratorWithServerProperties( final Map<String, String> serverProperties )
+    private LifecycleManagingDatabase newDatabase()
     {
-        return new Configurator.Adapter()
-        {
-            @Override
-            public Configuration configuration()
-            {
-                return new MapConfiguration( serverProperties );
-            }
-        };
+        Config dbConfig = new Config(stringMap( GraphDatabaseSettings.store_dir.name(), databaseDirectory.getAbsolutePath() ));
+        return new LifecycleManagingDatabase( dbConfig, dbFactory, Iterables.<KernelExtensionFactory<?>>empty() );
     }
 
     @After
@@ -101,7 +96,7 @@ public class TestCommunityDatabase
     @Test
     public void shouldLogOnSuccessfulStartup() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( CommunityDatabase.log );
+        InMemoryAppender appender = new InMemoryAppender( LifecycleManagingDatabase.log );
 
         theDatabase.start();
 
@@ -111,7 +106,7 @@ public class TestCommunityDatabase
     @Test
     public void shouldShutdownCleanly() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( CommunityDatabase.log );
+        InMemoryAppender appender = new InMemoryAppender( LifecycleManagingDatabase.log );
 
         theDatabase.start();
         theDatabase.stop();
@@ -125,8 +120,7 @@ public class TestCommunityDatabase
         deletionFailureOk = true;
         theDatabase.start();
 
-        CommunityDatabase db = new CommunityDatabase( configuratorWithServerProperties( stringMap(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
+        LifecycleManagingDatabase db = newDatabase();
 
         try
         {
@@ -140,68 +134,9 @@ public class TestCommunityDatabase
     }
 
     @Test
-    public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
-    {
-        theDatabase.start();
-        ShellLobby.newClient()
-                .shutdown();
-    }
-
-    @Test
-    public void shouldBeAbleToOverrideShellConfig()  throws Throwable
-    {
-        final int customPort = findFreeShellPortToUse( 8881 );
-        final File tempDir = createTempDir();
-
-        Database otherDb = new CommunityDatabase( new Configurator.Adapter()
-        {
-            @Override
-            public Configuration configuration()
-            {
-                return new MapConfiguration( stringMap(
-                        Configurator.DATABASE_LOCATION_PROPERTY_KEY, tempDir.getAbsolutePath() ) );
-            }
-
-            @Override
-            public Map<String, String> getDatabaseTuningProperties()
-            {
-                return stringMap(
-                      ShellSettings.remote_shell_enabled.name(), Settings.TRUE,
-                      ShellSettings.remote_shell_port.name(), "" + customPort );
-            }
-        } );
-        otherDb.start();
-
-        // Try to connect with a shell client to that custom port.
-        // Throws exception if unable to connect
-        ShellLobby.newClient( customPort )
-                .shutdown();
-
-        otherDb.stop();
-//        FileUtils.forceDelete( tempDir );
-    }
-
-    @Test
-    @SuppressWarnings( "deprecation" )
     public void shouldBeAbleToGetLocation() throws Throwable
     {
         theDatabase.start();
-        assertThat( theDatabase.getLocation(), is( theDatabase.getGraph().getStoreDir() ) );
-    }
-
-    private int findFreeShellPortToUse( int startingPort )
-    {
-        // Make sure there's no other random stuff on that port
-        while ( true )
-        {
-            try
-            {
-                ShellLobby.newClient( startingPort++ ).shutdown();
-            }
-            catch ( ShellException e )
-            {   // Good
-                return startingPort;
-            }
-        }
+        assertThat( theDatabase.getLocation(), is( databaseDirectory.getAbsolutePath() ) );
     }
 }

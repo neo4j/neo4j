@@ -131,6 +131,26 @@ public class DiagnosticsLoggingTest
         {
             return new ConsoleLogger( StringLogger.SYSTEM );
         }
+
+        @Override
+        public void init() throws Throwable
+        {
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
     }
 
     @SuppressWarnings("deprecation")

@@ -47,7 +47,7 @@ public class GraphDatabaseBuilder
     }
 
     DatabaseCreator creator;
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new HashMap<>();
 
     public GraphDatabaseBuilder( DatabaseCreator creator )
     {

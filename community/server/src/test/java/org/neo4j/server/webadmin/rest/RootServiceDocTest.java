@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.net.URI;
 import java.util.Map;
 
@@ -33,8 +27,13 @@ import javax.ws.rs.core.UriInfo;
 
 import org.junit.Test;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class RootServiceDocTest
 {
@@ -45,7 +44,7 @@ public class RootServiceDocTest
         URI uri = new URI( "http://example.org:7474/" );
         when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-        RootService svc = new RootService( new CommunityNeoServer() );
+        RootService svc = new RootService( new CommunityNeoServer(mock(Configurator.class)) );
         EntityOutputFormat output = new EntityOutputFormat( new JsonFormat(), null, null );
         Response serviceDefinition = svc.getServiceDefinition( uriInfo, output );
 

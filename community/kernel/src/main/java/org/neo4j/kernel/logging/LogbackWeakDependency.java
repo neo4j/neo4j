@@ -75,6 +75,18 @@ public class LogbackWeakDependency
     private static final String LOGGER_CONTEXT_CLASS_NAME = "ch.qos.logback.classic.LoggerContext";
     private static final String LOGGER_BINDER_CLASS_NAME = "org.slf4j.impl.StaticLoggerBinder";
 
+    public static Function<Config, Logging> logbackOrDefaultToClassic()
+    {
+        return new Function<Config, Logging>()
+        {
+            @Override
+            public Logging apply( Config config )
+            {
+                return new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
+            }
+        };
+    }
+
     public Logging tryLoadLogbackService( Config config, Function<Config, Object> loggerContextGetter,
             Function<Config, Logging> otherwiseDefaultTo )
     {
@@ -90,7 +102,7 @@ public class LogbackWeakDependency
         }
         return otherwiseDefaultTo.apply( config );
     }
-    
+
     public Logging tryLoadLogbackService( Config config, Function<Config, Logging> otherwiseDefaultTo )
     {
         return tryLoadLogbackService( config, STATIC_LOGGER_CONTEXT, otherwiseDefaultTo );
