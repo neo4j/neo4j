@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -183,6 +184,9 @@ public abstract class AbstractNeoServer implements NeoServer
 
             if ( interruptStartupTimer.wasTriggered() )
             {
+                // Make sure we don't leak rrd db files
+                stopRrdDb();
+
                 // If the database has been started, attempt to cleanly shut it down to avoid unclean shutdowns.
                 if(database.isRunning())
                 {
@@ -392,12 +396,12 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 logger.logMessage( "Server started on: " + baseUri() );
             }
-            log.info( String.format("Remote interface ready and available at [%s]", baseUri()) );
+            log.info( String.format( "Remote interface ready and available at [%s]", baseUri() ) );
         }
         catch ( RuntimeException e )
         {
-            log.error( String.format("Failed to start Neo Server on port [%d], reason [%s]",
-                    getWebServerPort(), e.getMessage()) );
+            log.error( String.format( "Failed to start Neo Server on port [%d], reason [%s]",
+                    getWebServerPort(), e.getMessage() ) );
             throw e;
         }
     }
@@ -486,8 +490,7 @@ public abstract class AbstractNeoServer implements NeoServer
             stopWebServer();
             stopModules();
 
-            rrdDbScheduler.stopJobs();
-            rrdDbWrapper.close();
+            stopRrdDb();
 
             log.info( "Successfully shutdown Neo4j Server." );
 
@@ -497,6 +500,19 @@ public abstract class AbstractNeoServer implements NeoServer
         catch ( Exception e )
         {
             log.warn( "Failed to cleanly shutdown database." );
+        }
+    }
+
+    private void stopRrdDb()
+    {
+        try
+        {
+            if( rrdDbScheduler != null) rrdDbScheduler.stopJobs();
+            if( rrdDbWrapper != null )  rrdDbWrapper.close();
+        } catch(IOException e)
+        {
+            // If we fail on shutdown, we can't really recover from it. Log the issue and carry on.
+            log.error( "Unable to cleanly shut down statistics database.", e );
         }
     }
 
