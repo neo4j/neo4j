@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.List;
-
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
@@ -33,7 +31,6 @@ import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Settings.list;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.setting;
@@ -73,15 +70,6 @@ public class HaSettings
     @Description( "Policy for how to handle branched data." )
     public static final Setting<BranchedDataPolicy> branched_data_policy = setting( "ha.branched_data_policy",
             options( BranchedDataPolicy.class ), "keep_all" );
-
-    @Description( "List of ZooKeeper coordinators. Only needed for rolling upgrade from 1.8 to 1.9." )
-    @Deprecated
-    public static final Setting<List<HostnamePort>> coordinators = setting( "ha.upgrade_coordinators", list( ",", HOSTNAME_PORT ),
-            "" );
-
-    @Description( "ZooKeeper session timeout. Only needed for rolling upgrade from 1.8 to 1.9." )
-    @Deprecated
-    public static final Setting<Long> zk_session_timeout = setting( "ha.zk_session_timeout", DURATION, "5s");
 
     @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
             "throughput, but may be more sensitive to variations in bandwidth, whereas lower size increases tolerance" +

@@ -436,21 +436,6 @@ public class ComponentVersion extends Version
         <artifactId>lucene-core</artifactId>
         <version>${lucene.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.apache.zookeeper</groupId>
-        <artifactId>zookeeper</artifactId>
-        <version>3.3.2</version>
-        <exclusions>
-          <exclusion>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>jline</groupId>
-            <artifactId>jline</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
       <!-- special -->
       <dependency>
         <groupId>${jta.groupId}</groupId>

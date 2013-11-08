@@ -138,9 +138,6 @@ respectively to your needs. Details are available at the Javadoc for +http://dow
 Apart from log statements originating from the Neo4j server, other libraries report their messages
 through various frameworks.
 
-Zookeeper is hardwired to use the log4j logging framework. The bundled 'conf/log4j.properties' applies for this use only and uses a rolling appender and outputs logs by default to the
-'data/log' directory.
-
 == HTTP logging configuration ==
 
 As well as logging events happening within the Neo4j server, it is possible to log the HTTP requests and responses

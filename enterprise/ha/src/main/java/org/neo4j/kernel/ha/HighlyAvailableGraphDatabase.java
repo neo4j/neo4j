@@ -25,6 +25,7 @@ import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.Transaction;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -62,7 +63,6 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
-import org.neo4j.kernel.ha.cluster.zoo.ZooKeeperHighAvailabilityEvents;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -71,7 +71,6 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
-import org.neo4j.kernel.ha.switchover.Switchover;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TxHookModeSwitcher;
 import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
@@ -323,35 +322,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
             clusterClient.getServerId(), clusterClient, clusterClient, logging, objectStreamFactory, objectStreamFactory );
 
-        // Here we decide whether to start in compatibility mode or mode or not
-        //noinspection deprecation
-        if ( !config.get( HaSettings.coordinators ).isEmpty() &&
-            !config.get( HaSettings.coordinators ).get( 0 ).toString().trim().equals( "" ) )
-        {
-            compatibilityMode = true;
-            compatibilityLifecycle = new LinkedList<>();
-
-            Switchover switchover = new ZooToPaxosSwitchover( life, paxosLife, compatibilityLifecycle,
-                clusterEventsDelegateInvocationHandler, memberContextDelegateInvocationHandler,
-                clusterMemberAvailabilityDelegateInvocationHandler, localClusterEvents,
-                localMemberContext, localClusterMemberAvailability );
-
-            ZooKeeperHighAvailabilityEvents zkEvents =
-                new ZooKeeperHighAvailabilityEvents( logging, config, switchover );
-            compatibilityLifecycle.add( zkEvents );
-            memberContextDelegateInvocationHandler.setDelegate(
-                    new SimpleHighAvailabilityMemberContext( zkEvents.getInstanceId() ) );
-            clusterEventsDelegateInvocationHandler.setDelegate( zkEvents );
-            clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( zkEvents );
-            // Paxos Events added to life, won't be stopped because it isn't started yet
-            paxosLife.add( localClusterEvents );
-        }
-        else
-        {
-            memberContextDelegateInvocationHandler.setDelegate( localMemberContext );
-            clusterEventsDelegateInvocationHandler.setDelegate( localClusterEvents );
-            clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
-        }
+        memberContextDelegateInvocationHandler.setDelegate( localMemberContext );
+        clusterEventsDelegateInvocationHandler.setDelegate( localClusterEvents );
+        clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
 
         members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
                 new InstanceId( config.get( ClusterSettings.server_id ) ) );
