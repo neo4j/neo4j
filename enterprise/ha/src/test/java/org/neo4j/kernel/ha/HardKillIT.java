@@ -101,6 +101,9 @@ public class HardKillIT
             assertTrue( dbWithId2.isMaster() );
             assertTrue( !dbWithId3.isMaster() );
 
+            // Ensure that everyone has marked the killed instance as failed, otherwise it cannot rejoin
+            Thread.sleep(15000);
+
             oldMaster = startDb( 1 );
             long oldMasterNode = createNamedNode( oldMaster, "Old master" );
             assertEquals( oldMasterNode, getNamedNode( dbWithId2, "Old master" ) );
