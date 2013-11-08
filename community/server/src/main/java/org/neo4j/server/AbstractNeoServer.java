@@ -24,11 +24,15 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import javax.servlet.Filter;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -43,6 +47,7 @@ import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.database.RrdDbWrapper;
+import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
@@ -71,8 +76,10 @@ import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
 
 import static java.lang.Math.round;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
@@ -196,7 +203,7 @@ public abstract class AbstractNeoServer implements NeoServer
                         1 );
             }
 
-            throw new ServerStartupException( String.format( "Starting Neo4j Server failed: %s", t.getMessage() ), t );
+            throw new ServerStartupException( format( "Starting Neo4j Server failed: %s", t.getMessage() ), t );
         }
     }
 
@@ -337,7 +344,7 @@ public abstract class AbstractNeoServer implements NeoServer
         boolean sslEnabled = getHttpsEnabled();
 
         //noinspection deprecation
-        log.info( String.format("Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads));
+        log.info( format( "Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads ));
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
         webServer.setMaxThreads( maxThreads );
@@ -352,7 +359,7 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( sslEnabled )
         {
             //noinspection deprecation
-            log.info( String.format("Enabling HTTPS on port :%s", sslPort) );
+            log.info( format( "Enabling HTTPS on port :%s", sslPort ) );
             webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
         }
     }
@@ -374,37 +381,56 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         try
         {
-            if ( httpLoggingProperlyConfigured() )
-            {
-                webServer.setHttpLoggingConfiguration(
-                        new File( getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION ).toString()
-                        ) );
-            }
+            setUpHttpLogging();
+
+            setUpTimeoutFilter();
 
             webServer.start();
-
-            Integer limit = getConfiguration().getInteger( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY,
-                    null );
-            if ( limit != null )
-            {
-                //noinspection deprecation
-                webServer.addExecutionLimitFilter( limit, database.getGraph().getGuard() );
-            }
 
             if ( logger != null )
             {
                 logger.logMessage( "Server started on: " + baseUri() );
             }
             //noinspection deprecation
-            log.info( String.format("Remote interface ready and available at [%s]", baseUri()) );
+            log.info( format( "Remote interface ready and available at [%s]", baseUri() ) );
         }
         catch ( RuntimeException e )
         {
             //noinspection deprecation
-            log.error( String.format("Failed to start Neo Server on port [%d], reason [%s]",
-                    getWebServerPort(), e.getMessage()) );
+            log.error( format( "Failed to start Neo Server on port [%d], reason [%s]",
+                    getWebServerPort(), e.getMessage() ) );
             throw e;
         }
+    }
+
+    private void setUpHttpLogging()
+    {
+        if ( !httpLoggingProperlyConfigured() )
+        {
+            return;
+        }
+        String logLocation = getConfiguration().getString( Configurator.HTTP_LOG_CONFIG_LOCATION );
+        webServer.setHttpLoggingConfiguration( new File( logLocation ) );
+    }
+
+    private void setUpTimeoutFilter()
+    {
+        if ( !getConfiguration().containsKey( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY ) )
+        {
+            return;
+        }
+        //noinspection deprecation
+        Guard guard = database.getGraph().getGuard();
+        if ( guard == null )
+        {
+            throw new RuntimeException( format("Inconsistent configuration. In order to use %s, you must set %s.",
+                    Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY,
+                    GraphDatabaseSettings.execution_guard_enabled.name()) );
+        }
+
+        Filter filter = new GuardingRequestFilter( guard,
+                getConfiguration().getInt( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY ) );
+        webServer.addFilter( filter, "/*" );
     }
 
     private boolean httpLoggingProperlyConfigured()

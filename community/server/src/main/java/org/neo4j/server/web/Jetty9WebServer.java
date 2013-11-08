@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
@@ -42,7 +41,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import ch.qos.logback.access.jetty.RequestLogImpl;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -55,13 +53,11 @@ import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.neo4j.kernel.guard.Guard;
+
 import org.neo4j.server.database.InjectableProvider;
-import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.security.KeyStoreInformation;
@@ -545,36 +541,4 @@ public class Jetty9WebServer implements WebServer
     	}
 	}
 
-    @Override
-    public void addExecutionLimitFilter( final int timeout, final Guard guard )
-    {
-        if ( guard == null )
-        {
-            //TODO enable guard and restart EmbeddedGraphdb
-            throw new RuntimeException( "unable to use guard, enable guard-insertion in neo4j.properties" );
-        }
-
-        if ( jetty == null )
-        {
-            throw new RuntimeException( "Jetty server not started before usage");
-        }
-
-        jetty.addLifeCycleListener( new JettyLifeCycleListenerAdapter()
-        {
-            @Override
-            public void lifeCycleStarted( LifeCycle arg0 )
-            {
-                for ( Handler handler : handlers.getHandlers() )
-                {
-                    if ( handler instanceof ServletContextHandler )
-                    {
-                        final ServletContextHandler context = (ServletContextHandler) handler;
-                        final Filter jettyFilter = new GuardingRequestFilter( guard, timeout );
-                        final FilterHolder holder = new FilterHolder( jettyFilter );
-                        context.addFilter( holder, "/*", EnumSet.allOf(DispatcherType.class) );
-                    }
-                }
-            }
-        } );
-    }
 }
