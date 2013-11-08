@@ -33,6 +33,7 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
@@ -124,6 +125,11 @@ public class CommunityServerBuilder
     public CommunityServerBuilder withClock( Clock clock )
     {
         this.clock = clock;
+        return this;
+    }
+
+    public CommunityServerBuilder withLogging( Logging logging )
+    {
         return this;
     }
 
@@ -308,12 +314,6 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withoutWebServerPort()
-    {
-        portNo = null;
-        return this;
-    }
-
     public CommunityServerBuilder withFailingPreflightTasks()
     {
         preflightTasks = new PreFlightTasks()
@@ -423,7 +423,7 @@ public class CommunityServerBuilder
     {
         private final File configFile;
 
-        public TestCommunityNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
+        private TestCommunityNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
         {
             super( propertyFileConfigurator );
             this.configFile = configFile;

@@ -24,13 +24,12 @@ import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.WrappingDatabase;
+import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -46,7 +45,7 @@ public class PropertyCountSampleableTest
     @Before
     public void setupReferenceNode()
     {
-        db = new WrappingDatabase( (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        db = new WrappedDatabase( (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase() );
         sampleable = new PropertyCountSampleable( db.getGraph().getNodeManager() );
 
         Transaction tx = db.getGraph().beginTx();

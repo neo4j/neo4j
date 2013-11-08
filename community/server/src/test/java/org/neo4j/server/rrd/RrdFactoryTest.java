@@ -34,7 +34,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
-import org.neo4j.server.database.WrappingDatabase;
+import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
@@ -66,7 +66,7 @@ public class RrdFactoryTest
     public void setUp() throws IOException
     {
         config = new MapConfiguration( new HashMap<String, String>() );
-        db = new WrappingDatabase( new ImpermanentGraphDatabase(
+        db = new WrappedDatabase( new ImpermanentGraphDatabase(
                 TargetDirectory.forTest( getClass() ).directory( "rrd", true ).getAbsolutePath()) );
     }
 
@@ -151,7 +151,7 @@ public class RrdFactoryTest
     public void shouldCreateRrdFileInDbSubdirectory() throws Exception
     {
         String storeDir = testDirectory.directory().getAbsolutePath();
-        db = new WrappingDatabase( (AbstractGraphDatabase)
+        db = new WrappedDatabase( (AbstractGraphDatabase)
                 new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
         TestableRrdFactory factory = createRrdFactory();
 

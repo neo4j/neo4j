@@ -101,7 +101,7 @@ public class TestCommunityDatabase
     @Test
     public void shouldLogOnSuccessfulStartup() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( Database.log );
+        InMemoryAppender appender = new InMemoryAppender( CommunityDatabase.log );
 
         theDatabase.start();
 
@@ -111,7 +111,7 @@ public class TestCommunityDatabase
     @Test
     public void shouldShutdownCleanly() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( Database.log );
+        InMemoryAppender appender = new InMemoryAppender( CommunityDatabase.log );
 
         theDatabase.start();
         theDatabase.stop();

@@ -32,7 +32,7 @@ import org.junit.Test;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.WrappingDatabase;
+import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -58,7 +58,7 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
     @Before
     public void setUp() throws Exception
     {
-        this.database = new WrappingDatabase( (AbstractGraphDatabase) new TestGraphDatabaseFactory().
+        this.database = new WrappedDatabase( (AbstractGraphDatabase) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().
                 setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
                 newGraphDatabase() );
