@@ -68,7 +68,6 @@ Apache Software License, Version 2.0
   parboiled-scala
   RRD4J
   The Netty Project
-  zookeeper
 ------------------------------------------------------------------------------
 
                                  Apache License

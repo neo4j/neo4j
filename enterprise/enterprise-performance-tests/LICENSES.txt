@@ -10,7 +10,6 @@ Apache Software License, Version 2.0
   parboiled-core
   parboiled-scala
   The Netty Project
-  zookeeper
 ------------------------------------------------------------------------------
 
                                  Apache License

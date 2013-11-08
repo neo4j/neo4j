@@ -19,22 +19,12 @@
  */
 package org.neo4j.ha.upgrade;
 
-import static java.lang.Runtime.getRuntime;
-import static java.util.Arrays.asList;
-import static org.apache.commons.io.FileUtils.copyURLToFile;
-import static org.apache.commons.io.IOUtils.closeQuietly;
-import static org.apache.commons.io.IOUtils.copy;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteFile;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-import static org.neo4j.kernel.impl.util.FileUtils.moveFile;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,7 +33,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.test.TargetDirectory;
+
+import static java.lang.Runtime.getRuntime;
+import static java.util.Arrays.asList;
+import static org.apache.commons.io.FileUtils.copyURLToFile;
+import static org.apache.commons.io.IOUtils.closeQuietly;
+import static org.apache.commons.io.IOUtils.copy;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteFile;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.neo4j.kernel.impl.util.FileUtils.moveFile;
 
 public class Utils
 {
@@ -159,49 +157,4 @@ public class Utils
         return getRuntime().exec( allArgs.toArray( new String[0] ) );
     }
 
-    public static String zkConfig( TargetDirectory target, int id, int clientPort )
-    {
-        File config = target.file( "zookeeper" + id + ".cfg" );
-        File dataDir = target.directory( "zk" + id + "data", true );
-        try
-        {
-            PrintWriter conf = new PrintWriter( config );
-            try
-            {
-                conf.println( "tickTime=2000" );
-                conf.println( "initLimit=10" );
-                conf.println( "syncLimit=5" );
-                conf.println( "maxClientCnxns=50" );
-
-                // On Windows the backslashes will have to be escaped for
-                // ZooKeeper to interpret them correctly.
-                conf.println( "dataDir=" + dataDir.getAbsolutePath().replaceAll( "\\\\", "\\\\\\\\" ) );
-
-                conf.println( "clientPort=" + clientPort );
-                for ( int j = 0; j < 1; j++ )
-                {
-                    conf.println( "server." + ( j + 1 ) + "=localhost:" + ( 2888 + j ) + ":"
-                                  + ( 3888 + j ) );
-                }
-            }
-            finally
-            {
-                conf.close();
-            }
-            PrintWriter myid = new PrintWriter( new File( dataDir, "myid" ) );
-            try
-            {
-                myid.println( Integer.toString( id ) );
-            }
-            finally
-            {
-                myid.close();
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new IllegalStateException( "Could not write ZooKeeper configuration", e );
-        }
-        return config.getAbsolutePath();
-    }
 }
