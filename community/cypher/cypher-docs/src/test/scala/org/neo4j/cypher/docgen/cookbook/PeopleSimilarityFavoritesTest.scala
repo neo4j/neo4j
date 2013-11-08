@@ -46,8 +46,8 @@ class PeopleSimilarityFavoritesTest extends DocumentingTestBase {
     testQuery(
       title = "Find people based on similar favorites",
       text = """To find out the possible new friends based on them liking similar things as the asking person, use a query like this:""",
-      queryText = "MATCH me-[:favorite]->stuff<-[:favorite]-person " +
-                  "WHERE me.name = 'Joe' AND NOT(me-[:friend]-person) " +
+      queryText = "MATCH (me {name: 'Joe'})-[:favorite]->(stuff)<-[:favorite]-(person) " +
+                  "WHERE NOT (me)-[:friend]-(person) " +
                   "RETURN person.name, count(stuff) " +
                   "ORDER BY count(stuff) DESC",
       returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends is returned.",

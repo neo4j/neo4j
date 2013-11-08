@@ -72,7 +72,7 @@ Something like this:
 To initialize an empty linked list, we simply create an empty node, and make it link to itself.
 
 ###no-results empty-graph assertion=create
-CREATE root-[:LINK]->root // no ‘value’ property assigned to root
+CREATE (root)-[:LINK]->(root) // no ‘value’ property assigned to root
 RETURN root###
 
 
@@ -80,25 +80,26 @@ Adding values is done by finding the relationship where the new value should be 
 a new node, and two relationships to it.
 
 ###no-results assertion=add
-MATCH root-[:LINK*0..]->before,// before could be same as root
-      after-[:LINK*0..]->root, // after could be same as root
-      before-[old:LINK]->after
+MATCH (root)-[:LINK*0..]->(before),// before could be same as root
+      (after)-[:LINK*0..]->(root), // after could be same as root
+      (before)-[old:LINK]->(after)
 WHERE root.name = 'ROOT'
   AND before.value < 25  // This is the value, which would normally
   AND 25 < after.value   // be supplied through a parameter.
-CREATE before-[:LINK]->({value:25})-[:LINK]->after
+CREATE (before)-[:LINK]->({value:25})-[:LINK]->(after)
 DELETE old###
 
 Deleting a value, conversely, is done by finding the node with the value, and the two relationships going in and out
 from it, and replacing with a new value.
 
 ###no-results assertion=delete
-MATCH root-[:LINK*0..]->before,
-      before-[delBefore:LINK]->del-[delAfter:LINK]->after,
-      after-[:LINK*0..]->root
+MATCH (root)-[:LINK*0..]->(before),
+      (before)-[delBefore:LINK]->(del)-[delAfter:LINK]->(after),
+      (after)-[:LINK*0..]->(root)
 WHERE root.name = 'ROOT'
   AND del.value = 10
-CREATE before-[:LINK]->after
+CREATE (before)-[:LINK]->(after)
 DELETE del, delBefore, delAfter###
-             """
+
+"""
 }

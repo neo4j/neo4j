@@ -20,7 +20,7 @@ Make sure that 'conf/jmx.password' has the correct file permissions.
 The owner of the file has to be the user that will run the service, and the permissions should be read only for that user.
 On Unix systems, this is +0600+.
 
-On Windows, follow the tutorial at http://docs.oracle.com/javase/6/docs/technotes/guides/management/security-windows.html to set the correct permissions.
+On Windows, follow the tutorial at http://docs.oracle.com/javase/7/docs/technotes/guides/management/security-windows.html to set the correct permissions.
 If you are running the service under the Local System Account, the user that owns the file and has access to it should be SYSTEM.
 
 With this setup, you should be able to connect to JMX monitoring of the Neo4j server using +<IP-OF-SERVER>:3637+, with the username +monitor+ and the password +Neo4j+.
@@ -30,7 +30,7 @@ Note that it is possible that you have to update the permissions and/or ownershi
 [WARNING]
 For maximum security, please adjust at least the password settings in 'conf/jmx.password' for a production installation.
 
-For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+For more details, see: http://docs.oracle.com/javase/7/docs/technotes/guides/management/agent.html.
 
 [[jmx-connect-jconsole]]
 == How to connect to a Neo4j instance using JMX and JConsole ==
@@ -56,7 +56,7 @@ image::jconsole_connect.png[scaledwidth="50%", alt="Connecting with JConsole"]
 Now, beside the MBeans exposed by the JVM, you will see an +org.neo4j+ section in the MBeans tab.
 Under that, you will have access to all the monitoring information exposed by Neo4j.
 
-For opening JMX to remote monitoring access, please see <<jmx-remote>> and http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html#gdenl[the JMX documention].
+For opening JMX to remote monitoring access, please see <<jmx-remote>> and http://docs.oracle.com/javase/7/docs/technotes/guides/management/agent.html[the JMX documention].
 When using Neo4j in embedded mode, make sure to pass the +com.sun.management.jmxremote.port=portNum+ or other configuration as JVM parameters to your running Java process.
 
 .Neo4j MBeans View

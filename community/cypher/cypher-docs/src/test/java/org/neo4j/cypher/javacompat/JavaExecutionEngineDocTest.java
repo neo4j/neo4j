@@ -225,7 +225,7 @@ public class JavaExecutionEngineDocTest
         // START SNIPPET: exampleWithStringLiteralAsParameter
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "name", "Johan" );
-        String query = "START n=node(0,1,2) WHERE n.name = {name} RETURN n";
+        String query = "MATCH (n) WHERE n.name = {name} RETURN n";
         ExecutionResult result = engine.execute( query, params );
         // END SNIPPET: exampleWithStringLiteralAsParameter
 
@@ -376,12 +376,12 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", n1 );
 
-        String query = "START n=node(0) SET n = {props}";
+        String query = "MATCH (n) WHERE n.name='Michaela' SET n = {props}";
         engine.execute( query, params );
         // END SNIPPET: set_properties_on_a_node_from_a_map
         dumpToFile( "set_properties_on_a_node_from_a_map", query, params );
 
-        engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
+        engine.execute( "match (n) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
         assertThat( michaelaNode.getProperty( "name" ).toString(), is( "Andres" ) );
     }
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import org.neo4j.graphdb.{DynamicLabel, Node, Relationship}
+import org.neo4j.graphdb.{ DynamicLabel, Node, Relationship }
 import org.neo4j.cypher.StatisticsChecker
 
 class CreateTest extends DocumentingTestBase with StatisticsChecker {
@@ -54,7 +54,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       returns = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 1))
   }
-  
+
   @Test def create_single_node_with_labels() {
     testQuery(
       title = "Create a node with multiple labels",
@@ -79,8 +79,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       text = "Creating a single node is done by issuing the following query.",
       queryText = "create (a {name : 'Andres'}) return a",
       returns = "The newly created node is returned.",
-      assertions = (p) => assert(p.size === 1)
-    )
+      assertions = (p) => assert(p.size === 1))
   }
 
   def createTwoNodes: (Long, Long) = db.inTx {
@@ -100,14 +99,13 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create a relationship between two nodes",
       text = "To create a relationship between two nodes, we first get the two nodes. " +
         "Once the nodes are loaded, we simply create a relationship between them.",
-      queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create a-[r:RELTYPE]->b return r",
+      queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE]->(b) return r",
       returns = "The created relationship is returned by the query.",
-      assertions = (p) => assert(p.size === 1)
-    )
+      assertions = (p) => assert(p.size === 1))
   }
 
   @Test def set_property_to_a_collection() {
-    db.inTx{
+    db.inTx {
       val a = db.createNode()
       val b = db.createNode()
 
@@ -120,13 +118,12 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       text = """When you set a property to an expression that returns a collection of values,
 Cypher will turn that into an array. All the elements in the collection must be of the same type
 for this to work.""",
-      queryText = "match n where has(n.name) with collect(n.name) as names create (new { name : names }) return new",
+      queryText = "match (n) where has(n.name) with collect(n.name) as names create (new { name : names }) return new",
       returns = "A node with an array property named name is returned.",
       assertions = (p) => {
         val createdNode = p.toList.head("new").asInstanceOf[Node]
         assert(createdNode.getProperty("name") === Array("Andres", "Michael"))
-      }
-    )
+      })
   }
 
   @Test def create_full_path_in_one_go() {
@@ -135,9 +132,9 @@ for this to work.""",
       text =
         """When you use `CREATE` and a pattern, all parts of the pattern that are not already in scope at this time
 will be created. """,
-      queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->neo<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
+      queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->(neo)<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
       returns = "This query creates three nodes and two relationships in one go, assigns it to a path identifier, " +
-                "and returns it.",
+        "and returns it.",
       assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 2))
   }
 
@@ -148,17 +145,16 @@ will be created. """,
       title = "Create a relationship and set properties",
       text = "Setting properties on relationships is done in a similar manner to how it's done when creating nodes. " +
         "Note that the values can be any expression.",
-      queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create a-[r:RELTYPE {name : a.name + '<->' + b.name }]->b return r",
+      queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE {name : a.name + '<->' + b.name }]->(b) return r",
       returns = "The newly created relationship is returned by the example query.",
       assertions = (p) => {
         val result = p.toList
         assert(result.size === 1)
         val r = result.head("r").asInstanceOf[Relationship]
         assert(r.getProperty("name") === "Node A<->Node B")
-      }
-    )
+      })
   }
-  
+
   @Test def create_single_node_from_map() {
     prepareAndTestQuery(
       title = "Create node with a parameter for the properties",

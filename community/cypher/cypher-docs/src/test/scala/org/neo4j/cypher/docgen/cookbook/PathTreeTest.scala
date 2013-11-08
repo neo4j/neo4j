@@ -56,10 +56,10 @@ include::includes/path-tree-layout-full-range.asciidoc[]
 
 """,
       queryText = "MATCH " +
-                "startPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->startLeaf, " +
-                "endPath=root-[:`2011`]->()-[:`01`]->()-[:`03`]->endLeaf, " +
-                "valuePath=startLeaf-[:NEXT*0..]->middle-[:NEXT*0..]->endLeaf, " +
-                "vals=middle-[:VALUE]->event " +
+                "startPath=(root)-[:`2010`]->()-[:`12`]->()-[:`31`]->(startLeaf), " +
+                "endPath=(root)-[:`2011`]->()-[:`01`]->()-[:`03`]->(endLeaf), " +
+                "valuePath=(startLeaf)-[:NEXT*0..]->(middle)-[:NEXT*0..]->(endLeaf), " +
+                "vals=(middle)-[:VALUE]->(event) " +
                 "WHERE root.name = 'Root'" +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
@@ -81,8 +81,8 @@ include::includes/path-tree-layout-zero-range.asciidoc[]
 
 """,
       queryText = "MATCH " +
-                "rootPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->leaf, " +
-                "leaf-[:VALUE]->event " +
+                "rootPath=(root)-[:`2010`]->()-[:`12`]->()-[:`31`]->(leaf), " +
+                "(leaf)-[:VALUE]->(event) " +
                 "WHERE root.name = 'Root'" +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
@@ -104,11 +104,11 @@ include::includes/path-tree-layout-shared-root-path.asciidoc[]
 
 """,
       queryText = "MATCH " +
-                "commonPath=root-[:`2011`]->()-[:`01`]->commonRootEnd, " +
-                "startPath=commonRootEnd-[:`01`]->startLeaf, " +
-                "endPath=commonRootEnd-[:`03`]->endLeaf, " +
-                "valuePath=startLeaf-[:NEXT*0..]->middle-[:NEXT*0..]->endLeaf, " +
-                "vals=middle-[:VALUE]->event " +
+                "commonPath=(root)-[:`2011`]->()-[:`01`]->(commonRootEnd), " +
+                "startPath=(commonRootEnd)-[:`01`]->(startLeaf), " +
+                "endPath=(commonRootEnd)-[:`03`]->(endLeaf), " +
+                "valuePath=(startLeaf)-[:NEXT*0..]->(middle)-[:NEXT*0..]->(endLeaf), " +
+                "vals=(middle)-[:VALUE]->(event) " +
                 "WHERE root.name = 'Root'" +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",

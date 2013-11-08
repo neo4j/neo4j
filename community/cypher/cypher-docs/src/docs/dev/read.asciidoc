@@ -7,10 +7,6 @@ This set is refined and augmented by subsequent parts of the query.
 
 :leveloffset: 2
 
-include::ql/start/index.asciidoc[]
-
-:leveloffset: 2
-
 include::ql/match/index.asciidoc[]
 
 :leveloffset: 2
@@ -20,6 +16,10 @@ include::ql/optional-match/index.asciidoc[]
 :leveloffset: 2
 
 include::ql/where/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/start/index.asciidoc[]
 
 :leveloffset: 2
 

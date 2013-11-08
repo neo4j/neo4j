@@ -6,8 +6,12 @@ Where
 
 In the case of +WITH+ and +START+, +WHERE+ simply filters the results.
 
-For +MATCH+ and +OPTIONAL+ +MATCH+ on the other hand, +WHERE+ adds constraints to the patterns described. It should
-not be seen as a filter after the matching is finished.
+For +MATCH+ and +OPTIONAL+ +MATCH+ on the other hand, +WHERE+ adds constraints to the patterns described.
+It should not be seen as a filter after the matching is finished.
+
+[NOTE]
+In the case of multiple (++OPTIONAL++) +MATCH+ clauses, the predicate in +WHERE+ is always a part of the patterns in the directly preceding +MATCH+.
+Both results and performance may be impacted if the +WHERE+ is put inside the wrong +MATCH+ clause.
 
 .Graph
 include::includes/cypher-where-graph.asciidoc[]

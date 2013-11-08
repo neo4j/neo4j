@@ -44,16 +44,16 @@ class PrettyGraphsCompleteGraphTest extends DocumentingTestBase {
         id of the first is less than the id of the next. This is to prevent double relationships and 
         self relationships. Using said match, relationships between all these nodes are created. Lastly, 
         the center node and all relationships connected to it are removed.""",
-      queryText = """create center
+      queryText = """create (center)
 foreach( x in range(1,6) |
-   create (leaf {count : x}), center-[:X]->leaf
+   create (leaf {count : x}), (center)-[:X]->(leaf)
 )
 WITH center
-MATCH leaf1<--center-->leaf2
+MATCH (leaf1)<--(center)-->(leaf2)
 WHERE id(leaf1)<id(leaf2)
-CREATE leaf1-[:X]->leaf2
+CREATE (leaf1)-[:X]->(leaf2)
 WITH center
-MATCH center-[r]->()
+MATCH (center)-[r]->()
 DELETE center,r;""",
       returns =
 """Nothing is returned by this query.""",

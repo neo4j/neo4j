@@ -156,7 +156,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   }
 
   private def consoleSnippet(query: String, empty: Boolean): String = {
-    val prettifiedQuery = Prettifier(query)
+    val prettifiedQuery = Prettifier(query.trim())
     if (generateConsole) {
       val create = if (!empty) {
         db.inTx {

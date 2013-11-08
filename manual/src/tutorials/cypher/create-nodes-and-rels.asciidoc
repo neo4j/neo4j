@@ -19,8 +19,7 @@ Let's find the node we created:
 
 [source,cypher]
 ----
-MATCH (actor:Actor)
-WHERE actor.name = "Tom Hanks"
+MATCH (actor:Actor {name: "Tom Hanks"})
 RETURN actor;
 ----
 
@@ -46,6 +45,8 @@ Properties set: 1
 Labels added: 1
 ////
 
+Using a `WHERE` clause in the query above to get the Tom Hanks node does the same thing as the pattern in the `MATCH` clause of the previous query.
+
 This is how our graph looks now:
 
 // graph:created-first-movie
@@ -56,8 +57,7 @@ Using this: `[r:ACTED_IN]` lets us return the relationship.
 
 [source,cypher]
 ----
-MATCH (actor:Actor)
-WHERE actor.name = "Tom Hanks"
+MATCH (actor:Actor {name: "Tom Hanks"})
 CREATE UNIQUE (actor)-[r:ACTED_IN]->(movie:Movie {title:"Forrest Gump"})
 RETURN r;
 ----
@@ -73,8 +73,7 @@ Set a property on a node:
 
 [source,cypher]
 ----
-MATCH (actor:Actor)
-WHERE actor.name = "Tom Hanks"
+MATCH (actor:Actor {name: "Tom Hanks"})
 SET actor.DoB = 1944
 RETURN actor.name, actor.DoB;
 ----

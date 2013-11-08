@@ -6,19 +6,19 @@ To add comments to your queries, use double slash. Examples:
 
 [source,cypher]
 ----
-START n=node(1) RETURN n //This is an end of line comment
+MATCH (n) RETURN n //This is an end of line comment
 ----
 
 [source,cypher]
 ----
-START n=node(1)
+MATCH (n)
 //This is a whole line comment
 RETURN n
 ----
 
 [source,cypher]
 ----
-START n=node(1) WHERE n.property = "//This is NOT a comment" RETURN n
+MATCH (n) WHERE n.property = "//This is NOT a comment" RETURN n
 ----
 
 

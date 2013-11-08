@@ -9,7 +9,7 @@ In this example:
 
 [source,cypher]
 ----
-START n=node(1) MATCH n-->b RETURN b
+MATCH (n)-->(b) RETURN b
 ----
 
 The identifiers are +n+ and +b+.

@@ -25,13 +25,11 @@ import org.junit.Assert._
 class AggregationTest extends DocumentingTestBase {
   def graphDescription = List("A:Person KNOWS B:Person", "A KNOWS C:Person", "A KNOWS D:Person")
 
-
   override val properties: Map[String, Map[String, Any]] = Map(
     "A" -> Map("property" -> 13),
     "B" -> Map("property" -> 33, "eyes" -> "blue"),
     "C" -> Map("property" -> 44, "eyes" -> "blue"),
-    "D" -> Map("eyes" -> "brown")
-  )
+    "D" -> Map("eyes" -> "brown"))
 
   def section = "Aggregation"
 
@@ -112,7 +110,7 @@ class AggregationTest extends DocumentingTestBase {
   @Test def collect() {
     testQuery(
       title = "collect",
-      text = "+collect+ collects all the values into a list. It will ignore null values,",
+      text = "+collect+ collects all the values into a list. It will ignore ++NULL++s.",
       queryText = "match (n:Person) return collect(n.property)",
       returns = "Returns a single row, with all the values collected.",
       assertions = p => assertEquals(Map("collect(n.property)" -> Seq(13, 33, 44)), p.toList.head))
@@ -127,7 +125,7 @@ So, to count the number of unique eye colors from nodes related to `a`, this que
       returns = "Returns the number of eye colors.",
       assertions = p => assertEquals(Map("count(distinct b.eyes)" -> 2), p.toList.head))
   }
-  
+
   @Test def intro() {
     testQuery(
       title = "Introduction",
@@ -159,13 +157,13 @@ an aggregate function.
 
 An example might be helpful:""",
       queryText = "" +
-      		"MATCH (me:Person)-->(friend:Person)-->(friend_of_friend:Person) " +
-          "WHERE me.name = 'A'" +
-      		"RETURN count(distinct friend_of_friend), count(friend_of_friend)",
+        "MATCH (me:Person)-->(friend:Person)-->(friend_of_friend:Person) " +
+        "WHERE me.name = 'A'" +
+        "RETURN count(distinct friend_of_friend), count(friend_of_friend)",
       returns = "In this example we are trying to find all our friends of friends, and count them. The first aggregate function, " +
-      		"+count(distinct friend_of_friend)+, will only see a `friend_of_friend` once -- +DISTINCT+ removes the duplicates. The latter " +
-      		"aggregate function, +count(friend_of_friend)+, might very well see the same `friend_of_friend` multiple times. Since there is " +
-      		"no real data in this case, an empty result is returned. See the sections below for real data.",
+        "+count(distinct friend_of_friend)+, will only see a `friend_of_friend` once -- +DISTINCT+ removes the duplicates. The latter " +
+        "aggregate function, +count(friend_of_friend)+, might very well see the same `friend_of_friend` multiple times. Since there is " +
+        "no real data in this case, an empty result is returned. See the sections below for real data.",
       assertions = p => assertTrue(true))
   }
 
@@ -191,16 +189,16 @@ An example might be helpful:""",
     testQuery(
       title = "stdev",
       text = "+stdev+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N-1 as the denominator, and should be used when taking a sample of the population for an unbiased estimate. When the standard variation of the entire population is being calculated, STDEVP should be used.",
-      queryText = "start n=node(%A%,%B%,%C%) return stdev(n.property)",
+      queryText = "match (n) where n.name IN ['A','B','C'] return stdev(n.property)",
       returns = "The standard deviation of the values in the property `property` is returned by the example query.",
-      assertions = p => assertEquals(15.7162336455,p.toList.head("stdev(n.property)").asInstanceOf[Double], 0.0000001))
+      assertions = p => assertEquals(15.7162336455, p.toList.head("stdev(n.property)").asInstanceOf[Double], 0.0000001))
   }
 
   @Test def stdevp() {
     testQuery(
       title = "stdevp",
       text = "+stdevp+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N as the denominator, and should be used when calculating the standard deviation for an entire population. When the standard variation of only a sample of the population is being calculated, STDEV should be used.",
-      queryText = "start n=node(%A%,%B%,%C%) return stdevp(n.property)",
+      queryText = "match (n) where n.name IN ['A','B','C'] return stdevp(n.property)",
       returns = "The population standard deviation of the values in the property `property` is returned by the example query.",
       assertions = p => assertEquals(12.8322510366, p.toList.head("stdevp(n.property)").asInstanceOf[Double], 0.0000001))
   }

@@ -10,6 +10,7 @@ The difference is that if no matches are found, +OPTIONAL+ +MATCH+ will use ++NU
 
 Either the whole pattern is matched, or nothing is matched.
 Remember that +WHERE+ is part of the pattern description, and the predicates will be considered while looking for matches, not after.
+This matters especially in the case of multiple (++OPTIONAL++) +MATCH+ clauses, where it is crucial to put +WHERE+ together with the +MATCH+ it belongs to.
 
 [TIP]
 To understand the patterns used in the +OPTIONAL+ +MATCH+ clause, read <<introduction-pattern>>.

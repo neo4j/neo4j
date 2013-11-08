@@ -53,21 +53,21 @@ Implementation of newsfeed or timeline feature is a frequent requirement for soc
 The query asked here is:
         
 Starting at `me`, retrieve the time-ordered status feed of the status updates of me and and all friends that are connected via a `CONFIRMED` `FRIEND` relationship to me.""",
-      queryText = """MATCH me-[rels:FRIEND*0..1]-myfriend
-WHERE me.name = 'Joe' AND ALL(r in rels WHERE r.status = 'CONFIRMED')
+      queryText = """MATCH (me {name: 'Joe'})-[rels:FRIEND*0..1]-(myfriend)
+WHERE ALL(r in rels WHERE r.status = 'CONFIRMED')
 WITH myfriend
-MATCH myfriend-[:STATUS]-latestupdate-[:NEXT*0..1]-statusupdates 
+MATCH (myfriend)-[:STATUS]-(latestupdate)-[:NEXT*0..1]-(statusupdates) 
 RETURN myfriend.name as name, statusupdates.date as date, statusupdates.text as text
 ORDER BY statusupdates.date DESC LIMIT 3""",
       returns =
 """
 To understand the strategy, let's divide the query into five steps:
 
-. First Get the list of all my friends (along with me) through `FRIEND` relationship (`MATCH me-[rels:FRIEND*0..1]-myfriend`). Also,  the `WHERE` predicate can be added to check whether the friend request is pending or confirmed.
+. First Get the list of all my friends (along with me) through `FRIEND` relationship (`MATCH (me {name: 'Joe'})-[rels:FRIEND*0..1]-(myfriend)`). Also,  the `WHERE` predicate can be added to check whether the friend request is pending or confirmed.
 . Get the latest status update of my friends through Status relationship (`MATCH myfriend-[:STATUS]-latestupdate`).
-. Get subsequent status updates (along with the latest one) of my friends through `NEXT` relationships (`MATCH myfriend-[:STATUS]-latestupdate-[:NEXT*0..1]-statusupdates`) which will give you the latest and one additional statusupdate, adjust `0..1` to whatever suits your case.
+. Get subsequent status updates (along with the latest one) of my friends through `NEXT` relationships (`MATCH (myfriend)-[:STATUS]-(latestupdate)-[:NEXT*0..1]-(statusupdates)`) which will give you the latest and one additional statusupdate; adjust `0..1` to whatever suits your case.
 . Sort the status updates by posted date (`ORDER BY statusupdates.date DESC`).
-. `LIMIT` the number of updates you need in every query (`LIMIT x SKIP x*y`).""",
+. `LIMIT` the number of updates you need in every query (`LIMIT 3`).""",
       assertions = (p) => assertEquals(List(Map("name" -> "Joe", "date" -> 6, "text" -> "Joe status2"),
           Map("name" -> "Bob", "date" -> 4, "text" -> "bobs status2"), Map("name" -> "Joe", "date" -> 3, "text" -> "Joe status1")), p.toList))
   }

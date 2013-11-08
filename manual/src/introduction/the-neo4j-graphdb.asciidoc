@@ -27,7 +27,7 @@ Let's start out with a really simple graph, containing only a single node with o
 
 ["dot", "graphdb-nodes.svg"]
 ----
-"name: Marko"
+"name: Peter"
 ----
 
 

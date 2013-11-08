@@ -110,6 +110,8 @@ include::asin.asciidoc[]
 
 include::atan.asciidoc[]
 
+include::atan2.asciidoc[]
+
 include::cos.asciidoc[]
 
 include::cot.asciidoc[]

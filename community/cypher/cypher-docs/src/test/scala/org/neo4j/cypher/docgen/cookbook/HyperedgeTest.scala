@@ -46,10 +46,8 @@ class HyperedgeTest extends DocumentingTestBase {
         'Group2'), the following query can traverse this HyperEdge node and
         provide answers.""",
       queryText =
-        "match n-[:hasRoleInGroup]->hyperEdge-[:hasGroup]->group, " +
-        "hyperEdge-[:hasRole]->role " +
-        "where n.name = 'User1' " +
-        "and group.name = 'Group2' " +
+        "match ({name: 'User1'})-[:hasRoleInGroup]->(hyperEdge)-[:hasGroup]->({name: 'Group2'}), " +
+        "(hyperEdge)-[:hasRole]->(role) " +
         "return role.name",
       returns = "The role of +User1+ is returned:",
       (p) => assertEquals(Map("role.name" -> "Role1"), p.toList.head))
@@ -60,9 +58,8 @@ class HyperedgeTest extends DocumentingTestBase {
       title = "Find all groups and roles for a user",
       text = """Here, find all groups and the roles a user has, sorted by the name of the role.""",
       queryText =
-        "match n-[:hasRoleInGroup]->hyperEdge-[:hasGroup]->group, " +
-        "hyperEdge-[:hasRole]->role " +
-        "where n.name = 'User1' " +
+        "match ({name: 'User1'})-[:hasRoleInGroup]->(hyperEdge)-[:hasGroup]->(group), " +
+        "(hyperEdge)-[:hasRole]->(role) " +
         "return role.name, group.name " +
         "order by role.name asc",
       returns = "The groups and roles of +User1+ are returned:",

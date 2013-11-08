@@ -164,7 +164,6 @@ enum BlockType
         @Override
         String process( Block block, State state )
         {
-            List<String> queryHeader = new ArrayList<String>();
             List<String> queryLines = new ArrayList<String>();
             boolean queryStarted = false;
             for ( String line : block.lines )
@@ -174,10 +173,6 @@ enum BlockType
                     if ( line.startsWith( CODE_BLOCK ) )
                     {
                         queryStarted = true;
-                    }
-                    else
-                    {
-                        queryHeader.add( line );
                     }
                 }
                 else if ( queryStarted )
@@ -197,13 +192,7 @@ enum BlockType
             state.latestResult = result;
             String prettifiedQuery = state.engine.prettify( query );
             StringBuilder output = new StringBuilder( 512 );
-            output.append( StringUtils.join( queryHeader, CypherDoc.EOL ) )
-                    .append( CypherDoc.EOL )
-                    .append( CODE_BLOCK )
-                    .append( CypherDoc.EOL )
-                    .append( prettifiedQuery )
-                    .append( CypherDoc.EOL )
-                    .append( CODE_BLOCK )
+            output.append( AsciidocHelper.createCypherSnippetFromPreformattedQuery( prettifiedQuery ) )
                     .append( CypherDoc.EOL )
                     .append( CypherDoc.EOL );
 

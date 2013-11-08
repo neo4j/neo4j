@@ -29,7 +29,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
@@ -83,11 +82,21 @@ public class RolesDocTest extends AbstractJavaDocTestbase
      * This gives us a useful partitioning of the graph. Neo4j has no predefined relationship
      * types, you are free to create any relationship types and give them the semantics you want.
      * 
-     * Lets now have a look at how to retrieve information from the graph. The Java code is using
-     * the Neo4j Traversal API (see <<tutorial-traversal-java-api>>), the queries are done using <<cypher-query-lang, Cypher>>.
+     * Lets now have a look at how to retrieve information from the graph. The the queries are done using <<cypher-query-lang, Cypher>>,
+     * the Java code is using the Neo4j Traversal API (see <<tutorial-traversal-java-api>>, which is part of <<advanced-usage>>).
      *
      * == Get the admins ==
      * 
+     * In Cypher, we could get the admins like this:
+     * 
+     * @@query-get-admins
+     * 
+     * resulting in:
+     * 
+     * @@o-query-get-admins
+     *
+     * And here's the code when using the Java Traversal API:
+     *
      * @@get-admins
      * 
      * resulting in the output
@@ -98,31 +107,29 @@ public class RolesDocTest extends AbstractJavaDocTestbase
      * 
      * @@read-traverser
      * 
-     * In Cypher, a similar query would be:
-     * 
-     * @@query-get-admins
-     * 
-     * resulting in:
-     * 
-     * @@o-query-get-admins
-     *
      * == Get the group memberships of a user ==
      * 
-     * Using the Neo4j Java Traversal API, this query looks like:
-     * 
-     * @@get-user-memberships
-     * 
-     * resuling in:
-     * 
-     * @@o-get-user-memberships
-     *
      * In Cypher:
      * 
      * @@query-get-user-memberships
      * 
      * @@o-query-get-user-memberships
      * 
+     * Using the Neo4j Java Traversal API, this query looks like:
+     * 
+     * @@get-user-memberships
+     * 
+     * resulting in:
+     * 
+     * @@o-get-user-memberships
+     *
      * == Get all groups ==
+     * 
+     * In Cypher:
+     * 
+     * @@query-get-groups
+     * 
+     * @@o-query-get-groups
      * 
      * In Java:
      * 
@@ -132,22 +139,10 @@ public class RolesDocTest extends AbstractJavaDocTestbase
      * 
      * @@o-get-groups
      * 
-     * In Cypher:
-     * 
-     * @@query-get-groups
-     * 
-     * @@o-query-get-groups
-     * 
      * == Get all members of all groups ==
      * 
      * Now, let's try to find all users in the system being part of any group.
-     * 
-     * in Java:
-     * 
-     * @@get-members
-     * 
-     * @@o-get-members
-     * 
+     *
      * In Cypher, this looks like:
      * 
      * @@query-get-members
@@ -156,8 +151,14 @@ public class RolesDocTest extends AbstractJavaDocTestbase
      * 
      * @@o-query-get-members
      * 
+     * in Java:
+     * 
+     * @@get-members
+     * 
+     * @@o-get-members
+     * 
      * As seen above, querying even more complex scenarios can be done using comparatively short
-     * constructs in Java and other query mechanisms.
+     * constructs in Cypher or Java.
      */
     @Test
     @Documented
@@ -180,7 +181,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
         System.out.println( "All admins:" );
         // START SNIPPET: get-admins
         Node admins = getNodeByName( "Admins" );
-        TraversalDescription traversalDescription = Traversal.description()
+        TraversalDescription traversalDescription = db.traversalDescription()
                 .breadthFirst()
                 .evaluator( Evaluators.excludeStartPosition() )
                 .relationships( RoleRels.PART_OF, Direction.INCOMING )
@@ -191,9 +192,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
         try ( Transaction tx = graphdb().beginTx() )
         {
             gen.get().addSnippet( "o-get-admins", createOutputSnippet( traverserToString( traverser ) ) );
-            String query = "start admins=node("
-                           + admins.getId()
-                           + ") match admins<-[:PART_OF*0..]-group<-[:MEMBER_OF]-user return user.name, group.name";
+            String query = "match ({name: 'Admins'})<-[:PART_OF*0..]-(group)<-[:MEMBER_OF]-(user) return user.name, group.name";
             gen.get().addSnippet( "query-get-admins", createCypherSnippet( query ) );
             String result = engine.execute( query )
                     .dumpToString();
@@ -203,7 +202,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
             //Jale's memberships
             // START SNIPPET: get-user-memberships
             Node jale = getNodeByName( "Jale" );
-            traversalDescription = Traversal.description()
+            traversalDescription = db.traversalDescription()
                     .depthFirst()
                     .evaluator( Evaluators.excludeStartPosition() )
                     .relationships( RoleRels.MEMBER_OF, Direction.OUTGOING )
@@ -212,9 +211,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
             // END SNIPPET: get-user-memberships
     
             gen.get().addSnippet( "o-get-user-memberships", createOutputSnippet( traverserToString( traverser ) ) );
-            query = "start jale=node("
-                    + jale.getId()
-                    + ") match jale-[:MEMBER_OF]->()-[:PART_OF*0..]->group return group.name";
+            query = "match ({name: 'Jale'})-[:MEMBER_OF]->()-[:PART_OF*0..]->(group) return group.name";
             gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
             result = engine.execute( query )
                     .dumpToString();
@@ -226,7 +223,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
             // get all groups
             // START SNIPPET: get-groups
             Node referenceNode = getNodeByName( "Reference_Node") ;
-            traversalDescription = Traversal.description()
+            traversalDescription = db.traversalDescription()
                     .breadthFirst()
                     .evaluator( Evaluators.excludeStartPosition() )
                     .relationships( RoleRels.ROOT, Direction.INCOMING )
@@ -235,9 +232,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
             // END SNIPPET: get-groups
     
             gen.get().addSnippet( "o-get-groups", createOutputSnippet( traverserToString( traverser ) ) );
-            query = "start refNode=node("
-                    + referenceNode.getId()
-                    + ") match refNode<-[:ROOT]->()<-[:PART_OF*0..]-group return group.name";
+            query = "match ({name: 'Reference_Node'})<-[:ROOT]->()<-[:PART_OF*0..]-(group) return group.name";
             gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
             result = engine.execute( query )
                     .dumpToString();
@@ -248,7 +243,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
             
             //get all members
             // START SNIPPET: get-members
-            traversalDescription = Traversal.description()
+            traversalDescription = db.traversalDescription()
                     .breadthFirst()
                     .evaluator(
                             Evaluators.includeWhereLastRelationshipTypeIs( RoleRels.MEMBER_OF ) );
@@ -256,8 +251,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
             // END SNIPPET: get-members
     
             gen.get().addSnippet( "o-get-members", createOutputSnippet( traverserToString( traverser ) ) );
-            query = "start refNode=node("+ referenceNode.getId() +") " +
-            		"match refNode<-[:ROOT]->root, p=root<-[PART_OF*0..]-()<-[:MEMBER_OF]-user " +
+            query = "match ({name: 'Reference_Node'})<-[:ROOT]->(root), p=(root)<-[PART_OF*0..]-()<-[:MEMBER_OF]-(user) " +
             		"return user.name, min(length(p)) " +
             		"order by min(length(p)), user.name";
             gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );

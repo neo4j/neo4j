@@ -20,6 +20,7 @@ If you want to use index hints to force Cypher to use a specific index, read mor
 
 +WHERE+ defines the +MATCH+ patterns in more detail.
 The predicates are part of the pattern description, not a filter applied after the matching is done.
+This means that +WHERE+ should always be put together with the +MATCH+ clause it belongs to.
 
 After finding starting points -- either by using scans, indexes or already bound points -- the execution engine will use pattern matching to find matching subgraphs.
 As Cypher is declarative, it can change the order of these operations.

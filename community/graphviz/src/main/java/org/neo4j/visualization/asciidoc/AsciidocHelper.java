@@ -22,6 +22,7 @@ package org.neo4j.visualization.asciidoc;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -36,9 +37,10 @@ import static java.lang.String.format;
 public class AsciidocHelper
 {
     /**
-     * Cut to max 123 chars for PDF layout compliance.
+     * Cut to max 123 chars for PDF layout compliance. Or even less, for
+     * readability.
      */
-    private static final int MAX_CHARS_PER_LINE = 123;
+    private static final int MAX_CHARS_PER_LINE = 100;
     /**
      * Cut text message line length for readability.
      */
@@ -175,10 +177,22 @@ public class AsciidocHelper
 
     private static String wrapText( final String text )
     {
-        StringBuffer out = new StringBuffer( text.length() + 10 );
-        for ( String line : text.split( "\n" ) )
+        return wrap( text, MAX_TEXT_LINE_LENGTH, " ", "\n" );
+    }
+
+    static String wrapQuery( final String query )
+    {
+        return wrap( wrap( query, MAX_CHARS_PER_LINE, ", ", ",\n  " ), MAX_CHARS_PER_LINE, "),(", "),\n  (" );
+    }
+
+    private static String wrap( final String text, final int maxChars, final String search, final String replace )
+    {
+        StringBuffer out = new StringBuffer( text.length() + 10 * replace.length() );
+        String pattern = Pattern.quote( search );
+        for ( String line : text.trim()
+                .split( "\n" ) )
         {
-            if ( line.length() < MAX_TEXT_LINE_LENGTH )
+            if ( line.length() < maxChars )
             {
                 out.append( line )
                         .append( '\n' );
@@ -186,38 +200,32 @@ public class AsciidocHelper
             else
             {
                 int currentLength = 0;
-                for ( String word : line.split( " " ) )
+                for ( String word : line.split( pattern ) )
                 {
-                    if ( word.length() > MAX_TEXT_LINE_LENGTH )
+                    if ( currentLength + word.length() > maxChars )
                     {
-                        if ( currentLength != 0 )
+                        if ( currentLength > 0 )
                         {
-                            out.append( '\n' );
-                            currentLength = 0;
+                            out.append( replace );
                         }
-                        out.append( word )
-                                .append( '\n' );
-                    }
-                    else if ( currentLength + word.length() > MAX_TEXT_LINE_LENGTH )
-                    {
-                        out.append( '\n' )
-                                .append( word );
-                        currentLength = word.length();
+                        out.append( word );
+                        currentLength = replace.length() + word.length();
                     }
                     else
                     {
                         if ( currentLength != 0 )
                         {
-                            out.append( ' ' );
-                            currentLength++;
+                            out.append( search );
+                            currentLength += search.length();
                         }
                         out.append( word );
                         currentLength += word.length();
                     }
                 }
+                out.append( '\n' );
             }
         }
-        return out.toString();
+        return out.substring( 0, out.length() - 1 );
     }
 
     public static String createCypherSnippet( final String query )
@@ -258,6 +266,12 @@ public class AsciidocHelper
         }
         String result = createAsciiDocSnippet(language, formattedQuery);
         return limitChars( result );
+    }
+
+    public static String createCypherSnippetFromPreformattedQuery( final String formattedQuery )
+    {
+        return format( "[source,%s]\n----\n%s%s----\n", "cypher", wrapQuery( formattedQuery ),
+                formattedQuery.endsWith( "\n" ) ? "" : "\n" );
     }
 
     public static String createAsciiDocSnippet(String language, String formattedQuery)

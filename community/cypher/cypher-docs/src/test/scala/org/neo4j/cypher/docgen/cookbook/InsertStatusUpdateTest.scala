@@ -30,32 +30,37 @@ class InsertStatusUpdateTest extends DocumentingTestBase {
   override val noTitle = true;
 
   @Test def updateStatus() {
-      executeQuery("""
+    executeQuery("""
 create 
 (bob{name:'Bob'})-[:STATUS]->(bob_s1{name:'bob_s1', text:'bobs status1',date:1})-[:NEXT]->(bob_s2{name:'bob_s2', text:'bobs status2',date:4})
           """)
     testQuery(
       title = "Insert a new status update for a user",
       text =
-"""
+        """
 Here, the example shows how to add a new status update into the existing data for a user.""",
       queryText = """
 MATCH (me)
 WHERE me.name='Bob'
 OPTIONAL MATCH (me)-[r:STATUS]-(secondlatestupdate)
-CREATE me-[:STATUS]->(latest_update {text:'Status',date:123})
 DELETE r
+CREATE (me)-[:STATUS]->(latest_update {text:'Status',date:123})
 WITH latest_update, collect(secondlatestupdate) as seconds
 FOREACH(x in seconds | CREATE latest_update-[:NEXT]->x)
 RETURN latest_update.text as new_status""",
       returns =
-"""
+        """
 Dividing the query into steps, this query resembles adding new item in middle of a doubly linked list:
 
-. Get the latest update (if it exists) of the user through the `STATUS` relationship (`MATCH me-[r?:STATUS]-secondlatestupdate`).
-. Delete the `STATUS` relationship between `user` and `secondlatestupdate` (if it exists), as this would become the second latest update now and only the latest update would be added through a `STATUS` relationship, all earlier updates would be connected to their subsequent updates through a `NEXT` relationship. (`DELETE r`).
-. Now, create the new `statusupdate` node (with text and date as properties) and connect this with the user through a `STATUS` relationship (`CREATE me-[:STATUS]->(latest_update{text:'Status',date:123})`).
-. Now, create a `NEXT` relationship between the latest status update and the second latest status update (if it exists) (`CREATE latest_update-[:NEXT]-secondlatestupdate WHERE secondlatestupdate <> null`).""",
+. Get the latest update (if it exists) of the user through the `STATUS` relationship (`OPTIONAL MATCH (me)-[r:STATUS]-(secondlatestupdate)`).
+. Delete the `STATUS` relationship between `user` and `secondlatestupdate` (if it exists), as this would become the second latest update now
+  and only the latest update would be added through a `STATUS` relationship;
+  all earlier updates would be connected to their subsequent updates through a `NEXT` relationship. (`DELETE r`).
+. Now, create the new `statusupdate` node (with text and date as properties) and connect this with the user through a `STATUS` relationship
+  (`CREATE me-[:STATUS]->(latest_update { text:'Status',date:123 })`).
+. Pipe over `statusupdate` or an empty collection to the next query part
+  (`WITH latest_update, collect(secondlatestupdate) AS seconds`).
+. Now, create a `NEXT` relationship between the latest status update and the second latest status update (if it exists) (`FOREACH(x in seconds | CREATE latest_update-[:NEXT]->x)`).""",
       assertions = (p) => assertEquals(List(Map("new_status" -> "Status")), p.toList))
-  } 
+  }
 }

@@ -43,22 +43,22 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
         
 - Create a center node.
 - Once per element in the range, create a leaf and connect it to the center.
-- Select 2 leafs from the center node and connect them.
+- Select two leafs from the center node and connect them.
 - Find the minimum and maximum leaf and connect these.
 - Return the id of the center node.""",
-      queryText = """CREATE center
+      queryText = """CREATE (center)
 foreach( x in range(1,6) |
-   CREATE (leaf {count:x}), center-[:X]->leaf
+   CREATE (leaf {count:x}), (center)-[:X]->(leaf)
 )
 WITH center
-MATCH large_leaf<--center-->small_leaf
+MATCH (large_leaf)<--(center)-->(small_leaf)
 WHERE large_leaf.count = small_leaf.count + 1
-CREATE small_leaf-[:X]->large_leaf
+CREATE (small_leaf)-[:X]->(large_leaf)
 
 WITH center, min(small_leaf.count) as min, max(large_leaf.count) as max
-MATCH first_leaf<--center-->last_leaf
+MATCH (first_leaf)<--(center)-->(last_leaf)
 WHERE first_leaf.count = min AND last_leaf.count = max
-CREATE last_leaf-[:X]->first_leaf
+CREATE (last_leaf)-[:X]->(first_leaf)
 
 RETURN id(center) as id""",
       returns =

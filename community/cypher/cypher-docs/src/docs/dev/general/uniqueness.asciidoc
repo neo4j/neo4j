@@ -10,7 +10,7 @@ Example: looking for a users friends of friends should not return said user.
 [source,cypher]
 ----
 MATCH (user)-[r1:FRIEND]-()-[r2:FRIEND]-(friend_of_a_friend)
-WHERE user.id = 42
+WHERE user.name = 'Adam'
 RETURN friend_of_a_friend
 ----
 
@@ -23,7 +23,7 @@ matching over multiple +MATCH+ clauses, like so:
 [source,cypher]
 ----
 MATCH (user)-[r1:FRIEND]-(friend)
-WHERE user.id = 42
+WHERE user.name = 'Adam'
 WITH friend
 MATCH (friend)-[r2:FRIEND]-(friend_of_a_friend)
 RETURN friend_of_a_friend

@@ -61,9 +61,8 @@ See <<capabilities-capacity>> for the maximum number of relationship types.
 
 To find the activity stream for a person, just follow the linked list of the friend list, and retrieve the needed amount of activities form the respective activity list of the friends.""",
       queryText =
-        "MATCH p=me-[:jane_knows*]->friend, " +
-        "friend-[:has]->status " +
-        "WHERE me.name = 'Jane' " +
+        "MATCH p=(me {name: 'Jane'})-[:jane_knows*]->(friend), " +
+        "(friend)-[:has]->(status) " +
         "RETURN me.name, friend.name, status.name, length(p) " +
         "ORDER BY length(p)",
       returns = "The returns the activity stream for Jane.",

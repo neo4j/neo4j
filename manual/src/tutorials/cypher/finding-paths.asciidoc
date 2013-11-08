@@ -31,8 +31,7 @@ All other movies that actors in ``The Matrix'' acted in ordered by occurrence:
 
 [source,cypher]
 ----
-MATCH (theMatrix:Movie), (theMatrix)<-[:ACTS_IN]-(actor)-[:ACTS_IN]->(movie)
-WHERE theMatrix.title = "The Matrix"
+MATCH (:Movie {title: "The Matrix"})<-[:ACTS_IN]-(actor)-[:ACTS_IN]->(movie)
 RETURN movie.title, count(*) 
 ORDER BY count(*) DESC;
 ----
@@ -47,8 +46,7 @@ Let's see who acted in each of these movies:
 
 [source,cypher]
 ----
-MATCH (theMatrix:Movie), (theMatrix)<-[:ACTS_IN]-(actor)-[:ACTS_IN]->(movie)
-WHERE theMatrix.title = "The Matrix"
+MATCH (:Movie {title: "The Matrix"})<-[:ACTS_IN]-(actor)-[:ACTS_IN]->(movie)
 RETURN movie.title, collect(actor.name), count(*) as count 
 ORDER BY count desc;
 ----
@@ -63,9 +61,7 @@ What about co-acting, that is actors that acted together:
 
 [source,cypher]
 ----
-MATCH (theMatrix:Movie),
-  (theMatrix)<-[:ACTS_IN]-(actor)-[:ACTS_IN]->(movie)<-[:ACTS_IN]-(colleague)
-WHERE theMatrix.title = "The Matrix"
+MATCH (:Movie {title: "The Matrix"})<-[:ACTS_IN]-(actor)-[:ACTS_IN]->(movie)<-[:ACTS_IN]-(colleague)
 RETURN actor.name, collect(distinct colleague.name);
 ----
 
@@ -79,9 +75,7 @@ Who of those other actors acted most often with anyone from the matrix cast?
 
 [source,cypher]
 ----
-MATCH (theMatrix:Movie),
-  (theMatrix)<-[:ACTS_IN]-(actor)-[:ACTS_IN]->(movie)<-[:ACTS_IN]-(colleague)
-WHERE theMatrix.title = "The Matrix"
+MATCH (:Movie {title: "The Matrix"})<-[:ACTS_IN]-(actor)-[:ACTS_IN]->(movie)<-[:ACTS_IN]-(colleague)
 RETURN colleague.name, count(*) 
 ORDER BY count(*) DESC LIMIT 10;
 ----
@@ -95,9 +89,7 @@ We'll limit the path length and the query as it exhaustively searches the graph 
 
 [source,cypher]
 ----
-MATCH (keanu:Actor), (carrieanne:Actor),
-  p = (keanu)-[:ACTS_IN*0..5]-(carrieanne)
-WHERE keanu.name = "Keanu Reeves" AND carrieanne.name = "Carrie-Anne Moss"
+MATCH p = (:Actor {name: "Keanu Reeves"})-[:ACTS_IN*0..5]-(:Actor {name: "Carrie-Anne Moss"})
 RETURN p, length(p) 
 LIMIT 10;
 ----
@@ -112,14 +104,12 @@ Bur that's a lot of data, we just want to look at the names and titles of the no
 
 [source,cypher]
 ----
-MATCH (keanu:Actor), (carrieanne:Actor),
-  p = (keanu)-[:ACTS_IN*0..5]-(carrieanne)
-WHERE keanu.name = "Keanu Reeves" AND carrieanne.name = "Carrie-Anne Moss"
+MATCH p = (:Actor {name: "Keanu Reeves"})-[:ACTS_IN*0..5]-(:Actor {name: "Carrie-Anne Moss"})
 RETURN extract(n IN nodes(p) | 
          coalesce(n.title,n.name)) AS `names and titles`, 
        length(p)
 ORDER BY length(p)
-LIMIT 10 ;
+LIMIT 10;
 ----
 
 ////

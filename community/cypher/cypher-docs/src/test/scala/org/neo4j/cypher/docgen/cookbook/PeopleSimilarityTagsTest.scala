@@ -56,8 +56,8 @@ class PeopleSimilarityTagsTest extends DocumentingTestBase {
 
 """,
       queryText =
-      		"MATCH me-[:favorite]->myFavorites-[:tagged]->tag<-[:tagged]-theirFavorites<-[:favorite]-people " +
-      		"WHERE me.name = 'Joe' AND NOT(me=people) " +
+      		"MATCH (me)-[:favorite]->(myFavorites)-[:tagged]->(tag)<-[:tagged]-(theirFavorites)<-[:favorite]-(people) " +
+      		"WHERE me.name = 'Joe' AND NOT me=people " +
       		"RETURN people.name as name, count(*) as similar_favs " +
       		"ORDER BY similar_favs DESC",
       returns = "The query returns the list of possible friends ranked by them liking similar stuff that are not yet friends.",

@@ -53,8 +53,7 @@ Let's check if the node is there:
 
 [source,cypher]
 ----
-MATCH (me:User)
-WHERE me.name = "Me"
+MATCH (me:User {name: "Me"})
 RETURN me.name;
 ----
 
@@ -67,8 +66,7 @@ Add a movie rating:
 
 [source,cypher]
 ----
-MATCH (me:User), (movie:Movie)
-WHERE me.name = "Me" AND movie.title = "The Matrix"
+MATCH (me:User {name: "Me"}), (movie:Movie {title: "The Matrix"})
 CREATE (me)-[:RATED {stars : 5, comment : "I love that movie!"}]->(movie);
 ----
 
@@ -81,8 +79,7 @@ Which movies did I rate?
 
 [source,cypher]
 ----
-MATCH (me:User), (me)-[rating:RATED]->(movie)
-WHERE me.name = "Me"
+MATCH (me:User {name: "Me"}), (me)-[rating:RATED]->(movie)
 RETURN movie.title, rating.stars, rating.comment;
 ----
 
@@ -105,8 +102,7 @@ We return the relationship to check that it has not been created several times.
 
 [source,cypher]
 ----
-MATCH (me:User), (friend:User)
-WHERE me.name = "Me" AND friend.name = "A Friend"
+MATCH (me:User {name: "Me"}), (friend:User {name: "A Friend"})
 CREATE UNIQUE (me)-[friendship:FRIEND]->(friend)
 RETURN friendship;
 ----
@@ -121,8 +117,7 @@ Let's update our friendship with a +since+ property:
 
 [source,cypher]
 ----
-MATCH (me:User), (friend:User), (me)-[friendship:FRIEND]->(friend)
-WHERE me.name = "Me" AND friend.name = "A Friend"
+MATCH (me:User {name: "Me"})-[friendship:FRIEND]->(friend:User {name: "A Friend"})
 SET friendship.since='forever'
 RETURN friendship;
 ----
@@ -135,8 +130,7 @@ Let's pretend us being our friend and wanting to see which movies our friends ha
 
 [source,cypher]
 ----
-MATCH (me:User), (me)-[:FRIEND]-(friend)-[rating:RATED]->(movie)
-WHERE me.name = "A Friend"
+MATCH (me:User {name: "A Friend"})-[:FRIEND]-(friend)-[rating:RATED]->(movie)
 RETURN movie.title, avg(rating.stars) as stars, collect(rating.comment) as comments, count(*);
 ----
 
@@ -150,8 +144,7 @@ That's too little data, let's add some more friends and friendships.
 
 [source,cypher]
 ----
-MATCH (me:User)
-WHERE me.name = "Me"
+MATCH (me:User {name: "Me"})
 FOREACH (i in range(1,10) |
   CREATE (friend:User {name: "Friend " + i}), (me)-[:FRIEND]->(friend));
 ----
@@ -166,8 +159,7 @@ Show all our friends:
 
 [source,cypher]
 ----
-MATCH (me:User), (me)-[r:FRIEND]->(friend)
-WHERE me.name = "Me" 
+MATCH (me:User {name: "Me"})-[r:FRIEND]->(friend)
 RETURN type(r) as friendship, friend.name;
 ----
 

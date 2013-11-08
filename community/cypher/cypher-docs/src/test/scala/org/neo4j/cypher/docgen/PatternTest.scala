@@ -21,7 +21,6 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.ExecutionResult
 
-
 class PatternTest extends ArticleTest {
   override val indexProps: List[String] = List("name")
 
@@ -35,8 +34,7 @@ class PatternTest extends ArticleTest {
     "C" -> Map("name" -> "Cesar"),
     "D" -> Map("name" -> "Dilshad"),
     "E" -> Map("name" -> "Emil"),
-    "F" -> Map("name" -> "Filipa")
-  )
+    "F" -> Map("name" -> "Filipa"))
 
   val title = "Pattern"
   val section = "Introduction"
@@ -80,7 +78,7 @@ This is a path starting from the pattern node `a`, with an outgoing relationship
 Paths can be of arbitrary length, and the same node may appear in multiple places in the path.
 Path patterns are expressions, and since these expressions are collections, they can also be used as predicates (where a non-empty collection signifies true).
 
-Node identifiers that don't specify labels or properties may omit surrounding parenthesis.
+Node identifiers that don't specify labels or properties may omit surrounding parentheses.
 The following match is semantically identical to the one we saw above -- the difference is purely aesthetic.
 
 +`a-->b`+
@@ -167,8 +165,7 @@ Variable length relationships can not be used with `CREATE` and `CREATE UNIQUE`.
 As a simple example, let's take the query below:
 
 ###
-START me=node(%F%)
-MATCH (me)-[:KNOWS*1..2]-(remote_friend)
+MATCH (me { name: "Filipa" })-[:KNOWS*1..2]-(remote_friend)
 RETURN remote_friend###
 
 This query starts from one node, and follows `KNOWS` relationships one or two steps out, and then stops.
@@ -185,10 +182,9 @@ You can do this in `MATCH`, `CREATE` and `CREATE UNIQUE`, but not when using pat
 Example of the three in a single query:
 
 ###no-results
-START me=node(%F%)
-MATCH p1 = (me)-[*2]-(friendOfFriend)
-CREATE p2 = (me)-[:MARRIED_TO]->(wife {name:"Gunhild"})
-CREATE UNIQUE p3 = (wife)-[:KNOWS]-(friendOfFriend)
+MATCH p1 =(me { name: "Cesar" })-[*2]-(friendOfFriend)
+CREATE p2 =(me)-[:MARRIED_TO]->(wife { name:"Gunhild" })
+CREATE UNIQUE p3 =(wife)-[:KNOWS]-(friendOfFriend)
 RETURN p1, p2, p3###
 
 == Setting properties ==

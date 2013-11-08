@@ -69,12 +69,11 @@ public class IntroDocTest implements GraphHolder
                     AsciidocHelper.createGraphVizWithNodeId( "Example Graph",
                             graphdb(), "cypher-intro" ) ) );
 
-            fw.append( "\nFor example, here is a query which finds a user called John in an index and then traverses " +
+            fw.append( "\nFor example, here is a query which finds a user called John and then traverses " +
                     "the graph looking for friends of Johns friends (though not his direct friends) before returning " +
                     "both John and any friends-of-friends that are found." );
             fw.append( "\n\n" );
-            String query = "START john=node:node_auto_index(name = 'John') "
-                    + "MATCH john-[:friend]->()-[:friend]->fof RETURN john, fof ";
+            String query = "MATCH (john {name: 'John'})-[:friend]->()-[:friend]->(fof) RETURN john, fof ";
             fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.query",
                     createCypherSnippet( query ) ) );
             fw.append( "\nResulting in:\n\n" );
@@ -83,16 +82,12 @@ public class IntroDocTest implements GraphHolder
 
             fw.append( "\nNext up we will add filtering to set more parts "
                     + "in motion:\n\nIn this next example, we take a list of users "
-                    + "(by node ID) and traverse the graph looking for those other "
+                    + "and traverse the graph looking for those other "
                     + "users that have an outgoing +friend+ relationship, returning "
                     + "only those followed users who have a +name+ property starting with +S+." );
-            query = "START user=node("
-                    + data.get().get( "Joe" ).getId() + ","
-                    + data.get().get( "John" ).getId() + ","
-                    + data.get().get( "Sara" ).getId() + ","
-                    + data.get().get( "Maria" ).getId() + ","
-                    + data.get().get( "Steve" ).getId()
-                    + ") MATCH user-[:friend]->follower WHERE follower.name =~ 'S.*' RETURN user, follower.name ";
+            query = "MATCH (user)-[:friend]->(follower) WHERE "
+                    + "user.name IN ['Joe', 'John', 'Sara', 'Maria', 'Steve'] AND follower.name =~ 'S.*' "
+                    + "RETURN user, follower.name ";
             fw.append( "\n\n" );
             fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.query",
                     createCypherSnippet( query ) ) );

@@ -211,7 +211,7 @@ class MatchTest extends DocumentingTestBase {
       queryText =
 """match p = shortestPath( (martin:Person {name:"Martin Sheen"} )-[*..15]-(oliver:Person {name:"Oliver Stone"}) )
 return p""",
-      returns = """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
+      returns = """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parentheses
  you define a single link of a path -- the starting node, the connecting relationship and the end node. Characteristics describing the relationship
  like relationship type, max hops and direction are all used when finding the shortest path. You can also mark the path as optional.""",
       assertions = (p) => assertEquals(2, p.toList.head("p").asInstanceOf[Path].length())

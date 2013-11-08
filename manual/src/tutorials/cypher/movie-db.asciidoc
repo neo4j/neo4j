@@ -41,7 +41,7 @@ Let's check how many nodes we have now:
 
 [source,cypher]
 ----
-START n=node(*) 
+MATCH (n)
 RETURN "Hello Graph with " + count(*) + " Nodes!" AS welcome;
 ----
 
@@ -53,8 +53,7 @@ Return a single node, by name:
 
 [source,cypher]
 ----
-MATCH (movie:Movie)
-WHERE movie.title = 'The Matrix'
+MATCH (movie:Movie {title: 'The Matrix'})
 RETURN movie;
 ----
 
@@ -68,8 +67,7 @@ Return the title and date of the matrix node:
 
 [source,cypher]
 ----
-MATCH (movie:Movie)
-WHERE movie.title = 'The Matrix'
+MATCH (movie:Movie {title: 'The Matrix'})
 RETURN movie.title, movie.year;
 ----
 
@@ -130,7 +128,7 @@ Count nodes:
 
 [source,cypher]
 ----
-START n=node(*)
+MATCH (n)
 RETURN count(*);
 ----
 
@@ -138,7 +136,6 @@ Count relationship types:
 
 [source,cypher]
 ----
-START n=node(*)  
 MATCH (n)-[r]->()
 RETURN type(r), count(*);
 ----
@@ -153,7 +150,6 @@ List all nodes and their relationships:
 
 [source,cypher]
 ----
-START n=node(*)    
 MATCH (n)-[r]->(m)
 RETURN n AS from, r AS `->`, m AS to;
 ----

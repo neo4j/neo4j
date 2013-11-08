@@ -52,7 +52,7 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
 
 * Determine who has favorited place x.
 * What else have they favorited that is not place x.""",
-      queryText = """MATCH place<-[:favorite]-person-[:favorite]->stuff
+      queryText = """MATCH (place)<-[:favorite]-(person)-[:favorite]->(stuff)
           WHERE place.name = 'CoffeeShop1'
       		RETURN stuff.name, count(*)
       		ORDER BY count(*) DESC, stuff.name""",
@@ -69,7 +69,7 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
 
 * Determine the tags for place x.
 * What else is tagged the same as x that is not x.""",
-      queryText = """MATCH place-[:tagged]->tag<-[:tagged]-otherPlace
+      queryText = """MATCH (place)-[:tagged]->(tag)<-[:tagged]-(otherPlace)
 WHERE place.name = 'CoffeeShop1'
 RETURN otherPlace.name, collect(tag.name)
 ORDER BY length(collect(tag.name)) DESC, otherPlace.name""",

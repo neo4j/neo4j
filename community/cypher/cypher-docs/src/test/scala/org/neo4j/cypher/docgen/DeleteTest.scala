@@ -33,25 +33,19 @@ class DeleteTest extends DocumentingTestBase {
   def section = "Delete"
 
   @Test def delete_single_node() {
-    val id = db.inTx {
-      val a = db.createNode()
-      a.setProperty("name", "Danny")
-      a.getId
-    }
-
     testQuery(
       title = "Delete single node",
       text = "To delete a node, use the +DELETE+ clause.",
-      queryText = "match n where n.name='Danny' delete n",
+      queryText = "match (n) where n.name='Peter' delete n",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
-      assertions = (p) => assertIsDeleted(db.getNodeById(id)))
+      assertions = (p) => assertIsDeleted(node("Peter")))
   }
 
   @Test def delete_single_node_with_all_relationships() {
     testQuery(
       title = "Delete a node and connected relationships",
       text = "If you are trying to delete a node with relationships on it, you have to delete these as well.",
-      queryText = "start n = node(%Andres%) match n-[r]-() delete n, r",
+      queryText = "match (n {name: 'Andres'})-[r]-() delete n, r",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertIsDeleted(node("Andres")))
   }

@@ -41,7 +41,8 @@ class MutualFriendsAndGroupsTest extends DocumentingTestBase {
       text =
 """In this scenario, the problem is to determine mutual friends and groups, if any,
 between persons. If no mutual groups or friends are found, there should be a `0` returned.""",
-      queryText = "START me=node(%Joe%), other=node(%Jill%, %Bob%) " +
+      queryText = "MATCH (me {name: 'Joe'}), (other) " +
+          "WHERE other.name IN ['Jill', 'Bob'] " +
           "OPTIONAL MATCH pGroups=(me)-[:member_of_group]->(mg)<-[:member_of_group]-(other) \n" +
           "OPTIONAL MATCH pMutualFriends=(me)-[:knows]->(mf)<-[:knows]-(other) " +
           "RETURN other.name as name, \n count(distinct pGroups) AS mutualGroups, \n count(distinct pMutualFriends) AS mutualFriends " +

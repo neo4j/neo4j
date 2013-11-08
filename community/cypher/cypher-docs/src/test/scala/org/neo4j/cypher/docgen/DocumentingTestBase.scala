@@ -29,12 +29,12 @@ import org.neo4j.visualization.graphviz.{ AsciiDocStyle, GraphvizWriter, GraphSt
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
-import org.neo4j.cypher.{CypherException, ExecutionResult, ExecutionEngine}
+import org.neo4j.cypher.{ CypherException, ExecutionResult, ExecutionEngine }
 import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
-import org.neo4j.cypher.internal.helpers.{Materialized, GraphIcing}
+import org.neo4j.cypher.internal.helpers.{ Materialized, GraphIcing }
 import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
 import org.neo4j.helpers.Settings
 import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
@@ -97,7 +97,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     internalTestQuery(title, text, queryText, returns, None, None, assertions: _*)
   }
 
-  def testFailingQuery[T <: CypherException : ClassTag](title: String, text: String, queryText: String, returns: String) {
+  def testFailingQuery[T <: CypherException: ClassTag](title: String, text: String, queryText: String, returns: String) {
     val classTag = implicitly[ClassTag[T]]
     internalTestQuery(title, text, queryText, returns, Some(classTag), None)
   }
@@ -179,8 +179,6 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
       tx2.finish()
     }
   }
-
-
 
   var db: GraphDatabaseAPI = null
   var engine: ExecutionEngine = null
@@ -350,8 +348,8 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   }
 
   private def createCypherSnippet(query: String) = {
-    val prettifiedQuery = Prettifier(query)
-    val result = AsciidocHelper.createAsciiDocSnippet("cypher", prettifiedQuery)
+    val prettifiedQuery = Prettifier(query.trim())
+    val result = AsciidocHelper.createCypherSnippetFromPreformattedQuery(prettifiedQuery)
     result
   }
 }
