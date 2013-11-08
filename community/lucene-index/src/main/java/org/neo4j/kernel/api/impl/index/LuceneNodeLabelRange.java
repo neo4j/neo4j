@@ -41,6 +41,29 @@ public class LuceneNodeLabelRange implements NodeLabelRange
     }
 
     @Override
+    public String toString()
+    {
+        StringBuilder result = new StringBuilder( "NodeLabelRange[docId=" ).append( id );
+        result.append( "; {" );
+        for ( int i = 0; i < nodeIds.length; i++ )
+        {
+            if ( i != 0 )
+            {
+                result.append( ", " );
+            }
+            result.append( "Node[" ).append( nodeIds[i] ).append( "]: Labels[" );
+            String sep = "";
+            for ( long labelId : labelIds[i] )
+            {
+                result.append( sep ).append( labelId );
+                sep = ", ";
+            }
+            result.append( "]" );
+        }
+        return result.append( "}]" ).toString();
+    }
+
+    @Override
     public int id()
     {
         return id;

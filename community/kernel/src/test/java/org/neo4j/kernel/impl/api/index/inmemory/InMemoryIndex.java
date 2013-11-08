@@ -40,10 +40,19 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 class InMemoryIndex
 {
-    private final InMemoryIndexImplementation indexData =
-            getBoolean( "neo4j.index.in_memory.USE_HASH" ) ? new HashBasedIndex() : new ListBasedIndex();
+    private final InMemoryIndexImplementation indexData;
     private InternalIndexState state = InternalIndexState.POPULATING;
     String failure;
+
+    InMemoryIndex()
+    {
+        this( getBoolean( "neo4j.index.in_memory.USE_HASH" ) ? new HashBasedIndex() : new ListBasedIndex() );
+    }
+
+    InMemoryIndex( InMemoryIndexImplementation indexData )
+    {
+        this.indexData = indexData;
+    }
 
     @Override
     public String toString()
@@ -73,7 +82,8 @@ class InMemoryIndex
         return indexData.lookup( propertyValue );
     }
 
-    protected void add( long nodeId, Object propertyValue, boolean applyIdempotently ) throws IndexEntryConflictException, IOException
+    protected void add( long nodeId, Object propertyValue, boolean applyIdempotently )
+            throws IndexEntryConflictException, IOException
     {
         indexData.add( nodeId, propertyValue, applyIdempotently );
     }
@@ -81,6 +91,11 @@ class InMemoryIndex
     protected void remove( long nodeId, Object propertyValue )
     {
         indexData.remove( nodeId, propertyValue );
+    }
+
+    protected void remove( long nodeId )
+    {
+        indexData.remove( nodeId );
     }
 
     InternalIndexState getState()
@@ -145,7 +160,7 @@ class InMemoryIndex
         }
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode ) throws IOException
+        public IndexUpdater newUpdater( final IndexUpdateMode mode )
         {
             return InMemoryIndex.this.newUpdater( mode );
         }
@@ -161,7 +176,8 @@ class InMemoryIndex
             return indexData;
         }
 
-        @Override public BoundedIterable<Long> newAllEntriesReader()
+        @Override
+        public BoundedIterable<Long> newAllEntriesReader()
         {
             return indexData;
         }
@@ -180,7 +196,6 @@ class InMemoryIndex
 
     private class InMemoryIndexUpdater implements IndexUpdater
     {
-
         private final boolean applyIdempotently;
 
         private InMemoryIndexUpdater( IndexUpdateMode mode )
@@ -193,18 +208,18 @@ class InMemoryIndex
         {
             switch ( update.getUpdateMode() )
             {
-                case ADDED:
-                    add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
-                    break;
-                case CHANGED:
-                    remove( update.getNodeId(), update.getValueBefore() );
-                    add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
-                    break;
-                case REMOVED:
-                    remove( update.getNodeId(), update.getValueBefore() );
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
+            case ADDED:
+                InMemoryIndex.this.add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
+                break;
+            case CHANGED:
+                InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
+                break;
+            case REMOVED:
+                InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                break;
+            default:
+                throw new UnsupportedOperationException();
             }
         }
 
@@ -212,5 +227,22 @@ class InMemoryIndex
         public void close() throws IOException, IndexEntryConflictException
         {
         }
+
+        @Override
+        public void remove( Iterable<Long> nodeIds )
+        {
+            for ( Long nodeId : nodeIds )
+            {
+                indexData.remove( nodeId );
+            }
+        }
+    }
+
+    InMemoryIndex snapshot()
+    {
+        InMemoryIndex snapshot = new InMemoryIndex( indexData.snapshot() );
+        snapshot.failure = this.failure;
+        snapshot.state = this.state;
+        return snapshot;
     }
 }

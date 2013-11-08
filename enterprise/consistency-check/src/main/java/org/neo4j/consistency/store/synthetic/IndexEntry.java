@@ -32,4 +32,10 @@ public class IndexEntry extends Abstract64BitRecord
         super( nodeId );
         setInUse( true );
     }
+
+    @Override
+    public String toString()
+    {
+        return "IndexEntry[nodeId=" + getId() + "]";
+    }
 }

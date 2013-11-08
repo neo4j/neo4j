@@ -65,9 +65,9 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        switch (mode)
+        switch ( mode )
         {
             case ONLINE:
                 return new LuceneIndexUpdater( false );
@@ -190,7 +190,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
                     change( update.getNodeId(), update.getValueAfter() );
                     break;
                 case REMOVED:
-                    remove( update.getNodeId() );
+                    LuceneIndexAccessor.this.remove( update.getNodeId() );
                     break;
                 default:
                     throw new UnsupportedOperationException();
@@ -201,6 +201,15 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         public void close() throws IOException, IndexEntryConflictException
         {
             searcherManager.maybeRefresh();
+        }
+
+        @Override
+        public void remove( Iterable<Long> nodeIds ) throws IOException
+        {
+            for ( long nodeId : nodeIds )
+            {
+                LuceneIndexAccessor.this.remove( nodeId );
+            }
         }
     }
 }

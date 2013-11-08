@@ -44,4 +44,10 @@ public final class SwallowingIndexUpdater implements IndexUpdater
     {
         // nothing to close
     }
+
+    @Override
+    public void remove( Iterable<Long> nodeIds )
+    {
+        // intentionally swallow these removals
+    }
 }

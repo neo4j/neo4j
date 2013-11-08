@@ -67,6 +67,18 @@ class ListBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
+    void remove( long nodeId )
+    {
+        for ( Iterator<Entry> iterator = data.iterator(); iterator.hasNext(); )
+        {
+            if ( iterator.next().nodeId == nodeId )
+            {
+                iterator.remove();
+            }
+        }
+    }
+
+    @Override
     public long maxCount()
     {
         return data.size();
@@ -131,5 +143,13 @@ class ListBasedIndex extends InMemoryIndexImplementation
                 return null;
             }
         };
+    }
+
+    @Override
+    InMemoryIndexImplementation snapshot()
+    {
+        ListBasedIndex snapshot = new ListBasedIndex();
+        snapshot.data.addAll( data );
+        return snapshot;
     }
 }

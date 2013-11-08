@@ -49,7 +49,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
         switch( mode )
         {
@@ -90,7 +90,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
 
         }
-    };
+    }
 
     @Override
     public InternalIndexState getState()

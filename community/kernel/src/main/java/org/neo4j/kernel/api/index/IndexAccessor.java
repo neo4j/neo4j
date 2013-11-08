@@ -51,7 +51,7 @@ public interface IndexAccessor
      * a crash or similar. Updates given then may have already been applied to this index, so
      * additional checks must be in place so that data doesn't get duplicated, but is idempotent.
      */
-    IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException;
+    IndexUpdater newUpdater( IndexUpdateMode mode );
 
     /**
      * Forces this index to disk. Called at certain points from within Neo4j for example when
@@ -93,7 +93,7 @@ public interface IndexAccessor
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
+        public IndexUpdater newUpdater( IndexUpdateMode mode )
         {
             return SwallowingIndexUpdater.INSTANCE;
         }

@@ -17,16 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
+import java.util.Set;
 
-public interface IndexUpdater extends AutoCloseable
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+
+public interface IndexUpdates extends Iterable<NodePropertyUpdate>
 {
-    void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException;
-
-    @Override
-    void close() throws IOException, IndexEntryConflictException;
-
-    void remove( Iterable<Long> nodeIds ) throws IOException;
+    Set<Long> changedNodeIds();
 }

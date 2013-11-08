@@ -50,6 +50,8 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
 
     abstract void doRemove( Object propertyValue, long nodeId );
 
+    abstract void remove( long nodeId );
+
     @Override
     public void close()
     {
@@ -107,4 +109,6 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
             return arrayValue != null ? arrayValue.hashCode() : 0;
         }
     }
+
+    abstract InMemoryIndexImplementation snapshot();
 }

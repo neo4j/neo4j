@@ -19,7 +19,6 @@
  */
 package org.neo4j.helpers.collection;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -189,17 +188,18 @@ public abstract class IteratorUtil
      * Iterates over the full iterators, and checks equality for each item in them. Note that this
      * will consume the iterators.
      */
-    public static boolean iteratorsEqual(Iterator<?> first, Iterator<?> other)
+    public static boolean iteratorsEqual( Iterator<?> first, Iterator<?> other )
     {
-        while(true)
+        while ( true )
         {
-            if(first.hasNext() && other.hasNext())
+            if ( first.hasNext() && other.hasNext() )
             {
-                if(!first.next().equals( other.next() ))
+                if ( !first.next().equals( other.next() ) )
                 {
                     return false;
                 }
-            } else
+            }
+            else
             {
                 return first.hasNext() == other.hasNext();
             }
@@ -331,14 +331,23 @@ public abstract class IteratorUtil
      */
     public static <T> T single( Iterator<T> iterator, T itemIfNone )
     {
-        T result = iterator.hasNext() ? iterator.next() : itemIfNone;
-        if ( iterator.hasNext() )
+        try
         {
-            throw new NoSuchElementException( "More than one element in " +
-                iterator + ". First element is '" + result +
-                "' and the second element is '" + iterator.next() + "'" );
+            T result = iterator.hasNext() ? iterator.next() : itemIfNone;
+            if ( iterator.hasNext() )
+            {
+                throw new NoSuchElementException( "More than one element in " + iterator + ". First element is '"
+                        + result + "' and the second element is '" + iterator.next() + "'" );
+            }
+            return result;
         }
-        return result;
+        finally
+        {
+            if ( iterator instanceof ResourceIterator )
+            {
+                ((ResourceIterator) iterator).close();
+            }
+        }
     }
 
     /**
@@ -586,6 +595,11 @@ public abstract class IteratorUtil
     }
 
     public static <T> List<T> asList( Iterator<T> iterator )
+    {
+        return addToCollection( iterator, new ArrayList<T>() );
+    }
+
+    public static <T> List<T> asList( Iterable<T> iterator )
     {
         return addToCollection( iterator, new ArrayList<T>() );
     }
@@ -1018,14 +1032,6 @@ public abstract class IteratorUtil
             }
         }
     }
-
-    public static final Closeable EMPTY_CLOSEABLE = new Closeable()
-    {
-        @Override
-        public void close() throws IOException
-        {
-        }
-    };
 
     public static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {

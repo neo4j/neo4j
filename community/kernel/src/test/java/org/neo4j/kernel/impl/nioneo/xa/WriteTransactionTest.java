@@ -22,15 +22,20 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -44,6 +49,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -68,9 +74,18 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -86,7 +101,6 @@ import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-import static org.neo4j.test.AllItemsMatcher.matchesAll;
 
 public class WriteTransactionTest
 {
@@ -681,21 +695,28 @@ public class WriteTransactionTest
 
         // -- and a tx creating a node with that label and property key
         IndexingService index = mock( IndexingService.class );
+        IteratorCollector<NodePropertyUpdate> indexUpdates = new IteratorCollector<>( 0 );
+        doAnswer( indexUpdates ).when( index ).updateIndexes( any( IndexUpdates.class ) );
         CommandCapturingVisitor commandCapturingVisitor = new CommandCapturingVisitor();
         tx = newWriteTransaction( index, commandCapturingVisitor );
         tx.nodeCreate( nodeId );
         tx.addLabelToNode( labelId, nodeId );
         tx.nodeAddProperty( nodeId, propertyKeyId, "Neo" );
         prepareAndCommit( tx );
-        verify( index, times( 1 ) ).updateIndexes( argThat( matchesAll( expectedUpdate ) ) );
+        verify( index, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
+        indexUpdates.assertContent( expectedUpdate );
+
         reset( index );
+        indexUpdates = new IteratorCollector<>( 0 );
+        doAnswer( indexUpdates ).when( index ).updateIndexes( any( IndexUpdates.class ) );
 
         // WHEN
         // -- later recovering that tx, there should be only one update
         tx = newWriteTransaction( index );
         commandCapturingVisitor.injectInto( tx );
         prepareAndCommitRecovered( tx );
-        verify( index, times( 1 ) ).updateIndexes( argThat( matchesAll( expectedUpdate ) ) );
+        verify( index, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
+        indexUpdates.assertContent( expectedUpdate );
     }
 
     private String string( int length )
@@ -712,6 +733,7 @@ public class WriteTransactionTest
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TransactionState transactionState;
     private final Config config = new Config( stringMap() );
+    @SuppressWarnings("deprecation")
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
     private final DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
     private NeoStore neoStore;
@@ -721,6 +743,7 @@ public class WriteTransactionTest
     public void before() throws Exception
     {
         transactionState = TransactionState.NO_STATE;
+        @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
                 fs.get(), DEV_NULL, new DefaultTxHook() );
         neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
@@ -810,7 +833,7 @@ public class WriteTransactionTest
         }
 
         @Override
-        public void updateIndexes( Iterable<NodePropertyUpdate> updates )
+        public void updateIndexes( IndexUpdates updates )
         {
             this.updates.addAll( asCollection( updates ) );
         }
@@ -910,4 +933,45 @@ public class WriteTransactionTest
         {   // Do nothing
         }
     };
+
+    private class IteratorCollector<T> implements Answer<Object>
+    {
+        private final int arg;
+        private final List<T> elements = new ArrayList<>();
+
+        public IteratorCollector( int arg )
+        {
+            this.arg = arg;
+        }
+
+        @SafeVarargs
+        public final void assertContent( T... expected )
+        {
+            assertEquals( Arrays.asList( expected ), elements );
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Object answer( InvocationOnMock invocation ) throws Throwable
+        {
+            Object iterator = invocation.getArguments()[arg];
+            if ( iterator instanceof Iterable )
+            {
+                iterator = ((Iterable) iterator).iterator();
+            }
+            if ( iterator instanceof Iterator )
+            {
+                collect( (Iterator) iterator );
+            }
+            return null;
+        }
+
+        private void collect( Iterator<T> iterator )
+        {
+            while ( iterator.hasNext() )
+            {
+                elements.add( iterator.next() );
+            }
+        }
+    }
 }

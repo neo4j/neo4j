@@ -22,10 +22,12 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.nioneo.store.MultipleUnderlyingStorageExceptions;
@@ -40,7 +42,7 @@ import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
  * All updaters retrieved from this map must be either closed manually or handle duplicate calls to close
  * or must all be closed indirectly by calling close on this updater map.
  */
-public class IndexUpdaterMap implements AutoCloseable
+public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
 {
     private final IndexUpdateMode indexUpdateMode;
     private final IndexMap indexMap;
@@ -53,7 +55,7 @@ public class IndexUpdaterMap implements AutoCloseable
         this.updaterMap = new HashMap<>();
     }
 
-    public IndexUpdater getUpdater( IndexDescriptor descriptor ) throws IOException
+    public IndexUpdater getUpdater( IndexDescriptor descriptor )
     {
         IndexUpdater updater = updaterMap.get( descriptor );
         if ( null == updater )
@@ -80,7 +82,7 @@ public class IndexUpdaterMap implements AutoCloseable
             {
                 updater.close();
             }
-            catch (IOException | IndexEntryConflictException e)
+            catch ( IOException | IndexEntryConflictException e )
             {
                 if ( null == exceptions )
                 {
@@ -111,5 +113,23 @@ public class IndexUpdaterMap implements AutoCloseable
     public int size()
     {
         return updaterMap.size();
+    }
+
+    @Override
+    public Iterator<IndexUpdater> iterator()
+    {
+        return new PrefetchingIterator<IndexUpdater>()
+        {
+            Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
+            @Override
+            protected IndexUpdater fetchNextOrNull()
+            {
+                if ( descriptors.hasNext() )
+                {
+                    return getUpdater( descriptors.next() );
+                }
+                return null;
+            }
+        };
     }
 }
