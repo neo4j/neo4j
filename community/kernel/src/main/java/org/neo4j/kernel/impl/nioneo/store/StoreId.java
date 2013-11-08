@@ -20,11 +20,12 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.nio.ByteBuffer;
+import java.security.SecureRandom;
 import java.util.Random;
 
 public final class StoreId
 {
-    private static final Random r = new Random( System.currentTimeMillis() );
+    private static final Random r = new SecureRandom();
     private final long creationTime;
     private final long randomId;
     private final long storeVersion;
