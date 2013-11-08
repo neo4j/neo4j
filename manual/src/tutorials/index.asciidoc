@@ -20,8 +20,4 @@ include::{importdir}/neo4j-examples-docs-jar/dev/data-modeling-examples.asciidoc
 
 include::languages.asciidoc[]
 
-:leveloffset: 1
-
-include::rest.asciidoc[]
-
 
