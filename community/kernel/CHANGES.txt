@@ -6,6 +6,17 @@ o BREAKING CHANGE: All classes under the org.neo4j.kernel package space, except
   into internal packages. This includes well-known classes such as EmbeddedGraphDatabase
   and HighlyAvailableGraphDatabase, both of which are replaced by GraphDatabaseFactory
   and HighlyAvailableGraphDatabaseFactory, respectively.
+o BREAKING CHANGE: Removed deprecated settings from org.neo4j.graphdb.factory.GraphDatabaseSettings. These settings are
+  no longer effective and can be removed without any effect.
+o BREAKING CHANGE: Removed deprecated org.neo4j.graphdb.index.IndexProvider (and associated
+  org.neo4j.graphdb.index.IndexIterable and org.neo4j.graphdb.index.IndexProviderKernelExtensionFactory). This has been
+  replaced by the kernel extension mechanism.
+o BREAKING CHANGE: Removed deprecated org.neo4j.graphdb.PropertyContainer#getPropertyValues(). Instead use
+  org.neo4j.graphdb.PropertyContainer#getPropertyKeys() and org.neo4j.graphdb.PropertyContainer#getProperty(String).
+o BREAKING CHANGE: Removed deprecated methods from org.neo4j.kernel.GraphDatabaseAPI: #getDiagnosticsManager(),
+  #getMessageLog(), #getIdGeneratorFactory(), #getKernelData() and #getPersistenceSource(). These are internal
+  components which Kernel clients should not need to access. The entire org.neo4j.kernel.GraphDatabaseAPI interface is
+  deprecated and will be removed in future.
 
 2.0.0-M05
 ---------
