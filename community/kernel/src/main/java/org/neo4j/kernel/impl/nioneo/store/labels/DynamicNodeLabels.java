@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.store.labels;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.filter;
@@ -56,7 +55,7 @@ public class DynamicNodeLabels implements NodeLabels
         long existingLabelsField = node.getLabelField();
         long existingLabelsBits = parseLabelsBody( existingLabelsField );
 
-        Collection<DynamicRecord> changedDynamicRecords = Collections.emptyList();
+        Collection<DynamicRecord> changedDynamicRecords = node.getDynamicLabelRecords();
 
         if ( labelField != 0 )
         {

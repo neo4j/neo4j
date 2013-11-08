@@ -205,6 +205,67 @@ public class WriteTransactionTest
     }
 
     @Test
+    public void shouldReUseOriginalDynamicRecordWhenInlinedAndThenExpandedLabelsInSameTx() throws Exception
+    {
+        // GIVEN
+        final long nodeId = neoStore.getNodeStore().nextId();
+
+        // A transaction that creates labels that just barely fit to be inlined
+        WriteTransaction writeTransaction = newWriteTransaction( mockIndexing );
+        writeTransaction.nodeCreate( nodeId );
+
+        writeTransaction.addLabelToNode( 16, nodeId );
+        writeTransaction.addLabelToNode( 29, nodeId );
+        writeTransaction.addLabelToNode( 32, nodeId );
+        writeTransaction.addLabelToNode( 41, nodeId );
+        writeTransaction.addLabelToNode( 44, nodeId );
+        writeTransaction.addLabelToNode( 45, nodeId );
+        writeTransaction.addLabelToNode( 50, nodeId );
+        writeTransaction.addLabelToNode( 51, nodeId );
+        writeTransaction.addLabelToNode( 52, nodeId );
+
+        writeTransaction.prepare();
+        writeTransaction.commit();
+
+        // And given that I now start recording the commands in the log
+        CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
+
+        // WHEN
+        // I remove enough labels to inline them, but then add enough new labels to expand it back to dynamic
+        writeTransaction = newWriteTransaction( mockIndexing, commandCapture);
+
+        writeTransaction.removeLabelFromNode( 50, nodeId );
+        writeTransaction.removeLabelFromNode( 51, nodeId );
+        writeTransaction.removeLabelFromNode( 52, nodeId );
+        writeTransaction.addLabelToNode( 60, nodeId );
+        writeTransaction.addLabelToNode( 61, nodeId );
+        writeTransaction.addLabelToNode( 62, nodeId );
+
+        writeTransaction.prepare();
+        writeTransaction.commit();
+
+        // THEN
+        // The dynamic label record in before should be the same id as in after, and should be in use
+        commandCapture.visitCapturedCommands( new Visitor<XaCommand, RuntimeException>()
+        {
+            @Override
+            public boolean visit( XaCommand element ) throws RuntimeException
+            {
+                if( element instanceof Command.NodeCommand )
+                {
+                    Command.NodeCommand cmd = (Command.NodeCommand)element;
+                    DynamicRecord before = cmd.getBefore().getDynamicLabelRecords().iterator().next();
+                    DynamicRecord after = cmd.getAfter().getDynamicLabelRecords().iterator().next();
+
+                    assertThat( before.getId(), equalTo(after.getId()) );
+                    assertThat( after.inUse(), equalTo(true) );
+                }
+                return true;
+            }
+        });
+    }
+
+    @Test
     public void shouldRemoveSchemaRuleWhenRollingBackTransaction() throws Exception
     {
         // GIVEN
