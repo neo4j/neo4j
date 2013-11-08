@@ -40,7 +40,7 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int contestedPort = 9999;
-        try ( ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty9WebServer.DEFAULT_ADDRESS ) ) )
+        try ( ServerSocket ignored = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty9WebServer.DEFAULT_ADDRESS ) ) )
         {
             InMemoryAppender appender = new InMemoryAppender( AbstractNeoServer.log );
             CommunityNeoServer server = CommunityServerBuilder.server()

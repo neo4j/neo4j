@@ -74,8 +74,6 @@ public interface WebServer
     /**
      * Please use {@link #addFilter instead}, this will be removed
      * in version 1.10
-     * @param timeout
-     * @param guard
      */
     @Deprecated
     void addExecutionLimitFilter( int timeout, Guard guard );
