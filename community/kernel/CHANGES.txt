@@ -6,6 +6,8 @@ o BREAKING CHANGE: All classes under the org.neo4j.kernel package space, except
   into internal packages. This includes well-known classes such as EmbeddedGraphDatabase
   and HighlyAvailableGraphDatabase, both of which are replaced by GraphDatabaseFactory
   and HighlyAvailableGraphDatabaseFactory, respectively.
+o BREAKING CHANGE: Deprecated constructors of EmbeddedReadOnlyDatabase and EmbeddedGraphDatabase have been removed,
+  in favor of the long-advertised alternative GraphDatabaseFactory.
 
 2.0.0-M05
 ---------
