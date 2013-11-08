@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -82,11 +87,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 /**
  * Performs the internal switches from pending to slave/master, by listening for
  * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
@@ -106,6 +106,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     public static final String MASTER = "master";
     public static final String SLAVE = "slave";
+    private URI masterHaURI;
 
     public static int getServerId( URI haUri )
     {
@@ -212,6 +213,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         availableMasterId = event.getServerHaUri();
         if ( event.getNewState() == event.getOldState() )
         {
+            if ( event.getNewState() == HighAvailabilityMemberState.MASTER )
+            {
+                clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
+            }
             return;
         }
         switch ( event.getNewState() )
@@ -269,10 +274,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             idGeneratorFactory.switchToMaster();
             life.start();
 
-            URI haUri = URI.create( "ha://" + (ServerUtil.getHostString(masterServer.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(masterServer.getSocketAddress())) + ":" +
+            masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress() ).contains
+                    ( "0.0.0.0" ) ? me.getHost() : ServerUtil.getHostString( masterServer.getSocketAddress() )) + ":" +
                     masterServer.getSocketAddress().getPort() + "?serverId=" +
                     config.get( ClusterSettings.server_id ) );
-            clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
+            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
             msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
                     ", successfully moved to master" );
         }

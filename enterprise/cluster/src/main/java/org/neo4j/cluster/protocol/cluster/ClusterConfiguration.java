@@ -176,7 +176,7 @@ public class ClusterConfiguration
     public void removeElected( String roleName )
     {
         roles = new HashMap<String, InstanceId>( roles );
-        InstanceId removed = roles.remove( roleName );
+        roles.remove( roleName );
     }
 
     public InstanceId getElected( String roleName )
