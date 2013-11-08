@@ -25,7 +25,6 @@ import org.neo4j.helpers.HostnamePort;
 
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
-import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.setting;
 
@@ -37,10 +36,6 @@ public class OnlineBackupSettings
 
     @Description("Enable support for running online backups")
     public static final Setting<Boolean> online_backup_enabled = setting( "online_backup_enabled", BOOLEAN, TRUE );
-
-    @Deprecated
-    @Description("Listening port for online backups. Replaced by online_backup_server")
-    public static final Setting<Integer> online_backup_port = setting( "online_backup_port", INTEGER, "6362" );
 
     @Description("Listening server for online backups")
     public static final Setting<HostnamePort> online_backup_server = setting( "online_backup_server", HOSTNAME_PORT,
