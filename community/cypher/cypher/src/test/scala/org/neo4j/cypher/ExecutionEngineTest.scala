@@ -29,8 +29,9 @@ import org.junit.{Ignore, Test}
 import util.Random
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
 import org.scalautils.LegacyTripleEquals
+import org.neo4j.helpers.collection.MapUtil
 
 class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker with LegacyTripleEquals {
 
@@ -2194,7 +2195,9 @@ RETURN x0.name""")
   private def createReadOnlyEngine(): ExecutionEngine = {
     val old = new GraphDatabaseFactory().newEmbeddedDatabase("target/readonly")
     old.shutdown()
-    val db = new EmbeddedReadOnlyGraphDatabase("target/readonly")
+    val db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")
+            .setConfig( GraphDatabaseSettings.read_only, "true" )
+            .newGraphDatabase();
     new ExecutionEngine(db)
   }
 

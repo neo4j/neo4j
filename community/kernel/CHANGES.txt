@@ -17,6 +17,8 @@ o BREAKING CHANGE: Removed deprecated methods from org.neo4j.kernel.GraphDatabas
   #getMessageLog(), #getIdGeneratorFactory(), #getKernelData() and #getPersistenceSource(). These are internal
   components which Kernel clients should not need to access. The entire org.neo4j.kernel.GraphDatabaseAPI interface is
   deprecated and will be removed in future.
+o BREAKING CHANGE: Deprecated constructors of EmbeddedReadOnlyDatabase and EmbeddedGraphDatabase have been removed,
+  in favor of the long-advertised alternative GraphDatabaseFactory.
 
 2.0.0-M05
 ---------
