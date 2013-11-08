@@ -109,12 +109,12 @@ public class Jetty9WebServer implements WebServer
     private int jettyHttpsPort = DEFAULT_HTTPS_PORT;
     private String jettyAddr = DEFAULT_ADDRESS;
 
-    private final HashMap<String, String> staticContent = new HashMap<String, String>();
+    private final HashMap<String, String> staticContent = new HashMap<>();
     private final Map<String,JaxRsServletHolderFactory> jaxRSPackages =
-            new HashMap<String, JaxRsServletHolderFactory>();
+            new HashMap<>();
     private final Map<String,JaxRsServletHolderFactory> jaxRSClasses =
-            new HashMap<String, JaxRsServletHolderFactory>();
-    private final List<FilterDefinition> filters = new ArrayList<FilterDefinition>();
+            new HashMap<>();
+    private final List<FilterDefinition> filters = new ArrayList<>();
 
     private int jettyMaxThreads = tenThreadsPerProcessor();
     private boolean httpsEnabled = false;
@@ -361,7 +361,7 @@ public class Jetty9WebServer implements WebServer
     {
         SessionManager sm = new HashSessionManager();
 
-        final SortedSet<String> mountpoints = new TreeSet<String>( new Comparator<String>()
+        final SortedSet<String> mountpoints = new TreeSet<>( new Comparator<String>()
         {
             @Override
             public int compare( final String o1, final String o2 )

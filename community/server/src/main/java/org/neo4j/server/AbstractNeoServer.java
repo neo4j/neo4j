@@ -257,6 +257,7 @@ public abstract class AbstractNeoServer implements NeoServer
         InterruptThreadTimer stopStartupTimer;
         if ( startupTimeout > 0 )
         {
+            //noinspection deprecation
             log.info( "Setting startup timeout to: " + startupTimeout + "ms based on " + getConfiguration().getInt(
                     Configurator.STARTUP_TIMEOUT, -1 ) );
             stopStartupTimer = InterruptThreadTimer.createTimer(
@@ -272,8 +273,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
     /**
      * Use this method to register server modules from subclasses
-     *
-     * @param module
      */
     protected final void registerModule( ServerModule module )
     {
@@ -299,6 +298,7 @@ public abstract class AbstractNeoServer implements NeoServer
             }
             catch ( Exception e )
             {
+                //noinspection deprecation
                 log.error( "Unable to stop module.", e );
             }
         }
@@ -336,6 +336,7 @@ public abstract class AbstractNeoServer implements NeoServer
         int sslPort = getHttpsPort();
         boolean sslEnabled = getHttpsEnabled();
 
+        //noinspection deprecation
         log.info( String.format("Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads));
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
@@ -350,6 +351,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( sslEnabled )
         {
+            //noinspection deprecation
             log.info( String.format("Enabling HTTPS on port :%s", sslPort) );
             webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
         }
@@ -385,6 +387,7 @@ public abstract class AbstractNeoServer implements NeoServer
                     null );
             if ( limit != null )
             {
+                //noinspection deprecation
                 webServer.addExecutionLimitFilter( limit, database.getGraph().getGuard() );
             }
 
@@ -392,10 +395,12 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 logger.logMessage( "Server started on: " + baseUri() );
             }
+            //noinspection deprecation
             log.info( String.format("Remote interface ready and available at [%s]", baseUri()) );
         }
         catch ( RuntimeException e )
         {
+            //noinspection deprecation
             log.error( String.format("Failed to start Neo Server on port [%d], reason [%s]",
                     getWebServerPort(), e.getMessage()) );
             throw e;
@@ -469,6 +474,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( !certificatePath.exists() )
         {
+            //noinspection deprecation
             log.info( "No SSL certificate found, generating a self-signed certificate.." );
             SslCertificateFactory certFactory = new SslCertificateFactory();
             certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
@@ -489,13 +495,16 @@ public abstract class AbstractNeoServer implements NeoServer
             rrdDbScheduler.stopJobs();
             rrdDbWrapper.close();
 
+            //noinspection deprecation
             log.info( "Successfully shutdown Neo4j Server." );
 
             stopDatabase();
+            //noinspection deprecation
             log.info( "Successfully shutdown database." );
         }
         catch ( Exception e )
         {
+            //noinspection deprecation
             log.warn( "Failed to cleanly shutdown database." );
         }
     }
@@ -572,7 +581,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected Collection<InjectableProvider<?>> createDefaultInjectables()
     {
-        Collection<InjectableProvider<?>> singletons = new ArrayList<InjectableProvider<?>>();
+        Collection<InjectableProvider<?>> singletons = new ArrayList<>();
 
         Database database = getDatabase();
 
@@ -637,14 +646,17 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             if ( type.equals( Database.class ) )
             {
+                //noinspection unchecked
                 return (T) database;
             }
             else if ( type.equals( PreFlightTasks.class ) )
             {
+                //noinspection unchecked
                 return (T) preflight;
             }
             else if ( type.equals( InterruptThreadTimer.class ) )
             {
+                //noinspection unchecked
                 return (T) interruptStartupTimer;
             }
 
