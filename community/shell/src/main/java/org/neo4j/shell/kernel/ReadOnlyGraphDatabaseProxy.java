@@ -64,8 +64,6 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -74,14 +72,11 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.info.DiagnosticsManager;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDatabaseAPI, IndexManager
 {
@@ -1071,27 +1066,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public DiagnosticsManager getDiagnosticsManager()
-    {
-        return actual.getDiagnosticsManager();
-    }
-
-    @Override
-    public StringLogger getMessageLog()
-    {
-        return actual.getMessageLog();
-    }
-
-    @Override
     public RelationshipTypeTokenHolder getRelationshipTypeTokenHolder()
     {
         return actual.getRelationshipTypeTokenHolder();
-    }
-
-    @Override
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
-        return actual.getIdGeneratorFactory();
     }
 
     @Override
@@ -1101,21 +1078,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public KernelData getKernelData()
-    {
-        return actual.getKernelData();
-    }
-
-    @Override
     public TransactionBuilder tx()
     {
         return actual.tx();
-    }
-
-    @Override
-    public PersistenceSource getPersistenceSource()
-    {
-        return actual.getPersistenceSource();
     }
 
     @Override

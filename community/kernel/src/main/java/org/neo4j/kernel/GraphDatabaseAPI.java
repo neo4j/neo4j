@@ -28,12 +28,9 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.info.DiagnosticsManager;
 
 /**
  * This API can be used to get access to services.
@@ -62,16 +59,7 @@ public interface GraphDatabaseAPI
     TransactionManager getTxManager();
 
     @Deprecated
-    DiagnosticsManager getDiagnosticsManager();
-    
-    @Deprecated
-    StringLogger getMessageLog();
-
-    @Deprecated
     RelationshipTypeTokenHolder getRelationshipTypeTokenHolder();
-
-    @Deprecated
-    IdGeneratorFactory getIdGeneratorFactory();
 
     @Deprecated
     TxIdGenerator getTxIdGenerator();
@@ -80,13 +68,7 @@ public interface GraphDatabaseAPI
     String getStoreDir();
 
     @Deprecated
-    KernelData getKernelData();
-
-    @Deprecated
     TransactionBuilder tx();
-
-    @Deprecated
-    PersistenceSource getPersistenceSource();
 
     @Deprecated
     KernelPanicEventGenerator getKernelPanicGenerator();

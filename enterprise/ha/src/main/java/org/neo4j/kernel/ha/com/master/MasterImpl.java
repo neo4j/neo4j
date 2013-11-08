@@ -52,6 +52,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
@@ -431,7 +432,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public Response<IdAllocation> allocateIds( IdType idType )
     {
         @SuppressWarnings("deprecation")
-        IdGenerator generator = graphDb.getIdGeneratorFactory().get( idType );
+        IdGenerator generator = graphDb.getDependencyResolver().resolveDependency( IdGeneratorFactory.class )
+                .get( idType );
         IdAllocation result = new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ), generator.getHighId(),
                 generator.getDefragCount() );
         return ServerUtil.packResponseWithoutTransactionStream( graphDb.getStoreId(), result );
