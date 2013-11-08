@@ -45,11 +45,11 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
     public void setUpFramework()
     {
         getTransaction().finish();
-        tm = getGraphDbAPI().getTxManager();
-        xaDsMgr = getGraphDbAPI().getXaDataSourceManager();
-        java.util.Map<String,String> map1 = new java.util.HashMap<String,String>();
+        tm = getGraphDbAPI().getDependencyResolver().resolveDependency( TxManager.class );
+        xaDsMgr = getGraphDbAPI().getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+        java.util.Map<String,String> map1 = new java.util.HashMap<>();
         map1.put( "store_dir", "target/var" );
-        java.util.Map<String,String> map2 = new java.util.HashMap<String,String>();
+        java.util.Map<String,String> map2 = new java.util.HashMap<>();
         map2.put( "store_dir", "target/var" );
         try
         {

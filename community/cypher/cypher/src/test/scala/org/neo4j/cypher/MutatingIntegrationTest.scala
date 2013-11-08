@@ -29,6 +29,7 @@ import java.util.HashMap
 import org.neo4j.graphdb.Neo4jMatchers._
 import org.neo4j.tooling.GlobalGraphOperations
 import org.scalautils.LegacyTripleEquals
+import org.neo4j.kernel.impl.transaction.TxManager
 
 class MutatingIntegrationTest extends ExecutionEngineHelper
   with Assertions with StatisticsChecker with LegacyTripleEquals {
@@ -403,7 +404,9 @@ return distinct center""")
   def failed_query_should_not_leave_dangling_transactions() {
     intercept[EntityNotFoundException](execute("START left=node(1), right=node(3,4) CREATE UNIQUE left-[r:KNOWS]->right RETURN r"))
 
-    assertNull("Did not expect to be in a transaction now", graph.getTxManager.getTransaction)
+
+    val txManager: TxManager = graph.getDependencyResolver.resolveDependency(classOf[TxManager])
+    assertNull("Did not expect to be in a transaction now", txManager.getTransaction)
   }
 
   @Test

@@ -37,6 +37,7 @@ import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -155,10 +156,10 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             try
             {
                 if ( dataSources.isEmpty() )
-                    graphdb.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
+                    dsManager( graphdb ).getNeoStoreDataSource().rotateLogicalLog();
                 else
                 {
-                    for ( XaDataSource ds : graphdb.getXaDataSourceManager().getAllRegisteredDataSources() )
+                    for ( XaDataSource ds : dsManager( graphdb ).getAllRegisteredDataSources() )
                     {
                         if ( dataSources.contains( ds.getName() ) )
                             ds.rotateLogicalLog();
@@ -172,7 +173,12 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             }
         }
     }
-    
+
+    private static XaDataSourceManager dsManager( GraphDatabaseAPI graphdb )
+    {
+        return graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+    }
+
     static class GetCommittedTransactions implements Task
     {
         private final long highestLogVersion;
@@ -190,7 +196,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         {
             try
             {
-                XaDataSource dataSource = graphdb.getXaDataSourceManager().getNeoStoreDataSource();
+                XaDataSource dataSource = dsManager( graphdb ).getNeoStoreDataSource();
                 for ( long logVersion = 0; logVersion < highestLogVersion; logVersion++ )
                 {
                     dataSource.getLogicalLog( logVersion );
@@ -240,7 +246,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         @SuppressWarnings("deprecation")
         public void run( GraphDatabaseAPI graphdb )
         {
-            assertEquals( tx, graphdb.getXaDataSourceManager().getXaDataSource( dataSource ).getLastCommittedTxId() );
+            assertEquals( tx, dsManager( graphdb ).getXaDataSource( dataSource ).getLastCommittedTxId() );
         }
     }
 

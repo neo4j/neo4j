@@ -30,6 +30,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
@@ -61,7 +62,8 @@ public class ProduceUncleanStore
             if ( setGraphProperty )
             {
                 //noinspection deprecation
-                ((GraphDatabaseAPI) db).getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
+                ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NodeManager.class )
+                        .getGraphProperties().setProperty( "prop", "Some value" );
             }
             tx.success();
         }

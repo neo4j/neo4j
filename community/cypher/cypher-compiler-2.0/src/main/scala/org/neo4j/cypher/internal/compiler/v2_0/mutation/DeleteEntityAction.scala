@@ -43,7 +43,7 @@ case class DeleteEntityAction(elementToDelete: Expression)
   }
 
   private def delete(x: PropertyContainer, state: QueryState) {
-    val nodeManager: NodeManager = state.graphDatabaseAPI.getNodeManager
+    val nodeManager: NodeManager = state.graphDatabaseAPI.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
     x match {
       case n: Node if !nodeManager.isDeleted(n) =>

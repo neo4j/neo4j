@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v1_9.mutation.{CreateNode, CreateRelat
 import org.neo4j.cypher.internal.compiler.v1_9.{ExecutionContext, ClosingIterator}
 import org.neo4j.cypher.internal.compiler.v1_9.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v1_9.spi.QueryContext
+import org.neo4j.kernel.impl.transaction.LockManager
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
 
@@ -44,7 +45,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
   def profile(query: QueryContext, tx: Transaction, params: Map[String, Any]): ExecutionResult = executionPlan(query, tx, true, params)
 
-  lazy val lockManager = graph.asInstanceOf[InternalAbstractGraphDatabase].getLockManager
+  lazy val lockManager = graph.asInstanceOf[InternalAbstractGraphDatabase].getDependencyResolver.resolveDependency(classOf[LockManager])
 
   private def prepareExecutionPlan(): ExecutionPlanParams => ExecutionResult = {
     var continue = true

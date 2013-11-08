@@ -30,7 +30,6 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
@@ -65,17 +64,10 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.TransactionBuilder;
-import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDatabaseAPI, IndexManager
@@ -1048,36 +1040,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public NodeManager getNodeManager()
-    {
-        return actual.getNodeManager();
-    }
-
-    @Override
-    public LockManager getLockManager()
-    {
-        return actual.getLockManager();
-    }
-
-    @Override
-    public XaDataSourceManager getXaDataSourceManager()
-    {
-        return actual.getXaDataSourceManager();
-    }
-
-    @Override
-    public TransactionManager getTxManager()
-    {
-        return txManager;
-    }
-
-    @Override
-    public RelationshipTypeTokenHolder getRelationshipTypeTokenHolder()
-    {
-        return actual.getRelationshipTypeTokenHolder();
-    }
-
-    @Override
     public String getStoreDir()
     {
         return actual.getStoreDir();
@@ -1090,27 +1052,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public KernelPanicEventGenerator getKernelPanicGenerator()
+    public StoreId storeId()
     {
-        return actual.getKernelPanicGenerator();
-    }
-
-    @Override
-    public Guard getGuard()
-    {
-        return actual.getGuard();
-    }
-
-    @Override
-    public StoreId getStoreId()
-    {
-        return actual.getStoreId();
-    }
-
-    @Override
-    public TxIdGenerator getTxIdGenerator()
-    {
-        return actual.getTxIdGenerator();
+        return actual.storeId();
     }
 
     @Override

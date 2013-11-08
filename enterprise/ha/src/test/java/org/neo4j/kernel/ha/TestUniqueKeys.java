@@ -100,9 +100,10 @@ public class TestUniqueKeys extends AbstractClusterTest
             int highestId = 0;
             for ( GraphDatabaseAPI db : cluster.getAllMembers() )
             {
-                RelationshipTypeTokenHolder holder = db.getRelationshipTypeTokenHolder();
+                RelationshipTypeTokenHolder holder = db.getDependencyResolver()
+                        .resolveDependency( RelationshipTypeTokenHolder.class );
                 highestId = highestIdOf( holder, highestId );
-                Set<String> types = new HashSet<String>();
+                Set<String> types = new HashSet<>();
                 for ( int j = 0; j <= highestId; j++ )
                 {
                     RelationshipType type = holder.getTokenById( j );
@@ -119,7 +120,7 @@ public class TestUniqueKeys extends AbstractClusterTest
     public void bruteForceCreateSamePropertyKeyOnDifferentSlaveAtTheSameTimeShouldYieldSameId() throws Exception
     {
         // Get a hold of all the slaves in there
-        List<HighlyAvailableGraphDatabase> slaves = new ArrayList<HighlyAvailableGraphDatabase>();
+        List<HighlyAvailableGraphDatabase> slaves = new ArrayList<>();
         for ( int i = 0; i < cluster.size()-1; i++ )
             slaves.add( cluster.getAnySlave( slaves.toArray( new HighlyAvailableGraphDatabase[0] ) ) );
         

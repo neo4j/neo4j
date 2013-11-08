@@ -25,6 +25,7 @@ import javax.management.MalformedObjectNameException;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -38,7 +39,7 @@ public class DatabasePrimitivesSampleableBaseDocTest
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         
-        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db.getNodeManager() );
+        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( nodeManager( db ) );
 
         assertTrue( "There should be no nodes in use.", sampleable.getValue() == 0 );
 
@@ -50,10 +51,15 @@ public class DatabasePrimitivesSampleableBaseDocTest
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
 
-        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db.getNodeManager() );
+        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( nodeManager( db ) );
 
         assertTrue( "There should be no nodes in use.", sampleable.getValue() == 0 );
 
         db.shutdown();
+    }
+
+    private NodeManager nodeManager( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( NodeManager.class );
     }
 }

@@ -32,7 +32,6 @@ import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsProvider;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.management.Diagnostics;
 
 @Service.Implementation( ManagementBeanProvider.class )
@@ -52,14 +51,12 @@ public class DiagnosticsBean extends ManagementBeanProvider
     private static class DiagnosticsImpl extends Neo4jMBean implements Diagnostics
     {
         private final DiagnosticsManager diagnostics;
-        private final StringLogger log;
 
         DiagnosticsImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
             DependencyResolver resolver = management.getKernelData().graphDatabase().getDependencyResolver();
             this.diagnostics = resolver.resolveDependency( DiagnosticsManager.class );
-            this.log = resolver.resolveDependency( Logging.class ).getMessagesLog( getClass() );
         }
 
         @Override
@@ -71,7 +68,7 @@ public class DiagnosticsBean extends ManagementBeanProvider
         @Override
         public List<String> getDiagnosticsProviders()
         {
-            List<String> result = new ArrayList<String>();
+            List<String> result = new ArrayList<>();
             for ( DiagnosticsProvider provider : diagnostics )
             {
                 result.add( provider.getDiagnosticsIdentifier() );

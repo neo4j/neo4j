@@ -86,7 +86,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
     private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
     {
         loadNode( db, node );
-        db.getNodeManager().clearCache();
+        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         loadNode( db, node );
     }
 
@@ -112,7 +112,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
     
     private void tryOnce( final GraphDatabaseAPI db, final Node node, int iterations ) throws Throwable
     {
-        db.getNodeManager().clearCache();
+        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         ExecutorService executor = newCachedThreadPool();
         final CountDownLatch startSignal = new CountDownLatch( 1 );
         int threads = getRuntime().availableProcessors();

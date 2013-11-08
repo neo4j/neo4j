@@ -34,6 +34,7 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.core.NodeManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -340,11 +341,11 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         MyTxEventHandler handler = new MyTxEventHandler(); 
         getGraphDb().registerTransactionEventHandler( handler );
         newTransaction();
-        getGraphDbAPI().getNodeManager().clearCache();
+        getGraphDbAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         rel.delete();
         node1.delete();
         node2.delete();
-        getGraphDbAPI().getNodeManager().clearCache();
+        getGraphDbAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         commit();
         assertEquals( "stringvalue", handler.nodeProps.get( "test1" ) );
         assertEquals( "stringvalue", handler.relProps.get( "test1" ) );
@@ -359,8 +360,8 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         
     private static class MyTxEventHandler implements TransactionEventHandler<Object>
     {
-        Map<String,Object> nodeProps = new HashMap<String,Object>();
-        Map<String,Object> relProps = new HashMap<String, Object>();
+        Map<String,Object> nodeProps = new HashMap<>();
+        Map<String,Object> relProps = new HashMap<>();
         
         @Override
 		public void afterCommit( TransactionData data, Object state )

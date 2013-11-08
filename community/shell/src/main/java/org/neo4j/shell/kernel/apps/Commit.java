@@ -25,6 +25,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -49,7 +50,7 @@ public class Commit extends NonTransactionProvidingApp
     {
         try
         {
-            return getServer().getDb().getTxManager().getTransaction();
+            return getServer().getDb().getDependencyResolver().resolveDependency( TxManager.class ).getTransaction();
         }
         catch ( SystemException e )
         {

@@ -913,7 +913,7 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
-    public StoreId getStoreId()
+    public StoreId storeId()
     {
         return storeId;
     }
@@ -1082,7 +1082,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
-            throw new NotFoundException( format("Relationship %d not found", id));
+            throw new NotFoundException( format( "Relationship %d not found", id));
         }
         return nodeManager.getRelationshipById( id );
     }
@@ -1091,12 +1091,6 @@ public abstract class InternalAbstractGraphDatabase
     public TransactionBuilder tx()
     {
         return defaultTxBuilder;
-    }
-
-    @Override
-    public Guard getGuard()
-    {
-        return guard;
     }
 
     @Override
@@ -1117,48 +1111,6 @@ public abstract class InternalAbstractGraphDatabase
     public Config getConfig()
     {
         return config;
-    }
-
-    @Override
-    public NodeManager getNodeManager()
-    {
-        return nodeManager;
-    }
-
-    @Override
-    public LockManager getLockManager()
-    {
-        return lockManager;
-    }
-
-    @Override
-    public XaDataSourceManager getXaDataSourceManager()
-    {
-        return xaDataSourceManager;
-    }
-
-    @Override
-    public TransactionManager getTxManager()
-    {
-        return txManager;
-    }
-
-    @Override
-    public RelationshipTypeTokenHolder getRelationshipTypeTokenHolder()
-    {
-        return relationshipTypeTokenHolder;
-    }
-
-    @Override
-    public TxIdGenerator getTxIdGenerator()
-    {
-        return txIdGenerator;
-    }
-
-    @Override
-    public KernelPanicEventGenerator getKernelPanicGenerator()
-    {
-        return kernelPanicEventGenerator;
     }
 
     private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,
@@ -1428,7 +1380,6 @@ public abstract class InternalAbstractGraphDatabase
             }
             return null;
         }
-
 
         @Override
         public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )

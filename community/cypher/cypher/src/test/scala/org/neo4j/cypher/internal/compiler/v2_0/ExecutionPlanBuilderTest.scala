@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.mutation.DeletePropertyAction
 import org.neo4j.cypher.internal.compiler.v2_0.commands.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
+import org.neo4j.kernel.impl.transaction.TxManager
 
 class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed with MockitoSugar {
   @Test def should_not_accept_returning_the_input_execution_plan() {
@@ -71,7 +72,8 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
     }
 
     // then
-    assertNull("Expected no transactions left open", graph.getTxManager.getTransaction)
+    val txManager: TxManager = graph.getDependencyResolver.resolveDependency(classOf[TxManager])
+    assertNull("Expected no transactions left open", txManager.getTransaction)
 
   }
 

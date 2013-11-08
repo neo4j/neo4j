@@ -30,6 +30,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.StoreWriter;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
@@ -39,31 +40,30 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
-import org.neo4j.kernel.impl.core.GraphProperties;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.core.*;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.Logging;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
     private static final int ID_GRAB_SIZE = 1000;
+    private final TransactionManager txManager;
+    private final DependencyResolver dependencyResolver;
     private GraphDatabaseAPI graphDb;
     private Logging logging;
-    private final TransactionManager txManager;
 
     public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging, TransactionManager txManager )
     {
         this.graphDb = graphDb;
         this.logging = logging;
         this.txManager = txManager;
+        this.dependencyResolver = graphDb.getDependencyResolver();
     }
 
     @Override
@@ -76,8 +76,9 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public void acquireLock( MasterImpl.LockGrabber grabber, Object... entities )
     {
-        LockManager lockManager = graphDb.getLockManager();
-        TransactionState state = ((AbstractTransactionManager) graphDb.getTxManager()).getTransactionState();
+        LockManager lockManager = resolve( LockManager.class );
+        AbstractTransactionManager dbTxManager = resolve( AbstractTransactionManager.class );
+        TransactionState state = dbTxManager.getTransactionState();
         for ( Object entity : entities )
         {
             grabber.grab( lockManager, state, entity );
@@ -137,28 +138,27 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public GraphProperties graphProperties()
     {
-        return graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).getGraphProperties();
+        return resolve( NodeManager.class ).getGraphProperties();
     }
 
     @Override
     public int getOrCreateLabel( String name )
     {
-        LabelTokenHolder labels = graphDb.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
+        LabelTokenHolder labels = resolve( LabelTokenHolder.class );
         return labels.getOrCreateId( name );
     }
 
     @Override
     public int getOrCreateProperty( String name )
     {
-        PropertyKeyTokenHolder propertyKeyHolder = graphDb.getDependencyResolver().resolveDependency( PropertyKeyTokenHolder.class );
+        PropertyKeyTokenHolder propertyKeyHolder = resolve( PropertyKeyTokenHolder.class );
         return propertyKeyHolder.getOrCreateId( name );
     }
 
     @Override
     public IdAllocation allocateIds( IdType idType )
     {
-        IdGenerator generator = graphDb.getDependencyResolver().resolveDependency( IdGeneratorFactory.class )
-                .get( idType );
+        IdGenerator generator = resolve( IdGeneratorFactory.class ).get(idType);
         return new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ), generator.getHighId(),
                 generator.getDefragCount() );
     }
@@ -166,35 +166,41 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public StoreId storeId()
     {
-        return graphDb.getStoreId();
+        return graphDb.storeId();
     }
 
     @Override
     public long applyPreparedTransaction( String resource, ReadableByteChannel preparedTransaction ) throws IOException
     {
-        XaDataSource dataSource = graphDb.getXaDataSourceManager().getXaDataSource( resource );
+        XaDataSource dataSource = resolve( XaDataSourceManager.class ).getXaDataSource( resource );
         return dataSource.applyPreparedTransaction( preparedTransaction );
     }
 
     @Override
     public Integer createRelationshipType( String name )
     {
-        return graphDb.getDependencyResolver().resolveDependency( RelationshipTypeTokenHolder.class ).getOrCreateId(
-                name );
+        return resolve(RelationshipTypeTokenHolder.class).getOrCreateId( name );
     }
 
     @Override
     public Pair<Integer, Long> getMasterIdForCommittedTx( long txId ) throws IOException
     {
-        XaDataSource nioneoDataSource = graphDb.getXaDataSourceManager().getNeoStoreDataSource();
+        XaDataSource nioneoDataSource = resolve(XaDataSourceManager.class).getNeoStoreDataSource();
         return nioneoDataSource.getMasterForCommittedTx( txId );
     }
 
     @Override
     public RequestContext rotateLogsAndStreamStoreFiles( StoreWriter writer )
     {
-        return ServerUtil.rotateLogsAndStreamStoreFiles( graphDb.getStoreDir(), graphDb.getXaDataSourceManager(),
-                graphDb.getKernelPanicGenerator(), logging.getMessagesLog( MasterImpl.class ), true, writer );
+        XaDataSourceManager xaDataSourceManager = resolve( XaDataSourceManager.class );
+        KernelPanicEventGenerator kernelPanicEventGenerator = resolve( KernelPanicEventGenerator.class );
+        return ServerUtil.rotateLogsAndStreamStoreFiles(
+                graphDb.getStoreDir(),
+                xaDataSourceManager,
+                kernelPanicEventGenerator,
+                logging.getMessagesLog( MasterImpl.class ),
+                true,
+                writer );
     }
 
     @Override
@@ -206,14 +212,24 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter )
     {
-        return ServerUtil.packResponse( graphDb.getStoreId(), graphDb.getXaDataSourceManager(), context, response,
-                filter );
+        XaDataSourceManager xaDataSourceManager = resolve( XaDataSourceManager.class );
+        return ServerUtil.packResponse( storeId(), xaDataSourceManager, context, response, filter );
     }
 
     @Override
     public void pushTransaction( String resourceName, int eventIdentifier, long tx, int machineId )
     {
-        graphDb.getTxIdGenerator().committed( graphDb.getXaDataSourceManager().getXaDataSource( resourceName ),
-                eventIdentifier, tx, machineId );
+        XaDataSourceManager xaDataSourceManager = resolve( XaDataSourceManager.class );
+        TxIdGenerator txIdGenerator = resolve( TxIdGenerator.class );
+        txIdGenerator.committed(
+                xaDataSourceManager.getXaDataSource(resourceName),
+                eventIdentifier,
+                tx,
+                machineId);
+    }
+
+    private <T> T resolve( Class<T> dependencyType )
+    {
+        return dependencyResolver.resolveDependency( dependencyType );
     }
 }

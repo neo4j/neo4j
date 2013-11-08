@@ -30,6 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Response;
 import org.neo4j.shell.Session;
@@ -101,7 +102,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     {
         try
         {
-            Transaction tx = getDb().getTxManager().suspend();
+            Transaction tx = getDb().getDependencyResolver().resolveDependency( TxManager.class ).suspend();
             if ( tx == null )
             {
                 transactions.remove( clientId );
@@ -124,7 +125,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         {
             try
             {
-                getDb().getTxManager().resume( tx );
+                getDb().getDependencyResolver().resolveDependency( TxManager.class ).resume( tx );
             }
             catch ( Exception e )
             {

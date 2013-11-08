@@ -215,7 +215,7 @@ public abstract class AbstractNeo4jTestCase
 
     public NodeManager getNodeManager()
     {
-        return graphDb.getNodeManager();
+        return graphDb.getDependencyResolver().resolveDependency( NodeManager.class );
     }
 
     public static void deleteFileOrDirectory( String dir )
@@ -245,7 +245,7 @@ public abstract class AbstractNeo4jTestCase
 
     protected void clearCache()
     {
-        getGraphDbAPI().getNodeManager().clearCache();
+        getGraphDbAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
     }
 
     protected long propertyRecordsInUse()
@@ -279,7 +279,7 @@ public abstract class AbstractNeo4jTestCase
     
     protected PropertyStore propertyStore()
     {
-        XaDataSourceManager dsMgr = graphDb.getXaDataSourceManager();
+        XaDataSourceManager dsMgr = graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
         return dsMgr.getNeoStoreDataSource().getXaConnection().getPropertyStore();
     }
 }

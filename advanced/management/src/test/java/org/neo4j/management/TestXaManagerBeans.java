@@ -19,20 +19,18 @@
  */
 package org.neo4j.management;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.impl.XaManagerBean;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
 
 public class TestXaManagerBeans
 {
@@ -68,7 +66,8 @@ public class TestXaManagerBeans
     @Test
     public void hasAllXaManagerBeans()
     {
-        for ( XaDataSource xaDataSource : graphDb.getXaDataSourceManager().getAllRegisteredDataSources() )
+        for ( XaDataSource xaDataSource : graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                .getAllRegisteredDataSources() )
         {
             XaResourceInfo info = getByName( xaDataSource.getName() );
             assertEquals( "wrong branchid for XA data source " + xaDataSource.getName(),

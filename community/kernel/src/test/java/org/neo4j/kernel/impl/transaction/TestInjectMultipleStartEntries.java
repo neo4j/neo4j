@@ -52,7 +52,7 @@ public class TestInjectMultipleStartEntries
         // -- a database with one additional data source and some initial data
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
-        XaDataSourceManager xaDs = db.getXaDataSourceManager();
+        XaDataSourceManager xaDs = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
         XaDataSource additionalDs = new DummyXaDataSource( "dummy", "dummy".getBytes(), new FakeXAResource( "dummy" ) );
         xaDs.registerDataSource( additionalDs );
         Node node = createNodeWithOneRelationshipToIt( db );
@@ -89,7 +89,8 @@ public class TestInjectMultipleStartEntries
             XaDataSource additionalDs, Node node ) throws Exception
     {
         Transaction tx = db.beginTx();
-        additionalDs.getXaConnection().enlistResource( db.getTxManager().getTransaction() );
+        additionalDs.getXaConnection().enlistResource( db.getDependencyResolver().resolveDependency( TxManager.class )
+                .getTransaction() );
         node.delete();
         tx.success();
         try

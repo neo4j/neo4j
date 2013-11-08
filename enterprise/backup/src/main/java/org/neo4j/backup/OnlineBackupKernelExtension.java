@@ -83,7 +83,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 @Override
                 public StoreId getStoreId()
                 {
-                    return graphDatabaseAPI.getStoreId();
+                    return graphDatabaseAPI.storeId();
                 }
             }, xaDataSourceManager, kpeg );
             try

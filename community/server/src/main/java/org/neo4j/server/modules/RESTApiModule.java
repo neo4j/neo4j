@@ -120,15 +120,17 @@ public class RESTApiModule implements ServerModule
         Integer limit = config.getInteger( WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null );
         if ( limit != null )
         {
-            Guard guard = database.getGraph().getGuard();
-            if ( guard == null )
+            try
+            {
+                Guard guard = database.getGraph().getDependencyResolver().resolveDependency( Guard.class );
+                this.requestTimeLimitFilter = new GuardingRequestFilter( guard, limit );
+                webServer.addFilter(requestTimeLimitFilter , "/*" );
+            }
+            catch ( IllegalArgumentException e )
             {
                 //TODO enable guard and restart EmbeddedGraphdb
-                throw new RuntimeException( "Unable to use guard, you have to enable guard in neo4j.properties" );
+                throw new RuntimeException( "Unable to use guard, you have to enable guard in neo4j.properties", e );
             }
-
-            this.requestTimeLimitFilter = new GuardingRequestFilter( guard, limit );
-            webServer.addFilter(requestTimeLimitFilter , "/*" );
         }
     }
 

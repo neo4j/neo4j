@@ -51,6 +51,7 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
@@ -157,7 +158,8 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     {
         assertInTransaction();
         // TODO This should not be in NodeManager. Make a separate service that does this, which can be passed into index implementations
-        return ((GraphDatabaseAPI)service.graphDb()).getNodeManager().indexPutIfAbsent( this, entity, key, value );
+        return ((GraphDatabaseAPI)service.graphDb()).getDependencyResolver().resolveDependency( NodeManager.class )
+                .indexPutIfAbsent( this, entity, key, value );
     }
 
     private void assertValidKey( String key )

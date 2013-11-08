@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.junit.Assert.*;
@@ -64,9 +66,9 @@ public class TestLogPruning
 
         doTransaction();
         rotate();
-        long sizeOfOneLog = fs.getFileSize( db.getXaDataSourceManager().getNeoStoreDataSource()
+        long sizeOfOneLog = fs.getFileSize( neoDataSource()
                 .getXaContainer().getLogicalLog().getFileName( 0 ) );
-        int filesNeededToExceedPruneLimit = (int) Math.ceil( (double)size/(double)sizeOfOneLog );
+        int filesNeededToExceedPruneLimit = (int) Math.ceil( (double) size / (double) sizeOfOneLog );
 
         // When
         for ( int i = 1; i < filesNeededToExceedPruneLimit*2; i++ )
@@ -77,6 +79,11 @@ public class TestLogPruning
             // Then
             assertEquals( Math.min( i+1, filesNeededToExceedPruneLimit ), logCount() );
         }
+    }
+
+    private NeoStoreXaDataSource neoDataSource()
+    {
+        return db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
     }
 
     @Test
@@ -139,12 +146,12 @@ public class TestLogPruning
 
     private void rotate() throws Exception
     {
-        db.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
+        neoDataSource().rotateLogicalLog();
     }
 
     private int logCount()
     {
-        XaLogicalLog log = db.getXaDataSourceManager().getNeoStoreDataSource().getXaContainer().getLogicalLog();
+        XaLogicalLog log = neoDataSource().getXaContainer().getLogicalLog();
         int count = 0;
         for ( long i = log.getHighestLogVersion()-1; i >= 0; i-- )
         {

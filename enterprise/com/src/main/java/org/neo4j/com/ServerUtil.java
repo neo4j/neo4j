@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.com.RequestContext.Tx;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
@@ -274,11 +275,12 @@ public class ServerUtil
      *                 those that evaluate to true
      * @return The response, packed with the latest transactions
      */
+    // TODO update javadoc of ServerUtil.packResponse
     public static <T> Response<T> packResponse( StoreId storeId, XaDataSourceManager dsManager,
                                                 RequestContext context, T response, Predicate<Long> filter )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
-        Set<String> resourceNames = new HashSet<String>();
+        Set<String> resourceNames = new HashSet<>();
         final List<LogExtractor> logExtractors = new ArrayList<LogExtractor>();
         try
         {
@@ -301,7 +303,7 @@ public class ServerUtil
                         filter );
                 logExtractors.add( logExtractor );
             }
-            return new Response<T>( response, storeId, createTransactionStream( resourceNames,
+            return new Response<>( response, storeId, createTransactionStream( resourceNames,
                     stream, logExtractors ), ResourceReleaser.NO_OP );
         }
         catch ( Throwable t )
@@ -331,8 +333,8 @@ public class ServerUtil
     public static Response<Void> getTransactions( GraphDatabaseAPI graphDb,
                                                   String dataSourceName, long startTx, long endTx )
     {
-        List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
-        XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
+        List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<>();
+        XaDataSourceManager dsManager = dsManager( graphDb );
         final XaDataSource dataSource = dsManager.getXaDataSource( dataSourceName );
         if ( dataSource == null )
         {
@@ -343,10 +345,15 @@ public class ServerUtil
         List<LogExtractor> extractors = startTx < endTx ? Collections.singletonList(
                 getTransactionStreamForDatasource( dataSource, startTx, endTx, stream, ServerUtil.ALL ) ) :
                 Collections.<LogExtractor>emptyList();
-        return new Response<Void>( null, graphDb.getStoreId(), createTransactionStream(
+        return new Response<>( null, graphDb.storeId(), createTransactionStream(
                 Collections.singletonList( dataSourceName ), stream,
                 extractors ), ResourceReleaser.NO_OP );
 
+    }
+
+    private static XaDataSourceManager dsManager( GraphDatabaseAPI graphDb )
+    {
+        return graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
     }
 
     private static TransactionStream createTransactionStream( Collection<String> resourceNames,
