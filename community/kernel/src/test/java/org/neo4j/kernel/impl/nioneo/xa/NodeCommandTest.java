@@ -29,6 +29,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
@@ -44,8 +45,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+
 import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
 import static org.neo4j.kernel.impl.nioneo.store.ShortArray.LONG;
 import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
@@ -132,12 +135,8 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeDynamicRecordsWhenWholeNodeIsRemoved() throws Exception
+    public void shouldSerializeDynamicRecordsRemoved() throws Exception
     {
-        // Note: This is in relation to a bug where serialization would skip the dynamic records if the node was not in
-        // use. In the HA and in the recovery case, that meant that slaves would not update their dynamic label records
-        // appropriately when a node was deleted.
-
         // Given
         NodeRecord before = new NodeRecord( 12, 1, 2 );
         before.setInUse( true );
@@ -145,7 +144,7 @@ public class NodeCommandTest
         before.setLabelField( dynamicPointer( beforeDyn ), beforeDyn );
 
         NodeRecord after = new NodeRecord( 12, 2, 1 );
-        after.setInUse( false );
+        after.setInUse( true );
         List<DynamicRecord> dynamicRecords = asList( dynamicRecord( 0, false, true, -1l, LONG.intValue(), new byte[]{1,2,3,4,5,6,7,8}));
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
 
@@ -201,6 +200,7 @@ public class NodeCommandTest
     @Before
     public void before() throws Exception
     {
+        @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
                 new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
         File storeFile = new File( "nodestore" );
