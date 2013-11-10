@@ -325,14 +325,14 @@ public class IndexingService extends LifecycleAdapter
             switch (update.getUpdateMode())
             {
             case ADDED:
-                for (int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++)
+                for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )
                 {
                     processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelAfter( i ) );
                 }
                 break;
 
             case REMOVED:
-                for (int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++)
+                for ( int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++ )
                 {
                     processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelBefore( i ) );
                 }
@@ -342,7 +342,7 @@ public class IndexingService extends LifecycleAdapter
                 int lenBefore = update.getNumberOfLabelsBefore();
                 int lenAfter = update.getNumberOfLabelsAfter();
 
-                for(int i = 0, j = 0; i < lenBefore && j < lenAfter; i++, j++)
+                for ( int i = 0, j = 0; i < lenBefore && j < lenAfter; )
                 {
                     int labelBefore = update.getLabelBefore( i );
                     int labelAfter = update.getLabelAfter( j );
