@@ -49,10 +49,23 @@ public enum BitmapFormat
         for ( int i = 0, offset = -1; i < result.length; i++ )
         {
             //noinspection StatementWithEmptyBody
-            while ( (bitmap & (1L << ++offset)) == 0 );
+            while ( (bitmap & (1L << ++offset)) == 0 )
+            {
+                ;
+            }
             result[i] = (range << shift) | offset;
         }
         return result;
+    }
+
+    // Returns true if the label exists on the given node for the given bitmap
+    public boolean peek( long bitmap, long nodeId )
+    {
+        long normalizedNodeId = nodeId % (1L << shift);
+
+        long bitRepresentingNodeIdInBitmap = 1L << normalizedNodeId;
+
+        return ((bitmap & bitRepresentingNodeIdInBitmap) != 0);
     }
 
     public void set( Bitmap bitmap, long id, boolean set )

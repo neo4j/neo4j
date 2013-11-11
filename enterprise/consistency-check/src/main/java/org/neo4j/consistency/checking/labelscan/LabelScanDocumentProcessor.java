@@ -40,4 +40,9 @@ public class LabelScanDocumentProcessor implements RecordProcessor<NodeLabelRang
     {
         reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ), labelScanCheck );
     }
+
+    @Override
+    public void close()
+    {
+    }
 }

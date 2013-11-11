@@ -20,13 +20,11 @@
 package org.neo4j.consistency.checking.full;
 
 import org.junit.Test;
-
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 
 import static java.util.Arrays.asList;
-
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -51,19 +49,22 @@ public class RecordScannerTest
         @SuppressWarnings("unchecked")
         RecordProcessor<Integer> recordProcessor = mock( RecordProcessor.class );
 
-        RecordScanner scanner = new RecordScanner<Integer>( store, "our test task", progressBuilder,
-                recordProcessor );
+        RecordScanner scanner = new RecordScanner<>( store, "our test task", progressBuilder, recordProcessor );
 
         // when
         scanner.run();
 
         // then
+        verify( recordProcessor ).process( 42 );
+        verify( recordProcessor ).process( 75 );
+        verify( recordProcessor ).process( 192 );
+        verify( recordProcessor ).close();
+
+        verify( store ).close();
+
         verify( progressListener ).set( 0 );
         verify( progressListener ).set( 1 );
         verify( progressListener ).set( 2 );
         verify( progressListener ).done();
-        verify( recordProcessor ).process( 42 );
-        verify( recordProcessor ).process( 75 );
-        verify( recordProcessor ).process( 192 );
     }
 }

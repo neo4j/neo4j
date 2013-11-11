@@ -110,12 +110,11 @@ public class ExecutionOrderIntegrationTest
         InvocationLog multiPassChecks = new InvocationLog();
 
         // when
-        singlePass.execute( fixture, new LogDecorator( singlePassChecks ), access,
-                new InconsistencyReport( logger, singlePassSummary ) );
-        singlePass.execute( fixture, new LogDecorator( singlePassChecks ), access,
-                new InconsistencyReport( logger, singlePassSummary ) );
-        multiPass.execute( fixture, new LogDecorator( multiPassChecks ), access,
-                new InconsistencyReport( logger, multiPassSummary ) );
+        singlePass.execute( fixture, new LogDecorator( singlePassChecks ), access, new InconsistencyReport( logger,
+                singlePassSummary ) );
+
+        multiPass.execute( fixture, new LogDecorator( multiPassChecks ), access, new InconsistencyReport( logger,
+                multiPassSummary ) );
 
         // then
         verifyZeroInteractions( logger );
@@ -191,27 +190,31 @@ public class ExecutionOrderIntegrationTest
             Map<String, Throwable> extras = new HashMap<>( multiPassChecks );
             missing.keySet().removeAll( multiPassChecks.keySet() );
             extras.keySet().removeAll( singlePassChecks.keySet() );
+
+            StringBuilder headers = new StringBuilder("\n");
             StringWriter diff = new StringWriter();
             PrintWriter writer = new PrintWriter( diff );
             if ( !missing.isEmpty() )
             {
                 writer.append( "These expected checks were missing:\n" );
-                for ( Throwable check : missing.values() )
+                for ( Map.Entry<String, Throwable> check : missing.entrySet() )
                 {
                     writer.append( "  " );
-                    check.printStackTrace( writer );
+                    headers.append( "Missing: " ).append( check.getKey() ).append( "\n" );
+                    check.getValue().printStackTrace( writer );
                 }
             }
             if ( !extras.isEmpty() )
             {
                 writer.append( "These extra checks were not expected:\n" );
-                for ( Throwable check : extras.values() )
+                for ( Map.Entry<String, Throwable> check : extras.entrySet() )
                 {
                     writer.append( "  " );
-                    check.printStackTrace( writer );
+                    headers.append( "Unexpected: " ).append( check.getKey() ).append( "\n" );
+                    check.getValue().printStackTrace( writer );
                 }
             }
-            fail( diff.toString() );
+            fail( headers.toString() + diff.toString() );
         }
     }
 
@@ -277,6 +280,13 @@ public class ExecutionOrderIntegrationTest
         @Override
         public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
                 RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
+        {
+            return logging( checker );
+        }
+
+        @Override
+        public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
+                RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
         {
             return logging( checker );
         }

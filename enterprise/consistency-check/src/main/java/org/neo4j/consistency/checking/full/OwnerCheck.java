@@ -306,8 +306,7 @@ class OwnerCheck implements CheckDecorator
         {
             return checker;
         }
-        return new NameCheckerDecorator
-                <LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport>( checker, dynamicOwners )
+        return new NameCheckerDecorator<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport>( checker, dynamicOwners )
         {
             @Override
             DynamicOwner.NameOwner owner( LabelTokenRecord record )
@@ -315,6 +314,14 @@ class OwnerCheck implements CheckDecorator
                 return new DynamicOwner.LabelToken( record );
             }
         };
+    }
+
+    @Override
+    public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
+            RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
+    {
+        // TODO: Understand what this does.
+        return checker;
     }
 
     RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> decorateDynamicChecker(

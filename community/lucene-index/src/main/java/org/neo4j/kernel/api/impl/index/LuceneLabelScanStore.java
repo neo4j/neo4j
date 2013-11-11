@@ -222,6 +222,12 @@ public class LuceneLabelScanStore
                     throw new RuntimeException( e );
                 }
             }
+
+            @Override
+            public Iterator<Long> labelsForNode( long nodeId )
+            {
+                return strategy.labelsForNode(searcher, nodeId);
+            }
         };
     }
 

@@ -116,6 +116,8 @@ public interface ConsistencyReport
 
         void forIndexEntry( IndexEntry entry,
                             RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker );
+
+        void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, LabelsMatchReport> nodeLabelCheck );
     }
 
     interface PrimitiveConsistencyReport extends ConsistencyReport
@@ -584,5 +586,12 @@ public interface ConsistencyReport
         /** This index entry refers to a node that does not have the expected label. */
         @Documented
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
+    }
+
+    interface LabelsMatchReport extends ConsistencyReport
+    {
+        /** This node record has a label that is not found in the label scan store entry for this node */
+        @Documented
+        void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 }

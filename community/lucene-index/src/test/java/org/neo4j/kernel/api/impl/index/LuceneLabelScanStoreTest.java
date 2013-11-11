@@ -38,7 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
@@ -53,7 +53,7 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-
+import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
@@ -62,7 +62,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -273,6 +273,27 @@ public class LuceneLabelScanStoreTest
 
         // THEN
         assertEquals( "Found gaps in node id range: " + gaps( nodeSet, nodeCount ), nodeCount, nodeSet.size() );
+    }
+
+    @Test
+    public void shouldFindAllLabelsForGivenNode() throws Exception
+    {
+        // GIVEN
+        // 16 is the magic number of the page iterator
+        // 32 is the number of nodes in each lucene document
+        final long labelId1 = 1, labelId2 = 2, labelId3 = 87;
+        start();
+
+        int nodeId = 42;
+        store.updateAndCommit( IteratorUtil.iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
+        store.updateAndCommit( IteratorUtil.iterator( labelChanges( 41, NO_LABELS, new long[]{labelId3, labelId2} ) ) );
+
+        // WHEN
+        LabelScanReader reader = store.newReader();
+
+        // THEN
+        assertThat( asSet( reader.labelsForNode( nodeId ) ), hasItems(labelId1, labelId2) );
+        reader.close();
     }
 
     private Set<Long> gaps( Set<Long> ids, int expectedCount )

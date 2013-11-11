@@ -69,6 +69,7 @@ public class RecordScanner<RECORD> implements StoppableRunnable
             {
                 progress.failed( e );
             }
+            processor.close();
             progress.done();
         }
     }

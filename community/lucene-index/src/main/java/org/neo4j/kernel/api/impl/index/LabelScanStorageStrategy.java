@@ -39,6 +39,8 @@ public interface LabelScanStorageStrategy
 
     AllEntriesLabelScanReader newNodeLabelReader( SearcherManager searcher );
 
+    Iterator<Long> labelsForNode( IndexSearcher searcher, long nodeId );
+
     interface StorageService
     {
         void updateDocument( Term documentTerm, Document document ) throws IOException;

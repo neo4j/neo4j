@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withCause;
@@ -56,6 +55,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.SchemaConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.NodeConsistencyReport> NODE_REPORT =
             ProxyFactory.create( ConsistencyReport.NodeConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.LabelsMatchReport> LABEL_MATCH_REPORT =
+            ProxyFactory.create( ConsistencyReport.LabelsMatchReport.class );
     private static final ProxyFactory<ConsistencyReport.RelationshipConsistencyReport> RELATIONSHIP_REPORT =
             ProxyFactory.create( ConsistencyReport.RelationshipConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.PropertyConsistencyReport> PROPERTY_REPORT =
@@ -429,6 +430,12 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                                RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker )
     {
         dispatch( RecordType.INDEX, INDEX, entry, checker );
+    }
+
+    @Override
+    public void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> nodeLabelCheck )
+    {
+        dispatch( RecordType.NODE, LABEL_MATCH_REPORT, nodeRecord, nodeLabelCheck );
     }
 
     @Override

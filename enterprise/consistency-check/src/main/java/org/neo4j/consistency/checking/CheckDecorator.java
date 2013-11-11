@@ -51,6 +51,10 @@ public interface CheckDecorator
     RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
             RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker );
 
+    RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
+            RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker );
+
+
     static CheckDecorator NONE = new CheckDecorator()
     {
         @Override
@@ -98,6 +102,13 @@ public interface CheckDecorator
         @Override
         public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
                 RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
+        {
+            return checker;
+        }
+
+        @Override
+        public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
+                RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
         {
             return checker;
         }
