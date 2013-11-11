@@ -24,6 +24,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -395,7 +397,27 @@ public abstract class Command extends XaCommand
             store.updateRecord( after );
 
             // Dynamic Label Records
-            store.updateDynamicLabelRecords( after.getDynamicLabelRecords() );
+            Collection<DynamicRecord> toUpdate = new ArrayList<>( after.getDynamicLabelRecords() );
+            addRemoved( toUpdate );
+            store.updateDynamicLabelRecords( toUpdate );
+        }
+
+        private void addRemoved( Collection<DynamicRecord> toUpdate )
+        {
+            // the dynamic label records that exist in before, but not in after should be deleted.
+            Set<Long> idsToRemove = new HashSet<>();
+            for ( DynamicRecord record : before.getDynamicLabelRecords() )
+            {
+                idsToRemove.add( record.getId() );
+            }
+            for ( DynamicRecord record : after.getDynamicLabelRecords() )
+            {
+                idsToRemove.remove( record.getId() );
+            }
+            for ( long id : idsToRemove )
+            {
+                toUpdate.add( new DynamicRecord( id ) );
+            }
         }
 
         @Override
@@ -419,9 +441,8 @@ public abstract class Command extends XaCommand
                 
                 // labels
                 buffer.putLong( record.getLabelField() );
+                writeDynamicRecords( buffer, record.getDynamicLabelRecords() );
             }
-
-            writeDynamicRecords( buffer, record.getDynamicLabelRecords() );
         }
 
         public static Command readFromFile( NeoStore neoStore, ReadableByteChannel byteChannel, ByteBuffer buffer )
@@ -432,15 +453,15 @@ public abstract class Command extends XaCommand
                 return null;
             }
             long id = buffer.getLong();
-            
+
             NodeRecord before = readNodeRecord( id, byteChannel, buffer );
-            if( before == null )
+            if ( before == null )
             {
                 return null;
             }
 
             NodeRecord after = readNodeRecord( id, byteChannel, buffer );
-            if( after == null )
+            if ( after == null )
             {
                 return null;
             }
@@ -470,9 +491,7 @@ public abstract class Command extends XaCommand
             {
                 throw new IOException( "Illegal in use flag: " + inUseFlag );
             }
-
             NodeRecord record;
-            long labelField = 0;
             if ( inUse )
             {
                 if ( !readAndFlip( byteChannel, buffer, 8*3 ) )
@@ -482,18 +501,16 @@ public abstract class Command extends XaCommand
                 record = new NodeRecord( id, buffer.getLong(), buffer.getLong() );
                 
                 // labels
-                labelField = buffer.getLong();
+                long labelField = buffer.getLong();
+                Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
+                readDynamicRecords( byteChannel, buffer, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
+                record.setLabelField( labelField, dynamicLabelRecords );
             }
             else
             {
                 record = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(),
                         Record.NO_NEXT_PROPERTY.intValue() );
             }
-
-            // Dynamic labels
-            Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
-            readDynamicRecords( byteChannel, buffer, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
-            record.setLabelField( labelField, dynamicLabelRecords );
 
             record.setInUse( inUse );
             return record;
