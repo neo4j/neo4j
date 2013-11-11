@@ -244,6 +244,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         } );
 
                         context.setAvailableHaMasterId( null );
+                        context.setElectedMasterId( null );
 
                         availabilityGuard.deny();
                     }
