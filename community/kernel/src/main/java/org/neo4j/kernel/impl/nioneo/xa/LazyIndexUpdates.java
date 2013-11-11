@@ -20,13 +20,16 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.api.UpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -87,12 +90,14 @@ class LazyIndexUpdates implements IndexUpdates
     private Collection<NodePropertyUpdate> gatherPropertyAndLabelUpdates()
     {
         Collection<NodePropertyUpdate> propertyUpdates = new HashSet<>();
-        gatherUpdatesFromPropertyCommands( propertyUpdates );
-        gatherUpdatesFromNodeCommands( propertyUpdates );
+        Map<Pair<Long, Integer>, NodePropertyUpdate> propertyChanges = new HashMap<>();
+        gatherUpdatesFromPropertyCommands( propertyUpdates, propertyChanges );
+        gatherUpdatesFromNodeCommands( propertyUpdates, propertyChanges );
         return propertyUpdates;
     }
 
-    private void gatherUpdatesFromPropertyCommands( Collection<NodePropertyUpdate> updates )
+    private void gatherUpdatesFromPropertyCommands( Collection<NodePropertyUpdate> updates,
+                                                    Map<Pair<Long, Integer>, NodePropertyUpdate> propertyLookup )
     {
         for ( PropertyCommand propertyCommand : propCommands )
         {
@@ -135,11 +140,16 @@ class LazyIndexUpdates implements IndexUpdates
                                                     nodeLabelsAfter ) )
             {
                 updates.add( update );
+                if ( update.getUpdateMode() == UpdateMode.CHANGED )
+                {
+                    propertyLookup.put( Pair.of( update.getNodeId(), update.getPropertyKeyId() ), update );
+                }
             }
         }
     }
 
-    private void gatherUpdatesFromNodeCommands( Collection<NodePropertyUpdate> propertyUpdates )
+    private void gatherUpdatesFromNodeCommands( Collection<NodePropertyUpdate> propertyUpdates,
+                                                Map<Pair<Long, Integer>, NodePropertyUpdate> propertyLookup )
     {
         for ( NodeCommand nodeCommand : nodeCommands.values() )
         {
@@ -159,15 +169,17 @@ class LazyIndexUpdates implements IndexUpdates
             while ( properties.hasNext() )
             {
                 DefinedProperty property = properties.next();
+                int propertyKeyId = property.propertyKeyId();
                 if ( summary.hasAddedLabels() )
                 {
-                    propertyUpdates.add(
-                            add( nodeId, property.propertyKeyId(), property.value(), summary.getAddedLabels() ) );
+                    Object value = property.value();
+                    propertyUpdates.add( add( nodeId, propertyKeyId, value, summary.getAddedLabels() ) );
                 }
                 if ( summary.hasRemovedLabels() )
                 {
-                    propertyUpdates.add(
-                            remove( nodeId, property.propertyKeyId(), property.value(), summary.getRemovedLabels() ) );
+                    NodePropertyUpdate propertyChange = propertyLookup.get( Pair.of( nodeId, propertyKeyId ) );
+                    Object value = propertyChange == null ? property.value() : propertyChange.getValueBefore();
+                    propertyUpdates.add( remove( nodeId, propertyKeyId, value, summary.getRemovedLabels() ) );
                 }
             }
         }
