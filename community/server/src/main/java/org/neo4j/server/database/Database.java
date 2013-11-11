@@ -25,11 +25,6 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-/**
- * NOTICE: This class to be replaced by a corresponding
- * interface in 1.10, please use available subclasses instead
- * of directly instantiating this.
- */
 public interface Database extends Lifecycle
 {
     public String getLocation();
