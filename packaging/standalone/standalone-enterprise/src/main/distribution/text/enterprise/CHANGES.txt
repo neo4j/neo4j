@@ -1,5 +1,41 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9.5 (2013-11-11)
+------------------
+HA:
+o Removed all usage of getHostName() that might lead to problems on instances with improperly
+  configured DNS
+o The master instance wil now always send out masterIsAvailable messages in response to
+  masterIsElected, ensuring that instances in PENDING state will transition eventually to
+  SLAVE
+
+Kernel:
+o Fixed NPE in PersistenceWindowPool when concurrently loading non-mapped windows
+o Fixed potential deadlock in PersistenceWindowPool cause by negative mark count
+o Performance optimizations for best-first selector
+
+Server:
+o Shutdown hook is now properly removed on normal shutdown, removing potential thread
+  leak which might prevent orderly exit of the VM process
+
+Graph Algorithms:
+o Fixed potential suboptimal path finding in A* executions for particular graph topologies. Also
+  improved performance and memory consumption of A*
+
+Cluster:
+o Fixed a bug around channel handling which might lead to messages being delayed and leading
+  to false heartbeat failures
+o It is now possible to specify 0.0.0.0 for ha.cluster_server and properly wait for messages
+  on all interfaces
+o Removed all usage of getHostName() that might lead to problems on instances with improperly
+  configured DNS
+o Fixed election bug which might lead to infinite wait on elections
+o Fixed election bug which might lead to votes being discarded and result in the wrong master
+  being elected
+o Instances no longer expect heartbeats from themselves so they can't timeout on their own
+o Instances will now ignore suspicions from ex cluster members
+o Instances will now ignore suspicions for themselves
+
 1.9.4 (2013-09-19)
 ------------------
 Backup:

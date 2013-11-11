@@ -1,3 +1,9 @@
+1.9.5 (2013-11-11)
+------------------
+Graph Algorithms:
+o Fixed potential suboptimal path finding in A* executions for particular graph topologies. Also
+  improved performance and memory consumption of A*
+
 1.8.M04 (2012-06-07)
 --------------------
 o AllPaths/AllSimplePaths uses the new bidirectional traversal feature in the traversal framework.
