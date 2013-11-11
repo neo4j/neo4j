@@ -55,7 +55,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.transactional.StubStatementDeserializer.deserilizationErrors;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
 
 public class TransactionHandleTest
@@ -108,7 +107,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
+        handle.execute( statements( new Statement( "query", map(), false, (ResultDataContent[]) null ) ), output );
 
         // then
         InOrder transactionOrder = inOrder( transactionContext, registry );
@@ -182,7 +181,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.commit( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
+        handle.commit( statements( new Statement( "query", map(), false, (ResultDataContent[]) null ) ), output );
 
         // then
         InOrder transactionOrder = inOrder( transactionContext, registry );
@@ -254,35 +253,6 @@ public class TransactionHandleTest
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
-        outputOrder.verify( output ).finish();
-        verifyNoMoreInteractions( output );
-    }
-
-    @Test
-    public void shouldRollbackTransactionIfDeserializationErrorOccurs() throws Exception
-    {
-        // given
-        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
-        TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
-
-        TransactionRegistry registry = mock( TransactionRegistry.class );
-        when( registry.begin() ).thenReturn( 1337l );
-
-        TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ), registry,
-                uriScheme, StringLogger.DEV_NULL );
-        ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
-
-        // when
-        handle.execute( deserilizationErrors(
-                new Neo4jError( Status.Request.InvalidFormat, new Exception() ) ), output );
-
-        // then
-        verify( transactionContext ).rollback();
-        verify( registry ).forget( 1337l );
-
-        InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Request.InvalidFormat ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }

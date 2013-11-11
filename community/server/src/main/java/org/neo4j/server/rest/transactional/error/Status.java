@@ -210,6 +210,22 @@ public interface Status
         {
             return classification.includeStackTrace;
         }
+
+        public static boolean shouldRollBackOn( Collection<Neo4jError> errors )
+        {
+            if ( errors.isEmpty() )
+            {
+                return false;
+            }
+            for ( Neo4jError error : errors )
+            {
+                if ( error.status().code().classification.rollbackTransaction )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     public enum Classification

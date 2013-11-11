@@ -169,15 +169,15 @@ public class TransactionHandle
     {
         executeStatements( statements, output, errors );
 
-        if ( errors.isEmpty() )
+        if ( Status.Code.shouldRollBackOn( errors ) )
+        {
+            rollback( errors );
+        }
+        else
         {
             context.suspendSinceTransactionsAreStillThreadBound();
             long lastActiveTimestamp = registry.release( id, this );
             output.transactionStatus( lastActiveTimestamp );
-        }
-        else
-        {
-            rollback( errors );
         }
     }
 
