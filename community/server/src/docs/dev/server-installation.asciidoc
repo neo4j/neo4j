@@ -14,6 +14,10 @@ Please read the relevant section below.
 
 For information on High Availability, please refer to <<ha>>.
 
+== Pre-requisites ==
+
+With the exception of our Windows Installer, you'll need a Java Virtual Machine installed on your computer.  We recommend that you install the Java JDK 7 from the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Website].
+
 == Windows ==
 
 === Windows Installer ===
@@ -29,8 +33,6 @@ For information on High Availability, please refer to <<ha>>.
 2. Right-click the downloaded file, click Extract All
    * refer to the top-level extracted directory as +NEO4J_HOME+
 3. Double-click on %NEO4J_HOME%\bin\Neo4j.bat
-
-NOTE: WE EITHER CHANGE THE NEO4j.bat file to start a console directly, or change the instructions to fire up a shell.  I vote for 1.
 
 === As a Windows service ===
 
@@ -51,9 +53,11 @@ To uninstall, run `bin\Neo4jInstaller.bat remove` as Administrator.
 
 To query the status of the service, run `bin\Neo4jInstaller.bat status`
 
-To start the service from the command prompt, run `bin\Neo4jInstaller.bat start`
+To start the service from the command prompt, run `sc start Neo4j-Server`
 
-To stop the service from the command prompt, run `bin\Neo4jInstaller.bat stop`
+To stop the service from the command prompt, run `sc stop Neo4j-Server`
+
+You can also start and stop Neo4j from the Windows Service Manager.
 
 NOTE: Some users have reported problems on Windows when using the ZoneAlarm firewall.
 If you are having problems getting large responses from the server, or if Webadmin does not work, try disabling ZoneAlarm.
@@ -74,7 +78,7 @@ Follow the instructions at http://debian.neo4j.org
 3. Change directory to `$NEO4J_HOME`
    * run `./bin/neo4j console`
 
-== Windows Service ==
+== Linux Service ==
 
 Neo4j can participate in the normal system startup and shutdown process.
 The following procedure should work on most popular Linux distributions:
@@ -109,56 +113,6 @@ which will stop the server, if running, and remove it.
 Note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
 
 NOTE: This approach to running Neo4j as a server is deprecated.  We strongly advise you to run Neo4j from a package where feasible.
-
-== Mac OSX ==
-
-=== via Homebrew ===
-
-Using http://mxcl.github.com/homebrew/[Homebrew], to install the latest stable version of Neo4j Server, issue the following command:
-
-----
-[source,shell]
-----
-
-
-=== Service from Tarball ===
-
-1. Download the latest release from http://neo4j.org/download
-   * select the appropriate tar.gz distribution for your platform
-2. Extract the contents of the archive, using +tar -cf <filename>+
-   * refer to the top-level extracted directory as +NEO4J_HOME+
-
-Neo4j can participate in the normal system startup and shutdown process.
-The following procedure should work on most popular Linux distributions:
-
-1. `cd $NEO4J_HOME`
-2. `sudo ./bin/neo4j-installer install`
-+
-if asked, enter your password to gain super-user privileges
-
-3. `service neo4j-service status`
-+
-should indicate that the server is not running
-
-4. `service neo4j-service start`
-+
-will start the server
-
-During installation you will be given the option to select the user Neo4j will run as.
-You will be asked to supply a username (defaulting to `neo4j`) and if that user is not present on the system it will be created as a system account and the '$NEO4J_HOME/data' directory will be `chown`'ed to that user.
-
-You are encouraged to create a dedicated user for running the service and for that reason it is suggested that you unpack the distribution package under '/opt' or your site specific optional packages directory.
-
-After installation you may have to do some platform specific configuration and performance tuning.
-For that, refer to  <<configuration-linux-notes>>.
-
-To remove the server from the set of startup services, the proper command is
-
-`service neo4j-service remove`
-+
-which will stop the server, if running, and remove it.
-
-Note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
 
 == Mac OSX ==
 
