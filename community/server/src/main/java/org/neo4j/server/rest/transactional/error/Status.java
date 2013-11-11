@@ -104,9 +104,17 @@ public interface Status
     {
         // client
         InvalidSyntax( ClientError ),
+        /** The syntax is valid, but the query is not semantically valid. */
+        InvalidSemantics( ClientError ),
         ParameterMissing( ClientError ),
+        /** A constraint that should hold in the query was violated by the data. */
+        ConstraintViolation( ClientError ),
+        EntityNotFound( ClientError ),
+        InvalidType( ClientError ),
+        ArithmeticError( ClientError ),
         // database
-        ExecutionFailure( DatabaseError );
+        ExecutionFailure( DatabaseError ),
+        ;
         private final Code code;
 
         @Override
@@ -121,9 +129,31 @@ public interface Status
         }
     }
 
+    enum Schema implements Status
+    {
+        /** A constraint in the database was violated by the query. */
+        ConstraintViolation( ClientError ),
+        NoSuchIndex( ClientError ),
+        NoSuchConstraint( ClientError ),
+        ;
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        private Schema( Classification classification )
+        {
+            this.code = new Code( classification, this );
+        }
+    }
+
     enum General implements Status
     {
         // database
+        FailedIndex( DatabaseError ),
         UnknownFailure( DatabaseError );
         private final Code code;
 
