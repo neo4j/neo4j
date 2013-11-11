@@ -35,7 +35,6 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.kernel.api.direct.SimpleDirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -82,7 +81,7 @@ public class ConsistencyCheckService
                 labelScanStore =
                     new LuceneLabelScanStoreBuilder( storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
-                DirectStoreAccess stores = new SimpleDirectStoreAccess( store, labelScanStore, indexes );
+                DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
                 summary = new FullCheck( tuningConfiguration, progressFactory )
                         .execute( stores, StringLogger.tee( logger, report ) );
             }

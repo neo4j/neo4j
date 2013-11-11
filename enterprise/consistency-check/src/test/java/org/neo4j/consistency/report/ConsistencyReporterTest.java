@@ -49,8 +49,10 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.impl.index.LuceneNodeLabelRange;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -314,13 +316,21 @@ public class ConsistencyReporterTest
             {
                 return new IndexEntry( 0 );
             }
+            if ( type == SchemaRule.Kind.class )
+            {
+                return SchemaRule.Kind.INDEX_RULE;
+            }
+            if ( type == IndexRule.class )
+            {
+                return IndexRule.indexRule( 1, 2, 3, new SchemaIndexProvider.Descriptor( "provider", "version" ) );
+            }
             if ( type == long.class )
             {
                 return 12L;
             }
-            if ( type == SchemaRule.Kind.class )
+            if ( type == Object.class )
             {
-                return SchemaRule.Kind.INDEX_RULE;
+                return "object";
             }
             throw new IllegalArgumentException( format( "Don't know how to provide parameter of type %s", type.getName() ) );
         }

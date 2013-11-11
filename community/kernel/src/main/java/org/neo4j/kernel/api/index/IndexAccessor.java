@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -33,7 +34,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 /**
  * Used for online operation of an index.
  */
-public interface IndexAccessor
+public interface IndexAccessor extends Closeable
 {
     /**
      * Deletes this index as well as closes all used external resources.

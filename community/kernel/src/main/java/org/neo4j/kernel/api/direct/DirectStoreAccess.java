@@ -19,15 +19,54 @@
  */
 package org.neo4j.kernel.api.direct;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
-public interface DirectStoreAccess
+public class DirectStoreAccess implements Closeable
 {
-    StoreAccess nativeStores();
+    private final StoreAccess nativeStores;
+    private final LabelScanStore labelScanStore;
+    private final SchemaIndexProvider indexes;
 
-    LabelScanStore labelScanStore();
+    public DirectStoreAccess(
+            StoreAccess nativeStores, LabelScanStore labelScanStore, SchemaIndexProvider indexes )
+    {
+        this.nativeStores = nativeStores;
+        this.labelScanStore = labelScanStore;
+        this.indexes = indexes;
+    }
 
-    SchemaIndexProvider indexes();
+    public StoreAccess nativeStores()
+    {
+        return nativeStores;
+    }
+
+    public LabelScanStore labelScanStore()
+    {
+        return labelScanStore;
+    }
+
+    public SchemaIndexProvider indexes()
+    {
+        return indexes;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        nativeStores.close();
+        labelScanStore.shutdown();
+        try
+        {
+            indexes.shutdown();
+        }
+        catch ( Throwable throwable )
+        {
+            throw new IOException( throwable );
+        }
+    }
 }

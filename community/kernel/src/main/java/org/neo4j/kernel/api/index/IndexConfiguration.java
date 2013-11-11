@@ -32,4 +32,18 @@ public class IndexConfiguration
     {
         return unique;
     }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        return this == o ||
+                !(o == null || getClass() != o.getClass()) &&
+                        unique == ((IndexConfiguration) o).unique;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return (unique ? 1 : 0);
+    }
 }

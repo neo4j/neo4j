@@ -38,7 +38,7 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.direct.SimpleDirectStoreAccess;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -253,7 +253,7 @@ class RebuildFromLogs
         Config tuningConfiguration = new Config( stringMap(),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
-                .execute( new SimpleDirectStoreAccess( stores, nioneo.getLabelScanStore(), nioneo.getIndexProvider() ), StringLogger.SYSTEM );
+                .execute( new DirectStoreAccess( stores, nioneo.getLabelScanStore(), nioneo.getIndexProvider() ), StringLogger.SYSTEM );
     }
 
     private static void printUsage( String... msgLines )

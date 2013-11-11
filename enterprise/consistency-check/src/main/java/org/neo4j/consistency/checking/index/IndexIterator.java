@@ -24,45 +24,47 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class IndexIterator implements BoundedIterable<Long>
 {
     private final IndexAccessor indexAccessor;
-    private final BoundedIterable<Long> indexReader;
+    private BoundedIterable<Long> indexReader;
 
-    public IndexIterator( IndexRule indexRule, SchemaIndexProvider indexes )
+    public IndexIterator( IndexAccessor indexAccessor )
     {
-        IndexConfiguration indexConfiguration = new IndexConfiguration( indexRule.isConstraintIndex() );
-        try
-        {
-            indexAccessor = indexes.getOnlineAccessor( indexRule.getId(), indexConfiguration );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        indexReader = indexAccessor.newAllEntriesReader();
+        this.indexAccessor = indexAccessor;
     }
 
     @Override
     public long maxCount()
     {
-        return indexReader.maxCount();
+        try ( BoundedIterable<Long> reader = indexAccessor.newAllEntriesReader() )
+        {
+            return reader.maxCount();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
     public void close() throws IOException
     {
-        indexReader.close();
-        indexAccessor.close();
+        if ( indexReader != null )
+        {
+            indexReader.close();
+        }
     }
 
     @Override
     public Iterator<Long> iterator()
     {
+        if ( indexReader == null )
+        {
+            indexReader = indexAccessor.newAllEntriesReader();
+        }
+
         return indexReader.iterator();
     }
 }

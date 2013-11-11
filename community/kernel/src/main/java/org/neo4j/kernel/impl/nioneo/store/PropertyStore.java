@@ -675,10 +675,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     {
         long nextProp = firstRecordId;
         List<PropertyRecord> toReturn = new LinkedList<>();
-        if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            return null;
-        }
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = getLightRecord( nextProp );
