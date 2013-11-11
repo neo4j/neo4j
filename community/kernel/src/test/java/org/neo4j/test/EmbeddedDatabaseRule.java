@@ -30,7 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
  */
 public class EmbeddedDatabaseRule extends DatabaseRule
 {
-    private final TemporaryFolder temp = new TemporaryFolder();
+    protected final TemporaryFolder temp = new TemporaryFolder();
     
     @Override
     protected GraphDatabaseFactory newFactory()
