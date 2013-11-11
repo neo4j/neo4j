@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
@@ -121,7 +116,12 @@ import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.tooling.Clock;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.lang.String.format;
+
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -140,7 +140,7 @@ public abstract class InternalAbstractGraphDatabase
         public static final GraphDatabaseSettings.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
         public static final Setting<Boolean> load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
         public static final Setting<Boolean> ephemeral = new GraphDatabaseSetting.BooleanSetting(
-                Settings.setting("ephemeral", Settings.BOOLEAN, Settings.FALSE ) );
+                Settings.setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE ) );
 
         public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
         public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
@@ -196,8 +196,10 @@ public abstract class InternalAbstractGraphDatabase
     protected Caches caches;
 
     protected final LifeSupport life = new LifeSupport();
-    private final Map<String,CacheProvider> cacheProviders;
+    private final Map<String, CacheProvider> cacheProviders;
     protected TransactionStateFactory stateFactory;
+    protected AvailabilityGuard availabilityGuard;
+    protected long accessTimeout;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
                                              Iterable<Class<?>> settingsClasses,
@@ -219,7 +221,8 @@ public abstract class InternalAbstractGraphDatabase
 
         // Convert IndexProviders into KernelExtensionFactories
         // Remove this when the deprecated IndexProvider is removed
-        Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = Iterables.map( new Function<IndexProvider, KernelExtensionFactory<?>>()
+        Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = Iterables.map( new
+                                                                                                   Function<IndexProvider, KernelExtensionFactory<?>>()
         {
             @Override
             public KernelExtensionFactory<?> apply( IndexProvider from )
@@ -235,6 +238,7 @@ public abstract class InternalAbstractGraphDatabase
                 dependencyResolver );
 
         this.storeDir = config.get( Configuration.store_dir );
+        accessTimeout = 1 * 1000; // TODO make configurable
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -264,10 +268,10 @@ public abstract class InternalAbstractGraphDatabase
         }
         catch ( final Throwable throwable )
         {
-            StringBuilder msg = new StringBuilder(  );
+            StringBuilder msg = new StringBuilder();
             msg.append( "Startup failed" );
             Throwable temporaryThrowable = throwable;
-            while (temporaryThrowable != null)
+            while ( temporaryThrowable != null )
             {
                 msg.append( ": " ).append( temporaryThrowable.getMessage() );
                 temporaryThrowable = temporaryThrowable.getCause();
@@ -279,6 +283,12 @@ public abstract class InternalAbstractGraphDatabase
 
             throw new RuntimeException( throwable );
         }
+    }
+
+    protected void createDatabaseAvailability()
+    {
+        // This is how we lock the entire database to avoid threads using it during lifecycle events
+        life.add( new DatabaseAvailability( txManager, availabilityGuard ) );
     }
 
     protected void registerRecovery()
@@ -309,6 +319,23 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void create()
     {
+        availabilityGuard = createAvailabilityGuard();
+
+        availabilityGuard.addListener( new AvailabilityGuard.AvailabilityListener()
+        {
+            @Override
+            public void available()
+            {
+                msgLog.logMessage( "Database is now ready" );
+            }
+
+            @Override
+            public void unavailable()
+            {
+                msgLog.logMessage( "Database is no longer ready" );
+            }
+        } );
+
         fileSystem = createFileSystemAbstraction();
 
         // Create logger
@@ -318,8 +345,9 @@ public abstract class InternalAbstractGraphDatabase
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
                 config.get( NeoStoreXaDataSource.Configuration.store_dir ),
                 GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap(
-                        config.get( Configuration.use_memory_mapped_buffers ) ), logging.getConsoleLog( AutoConfigurator.class ) );
-        if (config.get( GraphDatabaseSettings.dump_configuration ))
+                        config.get( Configuration.use_memory_mapped_buffers ) ),
+                logging.getConsoleLog( AutoConfigurator.class ) );
+        if ( config.get( GraphDatabaseSettings.dump_configuration ) )
         {
             System.out.println( autoConfigurator.getNiceMemoryInformation() );
         }
@@ -341,10 +369,10 @@ public abstract class InternalAbstractGraphDatabase
 
         config.setLogger( msgLog );
 
-        this.storeLocker = life.add(new StoreLockerLifecycleAdapter(
-                new StoreLocker( fileSystem ), storeDir ));
+        this.storeLocker = life.add( new StoreLockerLifecycleAdapter(
+                new StoreLocker( fileSystem ), storeDir ) );
 
-        new JvmChecker(msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
+        new JvmChecker( msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         // Instantiate all services - some are overridable by subclasses
         boolean readOnly = config.get( Configuration.read_only );
@@ -479,16 +507,20 @@ public abstract class InternalAbstractGraphDatabase
 
         life.add( new MonitorGc( config, msgLog ) );
 
-        // This is how we lock the entire database to avoid threads using it during lifecycle events
-        life.add( new DatabaseAvailability() );
+        life.add( nodeManager );
+
+        createDatabaseAvailability();
 
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
 
-        life.add( nodeManager );
-
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected AvailabilityGuard createAvailabilityGuard()
+    {
+        return new AvailabilityGuard( Clock.REAL_CLOCK, 1 );
     }
 
     protected TransactionStateFactory createTransactionStateFactory()
@@ -517,12 +549,14 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager,
+                    persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
         }
 
-        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager,
+                persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
     }
@@ -532,7 +566,8 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager,
+                    persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
             {
@@ -581,7 +616,8 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getMessagesLog( NodeManager.class ), this, txManager,
+                persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
         {
@@ -631,12 +667,19 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
+    public boolean isAvailable( long timeout )
+    {
+        return availabilityGuard.isAvailable( timeout );
+    }
+
+    @Override
     public void shutdown()
     {
         try
         {
             msgLog.info( "Shutdown started" );
             msgLog.flush();
+            availabilityGuard.shutdown();
             life.shutdown();
         }
         catch ( LifecycleException throwable )
@@ -811,6 +854,12 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Transaction beginTx( ForceMode forceMode )
     {
+        if ( !availabilityGuard.isAvailable( accessTimeout ) )
+        {
+            throw new TransactionFailureException( "Database is currently not available " + availabilityGuard
+                    .hashCode() );
+        }
+
         if ( transactionRunning() )
         {
             return new PlaceboTransaction( txManager, lockManager, txManager.getTransactionState() );
@@ -915,7 +964,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
-            throw new NotFoundException( format("Relationship %d not found", id));
+            throw new NotFoundException( format( "Relationship %d not found", id ) );
         }
         return nodeManager.getRelationshipById( id );
     }
@@ -1215,7 +1264,7 @@ public abstract class InternalAbstractGraphDatabase
         public TransactionEventsSyncHook create()
         {
             return transactionEventHandlers.hasHandlers() ?
-                   new TransactionEventsSyncHook( transactionEventHandlers, txManager) : null;
+                    new TransactionEventsSyncHook( transactionEventHandlers, txManager ) : null;
         }
     }
 
@@ -1248,7 +1297,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) lockManager;
             }
-            else if( StoreFactory.class.isAssignableFrom( type ) )
+            else if ( StoreFactory.class.isAssignableFrom( type ) )
             {
                 return (T) storeFactory;
             }
@@ -1324,13 +1373,17 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) kernelPanicEventGenerator;
             }
+            else if ( LifeSupport.class.isAssignableFrom( type ) )
+            {
+                return (T) life;
+            }
             else if ( DependencyResolver.class.isAssignableFrom( type ) )
             {
                 return (T) DependencyResolverImpl.this;
             }
             return null;
         }
-        
+
         @Override
         public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
         {
@@ -1340,7 +1393,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return selector.select( type, Iterables.option( result ) );
             }
-            
+
             // Try with kernel extensions
             return kernelExtensions.resolveDependency( type, selector );
         }
@@ -1371,45 +1424,6 @@ public abstract class InternalAbstractGraphDatabase
         public void shutdown()
                 throws Throwable
         {
-        }
-    }
-
-    /**
-     * This class handles whether the database as a whole is available to use at all.
-     * As it runs as the last service in the lifecycle list, the stop() is called first
-     * on stop, shutdown or restart, and thus blocks access to everything else for outsiders.
-     */
-    class DatabaseAvailability
-            implements Lifecycle
-    {
-        @Override
-        public void init()
-                throws Throwable
-        {
-            // TODO: Starting database. Make sure none can access it through lock or CAS
-        }
-
-        @Override
-        public void start()
-                throws Throwable
-        {
-            // TODO: Starting database. Make sure none can access it through lock or CAS
-            msgLog.logMessage( "Started - database is now available" );
-        }
-
-        @Override
-        public void stop()
-                throws Throwable
-        {
-            // TODO: Starting database. Make sure none can access it through lock or CAS
-            msgLog.logMessage( "Stopping - database is now unavailable" );
-        }
-
-        @Override
-        public void shutdown()
-                throws Throwable
-        {
-            // TODO: Starting database. Make sure none can access it through lock or CAS
         }
     }
 

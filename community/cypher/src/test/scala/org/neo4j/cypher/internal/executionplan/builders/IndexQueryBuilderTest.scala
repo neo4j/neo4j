@@ -156,6 +156,8 @@ class Fake_Database_That_Has_All_Indexes extends GraphDatabaseService with Index
 
   def registerTransactionEventHandler[T](handler: TransactionEventHandler[T]): TransactionEventHandler[T] = null
 
+  def isAvailable(timeout: Long): Boolean = true
+
   def shutdown() {}
 
   def unregisterKernelEventHandler(handler: KernelEventHandler): KernelEventHandler = null

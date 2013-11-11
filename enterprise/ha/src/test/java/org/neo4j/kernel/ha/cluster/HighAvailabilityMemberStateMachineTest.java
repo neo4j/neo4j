@@ -37,7 +37,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.Election;
-import org.neo4j.kernel.ha.InstanceAccessGuard;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -48,7 +48,7 @@ public class HighAvailabilityMemberStateMachineTest
     {
         // Given
         HighAvailabilityMemberContext context = mock( HighAvailabilityMemberContext.class );
-        InstanceAccessGuard guard = mock( InstanceAccessGuard.class );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         Election election = mock( Election.class );
@@ -66,7 +66,7 @@ public class HighAvailabilityMemberStateMachineTest
         // Given
         InstanceId me = new InstanceId( 1 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
-        InstanceAccessGuard guard = mock( InstanceAccessGuard.class );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
@@ -104,7 +104,7 @@ public class HighAvailabilityMemberStateMachineTest
         // Given
         InstanceId me = new InstanceId( 1 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
-        InstanceAccessGuard guard = mock( InstanceAccessGuard.class );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 
@@ -142,7 +142,7 @@ public class HighAvailabilityMemberStateMachineTest
         // Given
         InstanceId me = new InstanceId( 1 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
-        InstanceAccessGuard guard = mock( InstanceAccessGuard.class );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
 

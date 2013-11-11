@@ -43,6 +43,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
@@ -79,7 +80,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
     // SPI implementation, thus making it easier to test this class by mocking the SPI.
     public interface SPI
     {
-        void acquireLock(LockGrabber grabber, Object... entities);
+        boolean isAccessible();
+
+        void acquireLock( LockGrabber grabber, Object... entities );
 
         Transaction beginTx() throws SystemException, NotSupportedException;
 
@@ -99,7 +102,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         Integer createRelationshipType( String name );
 
-        Pair<Integer,Long> getMasterIdForCommittedTx( long txId ) throws IOException;
+        Pair<Integer, Long> getMasterIdForCommittedTx( long txId ) throws IOException;
 
         RequestContext rotateLogsAndStreamStoreFiles( StoreWriter writer );
 
@@ -134,7 +137,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
         this.unfinishedTransactionThresholdMillis = config.get( HaSettings.lock_read_timeout );
         this.unfinishedTransactionsExecutor =
                 Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Unfinished transaction reaper" ) );
-        this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new UnfinishedTransactionReaper(), UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
+        this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new UnfinishedTransactionReaper(),
+                UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
     }
 
     @Override
@@ -147,6 +151,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<Void> initializeTx( RequestContext context )
     {
+        if ( !spi.isAccessible() )
+        {
+            throw new TransactionFailureException( "Database is currently not available" );
+        }
+
         try
         {
             Transaction tx = spi.beginTx();
@@ -161,7 +170,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
         catch ( SystemException e )
         {
             throw new RuntimeException( e );
-        } finally
+        }
+        finally
         {
             suspendTransaction( context );
         }
@@ -198,7 +208,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     private <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter )
     {
-        return spi.packResponse(context, response, filter);
+        return spi.packResponse( context, response, filter );
     }
 
     private Transaction getTx( RequestContext txId )
@@ -233,7 +243,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         try
         {
-            MasterTransaction tx = transactions.get(context);
+            MasterTransaction tx = transactions.get( context );
             if ( tx.finishAsap() )
             {   // If we've tried to finish this tx off earlier then do it now when we have the chance.
                 spi.finishTransaction( false );
@@ -322,7 +332,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     public Response<IdAllocation> allocateIds( IdType idType )
     {
-        IdAllocation result = spi.allocateIds(idType);
+        IdAllocation result = spi.allocateIds( idType );
         return ServerUtil.packResponseWithoutTransactionStream( spi.storeId(), result );
     }
 
@@ -332,7 +342,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         resumeTransaction( context );
         try
         {
-            final long txId = spi.applyPreparedTransaction(resource, txGetter.extract());
+            final long txId = spi.applyPreparedTransaction( resource, txGetter.extract() );
             Predicate<Long> upUntilThisTx = new Predicate<Long>()
             {
                 public boolean accept( Long item )

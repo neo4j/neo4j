@@ -19,22 +19,24 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
 import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 /**
  * TODO
@@ -80,7 +82,7 @@ public class TestBasicHaOperations
         cluster.await( ClusterManager.masterAvailable() );
         long end = System.nanoTime();
 
-        logger.getLogger().warn( "Failover took:"+(end-start)/1000000+"ms" );
+        logger.getLogger().warn( "Failover took:" + (end - start) / 1000000 + "ms" );
 
         boolean slave1Master = slave1.isMaster();
         boolean slave2Master = slave2.isMaster();
@@ -181,7 +183,7 @@ public class TestBasicHaOperations
         assertEquals( "World", value );
 
 
-        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave(slave1);
+        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
 
         value = slave2.getNodeById( nodeId ).getProperty( "Hello" ).toString();
         logger.getLogger().info( "Hello=" + value );

@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.jboss.netty.channel.Channel;
+
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
@@ -37,7 +38,7 @@ import org.neo4j.kernel.ha.com.HaRequestType18;
 import org.neo4j.kernel.ha.com.slave.MasterClient18;
 import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.tooling.RealClock;
+import org.neo4j.tooling.Clock;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -50,7 +51,8 @@ public class MasterServer extends Server<Master, Void>
     public MasterServer( Master requestTarget, Logging logging, Configuration config,
                          TxChecksumVerifier txVerifier ) throws IOException
     {
-        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, txVerifier, new RealClock() );
+        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, txVerifier,
+                Clock.REAL_CLOCK );
     }
 
     @Override

@@ -22,7 +22,6 @@ package org.neo4j.shell.kernel;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -294,6 +293,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
             TransactionEventHandler<T> handler )
     {
         return readOnly();
+    }
+
+    @Override
+    public boolean isAvailable( long timeout )
+    {
+        return actual.isAvailable( timeout );
     }
 
     public void shutdown()

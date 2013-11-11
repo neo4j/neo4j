@@ -73,7 +73,12 @@ public class TestPullUpdatesApplied
         for ( int i = 0; i < dbs.length; i++ )
         {
             dbs[i] = newDb( i );
-            Thread.sleep( 1000 ); // Otherwise for some reason it races with the shutdown and causes NPEs
+        }
+
+        // Wait for all db's to become available
+        for ( HighlyAvailableGraphDatabase db : dbs )
+        {
+            db.isAvailable( 5000 );
         }
     }
 
@@ -119,22 +124,25 @@ public class TestPullUpdatesApplied
         final HighlyAvailableGraphDatabase masterDb = dbs[master];
         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener(
                 new ClusterListener.Adapter()
-        {
-            @Override
-            public void leftCluster( InstanceId member )
-            {
-                latch1.countDown();
-                masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeClusterListener( this );
-            }
-        } );
+                {
+                    @Override
+                    public void leftCluster( InstanceId member )
+                    {
+                        latch1.countDown();
+                        masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )
+                                .removeClusterListener( this );
+                    }
+                } );
 
         dbToKill.shutdown();
 
-        if (!latch1.await(60, TimeUnit.SECONDS))
+        if ( !latch1.await( 60, TimeUnit.SECONDS ) )
+        {
             throw new IllegalStateException( "Timeout waiting for instance to leave cluster" );
+        }
 
         addNode( master ); // this will be pulled by tne next start up, applied
-                           // but not written to log.
+        // but not written to log.
         File targetDirectory = dir.directory( "" + toKill, false );
 
         // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
@@ -143,21 +151,27 @@ public class TestPullUpdatesApplied
 
         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).addHeartbeatListener(
                 new HeartbeatListener.Adapter()
-        {
-            @Override
-            public void failed( InstanceId server )
-            {
-                latch2.countDown();
-                masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeHeartbeatListener( this );
-            }
-        });
+                {
+                    @Override
+                    public void failed( InstanceId server )
+                    {
+                        latch2.countDown();
+                        masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )
+                                .removeHeartbeatListener( this );
+                    }
+                } );
 
         dbToKill.shutdown();
 
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
 
-        if (!latch2.await(60, TimeUnit.SECONDS))
+        if ( !latch2.await( 60, TimeUnit.SECONDS ) )
+        {
             throw new IllegalStateException( "Timeout waiting for instance to fail" );
+        }
+
+        // This is to allow other instances to mark the dead instance as failed, otherwise on startup it will be denied.
+        Thread.sleep( 15000 );
 
         start( toKill, false ); // recovery and branching.
         boolean hasBranchedData = new File( targetDirectory, "branched" ).listFiles().length > 0;

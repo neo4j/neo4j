@@ -60,7 +60,7 @@ import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
-import org.neo4j.tooling.RealClock;
+import org.neo4j.tooling.Clock;
 
 import static org.neo4j.helpers.collection.Iterables.option;
 
@@ -113,7 +113,7 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     };
     private static final boolean SUCCESS = true;
-    private static final boolean FAILURE = ! SUCCESS;
+    private static final boolean FAILURE = !SUCCESS;
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -126,7 +126,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected DatabaseActions createDatabaseActions()
     {
         return new DatabaseActions( database,
-                new LeaseManager( new RealClock() ),
+                new LeaseManager( Clock.REAL_CLOCK ),
                 ForceMode.forced,
                 configurator.configuration().getBoolean(
                         Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,

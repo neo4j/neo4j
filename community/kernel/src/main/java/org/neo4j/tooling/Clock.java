@@ -21,5 +21,14 @@ package org.neo4j.tooling;
 
 public interface Clock
 {
+    public Clock REAL_CLOCK = new Clock()
+    {
+        @Override
+        public long currentTimeMillis()
+        {
+            return System.currentTimeMillis();
+        }
+    };
+
     long currentTimeMillis();
 }
