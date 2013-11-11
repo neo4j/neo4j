@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.server.rest.transactional.error.StatusCode;
+import org.neo4j.server.rest.transactional.error.Status;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -162,7 +162,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         assertThat( execute.status(), equalTo( 404 ) );
-        assertThat(execute, hasErrors( StatusCode.INVALID_TRANSACTION_ID ));
+        assertThat(execute, hasErrors( Status.Transaction.UnknownId ));
     }
 
     @Test

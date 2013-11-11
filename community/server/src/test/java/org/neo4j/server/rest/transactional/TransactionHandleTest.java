@@ -30,20 +30,30 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.StatusCode;
+import org.neo4j.server.rest.transactional.error.Status;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 import static java.util.Arrays.asList;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.deserilizationErrors;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
@@ -85,8 +95,7 @@ public class TransactionHandleTest
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
-        TransitionalTxManagementKernelTransaction transactionContext =
-                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -120,8 +129,7 @@ public class TransactionHandleTest
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
-        TransitionalTxManagementKernelTransaction transactionContext =
-                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -161,8 +169,7 @@ public class TransactionHandleTest
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
-        TransitionalTxManagementKernelTransaction transactionContext =
-                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -194,8 +201,7 @@ public class TransactionHandleTest
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
-        TransitionalTxManagementKernelTransaction transactionContext =
-                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
@@ -268,7 +274,7 @@ public class TransactionHandleTest
 
         // when
         handle.execute( deserilizationErrors(
-                new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception() ) ), output );
+                new Neo4jError( Status.Request.InvalidFormat, new Exception() ) ), output );
 
         // then
         verify( transactionContext ).rollback();
@@ -276,7 +282,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.INVALID_REQUEST_FORMAT ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Request.InvalidFormat ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -307,7 +313,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailure ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -317,8 +323,7 @@ public class TransactionHandleTest
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
-        TransitionalTxManagementKernelTransaction transactionContext =
-                (TransitionalTxManagementKernelTransaction) kernel.newTransaction();
+        TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
         doThrow( new NullPointerException() ).when( transactionContext ).commit();
 
         StringLogger log = mock( StringLogger.class );
@@ -341,7 +346,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
-        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.INTERNAL_COMMIT_TRANSACTION_ERROR ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Transaction.CouldNotCommit ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -370,7 +375,7 @@ public class TransactionHandleTest
         verify( registry ).forget( 1337l );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.STATEMENT_SYNTAX_ERROR ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.InvalidSyntax ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -402,7 +407,7 @@ public class TransactionHandleTest
         verify( registry ).forget( 1337l );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).errors( argThat( hasErrors( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailure ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -435,19 +440,19 @@ public class TransactionHandleTest
         return hasErrors();
     }
 
-    private static Matcher<Iterable<Neo4jError>> hasErrors( StatusCode... codes )
+    private static Matcher<Iterable<Neo4jError>> hasErrors( Status... codes )
     {
-        final Set<StatusCode> expectedErrorsCodes = new HashSet<>( asList( codes ) );
+        final Set<Status> expectedErrorsCodes = new HashSet<>( asList( codes ) );
 
         return new TypeSafeMatcher<Iterable<Neo4jError>>()
         {
             @Override
             protected boolean matchesSafely( Iterable<Neo4jError> item )
             {
-                Set<StatusCode> actualErrorCodes = new HashSet<>();
+                Set<Status> actualErrorCodes = new HashSet<>();
                 for ( Neo4jError neo4jError : item )
                 {
-                    actualErrorCodes.add( neo4jError.getStatusCode() );
+                    actualErrorCodes.add( neo4jError.status() );
                 }
                 return expectedErrorsCodes.equals( actualErrorCodes );
             }

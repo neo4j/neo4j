@@ -20,14 +20,16 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import org.junit.Test;
+
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.server.rest.transactional.error.StatusCode.INVALID_REQUEST_FORMAT;
-import static org.neo4j.server.rest.transactional.error.StatusCode.STATEMENT_SYNTAX_ERROR;
+
+import static org.neo4j.server.rest.transactional.error.Status.Request.InvalidFormat;
+import static org.neo4j.server.rest.transactional.error.Status.Statement.InvalidSyntax;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoStackTraces;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;
@@ -52,7 +54,7 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         response = POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE ;;' } ] }" ) );
 
         assertThat( response.status(), is( 200 ) );
-        assertThat( response, hasErrors( STATEMENT_SYNTAX_ERROR ) );
+        assertThat( response, hasErrors( InvalidSyntax ) );
         assertThat( response, containsNoStackTraces());
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
@@ -71,7 +73,7 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         HTTP.Response response = POST( commitResource, rawPayload( "[{asd,::}]" ) );
 
         assertThat( response.status(), is( 200 ) );
-        assertThat( response, hasErrors( INVALID_REQUEST_FORMAT ) );
+        assertThat( response, hasErrors( InvalidFormat ) );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }

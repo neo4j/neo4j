@@ -25,22 +25,24 @@ import java.util.Set;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
-public class StatusCodeTest
+public class StatusTest
 {
     @Test
     public void eachStatusCodeHasAUniqueCode() throws Exception
     {
         // given
-        Set<Object> numbers = new HashSet<>();
+        Set<Object> codes = new HashSet<>();
 
         // when
-        for ( StatusCode statusCode : StatusCode.values() )
+        for ( Status status : Status.Code.all() )
         {
-            numbers.add( statusCode.getCode() );
+            codes.add( status.code().getCode() );
         }
 
         // then
-        assertEquals( StatusCode.values().length, numbers.size() );
+        assertNotEquals( 0, codes.size() );
+        assertEquals( Status.Code.all().size(), codes.size() );
     }
 }

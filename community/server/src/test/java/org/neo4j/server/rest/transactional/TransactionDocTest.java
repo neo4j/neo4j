@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.repr.util.RFC1123;
-import org.neo4j.server.rest.transactional.error.StatusCode;
+import org.neo4j.server.rest.transactional.error.Status;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.server.HTTP;
 
@@ -289,7 +289,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
-        assertErrors( result, StatusCode.STATEMENT_SYNTAX_ERROR );
+        assertErrors( result, Status.Statement.InvalidSyntax );
     }
 
     private void assertNoErrors( Map<String, Object> response )
@@ -297,16 +297,16 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertErrors( response );
     }
 
-    private void assertErrors( Map<String, Object> response, StatusCode... expectedErrors )
+    private void assertErrors( Map<String, Object> response, Status... expectedErrors )
     {
         @SuppressWarnings("unchecked")
         Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
-        Iterator<StatusCode> expected = iterator( expectedErrors );
+        Iterator<Status> expected = iterator( expectedErrors );
 
         while ( expected.hasNext() )
         {
             assertTrue( errors.hasNext() );
-            assertThat( (String)errors.next().get( "code" ), equalTo( expected.next().getCode() ) );
+            assertThat( (String)errors.next().get( "code" ), equalTo( expected.next().code().getCode() ) );
         }
         if ( errors.hasNext() )
         {

@@ -27,8 +27,8 @@ public class InvalidTransactionId extends TransactionLifecycleException
     }
 
     @Override
-    protected StatusCode getStatusCode()
+    protected Status getStatusCode()
     {
-        return StatusCode.INVALID_TRANSACTION_ID;
+        return Status.Transaction.UnknownId;
     }
 }

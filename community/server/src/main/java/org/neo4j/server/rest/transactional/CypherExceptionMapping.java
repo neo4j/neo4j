@@ -24,22 +24,22 @@ import org.neo4j.cypher.InternalException;
 import org.neo4j.cypher.ParameterNotFoundException;
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.helpers.Function;
-import org.neo4j.server.rest.transactional.error.StatusCode;
+import org.neo4j.server.rest.transactional.error.Status;
 
-public class CypherExceptionMapping implements Function<CypherException, StatusCode>
+public class CypherExceptionMapping implements Function<CypherException, Status>
 {
     @Override
-    public StatusCode apply( CypherException e )
+    public Status apply( CypherException e )
     {
         if ( ParameterNotFoundException.class.isInstance( e ) )
-            return StatusCode.STATEMENT_MISSING_PARAMETER;
+            return Status.Statement.ParameterMissing;
 
         if ( SyntaxException.class.isInstance( e ) )
-            return StatusCode.STATEMENT_SYNTAX_ERROR;
+            return Status.Statement.InvalidSyntax;
 
         if ( InternalException.class.isInstance( e ) )
-            return StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR;
+            return Status.Statement.ExecutionFailure;
 
-        return StatusCode.STATEMENT_EXECUTION_ERROR;
+        return Status.Statement.ExecutionFailure;
     }
 }

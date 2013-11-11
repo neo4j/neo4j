@@ -29,18 +29,21 @@ import org.codehaus.jackson.JsonNode;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.util.RFC1123;
-import org.neo4j.server.rest.transactional.error.StatusCode;
+import org.neo4j.server.rest.transactional.error.Status;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
 /**
@@ -93,45 +96,12 @@ public class TransactionMatchers
         };
     }
 
-    @SuppressWarnings("unchecked")
-    public static void assertErrorCodes( Map<String, Object> response, StatusCode... expectedErrors )
-    {
-        Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
-        Iterator<StatusCode> expected = iterator( expectedErrors );
-
-        while ( expected.hasNext() )
-        {
-            assertTrue( errors.hasNext() );
-            assertThat( (String) errors.next().get( "code" ), equalTo( expected.next().getCode() ) );
-        }
-        if ( errors.hasNext() )
-        {
-            Map<String, Object> error = errors.next();
-            fail( "Expected no more errors, but got " + error.get( "code" ) + " - '" + error.get( "message" ) + "'." );
-        }
-    }
-
-    public static void assertErrorCodes( HTTP.Response response, StatusCode... expectedErrors )
-    {
-        assertErrorCodes( response.<Map<String, Object>>content(), expectedErrors );
-    }
-
-    public static void assertNoErrors( Map<String, Object> response )
-    {
-        assertErrorCodes( response );
-    }
-
-    public static void assertNoErrors( HTTP.Response response )
-    {
-        assertThat( response, containsNoErrors() );
-    }
-
     public static Matcher<? super HTTP.Response> containsNoErrors()
     {
         return hasErrors();
     }
 
-    public static Matcher<? super HTTP.Response> hasErrors( final StatusCode... expectedErrors )
+    public static Matcher<? super HTTP.Response> hasErrors( final Status... expectedErrors )
     {
         return new TypeSafeMatcher<HTTP.Response>()
         {
@@ -141,12 +111,12 @@ public class TransactionMatchers
                 try
                 {
                     Iterator<JsonNode> errors = response.get( "errors" ).iterator();
-                    Iterator<StatusCode> expected = iterator( expectedErrors );
+                    Iterator<Status> expected = iterator( expectedErrors );
 
                     while ( expected.hasNext() )
                     {
                         assertTrue( errors.hasNext() );
-                        assertThat( errors.next().get( "code" ).asText(), equalTo( expected.next().getCode() ) );
+                        assertThat( errors.next().get( "code" ).asText(), equalTo( expected.next().code().getCode() ) );
                     }
                     if ( errors.hasNext() )
                     {

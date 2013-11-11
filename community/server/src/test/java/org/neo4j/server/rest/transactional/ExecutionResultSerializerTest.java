@@ -42,7 +42,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.StatusCode;
+import org.neo4j.server.rest.transactional.error.Status;
 import org.neo4j.test.mocking.GraphMock;
 import org.neo4j.test.mocking.Link;
 
@@ -140,7 +140,7 @@ public class ExecutionResultSerializerTest
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
         serializer.statementResult( executionResult, false );
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
+        serializer.errors( asList( new Neo4jError( Status.Request.InvalidFormat, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
         // then
@@ -164,7 +164,7 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.statementResult( executionResult, false );
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
+        serializer.errors( asList( new Neo4jError( Status.Request.InvalidFormat, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
         // then
@@ -184,7 +184,7 @@ public class ExecutionResultSerializerTest
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
+        serializer.errors( asList( new Neo4jError( Status.Request.InvalidFormat, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
         // then
@@ -201,7 +201,7 @@ public class ExecutionResultSerializerTest
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
 
         // when
-        serializer.errors( asList( new Neo4jError( StatusCode.INVALID_REQUEST_FORMAT, new Exception( "cause1" ) ) ) );
+        serializer.errors( asList( new Neo4jError( Status.Request.InvalidFormat, new Exception( "cause1" ) ) ) );
         serializer.finish();
 
         // then
@@ -350,7 +350,7 @@ public class ExecutionResultSerializerTest
         }
         catch ( RuntimeException e )
         {
-            serializer.errors( asList( new Neo4jError( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR, e ) ) );
+            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailure, e ) ) );
         }
         serializer.finish();
 
@@ -389,7 +389,7 @@ public class ExecutionResultSerializerTest
         }
         catch ( RuntimeException e )
         {
-            serializer.errors( asList( new Neo4jError( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR, e ) ) );
+            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailure, e ) ) );
         }
         serializer.finish();
 

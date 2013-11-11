@@ -160,7 +160,7 @@ public class ExecutionResultSerializer
                     try
                     {
                         out.writeStartObject();
-                        out.writeObjectField( "code", error.getStatusCode().getCode() );
+                        out.writeObjectField( "code", error.status().code().getCode() );
                         out.writeObjectField( "message", error.getMessage() );
                         if ( error.shouldSerializeStackTrace() )
                         {
