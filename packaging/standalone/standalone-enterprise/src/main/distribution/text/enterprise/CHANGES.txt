@@ -5,14 +5,19 @@ For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 HA:
 o Removed all usage of getHostName() that might lead to problems on instances with improperly
   configured DNS
-o The master instance wil now always send out masterIsAvailable messages in response to
+o The master instance will now always send out masterIsAvailable messages in response to
   masterIsElected, ensuring that instances in PENDING state will transition eventually to
   SLAVE
+o Master instance now properly blocks transactions from starting after shutdown has started and
+  waits on a timeout for running transactions to finish and be pushed to slaves before stopping
+  completely
 
 Kernel:
 o Fixed NPE in PersistenceWindowPool when concurrently loading non-mapped windows
 o Fixed potential deadlock in PersistenceWindowPool cause by negative mark count
 o Performance optimizations for best-first selector
+o Database now waits on a timeout for transactions to finish before actually shutting
+  down, while preventing new transactions from starting up 
 
 Server:
 o Shutdown hook is now properly removed on normal shutdown, removing potential thread

@@ -6,6 +6,8 @@ Kernel:
 o Fixed NPE in PersistenceWindowPool when concurrently loading non-mapped windows
 o Fixed potential deadlock in PersistenceWindowPool cause by negative mark count
 o Performance optimizations for best-first selector
+o Database now waits on a timeout for transactions to finish before actually shutting
+  down, while preventing new transactions from starting up 
 
 Server:
 o Shutdown hook is now properly removed on normal shutdown, removing potential thread

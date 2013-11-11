@@ -2,9 +2,12 @@
 ------------------
 o Removed all usage of getHostName() that might lead to problems on instances with improperly
   configured DNS
-o The master instance wil now always send out masterIsAvailable messages in response to
+o The master instance will now always send out masterIsAvailable messages in response to
   masterIsElected, ensuring that instances in PENDING state will transition eventually to
   SLAVE
+o Master instance now properly blocks transactions from starting after shutdown has started and
+  waits on a timeout for running transactions to finish and be pushed to slaves before stopping
+  completely. 
 
 1.9.3
 -----
