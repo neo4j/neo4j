@@ -89,7 +89,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
         if ( IndexUpdateMode.ONLINE == mode )
         {

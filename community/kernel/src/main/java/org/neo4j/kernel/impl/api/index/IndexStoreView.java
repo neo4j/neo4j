@@ -43,4 +43,6 @@ public interface IndexStoreView
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, int[] propertyKeyIds,
             Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
+
+    Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
 }

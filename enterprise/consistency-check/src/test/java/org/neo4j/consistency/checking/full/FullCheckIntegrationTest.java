@@ -118,12 +118,17 @@ public class FullCheckIntegrationTest
         return checker.execute( stores, StringLogger.wrap( log ) );
     }
 
-    private void verifyInconsistency( RecordType recordType, ConsistencySummaryStatistics stats )
+    private void verifyInconsistency( ConsistencySummaryStatistics stats, RecordType... recordTypes )
     {
-        int count = stats.getInconsistencyCountForRecordType( recordType );
-        assertTrue( "Expected inconsistencies for records of type " + recordType, count > 0 );
-        assertEquals( "Expected only inconsistencies of type " + recordType + ", got:\n" + log,
-                      count, stats.getTotalInconsistencyCount() );
+        int totalInconsistencyCount = 0;
+        for ( RecordType recordType : recordTypes )
+        {
+            int count = stats.getInconsistencyCountForRecordType( recordType );
+            assertTrue( "Expected inconsistencies for records of type " + recordType, count > 0 );
+            totalInconsistencyCount += count;
+        }
+        assertEquals( "Expected only inconsistencies of type " + Arrays.toString( recordTypes ) + ", got:\n" + log,
+                      totalInconsistencyCount, stats.getTotalInconsistencyCount() );
     }
 
     @Test
@@ -159,7 +164,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.NEO_STORE, stats );
+        verifyInconsistency( stats, RecordType.NEO_STORE );
     }
 
     @Test
@@ -180,7 +185,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.NODE, stats );
+        verifyInconsistency( stats, RecordType.NODE );
     }
 
     @Test
@@ -203,7 +208,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.NODE, stats );
+        verifyInconsistency( stats, RecordType.NODE );
     }
 
     @Test
@@ -230,7 +235,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.NODE, stats );
+        verifyInconsistency( stats, RecordType.NODE );
     }
 
     @Test
@@ -276,7 +281,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.NODE_DYNAMIC_LABEL, stats );
+        verifyInconsistency( stats, RecordType.NODE_DYNAMIC_LABEL );
     }
 
     @Test
@@ -295,31 +300,23 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics result = check();
 
         // then
-        verifyInconsistency( RecordType.LABEL_SCAN_DOCUMENT, result );
+        verifyInconsistency( result, RecordType.LABEL_SCAN_DOCUMENT );
     }
 
     @Test
     public void shouldReportIndexInconsistencies() throws Exception
     {
         // given
-        fixture.apply( new GraphStoreFixture.Transaction()
+        for ( Long indexedNodeId : indexedNodes )
         {
-            @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
-            {
-                for ( Long indexedNodeId : indexedNodes )
-                {
-                    tx.delete( new NodeRecord( indexedNodeId, -1, -1 ) );
-                }
-            }
-        } );
+            fixture.nativeStores().getNodeStore().forceUpdateRecord( new NodeRecord( indexedNodeId, -1, -1 ) );
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.INDEX, stats );
+        verifyInconsistency( stats, RecordType.INDEX, RecordType.LABEL_SCAN_DOCUMENT );
     }
 
     @Test
@@ -353,7 +350,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.NODE, stats );
+        verifyInconsistency( stats, RecordType.NODE );
     }
 
     private List<DynamicRecord> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws IOException
@@ -423,7 +420,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.NODE, stats );
+        verifyInconsistency( stats, RecordType.NODE );
     }
 
     @Test
@@ -452,7 +449,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.NODE_DYNAMIC_LABEL, stats );
+        verifyInconsistency( stats, RecordType.NODE_DYNAMIC_LABEL );
     }
 
     @Test
@@ -473,7 +470,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.RELATIONSHIP, stats );
+        verifyInconsistency( stats, RecordType.RELATIONSHIP );
     }
 
     @Test
@@ -499,7 +496,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.PROPERTY, stats );
+        verifyInconsistency( stats, RecordType.PROPERTY );
     }
 
     @Test
@@ -534,7 +531,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.STRING_PROPERTY, stats );
+        verifyInconsistency( stats, RecordType.STRING_PROPERTY );
     }
 
     @Test
@@ -563,7 +560,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.SCHEMA, stats );
+        verifyInconsistency( stats, RecordType.SCHEMA );
     }
 
     @Test
@@ -610,7 +607,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.SCHEMA, stats );
+        verifyInconsistency( stats, RecordType.SCHEMA );
     }
 
     @Test
@@ -657,7 +654,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.SCHEMA, stats );
+        verifyInconsistency( stats, RecordType.SCHEMA );
     }
 
     public static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
@@ -707,7 +704,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( RecordType.ARRAY_PROPERTY, stats );
+        verifyInconsistency( stats, RecordType.ARRAY_PROPERTY );
     }
 
     @Test
@@ -734,7 +731,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture );
 
         // then
-        verifyInconsistency( RecordType.RELATIONSHIP_TYPE_NAME, stats );
+        verifyInconsistency( stats, RecordType.RELATIONSHIP_TYPE_NAME );
     }
 
     @Test
@@ -761,7 +758,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture );
 
         // then
-        verifyInconsistency( RecordType.PROPERTY_KEY_NAME, stats );
+        verifyInconsistency( stats, RecordType.PROPERTY_KEY_NAME );
     }
 
     @Test
@@ -778,7 +775,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture );
 
         // then
-        verifyInconsistency( RecordType.RELATIONSHIP_TYPE, stats );
+        verifyInconsistency( stats, RecordType.RELATIONSHIP_TYPE );
     }
 
     @Test
@@ -795,7 +792,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture );
 
         // then
-        verifyInconsistency( RecordType.LABEL, stats );
+        verifyInconsistency( stats, RecordType.LABEL );
     }
 
     @Test
@@ -822,7 +819,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture );
 
         // then
-        verifyInconsistency( RecordType.PROPERTY_KEY, stats );
+        verifyInconsistency( stats, RecordType.PROPERTY_KEY );
     }
 
     private static class Reference<T>

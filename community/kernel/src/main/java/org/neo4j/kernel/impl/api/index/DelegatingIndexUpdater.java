@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.api.index.IndexUpdater;
 
 public abstract class DelegatingIndexUpdater implements IndexUpdater
@@ -28,5 +30,11 @@ public abstract class DelegatingIndexUpdater implements IndexUpdater
     public DelegatingIndexUpdater( IndexUpdater delegate )
     {
         this.delegate = delegate;
+    }
+
+    @Override
+    public void remove( Iterable<Long> nodeIds ) throws IOException
+    {
+        delegate.remove( nodeIds );
     }
 }

@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -85,6 +86,18 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
+    @Override
+    public TestGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    {
+        return (TestGraphDatabaseFactory) super.addKernelExtensions( newKernelExtensions );
+    }
+
+    @Override
+    public TestGraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
+    {
+        return (TestGraphDatabaseFactory) super.addKernelExtension( newKernelExtension );
+    }
+
     public boolean isSystemOutLogging()
     {
         return getCurrentState().isSystemOutLogging();
@@ -115,21 +128,31 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                     {
                         FileSystemAbstraction fs = state.getFileSystem();
                         if ( fs != null )
+                        {
                             return fs;
+                        }
                         else
+                        {
                             return super.createFileSystemAbstraction();
+                        }
                     }
 
                     @Override
                     protected Logging createLogging()
                     {
                         if(overrideLoggingAndUseThis != null)
+                        {
                             return overrideLoggingAndUseThis;
+                        }
 
                         if ( state.isSystemOutLogging() )
+                        {
                             return new SingleLoggingService( StringLogger.SYSTEM );
+                        }
                         else
+                        {
                             return super.createLogging();
+                        }
                     }
                 };
             }

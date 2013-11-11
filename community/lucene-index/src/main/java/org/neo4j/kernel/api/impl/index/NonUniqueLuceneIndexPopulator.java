@@ -71,6 +71,12 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
                 }
 
             }
+
+            @Override
+            public void remove( Iterable<Long> nodeIds ) throws IOException
+            {
+                throw new UnsupportedOperationException( "Should not remove() from populating index." );
+            }
         };
     }
 

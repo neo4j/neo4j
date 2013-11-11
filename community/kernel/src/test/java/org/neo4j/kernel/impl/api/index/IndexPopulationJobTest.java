@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
@@ -406,6 +406,12 @@ public class IndexPopulationJobTest
                 public void close() throws IOException, IndexEntryConflictException
                 {
                 }
+
+                @Override
+                public void remove( Iterable<Long> nodeIds )
+                {
+                    throw new UnsupportedOperationException( "not expected" );
+                }
             };
         }
 
@@ -474,6 +480,12 @@ public class IndexPopulationJobTest
                 public void close() throws IOException, IndexEntryConflictException
                 {
                 }
+
+                @Override
+                public void remove( Iterable<Long> nodeIds )
+                {
+                    throw new UnsupportedOperationException( "not expected" );
+                }
             };
         }
     }
@@ -498,14 +510,15 @@ public class IndexPopulationJobTest
         populator = mock( IndexPopulator.class );
         stateHolder = new KernelSchemaStateStore();
 
-        Transaction tx = db.beginTx();
-        Statement statement = ctxProvider.instance();
-        labelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Statement statement = ctxProvider.instance();
+            labelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
 
-        statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
-        statement.close();
-        tx.success();
-        tx.finish();
+            statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
+            statement.close();
+            tx.success();
+        }
     }
 
     @After

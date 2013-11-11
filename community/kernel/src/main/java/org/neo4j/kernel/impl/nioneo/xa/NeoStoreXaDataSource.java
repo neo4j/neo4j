@@ -42,7 +42,6 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.KernelAPI;
@@ -59,6 +58,7 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
+import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
@@ -118,10 +118,9 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
-    public static abstract class Configuration
-        extends LogBackedXaDataSource.Configuration
+    @SuppressWarnings("deprecation")
+    public static abstract class Configuration extends LogBackedXaDataSource.Configuration
     {
-
         public static final Setting<Boolean> read_only= GraphDatabaseSettings.read_only;
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
@@ -137,6 +136,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private final DependencyResolver dependencyResolver;
     private final TransactionStateFactory stateFactory;
 
+    @SuppressWarnings("deprecation")
     private final TransactionInterceptorProviders providers;
     private final TokenNameLookup tokenNameLookup;
     private final PropertyKeyTokenHolder propertyKeyTokens;

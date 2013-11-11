@@ -41,4 +41,10 @@ public class LabelScanDocument extends Abstract64BitRecord
     {
         return nodeLabelRange;
     }
+
+    @Override
+    public String toString()
+    {
+        return nodeLabelRange.toString();
+    }
 }

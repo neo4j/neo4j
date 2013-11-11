@@ -77,6 +77,15 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
+    void remove( long nodeId )
+    {
+        for ( Set<Long> nodes : data.values() )
+        {
+            nodes.remove( nodeId );
+        }
+    }
+
+    @Override
     public long maxCount()
     {
         return ids().size();
@@ -98,5 +107,14 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return allIds;
     }
 
-
+    @Override
+    InMemoryIndexImplementation snapshot()
+    {
+        HashBasedIndex snapshot = new HashBasedIndex();
+        for ( Map.Entry<Object, Set<Long>> entry : data.entrySet() )
+        {
+            snapshot.data.put( entry.getKey(), new HashSet<>( entry.getValue() ) );
+        }
+        return snapshot;
+    }
 }

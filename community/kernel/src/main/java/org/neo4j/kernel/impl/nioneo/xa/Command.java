@@ -90,9 +90,13 @@ public abstract class Command extends XaCommand
         public static Mode fromRecordState( boolean created, boolean inUse )
         {
             if ( !inUse )
+            {
                 return DELETE;
+            }
             if ( created )
+            {
                 return CREATE;
+            }
             return UPDATE;
         }
 
@@ -174,7 +178,9 @@ public abstract class Command extends XaCommand
     {
         buffer.putInt( records.size() ); // 4
         for ( DynamicRecord record : records )
+        {
             writeDynamicRecord( buffer, record );
+        }
     }
     
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )
@@ -208,13 +214,17 @@ public abstract class Command extends XaCommand
     {
         PropertyBlock toReturn = new PropertyBlock();
         if ( !readAndFlip( byteChannel, buffer, 1 ) )
+        {
             return null;
+        }
         byte blockSize = buffer.get(); // the size is stored in bytes // 1
         assert blockSize > 0 && blockSize % 8 == 0 : blockSize
                                                      + " is not a valid block size value";
         // Read in blocks
         if ( !readAndFlip( byteChannel, buffer, blockSize ) )
+        {
             return null;
+        }
         long[] blocks = readLongs( buffer, blockSize / 8 );
         assert blocks.length == blockSize / 8 : blocks.length
                                                 + " longs were read in while i asked for what corresponds to "
@@ -235,7 +245,9 @@ public abstract class Command extends XaCommand
          * read in the buffer with the blocks, above.
          */
         if ( !readDynamicRecords( byteChannel, buffer, toReturn, PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER ) )
+        {
             return null;
+        }
 
         return toReturn;
     }
@@ -255,14 +267,18 @@ public abstract class Command extends XaCommand
             T target, DynamicRecordAdder<T> adder ) throws IOException
     {
         if ( !readAndFlip( byteChannel, buffer, 4 ) )
+        {
             return false;
+        }
         int numberOfRecords = buffer.getInt();
         assert numberOfRecords >= 0;
         while ( numberOfRecords-- > 0 )
         {
             DynamicRecord read = readDynamicRecord( byteChannel, buffer );
             if ( read == null )
+            {
                 return false;
+            }
             adder.add( target, read );
         }
         return true;
@@ -278,7 +294,9 @@ public abstract class Command extends XaCommand
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         if ( !readAndFlip( byteChannel, buffer, 13 ) )
+        {
             return null;
+        }
         long id = buffer.getLong();
         assert id >= 0 && id <= ( 1l << 36 ) - 1 : id
                                                   + " is not a valid dynamic record id";
@@ -292,7 +310,9 @@ public abstract class Command extends XaCommand
         {
             record.setStartRecord( ( inUseFlag & Record.FIRST_IN_CHAIN.byteValue() ) != 0 );
             if ( !readAndFlip( byteChannel, buffer, 12 ) )
+            {
                 return null;
+            }
             int nrOfBytes = buffer.getInt();
             assert nrOfBytes >= 0 && nrOfBytes < ( ( 1 << 24 ) - 1 ) : nrOfBytes
                                                                       + " is not valid for a number of bytes field of a dynamic record";
@@ -302,7 +322,9 @@ public abstract class Command extends XaCommand
                                                                     + " is not valid for a next record field of a dynamic record";
             record.setNextBlock( nextBlock );
             if ( !readAndFlip( byteChannel, buffer, nrOfBytes ) )
+            {
                 return null;
+            }
             byte data[] = new byte[nrOfBytes];
             buffer.get( data );
             record.setData( data );
@@ -371,8 +393,8 @@ public abstract class Command extends XaCommand
         public void execute()
         {
             store.updateRecord( after );
-            
-            // Dynamic labels
+
+            // Dynamic Label Records
             store.updateDynamicLabelRecords( after.getDynamicLabelRecords() );
         }
 
@@ -406,7 +428,9 @@ public abstract class Command extends XaCommand
             throws IOException
         {
             if ( !readAndFlip( byteChannel, buffer, 8 ) )
+            {
                 return null;
+            }
             long id = buffer.getLong();
             
             NodeRecord before = readNodeRecord( id, byteChannel, buffer );
@@ -433,7 +457,9 @@ public abstract class Command extends XaCommand
             throws IOException
         {
             if ( !readAndFlip( byteChannel, buffer, 1 ) )
+            {
                 return null;
+            }
             byte inUseFlag = buffer.get();
             boolean inUse = false;
             if ( inUseFlag == Record.IN_USE.byteValue() )
@@ -450,7 +476,9 @@ public abstract class Command extends XaCommand
             if ( inUse )
             {
                 if ( !readAndFlip( byteChannel, buffer, 8*3 ) )
+                {
                     return null;
+                }
                 record = new NodeRecord( id, buffer.getLong(), buffer.getLong() );
                 
                 // labels
@@ -578,7 +606,9 @@ public abstract class Command extends XaCommand
             throws IOException
         {
             if ( !readAndFlip( byteChannel, buffer, 9 ) )
+            {
                 return null;
+            }
             long id = buffer.getLong();
             byte inUseFlag = buffer.get();
             boolean inUse = false;
@@ -596,7 +626,9 @@ public abstract class Command extends XaCommand
             if ( inUse )
             {
                 if ( !readAndFlip( byteChannel, buffer, 60 ) )
+                {
                     return null;
+                }
                 record = new RelationshipRecord( id, buffer.getLong(), buffer
                     .getLong(), buffer.getInt() );
                 record.setInUse( inUse );
@@ -663,7 +695,9 @@ public abstract class Command extends XaCommand
                 throws IOException
         {
             if ( !readAndFlip( byteChannel, buffer, 8 ) )
+            {
                 return null;
+            }
             long nextProp = buffer.getLong();
             NeoStoreRecord record = new NeoStoreRecord();
             record.setNextProp( nextProp );
@@ -733,7 +767,9 @@ public abstract class Command extends XaCommand
         {
             // id+in_use(byte)+count(int)+key_blockId(int)
             if ( !readAndFlip( byteChannel, buffer, 13 ) )
+            {
                 return null;
+            }
             int id = buffer.getInt();
             byte inUseFlag = buffer.get();
             boolean inUse = false;
@@ -751,7 +787,9 @@ public abstract class Command extends XaCommand
             record.setPropertyCount( buffer.getInt() );
             record.setNameId( buffer.getInt() );
             if ( !readDynamicRecords( byteChannel, buffer, record, PROPERTY_INDEX_DYNAMIC_RECORD_ADDER ) )
+            {
                 return null;
+            }
             return new PropertyKeyTokenCommand( neoStore == null ? null : neoStore.getPropertyStore()
                 .getPropertyKeyTokenStore(), record );
         }
@@ -894,18 +932,24 @@ public abstract class Command extends XaCommand
         {
             // ID
             if ( !readAndFlip( byteChannel, buffer, 8 ) )
+            {
                 return null;
+            }
             long id = buffer.getLong(); // 8
             
             // BEFORE
             PropertyRecord before = readPropertyRecord( id, byteChannel, buffer );
             if ( before == null )
+            {
                 return null;
+            }
             
             // AFTER
             PropertyRecord after = readPropertyRecord( id, byteChannel, buffer );
             if ( after == null )
+            {
                 return null;
+            }
             
             return new PropertyCommand( neoStore == null ? null
                     : neoStore.getPropertyStore(), before, after );
@@ -917,7 +961,9 @@ public abstract class Command extends XaCommand
             // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
             // prev_prop_id(long)+next_prop_id(long)
             if ( !readAndFlip( byteChannel, buffer, 1 + 8 + 8 + 8 ) )
+            {
                 return null;
+            }
 
             PropertyRecord record = new PropertyRecord( id );
             byte inUseFlag = buffer.get(); // 1
@@ -945,7 +991,9 @@ public abstract class Command extends XaCommand
                 record.setRelId( primitiveId );
             }
             if ( !readAndFlip( byteChannel, buffer, 1 ) )
+            {
                 return null;
+            }
             int nrPropBlocks = buffer.get();
             assert nrPropBlocks >= 0;
             if ( nrPropBlocks > 0 )
@@ -963,7 +1011,9 @@ public abstract class Command extends XaCommand
             }
             
             if ( !readDynamicRecords( byteChannel, buffer, record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER ) )
+            {
                 return null;
+            }
 
             buffer.flip();
             int deletedRecords = buffer.getInt(); // 4
@@ -1054,7 +1104,9 @@ public abstract class Command extends XaCommand
         {
             // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
             if ( !readAndFlip( byteChannel, buffer, 13 ) )
+            {
                 return null;
+            }
             int id = buffer.getInt();
             byte inUseFlag = buffer.get();
             boolean inUse = false;
@@ -1139,7 +1191,9 @@ public abstract class Command extends XaCommand
         {
             // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
             if ( !readAndFlip( byteChannel, buffer, 13 ) )
+            {
                 return null;
+            }
             int id = buffer.getInt();
             byte inUseFlag = buffer.get();
             boolean inUse = false;
@@ -1312,7 +1366,9 @@ public abstract class Command extends XaCommand
             readDynamicRecords( byteChannel, buffer, recordsAfter, COLLECTION_DYNAMIC_RECORD_ADDER );
 
             if ( !readAndFlip( byteChannel, buffer, 1 ) )
+            {
                 throw new IllegalStateException( "Missing SchemaRule.isCreated flag in deserialization" );
+            }
 
             byte isCreated = buffer.get();
             if ( 1 == isCreated )
@@ -1324,7 +1380,9 @@ public abstract class Command extends XaCommand
             }
 
             if ( !readAndFlip( byteChannel, buffer, 8 ) )
+            {
                 throw new IllegalStateException( "Missing SchemaRule.txId in deserialization" );
+            }
 
             long txId = buffer.getLong();
 
@@ -1369,7 +1427,9 @@ public abstract class Command extends XaCommand
         ByteBuffer buffer ) throws IOException
     {
         if ( !readAndFlip( byteChannel, buffer, 1 ) )
+        {
             return null;
+        }
         byte commandType = buffer.get();
         switch ( commandType )
         {

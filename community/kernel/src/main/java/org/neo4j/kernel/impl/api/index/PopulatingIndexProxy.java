@@ -98,6 +98,12 @@ public class PopulatingIndexProxy implements IndexProxy
             public void close() throws IOException, IndexEntryConflictException
             {
             }
+
+            @Override
+            public void remove( Iterable<Long> nodeIds )
+            {
+                throw new UnsupportedOperationException( "Should not remove() from populating index." );
+            }
         };
     }
 

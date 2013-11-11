@@ -19,24 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
+import javax.transaction.xa.Xid;
+
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 
-import javax.transaction.xa.Xid;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class TestTxLog
 {
@@ -151,7 +152,7 @@ public class TestTxLog
 
     private List<?>[] getRecordLists( Iterable<List<Record>> danglingRecords )
     {
-        List<List<?>> list = new ArrayList<List<?>>();
+        List<List<?>> list = new ArrayList<>();
         for ( List<Record> txs : danglingRecords )
         {
             list.add( txs );

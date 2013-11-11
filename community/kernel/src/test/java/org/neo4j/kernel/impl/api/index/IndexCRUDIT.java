@@ -34,7 +34,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -129,7 +129,7 @@ public class IndexCRUDIT
         }
     }
 
-    private GraphDatabaseAPI db;
+    @SuppressWarnings("deprecation") private GraphDatabaseAPI db;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
@@ -151,6 +151,7 @@ public class IndexCRUDIT
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Before
     public void before() throws Exception
     {
@@ -208,7 +209,7 @@ public class IndexCRUDIT
         }
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode ) throws IOException
+        public IndexUpdater newUpdater( final IndexUpdateMode mode )
         {
             return new CollectingIndexUpdater()
             {
@@ -219,6 +220,12 @@ public class IndexCRUDIT
                     {
                         updatesCommitted.addAll( updates );
                     }
+                }
+
+                @Override
+                public void remove( Iterable<Long> nodeIds ) throws IOException
+                {
+                    throw new UnsupportedOperationException( "not expected" );
                 }
             };
         }

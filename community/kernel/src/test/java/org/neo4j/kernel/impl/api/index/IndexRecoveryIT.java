@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -59,6 +59,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -171,6 +172,10 @@ public class IndexRecoveryIT
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
                 .getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
         assertEquals( expectedUpdates, writer.recoveredUpdates );
+        for ( NodePropertyUpdate update : writer.recoveredUpdates )
+        {
+            assertTrue( writer.recoveredNodes.contains( update.getNodeId() ) );
+        }
     }
 
     @Test
@@ -197,7 +202,7 @@ public class IndexRecoveryIT
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), any( IndexConfiguration.class ) );
     }
 
-    private GraphDatabaseAPI db;
+    @SuppressWarnings("deprecation") private GraphDatabaseAPI db;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
@@ -215,6 +220,7 @@ public class IndexRecoveryIT
                 .thenReturn( 1 ); // always pretend to have highest priority
     }
 
+    @SuppressWarnings("deprecation")
     private void startDb()
     {
         if ( db != null )
@@ -321,9 +327,10 @@ public class IndexRecoveryIT
     {
         private final Set<NodePropertyUpdate> regularUpdates = new HashSet<>();
         private final Set<NodePropertyUpdate> recoveredUpdates = new HashSet<>();
+        private final Set<Long> recoveredNodes = new HashSet<>();
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode ) throws IOException
+        public IndexUpdater newUpdater( final IndexUpdateMode mode )
         {
             return new CollectingIndexUpdater()
             {
@@ -342,6 +349,15 @@ public class IndexRecoveryIT
 
                         default:
                             throw new UnsupportedOperationException(  );
+                    }
+                }
+
+                @Override
+                public void remove( Iterable<Long> nodeIds ) throws IOException
+                {
+                    for ( Long nodeId : nodeIds )
+                    {
+                        recoveredNodes.add( nodeId );
                     }
                 }
             };

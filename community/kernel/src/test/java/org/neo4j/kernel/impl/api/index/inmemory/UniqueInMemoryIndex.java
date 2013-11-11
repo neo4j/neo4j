@@ -46,8 +46,8 @@ class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUp
     @Override
     protected IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        return new UniquePropertyIndexUpdater( UniqueInMemoryIndex.this ) {
-
+        return new UniquePropertyIndexUpdater( UniqueInMemoryIndex.this )
+        {
             @Override
             protected void flushUpdates( Iterable<NodePropertyUpdate> updates )
                     throws IOException, IndexEntryConflictException
@@ -58,7 +58,7 @@ class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUp
                     {
                         case CHANGED:
                         case REMOVED:
-                            remove( update.getNodeId(), update.getValueBefore() );
+                            UniqueInMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
                     }
                 }
                 for ( NodePropertyUpdate update : updates )
@@ -69,6 +69,15 @@ class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUp
                         case CHANGED:
                             add( update.getNodeId(), update.getValueAfter(), IndexUpdateMode.ONLINE == mode );
                     }
+                }
+            }
+
+            @Override
+            public void remove( Iterable<Long> nodeIds )
+            {
+                for ( long nodeId : nodeIds )
+                {
+                    UniqueInMemoryIndex.this.remove( nodeId );
                 }
             }
         };

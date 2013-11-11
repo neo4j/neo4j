@@ -30,11 +30,22 @@ import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 public class InMemoryIndexProvider extends SchemaIndexProvider
 {
-    private final Map<Long, InMemoryIndex> indexes = new CopyOnWriteHashMap<>();
+    private final Map<Long, InMemoryIndex> indexes;
 
     public InMemoryIndexProvider()
     {
-        super( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 0 );
+        this( 0 );
+    }
+
+    public InMemoryIndexProvider( int prio )
+    {
+        this( prio, new CopyOnWriteHashMap<Long, InMemoryIndex>() );
+    }
+
+    private InMemoryIndexProvider( int prio, Map<Long, InMemoryIndex> indexes )
+    {
+        super( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, prio );
+        this.indexes = indexes;
     }
 
     @Override
@@ -77,5 +88,15 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
             throw new IllegalStateException();
         }
         return failure;
+    }
+
+    public InMemoryIndexProvider snapshot()
+    {
+        Map<Long, InMemoryIndex> copy = new CopyOnWriteHashMap<>();
+        for ( Map.Entry<Long, InMemoryIndex> entry : indexes.entrySet() )
+        {
+            copy.put( entry.getKey(), entry.getValue().snapshot() );
+        }
+        return new InMemoryIndexProvider( priority, copy );
     }
 }

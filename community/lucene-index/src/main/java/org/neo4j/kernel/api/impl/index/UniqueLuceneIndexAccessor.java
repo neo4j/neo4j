@@ -42,9 +42,9 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePro
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode ) throws IOException
+    public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        if(mode != IndexUpdateMode.RECOVERY)
+        if ( mode != IndexUpdateMode.RECOVERY )
         {
             return new LuceneUniquePropertyIndexUpdater( super.newUpdater( mode ) );
         }
@@ -105,10 +105,9 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePro
      */
     private class LuceneUniquePropertyIndexUpdater extends UniquePropertyIndexUpdater
     {
-
         final IndexUpdater delegate;
 
-        public LuceneUniquePropertyIndexUpdater( IndexUpdater delegate ) throws IOException
+        public LuceneUniquePropertyIndexUpdater( IndexUpdater delegate )
         {
             super( UniqueLuceneIndexAccessor.this );
             this.delegate = delegate;
@@ -123,6 +122,12 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePro
                 delegate.process( update );
                 delegate.close();
             }
+        }
+
+        @Override
+        public void remove( Iterable<Long> nodeIds ) throws IOException
+        {
+            delegate.remove( nodeIds );
         }
     }
 }

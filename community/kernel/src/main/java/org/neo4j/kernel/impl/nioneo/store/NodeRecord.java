@@ -20,14 +20,12 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.kernel.impl.nioneo.store.labels.InlineNodeLabels.parseInlined;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsBody;
+
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 public class NodeRecord extends PrimitiveRecord
 {
@@ -98,15 +96,8 @@ public class NodeRecord extends PrimitiveRecord
                 .append( ",used=" ).append( inUse() )
                 .append( ",rel=" ).append( nextRel )
                 .append( ",prop=" ).append( getNextProp() )
+                .append( ",labels=" ).append( parseLabelsField( this ) )
                 .append( "," ).append( isLight ? "light" : "heavy" );
-        if( fieldPointsToDynamicRecordOfLabels( labels ))
-        {
-            builder.append( ",firstLabelRecord=" ).append( parseLabelsBody( labels ) );
-        }
-        else
-        {
-            builder.append( ",inlinedLabels=" ).append( Arrays.toString(parseInlined( labels )) );
-        }
         if ( !isLight && !dynamicLabelRecords.isEmpty() )
         {
             builder.append( ",dynlabels=" ).append( dynamicLabelRecords );
@@ -132,7 +123,7 @@ public class NodeRecord extends PrimitiveRecord
 
         if( dynamicLabelRecords.size() > 0 )
         {
-            List<DynamicRecord> clonedLabelRecords = new ArrayList<DynamicRecord>(dynamicLabelRecords.size());
+            List<DynamicRecord> clonedLabelRecords = new ArrayList<>(dynamicLabelRecords.size());
             for ( DynamicRecord labelRecord : dynamicLabelRecords )
             {
                 clonedLabelRecords.add( labelRecord.clone() );

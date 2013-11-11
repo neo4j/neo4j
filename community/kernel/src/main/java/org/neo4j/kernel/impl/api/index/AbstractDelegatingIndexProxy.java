@@ -44,7 +44,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode ) throws IOException
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
         return getDelegate().newUpdater( mode );
     }

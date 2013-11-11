@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -88,6 +90,7 @@ public class IndexingService extends LifecycleAdapter
     private final Logging logging;
     private final StringLogger logger;
     private final UpdateableSchemaState updateableSchemaState;
+    private final Set<Long> recoveredNodeIds = new HashSet<>();
 
     public IndexingService( JobScheduler scheduler,
                             SchemaIndexProviderMap providerMap,
@@ -165,6 +168,7 @@ public class IndexingService extends LifecycleAdapter
     @Override
     public void start() throws Exception
     {
+        applyRecoveredUpdates();
         IndexMap indexMap = indexMapReference.getIndexMapCopy();
 
         final Map<Long, Pair<IndexDescriptor, SchemaIndexProvider.Descriptor>> rebuildingDescriptors = new HashMap<>();
@@ -191,7 +195,6 @@ public class IndexingService extends LifecycleAdapter
                         // Don't do anything, the user needs to drop the index and re-create
                         break;
                 }
-
             }
         } );
 
@@ -280,60 +283,89 @@ public class IndexingService extends LifecycleAdapter
         return String.format( "%s [provider: %s]", userDescription, providerDescriptor.toString() );
     }
 
-    public void updateIndexes( Iterable<NodePropertyUpdate> updates )
+    public void updateIndexes( IndexUpdates updates )
     {
-        IndexUpdateMode mode = serviceRunning ? IndexUpdateMode.ONLINE : IndexUpdateMode.RECOVERY;
-
-        try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( mode ) )
+        if ( serviceRunning )
         {
-            for ( NodePropertyUpdate update : updates )
+            try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( IndexUpdateMode.ONLINE ) )
             {
-                int propertyKeyId = update.getPropertyKeyId();
-                switch (update.getUpdateMode())
+                applyUpdates( updates, updaterMap );
+            }
+        }
+        else
+        {
+            recoveredNodeIds.addAll( updates.changedNodeIds() );
+        }
+    }
+
+    private void applyRecoveredUpdates() throws IOException
+    {
+        try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
+        {
+            if ( !recoveredNodeIds.isEmpty() )
+            {
+                for ( IndexUpdater updater : updaterMap )
                 {
-                    case ADDED:
-                        for (int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++)
-                        {
-                            processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelAfter( i ) );
-                        }
-                        break;
-
-                    case REMOVED:
-                        for (int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++)
-                        {
-                            processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelBefore( i ) );
-                        }
-                        break;
-
-                    case CHANGED:
-                        int lenBefore = update.getNumberOfLabelsBefore();
-                        int lenAfter = update.getNumberOfLabelsAfter();
-
-                        for(int i = 0, j = 0; i < lenBefore && j < lenAfter; i++, j++)
-                        {
-                            int labelBefore = update.getLabelBefore( i );
-                            int labelAfter = update.getLabelAfter( j );
-
-                            if ( labelBefore == labelAfter )
-                            {
-                                processUpdateIfIndexExists( updaterMap, update, propertyKeyId, labelAfter );
-                                i++;
-                                j++;
-                            }
-                            else
-                            {
-                                if ( labelBefore < labelAfter )
-                                {
-                                    i++;
-                                }
-                                else /* labelBefore > labelAfter */
-                                {
-                                    j++;
-                                }
-                            }
-                        }
-                        break;
+                    updater.remove( recoveredNodeIds );
                 }
+                for ( long nodeId : recoveredNodeIds )
+                {
+                    applyUpdates( storeView.nodeAsUpdates( nodeId ), updaterMap );
+                }
+            }
+        }
+        recoveredNodeIds.clear();
+    }
+
+    private void applyUpdates( Iterable<NodePropertyUpdate> updates, IndexUpdaterMap updaterMap )
+    {
+        for ( NodePropertyUpdate update : updates )
+        {
+            int propertyKeyId = update.getPropertyKeyId();
+            switch (update.getUpdateMode())
+            {
+            case ADDED:
+                for (int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++)
+                {
+                    processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelAfter( i ) );
+                }
+                break;
+
+            case REMOVED:
+                for (int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++)
+                {
+                    processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelBefore( i ) );
+                }
+                break;
+
+            case CHANGED:
+                int lenBefore = update.getNumberOfLabelsBefore();
+                int lenAfter = update.getNumberOfLabelsAfter();
+
+                for(int i = 0, j = 0; i < lenBefore && j < lenAfter; i++, j++)
+                {
+                    int labelBefore = update.getLabelBefore( i );
+                    int labelAfter = update.getLabelAfter( j );
+
+                    if ( labelBefore == labelAfter )
+                    {
+                        processUpdateIfIndexExists( updaterMap, update, propertyKeyId, labelAfter );
+                        i++;
+                        j++;
+                    }
+                    else
+                    {
+                        if ( labelBefore < labelAfter )
+                        {
+                            i++;
+                        }
+                        else /* labelBefore > labelAfter */
+                        {
+                            j++;
+                        }
+                    }
+                }
+                break;
             }
         }
     }
@@ -342,10 +374,9 @@ public class IndexingService extends LifecycleAdapter
                                              int propertyKeyId, int labelId )
     {
         IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
-        IndexUpdater updater;
         try
         {
-            updater = updaterMap.getUpdater( descriptor );
+            IndexUpdater updater = updaterMap.getUpdater( descriptor );
             if ( null != updater )
             {
                 updater.process( update );
@@ -384,7 +415,7 @@ public class IndexingService extends LifecycleAdapter
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
-        final String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);
+        final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         IndexPopulator populator =
             getPopulatorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( unique ) );
 

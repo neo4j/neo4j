@@ -119,8 +119,8 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     @Override
     public IndexUpdater newPopulatingUpdater() throws IOException
     {
-        return new IndexUpdater() {
-
+        return new IndexUpdater()
+        {
             @Override
             public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
             {
@@ -130,6 +130,12 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
             @Override
             public void close() throws IOException, IndexEntryConflictException
             {
+            }
+
+            @Override
+            public void remove( Iterable<Long> nodeIds )
+            {
+                throw new UnsupportedOperationException( "should not remove() from populating index" );
             }
         };
     }

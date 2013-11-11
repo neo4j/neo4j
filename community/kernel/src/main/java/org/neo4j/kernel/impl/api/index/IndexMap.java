@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.helpers.BiConsumer;
@@ -98,4 +99,8 @@ public final class IndexMap implements Cloneable
         return shallowCopy;
     }
 
+    public Iterator<IndexDescriptor> descriptors()
+    {
+        return indexesByDescriptor.keySet().iterator();
+    }
 }
