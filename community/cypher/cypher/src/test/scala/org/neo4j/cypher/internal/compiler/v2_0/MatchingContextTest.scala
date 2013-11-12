@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
+import org.neo4j.graphdb.Transaction
 import commands._
 import commands.expressions.{Identifier, Literal, Property}
 import commands.values.TokenType.PropertyKey
@@ -27,7 +28,7 @@ import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Node, Direction}
-import org.junit.{Before, Test}
+import org.junit.{After, Before, Test}
 import org.scalatest.Assertions
 import collection.Map
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.MatchingContext
@@ -40,9 +41,11 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
 
   var state: QueryState = null
   var matchingContext: MatchingContext = null
+  var tx: Transaction = null
 
   private def ctx(x: (String, Any)*) = {
-    state = QueryStateHelper.queryStateFrom(graph)
+    if(tx == null) tx = graph.beginTx()
+    state = QueryStateHelper.queryStateFrom(graph, tx)
     ExecutionContext().newWith(x.toMap)
   }
 
@@ -52,6 +55,12 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     b = createNode("b")
     c = createNode("c")
     d = createNode("d")
+  }
+
+  @After
+  def cleanup()
+  {
+    if(tx != null) tx.close()
   }
 
   @Test def singleHopSingleMatch() {

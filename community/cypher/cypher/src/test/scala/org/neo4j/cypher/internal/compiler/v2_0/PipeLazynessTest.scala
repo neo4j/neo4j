@@ -27,7 +27,7 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import org.junit.Test
+import org.junit.{After, Test}
 import org.junit.runners.Parameterized.Parameters
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
@@ -48,13 +48,26 @@ in fact are lazy. Every Pipe should be represented here
 class PipeLazynessTest(pipe: Pipe, iter: LazyIterator[_]) extends GraphDatabaseTestBase {
   @Test def test() {
     iter.db = Some(graph)
-    val resultIterator = pipe.createResults(QueryStateHelper.queryStateFrom(graph))
+    val resultIterator = pipe.createResults(queryState)
 
     if (resultIterator.hasNext)
       resultIterator.next()
 
     val isEager = iter.isEmpty
     assert(pipe.isLazy !== isEager, s"The lazyness declaration for pipe ${pipe.toString} is not true")
+  }
+
+  var tx : org.neo4j.graphdb.Transaction = null
+
+  private def queryState = {
+    if(tx == null) tx = graph.beginTx()
+    QueryStateHelper.queryStateFrom(graph, tx)
+  }
+
+  @After
+  def cleanup()
+  {
+    if(tx != null) tx.close()
   }
 }
 

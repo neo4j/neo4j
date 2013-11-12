@@ -40,6 +40,7 @@ import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.*;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 public class ClusterTest
@@ -58,7 +59,7 @@ public class ClusterTest
         {
             clusterManager.start();
 
-            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
             Transaction tx = master.beginTx();
@@ -108,7 +109,7 @@ public class ClusterTest
         {
             clusterManager.start();
 
-            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
             Transaction tx = master.beginTx();
@@ -151,7 +152,7 @@ public class ClusterTest
         {
             clusterManager.start();
 
-            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
             Transaction tx = master.beginTx();
@@ -182,7 +183,7 @@ public class ClusterTest
         try
         {
             clusterManager.start();
-            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
             Transaction tx = master.beginTx();
@@ -291,7 +292,7 @@ public class ClusterTest
         {
             clusterManager.start();
             ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( ClusterManager.allSeesAllAsAvailable() );
+            cluster.await( allSeesAllAsAvailable() );
 
             logging.getLogger().info( "STOPPING MASTER" );
             cluster.shutdown( cluster.getMaster() );

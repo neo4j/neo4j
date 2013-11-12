@@ -154,8 +154,7 @@ public enum LearnerState
                             {
                                 // Found hole - we're waiting for this to be filled, i.e. timeout already set
                                 context.clusterContext.getLogger( LearnerState.class ).debug( "*** GOT " + instanceId
-                                        + ", WAITING FOR " + (context.learnerContext.getLastDeliveredInstanceId() +
-                                        1) );
+                                        + ", WAITING FOR " + (context.learnerContext.getLastDeliveredInstanceId() + 1) );
 
                                 context.timeouts.setTimeout( "learn", Message.timeout( LearnerMessage.learnTimedout,
                                         message ) );

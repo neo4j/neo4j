@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
@@ -50,17 +51,19 @@ public class ExportTest
 
     private final static String NL = System.getProperty( "line.separator" );
     private GraphDatabaseService gdb;
+    private Transaction tx;
 
     @Before
     public void setUp() throws Exception
     {
         gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        gdb.beginTx();
+        tx = gdb.beginTx();
     }
 
     @After
     public void tearDown() throws Exception
     {
+        tx.close();
         gdb.shutdown();
     }
 

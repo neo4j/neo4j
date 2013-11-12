@@ -19,12 +19,6 @@
  */
 package slavetest;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.com.ServerUtil.rotateLogs;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.util.Map;
 
 import org.junit.Test;
@@ -35,7 +29,14 @@ import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
+import static org.neo4j.com.ServerUtil.rotateLogs;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 /*
  * This test case ensures that instances with the same store id but very old txids
@@ -66,7 +67,8 @@ public class TestInstanceJoin
             long nodeId = createNode( master, key, value );
             createNode( master, "something", "unimportant" );
             // Rotating, moving the above transactions away so they are removed on shutdown.
-            rotateLogs( master );
+            rotateLogs( master.getXaDataSourceManager(), master.getKernelPanicGenerator(),
+                    master.getDependencyResolver().resolveDependency( StringLogger.class ) );
 
             /*
              * We need to shutdown - rotating is not enough. The problem is that log positions are cached and they

@@ -76,7 +76,7 @@ public class MasterServer extends Server<Master, Void>
     public Map<Integer, Collection<RequestContext>> getSlaveInformation()
     {
         // Which slaves are connected a.t.m?
-        Set<Integer> machineIds = new HashSet<Integer>();
+        Set<Integer> machineIds = new HashSet<>();
         Map<Channel, RequestContext> channels = getConnectedSlaveChannels();
         synchronized ( channels )
         {
@@ -97,6 +97,6 @@ public class MasterServer extends Server<Master, Void>
                 ongoingTransactions.put( machineId, Collections.<RequestContext>emptyList() );
             }
         }
-        return new TreeMap<Integer, Collection<RequestContext>>( ongoingTransactions );
+        return new TreeMap<>( ongoingTransactions );
     }
 }

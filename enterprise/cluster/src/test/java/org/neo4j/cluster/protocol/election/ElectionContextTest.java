@@ -138,8 +138,7 @@ public class ElectionContextTest
         public int compareTo( Object o )
         {
             return o instanceof IntegerElectionCredentials
-                    ? Integer.compare( credential, ( (IntegerElectionCredentials) o).credential )
-                    : 0;
+                    ? Integer.valueOf(credential).compareTo(Integer.valueOf(( (IntegerElectionCredentials) o).credential)) : 0;
         }
     }
 }

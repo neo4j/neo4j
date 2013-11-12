@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import commands.True
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.Direction
-import org.junit.Test
+import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.{VarLengthStep, SingleStep, ExpanderStep}
 
 class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
@@ -40,7 +40,19 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
                       next: Option[ExpanderStep]) = VarLengthStep(id, typ, direction, min, max, next, True(), True())
 
   private def context = ExecutionContext()
-  private def state = QueryStateHelper.queryStateFrom(graph)
+  var tx : org.neo4j.graphdb.Transaction = null
+
+  private def queryState = {
+    if(tx == null) tx = graph.beginTx()
+    QueryStateHelper.queryStateFrom(graph, tx)
+  }
+
+  @After
+  def cleanup()
+  {
+    if(tx != null) tx.close()
+  }
+
   val A = "A"
   val B = "B"
   val C = "C"
@@ -64,7 +76,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
     /*
    When given the start node a
    */
-    val (relationships, next) = step.expand(a, context, state)
+    val (relationships, next) = step.expand(a, context, queryState)
 
     /*should return r1 and next step: ()-[:A*0..1]->()*/
     val expectedNext = Some(varStep(0, Seq("REL"), Direction.OUTGOING, 0, Some(1), None))
@@ -101,7 +113,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
     /*
    When given the start node a
    */
-    val (relationships, next) = step1.expand(a, context, state)
+    val (relationships, next) = step1.expand(a, context, queryState)
 
     /*should return both relationships and the same step again */
 
@@ -128,7 +140,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
     val r1 = relate(a, b, "B")
 
     /*When given the start node a*/
-    val (relationships, next) = step1.expand(a, context, state)
+    val (relationships, next) = step1.expand(a, context, queryState)
 
     /*should return the single relationship and None as the next step*/
     assert(relationships.toSeq === Seq(r1))
@@ -153,7 +165,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
     val r1 = relate(a, b, "A")
 
     /*When given the start node a*/
-    val (relationships, next) = step1.expand(a, context, state)
+    val (relationships, next) = step1.expand(a, context, queryState)
 
     /*should return the single relationship and step2 as the next step*/
     assert(relationships.toSeq === Seq(r1))
@@ -178,7 +190,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
     relate(a, b, "B")
 
     /*When given the start node a*/
-    val (relationships, next) = step1.expand(a, context, state)
+    val (relationships, next) = step1.expand(a, context, queryState)
 
     /*should return no relationships, and step 0, but with one less min step as the next step*/
     val expectedNext = varStep(0, Seq(A), Direction.OUTGOING, 0, Some(1), Some(step2))
@@ -205,7 +217,7 @@ class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
     relate(a, b, "B")
 
     /*When given the start node a*/
-    val (relationships, next) = step1.expand(a, context, state)
+    val (relationships, next) = step1.expand(a, context, queryState)
 
     /*should return no relationships, and step 0, but with one less min step as the next step*/
     val expectedNext = varStep(0, Seq(A), Direction.OUTGOING, 0, Some(1), Some(step2))

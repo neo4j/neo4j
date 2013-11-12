@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0
 
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
-import org.junit.Test
+import org.junit.{After, Test}
 import org.junit.Assert._
 import org.neo4j.graphdb.{Path, Direction}
 import org.neo4j.cypher.internal.compiler.v2_0.commands._
@@ -98,7 +98,18 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
     assert(result === false)
   }
 
-  private def state = QueryStateHelper.queryStateFrom(graph)
+  var tx : org.neo4j.graphdb.Transaction = null
+
+  private def state = {
+    if(tx == null) tx = graph.beginTx()
+    QueryStateHelper.queryStateFrom(graph, tx)
+  }
+
+  @After
+  def cleanup()
+  {
+    if(tx != null) tx.close()
+  }
 
   private def createExecutionContext(m: Map[String, Any]): ExecutionContext = ExecutionContext().newFrom(m)
 }

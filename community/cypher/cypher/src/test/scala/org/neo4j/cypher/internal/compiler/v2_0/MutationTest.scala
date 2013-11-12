@@ -25,18 +25,28 @@ import symbols.{SymbolTable, CypherType, NodeType}
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineHelper}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import org.scalatest.Assertions
-import org.junit.Test
+import org.junit.{After, Test}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.{QueryState, ExecuteUpdateCommandsPipe, NullPipe}
 import org.scalautils.LegacyTripleEquals
 
 class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTripleEquals {
 
-  def createQueryState = QueryStateHelper.queryStateFrom(graph)
+  var tx : org.neo4j.graphdb.Transaction = null
 
+  def createQueryState = {
+    if(tx == null) tx = graph.beginTx()
+    QueryStateHelper.queryStateFrom(graph, tx)
+  }
+
+  @After
+  def cleanup() {
+//    if(tx != null) tx.close()
+  }
 
   @Test
   def create_node() {
+    val tx = graph.beginTx()
     val start = NullPipe
     val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
@@ -47,6 +57,8 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
     assert(n.getProperty("name") === "Andres")
     assert(queryState.getStatistics.nodesCreated === 1)
     assert(queryState.getStatistics.propertiesSet === 1)
+
+    tx.close()
   }
 
   @Test
@@ -83,6 +95,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
   def create_rel() {
     val a = createNode()
     val b = createNode()
+    val tx = graph.beginTx()
 
     val createRel = CreateRelationship("r",
       RelationshipEndpoint(getNode("a", a), Map(), Seq.empty, true),
@@ -99,17 +112,22 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
     assert(results === List(Map("r" -> r)))
     assert(state.getStatistics.relationshipsCreated === 1)
     assert(state.getStatistics.propertiesSet === 1)
+
+    tx.close()
   }
 
   @Test
   def throw_exception_if_wrong_stuff_to_delete() {
+    val tx = graph.beginTx()
     val createRel = DeleteEntityAction(Literal("some text"))
 
     intercept[CypherTypeException](createRel.exec(ExecutionContext.empty, createQueryState))
+    tx.close()
   }
 
   @Test
   def delete_node() {
+    val tx = graph.beginTx()
     val a: Node = createNode()
     val node_id: Long = a.getId
     val deleteCommand = DeleteEntityAction(getNode("a", a))
@@ -121,6 +139,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
     createNodePipe.createResults(state).toList
 
     state.inner.close(success = true)
+    tx.close()
 
     intercept[NotFoundException](graph.inTx(graph.getNodeById(node_id)))
   }

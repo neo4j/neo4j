@@ -23,6 +23,11 @@ o REST transaction support
 o Added support for labels
 o Added support for the new label-based indexes
 
+1.9.5 (2013-11-11)
+------------------
+o Shutdown hook is now properly removed on normal shutdown, removing potential thread
+  leak which might prevent orderly exit of the VM process
+
 1.9.3
 -----
 o Reintroduces, deprecated, the Configurator.getThirdpartyJaxRsClasses. Fixes, among other things, the authentication-extension

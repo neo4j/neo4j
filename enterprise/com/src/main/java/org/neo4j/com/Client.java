@@ -41,6 +41,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -61,7 +62,7 @@ import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
  * A means for a client to communicate with a {@link Server}. It
  * serializes requests and sends them to the server and waits for
  * a response back.
- * 
+ *
  * @see Server
  */
 public abstract class Client<T> extends LifecycleAdapter implements ChannelPipelineFactory
@@ -89,12 +90,12 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private int chunkSize;
 
     public Client( String hostNameOrIp, int port, Logging logging,
-            StoreId storeId, int frameLength,
-            byte applicationProtocolVersion, long readTimeout,
-            int maxConcurrentChannels, int maxUnusedPoolSize, int chunkSize )
+                   StoreId storeId, int frameLength,
+                   byte applicationProtocolVersion, long readTimeout,
+                   int maxConcurrentChannels, int maxUnusedPoolSize, int chunkSize )
     {
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
-        
+
         this.msgLog = logging.getMessagesLog( getClass() );
         this.storeId = storeId;
         this.frameLength = frameLength;
@@ -112,7 +113,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     @Override
     public void start()
     {
-        executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address ) );
+        executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address
+        ) );
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels,
@@ -134,7 +136,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                     return channel;
                 }
 
-                String msg = Client.this.getClass().getSimpleName()+" could not connect to " + address;
+                String msg = Client.this.getClass().getSimpleName() + " could not connect to " + address;
                 msgLog.logMessage( msg, true );
                 ComException exception = new ComException( msg );
                 // connectionLostHandler.handle( exception );

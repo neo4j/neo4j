@@ -34,7 +34,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
   @Before
   def init() {
     tx = graph.beginTx()
-    state = QueryStateHelper.queryStateFrom(graph)
+    state = QueryStateHelper.queryStateFrom(graph, tx)
   }
 
   @After

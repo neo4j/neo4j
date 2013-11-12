@@ -23,11 +23,13 @@ import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
+
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.com.Protocol.readString;
 
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {

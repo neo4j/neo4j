@@ -20,15 +20,14 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.List;
-
 import javax.transaction.Transaction;
 
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.InstanceAccessGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.GraphProperties;
@@ -48,7 +47,7 @@ public class SlaveLockManager implements LockManager
 {
     private final AbstractTransactionManager txManager;
     private final TxHook txHook;
-    private final InstanceAccessGuard switchBlock;
+    private final AvailabilityGuard availabilityGuard;
     private final Configuration config;
     private final RequestContextFactory requestContextFactory;
     private final LockManagerImpl local;
@@ -57,17 +56,17 @@ public class SlaveLockManager implements LockManager
 
     public static interface Configuration
     {
-        long getStateSwitchTimeout();
+        long getAvailabilityTimeout();
     }
 
     public SlaveLockManager( AbstractTransactionManager txManager, TxHook txHook,
-                             InstanceAccessGuard switchBlock, Configuration config,
+                             AvailabilityGuard availabilityGuard, Configuration config,
                              RagManager ragManager, RequestContextFactory requestContextFactory, Master master,
                              HaXaDataSourceManager xaDsm )
     {
         this.txManager = txManager;
         this.txHook = txHook;
-        this.switchBlock = switchBlock;
+        this.availabilityGuard = availabilityGuard;
         this.config = config;
         this.requestContextFactory = requestContextFactory;
         this.xaDsm = xaDsm;
@@ -96,12 +95,14 @@ public class SlaveLockManager implements LockManager
         if ( resource instanceof Node )
         {
             makeSureTxHasBeenInitialized();
-            response = master.acquireNodeReadLock( requestContextFactory.newRequestContext(), ((Node)resource).getId() );
+            response = master.acquireNodeReadLock( requestContextFactory.newRequestContext(),
+                    ((Node) resource).getId() );
         }
         else if ( resource instanceof Relationship )
         {
             makeSureTxHasBeenInitialized();
-            response = master.acquireRelationshipReadLock( requestContextFactory.newRequestContext(), ((Relationship)resource).getId() );
+            response = master.acquireRelationshipReadLock( requestContextFactory.newRequestContext(),
+                    ((Relationship) resource).getId() );
         }
         else if ( resource instanceof GraphProperties )
         {
@@ -112,7 +113,8 @@ public class SlaveLockManager implements LockManager
         {
             makeSureTxHasBeenInitialized();
             IndexLock indexLock = (IndexLock) resource;
-            response = master.acquireIndexReadLock( requestContextFactory.newRequestContext(), indexLock.getIndex(), indexLock.getKey() );
+            response = master.acquireIndexReadLock( requestContextFactory.newRequestContext(), indexLock.getIndex(),
+                    indexLock.getKey() );
         }
         else
         {
@@ -126,14 +128,14 @@ public class SlaveLockManager implements LockManager
         LockResult result = xaDsm.applyTransactions( response );
         switch ( result.getStatus() )
         {
-        case DEAD_LOCKED:
-            throw new DeadlockDetectedException( result.getDeadlockMessage() );
-        case NOT_LOCKED:
-            throw new UnsupportedOperationException();
-        case OK_LOCKED:
-            break;
-        default:
-            throw new UnsupportedOperationException( result.toString() );
+            case DEAD_LOCKED:
+                throw new DeadlockDetectedException( result.getDeadlockMessage() );
+            case NOT_LOCKED:
+                throw new UnsupportedOperationException();
+            case OK_LOCKED:
+                break;
+            default:
+                throw new UnsupportedOperationException( result.toString() );
         }
 
         return true;
@@ -160,7 +162,8 @@ public class SlaveLockManager implements LockManager
         else if ( resource instanceof Relationship )
         {
             makeSureTxHasBeenInitialized();
-            response = master.acquireRelationshipWriteLock( requestContextFactory.newRequestContext(), ((Relationship)resource).getId() );
+            response = master.acquireRelationshipWriteLock( requestContextFactory.newRequestContext(),
+                    ((Relationship) resource).getId() );
         }
         else if ( resource instanceof GraphProperties )
         {
@@ -178,16 +181,17 @@ public class SlaveLockManager implements LockManager
         {
             makeSureTxHasBeenInitialized();
             IndexLock indexLock = (IndexLock) resource;
-            response = master.acquireIndexWriteLock( requestContextFactory.newRequestContext(), indexLock.getIndex(), indexLock.getKey() );
+            response = master.acquireIndexWriteLock( requestContextFactory.newRequestContext(), indexLock.getIndex(),
+                    indexLock.getKey() );
         }
         else
         {
             throw new IllegalArgumentException("Don't know how to take lock on resource: '" + resource + "'.");
         }
-        
+
         return receiveLockResponse( response );
     }
-    
+
     @Override
     public void releaseReadLock( Object resource, Transaction tx ) throws LockNotFoundException,
             IllegalResourceException
@@ -234,16 +238,17 @@ public class SlaveLockManager implements LockManager
 
     private void makeSureTxHasBeenInitialized()
     {
-        int eventIdentifier = txManager.getEventIdentifier();
-        if ( !txManager.getTransactionState().hasLocks() )
-        {
-            if ( !switchBlock.await( config.getStateSwitchTimeout() ) )
-            {
-                // TODO Specific exception instead?
-                throw new RuntimeException( "Timed out waiting for database to switch state" );
-            }
 
-            txHook.initializeTransaction( eventIdentifier );
-        }
+//        int eventIdentifier = txManager.getEventIdentifier();
+//        if ( !txManager.getTransactionState().hasLocks() )
+//        {
+//            if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
+//            {
+//                // TODO Specific exception instead?
+//                throw new RuntimeException( "Timed out waiting for database to switch state" );
+//            }
+//
+//            txHook.initializeTransaction( eventIdentifier );
+//        }
     }
 }

@@ -32,7 +32,7 @@ class CreateNodeActionTest extends ExecutionEngineHelper with Assertions with Le
     val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Seq.empty)
 
     graph.inTx {
-      action.exec(ExecutionContext.empty, QueryStateHelper.queryStateFrom(graph)).size
+      action.exec(ExecutionContext.empty, QueryStateHelper.queryStateFrom(graph, graph.beginTx())).size
     }
 
     val n = graph.createdNodes.dequeue()

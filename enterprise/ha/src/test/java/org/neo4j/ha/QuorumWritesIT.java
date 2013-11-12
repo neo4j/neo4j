@@ -111,13 +111,16 @@ public class QuorumWritesIT
             final CountDownLatch latch4 = new CountDownLatch( 1 );
             final CountDownLatch latch5 = new CountDownLatch( 1 );
             waitOnHeartbeatAlive( master, latch3 );
-            waitOnRoleIsAvailable( master, latch4, HighAvailabilityModeSwitcher.MASTER );
+//            waitOnRoleIsAvailable( master, latch4, HighAvailabilityModeSwitcher.MASTER );
             waitOnRoleIsAvailable( master, latch5, HighAvailabilityModeSwitcher.SLAVE );
 
             rk2.repair();
 
             latch3.await();
-            latch4.await();
+
+            cluster.await( ClusterManager.masterAvailable( slave1, slave2 ) );
+
+//            latch4.await();
             latch5.await();
 
             cluster.await( ClusterManager.masterAvailable(  ) );

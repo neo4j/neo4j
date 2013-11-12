@@ -114,7 +114,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected abstract WebServer createWebServer();
 
-    @Override
     public void init()
     {
         this.preflight = createPreflightTasks();

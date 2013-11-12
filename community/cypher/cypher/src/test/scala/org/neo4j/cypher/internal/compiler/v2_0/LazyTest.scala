@@ -79,6 +79,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
   @Test def traversal_matcher_is_lazy() {
     //Given:
+    val tx = graph.beginTx()
     val limiter = new Limiter(2)
     val monitoredNode = new MonitoredNode(a, limiter.monitor)
 
@@ -88,13 +89,14 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val ctx = ExecutionContext().newWith("a" -> monitoredNode)
 
     //When:
-    val iter = matcher.findMatchingPaths(QueryStateHelper.queryStateFrom(graph), ctx)
+    val iter = matcher.findMatchingPaths(QueryStateHelper.queryStateFrom(graph, tx), ctx)
 
     //Then:
     assert(limiter.count === 0)
 
     //Also then, does not throw exception
     iter.next()
+    tx.close()
   }
 
   @Test def execution_of_query_is_lazy() {
@@ -112,6 +114,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
     //Also then does not step over the limit
     iter.next()
+    iter.close()
   }
 
   @Test def distinct_is_lazy() {
@@ -133,6 +136,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
     //Then, no Runtime exception is thrown
     iter.next()
+    iter.close()
   }
 
   @Test def union_is_lazy() {
@@ -152,6 +156,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
     //Then, no Runtime exception is thrown
     iter.next()
+    iter.close()
   }
 
   @Test def execution_of_query_is_eager() {
@@ -206,17 +211,19 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
   @Test def traversalmatcherpipe_is_lazy() {
     //Given:
+    val tx = graph.beginTx()
     val limiter = new Limiter(2)
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 
     //When:
-    val result = traversalMatchPipe.createResults(QueryStateHelper.queryStateFrom(graph))
+    val result = traversalMatchPipe.createResults(QueryStateHelper.queryStateFrom(graph, tx))
 
     //Then:
     assert(limiter.count === 0)
 
     //Also then:
     result.next() // throws exception if we iterate over more than expected to fill buffers
+    tx.close()
   }
 
   @Test def filterpipe_is_lazy() {

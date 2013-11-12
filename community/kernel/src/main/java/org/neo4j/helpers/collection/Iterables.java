@@ -620,6 +620,11 @@ public final class Iterables
         };
     }
 
+    public static <T> Set<T> toSet( Iterable<T> iterable )
+    {
+        return addAll( new HashSet<T>(), iterable );
+    }
+
     private static class MapIterable<FROM, TO>
             implements Iterable<TO>
     {
