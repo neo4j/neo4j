@@ -69,8 +69,17 @@ public class TestStoreCopy extends AbstractClusterTest
 
         slave = slaveDown.repair();
 
-        assertNodeAndIndexingExists( slave, nodeId, KEY, VALUE );
-        assertNodeAndIndexingExists( slave, secondNodeId, KEY2, VALUE2 );
+        Transaction tx = slave.beginTx();
+        try
+        {
+            assertNodeAndIndexingExists( slave, nodeId, KEY, VALUE );
+            assertNodeAndIndexingExists( slave, secondNodeId, KEY2, VALUE2 );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
     
     @Before
