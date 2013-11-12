@@ -54,8 +54,7 @@ public class Neo4jMatchers
             @Override
             protected boolean matches( Object item, Description mismatchDescription )
             {
-                Transaction tx = db.beginTx();
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
                     if ( inner.matches( item ) )
                     {
@@ -66,10 +65,6 @@ public class Neo4jMatchers
 
                     return false;
 
-                }
-                finally
-                {
-                    tx.finish();
                 }
             }
 
@@ -464,14 +459,9 @@ public class Neo4jMatchers
 
         public Collection<T> collection()
         {
-            Transaction tx = db.beginTx();
-            try
+            try ( Transaction tx = db.beginTx() )
             {
                 return asCollection( manifest() );
-            }
-            finally
-            {
-                tx.finish();
             }
         }
 
@@ -607,16 +597,11 @@ public class Neo4jMatchers
 
     public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String property )
     {
-        Transaction tx = beansAPI.beginTx();
         IndexDefinition indexDef;
-        try
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             indexDef = beansAPI.schema().indexFor( label ).on( property ).create();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         waitForIndex( beansAPI, indexDef );
@@ -633,7 +618,7 @@ public class Neo4jMatchers
         }
         finally
         {
-            tx.finish();
+            tx.close();
         }
     }
 
@@ -647,7 +632,7 @@ public class Neo4jMatchers
         }
         finally
         {
-            tx.finish();
+            tx.close();
         }
     }
 

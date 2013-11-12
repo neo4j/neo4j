@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.Merger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -144,6 +145,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
     @Override
     public Iterable<Node> getAllNodes()
+    {
+        throw unsupportedOperation();
+    }
+
+    @Override
+    public Merger<Node> getOrCreateNode( Label... labels )
     {
         throw unsupportedOperation();
     }

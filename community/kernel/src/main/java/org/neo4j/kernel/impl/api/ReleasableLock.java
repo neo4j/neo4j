@@ -19,37 +19,22 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.NoSuchElementException;
-
-public class PrimitiveLongIteratorForArray implements PrimitiveLongIterator
+public interface ReleasableLock extends AutoCloseable
 {
-    public static final PrimitiveLongIteratorForArray EMPTY = new PrimitiveLongIteratorForArray();
+    /**
+     * Immediately release this lock
+     */
+    void release();
 
-    private final long[] values;
+    /**
+     * Register this lock for delayed release with the current transaction
+     */
+    void registerWithTransaction();
 
-    int i = 0;
-
-    public PrimitiveLongIteratorForArray( long... values )
-    {
-        this.values = values;
-    }
-
+    /**
+     * If neither {@link #release()} nor {@link #registerWithTransaction()} has been called prior to calling this
+     * method, it will behave the same as {@link #registerWithTransaction()}, otherwise it is a no-op.
+     */
     @Override
-    public boolean hasNext()
-    {
-        return i < values.length;
-    }
-
-    @Override
-    public long next()
-    {
-        if ( hasNext() )
-        {
-            return values[i++];
-        }
-        else
-        {
-            throw new NoSuchElementException( );
-        }
-    }
+    void close();
 }

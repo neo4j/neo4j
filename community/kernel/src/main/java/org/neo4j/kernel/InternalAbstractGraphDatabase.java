@@ -35,6 +35,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Merger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -76,7 +77,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
@@ -87,6 +87,7 @@ import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
+import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
@@ -118,6 +119,7 @@ import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.merge.NodeMerger;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -341,6 +343,7 @@ public abstract class InternalAbstractGraphDatabase
         } );
     }
 
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void doAfterRecoveryAndStartup( boolean isMaster )
     {
         if ( txManager.getRecoveryError() != null )
@@ -1474,6 +1477,12 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
+    public Merger<Node> getOrCreateNode( Label... labels )
+    {
+        return NodeMerger.createMerger( statementContextProvider, nodeManager, labels );
+    }
+
+    @Override
     public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
                                                                final Object value )
     {
@@ -1640,4 +1649,5 @@ public abstract class InternalAbstractGraphDatabase
     {
         return new BidirectionalTraversalDescriptionImpl(statementContextProvider);
     }
+
 }

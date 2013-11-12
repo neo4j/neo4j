@@ -17,39 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.graphdb;
 
-import java.util.NoSuchElementException;
-
-public class PrimitiveLongIteratorForArray implements PrimitiveLongIterator
+/**
+ * A utility interface for getting or creating entities (with regard to given indexes or constraints).
+ *
+ * @see GraphDatabaseService#getOrCreateNode(Label...)
+ *
+ * @param <ENTITY> the type of entity created by this {@link Merger}.
+ */
+public interface Merger<ENTITY> extends ResourceIterable<ENTITY>
 {
-    public static final PrimitiveLongIteratorForArray EMPTY = new PrimitiveLongIteratorForArray();
+    Merger<ENTITY> withProperty( String key, Object value );
 
-    private final long[] values;
-
-    int i = 0;
-
-    public PrimitiveLongIteratorForArray( long... values )
-    {
-        this.values = values;
-    }
-
+    /**
+     * This method is an alias for merge() that exists for convenient iteration.
+     *
+     * @return The result of merging
+     */
     @Override
-    public boolean hasNext()
-    {
-        return i < values.length;
-    }
+    MergeResult<ENTITY> iterator();
 
-    @Override
-    public long next()
-    {
-        if ( hasNext() )
-        {
-            return values[i++];
-        }
-        else
-        {
-            throw new NoSuchElementException( );
-        }
-    }
+    /**
+     * @return The result of merging
+     */
+    MergeResult<ENTITY> merge();
 }

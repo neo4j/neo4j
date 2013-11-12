@@ -43,6 +43,8 @@ import org.neo4j.kernel.impl.cache.SizeOfObject;
  */
 public abstract class DefinedProperty extends Property implements SizeOfObject
 {
+    public static final DefinedProperty[] EMPTY_ARRAY = new DefinedProperty[0];
+
     @Override
     public boolean isDefined()
     {

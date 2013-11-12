@@ -1,5 +1,7 @@
 2.0.0-SNAPSHOT
 --------------
+o Add new merge functionality for creating unique nodes as part of core API that may be accessed via
+  GraphDatabaseService.mergeByConstraint and UniqueFactory.asMerger
 o BREAKING CHANGE: Reference node has been removed.
 o BREAKING CHANGE: All classes under the org.neo4j.kernel package space, except
   those related to the traversal frameworks, are now deprecated and due to be moved

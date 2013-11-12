@@ -492,17 +492,14 @@ public class DatabaseActions
     private AutoIndexer<? extends PropertyContainer> getAutoIndexerForType( String type )
     {
         final IndexManager indexManager = graphDb.index();
-        if ( "node".equals( type ) )
+        switch ( type )
         {
-            return indexManager.getNodeAutoIndexer();
-        }
-        else if ( "relationship".equals( type ) )
-        {
-            return indexManager.getRelationshipAutoIndexer();
-        }
-        else
-        {
-            throw new IllegalArgumentException( "invalid type " + type );
+            case "node":
+                return indexManager.getNodeAutoIndexer();
+            case "relationship":
+                return indexManager.getRelationshipAutoIndexer();
+            default:
+                throw new IllegalArgumentException( "invalid type " + type );
         }
     }
 
@@ -658,31 +655,6 @@ public class DatabaseActions
         if ( relationship.removeProperty( key ) == null )
         {
             throw new NoSuchPropertyException( relationship, key );
-        }
-    }
-
-    // Index
-
-    public enum IndexType
-    {
-        node( "index" )
-                {
-                },
-        relationship( "index" )
-                {
-                };
-        private final String pathPrefix;
-
-        private IndexType( String pathPrefix )
-        {
-            this.pathPrefix = pathPrefix;
-        }
-
-        @SuppressWarnings("boxing")
-        String path( String indexName, String key, String value, long id )
-        {
-            return String.format( "%s/%s/%s/%s/%s", pathPrefix, indexName, key,
-                    value, id );
         }
     }
 

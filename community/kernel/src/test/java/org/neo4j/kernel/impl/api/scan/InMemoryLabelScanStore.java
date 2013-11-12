@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Collections.singletonList;
@@ -118,7 +119,10 @@ public class InMemoryLabelScanStore implements LabelScanStore
             public PrimitiveLongIterator nodesWithLabel( int labelId )
             {
                 Set<Long> nodes = data.get( (long) labelId );
-                assert nodes != null;
+                if ( null == nodes )
+                {
+                    return PrimitiveLongIteratorForArray.EMPTY;
+                }
 
                 final Iterator<Long> nodesIterator = nodes.iterator();
                 return new PrimitiveLongIterator()

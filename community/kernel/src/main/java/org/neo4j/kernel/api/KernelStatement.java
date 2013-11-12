@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -116,11 +117,13 @@ public class KernelStatement implements TxState.Holder, Statement
         }
     }
 
-    void assertOpen()
+    public void assertOpen()
     {
+        transaction.assertOpen();
+
         if ( closed )
         {
-            throw new IllegalStateException( "The statement has been closed." );
+            throw new NotInTransactionException( "The statement has been closed." );
         }
     }
 

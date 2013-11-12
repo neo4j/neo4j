@@ -28,6 +28,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
@@ -39,6 +40,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
 import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class IndexingAcceptanceTest
@@ -340,12 +342,12 @@ public class IndexingAcceptanceTest
         // WHEN & THEN
         assertCanCreateAndFind( db, LABEL1, property, "A String" );
         assertCanCreateAndFind( db, LABEL1, property, true );
-        assertCanCreateAndFind( db, LABEL1, property, Boolean.FALSE );
-        assertCanCreateAndFind( db, LABEL1, property, (short) 12 );
-        assertCanCreateAndFind( db, LABEL1, property, 12 );
-        assertCanCreateAndFind( db, LABEL1, property, 12l );
+        assertCanCreateAndFind( db, LABEL1, property, false );
+        assertCanCreateAndFind( db, LABEL1, property, (short)12 );
+        assertCanCreateAndFind( db, LABEL1, property, (int)12 );
+        assertCanCreateAndFind( db, LABEL1, property, (long)12l );
         assertCanCreateAndFind( db, LABEL1, property, (float)12. );
-        assertCanCreateAndFind( db, LABEL1, property, 12. );
+        assertCanCreateAndFind( db, LABEL1, property, (double)12. );
 
         assertCanCreateAndFind( db, LABEL1, property, new String[]{"A String"} );
         assertCanCreateAndFind( db, LABEL1, property, new boolean[]{true} );
@@ -355,9 +357,36 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, LABEL1, property, new long[]{12l} );
         assertCanCreateAndFind( db, LABEL1, property, new float[]{(float)12.} );
         assertCanCreateAndFind( db, LABEL1, property, new double[]{12.} );
-
     }
 
+    @Test
+    public void shouldRetrieveMultipleNodesWithSameValueFromIndex() throws Exception
+    {
+        // this test was included here for now as a precondition for the following test
+
+        // given
+        GraphDatabaseService graph = dbRule.getGraphDatabaseService();
+        createIndex( graph, LABEL1, "name" );
+
+        Node node1, node2;
+        try ( Transaction tx = graph.beginTx() )
+        {
+            node1 = graph.createNode( LABEL1 );
+            node1.setProperty( "name", "Stefan" );
+
+            node2 = graph.createNode( LABEL1 );
+            node2.setProperty( "name", "Stefan" );
+            tx.success();
+        }
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            ResourceIterable<Node> result = graph.findNodesByLabelAndProperty( LABEL1, "name",  "Stefan" );
+            assertEquals( asSet( node1, node2 ), asSet( result ) );
+
+            tx.success();
+        }
+    }
 
     private void assertCanCreateAndFind( GraphDatabaseService db, Label label, String propertyKey, Object value )
     {

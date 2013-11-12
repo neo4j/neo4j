@@ -44,7 +44,7 @@ class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUp
     }
 
     @Override
-    protected IndexUpdater newUpdater( final IndexUpdateMode mode )
+    protected IndexUpdater newUpdater( final IndexUpdateMode mode, final boolean populating )
     {
         return new UniquePropertyIndexUpdater( UniqueInMemoryIndex.this )
         {

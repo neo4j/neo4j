@@ -22,14 +22,17 @@ package org.neo4j.kernel.api.operations;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.LockHolder;
 import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.ReleasableLock;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.constraints.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.impl.api.constraints.UniqueConstraintViolationKernelException;
@@ -196,19 +199,42 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value ) throws
-            IndexNotFoundKernelException, IndexBrokenKernelException
+    public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         verifyIndexOnline( state, index );
 
-        String stringValue = "";
+        int labelId = index.getLabelId();
+        int propertyKeyId = index.getPropertyKeyId();
+        String stringVal = "";
         if ( null != value )
         {
-            DefinedProperty property = Property.property( index.getPropertyKeyId(), value );
-            stringValue = property.valueAsString();
+            DefinedProperty property = Property.property( propertyKeyId, value );
+            stringVal = property.valueAsString();
         }
-        state.locks().acquireIndexEntryReadLock( index.getLabelId(), index.getPropertyKeyId(), stringValue );
-        return entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
+
+        LockHolder holder = state.locks();
+
+        // If we find the node - hold a READ lock. If we don't find a node - hold a WRITE lock.
+        try ( ReleasableLock r = holder.getReleasableIndexEntryReadLock( labelId, propertyKeyId, stringVal ) )
+        {
+            long nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
+            if ( StatementConstants.NO_SUCH_NODE == nodeId )
+            {
+                r.release(); // and change to a WRITE lock
+                try ( ReleasableLock w = holder.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, stringVal ) )
+                {
+                    nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
+                    if ( StatementConstants.NO_SUCH_NODE != nodeId ) // we found it under the WRITE lock
+                    { // downgrade to a READ lock
+                        holder.getReleasableIndexEntryReadLock( labelId, propertyKeyId, stringVal )
+                              .registerWithTransaction();
+                        w.release();
+                    }
+                }
+            }
+            return nodeId;
+        }
     }
 
     @Override

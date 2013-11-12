@@ -119,13 +119,20 @@ By using a single thread, no two threads will even try to create a particular en
 On High Availability, an external single-threaded client can perform the operations on the cluster.
 
 [[transactions-get-or-create]]
-=== Get or create ===
+=== Get or create (using constraints) ===
+
+Constraints allow to enforce that there is always at most a single, unique node for a given label and property.
+Any transaction that tries to create a second, conflicting node is aborted by the database. Sometimes it is more useful
+to instead either retrieve such a node if it already exists or create a new one otherwise (get-or-create).
+
+See <<tutorials-java-embedded-unique-get-or-create>> for how to do this using the core Java API.
+
+=== Get or create (using legacy indexing) ===
 By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
 entity uniqueness can be guaranteed using an index.
 Here the index acts as the lock and will only lock the smallest part needed to guaranteed uniqueness across threads and transactions.
 
-See <<tutorials-java-embedded-unique-get-or-create>> for how to do this using the core Java API.
-When using the REST API, see <<rest-api-unique-indexes>>.
+See <<tutorials-java-embedded-unique-legacy-get-or-create>> for how to do this using the core Java API.
 
 === Pessimistic locking ===
 [IMPORTANT]
@@ -135,6 +142,10 @@ By using explicit, pessimistic locking, unique creation of entities can be achie
 It is most commonly done by locking on a single or a set of common nodes.
 
 See <<tutorials-java-embedded-unique-pessimistic>> for how to do this using the core Java API.
+
+== Get or create (REST API) ==
+
+When using the REST API to create unique nodes, see <<rest-api-unique-indexes>>.
 
 [[transactions-events]]
 == Transaction events ==

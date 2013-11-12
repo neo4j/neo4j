@@ -22,7 +22,6 @@ package org.neo4j.shell.kernel;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -36,6 +35,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Merger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -241,6 +241,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public Iterable<Node> getAllNodes()
     {
         return nodes( actual.getAllNodes() );
+    }
+
+    @Override
+    public Merger<Node> getOrCreateNode( Label... labels )
+    {
+        return readOnly();
     }
 
     @Override

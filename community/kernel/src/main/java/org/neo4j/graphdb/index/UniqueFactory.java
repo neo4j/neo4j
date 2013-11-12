@@ -27,6 +27,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 
 /**
  * A utility class for creating unique (with regard to a given index) entities.
@@ -43,24 +45,24 @@ public abstract class UniqueFactory<T extends PropertyContainer>
     {
         private final T entity;
         private final boolean created;
-        
+
         UniqueEntity( T entity, boolean created )
         {
             this.entity = entity;
             this.created = created;
         }
-        
+
         public T entity()
         {
             return this.entity;
         }
-        
+
         public boolean wasCreated()
         {
             return this.created;
         }
     }
-    
+
     /**
      * Implementation of {@link UniqueFactory} for {@link Node}.
      *
@@ -226,6 +228,9 @@ public abstract class UniqueFactory<T extends PropertyContainer>
      */
     public final UniqueEntity<T> getOrCreateWithOutcome( String key, Object value )
     {
+        ThreadToStatementContextBridge bridge = statementContextBridge();
+        bridge.assertInTransaction();
+
         T result = index.get( key, value ).getSingle();
         boolean wasCreated = false;
         if ( result == null )
@@ -248,7 +253,8 @@ public abstract class UniqueFactory<T extends PropertyContainer>
                 tx.success();
             }
         }
-        return new UniqueEntity<T>( result, wasCreated );
+
+        return new UniqueEntity<>( result, wasCreated );
     }
 
     /**
@@ -258,6 +264,11 @@ public abstract class UniqueFactory<T extends PropertyContainer>
     protected final GraphDatabaseService graphDatabase()
     {
         return index.getGraphDatabase();
+    }
+
+    protected final ThreadToStatementContextBridge statementContextBridge()
+    {
+        return ((GraphDatabaseAPI)graphDatabase()).getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     /**

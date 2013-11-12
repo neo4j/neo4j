@@ -120,20 +120,70 @@ public class LockHolderImpl implements LockHolder
     }
 
     @Override
-    public void acquireIndexEntryReadLock( int labelId, int propertyKeyId, String propertyValue )
-    {
-        IndexEntryLock resource = new IndexEntryLock( labelId, propertyKeyId, propertyValue );
-        lockManager.getReadLock( resource, tx );
-        locks.add( new LockReleaseCallback( LockType.READ, resource ) );
-    }
-
-    @Override
     public void acquireIndexEntryWriteLock( int labelId, int propertyKeyId, String propertyValue )
     {
         IndexEntryLock resource = new IndexEntryLock( labelId, propertyKeyId, propertyValue );
         lockManager.getWriteLock( resource, tx );
         locks.add( new LockReleaseCallback( LockType.WRITE, resource ) );
     }
+
+    @Override
+    public ReleasableLock getReleasableIndexEntryReadLock( int labelId, int propertyKeyId, String propertyValue )
+    {
+        IndexEntryLock resource = new IndexEntryLock( labelId, propertyKeyId, propertyValue );
+        lockManager.getReadLock( resource, tx );
+        return new RegisteringReleasableLock( new LockReleaseCallback( LockType.READ, resource ) );
+    }
+
+    @Override
+    public ReleasableLock getReleasableIndexEntryWriteLock( int labelId, int propertyKeyId, String propertyValue )
+    {
+        IndexEntryLock resource = new IndexEntryLock( labelId, propertyKeyId, propertyValue );
+        lockManager.getWriteLock( resource, tx );
+        return new RegisteringReleasableLock( new LockReleaseCallback( LockType.WRITE, resource ) );
+    }
+
+    private class RegisteringReleasableLock implements ReleasableLock
+    {
+        private LockReleaseCallback callback;
+
+        private RegisteringReleasableLock( LockReleaseCallback callback )
+        {
+            this.callback = callback;
+        }
+
+        @Override
+        public void release()
+        {
+            if ( callback == null )
+            {
+                throw new IllegalStateException();
+            }
+            callback.release();
+            callback = null;
+        }
+
+        @Override
+        public void registerWithTransaction()
+        {
+            if ( callback == null )
+            {
+                throw new IllegalStateException();
+            }
+            locks.add( callback );
+            callback = null;
+        }
+
+        @Override
+        public void close()
+        {
+            if ( callback != null )
+            {
+                registerWithTransaction();
+            }
+        }
+    }
+
 
     @Override
     public void releaseLocks() throws ReleaseLocksFailedKernelException
@@ -469,8 +519,8 @@ public class LockHolderImpl implements LockHolder
         @Override
         public boolean equals( Object o )
         {
-            return o instanceof GraphProperties &&
-                    this.getNodeManager().equals( ((GraphProperties) o).getNodeManager() );
+            return o instanceof GraphProperties
+                    && this.getNodeManager().equals( ((GraphProperties) o).getNodeManager() );
         }
     }
 }
