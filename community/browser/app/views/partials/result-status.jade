@@ -1,0 +1,10 @@
+span(ng-show='frame.hasErrors')
+  | Execution error
+span(ng-hide='frame.hasErrors')
+  span(ng-show='isActive("graph")')
+    | Displaying
+    ng-pluralize(count='frame.response.graph.nodes().length', when="{one: '1 node', other: '{} nodes'}")
+    | ,
+    ng-pluralize(count='frame.response.graph.relationships().length', when="{one: '1 relationship', other: '{} relationships'}")
+  span(ng-show='isActive("table")')
+    | {{resultStatistics(frame)}} in {{frame.runTime}} ms

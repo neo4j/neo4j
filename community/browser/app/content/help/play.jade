@@ -1,0 +1,29 @@
+article.help
+  .container-fluid
+    section.row-fluid.summary
+      .summary.span3
+        h3 Play
+        p.lead Display a mini-deck
+      .details.span9
+        p
+          | The &nbsp;
+          code :play
+          |  command loads a mini-deck with either guide material or sample data.
+        table.table-condensed.table-help
+          tr
+            th Usage:
+            td
+              code :play &lt;guide | data&gt;
+          tr
+            th Guides:
+            td
+              a(play-topic="intro") :play intro
+              | &nbsp;
+              a(play-topic="graphs") :play graphs
+              | &nbsp;
+              a(play-topic="cypher") :play cypher
+          tr
+            th Sample data:
+            td
+              a(play-topic="movies") :play movies
+

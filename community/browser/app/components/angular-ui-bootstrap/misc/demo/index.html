@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="bootstrapDemoApp" id="top">
+<head>
+    <meta charset="utf-8">
+    <title>Angular directives for Twitter's Bootstrap</title>
+    <meta name="description" content="AngularJS (Angular) native directives for Twitter Bootstrap. Small footprint (5kB gzipped!), no 3rd party JS dependencies (jQuery, bootstrap JS) required! Widgets: <% demoModules.forEach(function(module) { %><%= module.displayName %>, <% }); %>">
+    <meta name="google-site-verification" content="7lc5HyceLDqpV_6oNHteYFfxDJH7-S3DwnJKtNUKcRg" />
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/<%= ngversion %>/angular.min.js"></script>
+    <script src="ui-bootstrap-tpls-<%= pkg.version%>.min.js"></script>
+    <script src="assets/select2.js"></script>
+    <script src="assets/ui-select2.js"></script>
+    <script src="assets/plunker.js"></script>
+    <script src="assets/app.js"></script>
+    <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/<%= bsversion %>/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="assets/rainbow.css"/>
+    <link rel="stylesheet" href="assets/demo.css"/>
+    <link rel="stylesheet" href="assets/select2.css"/>
+
+    <link rel="author" href="https://github.com/angular-ui/bootstrap/graphs/contributors">
+</head>
+<body class="ng-cloak" ng-controller="MainCtrl">
+<header class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+    <div class="container">
+      <div class="dropdown pull-left">
+        <a class="brand dropdown-toggle" role="button" data-toggle="dropdown" href="#"> 
+          UI Bootstrap
+          <b class="caret"></b>
+        </a>
+        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+          <li><a href="https://github.com/angular-ui/"><strong>Related Projects:</strong></a></li>
+          <li class="divider"></li>
+          <li><a href="http://angular-ui.github.io/">AngularUI</a></li>
+          <li><a href="http://angular-ui.github.io/ng-grid/">Grid</a></li>
+          <li><a href="https://github.com/angular-ui/AngularJs.tmbundle">AngularJS.tmbundle</a></li>
+          <li><a href="https://github.com/angular-ui/ui-router">Router <span class="label label-success">New!</span></a></li>
+        </ul>
+      </div>
+      <div class="nav-collapse">
+        <ul class="nav">
+           <li>
+               <a href="#" role="button" class="dropdown-toggle">
+                   Directives <b class="caret"></b>
+               </a>
+               <ul class="dropdown-menu">
+                   <% demoModules.forEach(function(module) {  %>
+                   <li><a href="#<%= module.name %>"><%= module.displayName %></a></li>
+                   <% });  %>
+               </ul>
+           </li>
+           <li><a href="#getting_started">Getting started</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</header>
+<div style="margin: 32px;"></div>
+<div role="main">
+
+    <header class="hero-unit" id="overview">
+        <div class="container">
+            <h1>
+                UI Bootstrap
+            </h1>
+
+            <p>Bootstrap components written in pure <strong><a href="http://angularjs.org">AngularJS</a></strong> by the <strong><a
+                    href="http://angular-ui.github.io">AngularUI Team</a></strong></p>
+
+            <p class="btn-group">
+                <a class="btn" href="https://github.com/angular-ui/bootstrap"><i class="icon-github"></i> Code on Github</a>
+                <a class="btn btn-primary" href="https://github.com/angular-ui/bootstrap/tree/gh-pages">
+                    <i class="icon-download-alt icon-white"></i> Download <small>(<%= pkg.version%>)</small>
+                </a>
+                <a class="btn" ng-click="showBuildModal()"><i class="icon-wrench"></i> Create a Build</a>
+            </p>
+        </div>
+        <div class="bs-docs-social">
+            <div class="container">
+                <ul class="bs-docs-social-buttons">
+                    <li>
+                        <iframe src="http://ghbtns.com/github-btn.html?user=angular-ui&repo=bootstrap&type=watch&count=true"
+                                allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20"></iframe>
+                    </li>
+                    <li>
+                        <iframe src="http://ghbtns.com/github-btn.html?user=angular-ui&repo=bootstrap&type=fork&count=true"
+                                allowtransparency="true" frameborder="0" scrolling="0" width="95" height="20"></iframe>
+                    </li>
+                    <li>
+                        <a href="https://twitter.com/share" class="twitter-share-button"
+                           data-hashtags="angularjs">Tweet</a>
+                        <script>!function (d, s, id) {
+                            var js, fjs = d.getElementsByTagName(s)[0];
+                            if (!d.getElementById(id)) {
+                                js = d.createElement(s);
+                                js.id = id;
+                                js.src = "//platform.twitter.com/widgets.js";
+                                fjs.parentNode.insertBefore(js, fjs);
+                            }
+                        }(document, "script", "twitter-wjs");</script>
+                    </li>
+                    <li>
+                        <!-- Place this tag where you want the +1 button to render. -->
+                        <div class="g-plusone" data-size="medium"></div>
+
+                        <!-- Place this tag after the last +1 button tag. -->
+                        <script type="text/javascript">
+                            (function () {
+                                var po = document.createElement('script');
+                                po.type = 'text/javascript';
+                                po.async = true;
+                                po.src = 'https://apis.google.com/js/plusone.js';
+                                var s = document.getElementsByTagName('script')[0];
+                                s.parentNode.insertBefore(po, s);
+                            })();
+                        </script>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <section id="getting_started">
+            <div class="page-header">
+                <h1>Getting started</h1>
+            </div>
+            <div class="row">
+                <div class="span12">
+                    <h3>Dependencies</h3>
+                    <p>
+                        This repository contains a set of <strong>native AngularJS directives</strong> based on
+                        Twitter Bootstrap's markup and CSS. As a result no dependency on jQuery or Bootstrap's
+                        JavaScript is required. The <strong>only required dependencies</strong> are:
+                    </p>
+                    <ul>
+                        <li>AngularJS (minimal version 1.0.4 or 1.1.2)</li>
+                        <li>Bootstrap CSS</li>
+                    </ul>
+                    <h3>Files to download</h3>
+                    <p>
+                        Build files for all directives are distributed in several flavours: minified for production usage, un-minified
+                        for development, with or without templates. All the options are described and can be
+                        <a href="https://github.com/angular-ui/bootstrap/tree/gh-pages">downloaded from here</a>.
+                    </p>
+                    <p>Alternativelly, if you are only interested in a subset of directives, you can
+                        <a ng-click="showBuildModal()">create your own build</a>.
+                    </p>
+                    <p>Whichever method you choose the good news that the overall size of a download is very small:
+                       &lt;20kB for all directives (~5kB with gzip compression!)</p>
+                    <h3>Installation</h3>
+                    <p>As soon as you've got all the files downloaded and included in your page you just need to declare
+                       a dependency on the <code>ui.bootstrap</code> <a href="http://docs.angularjs.org/guide/module">module</a>:<br>
+                       <code>angular.module('myModule', ['ui.bootstrap']);</code>
+                    </p>
+                    <p>You can fork one of the plunkers from this page to see a working example of what is described here.</p>
+                </div>
+            </div>
+        </section>
+
+    <% demoModules.forEach(function(module) { %>
+      <section id="<%= module.name %>">
+        <div class="page-header">
+          <h1><%= module.displayName %><small>
+              (<a target="_blank" href="https://github.com/angular-ui/bootstrap/tree/master/src/<%= module.name %>">ui.bootstrap.<%= module.name %></a>)
+          </small></h1>
+        </div>
+        <div class="row">
+            <div class="span6">
+                <%= module.docs.html %>
+            </div>
+            <div class="span6">
+                <%= module.docs.md %>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="span12" ng-controller="PlunkerCtrl">
+                <div class="pull-right">
+                    <button class="btn btn-info" id="plunk-btn" ng-click="edit('<%= ngversion%>', '<%= bsversion %>', '<%= pkg.version%>', '<%= module.name %>')"><i class="icon-edit icon-white"></i> Edit in plunker</button>
+                </div>
+                <tabset>
+                    <tab heading="Markup" plunker-content="markup">
+                      <pre ng-non-bindable><code data-language="html"><%- module.docs.html %></code></pre>
+                    </tab>
+                    <tab heading="JavaScript" plunker-content="javascript">
+                      <pre ng-non-bindable><code data-language="javascript"><%- module.docs.js %></code></pre>
+                    </tab>
+                </tabset>
+            </div>
+        </div>
+      </section>
+      <script><%= module.docs.js %></script>
+    <% }); %>
+  </div>
+</div>
+<footer class="footer">
+    <div class="container">
+        <p>Designed and built by <a href="https://github.com/angular-ui?tab=members" target="_blank">Angular-UI team</a> and <a href="https://github.com/angular-ui/bootstrap/graphs/contributors" target="_blank">contributors</a>.</p>
+        <p>Code licensed under <a href="https://github.com/angular-ui/bootstrap/blob/master/LICENSE">MIT License</a>.</p>
+        <p><a href="https://github.com/angular-ui/bootstrap/issues?state=open">Issues</a></p>
+    </div>
+</footer>
+<script src="assets/rainbow.js"></script>
+<script src="assets/rainbow-generic.js"></script>
+<script src="assets/rainbow-javascript.js"></script>
+<script src="assets/rainbow-html.js"></script>
+<div modal="buildModalShown" class="fade">
+  <div class="modal-header"><h2>Create a Custom Build</h2></div>
+  <div class="modal-body">
+    <div ng-show="buildErrorText">
+      <h3 style="text-align: center;">{{buildErrorText}}</h3>
+    </div>
+    <div ng-hide="buildErrorText">
+      <label>Select the modules you wish to download:
+      <select style="width: 100%;" ui-select2 multiple 
+        ui-options="{multiple: true}"
+        ng-model="selectedModules">
+        <% modules.forEach(function(module) { %>
+          <option value="<%= module.name %>"><%= module.displayName %></option>
+        <% }); %>
+      </select></label>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <a class="btn btn-primary" ng-disabled="!selectedModules.length" ng-click="selectedModules.length && downloadBuild()"><i class="icon-download-alt icon-white"></i> Download {{selectedModules.length}} Modules</a>
+    <a class="btn" ng-click="buildModalShown = false">Cancel</a>
+  </div>
+</div>
+
+<script type="text/javascript">
+
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-37467169-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+</script>
+</body>
+</html>

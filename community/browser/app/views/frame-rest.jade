@@ -1,0 +1,18 @@
+div(fullscreen)
+  include partials/frame-common-actions
+  .inner
+    .view-result(ng-show='frame.response')
+      pre(output-raw = "frame.response")
+    .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
+      div(ng-hide='frame.isLoading')
+        span(ng-show='frame.hasErrors')
+          .icon-warning-sign
+          {{frame.errorText}}
+        div(ng-hide='frame.hasErrors')
+          div(ng-show='frame.response')
+            .icon-ok
+            span(ng-show='frame.hasErrors')
+              | Execution error
+      span(ng-show='frame.isLoading')
+        .icon-spinner.icon-spin
+        | Executing query...

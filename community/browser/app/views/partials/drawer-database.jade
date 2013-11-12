@@ -1,0 +1,25 @@
+h4 Neo4j {{ neo4j.version }}
+.inner
+  h5 Node labels
+  a.badge(ng-click="editor.execScript('MATCH n RETURN n LIMIT 25')") *
+  span(ng-repeat='node in labels')
+    a.badge(ng-click="editor.execScript('MATCH (n:`'+node+'`) RETURN n LIMIT 25')") {{node}}
+
+  h5 Relationship types
+  a.label.relationship(ng-click="editor.execScript('MATCH (a)-[r]-(b) RETURN a,b LIMIT 25')") *
+  span(ng-repeat='relationship in relationships')
+    a.label.relationship(ng-click="editor.execScript('MATCH (a)-[:`'+relationship+'`]->(b) RETURN a,b LIMIT 25')") {{relationship}}
+
+  span(ng-show='propertyKeys')
+    h5 Property keys
+    span(ng-repeat='propertyKey in propertyKeys')
+      a.label.property(ng-click="editor.execScript('MATCH (n) WHERE has(n.`'+propertyKey+'`) RETURN DISTINCT \"node\" as element, n.`'+propertyKey+'` AS `'+propertyKey+'` LIMIT 25 UNION ALL MATCH ()-[r]-() WHERE has(r.`'+propertyKey+'`) RETURN DISTINCT \"relationship\" AS element, r.`'+propertyKey+'` AS `'+propertyKey+'` LIMIT 25')") {{propertyKey}}
+
+  h5 Database
+  ul
+    li.pair
+      .key Location:
+      .value {{kernel.StoreDirectory}}
+    li.pair
+      .key Size:
+      .value {{kernel.TotalStoreSize | humanReadableBytes}}

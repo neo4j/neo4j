@@ -1,0 +1,37 @@
+{
+  "name": "jquery.easing",
+  "version": "1.3.0",
+  "description": "jQuery Easing plugin",
+  "homepage": "http://gsgd.co.uk/sandbox/jquery/easing/",
+  "main": "js/jquery.easing.min.js",
+  "keywords": [
+    "jquery",
+    "jquery plugin",
+    "easing"
+  ],
+  "dependencies": {
+    "jquery": ">= 1.2.1"
+  },
+  "authors": [
+    "Source code: George McGinley Smith",
+    "Package: Jozef Izso"
+  ],
+  "licenses": "NewBSD",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "_release": "1.3.0",
+  "_resolution": {
+    "type": "version",
+    "tag": "v1.3.0",
+    "commit": "89cdc46988ac150bae9225fd9fc9fb85e5964e4e"
+  },
+  "_source": "git://github.com/jozefizso/bower-jquery-easing.git",
+  "_target": "~1.3.0",
+  "_originalSource": "jquery.easing",
+  "_direct": true
+}
