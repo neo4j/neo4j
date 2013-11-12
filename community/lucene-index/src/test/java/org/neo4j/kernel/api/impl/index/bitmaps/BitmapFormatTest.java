@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.index.bitmaps;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 import org.junit.Test;
@@ -45,20 +44,16 @@ public class BitmapFormatTest
             assertArrayEquals( new long[]{(16 << 5) + i}, longs );
         }
 
-        // given
-        for ( int i = 0; i < 32; i++ )
-        {
-            // when
-            long[] longs = BitmapFormat._32.convertRangeAndBitmapToArray( 13, -1L );
+        // when
+        long[] longs = BitmapFormat._32.convertRangeAndBitmapToArray( 13, -1L );
 
-            // then
-            long[] expected = new long[32];
-            for ( int j = 0; j < expected.length; j++ )
-            {
-                expected[j] = (13 << 5) + j;
-            }
-            assertArrayEquals( expected, longs );
+        // then
+        long[] expected = new long[32];
+        for ( int i = 0; i < expected.length; i++ )
+        {
+            expected[i] = (13 << 5) + i;
         }
+        assertArrayEquals( expected, longs );
     }
 
     @Test
@@ -74,20 +69,16 @@ public class BitmapFormatTest
             assertArrayEquals( new long[]{(11 << 6) + i}, longs );
         }
 
-        // given
-        for ( int i = 0; i < 32; i++ )
-        {
-            // when
-            long[] longs = BitmapFormat._64.convertRangeAndBitmapToArray( 19, -1L );
+        // when
+        long[] longs = BitmapFormat._64.convertRangeAndBitmapToArray( 19, -1L );
 
-            // then
-            long[] expected = new long[64];
-            for ( int j = 0; j < expected.length; j++ )
-            {
-                expected[j] = (19 << 6) + j;
-            }
-            assertArrayEquals( expected, longs );
+        // then
+        long[] expected = new long[64];
+        for ( int i = 0; i < expected.length; i++ )
+        {
+            expected[i] = (19 << 6) + i;
         }
+        assertArrayEquals( expected, longs );
     }
 
     @Test
@@ -135,14 +126,38 @@ public class BitmapFormatTest
     }
 
     @Test
-    public void shouldBeAbleToCheckIfASingleNodeIdIsSet() throws Exception
+    public void shouldBeAbleToCheckIfASingleNodeIdIsSet_32() throws Exception
     {
-        Bitmap bitmap = new Bitmap();
-        // when
-        int input = new Random(  ).nextInt();
-        BitmapFormat._32.set( bitmap, input % 32, true );
+        for ( int input = 0; input < 32; input++ )
+        {
+            // given
+            Bitmap bitmap = new Bitmap();
+            // when
+            BitmapFormat._32.set( bitmap, input, true );
+            // then
+            assertThat( BitmapFormat._32.peek( bitmap.bitmap(), input ), is( true ) );
+            for ( int check = 0; check < 32; check++ )
+            {
+                assertThat( BitmapFormat._32.peek( bitmap.bitmap(), check ), is( input == check ) );
+            }
+        }
+    }
 
-        assertThat( BitmapFormat._32.peek( bitmap.bitmap(), input ), is( true ) );
-        assertThat( BitmapFormat._32.peek( bitmap.bitmap(), (input + 1) % 32 ), is( false ) );
+    @Test
+    public void shouldBeAbleToCheckIfASingleNodeIdIsSet_64() throws Exception
+    {
+        for ( int input = 0; input < 64; input++ )
+        {
+            // given
+            Bitmap bitmap = new Bitmap();
+            // when
+            BitmapFormat._64.set( bitmap, input, true );
+            // then
+            assertThat( BitmapFormat._64.peek( bitmap.bitmap(), input ), is( true ) );
+            for ( int check = 0; check < 64; check++ )
+            {
+                assertThat( BitmapFormat._64.peek( bitmap.bitmap(), check ), is( input == check ) );
+            }
+        }
     }
 }
