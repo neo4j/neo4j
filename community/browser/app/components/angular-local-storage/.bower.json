@@ -1,0 +1,26 @@
+{
+  "name": "angular-local-storage",
+  "description": "An Angular module that gives you access to the browsers local storage",
+  "main": "./angular-local-storage.js",
+  "author": {
+    "name": "Gregory Pike",
+    "site": "https://github.com/grevory/angular-local-storage"
+  },
+  "dependencies": {
+    "angular": "~1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jjperezaguinaga/bower-angular-local.git"
+  },
+  "homepage": "https://github.com/jjperezaguinaga/bower-angular-local",
+  "_release": "59ee7545fc",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "59ee7545fc69fe175281ea6894baffa3b25ac0cc"
+  },
+  "_source": "git://github.com/jjperezaguinaga/bower-angular-local.git",
+  "_target": "*",
+  "_originalSource": "angular-local-storage"
+}

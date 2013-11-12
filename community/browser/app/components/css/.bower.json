@@ -1,0 +1,14 @@
+{
+  "name": "css",
+  "_cacheHeaders": {
+    "ETag": "\"a16bc9ace78c589e37b6013a50aaada9\"",
+    "Content-Length": "28846",
+    "Content-Type": "text/plain; charset=utf-8",
+    "Content-Disposition": "inline"
+  },
+  "_release": "e-tag:a16bc9ace",
+  "main": "index.js",
+  "_source": "https://raw.github.com/marijnh/CodeMirror/master/mode/css/css.js",
+  "_target": "*",
+  "_originalSource": "https://raw.github.com/marijnh/CodeMirror/master/mode/css/css.js"
+}

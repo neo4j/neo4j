@@ -1,0 +1,11 @@
+{
+  "name": "bootstrap",
+  "_cacheHeaders": {
+    "Last-Modified": "Fri, 23 Aug 2013 04:27:37 GMT",
+    "Content-Length": "85732",
+    "Content-Type": "application/zip"
+  },
+  "_source": "http://getbootstrap.com/2.3.2/assets/bootstrap.zip",
+  "_target": "*",
+  "_originalSource": "http://getbootstrap.com/2.3.2/assets/bootstrap.zip"
+}

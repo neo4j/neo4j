@@ -1,0 +1,10 @@
+.legend(ng-controller='LegendCtrl')
+  ul.unstyled
+    li(ng-repeat='rule in rules | filter:isNode')
+      a.preview(style='background-color: {{rule.props.color}}; border-color: {{rule.props["border-color"]}}')
+        .shade
+      .contents.no-condition
+        .class-name {{rule.selector.klass || 'Default'}}
+        .condition
+      //- a.remove.btn.btn-small(tooltip-placement='right', tooltip='Remove style', ng-click="remove(rule)")
+      //-   i.icon-remove

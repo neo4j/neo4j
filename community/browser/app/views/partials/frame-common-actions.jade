@@ -1,0 +1,9 @@
+.code-bar
+  div(class="label label-{{frame.type | lowercase}}") {{frame.type | uppercase}}
+  span.code(click-to-code='frame.input') {{frame.input | uncomment}}
+  .actions
+    a.icon-download-alt(exportable ng-click='exportJSON(frame.response)', tooltip-placement='bottom', tooltip='Export JSON', ng-show='frame.exportable')
+    // span.divider &nbsp;
+    a.icon-fullscreen(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
+    a.icon-trash(ng-click='frames.remove(frame)', tooltip-placement='bottom', tooltip='Remove')
+  a.close-fullscreen.icon-chevron-down(ng-click="toggleFullscreen(false)")

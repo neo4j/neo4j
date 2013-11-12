@@ -1,0 +1,18 @@
+h4 Saved scripts
+  a.create-folder(ng-click='folders.create()', tooltip-placement='bottom', tooltip='Create folder')
+    .icon-plus-sign-alt
+.inner
+  .droppable(
+    ng-repeat='folder in folders.all()', ui-sortable="sortableOptions")
+    h5.folder(ng-click='folders.expand(folder)')
+      i.icon-caret-right(ng-class="{'icon-rotate-90': folder.expanded}")
+      div(edit-in-place='folder.name', on-blur='folders.save()')
+      a.icon-trash(ng-click='removeFolder(folder)', tooltip-placement='left', tooltip='Remove folder')
+    ul.starred.indented(ng-show='folder.expanded')
+      li(ng-repeat="document in documents.where({folder: folder.id})", ng-animate="{leave:'pop-out', enter:'pop-in'}")
+        include list-item
+  .droppable(ui-sortable="sortableOptions")
+    ul.starred
+      li(ng-repeat="document in documents.where({folder: false})")
+        include list-item
+  file-upload(upload="importDocument($content)", extension="cyp|cypher|cql|txt")

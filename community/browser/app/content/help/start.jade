@@ -1,0 +1,35 @@
+article.help
+  .container-fluid
+    section.row-fluid.summary
+      .summary.span3
+        h3 START
+        p.lead with known data
+      .details.span9
+        p
+          | The&nbsp;
+          code START
+          |  clause binds starting points within the graph, by directly looking up
+          | a node ID, or using a special (non-schema) index.
+        table.table-condensed.table-help
+          tr
+            th Reference:
+            td
+              code
+                a(href='http://docs.neo4j.org/chunked/{{neo4j.version}}/query-start.html') START
+              |  manual page
+          tr
+            th Related:
+            td
+              a(help-topic='match') :help MATCH
+              | &nbsp;
+              a(help-topic='return') :help RETURN
+              | &nbsp;
+              a(help-topic='cypher') :help Cypher
+    section.row-fluid.example
+      .span9.offset3
+        figure
+          pre.code.runnable.
+            START n=node(0)
+            RETURN n
+          figcaption Bind n to node with ID 0, then return that node.
+

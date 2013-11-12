@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>JSON 3</title>
+    <link rel="stylesheet" href="page/style.css" media="screen">
+  </head>
+  <body>
+    <ul id="navigation">
+      <li><a href="#section_1">JSON 3</a></li>
+<li><a href="#section_2">Changes from JSON 2</a></li>
+<li><a href="#section_3">Usage</a></li>
+<li><a href="#section_4">Compatibility</a></li>
+<li><a href="#section_5">Contribute</a></li>
+
+    </ul>
+    <div id="content">
+      <h1><a name="section_1"></a>JSON 3</h1>
+<p><img src="http://bestiejs.github.io/json3/page/logo.png" alt="JSON 3 Logo">
+
+</p>
+<p><strong>JSON 3</strong> is a modern JSON implementation compatible with a variety of JavaScript platforms, including Internet Explorer 6, Opera 7, Safari 2, and Netscape 6. The current version is <strong>3.2.5</strong>.
+
+</p>
+<ul>
+<li><a href="http://bestiejs.github.io/json3/lib/json3.js">Development Version</a> <em>(38.8 KB; uncompressed with comments)</em></li>
+<li><a href="http://bestiejs.github.io/json3/lib/json3.min.js">Production Version</a> <em>(3.2 KB; compressed and <code>gzip</code>-ped)</em></li>
+</ul>
+<p><a href="http://json.org/">JSON</a> is a language-independent data interchange format based on a loose subset of the JavaScript grammar. Originally popularized by <a href="http://www.crockford.com/">Douglas Crockford</a>, the format was standardized in the <a href="http://es5.github.com/">fifth edition</a> of the ECMAScript specification. The 5.1 edition, ratified in June 2011, incorporates several modifications to the grammar pertaining to the serialization of dates.
+
+</p>
+<p>JSON 3 exposes two functions: <code>stringify()</code> for <a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/JSON/stringify">serializing</a> a JavaScript value to JSON, and <code>parse()</code> for <a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/JSON/parse">producing</a> a JavaScript value from a JSON source string. It is a <strong>drop-in replacement</strong> for <a href="http://json.org/js">JSON 2</a>. The functions behave exactly as described in the ECMAScript spec, <strong>except</strong> for the date serialization discrepancy noted below.
+
+</p>
+<p>The JSON 3 parser does <strong>not</strong> use <code>eval</code> or regular expressions. This provides security and performance benefits in obsolete and mobile environments, where the margin is particularly significant. The complete <a href="http://jsperf.com/json3">benchmark suite</a> is available on <a href="http://jsperf.com/">jsPerf</a>.
+
+</p>
+<p>The project is <a href="http://git.io/json3">hosted on GitHub</a>, along with the <a href="http://bestiejs.github.io/json3/test/test_browser.html">unit tests</a>. It is part of the <a href="https://github.com/bestiejs">BestieJS</a> family, a collection of best-in-class JavaScript libraries that promote cross-platform support, specification precedents, unit testing, and plenty of documentation.
+
+</p>
+<h1><a name="section_2"></a>Changes from JSON 2</h1>
+<p>JSON 3...
+
+</p>
+<ul>
+<li>Correctly serializes primitive wrapper objects.</li>
+<li>Throws a <code>TypeError</code> when serializing cyclic structures (JSON 2 recurses until the call stack overflows).</li>
+<li>Utilizes <strong>feature tests</strong> to detect broken or incomplete <em>native</em> JSON implementations (JSON 2 only checks for the presence of the native functions). The tests are only executed once at runtime, so there is no additional performance cost when parsing or serializing values.</li>
+</ul>
+<p><strong>As of v3.2.3</strong>, JSON 3 is compatible with <a href="http://prototypejs.org">Prototype</a> 1.6.1 and older.
+
+</p>
+<p>In contrast to JSON 2, JSON 3 <strong>does not</strong>...
+
+</p>
+<ul>
+<li>Add <code>toJSON()</code> methods to the <code>Boolean</code>, <code>Number</code>, and <code>String</code> prototypes. These are not part of any standard, and are made redundant by the design of the <code>stringify()</code> implementation.</li>
+<li>Add <code>toJSON()</code> or <code>toISOString()</code> methods to <code>Date.prototype</code>. See the note about date serialization below.</li>
+</ul>
+<h2>Date Serialization</h2>
+<p><strong>JSON 3 deviates from the specification in one important way</strong>: it does not define <code>Date#toISOString()</code> or <code>Date#toJSON()</code>. This preserves CommonJS compatibility and avoids polluting native prototypes. Instead, date serialization is performed internally by the <code>stringify()</code> implementation: if a date object does not define a custom <code>toJSON()</code> method, it is serialized as a <a href="http://es5.github.com/#x15.9.1.15">simplified ISO 8601 date-time string</a>.
+
+</p>
+<p><strong>Several native <code>Date#toJSON()</code> implementations produce date time strings that do <em>not</em> conform to the grammar outlined in the spec</strong>. For instance, all versions of Safari 4, as well as JSON 2, fail to serialize extended years correctly. Furthermore, JSON 2 and older implementations omit the milliseconds from the date-time string (optional in ES 5, but required in 5.1). Finally, in all versions of Safari 4 and 5, serializing an invalid date will produce the string <code>&quot;Invalid Date&quot;</code>, rather than <code>null</code>. Because these environments exhibit other serialization bugs, however, JSON 3 will override the native <code>stringify()</code> implementation.
+
+</p>
+<p>Portions of the date serialization code are adapted from the <a href="https://github.com/Yaffle/date-shim"><code>date-shim</code></a> project.
+
+</p>
+<h1><a name="section_3"></a>Usage</h1>
+<h2>Web Browsers</h2>
+<pre><code>&lt;script src=&quot;http://bestiejs.github.io/json3/lib/json3.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+  JSON.stringify({&quot;Hello&quot;: 123});
+  // =&gt; &#39;{&quot;Hello&quot;:123}&#39;
+  JSON.parse(&quot;[[1, 2, 3], 1, 2, 3, 4]&quot;, function (key, value) {
+    if (typeof value == &quot;number&quot;) {
+      value = value % 2 ? &quot;Odd&quot; : &quot;Even&quot;;
+    }
+    return value;
+  });
+  // =&gt; [[&quot;Odd&quot;, &quot;Even&quot;, &quot;Odd&quot;], &quot;Odd&quot;, &quot;Even&quot;, &quot;Odd&quot;, &quot;Even&quot;]
+&lt;/script&gt;</code></pre>
+<h2>CommonJS Environments</h2>
+<pre><code>var JSON3 = require(&quot;./path/to/json3&quot;);
+JSON3.parse(&quot;[1, 2, 3]&quot;);
+// =&gt; [1, 2, 3]</code></pre>
+<h2>JavaScript Engines</h2>
+<pre><code>load(&quot;path/to/json3.js&quot;);
+JSON.stringify({&quot;Hello&quot;: 123, &quot;Good-bye&quot;: 456}, [&quot;Hello&quot;], &quot;\t&quot;);
+// =&gt; &#39;{\n\t&quot;Hello&quot;: 123\n}&#39;</code></pre>
+<h1><a name="section_4"></a>Compatibility</h1>
+<p>JSON 3 has been <strong>tested</strong> with the following web browsers, CommonJS environments, and JavaScript engines.
+
+</p>
+<h2>Web Browsers</h2>
+<ul>
+<li>Windows <a href="http://www.microsoft.com/windows/internet-explorer">Internet Explorer</a>, version 6.0 and higher</li>
+<li>Mozilla <a href="http://www.mozilla.com/firefox">Firefox</a>, version 1.0 and higher</li>
+<li>Apple <a href="http://www.apple.com/safari">Safari</a>, version 2.0 and higher</li>
+<li><a href="http://www.opera.com">Opera</a> 7.02 and higher</li>
+<li><a href="http://sillydog.org/narchive/gecko.php">Mozilla</a> 1.0, <a href="http://sillydog.org/narchive/">Netscape</a> 6.2.3, and <a href="http://www.seamonkey-project.org/">SeaMonkey</a> 1.0 and higher</li>
+</ul>
+<h2>CommonJS Environments</h2>
+<ul>
+<li><a href="http://nodejs.org/">Node</a> 0.2.6 and higher</li>
+<li><a href="http://ringojs.org/">RingoJS</a> 0.4 and higher</li>
+<li><a href="http://narwhaljs.org/">Narwhal</a> 0.3.2 and higher</li>
+</ul>
+<h2>JavaScript Engines</h2>
+<ul>
+<li>Mozilla <a href="http://www.mozilla.org/rhino">Rhino</a> 1.5R5 and higher</li>
+<li>WebKit <a href="https://trac.webkit.org/wiki/JSC">JSC</a></li>
+<li>Google <a href="http://code.google.com/p/v8">V8</a></li>
+</ul>
+<h2>Known Incompatibilities</h2>
+<ul>
+<li>Attempting to serialize the <code>arguments</code> object may produce inconsistent results across environments due to specification version differences. As a workaround, please convert the <code>arguments</code> object to an array first: <code>JSON.stringify([].slice.call(arguments, 0))</code>.</li>
+</ul>
+<h2>Required Native Methods</h2>
+<p>JSON 3 assumes that the following methods exist and function as described in the ECMAScript specification:
+
+</p>
+<ul>
+<li>The <code>Number</code>, <code>String</code>, <code>Array</code>, <code>Object</code>, <code>Date</code>, <code>SyntaxError</code>, and <code>TypeError</code> constructors.</li>
+<li><code>String.fromCharCode</code></li>
+<li><code>Object#toString</code></li>
+<li><code>Function#call</code></li>
+<li><code>Math.floor</code></li>
+<li><code>Number#toString</code></li>
+<li><code>Date#valueOf</code></li>
+<li><code>String.prototype</code>: <code>indexOf</code>, <code>charCodeAt</code>, <code>charAt</code>, <code>slice</code>.</li>
+<li><code>Array.prototype</code>: <code>push</code>, <code>pop</code>, <code>join</code>.</li>
+</ul>
+<h1><a name="section_5"></a>Contribute</h1>
+<p>Check out a working copy of the JSON 3 source code with <a href="http://git-scm.com/">Git</a>:
+
+</p>
+<pre><code>$ git clone git://github.com/bestiejs/json3.git
+$ cd json3
+$ git submodule update --init</code></pre>
+<p>If you&#39;d like to contribute a feature or bug fix, you can <a href="http://help.github.com/fork-a-repo/">fork</a> JSON 3, commit your changes, and <a href="http://help.github.com/send-pull-requests/">send a pull request</a>. Please make sure to update the unit tests in the <code>test</code> directory as well.
+
+</p>
+<p>Alternatively, you can use the <a href="https://github.com/bestiejs/json3/issues">GitHub issue tracker</a> to submit bug reports, feature requests, and questions, or send tweets to <a href="http://twitter.com/kitcambridge">@kitcambridge</a>.
+
+</p>
+<p>JSON 3 is released under the <a href="http://kit.mit-license.org/">MIT License</a>.</p>
+
+    </div>
+    <div id="footer">
+      <p>&copy; 2012-2013 <a href="http://kitcambridge.be/">Kit Cambridge</a>.</p>
+    </div>
+  </body>
+</html>

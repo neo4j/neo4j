@@ -1,0 +1,39 @@
+article.help
+  .container
+    section.row-fluid.summary
+      .summary.span3
+        h3 CREATE
+        p.lead Insert graph data
+      .details.span9
+        p
+          | The&nbsp;
+          code CREATE
+          |  clause is used to create data by specifying named
+          | nodes and relationships with inline properties.
+
+        table.table-condensed.table-help
+          tr
+            th Reference:
+            td
+              code
+                a(href='http://docs.neo4j.org/chunked/{{neo4j.version}}/query-create.html') CREATE
+              |  manual page
+          tr
+            th Related:
+            td
+              a(help-topic='set') :help SET
+              | &nbsp;
+              a(help-topic='create-unique') :help CREATE UNIQUE
+              | &nbsp;
+              a(help-topic='merge') :help MERGE
+              | &nbsp;
+              a(help-topic='cypher') :help Cypher
+              | &nbsp;
+    section.row-fluid.example
+      .span9.offset3
+        figure
+          pre.code.runnable.
+            CREATE (le:Person {name:"Euler"}),(db:Person {name:"Bernoulli"}),
+              (le)-[:KNOWS {since:1768}]->(db)
+            RETURN le, db
+          figcaption Create two related people, returning them.
