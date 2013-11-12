@@ -34,23 +34,23 @@ import java.io.StringWriter;
  */
 public class Neo4jError
 {
-    private final StatusCode statusCode;
+    private final Status status;
     private final Throwable cause;
 
-    public Neo4jError( StatusCode statusCode, Throwable cause )
+    public Neo4jError( Status status, Throwable cause )
     {
-        if ( statusCode == null  )
+        if ( status == null  )
             throw new IllegalArgumentException( "statusCode must not be null" );
         if ( cause == null  )
             throw new IllegalArgumentException( "cause must not be null" );
 
-        this.statusCode = statusCode;
+        this.status = status;
         this.cause = cause;
     }
 
-    public StatusCode getStatusCode()
+    public Status status()
     {
-        return statusCode;
+        return status;
     }
 
     public String getMessage()
@@ -60,7 +60,7 @@ public class Neo4jError
 
     public boolean shouldSerializeStackTrace()
     {
-        return statusCode.includeStackTrace();
+        return status.code().includeStackTrace();
     }
 
     public String getStackTraceAsString()

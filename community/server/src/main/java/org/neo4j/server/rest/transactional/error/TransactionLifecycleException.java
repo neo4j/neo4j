@@ -41,5 +41,5 @@ public abstract class TransactionLifecycleException extends Exception
         return new Neo4jError( getStatusCode(), this );
     }
 
-    protected abstract StatusCode getStatusCode();
+    protected abstract Status getStatusCode();
 }

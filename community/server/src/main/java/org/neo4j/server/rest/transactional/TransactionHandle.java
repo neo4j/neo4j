@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.StatusCode;
+import org.neo4j.server.rest.transactional.error.Status;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
@@ -169,15 +169,15 @@ public class TransactionHandle
     {
         executeStatements( statements, output, errors );
 
-        if ( errors.isEmpty() )
+        if ( Status.Code.shouldRollBackOn( errors ) )
+        {
+            rollback( errors );
+        }
+        else
         {
             context.suspendSinceTransactionsAreStillThreadBound();
             long lastActiveTimestamp = registry.release( id, this );
             output.transactionStatus( lastActiveTimestamp );
-        }
-        else
-        {
-            rollback( errors );
         }
     }
 
@@ -197,7 +197,7 @@ public class TransactionHandle
                 catch ( Exception e )
                 {
                     log.error( "Failed to commit transaction.", e );
-                    errors.add( new Neo4jError( StatusCode.INTERNAL_COMMIT_TRANSACTION_ERROR, e ) );
+                    errors.add( new Neo4jError( Status.Transaction.CouldNotCommit, e ) );
                 }
             }
             else
@@ -209,7 +209,7 @@ public class TransactionHandle
                 catch ( Exception e )
                 {
                     log.error( "Failed to rollback transaction.", e );
-                    errors.add( new Neo4jError( StatusCode.INTERNAL_ROLLBACK_TRANSACTION_ERROR, e ) );
+                    errors.add( new Neo4jError( Status.Transaction.CouldNotRollback, e ) );
                 }
             }
         }
@@ -228,7 +228,7 @@ public class TransactionHandle
         catch ( Exception e )
         {
             log.error( "Failed to rollback transaction.", e );
-            errors.add( new Neo4jError( StatusCode.INTERNAL_ROLLBACK_TRANSACTION_ERROR, e ) );
+            errors.add( new Neo4jError( Status.Transaction.CouldNotRollback, e ) );
         }
         finally
         {
@@ -257,12 +257,12 @@ public class TransactionHandle
                 }
                 catch ( IOException e )
                 {
-                    errors.add( new Neo4jError( StatusCode.NETWORK_ERROR, e ) );
+                    errors.add( new Neo4jError( Status.Network.UnknownFailure, e ) );
                     break;
                 }
                 catch ( Exception e )
                 {
-                    errors.add( new Neo4jError( StatusCode.INTERNAL_STATEMENT_EXECUTION_ERROR, e ) );
+                    errors.add( new Neo4jError( Status.Statement.ExecutionFailure, e ) );
                     break;
                 }
             }
@@ -275,7 +275,7 @@ public class TransactionHandle
         }
         catch ( Exception e )
         {
-            errors.add( new Neo4jError( StatusCode.INTERNAL_DATABASE_ERROR, e ) );
+            errors.add( new Neo4jError( Status.General.UnknownFailure, e ) );
         }
     }
 }

@@ -24,16 +24,19 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
-import static org.neo4j.server.rest.transactional.error.StatusCode.INVALID_TRANSACTION_ID;
+import static org.neo4j.server.rest.transactional.error.Status.Transaction.UnknownId;
 
 public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
 {
@@ -59,8 +62,9 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
         Map<String, Object> response = HTTP.POST( tx + "/commit" ).content();
 
         // Then
+        @SuppressWarnings("unchecked")
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
-        assertThat( ((Number) errors.get( 0 ).get( "code" )).intValue(), equalTo( INVALID_TRANSACTION_ID.getCode() ) );
+        assertThat( (String) errors.get( 0 ).get( "code" ), equalTo( UnknownId.code().getCode() ) );
     }
 
     private String txURI()

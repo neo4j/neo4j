@@ -27,8 +27,8 @@ public class InvalidConcurrentTransactionAccess extends TransactionLifecycleExce
     }
 
     @Override
-    protected StatusCode getStatusCode()
+    protected Status getStatusCode()
     {
-        return StatusCode.INVALID_CONCURRENT_TRANSACTION_ACCESS;
+        return Status.Transaction.ConcurrentRequest;
     }
 }

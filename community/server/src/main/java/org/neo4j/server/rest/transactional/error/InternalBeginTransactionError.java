@@ -27,8 +27,8 @@ public class InternalBeginTransactionError extends TransactionLifecycleException
     }
 
     @Override
-    protected StatusCode getStatusCode()
+    protected Status getStatusCode()
     {
-        return StatusCode.INTERNAL_BEGIN_TRANSACTION_ERROR;
+        return Status.Transaction.CouldNotBegin;
     }
 }
