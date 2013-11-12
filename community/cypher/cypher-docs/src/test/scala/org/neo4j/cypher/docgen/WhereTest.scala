@@ -57,7 +57,8 @@ class WhereTest extends DocumentingTestBase {
   @Test def boolean_operations() {
     testQuery(
       title = "Boolean operations",
-      text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT()`.",
+      text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT()`. " +
+        "See <<cypher-working-with-null>> for more information on how this works with +NULL+.",
       queryText = """match (n) where n.name = 'Peter' xor (n.age < 30 and n.name = "Tobias") or not (n.name = "Tobias" or n.name="Peter") return n""",
       returns = "This query shows how boolean operators can be used.",
       assertions = (p) => assertEquals(nodes("Andres", "Tobias", "Peter").toSet, p.columnAs[Node]("n").toSet))
@@ -105,7 +106,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Default to true if property is missing",
       text = "If you want to compare a property on a graph element, but only if it exists, you can compare the " +
         "property against both the value you are looking for and +NULL+, like:",
-      queryText = """match (n) where n.belt = 'white' or n.belt = null return n order by n.name""",
+      queryText = """match (n) where n.belt = 'white' or n.belt IS NULL return n order by n.name""",
       returns = "This returns all nodes, even those without the belt property.",
       assertions = (p) => assertEquals(List(node("Andres"), node("Peter"), node("Tobias")), p.columnAs[Node]("n").toList))
   }

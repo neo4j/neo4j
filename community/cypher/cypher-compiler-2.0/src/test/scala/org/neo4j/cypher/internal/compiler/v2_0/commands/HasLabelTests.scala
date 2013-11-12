@@ -37,6 +37,6 @@ class HasLabelTests extends Assertions {
     implicit val state = QueryStateHelper.empty
 
     //then
-    assert(predicate.isMatch(ctx) === false)
+    assert(predicate.isMatch(ctx) === None)
   }
 }

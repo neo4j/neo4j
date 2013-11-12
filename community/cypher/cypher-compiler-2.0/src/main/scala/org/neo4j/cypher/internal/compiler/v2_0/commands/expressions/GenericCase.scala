@@ -30,7 +30,7 @@ case class GenericCase(alternatives: Seq[(Predicate, Expression)], default: Opti
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val thisMatch: Option[Expression] = alternatives find {
-      case (p, e) => p.isMatch(ctx)
+      case (p, e) => p.isTrue(ctx)
     } map (_._2)
 
     thisMatch match {

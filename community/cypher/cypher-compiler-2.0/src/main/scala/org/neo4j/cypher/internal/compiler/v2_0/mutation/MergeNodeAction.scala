@@ -85,7 +85,7 @@ case class MergeNodeAction(identifier: String,
     case PlainMergeNodeProducer(nodeProducer) =>
       nodeProducer(context, state).
         map(n => context.newWith(identifier -> n)).
-        filter(ctx => expectations.forall(_.isMatch(ctx)(state)))
+        filter(ctx => expectations.forall(_.isTrue(ctx)(state)))
 
     // unique index lookup
     case UniqueMergeNodeProducers(indexNodeProducers) =>
@@ -111,7 +111,7 @@ case class MergeNodeAction(identifier: String,
       checkedOptNode match {
         case Some(node) =>
           val resultContext = context.newWith(identifier -> node)
-          if (expectations.forall(_(resultContext))) Iterator(resultContext) else Iterator.empty
+          if (expectations.forall(_.isTrue(resultContext))) Iterator(resultContext) else Iterator.empty
         case None =>
           Iterator.empty
       }

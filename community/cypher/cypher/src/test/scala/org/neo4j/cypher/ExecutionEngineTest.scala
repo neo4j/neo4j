@@ -2522,14 +2522,14 @@ RETURN x0.name""")
   }
 
   @Test
-  def should_return_false_on_all_comparisons_against_null() {
+  def should_return_null_on_all_comparisons_against_null() {
     // given
 
     // when
     val result = execute("return 1 > null as A, 1 < null as B, 1 <= null as C, 1 >= null as D, null <= null as E, null >= null as F")
 
     // then
-    assert(result.toList === List(Map("A" -> false, "B" -> false, "C" -> false, "D" -> false, "E" -> true, "F" -> true)))
+    assert(result.toList === List(Map("A" -> null, "B" -> null, "C" -> null, "D" -> null, "E" -> null, "F" -> null)))
   }
 
   @Test

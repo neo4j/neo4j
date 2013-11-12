@@ -31,12 +31,14 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
   with CollectionSupport
   with Closure {
 
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
+  type CollectionPredicate[U] = ((U) => Option[Boolean]) => Option[Boolean]
+  
+  def seqMethod[U](f: Seq[U]): CollectionPredicate[U]
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val seq = makeTraversable(collection(m)).toSeq
 
-    seqMethod(seq)(item =>predicate.isMatch(m.newWith(id -> item)))
+    seqMethod(seq)(item => predicate.isMatch(m.newWith(id -> item)))
   }
 
   def name: String
@@ -59,8 +61,22 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
 
 case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate)
   extends InCollection(collection, symbolName, inner) {
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
 
+  private def forAll[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
+    var result: Option[Boolean] = Some(true)
+
+    for (item <- collectionValue) {
+      predicate(item) match {
+        case Some(false) => return Some(false)
+        case None        => result = None
+        case _           =>
+      }
+    }
+
+    result
+  }
+
+  def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = forAll(value)
   def name = "all"
 
   def rewrite(f: (Expression) => Expression) = AllInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
@@ -68,7 +84,22 @@ case class AllInCollection(collection: Expression, symbolName: String, inner: Pr
 
 case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate)
   extends InCollection(collection, symbolName, inner) {
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
+
+  private def exists[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
+    var result: Option[Boolean] = Some(false)
+
+    for (item <- collectionValue) {
+      predicate(item) match {
+        case Some(true) => return Some(true)
+        case None       => result = None
+        case _          =>
+      }
+    }
+
+    result
+  }
+
+  def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = exists(value)
 
   def name = "any"
 
@@ -77,7 +108,22 @@ case class AnyInCollection(collection: Expression, symbolName: String, inner: Pr
 
 case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate)
   extends InCollection(collection, symbolName, inner) {
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
+
+  private def none[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
+    var result: Option[Boolean] = Some(true)
+
+    for (item <- collectionValue) {
+      predicate(item) match {
+        case Some(true) => return Some(false)
+        case None       => result = None
+        case _          =>
+      }
+    }
+
+    result
+  }
+
+  def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = none(value)
 
   def name = "none"
 
@@ -86,7 +132,23 @@ case class NoneInCollection(collection: Expression, symbolName: String, inner: P
 
 case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate)
   extends InCollection(collection, symbolName, inner) {
-  def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
+
+  private def single[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
+    var matched = false
+
+    for (item <- collectionValue) {
+      predicate(item) match {
+        case Some(true) if matched => return Some(false)
+        case Some(true)            => matched = true
+        case None                  => return None
+        case _                     =>
+      }
+    }
+
+    Some(matched)
+  }
+
+  def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = single(value)
 
   def name = "single"
 

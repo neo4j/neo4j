@@ -26,3 +26,7 @@ include::../ql/introduction/pattern.asciidoc[]
 :leveloffset: 2
 
 include::../ql/syntax/collections.asciidoc[]
+
+:leveloffset: 2
+
+include::working-with-null.asciidoc[]

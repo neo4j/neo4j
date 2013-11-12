@@ -144,7 +144,7 @@ class ExpanderStepReversalTest extends Assertions {
 }
 
 case class Pred(identifier: String) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState) = false
+  def isMatch(m: ExecutionContext)(implicit state: QueryState) = Some(false)
 
   def rewrite(f: (Expression) => Expression) = null
 

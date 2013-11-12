@@ -118,7 +118,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
             result += tuple
         }
 
-        Some(result).filter(r => validPredicates.forall(_.isMatch(r)(state)))
+        Some(result).filter(r => validPredicates.forall(_.isTrue(r)(state)))
       }
     })
   }
