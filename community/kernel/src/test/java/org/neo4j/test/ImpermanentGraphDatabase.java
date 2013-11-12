@@ -28,6 +28,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -178,8 +180,21 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     public void cleanContent( boolean retainReferenceNode )
     {
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
+        {
+            for ( ConstraintDefinition constraintDefinition : schema.getConstraints() )
+            {
+                constraintDefinition.drop();
+            }
+
+            for ( IndexDefinition indexDefinition : schema.getIndexes() )
+            {
+                indexDefinition.drop();
+            }
+            tx.success();
+        }
+
+        try ( Transaction tx = beginTx() )
         {
             for ( Node node : GlobalGraphOperations.at( this ).getAllNodes() )
             {
@@ -189,7 +204,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 }
                 if ( !node.hasRelationship() )
                 {
-                    if(retainReferenceNode && node.getId() == 0)
+                    if ( retainReferenceNode && node.getId() == 0 )
                     {
                         continue;
                     }
@@ -197,15 +212,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 }
             }
             tx.success();
-        }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
-        finally
-        {
-            //noinspection deprecation
-            tx.finish();
         }
     }
 

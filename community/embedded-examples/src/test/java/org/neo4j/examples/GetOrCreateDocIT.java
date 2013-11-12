@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.MergeResult;
 import org.neo4j.graphdb.Merger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -41,7 +40,6 @@ import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 public class GetOrCreateDocIT extends AbstractJavaDocTestbase
@@ -80,7 +78,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
         @Override
         public Node getOrCreateUser( String username, GraphDatabaseService graphDb, ConstraintDefinition constraint )
         {
-            return getOrCreateUserWithMerger( username, graphDb, constraint );
+            return getOrCreateUserWithMerger( username, graphDb );
         }
 
         @Override
@@ -108,7 +106,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             final D dependency = createDependency();
             final List<GetOrCreateTask<D>> threads = new ArrayList<>();
 
-//            int numThreads = Runtime.getRuntime().availableProcessors() * 2;
+            // int numThreads = Runtime.getRuntime().availableProcessors() * 2;
             int numThreads = 2;
             for ( int i = 0; i < numThreads; i++ )
             {
@@ -337,19 +335,17 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
         }
     }
 
-    public static Node getOrCreateUserWithMerger( String username, GraphDatabaseService graphDb,
-                                                  ConstraintDefinition constraint )
+    public static Node getOrCreateUserWithMerger( String username, GraphDatabaseService graphDb  )
     {
         // START SNIPPET: getOrCreateWithMerger
         try ( Transaction tx = graphDb.beginTx() )
         {
-            Merger<Node> merger =
-                    graphDb.getOrCreateNode( constraint.getLabel() )
-                           .withProperty( single( constraint.getPropertyKeys() ), username );
+            Merger<Node> merger = graphDb.getOrCreateNode( DynamicLabel.label( "User" ) )
+                                         .withProperty( "name", username );
 
-            MergeResult<Node> result = merger.merge();
+            Node resultNode = merger.merge().single();
             tx.success();
-            return result.single();
+            return resultNode;
         }
         // END SNIPPET: getOrCreateWithMerger
     }

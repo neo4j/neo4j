@@ -22,8 +22,7 @@ package org.neo4j.graphdb;
 /**
  * A utility interface for getting or creating entities (with regard to given indexes or constraints).
  *
- * @see org.neo4j.graphdb.GraphDatabaseService#getOrCreateNode(Label, Label...)
- * @see org.neo4j.graphdb.index.UniqueFactory#asMerger()
+ * @see GraphDatabaseService#getOrCreateNode(Label...)
  *
  * @param <ENTITY> the type of entity created by this {@link Merger}.
  */

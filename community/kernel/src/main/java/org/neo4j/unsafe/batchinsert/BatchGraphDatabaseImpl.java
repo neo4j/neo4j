@@ -150,7 +150,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     }
 
     @Override
-    public Merger<Node> getOrCreateNode( Label label, Label... labels )
+    public Merger<Node> getOrCreateNode( Label... labels )
     {
         throw unsupportedOperation();
     }

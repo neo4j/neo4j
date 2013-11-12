@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.merge;
 
+import com.sun.xml.internal.xsom.impl.scd.Iterators;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -91,14 +93,20 @@ public class NodeMergerTest
     public void shouldAcceptLabelButNoProperties() throws Exception
     {
         // given
-        labelId( "Foo", 1 );
-
         NodeMerger merger = createMerger( "Foo" );
 
         // when
         merger.merge();
+    }
 
-        // then all is good
+    @Test
+    public void shouldAcceptNoLabelsAndNoProperties() throws Exception
+    {
+        // given
+        NodeMerger merger = createMerger();
+
+        // when
+        merger.merge();
     }
 
     @Test
@@ -121,8 +129,7 @@ public class NodeMergerTest
                 merger.properties );
 
     }
-
-    private NodeMerger createMerger( String label, String... labels ) throws Exception
+    private NodeMerger createMerger( String... labels ) throws Exception
     {
         Statement statement = mock( Statement.class );
         when( statement.readOperations() ).thenReturn( readOps );
@@ -133,8 +140,8 @@ public class NodeMergerTest
         when( statementContextProvider.instance() ).thenReturn( statement );
         NodeManager nodeManager = mock( NodeManager.class );
         when( nodeManager.newNodeProxyById( anyLong() ) ).then( Mockito.CALLS_REAL_METHODS );
-        return NodeMerger.createMerger( statementContextProvider, nodeManager,
-                                        label( label ), labels( labels ) );
+        when( nodeManager.getAllNodes() ).thenReturn( Iterators.<Node>empty()  );
+        return NodeMerger.createMerger( statementContextProvider, nodeManager, labels( labels ) );
     }
 
     private void propertyKeyId( String name, int id ) throws IllegalTokenNameException

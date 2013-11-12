@@ -31,14 +31,16 @@ package org.neo4j.graphdb;
  * or by using try-with-resources.
  *
  * @see Merger#merge()
- * @see org.neo4j.graphdb.GraphDatabaseService#getOrCreateNode(Label, Label...)
+ * @see GraphDatabaseService#getOrCreateNode(Label...)
  *
  * @param <T> the type of entities contained in this result
  */
 public interface MergeResult<T> extends ResourceIterator<T>
 {
     /**
-     * @see MergeResult#wasCreated()
+     * Attempts to return the single entity produces by merge and closes this merge result.
+     *
+     * @see MergeResult#containsNewlyCreated()
      *
      * @return the single merged entity found or created by merge
      *
@@ -56,7 +58,9 @@ public interface MergeResult<T> extends ResourceIterator<T>
     T next();
 
     /**
-     * @return true, if a new entity was created by merge
+     * Indicates if this iterator returns newly created entities (vs. returning already existing elements)
+     *
+     * @return true, if this iterator contains newly created entities
      */
-    boolean wasCreated();
+    boolean containsNewlyCreated();
 }

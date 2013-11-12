@@ -10,7 +10,7 @@ For an overview of the topic, see <<transactions-unique-nodes>>.
 Constraints allow to enforce that there is always at most a single, unique node for a given label and property.
 Any transaction that tries to create a second, conflicting node is aborted by the database. Sometimes it is more useful
 to instead either retrieve such a node if it already exists or create a new one otherwise (get-or-create). For this
-purpose, neo4j provides http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Merger.html
+purpose, neo4j provides http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Merger.html[+Merger+]
 functionality.
 
 .Use a merger for a constraint to get or create a node

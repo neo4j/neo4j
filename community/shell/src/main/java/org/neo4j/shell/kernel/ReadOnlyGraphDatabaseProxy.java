@@ -22,7 +22,6 @@ package org.neo4j.shell.kernel;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -245,7 +244,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public Merger<Node> getOrCreateNode( Label label, Label... labels )
+    public Merger<Node> getOrCreateNode( Label... labels )
     {
         return readOnly();
     }

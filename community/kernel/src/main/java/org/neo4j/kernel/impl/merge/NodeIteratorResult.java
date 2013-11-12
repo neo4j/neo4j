@@ -19,31 +19,23 @@
  */
 package org.neo4j.kernel.impl.merge;
 
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.MergeResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.core.NodeManager;
 
-public class MultiNodeMergeResult implements MergeResult<Node>
+public class NodeIteratorResult implements MergeResult<Node>
 {
     private Statement statement;
-
-    private final NodeManager nodeManager;
-    private final PrimitiveLongIterator iterator;
-
+    private Iterator<Node> iterator;
     private Node next;
 
-    public MultiNodeMergeResult( Statement statement,
-                                 NodeManager nodeManager,
-                                 PrimitiveLongIterator iterator )
+    public NodeIteratorResult( Statement statement, Iterator<Node> iterator )
     {
         this.statement = statement;
-        this.nodeManager = nodeManager;
         this.iterator = iterator;
-
         computeNext();
     }
 
@@ -110,7 +102,7 @@ public class MultiNodeMergeResult implements MergeResult<Node>
         statement.assertOpen();
         if ( iterator.hasNext() )
         {
-            next = nodeManager.newNodeProxyById( iterator.next() );
+            next = iterator.next();
         }
         else
         {

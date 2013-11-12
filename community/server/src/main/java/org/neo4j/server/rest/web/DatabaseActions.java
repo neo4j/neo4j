@@ -875,8 +875,8 @@ public class DatabaseActions
                 UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
                 UniqueEntity<Node> entity = factory.getOrCreateWithOutcome( key, value );
                 // when given a node id, return as created if that node was newly added to the index
-                created = entity.single().getId() == node.getId() || entity.wasCreated();
-                result = entity.single();
+                created = entity.entity().getId() == node.getId() || entity.wasCreated();
+                result = entity.entity();
             }
         }
         else
@@ -890,7 +890,7 @@ public class DatabaseActions
             }
             UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
             UniqueEntity<Node> entity = factory.getOrCreateWithOutcome( key, value );
-            result = entity.single();
+            result = entity.entity();
             created = entity.wasCreated();
         }
         return Pair.of( new IndexedEntityRepresentation( result, key, value,
@@ -924,8 +924,8 @@ public class DatabaseActions
                     new UniqueRelationshipFactory( indexName, relationship.getStartNode(), relationship.getEndNode(), relationship.getType().name(), properties );
                 UniqueEntity<Relationship> entity = factory.getOrCreateWithOutcome( key, value );
                 // when given a relationship id, return as created if that relationship was newly added to the index
-                created = entity.single().getId() == relationship.getId() || entity.wasCreated();
-                result = entity.single();
+                created = entity.entity().getId() == relationship.getId() || entity.wasCreated();
+                result = entity.entity();
             }
         }
         else if ( startNode == null || type == null || endNode == null )
@@ -938,7 +938,7 @@ public class DatabaseActions
             UniqueRelationshipFactory factory =
                 new UniqueRelationshipFactory( indexName, node( startNode ), node( endNode ), type, properties );
             UniqueEntity<Relationship> entity = factory.getOrCreateWithOutcome( key, value );
-            result = entity.single();
+            result = entity.entity();
             created = entity.wasCreated();
         }
         return Pair.of( new IndexedEntityRepresentation( result, key, value,

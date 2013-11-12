@@ -51,9 +51,9 @@ public class SingleMergeResult<T> implements MergeResult<T>
     @Override
     public T single()
     {
-        statement.assertOpen();
         T result = next();
         assert ! hasNext();
+
         return result;
     }
 
@@ -61,7 +61,7 @@ public class SingleMergeResult<T> implements MergeResult<T>
      * @return true if the returned unique entity was newly created (false if it already existed)
      */
     @Override
-    public boolean wasCreated()
+    public boolean containsNewlyCreated()
     {
         return wasCreated;
     }
@@ -79,6 +79,7 @@ public class SingleMergeResult<T> implements MergeResult<T>
         if ( hasNext )
         {
             hasNext = false;
+            close();
             return entity;
         }
         else

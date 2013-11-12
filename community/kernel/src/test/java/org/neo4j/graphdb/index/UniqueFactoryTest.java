@@ -74,7 +74,7 @@ public class UniqueFactoryTest
         UniqueEntity<Node> node = unique.getOrCreateWithOutcome( "key1", "value1" );
 
         // then
-        assertSame(node.single(), concurrentNode);
+        assertSame(node.entity(), concurrentNode);
         assertFalse( node.wasCreated() );
         verify( index ).get( "key1", "value1" );
         verify( index ).putIfAbsent( createdNode, "key1", "value1" );
@@ -152,7 +152,7 @@ public class UniqueFactoryTest
         UniqueEntity<Node> node = unique.getOrCreateWithOutcome( "key1", "value1" );
 
         // then
-        assertSame(node.single(), indexedNode);
+        assertSame(node.entity(), indexedNode);
         assertTrue( node.wasCreated() );
         verify( index ).get( "key1", "value1" );
         verify( index ).putIfAbsent( indexedNode, "key1", "value1" );

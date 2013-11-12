@@ -20,10 +20,8 @@
 package org.neo4j.kernel.api.impl.index.bitmaps;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.Is.is;
@@ -136,18 +134,33 @@ public class BitmapFormatTest
     }
 
     @Test
-    public void shouldBeAbleToCheckIfASingleNodeIdIsSet() throws Exception
+    public void shouldBeAbleToCheckIfASingleNodeIdIsSet_32() throws Exception
     {
         // when
-        for ( int nodeId = 0; nodeId < 32; nodeId++ )
+        for ( int offset = 0; offset < 32; offset++ )
         {
             Bitmap bitmap = new Bitmap();
-            BitmapFormat._32.set( bitmap, nodeId, true );
+            BitmapFormat._32.set( bitmap, offset, true );
 
-            for ( int offsetId = 1; offsetId < 32; offsetId++ )
+            for ( int checkOffset = 0; checkOffset < 32; checkOffset++ )
             {
-                assertThat( BitmapFormat._32.peek( bitmap.bitmap(), nodeId ), is( true ) );
-                assertThat( BitmapFormat._32.peek( bitmap.bitmap(), (nodeId + offsetId) % 32 ), is( false ) );
+                assertThat( BitmapFormat._32.peek( bitmap.bitmap(), checkOffset ), is( offset == checkOffset ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToCheckIfASingleNodeIdIsSet_64() throws Exception
+    {
+        // when
+        for ( int offset = 0; offset < 32; offset++ )
+        {
+            Bitmap bitmap = new Bitmap();
+            BitmapFormat._64.set( bitmap, offset, true );
+
+            for ( int checkOffset = 0; checkOffset < 64; checkOffset++ )
+            {
+                assertThat( BitmapFormat._64.peek( bitmap.bitmap(), checkOffset ), is( offset == checkOffset ) );
             }
         }
     }

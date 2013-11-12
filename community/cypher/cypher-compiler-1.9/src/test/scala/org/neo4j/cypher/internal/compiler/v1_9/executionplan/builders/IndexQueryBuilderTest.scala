@@ -170,5 +170,5 @@ class Fake_Database_That_Has_All_Indexes extends GraphDatabaseService with Index
 
   def bidirectionalTraversalDescription() = ???
 
-  def getOrCreateNode(label: Label, labels: Label*): Merger[Node] = ???
+  def getOrCreateNode(labels: Label*): Merger[Node] = ???
 }

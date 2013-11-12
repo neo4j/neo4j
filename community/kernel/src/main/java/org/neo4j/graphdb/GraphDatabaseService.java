@@ -116,7 +116,7 @@ public interface GraphDatabaseService
      * try ( Transaction tx = graph.beginTx() )
      * {
      *     Label bookLabel =  DynamicLabel.from("Book" );
-     *     Merger<Node> nodeCreator = graph.getOrCreateNode( bookLabel.withProperty( "isbn", "978-1-449-35626-2" );
+     *     Merger<Node> nodeCreator = graph.getOrCreateNode( bookLabel ).withProperty( "isbn", "978-1-449-35626-2" );
      *     try ( MergeResult<Node> result = nodeCreator.merge() )
      *     {
      *        // Assuming there is a uniqueness constraint on :Book(isbn), uniqueNode is unique at this point
@@ -127,12 +127,12 @@ public interface GraphDatabaseService
      * }
      * </code></pre>
      *
-     * @param label a label that requested nodes must have.
-     * @param labels (optional) additional labels that the requested nodes must have.
+     *
+     * @param labels labels that the requested nodes must have.
      * @return a {@link org.neo4j.graphdb.Merger} for getting either (when using constraints) the unique node found
      * or created, or (when not using constraints) all matching nodes or a newly created node.
      */
-    Merger<Node> getOrCreateNode( Label label, Label... labels );
+    Merger<Node> getOrCreateNode( Label... labels );
 
     /**
      * Returns all nodes having the label, and the wanted property value.

@@ -23,16 +23,12 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.MergeResult;
-import org.neo4j.graphdb.Merger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.merge.SingleMergeResult;
 
 /**
  * A utility class for creating unique (with regard to a given index) entities.
@@ -45,14 +41,28 @@ import org.neo4j.kernel.impl.merge.SingleMergeResult;
  */
 public abstract class UniqueFactory<T extends PropertyContainer>
 {
-    public static class UniqueEntity<T extends PropertyContainer> extends SingleMergeResult<T>
+    public static class UniqueEntity<T extends PropertyContainer>
     {
-        public UniqueEntity( Statement statement, T entity, boolean wasCreated )
+        private final T entity;
+        private final boolean created;
+
+        UniqueEntity( T entity, boolean created )
         {
-            super( statement, entity, wasCreated );
+            this.entity = entity;
+            this.created = created;
+        }
+
+        public T entity()
+        {
+            return this.entity;
+        }
+
+        public boolean wasCreated()
+        {
+            return this.created;
         }
     }
-    
+
     /**
      * Implementation of {@link UniqueFactory} for {@link Node}.
      *
@@ -205,7 +215,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
      */
     public final T getOrCreate( String key, Object value )
     {
-        return getOrCreateWithOutcome( key, value ).single();
+        return getOrCreateWithOutcome( key, value ).entity();
     }
     
     /**
@@ -244,17 +254,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
             }
         }
 
-        return new UniqueEntity<>( bridge.instance(), result, wasCreated );
-    }
-
-    /**
-     * Wrap this {@link org.neo4j.graphdb.index.UniqueFactory} as a {@link org.neo4j.graphdb.Merger}
-     *
-     * @return a {@link org.neo4j.graphdb.Merger} that wrap this {@link org.neo4j.graphdb.index.UniqueFactory}
-     */
-    public Merger<T> asMerger()
-    {
-        return new FactoryMerger( null, null );
+        return new UniqueEntity<>( result, wasCreated );
     }
 
     /**
@@ -285,43 +285,5 @@ public abstract class UniqueFactory<T extends PropertyContainer>
     private UniqueFactory( Index<T> index )
     {
         this.index = index;
-    }
-
-    private class FactoryMerger implements Merger<T>
-    {
-        private final String key;
-        private final Object value;
-
-        FactoryMerger( String key, Object value )
-        {
-            this.key = key;
-            this.value = value;
-        }
-
-        @Override
-        public Merger<T> withProperty( String key, Object value )
-        {
-            if ( this.key != null )
-            {
-                throw new IllegalArgumentException( "Only one property supported." );
-            }
-            return new FactoryMerger( key, value );
-        }
-
-        @Override
-        public MergeResult<T> iterator()
-        {
-            return merge();
-        }
-
-        @Override
-        public MergeResult<T> merge()
-        {
-            if ( key == null )
-            {
-                throw new IllegalArgumentException( "No property specified." );
-            }
-            return getOrCreateWithOutcome( key, value );
-        }
     }
 }

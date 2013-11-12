@@ -30,7 +30,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.index.UniqueFactoryMergerTest;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.DoubleLatch;
@@ -45,7 +44,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 public class NodeMergerAcceptanceTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( UniqueFactoryMergerTest.class );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( NodeMergerAcceptanceTest.class );
 
     private GraphDatabaseService graph;
 
@@ -63,15 +62,14 @@ public class NodeMergerAcceptanceTest
         // given
         try ( Transaction ignored = graph.beginTx() )
         {
-            Merger<Node> nodeCreator = graph.getOrCreateNode( label ).withProperty( "name", "Ben" );
+            Merger<Node> nodeCreator = graph.getOrCreateNode().withProperty( "name", "Ben" );
 
             // when
-            try ( MergeResult<Node> result = nodeCreator.merge() )
-            {
-                // then
-                assertTrue( result.wasCreated() );
-                assertEquals( "Ben", result.single().getProperty( "name" ) );
-            }
+            MergeResult<Node> result = nodeCreator.merge();
+
+            // then
+            assertTrue( result.containsNewlyCreated() );
+            assertEquals( "Ben", result.single().getProperty( "name" ) );
         }
     }
 
@@ -86,12 +84,10 @@ public class NodeMergerAcceptanceTest
             Merger<Node> nodeCreator = graph.getOrCreateNode( label ).withProperty( "name", "Ben" );
 
             // when
-            try ( MergeResult<Node> result = nodeCreator.merge() )
-            {
-                // then
-                assertTrue( result.wasCreated() );
-                assertEquals( "Ben", result.single().getProperty( "name" ) );
-            }
+            MergeResult<Node> result = nodeCreator.merge();
+            // then
+            assertTrue( result.containsNewlyCreated() );
+            assertEquals( "Ben", result.single().getProperty( "name" ) );
         }
     }
 
@@ -118,7 +114,7 @@ public class NodeMergerAcceptanceTest
             MergeResult<Node> result = nodeCreator.merge();
 
             // then
-            assertFalse( result.wasCreated() );
+            assertFalse( result.containsNewlyCreated() );
             assertEquals( asSet( node1, node2 ), asSet( result ) );
         }
     }
@@ -148,7 +144,37 @@ public class NodeMergerAcceptanceTest
             MergeResult<Node> result = nodeCreator.merge();
 
             // then
-            assertFalse( result.wasCreated() );
+            assertFalse( result.containsNewlyCreated() );
+            assertEquals( asSet( node1, node2 ), asSet( result ) );
+        }
+    }
+
+    @Test
+    public void shouldRetrieveAllLabeledNodesWhenNotRequiringLabels() throws Exception
+    {
+        // given
+        createIndex();
+
+        Node node1, node2;
+        try ( Transaction tx = graph.beginTx() )
+        {
+            node1 = graph.createNode();
+            node1.setProperty( "name", "Stefan" );
+
+            node2 = graph.createNode( label );
+            node2.setProperty( "name", "Stefan" );
+            tx.success();
+        }
+
+        try ( Transaction ignored = graph.beginTx() )
+        {
+            Merger<Node> nodeCreator = graph.getOrCreateNode().withProperty( "name", "Stefan" );
+
+            // when
+            MergeResult<Node> result = nodeCreator.merge();
+
+            // then
+            assertFalse( result.containsNewlyCreated() );
             assertEquals( asSet( node1, node2 ), asSet( result ) );
         }
     }
@@ -164,12 +190,11 @@ public class NodeMergerAcceptanceTest
             Merger<Node> nodeCreator = graph.getOrCreateNode( label ).withProperty( "name", "Ben" );
 
             // when
-            try ( MergeResult<Node> result = nodeCreator.merge() )
-            {
-                // then
-                assertTrue( result.wasCreated() );
-                assertEquals( "Ben", result.single().getProperty( "name" ) );
-            }
+            MergeResult<Node> result = nodeCreator.merge();
+
+            // then
+            assertTrue( result.containsNewlyCreated() );
+            assertEquals( "Ben", result.single().getProperty( "name" ) );
         }
     }
 
@@ -184,12 +209,15 @@ public class NodeMergerAcceptanceTest
             Merger<Node> nodeCreator = graph.getOrCreateNode( label ).withProperty( "name", "Ben" );
 
             // when
-            try ( MergeResult<Node> result1 = nodeCreator.merge(); MergeResult<Node> result2 = nodeCreator.merge() )
-            {
-                // then
-                assertFalse( result2.wasCreated() );
-                assertEquals( result1.single().getId(), result2.single().getId() );
-            }
+            MergeResult<Node> result1 = nodeCreator.merge();
+            Node node1 = result1.single();
+
+            MergeResult<Node> result2 = nodeCreator.merge();
+            Node node2 = result2.single();
+
+            // then
+            assertFalse( result2.containsNewlyCreated() );
+            assertEquals( node1.getId(), node2.getId() );
         }
     }
 
@@ -211,7 +239,7 @@ public class NodeMergerAcceptanceTest
                 {
                     Merger<Node> nodeCreator = graph.getOrCreateNode( label ).withProperty( "name", "Ben" );
                     MergeResult<Node> result = nodeCreator.merge();
-                    assertTrue( result.wasCreated() );
+                    assertTrue( result.containsNewlyCreated() );
                     result.single().setProperty( "blocker", true );
 
                     // trigger blocked after holding the lock
@@ -242,7 +270,7 @@ public class NodeMergerAcceptanceTest
                     bothThreads.start();
                     Merger<Node> nodeCreator = graph.getOrCreateNode( label ).withProperty( "name", "Ben" );
                     MergeResult<Node> result = nodeCreator.merge();
-                    assertFalse( result.wasCreated() );
+                    assertFalse( result.containsNewlyCreated() );
                     result.single().setProperty( "blocked", true );
                     tx.success();
                 }
@@ -266,14 +294,12 @@ public class NodeMergerAcceptanceTest
         try ( Transaction tx = graph.beginTx() )
         {
             Merger<Node> nodeCreator = graph.getOrCreateNode( label ).withProperty( "name", "Ben" );
-            try ( MergeResult<Node> result = nodeCreator.merge() )
-            {
-                assertFalse( result.wasCreated() );
-                Node singleNode = result.single();
-                assertTrue( singleNode.hasProperty( "blocker" ) );
-                assertTrue( singleNode.hasProperty( "blocked" ) );
-                tx.success();
-            }
+            MergeResult<Node> result = nodeCreator.merge();
+            assertFalse( result.containsNewlyCreated() );
+            Node singleNode = result.single();
+            assertTrue( singleNode.hasProperty( "blocker" ) );
+            assertTrue( singleNode.hasProperty( "blocked" ) );
+            tx.success();
         }
     }
 
@@ -298,14 +324,13 @@ public class NodeMergerAcceptanceTest
                         Merger<Node> merger = graph.getOrCreateNode( label ).withProperty( "name", "value" );
                         latch2.countDown();
                         await( latch1 );
-                        try ( MergeResult<Node> result = merger.merge() )
-                        {
-                            tx.success();
-                            return result.single();
-                        }
+                        Node result = merger.merge().single();
+                        tx.success();
+                        return result;
                     }
                 }
             } );
+
             Future<Node> node2 = thread2.submit( new Callable<Node>()
             {
                 @Override
@@ -316,11 +341,9 @@ public class NodeMergerAcceptanceTest
                         await( latch2 );
                         latch1.countDown();
                         Merger<Node> merger = graph.getOrCreateNode( label ).withProperty( "name", "value" );
-                        try ( MergeResult<Node> result = merger.merge() )
-                        {
-                            tx.success();
-                            return result.single();
-                        }
+                        Node result = merger.merge().single();
+                        tx.success();
+                        return result;
                     }
                 }
             } );

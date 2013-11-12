@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.MergeResult;
 import org.neo4j.graphdb.Merger;
 import org.neo4j.graphdb.Node;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -50,25 +51,32 @@ import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 
 import static java.lang.String.format;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.Property.property;
 
 public class NodeMerger implements Merger<Node>
 {
     public static NodeMerger createMerger( ThreadToStatementContextBridge statementContextProvider,
-                                           NodeManager nodeManager, Label label, Label[] labels )
+                                           NodeManager nodeManager, Label[] labels )
     {
+        if ( labels == null )
+        {
+            throw new IllegalArgumentException( "Requires an array of labels" );
+        }
+
         try ( Statement statement = statementContextProvider.instance() )
         {
             try
             {
                 TokenWriteOperations tokenOperations = statement.tokenWriteOperations();
                 return new NodeMerger( statementContextProvider, nodeManager,
-                                       uniqueLabelIds( tokenOperations, label, labels ) );
+                                       uniqueLabelIds( tokenOperations, labels ) );
             }
             catch ( IllegalTokenNameException e )
             {
@@ -83,16 +91,15 @@ public class NodeMerger implements Merger<Node>
         }
     }
 
-    private static int[] uniqueLabelIds( TokenWriteOperations tokenOperations, Label label, Label[] labels )
+    private static int[] uniqueLabelIds( TokenWriteOperations tokenOperations, Label[] labels )
             throws IllegalTokenNameException, TooManyLabelsException
     {
-        int[] labelIds = new int[(labels == null ? 0 : labels.length) + 1];
+        int[] labelIds = new int[labels.length];
         int duplicates = 0;
         LABELS:
         for ( int i = 0; i < labelIds.length; i++ )
         {
-            @SuppressWarnings("ConstantConditions"/*'labels' might be null, but will not be accessed if it is*/)
-            Label current = i == 0 ? label : labels[i - 1];
+            Label current = labels[i];
             int labelId = tokenOperations.labelGetOrCreateForName( current.name() );
             for ( int j = 0; j < i; j++ )
             {
@@ -183,54 +190,29 @@ public class NodeMerger implements Merger<Node>
             {
                 // build all strategies
                 List<NodeMergeStrategy> strategies = buildNodeMergeStrategies( readOps );
+                Statement resultStatement = statementContextProvider.instance();
 
-                // if we find at least one strategy and there is no strategy that uses a unique index
-                if ( !strategies.isEmpty() )
+                if ( strategies.isEmpty() )
                 {
-                    NodeMergeStrategy first = strategies.get( 0 );
-                    if ( first.type != NodeMergeStrategy.Type.UNIQUE_INDEX )
-                    {
-                        try
-                        {
-                            PrimitiveLongIterator nodeIds =
-                                first.lookupAll( readOps, new FilterMatchingNodes( NO_SUCH_NODE ) );
-                            if ( nodeIds.hasNext() )
-                            {
-                                return new MultiNodeMergeResult( statementContextProvider.instance(), nodeManager, nodeIds );
-                            }
-                            else
-                            {
-                                long nodeId = createNewNode( statement );
-                                return new SingleMergeResult<Node>( statementContextProvider.instance(), nodeManager.newNodeProxyById( nodeId ), true );
-                            }
-                        }
-                        catch ( IndexBrokenKernelException e )
-                        {
-                            throw new RuntimeException( e );
-                        }
-                    }
-                }
-
-                // else: find single node or none
-                long nodeId = NO_SUCH_NODE;
-                boolean wasCreated;
-
-
-                for ( NodeMergeStrategy strategy : strategies )
-                {
-                    nodeId = strategy.merge( statement, nodeId, new FilterMatchingNodes( nodeId ) );
-                }
-                if ( nodeId == NO_SUCH_NODE ) // no node was found - create a node!
-                {
-                    nodeId = createNewNode( statement );
-                    wasCreated = true;
+                    return scanAllNodes( resultStatement );
                 }
                 else
                 {
-                    wasCreated = false;
-                }
+                    // if we find at least one strategy
+                    NodeMergeStrategy firstStrategy = strategies.get( 0 );
 
-                return new SingleMergeResult<Node>( statementContextProvider.instance(), nodeManager.newNodeProxyById( nodeId ), wasCreated );
+                    if ( firstStrategy.type == NodeMergeStrategy.Type.UNIQUE_INDEX )
+                    {
+
+                        // and there is at least one strategy that uses a unique index: find single node or none
+                        return intersectAllStrategies( resultStatement, strategies );
+                    }
+                    else
+                    {
+                        // else: scan single
+                        return scanSingleStrategy( resultStatement, firstStrategy );
+                    }
+                }
             }
             catch ( ReadOnlyDatabaseKernelException | InvalidTransactionTypeKernelException e )
             {
@@ -246,6 +228,77 @@ public class NodeMerger implements Merger<Node>
                 throw new ThisShouldNotHappenError( "Tobias", "Node that we just created should exist.", e );
             }
         }
+    }
+
+    private MergeResult<Node> scanAllNodes( Statement statement )
+            throws ConstraintValidationKernelException, EntityNotFoundException,
+                   InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+
+    {
+        Iterator<Node> allNodes = nodeManager.getAllNodes();
+        Iterator<Node> iterator = filter( new FilterMatchingNodes( NO_SUCH_NODE ), allNodes );
+        if ( iterator.hasNext() )
+        {
+            return new NodeIteratorResult( statement, iterator );
+        }
+        else
+        {
+            long nodeId = createNewNode( statement );
+            return new SingleMergeResult<Node>( statement, nodeProxy( nodeId ), true );
+        }
+    }
+
+    private MergeResult<Node> scanSingleStrategy( Statement statement, NodeMergeStrategy first )
+            throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
+                   EntityNotFoundException, ConstraintValidationKernelException
+    {
+        try
+        {
+            ReadOperations readOps = statement.readOperations();
+            PrimitiveLongIterator nodeIds = first.lookupAll( readOps, new FilterMatchingNodes( NO_SUCH_NODE ) );
+            if ( nodeIds.hasNext() )
+            {
+                return new MultiNodeMergeResult( statement, nodeManager, nodeIds );
+            }
+            else
+            {
+                long nodeId = createNewNode( statement );
+                return new SingleMergeResult<Node>( statement, nodeProxy( nodeId ), true );
+            }
+        }
+        catch ( IndexBrokenKernelException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private MergeResult<Node> intersectAllStrategies( Statement statement, List<NodeMergeStrategy> strategies )
+            throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
+                   EntityNotFoundException, ConstraintValidationKernelException
+    {
+        long nodeId = NO_SUCH_NODE;
+        boolean wasCreated;
+
+        for ( NodeMergeStrategy strategy : strategies )
+        {
+            nodeId = strategy.merge( statement, nodeId, new FilterMatchingNodes( nodeId ) );
+        }
+        if ( nodeId == NO_SUCH_NODE ) // no node was found - create a node!
+        {
+            nodeId = createNewNode( statement );
+            wasCreated = true;
+        }
+        else
+        {
+            wasCreated = false;
+        }
+
+        return new SingleMergeResult<Node>( statement, nodeProxy( nodeId ), wasCreated );
+    }
+
+    private NodeProxy nodeProxy( long nodeId )
+    {
+        return nodeManager.newNodeProxyById( nodeId );
     }
 
     private List<NodeMergeStrategy> buildNodeMergeStrategies( ReadOperations ops )
@@ -330,7 +383,7 @@ public class NodeMerger implements Merger<Node>
     }
 
     // this predicate accepts only nodes that match all requirements (labelIds, pkIds)
-    private class FilterMatchingNodes implements PrimitiveLongPredicate
+    private class FilterMatchingNodes implements PrimitiveLongPredicate, Predicate<Node>
     {
         private final long expectedId;
 
@@ -374,6 +427,12 @@ public class NodeMerger implements Merger<Node>
             {
                 throw new ThisShouldNotHappenError( "Stefan", "Could not read previously retrieved node" );
             }
+        }
+
+        @Override
+        public boolean accept( Node item )
+        {
+            return accept( item.getId() );
         }
     }
 }

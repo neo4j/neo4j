@@ -342,7 +342,7 @@ public class IndexingAcceptanceTest
         // WHEN & THEN
         assertCanCreateAndFind( db, LABEL1, property, "A String" );
         assertCanCreateAndFind( db, LABEL1, property, true );
-        assertCanCreateAndFind( db, LABEL1, property, new Boolean(false) );
+        assertCanCreateAndFind( db, LABEL1, property, false );
         assertCanCreateAndFind( db, LABEL1, property, (short)12 );
         assertCanCreateAndFind( db, LABEL1, property, (int)12 );
         assertCanCreateAndFind( db, LABEL1, property, (long)12l );

@@ -1477,9 +1477,9 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
-    public Merger<Node> getOrCreateNode( Label label, Label... labels )
+    public Merger<Node> getOrCreateNode( Label... labels )
     {
-        return NodeMerger.createMerger( statementContextProvider, nodeManager, label, labels );
+        return NodeMerger.createMerger( statementContextProvider, nodeManager, labels );
     }
 
     @Override

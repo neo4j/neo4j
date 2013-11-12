@@ -37,7 +37,8 @@ abstract class NodeMergeStrategy implements Comparable<NodeMergeStrategy>
     {
         UNIQUE_INDEX,
         REGULAR_INDEX,
-        LABEL_SCAN
+        LABEL_SCAN,
+        GLOBAL_SCAN
     }
 
     protected final Type type;

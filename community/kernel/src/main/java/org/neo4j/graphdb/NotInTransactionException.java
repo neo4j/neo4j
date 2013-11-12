@@ -24,7 +24,7 @@ package org.neo4j.graphdb;
  * 
  * @see Transaction
  */
-public class NotInTransactionException extends IllegalStateException
+public class NotInTransactionException extends RuntimeException
 {
     public NotInTransactionException()
     {
