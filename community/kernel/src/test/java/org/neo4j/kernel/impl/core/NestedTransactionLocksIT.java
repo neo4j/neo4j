@@ -35,6 +35,7 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.fail;
@@ -81,7 +82,7 @@ public class NestedTransactionLocksIT
         Transaction realTx = db.beginTx();
         Transaction nestedTx = db.beginTx();
         assertNotSame( realTx, nestedTx );
-        OtherThreadExecutor<Void> otherTx = new OtherThreadExecutor<Void>( "other thread", null );
+        OtherThreadExecutor<Void> otherTx = new OtherThreadExecutor<>( "other thread", null );
         
         // when
         Lock lock = nestedTx.acquireWriteLock( resource );
@@ -99,7 +100,7 @@ public class NestedTransactionLocksIT
         }
         lock.release();
         assertNotNull( future.get() );
-        otherTx.shutdown();
+        otherTx.close();
     }
 
     private Node createNode()
