@@ -26,7 +26,7 @@ import executionplan.builders.PatternGraphBuilder
 import symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.ExecutionEngineHelper
 import org.neo4j.graphdb.Direction
-import org.junit.Test
+import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.PatternMatchingBuilder
 
 class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder {
@@ -35,6 +35,19 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
   val rightNode = patternRelationship.right
 
   val label = UnresolvedLabel("Person")
+
+  var tx : org.neo4j.graphdb.Transaction = null
+
+  private def queryState = {
+    if(tx == null) tx = graph.beginTx()
+    QueryStateHelper.queryStateFrom(graph, tx)
+  }
+
+  @After
+  def cleanup()
+  {
+    if(tx != null) tx.close()
+  }
 
 
   @Test def should_handle_a_single_relationship_with_no_matches() {
@@ -45,7 +58,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
     val aNode = createNode()
 
     // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), QueryStateHelper.queryStateFrom(graph)).toList
+    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
 
     // Then
     assert(result === List.empty)
@@ -60,7 +73,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
     val relationship = relate(aNode, bNode)
 
     // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), QueryStateHelper.queryStateFrom(graph)).toList
+    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
 
     // Then
     assert(result === List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
@@ -75,7 +88,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
     relate(aNode, bNode)
 
     // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), QueryStateHelper.queryStateFrom(graph)).toList
+    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
 
     // Then
     assert(result === List())
@@ -90,7 +103,7 @@ class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder
     val relationship = relate(aNode, bNode)
 
     // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), QueryStateHelper.queryStateFrom(graph)).toList
+    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
 
     // Then
     assert(result === List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))

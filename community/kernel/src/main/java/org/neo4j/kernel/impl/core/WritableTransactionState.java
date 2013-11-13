@@ -571,7 +571,7 @@ public class WritableTransactionState implements TransactionState
         {
             CowRelElement relElement = element.relationships.get( relId );
             RelationshipProxy rel = nodeManager.newRelationshipProxyById( relId );
-            RelationshipImpl relImpl = nodeManager.getRelationshipForProxy( relId, null );
+            RelationshipImpl relImpl = nodeManager.getRelationshipForProxy( relId );
             if ( relElement.isDeleted() )
             {
                 if ( primitiveElement.createdRelationships.contains( relId ) )

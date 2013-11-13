@@ -23,9 +23,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.ComException;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -36,7 +37,7 @@ public class UpdatePuller implements Lifecycle
     private final Master master;
     private final RequestContextFactory requestContextFactory;
     private final AbstractTransactionManager txManager;
-    private final InstanceAccessGuard accessGuard;
+    private final AvailabilityGuard availabilityGuard;
     private final LastUpdateTime lastUpdateTime;
     private final Config config;
     private final StringLogger logger;
@@ -45,14 +46,14 @@ public class UpdatePuller implements Lifecycle
 
     public UpdatePuller( HaXaDataSourceManager xaDataSourceManager, Master master,
                          RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
-                         InstanceAccessGuard accessGuard, LastUpdateTime lastUpdateTime, Config config,
+                         AvailabilityGuard availabilityGuard, LastUpdateTime lastUpdateTime, Config config,
                          StringLogger logger )
     {
         this.xaDataSourceManager = xaDataSourceManager;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.txManager = txManager;
-        this.accessGuard = accessGuard;
+        this.availabilityGuard = availabilityGuard;
         this.lastUpdateTime = lastUpdateTime;
         this.config = config;
         this.logger = logger;
@@ -60,7 +61,7 @@ public class UpdatePuller implements Lifecycle
 
     public void pullUpdates()
     {
-        if ( accessGuard.await( 5000 ) )
+        if ( availabilityGuard.isAvailable( 5000 ) )
         {
             xaDataSourceManager.applyTransactions(
                     master.pullUpdates( requestContextFactory.newRequestContext( txManager.getEventIdentifier() ) ) );

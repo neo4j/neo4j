@@ -33,9 +33,13 @@ public abstract class ResourcePool<R>
     public interface Monitor<R>
     {
         public void updatedCurrentPeakSize( int currentPeakSize );
+
         public void updatedTargetSize( int targetSize );
+
         public void created( R resource );
+
         public void acquired( R resource );
+
         public void disposed( R resource );
 
         public class Adapter<R> implements Monitor<R>
@@ -88,7 +92,7 @@ public abstract class ResourcePool<R>
             public boolean shouldCheck()
             {
                 long currentTime = clock.currentTimeMillis();
-                if (currentTime > lastCheckTime + interval)
+                if ( currentTime > lastCheckTime + interval )
                 {
                     lastCheckTime = currentTime;
                     return true;
@@ -143,12 +147,21 @@ public abstract class ResourcePool<R>
             List<R> garbage = null;
             synchronized ( unused )
             {
-                for ( ;; )
+                for (; ; )
                 {
                     resource = unused.poll();
-                    if ( resource == null ) break;
-                    if ( isAlive( resource ) ) break;
-                    if ( garbage == null ) garbage = new LinkedList<R>();
+                    if ( resource == null )
+                    {
+                        break;
+                    }
+                    if ( isAlive( resource ) )
+                    {
+                        break;
+                    }
+                    if ( garbage == null )
+                    {
+                        garbage = new LinkedList<R>();
+                    }
                     garbage.add( resource );
                 }
             }
@@ -213,7 +226,10 @@ public abstract class ResourcePool<R>
             dead.addAll( unused );
             unused.clear();
         }
-        if ( force ) dead.addAll( current.values() );
+        if ( force )
+        {
+            dead.addAll( current.values() );
+        }
         for ( R resource : dead )
         {
             dispose( resource );

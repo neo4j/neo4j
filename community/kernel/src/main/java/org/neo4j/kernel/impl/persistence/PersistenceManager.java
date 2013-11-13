@@ -84,6 +84,11 @@ public class PersistenceManager
         return getResource().kernelTransaction();
     }
 
+    public void ensureKernelIsEnlisted()
+    {
+        getResource();
+    }
+
     public NodeRecord loadLightNode( long id )
     {
         return getResource().nodeLoadLight( id );

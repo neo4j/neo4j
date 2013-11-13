@@ -306,7 +306,7 @@ public enum ElectionState
                                 context.getClusterContext().timeouts.cancelTimeout( "election-" + data.getRole() );
                             }
                             else if ( context.getVoteCount( data.getRole() ) == context.getNeededVoteCount() - 1 &&
-                                    currentElected != null )
+                                    currentElected != null && !context.hasCurrentlyElectedVoted(data.getRole(), currentElected))
                             {
                                 // Missing one vote, the one from the current role holder
                                 outgoing.offer( Message.to( ElectionMessage.vote,

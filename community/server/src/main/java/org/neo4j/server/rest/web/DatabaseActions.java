@@ -879,11 +879,9 @@ public class DatabaseActions
         return new ListRepresentation( RepresentationType.RELATIONSHIP, results );
     }
 
-    public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedNode( String indexName, String key,
-                                                                              String value, Long nodeOrNull,
-                                                                              Map<String,
-                                                                                      Object> properties ) throws
-            BadInputException, NodeNotFoundException
+    public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedNode(
+            String indexName, String key, String value, Long nodeOrNull, Map<String, Object> properties )
+            throws BadInputException, NodeNotFoundException
     {
         assertIsLegalIndexName( indexName );
         Node result;
@@ -896,16 +894,12 @@ public class DatabaseActions
                         "when a node to index is specified." );
             }
             Node node = node( nodeOrNull );
-            result = graphDb.index().forNodes( indexName ).putIfAbsent( node, key, value );
-            created = result == null;
-            if ( created )
-            {
-                UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
-                UniqueEntity<Node> entity = factory.getOrCreateWithOutcome( key, value );
-                // when given a node id, return as created if that node was newly added to the index
-                created = entity.entity().getId() == node.getId() || entity.wasCreated();
-                result = entity.entity();
-            }
+
+            UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
+            UniqueEntity<Node> entity = factory.getOrCreateWithOutcome( key, value );
+            // when given a node id, return as created if that node was newly added to the index
+            created = entity.entity().getId() == node.getId() || entity.wasCreated();
+            result = entity.entity();
         }
         else
         {
@@ -925,13 +919,10 @@ public class DatabaseActions
                 new NodeIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) ), created );
     }
 
-    public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedRelationship( String indexName, String key,
-                                                                                      String value,
-                                                                                      Long relationshipOrNull,
-                                                                                      Long startNode, String type,
-                                                                                      Long endNode,
-                                                                                      Map<String,
-                                                                                              Object> properties )
+    public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedRelationship(
+            String indexName, String key, String value,
+            Long relationshipOrNull, Long startNode, String type, Long endNode,
+            Map<String, Object> properties )
             throws BadInputException, RelationshipNotFoundException, NodeNotFoundException
     {
         assertIsLegalIndexName( indexName );
@@ -945,16 +936,14 @@ public class DatabaseActions
                         "or the means for creating it." );
             }
             Relationship relationship = relationship( relationshipOrNull );
-            result = graphDb.index().forRelationships( indexName ).putIfAbsent( relationship, key, value );
-            if ( created = result == null )
-            {
-                UniqueRelationshipFactory factory =
-                    new UniqueRelationshipFactory( indexName, relationship.getStartNode(), relationship.getEndNode(), relationship.getType().name(), properties );
-                UniqueEntity<Relationship> entity = factory.getOrCreateWithOutcome( key, value );
-                // when given a relationship id, return as created if that relationship was newly added to the index
-                created = entity.entity().getId() == relationship.getId() || entity.wasCreated();
-                result = entity.entity();
-            }
+
+            UniqueRelationshipFactory factory =
+                new UniqueRelationshipFactory( indexName, relationship.getStartNode(), relationship.getEndNode(),
+                        relationship.getType().name(), properties );
+            UniqueEntity<Relationship> entity = factory.getOrCreateWithOutcome( key, value );
+            // when given a relationship id, return as created if that relationship was newly added to the index
+            created = entity.entity().getId() == relationship.getId() || entity.wasCreated();
+            result = entity.entity();
         }
         else if ( startNode == null || type == null || endNode == null )
         {

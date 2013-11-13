@@ -19,10 +19,25 @@
  */
 package org.neo4j.server.rest;
 
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -32,16 +47,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response.Status;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
@@ -503,6 +508,43 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void put_relationship_if_absent_only_fail() throws Exception
     {
+        // Given
+        final String index = "rels", key = "name", value = "Peter";
+        GraphDatabaseService graphdb = graphdb();
+        helper.createRelationshipIndex( index );
+        try ( Transaction tx = graphdb.beginTx() )
+        {
+            Node node1 = graphdb.createNode();
+            Node node2 = graphdb.createNode();
+            Relationship rel = node1.createRelationshipTo( node2, MyRelationshipTypes.KNOWS );
+            graphdb.index().forRelationships( index ).add( rel, key, value );
+            tx.success();
+        }
+
+        Relationship rel;
+        try ( Transaction tx = graphdb.beginTx() )
+        {
+            Node node1 = graphdb.createNode();
+            Node node2 = graphdb.createNode();
+            rel = node1.createRelationshipTo( node2, MyRelationshipTypes.KNOWS );
+            tx.success();
+        }
+
+        // When & Then
+        gen.get()
+                .noGraph()
+                .expectedStatus( 409 /* conflict */)
+                .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                .payload(
+                        "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\""
+                                + functionalTestHelper.relationshipUri( rel.getId() ) + "\"}" )
+                .post( functionalTestHelper.relationshipIndexUri() + index + "?uniqueness=create_or_fail" );
+    }
+
+    @Test
+    public void already_indexed_relationship_should_not_fail_on_create_or_fail() throws Exception
+    {
+        // Given
         final String index = "rels", key = "name", value = "Peter";
         GraphDatabaseService graphdb = graphdb();
         helper.createRelationshipIndex( index );
@@ -516,9 +558,10 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
             tx.success();
         }
 
+        // When & Then
         gen.get()
                 .noGraph()
-                .expectedStatus( 409 /* conflict */)
+                .expectedStatus( 201 )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(
                         "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\""

@@ -23,7 +23,7 @@ import pipes.QueryState
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
-import org.junit.Test
+import org.junit.{After, Test}
 import org.scalatest.Assertions
 import java.lang.Iterable
 import collection.JavaConverters._
@@ -40,6 +40,7 @@ getRelationships on a node, we'll create a new relationship.
 class DoubleCheckCreateUniqueTest extends Assertions {
   var done = false
   val db = new ImpermanentGraphDatabase() with TripIt
+  var tx:Transaction = null
 
   @Test def double_check_unique() {
     //GIVEN
@@ -57,11 +58,20 @@ class DoubleCheckCreateUniqueTest extends Assertions {
   val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
 
 
+  @After
+  def cleanup() {
+    if(tx != null) tx.close()
+  }
+
   private def createExecutionContext(state:QueryState, a: Node): ExecutionContext = {
     ExecutionContext().newWith(Map("a" -> a))
   }
 
-  private def createQueryState(): QueryState = QueryStateHelper.queryStateFrom(db)
+  private def createQueryState(): QueryState = {
+    if(tx == null)
+      tx = db.beginTx()
+    QueryStateHelper.queryStateFrom(db, tx)
+  }
 
   private def createNode(): Node = {
     val tx = db.beginTx()

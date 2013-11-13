@@ -24,13 +24,24 @@ import executionplan.builders.PatternGraphBuilder
 import symbols.{SymbolTable, RelationshipType, NodeType}
 import org.neo4j.cypher.ExecutionEngineHelper
 import org.neo4j.graphdb.Direction
-import org.junit.Test
+import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.SimplePatternMatcherBuilder
 
 class SimplePatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder {
   val symbols = new SymbolTable(Map("a" -> NodeType()))
 
-  def queryState = QueryStateHelper.queryStateFrom(graph)
+  var tx : org.neo4j.graphdb.Transaction = null
+
+  private def queryState = {
+    if(tx == null) tx = graph.beginTx()
+    QueryStateHelper.queryStateFrom(graph, tx)
+  }
+
+  @After
+  def cleanup()
+  {
+    if(tx != null) tx.close()
+  }
 
   @Test def should_only_return_matches_that_fulfill_the_uniqueness_constraint() {
     // Given MATCH (a)--(b)--(c)

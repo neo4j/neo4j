@@ -302,7 +302,7 @@ public class DatabaseActionsTest
         long nodeId = createNode( map( "emptyArray", new int[]{} ) );
 
         // When
-        actions.setNodeProperty( nodeId, "emptyArray", new ArrayList<Object>() );
+        actions.setNodeProperty( nodeId, "emptyArray", new ArrayList<>() );
 
         // Then
         Transaction transaction = graph.beginTx();

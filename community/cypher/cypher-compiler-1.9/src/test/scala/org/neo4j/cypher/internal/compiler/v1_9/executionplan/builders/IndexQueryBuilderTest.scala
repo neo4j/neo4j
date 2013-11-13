@@ -171,4 +171,6 @@ class Fake_Database_That_Has_All_Indexes extends GraphDatabaseService with Index
   def traversalDescription() = ???
 
   def bidirectionalTraversalDescription() = ???
+
+  def isAvailable(timeout: Long) = ???
 }

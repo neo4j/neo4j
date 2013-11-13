@@ -39,7 +39,7 @@ class CreateRelationshipTest extends GraphDatabaseTestBase with Assertions {
     val aEndNode = RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, bare = true)
     val bEndNode = RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, bare = true)
     val relCreator = new CreateRelationship("r", aEndNode, bEndNode, "RELTYPE", Map("*" -> ParameterExpression("props")))
-    val state = QueryStateHelper.queryStateFrom(graph).copy(params = props)
+    val state = QueryStateHelper.queryStateFrom(graph, graph.beginTx()).copy(params = props)
     val ctx = ExecutionContext.from("a" -> a, "b" -> b)
 
     //when

@@ -24,7 +24,7 @@ import pipes._
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Direction, Node, Path}
 import org.neo4j.graphdb.Direction.OUTGOING
-import org.junit.Test
+import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.{MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher, SingleStep}
 
 class TraversalMatcherTest extends GraphDatabaseTestBase {
@@ -35,7 +35,18 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
   val pr2 = SingleStep(1, Seq(B), OUTGOING, None, True(), True())
   val pr1 = SingleStep(0, Seq(A), OUTGOING, Some(pr2), True(), True())
 
-  def queryState = QueryStateHelper.queryStateFrom(graph)
+  var tx : org.neo4j.graphdb.Transaction = null
+
+  private def queryState = {
+    if(tx == null) tx = graph.beginTx()
+    QueryStateHelper.queryStateFrom(graph, tx)
+  }
+
+  @After
+  def cleanup()
+  {
+    if(tx != null) tx.close()
+  }
 
   @Test def basic() {
     //Data nodes and rels

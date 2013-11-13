@@ -141,7 +141,7 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     @Override
     public void deleteRelationship( long relationshipId )
     {
-        RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId, null );
+        RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId );
         boolean success = false;
         try
         {
@@ -192,7 +192,7 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     @Override
     public void relationshipSetProperty( long relationshipId, DefinedProperty property )
     {
-        RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId, null );
+        RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId );
         state.getOrCreateCowPropertyAddMap( relationship ).put( property.propertyKeyId(), property );
         ArrayMap<Integer, DefinedProperty> removed = state.getCowPropertyRemoveMap( relationship );
         if ( removed != null )
@@ -228,7 +228,7 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     @Override
     public void relationshipRemoveProperty( long relationshipId, DefinedProperty property )
     {
-        RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId, null );
+        RelationshipImpl relationship = nodeManager.getRelationshipForProxy( relationshipId );
         state.getOrCreateCowPropertyRemoveMap( relationship ).put( property.propertyKeyId(), property );
         ArrayMap<Integer, DefinedProperty> added = state.getCowPropertyAddMap( relationship );
         if ( added != null )

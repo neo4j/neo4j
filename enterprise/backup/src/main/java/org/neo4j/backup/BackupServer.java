@@ -22,6 +22,7 @@ package org.neo4j.backup;
 import java.io.IOException;
 
 import org.jboss.netty.channel.Channel;
+
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
@@ -41,7 +42,8 @@ class BackupServer extends Server<TheBackupInterface, Object>
     static int DEFAULT_PORT = 6362;
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
-    public BackupServer( TheBackupInterface requestTarget, final HostnamePort server , Logging logging ) throws IOException
+    public BackupServer( TheBackupInterface requestTarget, final HostnamePort server,
+                         Logging logging ) throws IOException
     {
         super( requestTarget, new Configuration()
         {

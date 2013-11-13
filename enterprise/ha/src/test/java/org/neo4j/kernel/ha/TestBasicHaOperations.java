@@ -80,7 +80,7 @@ public class TestBasicHaOperations
         cluster.await( ClusterManager.masterAvailable() );
         long end = System.nanoTime();
 
-        logger.getLogger().warn( "Failover took:"+(end-start)/1000000+"ms" );
+        logger.getLogger().warn( "Failover took:" + (end - start) / 1000000 + "ms" );
 
         // Then
         boolean slave1Master = slave1.isMaster();

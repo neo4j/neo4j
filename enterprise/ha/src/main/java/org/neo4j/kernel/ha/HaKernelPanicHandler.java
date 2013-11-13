@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
@@ -31,14 +32,15 @@ public class HaKernelPanicHandler implements KernelEventHandler
     private final XaDataSourceManager dataSourceManager;
     private final TxManager txManager;
     private final AtomicInteger epoch = new AtomicInteger();
-    private final InstanceAccessGuard accessGuard;
+    private final AvailabilityGuard availabilityGuard;
 
     public HaKernelPanicHandler( XaDataSourceManager dataSourceManager, TxManager txManager,
-            InstanceAccessGuard accessGuard )
+                                 AvailabilityGuard availabilityGuard )
     {
         this.dataSourceManager = dataSourceManager;
         this.txManager = txManager;
-        this.accessGuard = accessGuard;
+        this.availabilityGuard = availabilityGuard;
+        availabilityGuard.grant();
     }
 
     @Override
@@ -57,9 +59,11 @@ public class HaKernelPanicHandler implements KernelEventHandler
                 synchronized ( dataSourceManager )
                 {
                     if ( myEpoch != epoch.get() )
+                    {
                         return;
-                    
-                    accessGuard.enter();
+                    }
+
+                    availabilityGuard.deny();
                     try
                     {
                         txManager.stop();
@@ -71,7 +75,7 @@ public class HaKernelPanicHandler implements KernelEventHandler
                     }
                     finally
                     {
-                        accessGuard.exit();
+                        availabilityGuard.grant();
                     }
                 }
             }
@@ -79,6 +83,11 @@ public class HaKernelPanicHandler implements KernelEventHandler
             {
                 throw new RuntimeException( "error while handling kernel panic for TX_MANAGER_NOT_OK", t );
             }
+        }
+        else if ( error == ErrorState.STORAGE_MEDIA_FULL )
+        {
+            // Fatal error - Permanently unavailable
+            availabilityGuard.shutdown();
         }
     }
 

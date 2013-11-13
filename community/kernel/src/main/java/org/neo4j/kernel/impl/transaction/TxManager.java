@@ -38,6 +38,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
+import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
@@ -59,6 +60,38 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public class TxManager extends AbstractTransactionManager implements Lifecycle
 {
+    public interface Monitor
+    {
+        void txStarted( Xid xid );
+        void txCommitted( Xid xid );
+        void txRolledBack( Xid xid );
+
+        void txManagerStopped();
+
+        public static class Adapter implements Monitor
+        {
+            @Override
+            public void txStarted( Xid xid )
+            {
+            }
+
+            @Override
+            public void txCommitted( Xid xid )
+            {
+            }
+
+            @Override
+            public void txRolledBack( Xid xid )
+            {
+            }
+
+            @Override
+            public void txManagerStopped()
+            {
+            }
+        }
+    }
+
     private ThreadLocalWithSize<TransactionImpl> txThreadMap;
 
     private final File txLogDir;
@@ -89,6 +122,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
 
+    private final Monitor monitor;
+
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
                       KernelPanicEventGenerator kpe,
@@ -97,12 +132,25 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                       TransactionStateFactory stateFactory
     )
     {
+        this(txLogDir, xaDataSourceManager, kpe, log, fileSystem, stateFactory, new Monitor.Adapter());
+    }
+
+    public TxManager( File txLogDir,
+                      XaDataSourceManager xaDataSourceManager,
+                      KernelPanicEventGenerator kpe,
+                      StringLogger log,
+                      FileSystemAbstraction fileSystem,
+                      TransactionStateFactory stateFactory,
+                      Monitor monitor
+    )
+    {
         this.txLogDir = txLogDir;
         this.xaDataSourceManager = xaDataSourceManager;
         this.fileSystem = fileSystem;
         this.log = log;
         this.kpe = kpe;
         this.stateFactory = stateFactory;
+        this.monitor = monitor;
     }
 
     int getNextEventIdentifier()
@@ -176,6 +224,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         recovered = false;
         xaDataSourceManager.removeDataSourceRegistrationListener( dataSourceRegistrationListener );
         closeLog();
+        monitor.txManagerStopped();
     }
 
     @Override
@@ -277,6 +326,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             peakConcurrentTransactions = concurrentTxCount;
         }
         startedTxCount.incrementAndGet();
+
+        monitor.txStarted( new XidImpl( tx.getGlobalId(), new byte[0] ) );
         // start record written on resource enlistment
     }
 
@@ -522,6 +573,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             }
         }
         tx.doAfterCompletion();
+
+        monitor.txCommitted( new XidImpl( tx.getGlobalId(), new byte[0] ) );
+
         try
         {
             if ( tx.isGlobalStartRecordWritten() )
@@ -651,6 +705,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 tx.finish( false );
             }
         }
+
+        monitor.txRolledBack( new XidImpl( tx.getGlobalId(), new byte[0] ) );
     }
 
     @Override

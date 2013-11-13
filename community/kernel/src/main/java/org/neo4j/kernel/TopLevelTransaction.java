@@ -26,6 +26,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 /**
@@ -64,14 +65,16 @@ public class TopLevelTransaction implements Transaction
             return failure;
         }
     }
-    
+
+    private final PersistenceManager persistenceManager;
     private final AbstractTransactionManager transactionManager;
     protected final TransactionOutcome transactionOutcome = new TransactionOutcome();
     private final TransactionState state;
 
-    public TopLevelTransaction( AbstractTransactionManager transactionManager,
+    public TopLevelTransaction( PersistenceManager persistenceManager, AbstractTransactionManager transactionManager,
             TransactionState state )
     {
+        this.persistenceManager = persistenceManager;
         this.transactionManager = transactionManager;
         this.state = state;
     }
@@ -146,12 +149,14 @@ public class TopLevelTransaction implements Transaction
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
+        persistenceManager.ensureKernelIsEnlisted();
         return state.acquireWriteLock( entity );
     }
 
     @Override
     public Lock acquireReadLock( PropertyContainer entity )
     {
+        persistenceManager.ensureKernelIsEnlisted();
         return state.acquireReadLock( entity );
     }
 }
