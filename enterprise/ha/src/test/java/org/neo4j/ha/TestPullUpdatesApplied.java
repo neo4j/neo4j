@@ -67,7 +67,7 @@ public class TestPullUpdatesApplied
     private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
     private final TargetDirectory dir = forTest( getClass() );
 
-  //  @Before
+    @Before
     public void doBefore() throws Exception
     {
         for ( int i = 0; i < dbs.length; i++ )
@@ -99,7 +99,7 @@ public class TestPullUpdatesApplied
                 .newGraphDatabase();
     }
 
-   // @After
+    @After
     public void doAfter() throws Exception
     {
         for ( HighlyAvailableGraphDatabase db : dbs )
@@ -108,19 +108,6 @@ public class TestPullUpdatesApplied
             {
                 db.shutdown();
             }
-        }
-    }
-
-    @Test
-    public void loop() throws Exception
-    {
-        for ( int i = 0; i < 1000; i++ )
-        {
-            doBefore();
-            testUpdatesAreWrittenToLogBeforeBeingAppliedToStore();
-            doAfter();
-
-            System.out.println("ROUND "+i);
         }
     }
 
