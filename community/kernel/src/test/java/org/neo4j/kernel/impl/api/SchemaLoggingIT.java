@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
@@ -42,6 +43,7 @@ public class SchemaLoggingIT
     @Test
     public void shouldLogUserReadableLabelAndPropertyNames() throws Exception
     {
+        //noinspection deprecation
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         String labelName = "User";
@@ -57,16 +59,18 @@ public class SchemaLoggingIT
         );
     }
 
-    private void createIndex( GraphDatabaseAPI db, String labelName, String property )
+    private void createIndex( @SuppressWarnings("deprecation") GraphDatabaseAPI db, String labelName, String property )
     {
-        Transaction tx = db.beginTx();
-        db.schema().indexFor( label( labelName ) ).on( property ).create();
-        tx.success();
-        tx.finish();
-        tx = db.beginTx();
-        db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-        tx.success();
-        tx.finish();
-    }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( label( labelName ) ).on( property ).create();
+            tx.success();
+        }
 
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+    }
 }

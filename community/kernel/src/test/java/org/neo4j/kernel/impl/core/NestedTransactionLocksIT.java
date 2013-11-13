@@ -69,8 +69,10 @@ public class NestedTransactionLocksIT
             @Override
             public Lock doWork( Void state )
             {
-                Transaction tx = db.beginTx();
-                return tx.acquireWriteLock( resource );
+                try ( Transaction tx = db.beginTx() )
+                {
+                    return tx.acquireWriteLock( resource );
+                }
             }
         };
     }
@@ -81,24 +83,25 @@ public class NestedTransactionLocksIT
         // given
         Node resource = createNode();
 
-        Transaction outerTx = db.beginTx();
-        Transaction nestedTx = db.beginTx();
-        assertNotSame( outerTx, nestedTx );
-
-        try ( OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<>( "other thread", null ) )
+        try ( Transaction outerTx = db.beginTx(); Transaction nestedTx = db.beginTx() )
         {
-            // when
-            Lock lock = nestedTx.acquireWriteLock( resource );
-            Future<Lock> future = tryToAcquireSameLockOnAnotherThread( resource, otherThread );
+            assertNotSame( outerTx, nestedTx );
 
-            // then
-            acquireOnOtherThreadTimesOut( future );
+            try ( OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<>( "other thread", null ) )
+            {
+                // when
+                Lock lock = nestedTx.acquireWriteLock( resource );
+                Future<Lock> future = tryToAcquireSameLockOnAnotherThread( resource, otherThread );
 
-            // and when
-            lock.release();
+                // then
+                acquireOnOtherThreadTimesOut( future );
 
-            //then
-            assertNotNull( future.get() );
+                // and when
+                lock.release();
+
+                //then
+                assertNotNull( future.get() );
+            }
         }
     }
 
