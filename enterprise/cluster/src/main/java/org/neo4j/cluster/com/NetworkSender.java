@@ -312,7 +312,10 @@ public class NetworkSender
 
         if ( to == null )
         {
-            msgLog.error( "Channel " + channelClosed + " had no URI associated with it." );
+            /*
+             * This is normal to happen if a channel fails to open - channelOpened() will not be called and the
+             * association with the URI will not exist, but channelClosed() will be called anyway.
+             */
             return;
         }
 
