@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 
-public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E>, DiagnosticsProvider
+public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cache<E>, DiagnosticsProvider
 {
     public static final long MIN_SIZE = 1;
     private final AtomicReferenceArray<E> cache;
@@ -56,7 +56,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
     private final AtomicInteger forcedPurgeWaits = new AtomicInteger();
     private long purgeTime;
 
-    GCResistantCache( AtomicReferenceArray<E> cache )
+    HighPerformanceCache( AtomicReferenceArray<E> cache )
     {
         this.cache = cache;
         this.minLogInterval = Long.MAX_VALUE;
@@ -66,8 +66,8 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
         calculateSizes();
     }
 
-    public GCResistantCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name,
-            StringLogger logger )
+    public HighPerformanceCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name,
+                                 StringLogger logger )
     {
         if ( logger == null )
         {
@@ -78,7 +78,7 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
         if ( arrayHeapFraction < 1 || arrayHeapFraction > 10 )
         {
             throw new IllegalArgumentException(
-                    "The heap fraction used by a GC resistant cache must be between 1% and 10%, not "
+                    "The heap fraction used by the High-Performance Cache must be between 1% and 10%, not "
                             + arrayHeapFraction + "%" );
         }
         long memToUse = (long)(((double)arrayHeapFraction) * Runtime.getRuntime().maxMemory() / 100);

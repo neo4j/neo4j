@@ -26,54 +26,54 @@ import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 @Service.Implementation(CacheProvider.class)
-public class GCResistantCacheProvider extends CacheProvider
+public class HighPerformanceCacheProvider extends CacheProvider
 {
-    public static final String NAME = "gcr";
+    public static final String NAME = "hpc";
 
-    public GCResistantCacheProvider()
+    public HighPerformanceCacheProvider()
     {
-        super( NAME, "GC resistant cache" );
+        super( NAME, "High-Performance Cache" );
     }
 
     @Override
     public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config )
     {
-        Long node = config.get( GcrSettings.node_cache_size );
+        Long node = config.get( HighPerformanceCacheSettings.node_cache_size );
         if ( node == null )
         {
             node = Runtime.getRuntime().maxMemory() / 4;
         }
 
-        Long rel = config.get( GcrSettings.relationship_cache_size );
+        Long rel = config.get( HighPerformanceCacheSettings.relationship_cache_size );
         if ( rel == null )
         {
             rel = Runtime.getRuntime().maxMemory() / 4;
         }
 
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
-        return new GCResistantCache<NodeImpl>( node, config.get( GcrSettings.node_cache_array_fraction ),
-                config.get( GcrSettings.log_interval ),
+        return new HighPerformanceCache<>( node, config.get( HighPerformanceCacheSettings.node_cache_array_fraction ),
+                config.get( HighPerformanceCacheSettings.log_interval ),
                 NODE_CACHE_NAME, logger );
     }
 
     @Override
     public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config )
     {
-        Long node = config.get( GcrSettings.node_cache_size );
+        Long node = config.get( HighPerformanceCacheSettings.node_cache_size );
         if ( node == null )
         {
             node = Runtime.getRuntime().maxMemory() / 4;
         }
 
-        Long rel = config.get( GcrSettings.relationship_cache_size );
+        Long rel = config.get( HighPerformanceCacheSettings.relationship_cache_size );
         if ( rel == null )
         {
             rel = Runtime.getRuntime().maxMemory() / 4;
         }
 
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
-        return new GCResistantCache<RelationshipImpl>( rel, config.get( GcrSettings
-                .relationship_cache_array_fraction ), config.get( GcrSettings.log_interval ),
+        return new HighPerformanceCache<>( rel, config.get( HighPerformanceCacheSettings
+                .relationship_cache_array_fraction ), config.get( HighPerformanceCacheSettings.log_interval ),
                 RELATIONSHIP_CACHE_NAME, logger );
     }
 
@@ -83,9 +83,9 @@ public class GCResistantCacheProvider extends CacheProvider
     {
         long advicedMax = available / 2;
         long total = 0;
-        node = Math.max( GCResistantCache.MIN_SIZE, node );
+        node = Math.max( HighPerformanceCache.MIN_SIZE, node );
         total += node;
-        rel = Math.max( GCResistantCache.MIN_SIZE, rel );
+        rel = Math.max( HighPerformanceCache.MIN_SIZE, rel );
         total += rel;
         if ( total > available )
         {
@@ -105,6 +105,6 @@ public class GCResistantCacheProvider extends CacheProvider
     @Override
     public Class getSettingsClass()
     {
-        return GcrSettings.class;
+        return HighPerformanceCacheSettings.class;
     }
 }

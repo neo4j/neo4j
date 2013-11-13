@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.AfterClass;
@@ -47,11 +41,17 @@ import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
+
 @ForeignBreakpoints( {
     @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.core.NodeImpl", method = "updateSize" )
 } )
 @RunWith( SubProcessTestRunner.class )
-public class TestGcrCacheRemoveSizeDiverge
+public class TestHighPerformanceCacheRemoveSizeDiverge
 {
     private static GraphDatabaseAPI graphdb;
     private static DebuggedThread thread;
@@ -63,8 +63,8 @@ public class TestGcrCacheRemoveSizeDiverge
         try
         {
         graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( forTest(TestGcrCacheRemoveSizeDiverge.class ).graphDbDir( true ).getAbsolutePath()).
-                setConfig( stringMap( GraphDatabaseSettings.cache_type.name(), GCResistantCacheProvider.NAME ) ).
+                newEmbeddedDatabaseBuilder( forTest(TestHighPerformanceCacheRemoveSizeDiverge.class ).graphDbDir( true ).getAbsolutePath()).
+                setConfig( stringMap( GraphDatabaseSettings.cache_type.name(), HighPerformanceCacheProvider.NAME ) ).
                 newGraphDatabase();
         }
         catch ( Throwable t )

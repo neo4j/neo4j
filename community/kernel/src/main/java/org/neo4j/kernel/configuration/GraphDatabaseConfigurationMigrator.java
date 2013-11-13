@@ -154,6 +154,9 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             {
             }
         } );
+
+        add( new ConfigValueChanged( "cache_type", "gcr", "hpc",
+                "'gcr' cache type has been renamed to 'hpc', High Performance Cache." ));
     }
 
     @Deprecated
