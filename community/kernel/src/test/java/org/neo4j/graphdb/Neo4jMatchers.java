@@ -458,7 +458,7 @@ public class Neo4jMatchers
 
         public Collection<T> collection()
         {
-            try ( Transaction ignored = db.beginTx() )
+            try ( Transaction ignore = db.beginTx() )
             {
                 return asCollection( manifest() );
             }

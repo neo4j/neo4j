@@ -21,12 +21,14 @@
 package org.neo4j.examples;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
-public class DocumentationDocTest extends AbstractJavaDocTestbase
+public class DocumentationDocTest extends ImpermanentGraphJavaDocTestBase
 {
     /**
      * This is a sample documentation test, demonstrating different ways of

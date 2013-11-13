@@ -149,7 +149,7 @@ public class IndexRule extends AbstractSchemaRule
                + UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() )
                + 2 * 1                              /* number of property keys, for now always 1 */
                + 8                                  /* the property keys */
-               + (isConstraintIndex() ? 8 : 0) /* constraint indexes have an owner field */;
+               + (isConstraintIndex() ? 8 : 0)      /* constraint indexes have an owner field */;
     }
 
     @Override

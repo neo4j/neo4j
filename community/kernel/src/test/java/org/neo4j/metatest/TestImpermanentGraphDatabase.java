@@ -32,6 +32,8 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
+import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
+
 public class TestImpermanentGraphDatabase
 {
     private ImpermanentGraphDatabase db;
@@ -85,7 +87,7 @@ public class TestImpermanentGraphDatabase
             tx.success();
         }
 
-        db.cleanContent();
+        cleanDatabaseContent( db );
 
         assertThat( nodeCount(), is( 0 ) );
     }

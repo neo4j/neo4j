@@ -19,15 +19,17 @@
 package org.neo4j.examples;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
-public class AclExampleDocTest extends AbstractJavaDocTestbase
+public class AclExampleDocTest extends ImpermanentGraphJavaDocTestBase
 {
     
     /**

@@ -40,7 +40,7 @@ import static org.neo4j.kernel.Traversal.traversal;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
-public class Roles extends AbstractJavaDocTestbase
+public class Roles extends ImpermanentGraphJavaDocTestBase
 {
     private static final String NAME = "name";
 
@@ -48,7 +48,7 @@ public class Roles extends AbstractJavaDocTestbase
     {
         ROOT,
         PART_OF,
-        MEMBER_OF;
+        MEMBER_OF
     }
 
     /**
@@ -276,7 +276,7 @@ public class Roles extends AbstractJavaDocTestbase
 
     private String traverserToString( Traverser traverser )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             // START SNIPPET: read-traverser
             String output = "";

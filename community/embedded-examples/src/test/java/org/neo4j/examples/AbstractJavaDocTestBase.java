@@ -23,40 +23,31 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
+
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-public class AbstractJavaDocTestbase implements GraphHolder
+import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
+
+public abstract class AbstractJavaDocTestBase implements GraphHolder
 {
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
+
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
-    protected static GraphDatabaseService db;
-    protected ExecutionEngine engine;
-    
-    protected String createCypherSnippet( String cypherQuery )
-    {
-        String snippet = org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier$.MODULE$.apply( cypherQuery );
-        return AsciidocHelper.createAsciiDocSnippet( "cypher", snippet );
-    }
 
-    @BeforeClass
-    public static void init()
-    {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
-    }
-    
+    protected ExecutionEngine engine;
+
+    protected static GraphDatabaseService db;
+
     @AfterClass
     public static void shutdownDb()
     {
@@ -70,23 +61,30 @@ public class AbstractJavaDocTestbase implements GraphHolder
         }
     }
 
+    @Override
+    public GraphDatabaseService graphdb()
+    {
+        return db;
+    }
+
+    protected String createCypherSnippet( String cypherQuery )
+    {
+        String snippet = org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier$.MODULE$.apply( cypherQuery );
+        return AsciidocHelper.createAsciiDocSnippet( "cypher", snippet );
+    }
+
     @Before
     public void setUp()
     {
-        ((ImpermanentGraphDatabase)db).cleanContent();
-        gen.get().setGraph( db );
-        engine = new ExecutionEngine( db );
+        GraphDatabaseService graphdb = graphdb();
+        cleanDatabaseContent( graphdb );
+        gen.get().setGraph( graphdb );
+        engine = new ExecutionEngine( graphdb );
     }
 
     @After
     public void doc()
     {
         gen.get().document( "target/docs/dev", "examples" );
-    }
-
-    @Override
-    public GraphDatabaseService graphdb()
-    {
-        return db;
     }
 }

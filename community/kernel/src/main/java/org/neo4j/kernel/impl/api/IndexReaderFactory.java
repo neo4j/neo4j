@@ -31,6 +31,8 @@ public interface IndexReaderFactory
 {
     IndexReader newReader( long indexId ) throws IndexNotFoundKernelException;
 
+    IndexReader newUnCachedReader( long indexId ) throws IndexNotFoundKernelException;
+
     void close();
 
     class Caching implements IndexReaderFactory
@@ -54,11 +56,16 @@ public interface IndexReaderFactory
             IndexReader reader = indexReaders.get( indexId );
             if ( reader == null )
             {
-                IndexProxy index = indexingService.getProxyForRule( indexId );
-                reader = index.newReader();
+                reader = newUnCachedReader( indexId );
                 indexReaders.put( indexId, reader );
             }
             return reader;
+        }
+
+        public IndexReader newUnCachedReader( long indexId ) throws IndexNotFoundKernelException
+        {
+            IndexProxy index = indexingService.getProxyForRule( indexId );
+            return index.newReader();
         }
 
         @Override

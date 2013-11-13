@@ -43,7 +43,7 @@ class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
     val labelId = statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    getOnlineIndex(statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    Some(statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =

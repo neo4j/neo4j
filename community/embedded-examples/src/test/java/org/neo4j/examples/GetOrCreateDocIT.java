@@ -19,102 +19,110 @@
 package org.neo4j.examples;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.UniqueFactory;
+import org.neo4j.test.TargetDirectory;
+
+import static java.lang.String.format;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class GetOrCreateDocIT extends AbstractJavaDocTestbase
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+
+public class GetOrCreateDocIT extends AbstractJavaDocTestBase
 {
-    interface GetOrCreate
+    @BeforeClass
+    public static void init()
     {
-        Node getOrCreateUser( String username, GraphDatabaseService graphDb, Node lockNode,
-                UniqueFactory<Node> uniqueFactory );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase(
+                TargetDirectory.forTest( GetOrCreateDocIT.class ).graphDbDir( true ).getAbsolutePath()
+             );
     }
 
-    class PessimisticGetOrCreate implements GetOrCreate
+    abstract class GetOrCreate<D>
+    {
+        abstract Node getOrCreateUser( String username, GraphDatabaseService graphDb, D dependency );
+
+        void assertUserExistsUniquely( GraphDatabaseService graphDb, Transaction tx, String username )
+        {
+            assertUserExistsUniquelyInGraphDb( graphDb, tx, username );
+        }
+    }
+
+    class PessimisticGetOrCreate extends GetOrCreate<Node>
     {
         @Override
-        public Node getOrCreateUser( String username, GraphDatabaseService graphDb, Node lockNode,
-                UniqueFactory<Node> uniqueFactory )
+        public Node getOrCreateUser( String username, GraphDatabaseService graphDb, Node lockNode )
         {
             return getOrCreateUserPessimistically( username, graphDb, lockNode );
         }
     }
 
-    class UniqueFactoryGetOrCreate implements GetOrCreate
+    class UniqueFactoryGetOrCreate extends GetOrCreate<UniqueFactory<Node>>
     {
         @Override
-        public Node getOrCreateUser( String username, GraphDatabaseService graphDb, Node lockNode,
-                UniqueFactory<Node> uniqueFactory )
+        public Node getOrCreateUser( String username, GraphDatabaseService graphDb, UniqueFactory<Node> uniqueFactory )
         {
             return getOrCreateUserWithUniqueFactory( username, graphDb, uniqueFactory );
         }
+
+        @Override
+        void assertUserExistsUniquely( GraphDatabaseService graphDb, Transaction tx, String username )
+        {
+            super.assertUserExistsUniquely( graphDb, tx, username );    //To change body of overridden methods use
+            assertUserExistsUniquelyInIndex( graphDb, tx, username );
+        }
     }
 
-    class ThreadRunner implements Runnable
+    class CypherGetOrCreate extends GetOrCreate<ExecutionEngine>
     {
-        static final int NUM_USERS = 10;
-        final GetOrCreate impl;
+        @Override
+        public Node getOrCreateUser( String username, GraphDatabaseService graphDb, ExecutionEngine engine )
+        {
+            return getOrCreateWithCypher( username, graphDb, engine );
+        }
+    }
 
-        ThreadRunner( GetOrCreate impl )
+    abstract class ThreadRunner<D> implements Runnable
+    {
+        static final int NUM_USERS = 100;
+        final GetOrCreate<D> impl;
+
+        ThreadRunner( GetOrCreate<D> impl )
         {
             this.impl = impl;
         }
 
-        private Node createLockNode()
-        {
-            // START SNIPPET: prepareLockNode
-            try ( Transaction tx = graphdb().beginTx() )
-            {
-                final Node lockNode = graphdb().createNode();
-                tx.success();
-                return lockNode;
-            }
-            // END SNIPPET: prepareLockNode
-        }
-
-        private UniqueFactory<Node> createUniqueFactory()
-        {
-            GraphDatabaseService graphDb = graphdb();
-            // START SNIPPET: prepareUniqueFactory
-            try ( Transaction tx = graphDb.beginTx() )
-            {
-                UniqueFactory<Node> factory = new UniqueFactory.UniqueNodeFactory( graphDb, "users" )
-                {
-                    @Override
-                    protected void initialize( Node created, Map<String, Object> properties )
-                    {
-                        created.setProperty( "name", properties.get( "name" ) );
-                    }
-                };
-                return factory;
-            }
-            // END SNIPPET: prepareUniqueFactory
-        }
+        abstract D createDependency();
 
         @Override
         public void run()
         {
-            final Node lockNode = createLockNode();
-            final UniqueFactory<Node> uniqueFactory = createUniqueFactory();
-            final List<GetOrCreateTask> threads = new ArrayList<>();
-            int numThreads = Runtime.getRuntime()
-                    .availableProcessors() * 2;
+            final D dependency = createDependency();
+            final List<GetOrCreateTask<D>> threads = new ArrayList<>();
+
+            int numThreads = Runtime.getRuntime().availableProcessors() * 2;
             for ( int i = 0; i < numThreads; i++ )
             {
-                threads.add( new GetOrCreateTask( db, lockNode, NUM_USERS, impl, GetOrCreateDocIT.class.getSimpleName()
-                                                                                 + " thread " + i, uniqueFactory ) );
+                String threadName = format( "%s thread %d", GetOrCreateDocIT.class.getSimpleName(), i );
+                threads.add( new GetOrCreateTask<>( db,  NUM_USERS, impl, threadName, dependency ) );
             }
             for ( Thread thread : threads )
             {
@@ -123,7 +131,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
 
             RuntimeException failure = null;
             List<List<Node>> results = new ArrayList<>();
-            for ( GetOrCreateTask thread : threads )
+            for ( GetOrCreateTask<D> thread : threads )
             {
                 try
                 {
@@ -152,54 +160,47 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             {
                 assertEquals( firstResult, subresult );
             }
+
             for ( int i = 0; i < NUM_USERS; i++ )
             {
                 final String username = getUsername( i );
-                impl.getOrCreateUser( username, graphdb(), lockNode, uniqueFactory );
-                assertUserExistsUniquely( username );
-            }
-        }
+                GraphDatabaseService graphdb = graphdb();
+                impl.getOrCreateUser( username, graphdb, dependency );
 
-        private void assertUserExistsUniquely( String username )
-        {
-            try ( Transaction tx = graphdb().beginTx() )
-            {
-                assertNotNull( "User '" + username + "' not created.", graphdb().index()
-                        .forNodes( "users" )
-                        .get( "name", username )
-                        .getSingle() );
-            }
-            catch ( NoSuchElementException e )
-            {
-                throw new RuntimeException( "User '" + username + "' not created uniquely.", e );
+                try ( Transaction tx = graphdb.beginTx() )
+                {
+                    impl.assertUserExistsUniquely( graphdb, tx, username );
+                }
+                catch ( NoSuchElementException e )
+                {
+                    throw new RuntimeException( format( "User '%s' not created uniquely.", username ), e );
+                }
             }
         }
     }
 
     private static String getUsername( int j )
     {
-        return "User" + j;
+        return format( "User%d", j );
     }
 
-    private static class GetOrCreateTask extends Thread
+    private static class GetOrCreateTask<D> extends Thread
     {
         private final GraphDatabaseService db;
-        private final Node lockNode;
         private final int numUsers;
-        private final GetOrCreate impl;
-        private final UniqueFactory<Node> uniqueFactory;
+        private final GetOrCreate<D> impl;
+        private final D dependency;
+
         volatile List<Node> result;
         volatile RuntimeException failure;
 
-        GetOrCreateTask( GraphDatabaseService db, Node lockNode, int numUsers, GetOrCreate impl, String name,
-                UniqueFactory<Node> uniqueFactory )
+        GetOrCreateTask( GraphDatabaseService db, int numUsers, GetOrCreate<D> impl, String name, D dependency )
         {
             super( name );
             this.db = db;
-            this.lockNode = lockNode;
             this.numUsers = numUsers;
             this.impl = impl;
-            this.uniqueFactory = uniqueFactory;
+            this.dependency = dependency;
         }
 
         @Override
@@ -210,7 +211,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
                 List<Node> subresult = new ArrayList<>();
                 for ( int j = 0; j < numUsers; j++ )
                 {
-                    subresult.add( impl.getOrCreateUser( getUsername( j ), db, lockNode, uniqueFactory ) );
+                    subresult.add( impl.getOrCreateUser( getUsername( j ), db, dependency) );
                 }
                 this.result = subresult;
             }
@@ -224,7 +225,39 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
     @Test
     public void testPessimisticLocking()
     {
-        new ThreadRunner( new PessimisticGetOrCreate() ).run();
+        new ThreadRunner<Node>( new PessimisticGetOrCreate() )
+        {
+            @Override
+            Node createDependency()
+            {
+                return createLockNode( graphdb() );
+            }
+        }.run();
+    }
+
+    @Test
+    public void getOrCreateWithUniqueFactory() throws Exception
+    {
+        new ThreadRunner<UniqueFactory<Node>>( new UniqueFactoryGetOrCreate() ) {
+
+            @Override
+            UniqueFactory<Node> createDependency()
+            {
+                return createUniqueFactory( graphdb() );
+            }
+        }.run();
+    }
+
+    @Test
+    public void getOrCreateUsingCypher() throws Exception
+    {
+        new ThreadRunner<ExecutionEngine>( new CypherGetOrCreate() ) {
+            @Override
+            ExecutionEngine createDependency()
+            {
+                return createExecutionEngineAndConstraint( graphdb() );
+            }
+        }.run();
     }
 
     public Node getOrCreateUserPessimistically( String username, GraphDatabaseService graphDb, Node lockNode )
@@ -243,9 +276,9 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             userNode = usersIndex.get( "name", username ).getSingle();
             if ( userNode == null )
             {
-                userNode = graphDb.createNode();
-                userNode.setProperty( "name", username );
+                userNode = graphDb.createNode( DynamicLabel.label( "User" ) );
                 usersIndex.add( userNode, "name", username );
+                userNode.setProperty( "name", username );
             }
             tx.success();
             return userNode;
@@ -253,22 +286,111 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
         // END SNIPPET: pessimisticLocking
     }
 
-    @Test
-    public void getOrCreateWithUniqueFactory() throws Exception
+    public static Node createLockNode( GraphDatabaseService graphDb )
     {
-        new ThreadRunner( new UniqueFactoryGetOrCreate() ).run();
+        // START SNIPPET: prepareLockNode
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            final Node lockNode = graphDb.createNode();
+            tx.success();
+            return lockNode;
+        }
+        // END SNIPPET: prepareLockNode
+    }
+
+    private UniqueFactory<Node> createUniqueFactory(  GraphDatabaseService graphDb )
+    {
+        // START SNIPPET: prepareUniqueFactory
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            UniqueFactory.UniqueNodeFactory result = new UniqueFactory.UniqueNodeFactory( graphDb, "users" )
+            {
+                @Override
+                protected void initialize( Node created, Map<String, Object> properties )
+                {
+                    created.addLabel( DynamicLabel.label( "User" ) );
+                    created.setProperty( "name", properties.get( "name" ) );
+                }
+            };
+            tx.success();
+            return result;
+        }
+        // END SNIPPET: prepareUniqueFactory
     }
 
     public Node getOrCreateUserWithUniqueFactory( String username, GraphDatabaseService graphDb,
-            UniqueFactory<Node> factory )
+                                                  UniqueFactory<Node> factory )
     {
-        // START SNIPPET: getOrCreate
+        // START SNIPPET: getOrCreateWithFactory
         try ( Transaction tx = graphDb.beginTx() )
         {
             Node node = factory.getOrCreate( "name", username );
             tx.success();
             return node;
         }
-        // END SNIPPET: getOrCreate
+        // END SNIPPET: getOrCreateWithFactory
+    }
+
+    private Node getOrCreateWithCypher( String username, GraphDatabaseService graphDb, ExecutionEngine engine )
+    {
+        // START SNIPPET: getOrCreateWithCypher
+        Node result = null;
+        ResourceIterator<Node> resultIterator = null;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            String queryString = "MERGE (n:User {name: {name}}) RETURN n";
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put( "name", username );
+            resultIterator = engine.execute( queryString, parameters ).columnAs( "n" );
+            result = resultIterator.next();
+            tx.success();
+            return result;
+        }
+        // END SNIPPET: getOrCreateWithCypher
+        finally
+        {
+            if ( resultIterator != null )
+            {
+                if ( resultIterator.hasNext() )
+                {
+                    Node other = resultIterator.next();
+                    //noinspection ThrowFromFinallyBlock
+                    throw new IllegalStateException( "Merge returned more than one node: " + result + " and " + other );
+                }
+            }
+        }
+    }
+
+    private ExecutionEngine createExecutionEngineAndConstraint( GraphDatabaseService graphdb )
+    {
+        // START SNIPPET: prepareExecutionEngineAndConstraint
+        try ( Transaction tx = graphdb.beginTx() )
+        {
+            graphdb.schema()
+                    .constraintFor( DynamicLabel.label( "User" ) )
+                    .assertPropertyIsUnique( "name" )
+                    .create();
+            tx.success();
+        }
+
+        return new ExecutionEngine( graphdb() );
+        // END SNIPPET: prepareExecutionEngineAndConstraint
+    }
+
+    private static void assertUserExistsUniquelyInIndex( GraphDatabaseService graph, Transaction tx, String username )
+    {
+        assertNotNull( format( "User '%s' not created.", username ), graph.index()
+                .forNodes( "users" )
+                .get( "name", username )
+                .getSingle() );
+        tx.success();
+    }
+
+    private static void assertUserExistsUniquelyInGraphDb( GraphDatabaseService graph, Transaction tx, String username )
+    {
+        Label label = DynamicLabel.label( "User" );
+        Node result = singleOrNull( graph.findNodesByLabelAndProperty( label, "name", username ) );
+        assertNotNull( format( "User '%s' not created.", username ), result );
+        tx.success();
     }
 }

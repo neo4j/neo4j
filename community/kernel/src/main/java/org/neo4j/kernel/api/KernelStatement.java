@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -120,7 +121,7 @@ public class KernelStatement implements TxState.Holder, Statement
     {
         if ( closed )
         {
-            throw new IllegalStateException( "The statement has been closed." );
+            throw new NotInTransactionException( "The statement has been closed." );
         }
     }
 
@@ -132,6 +133,11 @@ public class KernelStatement implements TxState.Holder, Statement
     public IndexReader getIndexReader( long indexId ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory.newReader( indexId );
+    }
+
+    public IndexReader getFreshIndexReader( long indexId ) throws IndexNotFoundKernelException
+    {
+        return indexReaderFactory.newUnCachedReader( indexId );
     }
 
     public LabelScanReader getLabelScanReader()

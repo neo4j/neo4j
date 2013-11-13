@@ -43,24 +43,24 @@ public abstract class UniqueFactory<T extends PropertyContainer>
     {
         private final T entity;
         private final boolean created;
-        
+
         UniqueEntity( T entity, boolean created )
         {
             this.entity = entity;
             this.created = created;
         }
-        
+
         public T entity()
         {
             return this.entity;
         }
-        
+
         public boolean wasCreated()
         {
             return this.created;
         }
     }
-    
+
     /**
      * Implementation of {@link UniqueFactory} for {@link Node}.
      *
@@ -226,6 +226,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
      */
     public final UniqueEntity<T> getOrCreateWithOutcome( String key, Object value )
     {
+        // Index reads implies asserting we're in a transaction.
         T result = index.get( key, value ).getSingle();
         boolean wasCreated = false;
         if ( result == null )
@@ -248,7 +249,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
                 tx.success();
             }
         }
-        return new UniqueEntity<T>( result, wasCreated );
+        return new UniqueEntity<>( result, wasCreated );
     }
 
     /**

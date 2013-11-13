@@ -90,7 +90,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
                     {
                         try
                         {
-                            return getSchemaRule( id, scratchData );
+                            return forceGetSchemaRule( id, scratchData );
                         }
                         catch ( MalformedSchemaRuleException e )
                         {

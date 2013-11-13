@@ -37,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
-public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
+public class UniquenessOfPathsDocTest extends ImpermanentGraphJavaDocTestBase
 {
     /**
      * Uniqueness of Paths in traversals.
@@ -111,7 +111,7 @@ public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
         String output = "";
         int count = 0;
         //we should get two paths back, through Pet1 and Pet3
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             for ( Path path : results )
             {

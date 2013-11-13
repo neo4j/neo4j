@@ -24,10 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -39,12 +35,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
+import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -137,10 +133,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
         {
-            Exception testThatDidntCloseDb = startedButNotYetClosed.put( new File( path ),
+            Exception testThatDidNotCloseDb = startedButNotYetClosed.put( new File( path ),
                     new Exception( "Unclosed database instance" ) );
-            if ( testThatDidntCloseDb != null )
-                testThatDidntCloseDb.printStackTrace();
+            if ( testThatDidNotCloseDb != null )
+                testThatDidNotCloseDb.printStackTrace();
         }
     }
     
@@ -161,7 +157,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
     {
-        // Because EphemeralFileChannel doesn't support memorymapping
+        // Because EphemeralFileChannel doesn't support memory mapping
         Map<String, String> result = new HashMap<>( params );
         result.put( use_memory_mapped_buffers.name(), FALSE );
 
@@ -178,28 +174,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     public void cleanContent()
     {
-        Transaction tx = beginTx();
-        try
-        {
-            Iterable<Node> allNodes = GlobalGraphOperations.at(this).getAllNodes();
-            for ( Node node : allNodes)
-            {
-                for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
-                {
-                    rel.delete();
-                }
-                node.delete();
-            }
-            tx.success();
-        }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
-        finally
-        {
-            //noinspection deprecation
-            tx.finish();
-        }
+        cleanDatabaseContent( this );
     }
 }
