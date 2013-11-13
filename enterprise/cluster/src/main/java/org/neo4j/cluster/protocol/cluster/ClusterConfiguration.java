@@ -97,7 +97,7 @@ public class ClusterConfiguration
 
     public void left( InstanceId leftInstanceId )
     {
-        logger.warn("Left " + leftInstanceId );
+        logger.info( "Instance " + leftInstanceId + " is leaving the cluster" );
         this.members = new HashMap<InstanceId, URI>( members );
         members.remove( leftInstanceId );
 
@@ -109,7 +109,7 @@ public class ClusterConfiguration
 
             if ( roleEntry.getValue().equals( leftInstanceId ) )
             {
-                logger.warn("Removed role " + roleEntry.getValue() + " for leaving instance " + roleEntry.getKey() );
+                logger.info("Removed role " + roleEntry.getValue() + " from leaving instance " + roleEntry.getKey() );
                 entries.remove();
             }
         }
@@ -182,10 +182,9 @@ public class ClusterConfiguration
 
     public void removeElected( String roleName )
     {
-        logger.warn( "Asked to remove elected " + roleName);
         roles = new HashMap<String, InstanceId>( roles );
         InstanceId removed = roles.remove( roleName );
-        logger.warn( "Removed elected " + removed + "(" + roleName + ")" );
+        logger.info( "Removed role " + roleName + " from instance " + removed );
     }
 
     public InstanceId getElected( String roleName )
