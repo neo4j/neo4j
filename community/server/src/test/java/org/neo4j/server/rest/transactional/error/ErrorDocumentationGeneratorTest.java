@@ -19,30 +19,20 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
-public class StatusTest
+public class ErrorDocumentationGeneratorTest
 {
     @Test
-    public void eachStatusCodeHasAUniqueCode() throws Exception
+    public void documents() throws Exception
     {
-        // given
-        Set<Object> codes = new HashSet<>();
+        // Given
+        ErrorDocumentationGenerator gen = new ErrorDocumentationGenerator();
 
-        // when
-        for ( Status status : Status.Code.all() )
-        {
-            codes.add( status.code().serialize() );
-        }
+        // When
+        System.out.println( gen.generateClassificationDocs() );
 
-        // then
-        assertNotEquals( 0, codes.size() );
-        assertEquals( Status.Code.all().size(), codes.size() );
+        // Then
     }
+
 }
