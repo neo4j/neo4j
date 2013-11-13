@@ -34,11 +34,6 @@ import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.impl.cache.GcrSettings.log_interval;
-import static org.neo4j.kernel.impl.cache.GcrSettings.node_cache_array_fraction;
-import static org.neo4j.kernel.impl.cache.GcrSettings.node_cache_size;
-import static org.neo4j.kernel.impl.cache.GcrSettings.relationship_cache_array_fraction;
-import static org.neo4j.kernel.impl.cache.GcrSettings.relationship_cache_size;
 
 /**
  * Settings for High Availability mode
@@ -86,12 +81,6 @@ public class HaSettings
     @Description( "Push strategy of a transaction to a slave during commit." )
     public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options(
             TxPushStrategy.class ), "fixed" );
-
-    public static final Setting<Long> gcr_node_cache_size = node_cache_size;
-    public static final Setting<Long> gcr_relationship_cache_size = relationship_cache_size;
-    public static final Setting<Float> gcr_node_cache_array_fraction = node_cache_array_fraction;
-    public static final Setting<Float> gcr_relationship_cache_array_fraction = relationship_cache_array_fraction;
-    public static final Setting<Long> gcr_log_interval = log_interval;
 
     public static enum TxPushStrategy
     {

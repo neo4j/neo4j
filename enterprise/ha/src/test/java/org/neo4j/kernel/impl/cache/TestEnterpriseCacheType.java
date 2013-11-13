@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.cluster.ClusterSettings.server_id;
-
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
@@ -32,22 +29,25 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.cluster.ClusterSettings.server_id;
+
 public class TestEnterpriseCacheType
 {
     @Test
-    public void defaultEmbeddedGraphDbShouldUseGcr() throws Exception
+    public void defaultEmbeddedGraphDbShouldUseHighPerformanceCache() throws Exception
     {
         // GIVEN
         // -- an embedded graph database with default cache type config
         db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         // THEN
-        // -- the selected cache type should be GCR
-        assertEquals( "gcr", getCacheTypeUsed() );
+        // -- the selected cache type should be HPC
+        assertEquals( HighPerformanceCacheProvider.NAME, getCacheTypeUsed() );
     }
     
     @Test
-    public void defaultHaGraphDbShouldUseGcr() throws Exception
+    public void defaultHaGraphDbShouldUseHighPerformanceCache() throws Exception
     {
         // GIVEN
         // -- an HA graph database with default cache type config
@@ -55,8 +55,7 @@ public class TestEnterpriseCacheType
                 .setConfig( server_id, "1" ).setConfig( ClusterSettings.initial_hosts, ":5001" ).newGraphDatabase();
 
         // THEN
-        // -- the selected cache type should be GCR
-        assertEquals( "gcr", getCacheTypeUsed() );
+        assertEquals( HighPerformanceCacheProvider.NAME, getCacheTypeUsed() );
     }
 
     private String getCacheTypeUsed()
@@ -68,7 +67,9 @@ public class TestEnterpriseCacheType
     public void after() throws Exception
     {
         if ( db != null )
+        {
             db.shutdown();
+        }
     }
 
     private String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
