@@ -54,8 +54,7 @@ public class Neo4jMatchers
             @Override
             protected boolean matches( Object item, Description mismatchDescription )
             {
-                Transaction tx = db.beginTx();
-                try
+                try ( Transaction ignored = db.beginTx() )
                 {
                     if ( inner.matches( item ) )
                     {
@@ -65,11 +64,6 @@ public class Neo4jMatchers
                     inner.describeMismatch( item, mismatchDescription );
 
                     return false;
-
-                }
-                finally
-                {
-                    tx.finish();
                 }
             }
 
@@ -464,14 +458,9 @@ public class Neo4jMatchers
 
         public Collection<T> collection()
         {
-            Transaction tx = db.beginTx();
-            try
+            try ( Transaction ignored = db.beginTx() )
             {
                 return asCollection( manifest() );
-            }
-            finally
-            {
-                tx.finish();
             }
         }
 
@@ -607,16 +596,11 @@ public class Neo4jMatchers
 
     public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String property )
     {
-        Transaction tx = beansAPI.beginTx();
         IndexDefinition indexDef;
-        try
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             indexDef = beansAPI.schema().indexFor( label ).on( property ).create();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         waitForIndex( beansAPI, indexDef );
@@ -625,30 +609,17 @@ public class Neo4jMatchers
 
     public static void waitForIndex( GraphDatabaseService beansAPI, IndexDefinition indexDef )
     {
-        Transaction tx;
-        tx = beansAPI.beginTx();
-        try
+        try ( Transaction ignored = beansAPI.beginTx() )
         {
             beansAPI.schema().awaitIndexOnline( indexDef, 10, SECONDS );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
     public static Object getIndexState( GraphDatabaseService beansAPI, IndexDefinition indexDef )
     {
-        Transaction tx;
-        tx = beansAPI.beginTx();
-        try
+        try ( Transaction ignored = beansAPI.beginTx() )
         {
             return beansAPI.schema().getIndexState( indexDef );
         }
-        finally
-        {
-            tx.finish();
-        }
     }
-
 }

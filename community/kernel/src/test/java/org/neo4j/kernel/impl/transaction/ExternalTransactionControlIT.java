@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
@@ -53,31 +54,35 @@ public class ExternalTransactionControlIT
     public void shouldAllowSuspendingAndResumingTransactions() throws Exception
     {
         // Given
+        //noinspection deprecation
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         TransactionManager tm = db.getDependencyResolver().resolveDependency( TransactionManager.class );
 
         Node node = createNode();
 
         // And that I have added a label to a node in a transaction
-        db.beginTx();
-        node.addLabel( Labels.MY_LABEL );
+        try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
+        {
+            node.addLabel( Labels.MY_LABEL );
 
-        // When
-        Transaction jtaTx = tm.suspend();
+            // When
+            Transaction jtaTx = tm.suspend();
 
-        // Then
-        assertThat(node, inTx(db, not( hasLabel( Labels.MY_LABEL ) )));
+            // Then
+            assertThat(node, inTx(db, not( hasLabel( Labels.MY_LABEL ) )));
 
-        // And when
-        tm.resume( jtaTx );
-        // Then
-        assertTrue("The label should be visible when I've resumed the transaction.", node.hasLabel( Labels.MY_LABEL ));
+            // And when
+            tm.resume( jtaTx );
+            // Then
+            assertTrue("The label should be visible when I've resumed the transaction.", node.hasLabel( Labels.MY_LABEL ));
+        }
     }
 
     @Test
     public void shouldBeAbleToUseJTATransactionManagerForTxManagement() throws Exception
     {
         // Given
+        //noinspection deprecation
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         TransactionManager tm = db.getDependencyResolver().resolveDependency( TransactionManager.class );
 
@@ -95,40 +100,63 @@ public class ExternalTransactionControlIT
     public void shouldBeAbleToMoveTransactionToAnotherThread() throws Exception
     {
         // Given
+        //noinspection deprecation
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         final TransactionManager tm = db.getDependencyResolver().resolveDependency( TransactionManager.class );
 
         final Node node = createNode();
 
         // And that I have added a label to a node in a transaction
-        db.beginTx();
-        node.addLabel( Labels.MY_LABEL );
-
-        // And that I suspend the transaction in this thread
-        final Transaction jtaTx = tm.suspend();
-
-        // When
-        OtherThreadExecutor<Boolean> otherThread = new OtherThreadExecutor<>( "Thread to resume tx in", null );
-        boolean result = otherThread.execute( new OtherThreadExecutor.WorkerCommand<Boolean, Boolean>()
+        try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
         {
-            @Override
-            public Boolean doWork( Boolean ignore )
-            {
-                try
-                {
-                    tm.resume( jtaTx );
-                    // Then
-                    return node.hasLabel( Labels.MY_LABEL );
-                }
-                catch ( Throwable e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-        } );
+            node.addLabel( Labels.MY_LABEL );
 
-        // Then
-        assertTrue("The label should be visible when I've resumed the transaction.", result);
+            // And that I suspend the transaction in this thread
+            final Transaction jtaTx = tm.suspend();
+
+            boolean result;
+            try
+            {
+                // When
+                OtherThreadExecutor<Boolean> otherThread = new OtherThreadExecutor<>( "Thread to resume tx in", null );
+                result = otherThread.execute( new OtherThreadExecutor.WorkerCommand<Boolean, Boolean>()
+                {
+                    @Override
+                    public Boolean doWork( Boolean ignore )
+                    {
+                        try
+                        {
+                            tm.resume( jtaTx );
+                            // Then
+                            return node.hasLabel( Labels.MY_LABEL );
+                        }
+                        catch ( Exception e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                tm.suspend();
+                            }
+                            catch ( SystemException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
+                        }
+                    }
+                } );
+            }
+            finally
+            {
+                // Need to resume this transaction so that we can close it cleanly.
+                tm.resume( jtaTx );
+            }
+
+            // Then
+            assertTrue("The label should be visible when I've resumed the transaction.", result);
+        }
     }
 
     private Node createNode()
