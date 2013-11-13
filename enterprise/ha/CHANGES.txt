@@ -1,3 +1,8 @@
+1.9.6
+-----
+o HA Backup now properly resolves the master URI, solving a bug where ha:// backups not running
+  from the current master would in some cases fail
+
 1.9.5 (2013-11-11)
 ------------------
 o Removed all usage of getHostName() that might lead to problems on instances with improperly
