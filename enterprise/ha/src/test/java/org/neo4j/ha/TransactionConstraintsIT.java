@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -51,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
@@ -254,7 +256,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             tx.success();
         }
 
-        OtherThreadExecutor<HighlyAvailableGraphDatabase> thread2 = new OtherThreadExecutor<HighlyAvailableGraphDatabase>( "T2", slave2 );
+        OtherThreadExecutor<HighlyAvailableGraphDatabase> thread2 = new OtherThreadExecutor<>( "T2", slave2 );
         Transaction tx1 = slave1.beginTx();
         Transaction tx2 = thread2.execute( new BeginTx() );
         tx1.acquireReadLock( commonNode );
@@ -286,7 +288,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         
         assertNotNull( writeLockFuture.get() );
         thread2.execute( new FinishTx( tx2, true ) );
-        thread2.shutdown();
+        thread2.close();
     }
 
     @Ignore( "Known issue where locks acquired from Transaction#acquireXXXLock() methods doesn't get properly released when calling Lock#release() method" )
@@ -296,7 +298,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         // GIVEN
         // -- a slave acquiring a lock on an ubiquitous node
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        OtherThreadExecutor<HighlyAvailableGraphDatabase> masterWorker = new OtherThreadExecutor<HighlyAvailableGraphDatabase>( "master worker", master );
+        OtherThreadExecutor<HighlyAvailableGraphDatabase> masterWorker = new OtherThreadExecutor<>( "master worker", master );
         final Node node = createNode( master );
         cluster.sync();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
@@ -324,7 +326,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         finally
         {
             slaveTx.finish();
-            masterWorker.shutdown();
+            masterWorker.close();
         }
     }
     

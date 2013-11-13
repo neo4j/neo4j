@@ -19,18 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.test.OtherThreadExecutor;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import static org.junit.Assert.fail;
 
 public class TestManualAcquireLock extends AbstractNeo4jTestCase
 {
@@ -45,7 +47,7 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
     @After
     public void doAfter() throws Exception
     {
-        worker.shutdown();
+        worker.close();
     }
     
     @Test
