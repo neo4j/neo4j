@@ -24,9 +24,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,11 +36,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -817,7 +811,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( expectedCount, count( node1.getRelationships() ) );
     }
 
-    @Ignore( "Triggers a bug, enable this test when fixed, https://github.com/neo4j/community/issues/52" )
     @Test
     public void deleteRelsWithCommitInMiddle() throws Exception
     {

@@ -116,7 +116,7 @@ public class TransactionMatchers
                     while ( expected.hasNext() )
                     {
                         assertTrue( errors.hasNext() );
-                        assertThat( errors.next().get( "code" ).asText(), equalTo( expected.next().code().getCode() ) );
+                        assertThat( errors.next().get( "code" ).asText(), equalTo( expected.next().code().serialize() ) );
                     }
                     if ( errors.hasNext() )
                     {
