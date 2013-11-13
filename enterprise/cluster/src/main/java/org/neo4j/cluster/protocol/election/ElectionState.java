@@ -86,9 +86,9 @@ public enum ElectionState
                             {
                                 logger.warn( "Context says election is not OK to proceed. " +
                                         "Failed instances are: " +
-                                        context.getFailed() +
+                                        context.getHeartbeatContext().getFailed() +
                                         ", cluster members are: " +
-                                        context.getMembers()  );
+                                        context.getClusterContext().getConfiguration().getMembers()  );
                                 break;
                             }
 
@@ -98,13 +98,15 @@ public enum ElectionState
                             if ( context.isInCluster() )
                             {
                                 // Only the first alive server should try elections. Everyone else waits
-                                List<InstanceId> aliveInstances = Iterables.toList(context.getAlive());
+                                List<InstanceId> aliveInstances = Iterables.toList(
+                                        context.getHeartbeatContext().getAlive() );
                                 Collections.sort( aliveInstances );
-                                boolean isElector = aliveInstances.indexOf( context.getMyId() ) == 0;
+                                logger.debug( "Found and ordered alive instances as " + aliveInstances );
+                                boolean isElector = aliveInstances.indexOf( context.getClusterContext().getMyId() ) == 0;
 
                                 if ( isElector )
                                 {
-                                    logger.debug( "I (" + context.getMyId() + ") am the elector, " +
+                                    logger.debug( "I (" + context.getClusterContext().getMyId() + ") am the elector, " +
                                             "executing the election" );
                                     // Start election process for all roles that are currently unassigned
                                     Iterable<String> rolesRequiringElection = context.getRolesRequiringElection();
