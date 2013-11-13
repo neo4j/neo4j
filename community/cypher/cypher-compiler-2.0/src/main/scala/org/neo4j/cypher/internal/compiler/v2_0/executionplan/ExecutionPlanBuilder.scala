@@ -25,7 +25,6 @@ import commands._
 import commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.prepare.{AggregationPreparationRewriter, KeyTokenResolver}
 import pipes._
-import pipes.optional.NullInsertingPipe
 import profiler.Profiler
 import symbols.SymbolTable
 import org.neo4j.cypher.{SyntaxException, ExecutionResult}
@@ -80,13 +79,10 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)
 
     while (continue) {
-      if (planInProgress.query.optional) {
-        planInProgress = planOptionalQuery(planInProgress, context)
-      } else
-        phases.foreach {
-          phase =>
-            planInProgress = phase(planInProgress, context)
-        }
+      phases.foreach {
+        phase =>
+          planInProgress = phase(planInProgress, context)
+      }
 
       if (!planInProgress.query.isSolved) {
         produceAndThrowException(planInProgress)
@@ -106,28 +102,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
 
     (planInProgress.pipe, planInProgress.isUpdating)
-  }
-
-  private def planOptionalQuery(inputQuery: ExecutionPlanInProgress, context: PlanContext): ExecutionPlanInProgress = {
-    // Prepare the query
-    var planInProgress = prepare(inputQuery, context)
-
-    // Match using NullInsertingPipe
-    def builder(in: Pipe): Pipe = {
-      planInProgress = planInProgress.copy(pipe = in)
-      planInProgress = matching(planInProgress, context)
-      planInProgress.pipe
-    }
-
-    val nullingPipe = new NullInsertingPipe(planInProgress.pipe, builder)
-    planInProgress = planInProgress.copy(pipe = nullingPipe)
-
-    // Do the phases after match
-    postMatchingPhases.foreach {
-      phase =>
-        planInProgress = phase(planInProgress, context)
-    }
-    planInProgress
   }
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
@@ -213,8 +187,6 @@ The Neo4j Team""")
     finish    /* Prepares the return set so it looks like the user specified */
   )
 
-  val postMatchingPhases = Seq(updates, extract, finish)
-
   lazy val builders = phases.flatMap(_.myBuilders).distinct
 
   /*
@@ -227,13 +199,14 @@ The Neo4j Team""")
       new AggregationPreparationRewriter(), 
       new IndexLookupBuilder, 
       new StartPointChoosingBuilder, 
-      new MergeStartPointBuilder    
+      new MergeStartPointBuilder,
+      new OptionalMatchBuilder(matching)
     )
   }
 
   def matching = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
-      new TraversalMatcherBuilder, 
+      new TraversalMatcherBuilder,
       new FilterBuilder, 
       new NamedPathBuilder, 
       new StartPointBuilder,

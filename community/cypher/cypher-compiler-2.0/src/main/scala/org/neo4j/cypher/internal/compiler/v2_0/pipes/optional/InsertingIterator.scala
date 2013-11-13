@@ -19,11 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.pipes.optional
 
-// THIS CLASS IS NOT THREAD SAFE
-class NullInsertingIterator[ExecutionContext](listener: Listener[ExecutionContext],
-                                              inner: Iterator[ExecutionContext],
-                                              nullF: ExecutionContext => ExecutionContext)
-  extends Iterator[ExecutionContext] {
+import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
+
+/**
+ * This class makes sure that if the inner iterator has to pull out multiple elements from the listener,
+ * the inserter gets a chance to insert things into the result stream
+ *
+ * @param listener An iterator that keeps track of things moving through it
+ * @param inner The iterator that in turn consumes the listener iterator
+ * @param inserter A method that can produce a new ExecutionContext with more data in it
+ */
+class InsertingIterator(listener: Listener[ExecutionContext],
+                        inner: Iterator[ExecutionContext],
+                        inserter: ExecutionContext => ExecutionContext) extends Iterator[ExecutionContext] {
   var buffer: List[ExecutionContext] = List.empty
 
   private def fillBuffer() = {
@@ -32,9 +40,9 @@ class NullInsertingIterator[ExecutionContext](listener: Listener[ExecutionContex
 
     if (innerHasNext || seenByListener.nonEmpty) {
       buffer = if (innerHasNext) {
-        seenByListener.dropRight(1).map(nullF) :+ inner.next()
+        seenByListener.dropRight(1).map(inserter) :+ inner.next()
       } else {
-        seenByListener.map(nullF)
+        seenByListener.map(inserter)
       }
 
       listener.clear()
