@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.io.Closeable;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -48,7 +49,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @param <T>
  * @author Mattias Persson
  */
-public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger, RuntimeException>
+public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger, RuntimeException>, Closeable
 {
     private final ExecutorService commandExecutor = newSingleThreadExecutor( this );
     protected final T state;
@@ -216,7 +217,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         return thread;
     }
 
-    public void shutdown()
+    public void close()
     {
         commandExecutor.shutdown();
         try

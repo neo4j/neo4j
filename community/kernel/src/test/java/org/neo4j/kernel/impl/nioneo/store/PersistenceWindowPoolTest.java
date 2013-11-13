@@ -102,7 +102,7 @@ public class PersistenceWindowPoolTest
         // Verify that what T1 wrote is on disk
         
         final PersistenceWindow t1Row = pool.acquire( 0, OperationType.WRITE );
-        OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<Void>( "other thread", null ); 
+        OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<>( "other thread", null );
         Future<Throwable> future = otherThread.executeDontWait( new WorkerCommand<Void, Throwable>()
         {
             @Override
@@ -145,7 +145,7 @@ public class PersistenceWindowPoolTest
         assertBufferContents( blockSize, row );
         
         pool.close();
-        otherThread.shutdown();
+        otherThread.close();
         file.close();
     }
 
@@ -185,6 +185,7 @@ public class PersistenceWindowPoolTest
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
         PersistenceRow window = new PersistenceRow( 0l, 10, file.getChannel() );
 
+        //noinspection unchecked
         ConcurrentMap<Long, PersistenceRow> map = mock(ConcurrentMap.class);
 
         // On the first lookup, pretend the row is not in memory, this makes the current thread decide to load

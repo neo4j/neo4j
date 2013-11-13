@@ -74,8 +74,8 @@ public class ManyPropertyKeysIT
         worker2.execute( new CreateNodeAndSetProperty( key ) );
         worker1.execute( new FinishTx() );
         worker2.execute( new FinishTx() );
-        worker1.shutdown();
-        worker2.shutdown();
+        worker1.close();
+        worker2.close();
 
         // THEN
         assertEquals( 1, propertyKeyCount( db ) );

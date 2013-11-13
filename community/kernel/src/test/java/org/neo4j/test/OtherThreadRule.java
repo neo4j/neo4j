@@ -124,7 +124,7 @@ public class OtherThreadRule<STATE> implements TestRule
                 {
                     try
                     {
-                        executor.shutdown();
+                        executor.close();
                     }
                     finally
                     {
