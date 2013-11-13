@@ -663,10 +663,10 @@ public abstract class InternalAbstractGraphDatabase
                 }
 
                 @Override
-                public RelationshipImpl getRelationshipForProxy( final long relId, final LockType lock )
+                public RelationshipImpl getRelationshipForProxy( final long relId )
                 {
                     guard.check();
-                    return super.getRelationshipForProxy( relId, lock );
+                    return super.getRelationshipForProxy( relId );
                 }
 
                 @Override
@@ -712,10 +712,10 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
-            public RelationshipImpl getRelationshipForProxy( final long relId, final LockType lock )
+            public RelationshipImpl getRelationshipForProxy( final long relId )
             {
                 guard.check();
-                return super.getRelationshipForProxy( relId, lock );
+                return super.getRelationshipForProxy( relId );
             }
 
             @Override
@@ -798,7 +798,7 @@ public abstract class InternalAbstractGraphDatabase
             public RelationshipImpl lookupRelationship( long relationshipId )
             {
                 assertDatabaseRunning();
-                return nodeManager.getRelationshipForProxy( relationshipId, null );
+                return nodeManager.getRelationshipForProxy( relationshipId );
             }
 
             @Override

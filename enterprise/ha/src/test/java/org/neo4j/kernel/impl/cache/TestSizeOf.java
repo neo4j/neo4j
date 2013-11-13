@@ -229,7 +229,7 @@ public class TestSizeOf
     {
         try(Transaction ignore = db.beginTx())
         {
-            return db.getNodeManager().getRelationshipForProxy( relationship.getId(), null )
+            return db.getNodeManager().getRelationshipForProxy( relationship.getId() )
                     .sizeOfObjectInBytesIncludingOverhead();
         }
     }

@@ -406,6 +406,14 @@ public class NodeManager implements Lifecycle, EntityFactory
                 } ) );
     }
 
+    /**
+     * TODO: We only grab this lock in one single place, from inside the kernel:
+     * {@link org.neo4j.kernel.impl.api.DefaultLegacyKernelOperations#relationshipCreate(org.neo4j.kernel.api.Statement, long, long, long)}.
+     * We should move that code around such that this lock is grabbed through the locking layer in the kernel cake, and
+     * then we should remove this locking code. It is dangerous to have it here, because it allows grabbing a lock
+     * before the kernel is registered as a data source. If that happens in HA, we will attempt to grab locks on the
+     * master before the transaction is started on the master.
+     */
     public NodeImpl getNodeForProxy( long nodeId, LockType lock )
     {
         if ( lock != null )
@@ -532,13 +540,8 @@ public class NodeManager implements Lifecycle, EntityFactory
         return relTypeHolder.getTokenById( id );
     }
 
-    public RelationshipImpl getRelationshipForProxy( long relId, LockType lock )
+    public RelationshipImpl getRelationshipForProxy( long relId )
     {
-        if ( lock != null )
-        {
-            lock.acquire( getTransactionState(),
-                    new RelationshipProxy( relId, relationshipLookups, statementCtxProvider ) );
-        }
         RelationshipImpl rel = relCache.get( relId );
         if ( rel == null )
         {
