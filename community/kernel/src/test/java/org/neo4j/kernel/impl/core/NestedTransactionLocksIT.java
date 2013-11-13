@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
@@ -79,17 +80,30 @@ public class NestedTransactionLocksIT
     {
         // given
         Node resource = createNode();
-        Transaction realTx = db.beginTx();
+
+        Transaction outerTx = db.beginTx();
         Transaction nestedTx = db.beginTx();
-        assertNotSame( realTx, nestedTx );
-        OtherThreadExecutor<Void> otherTx = new OtherThreadExecutor<>( "other thread", null );
-        
-        // when
-        Lock lock = nestedTx.acquireWriteLock( resource );
-        Future<Lock> future = otherTx.executeDontWait( acquireWriteLock( resource ) );
-        otherTx.waitUntilWaiting();
-        
-        // then
+        assertNotSame( outerTx, nestedTx );
+
+        try ( OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<>( "other thread", null ) )
+        {
+            // when
+            Lock lock = nestedTx.acquireWriteLock( resource );
+            Future<Lock> future = tryToAcquireSameLockOnAnotherThread( resource, otherThread );
+
+            // then
+            acquireOnOtherThreadTimesOut( future );
+
+            // and when
+            lock.release();
+
+            //then
+            assertNotNull( future.get() );
+        }
+    }
+
+    private void acquireOnOtherThreadTimesOut( Future<Lock> future ) throws InterruptedException, ExecutionException
+    {
         try
         {
             future.get( 1, SECONDS );
@@ -98,9 +112,13 @@ public class NestedTransactionLocksIT
         catch ( TimeoutException e )
         {   // Good
         }
-        lock.release();
-        assertNotNull( future.get() );
-        otherTx.close();
+    }
+
+    private Future<Lock> tryToAcquireSameLockOnAnotherThread( Node resource, OtherThreadExecutor<Void> otherThread ) throws TimeoutException
+    {
+        Future<Lock> future = otherThread.executeDontWait( acquireWriteLock( resource ) );
+        otherThread.waitUntilWaiting();
+        return future;
     }
 
     private Node createNode()
