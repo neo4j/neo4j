@@ -23,17 +23,18 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestGCResistantCache
+public class TestHighPerformanceCache
 {
-    private GCResistantCache<Entity> cache;
+    private HighPerformanceCache<Entity> cache;
 
     @Before
     public void setup()
     {
-        cache = new GCResistantCache<>( new AtomicReferenceArray<Entity>( 10 ) );
+        cache = new HighPerformanceCache<>( new AtomicReferenceArray<Entity>( 10 ) );
     }
 
     @Test
@@ -59,7 +60,7 @@ public class TestGCResistantCache
     @Test
     public void assertThatPutKeepsCorrectSize()
     {
-        cache = new GCResistantCache<Entity>( new AtomicReferenceArray<Entity>( 10 ) )
+        cache = new HighPerformanceCache<Entity>( new AtomicReferenceArray<Entity>( 10 ) )
         {
             @Override
             protected int getPosition( EntityWithSizeObject obj )

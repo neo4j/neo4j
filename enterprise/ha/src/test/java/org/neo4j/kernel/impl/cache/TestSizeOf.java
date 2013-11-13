@@ -26,7 +26,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -41,7 +40,6 @@ import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
@@ -62,7 +60,7 @@ public class TestSizeOf
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
               newImpermanentDatabaseBuilder().
-              setConfig( GraphDatabaseSettings.cache_type, GCResistantCacheProvider.NAME ).
+              setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).
               newGraphDatabase();
     }
 

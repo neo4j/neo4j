@@ -149,7 +149,7 @@ The available cache types are:
                  Suitable for high throughput applications where a larger portion of the graph than what can fit into memory is frequently accessed.
 | strong       | This cache will hold on to *all data* that gets loaded to never release it again.
                  Provides good performance if your graph is small enough to fit in memory.
-| gcr          | The High-Performance Cache. Provides means of assigning a specific amount of memory to dedicate to caching loaded nodes and relationships.
+| hpc          | The High-Performance Cache. Provides means of assigning a specific amount of memory to dedicate to caching loaded nodes and relationships.
                  Small footprint and fast insert/lookup. Should be the best option for most scenarios. See below on how to configure it.
                  Note that this option is only available in the Neo4j Enterprise Edition.
 |==========================================
