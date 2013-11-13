@@ -11,6 +11,10 @@ Let's start out adding a constraint -- in this case we decided that all +Movie+ 
 CREATE CONSTRAINT ON (movie:Movie) ASSERT movie.title IS UNIQUE
 ----
 
+////
+Constraints added: 1
+////
+
 // console
 
 Note that adding the unique constraint will add an index on that property, so we won't do that separately.
@@ -22,6 +26,10 @@ In this case we want an index to speed up finding actors by name in the database
 ----
 CREATE INDEX ON :Actor(name)
 ----
+
+////
+Indexes added: 1
+////
 
 Indexes can be added at any time.
 Constraints can be added after a label is already in use, but that requires that the existing data complies with the constraints.
@@ -52,6 +60,11 @@ MATCH (actor:Actor {name: "Tom Hanks"})
 RETURN actor;
 ----
 
+////
+Tom Hanks
+1 row
+////
+
 Now let's say we want to add another label for a node.
 Here's how to do that:
 
@@ -61,6 +74,10 @@ MATCH (actor:Actor {name: "Tom Hanks"})
 SET actor :American;
 ----
 
+////
+Labels added: 1
+////
+
 To remove a label from nodes, this is what to do:
 
 [source,cypher]
@@ -68,6 +85,10 @@ To remove a label from nodes, this is what to do:
 MATCH (actor:Actor {name: "Tom Hanks"})
 REMOVE actor:American;
 ----
+
+////
+Labels removed: 1
+////
 
 For more information on labels and related topics, see:
 
