@@ -380,12 +380,12 @@ public class NetworkSender
         {
             ChannelPipeline pipeline = Channels.pipeline();
             pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
-            pipeline.addLast( "sender", new NetworkSender.MessageSender() );
+            pipeline.addLast( "sender", new NetworkMessageSender() );
             return pipeline;
         }
     }
 
-    private class MessageSender
+    private class NetworkMessageSender
             extends SimpleChannelHandler
     {
         @Override
