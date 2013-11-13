@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import Pattern.SemanticContext.Update
 import org.neo4j.cypher.internal.compiler.v2_0._
-import commands.{expressions => legacy, values => commandvalues}
-import commands.expressions.{Expression => CommandExpression}
-import commands.values.KeyToken.Unresolved
-import commands.values.UnresolvedLabel
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => legacy, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.UnresolvedLabel
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken.Unresolved
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.UpdateAction
 import org.neo4j.cypher.{PatternException, SyntaxException}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
@@ -52,6 +53,19 @@ case class Pattern(patternParts: Seq[PatternPart], token: InputToken) extends As
   def toLegacyNamedPaths: Seq[commands.NamedPath] = patternParts.flatMap(_.toLegacyNamedPath)
   def toLegacyCreates: Seq[mutation.UpdateAction] = patternParts.flatMap(_.toLegacyCreates)
   def toAbstractPatterns: Seq[AbstractPattern] = patternParts.flatMap(_.toAbstractPatterns)
+
+  // TODO: Kill once we get rid of the legacy commands structure
+  // This methods gathers up all MERGE patterns that are not single nodes
+  def toMergeObjects: (Seq[commands.Pattern], Seq[mutation.UpdateAction]) = {
+    val collect: Seq[(Seq[commands.Pattern], Seq[UpdateAction])] = patternParts.collect {
+      case p if p.toAbstractPatterns.exists(_.isInstanceOf[ParsedRelation]) => (p.toLegacyPatterns, p.toLegacyCreates)
+    }
+
+    val patterns: Seq[commands.Pattern] = collect.flatMap(_._1)
+    val actions: Seq[UpdateAction] = collect.flatMap(_._2)
+
+    (patterns, actions)
+  }
 }
 
 

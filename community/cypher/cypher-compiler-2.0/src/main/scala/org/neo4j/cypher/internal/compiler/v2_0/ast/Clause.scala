@@ -141,8 +141,8 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction], token: InputToken)
       a => SemanticError(s"Invalid use of ${a.identifier.name} for ${a.name}: already defined prior to ${name}", a.identifier.token, a.token, token)
     }
 
-  def legacyUpdateActions = toCommand.nextStep
-  def toCommand = commands.MergeAst(pattern.toAbstractPatterns, actions.map(_.toAction))
+  def legacyUpdateActions = toCommand.nextStep()
+  def toCommand = commands.MergeAst(pattern.toAbstractPatterns, actions.map(_.toAction), pattern.toLegacyPatterns, pattern.toLegacyCreates)
 
   def addToLegacyQuery(builder: commands.QueryBuilder) = {
     val updates = builder.updates ++ legacyUpdateActions

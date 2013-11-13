@@ -23,12 +23,15 @@ import expressions._
 import values.KeyToken
 import values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_0._
-import mutation.{UpdateAction, PropertySetAction, MergeNodeAction}
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.{MergePatternAction, UpdateAction, PropertySetAction, MergeNodeAction}
 import org.neo4j.cypher.PatternException
 import scala.collection.mutable
 
-case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
-  def nextStep(): Seq[MergeNodeAction] = {
+case class MergeAst(patterns: Seq[AbstractPattern],
+                    onActions: Seq[OnAction],
+                    matches: Seq[Pattern],
+                    create: Seq[UpdateAction]) {
+  def nextStep(): Seq[UpdateAction] = {
 
     val actionsMap = new mutable.HashMap[(String, Action), mutable.Set[UpdateAction]] with mutable.MultiMap[(String, Action), UpdateAction]
 
@@ -38,7 +41,7 @@ case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
       actionsMap.addBinding((actions.identifier, actions.verb), action)
     }
 
-    patterns.map {
+    val singleNodeActions: Seq[MergeNodeAction] = patterns.flatMap {
       case ParsedEntity(name, _, props, labelTokens, _) =>
 
         val labelPredicates = labelTokens.map(labelName => HasLabel(Identifier(name), labelName))
@@ -66,12 +69,20 @@ case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
 
         val onCreate: Seq[UpdateAction] = labelActions ++ propertyActions ++ actionsFromOnCreateClause
 
-        MergeNodeAction(name, propertyMap, labelTokens, predicates, onCreate, actionsFromOnMatchClause.toSeq, None)
+        Some(MergeNodeAction(name, propertyMap, labelTokens, predicates, onCreate, actionsFromOnMatchClause.toSeq, None))
 
       case _ =>
-        throw new PatternException("MERGE only supports single node patterns")
-    }
+        None
+    }.toSeq
+
+    singleNodeActions ++ getPatternMerges
   }
+
+  private def getPatternMerges = if (matches.isEmpty)
+    None
+  else
+    Some(MergePatternAction(matches, create))
+
 }
 
 
