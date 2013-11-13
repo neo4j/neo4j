@@ -67,7 +67,7 @@ public class TestPullUpdatesApplied
     private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
     private final TargetDirectory dir = forTest( getClass() );
 
-    @Before
+  //  @Before
     public void doBefore() throws Exception
     {
         for ( int i = 0; i < dbs.length; i++ )
@@ -99,7 +99,7 @@ public class TestPullUpdatesApplied
                 .newGraphDatabase();
     }
 
-    @After
+   // @After
     public void doAfter() throws Exception
     {
         for ( HighlyAvailableGraphDatabase db : dbs )
@@ -108,6 +108,19 @@ public class TestPullUpdatesApplied
             {
                 db.shutdown();
             }
+        }
+    }
+
+    @Test
+    public void loop() throws Exception
+    {
+        for ( int i = 0; i < 1000; i++ )
+        {
+            doBefore();
+            testUpdatesAreWrittenToLogBeforeBeingAppliedToStore();
+            doAfter();
+
+            System.out.println("ROUND "+i);
         }
     }
 
@@ -161,8 +174,6 @@ public class TestPullUpdatesApplied
                     }
                 } );
 
-        dbToKill.shutdown();
-
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
 
         if ( !latch2.await( 60, TimeUnit.SECONDS ) )
@@ -205,10 +216,10 @@ public class TestPullUpdatesApplied
         launchStreamConsumers( threads, p );
         /*
          * Yes, timeouts suck but HAGD does not terminate politely, since it still has
-         * threads running after main() completes, so we need to kill it. When? 5 seconds
+         * threads running after main() completes, so we need to kill it. When? 10 seconds
          * is good enough.
          */
-        Thread.sleep( 5000 );
+        Thread.sleep( 10000 );
         p.destroy();
         for ( Thread t : threads )
         {
