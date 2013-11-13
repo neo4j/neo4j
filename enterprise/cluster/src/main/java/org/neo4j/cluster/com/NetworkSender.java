@@ -196,18 +196,7 @@ public class NetworkSender
     {
         if ( message.hasHeader( Message.TO ) )
         {
-            String to = message.getHeader( Message.TO );
-
-/*
-            if ( to.equals( me.toString() ) )
-            {
-                receiver.receive( message );
-            }
-            else
-*/
-            {
-                send( message );
-            }
+            send( message );
         }
         else
         {
