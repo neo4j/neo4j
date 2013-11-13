@@ -217,7 +217,6 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestbase
             catch ( RuntimeException e )
             {
                 failure = e;
-                throw e;
             }
         }
     }

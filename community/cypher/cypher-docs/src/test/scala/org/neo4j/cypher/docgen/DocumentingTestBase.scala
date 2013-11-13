@@ -277,7 +277,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
       newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
     engine = new ExecutionEngine(db)
 
-    db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
+    db.asInstanceOf[ImpermanentGraphDatabase].cleanContent()
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodes")

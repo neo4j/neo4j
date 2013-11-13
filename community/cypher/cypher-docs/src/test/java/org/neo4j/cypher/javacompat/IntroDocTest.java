@@ -102,7 +102,7 @@ public class IntroDocTest implements GraphHolder
     public static void setup() throws IOException
     {
         graphdb = (ImpermanentGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        graphdb.cleanContent( false );
+        graphdb.cleanContent();
 
         engine = new ExecutionEngine( graphdb );
     }

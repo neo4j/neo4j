@@ -22,11 +22,14 @@ package org.neo4j.metatest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 public class TestImpermanentGraphDatabase
@@ -54,17 +57,6 @@ public class TestImpermanentGraphDatabase
     }
 
     @Test
-    public void should_keep_reference_node()
-    {
-        createNode();
-        assertEquals( "Expected one new node", 1, nodeCount() );
-        db.cleanContent( true );
-        assertEquals( "node 0, for legacy tests", 1, nodeCount() );
-        db.cleanContent( false );
-        assertEquals( "node 0, for legacy tests", 0, nodeCount() );
-    }
-
-    @Test
     public void data_should_not_survive_shutdown()
     {
         createNode();
@@ -73,6 +65,29 @@ public class TestImpermanentGraphDatabase
         createDb();
 
         assertEquals( "Should not see anything.", 0, nodeCount() );
+    }
+
+    @Test
+    public void should_remove_all_data()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            DynamicRelationshipType relationshipType = DynamicRelationshipType.withName("R");
+
+            Node n1 = db.createNode();
+            Node n2 = db.createNode();
+            Node n3 = db.createNode();
+
+            n1.createRelationshipTo(n2, relationshipType);
+            n2.createRelationshipTo(n1, relationshipType);
+            n3.createRelationshipTo(n1, relationshipType);
+
+            tx.success();
+        }
+
+        db.cleanContent();
+
+        assertThat( nodeCount(), is( 0 ) );
     }
 
     private int nodeCount()
@@ -85,9 +100,10 @@ public class TestImpermanentGraphDatabase
 
     private void createNode()
     {
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
     }
 }

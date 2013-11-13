@@ -176,25 +176,19 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         return life.add( new SingleLoggingService( StringLogger.loggerDirectory( fileSystem, storeDir ) ) );
     }
 
-    public void cleanContent( boolean retainReferenceNode )
+    public void cleanContent()
     {
         Transaction tx = beginTx();
         try
         {
-            for ( Node node : GlobalGraphOperations.at( this ).getAllNodes() )
+            Iterable<Node> allNodes = GlobalGraphOperations.at(this).getAllNodes();
+            for ( Node node : allNodes)
             {
                 for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
                 {
                     rel.delete();
                 }
-                if ( !node.hasRelationship() )
-                {
-                    if(retainReferenceNode && node.getId() == 0)
-                    {
-                        continue;
-                    }
-                    node.delete();
-                }
+                node.delete();
             }
             tx.success();
         }
@@ -207,10 +201,5 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
             //noinspection deprecation
             tx.finish();
         }
-    }
-
-    public void cleanContent()
-    {
-        cleanContent( false );
     }
 }
