@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
@@ -188,8 +189,12 @@ enum BlockType
                 }
             }
             String query = StringUtils.join( queryLines, CypherDoc.EOL );
-            String result = state.engine.execute( query ).dumpToString();
-            state.latestResult = result;
+            try (Transaction tx = state.database.beginTx())
+            {
+                state.latestResult = state.engine.execute( query )
+                        .dumpToString();
+                tx.success();
+            }
             String prettifiedQuery = state.engine.prettify( query );
             StringBuilder output = new StringBuilder( 512 );
             output.append( AsciidocHelper.createCypherSnippetFromPreformattedQuery( prettifiedQuery ) )
@@ -223,7 +228,7 @@ enum BlockType
             GraphvizWriter writer = new GraphvizWriter(
                     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            try
+            try (Transaction ignored = state.database.beginTx())
             {
                 writer.emit( out, Walker.fullGraph( state.database ) );
             }

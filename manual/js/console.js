@@ -16,15 +16,18 @@
 function CypherConsole(config, ready) {
 
     //    var CONSOLE_URL_BASE = 'http://localhost:8080/';
-    var CONSOLE_URL_BASE = 'http://console-test.neo4j.org/';
+    var CONSOLE_URL_BASE = 'http://console.neo4j.org/';
 
     var $IFRAME = $('<iframe/>').attr('id', 'console').addClass('cypherdoc-console');
     var $IFRAME_WRAPPER = $('<div/>').attr('id', 'console-wrapper');
     var RESIZE_OUT_ICON = 'icon-resize-full';
     var RESIZE_IN_ICON = 'icon-resize-small';
     var $RESIZE_BUTTON = $('<a class="btn btn-small resize-toggle"><i class="' + RESIZE_OUT_ICON + '"></i></a>');
+    var $RESIZE_VERTICAL_BUTTON = $('<span class="resize-vertical-handle ui-resizable-handle ui-resizable-s"><span/></span>');
     var $PLAY_BUTTON = $('<a class="run-query btn btn-small btn-success" data-toggle="tooltip" title="Execute in the console." href="#"><i class="icon-play"></i></a>');
     var $EDIT_BUTTON = $('<a class="edit-query btn btn-small" data-toggle="tooltip" title="Edit in the console." href="#"><i class="icon-edit"></i></a>');
+
+    var $resizeOverlay = $('<div id="resize-overlay"/>');
 
     var consolr;
     var consoleClass = 'consoleClass' in config ? config.consoleClass : 'console';
@@ -58,23 +61,50 @@ function CypherConsole(config, ready) {
         $context.empty();
         var $iframeWrapper = $IFRAME_WRAPPER.clone();
         $iframeWrapper.append($iframe);
+        var $contentMoveSelector = $(contentMoveSelector).first();
         $context.append($iframeWrapper).append('<span id="console-label" class="label">Console expanded</span>');
         $context.css('background', 'none');
+        var latestResizeAmount = 0;
+        var $verticalResizeButton = $RESIZE_VERTICAL_BUTTON.clone().appendTo($iframeWrapper).mousedown(function(event){
+            event.preventDefault();
+        });
+        $iframeWrapper.resizable({'handles': {'s': $verticalResizeButton}, 'alsoResize': $context, 'minHeight': 80, 'start': function () {
+                $resizeOverlay.appendTo($iframeWrapper);
+            }, 'stop': function (event, ui) {
+                $resizeOverlay.detach();
+                latestResizeAmount = ui.size.height - ui.originalSize.height;
+            }, 'resize': function (event, ui) {
+                if (!$resizeIcon.hasClass(RESIZE_OUT_ICON)) {
+                    $contentMoveSelector.css('margin-top', ui.size.height);
+                }
+            }}
+        );
+        var $gistForm = $('#gist-form');
+        var contextHeight = 0;
         var $resizeButton = $RESIZE_BUTTON.clone().appendTo($iframeWrapper).click(function () {
-            var $icon = $('i', $resizeButton);
-            if ($icon.hasClass(RESIZE_OUT_ICON)) {
-                $icon.removeClass(RESIZE_OUT_ICON).addClass(RESIZE_IN_ICON);
+            if ($resizeIcon.hasClass(RESIZE_OUT_ICON)) {
+                contextHeight = $context.height();
+                $context.height(36);
+                $resizeIcon.removeClass(RESIZE_OUT_ICON).addClass(RESIZE_IN_ICON);
                 $iframeWrapper.addClass('fixed-console');
                 $context.addClass('fixed-console');
-                $(contentMoveSelector).first().css('margin-top', $iframeWrapper.height());
-            }
-            else {
-                $icon.removeClass(RESIZE_IN_ICON).addClass(RESIZE_OUT_ICON);
+                $contentMoveSelector.css('margin-top', $iframeWrapper.height());
+                $iframeWrapper.resizable('option', 'alsoResize', null);
+                $gistForm.css('margin-right', 56);
+                latestResizeAmount = 0;
+            } else {
+                if (latestResizeAmount) {
+                    $context.height(contextHeight + latestResizeAmount);
+                }
+                $resizeIcon.removeClass(RESIZE_IN_ICON).addClass(RESIZE_OUT_ICON);
                 $iframeWrapper.removeClass('fixed-console');
                 $context.removeClass('fixed-console');
-                $(contentMoveSelector).first().css('margin-top', 0);
+                $contentMoveSelector.css('margin-top', 0);
+                $iframeWrapper.resizable('option', 'alsoResize', $context);
+                $gistForm.css('margin-right', 0);
             }
         });
+        var $resizeIcon = $('i', $resizeButton);
     }
 
     function addPlayButtons() {

@@ -21,6 +21,7 @@
 <!-- JQuery -->
 
 <script type="text/javascript" src="js/jquery-1.6.4.min.js"></script>
+<script type="text/javascript" src="js/jquery-ui-1.10.3.custom.min.js"></script>
 
 <!-- Replace SVG for browsers that lack support. -->
 <script type="text/javascript" src="js/svgreplacer.js"></script>

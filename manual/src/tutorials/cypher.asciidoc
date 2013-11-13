@@ -26,3 +26,7 @@ include::{importdir}/cypherdoc/social-movie-db.asciidoc[]
 
 include::{importdir}/cypherdoc/finding-paths.asciidoc[]
 
+:leveloffset: 2
+
+include::{importdir}/cypherdoc/labels.asciidoc[]
+

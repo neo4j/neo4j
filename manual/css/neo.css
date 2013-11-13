@@ -516,6 +516,39 @@ a.resize-toggle {
     bottom: -26px;
 }
 
+a.resize-toggle {
+    position: absolute;
+    right: 0;
+    bottom: -39px;
+}
+
+span.resize-vertical-handle {
+    position: absolute;
+    bottom: -11px;
+    display: block;
+    height: 9px;
+    width: 100%;
+    background: #f9f9f9;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    cursor: s-resize;
+}
+
+span.resize-vertical-handle span {
+    display: block;
+    margin: 4px auto;
+    height: 1px;
+    width: 30px;
+    background: #888888;
+}
+
+#resize-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
 #console-wrapper, p.cypherdoc-console {
     height: 23em;
 }
