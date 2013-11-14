@@ -179,4 +179,33 @@ To use map parameters with +MERGE+, it is necessary to explicitly use the expect
       assertions = p => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
   }
+
+  @Test def merging_on_a_single_relationship() {
+    testQuery(
+      title = "Merge on a relationship",
+      text = "+MERGE+ can be used to match or create a relationship.",
+      queryText =
+        """match (charlie:Person {name:'Charlie Sheen'}), (wallStreet:Movie {title:'Wall Street'})
+merge (charlie)-[r:ACTED_IN]->(wallStreet)
+return r""",
+      returns = "Charlie Sheen had already been marked as acting on Wall Street, so the existing relationship is found and returned",
+      assertions = (p) => assertStats(p, relationshipsCreated = 0)
+    )
+  }
+
+  @Test def merging_on_a_longer_pattern() {
+    testQuery(
+      title = "Merge on multiple relationships",
+      text = "When +MERGE+ is used on a whole pattern, either everything matches, or everything is created.",
+      queryText =
+        """match (oliver:Person {name:'Oliver Stone'}), (reiner:Person {name:'Rob Reiner'})
+merge (oliver)-[:DIRECTED]->(movie:Movie)<-[:ACTED_IN]-(reiner)
+return movie""",
+      returns = "In our example graph, Oliver Stone and Rob Reiner have never worked together. When we try to +MERGE+ a " +
+        "movie between them, Cypher will not use any of the existing movies already connected to either person. Instead, " +
+        "a new movie node is created.",
+      assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1, propertiesSet = 0, labelsAdded = 1)
+    )
+  }
+
 }
