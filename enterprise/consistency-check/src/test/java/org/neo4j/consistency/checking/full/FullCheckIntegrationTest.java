@@ -338,6 +338,7 @@ public class FullCheckIntegrationTest
         final List<Integer> labels = new ArrayList<>();
 
         // given
+        final Pair<List<DynamicRecord>, List<Integer>> pair = chainOfDynamicRecordsWithLabelsForANode( 3 );
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -347,16 +348,8 @@ public class FullCheckIntegrationTest
                 NodeRecord node = new NodeRecord( 42, -1, -1 );
                 node.setInUse( true );
                 List<DynamicRecord> dynamicRecords;
-                try
-                {
-                    Pair<List<DynamicRecord>, List<Integer>> pair = self.chainOfDynamicRecordsWithLabelsForANode( 3 );
-                    dynamicRecords = pair.first();
-                    labels.addAll( pair.other() );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                dynamicRecords = pair.first();
+                labels.addAll( pair.other() );
                 node.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
                 tx.create( node );
 
@@ -375,8 +368,6 @@ public class FullCheckIntegrationTest
         // then
         verifyInconsistency( stats, RecordType.NODE );
     }
-
-    private FullCheckIntegrationTest self = this;
 
     private long[] asArray(List<Integer> in){
         long[] longs = new long[in.size()];
