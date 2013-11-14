@@ -25,16 +25,20 @@ import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{Pattern, AstNode}
 
-case class MergePatternAction(patterns: Seq[Pattern], actions: Seq[UpdateAction]) extends UpdateAction {
+case class MergePatternAction(patterns: Seq[Pattern], actions: Seq[UpdateAction], onMatch: Seq[UpdateAction]) extends UpdateAction {
   def children: Seq[AstNode[_]] = ???
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = ???
 
-  def throwIfSymbolsMissing(symbols: SymbolTable): Unit = ???
+  def throwIfSymbolsMissing(symbols: SymbolTable): Unit = {
+    patterns.foreach(_.throwIfSymbolsMissing(symbols))
+  }
 
-  def identifiers: Seq[(String, CypherType)] = ???
+  def identifiers: Seq[(String, CypherType)] = patterns.flatMap(_.possibleStartPoints)
 
-  def rewrite(f: (Expression) => Expression): UpdateAction = ???
+  def rewrite(f: (Expression) => Expression): UpdateAction = MergePatternAction(patterns = patterns.map(_.rewrite(f)),
+                                                                                actions = actions.map(_.rewrite(f)),
+                                                                                onMatch = onMatch.map(_.rewrite(f)))
 
-  def symbolTableDependencies: Set[String] = ???
+  def symbolTableDependencies: Set[String] = patterns.flatMap(_.symbolTableDependencies).toSet
 }

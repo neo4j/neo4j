@@ -36,7 +36,7 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with Upd
 
     val commands = expandCommands(updateActions, plan.pipe.symbols)
 
-    val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, db, commands)
+    val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, commands)
 
     plan.copy(
       isUpdating = true,

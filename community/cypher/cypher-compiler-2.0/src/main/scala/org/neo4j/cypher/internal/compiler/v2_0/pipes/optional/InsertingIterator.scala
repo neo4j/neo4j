@@ -23,7 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 
 /**
  * This class makes sure that if the inner iterator has to pull out multiple elements from the listener,
- * the inserter gets a chance to insert things into the result stream
+ * the inserter gets a chance to insert things into the result stream.
+ *
+ * It is used to insert the nulls when doing OPTIONAL MATCH, and to create the missing pattern when
+ * doing MERGE with patterns.
  *
  * @param listener An iterator that keeps track of things moving through it
  * @param inner The iterator that in turn consumes the listener iterator

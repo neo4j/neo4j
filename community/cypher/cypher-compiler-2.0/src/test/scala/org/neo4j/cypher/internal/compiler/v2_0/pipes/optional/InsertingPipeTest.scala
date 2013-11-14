@@ -38,7 +38,10 @@ class InsertingPipeTest(name: String,
   def test() {
     val sourcePipe = new FakePipe(sourceIter, "x" -> NumberType())
     val builder = (source: Pipe) => MapPipe(source, mapF)
-    def nullCreator(ctx:ExecutionContext, ignore:Seq[String]) = ctx.newWith("z" -> null)
+
+    def nullCreator(ctx:ExecutionContext, ignore:Seq[String], ignored:QueryState) =
+      ctx.newWith("z" -> null)
+
     val nullInsertingPipe = new InsertingPipe(sourcePipe, builder, nullCreator)
     val results = nullInsertingPipe.createResults(QueryStateHelper.empty).toList
 

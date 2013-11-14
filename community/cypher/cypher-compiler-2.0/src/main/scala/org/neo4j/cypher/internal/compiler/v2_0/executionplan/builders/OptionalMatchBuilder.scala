@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlanInProgress, PlanBuilder, Phase}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.Pipe
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.{QueryState, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.optional.InsertingPipe
 import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 
@@ -37,7 +37,7 @@ case class OptionalMatchBuilder(matching: Phase) extends PlanBuilder {
       planInProgress.pipe
     }
 
-    def createNullValues(in: ExecutionContext, addedIdentifiers: Seq[String]) = {
+    def createNullValues(in: ExecutionContext, addedIdentifiers: Seq[String], ignored: QueryState): ExecutionContext = {
       val nulls = addedIdentifiers.map(_ -> null).toMap
       in.newWith(nulls)
     }

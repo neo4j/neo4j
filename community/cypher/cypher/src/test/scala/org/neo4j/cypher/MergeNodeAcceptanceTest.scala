@@ -24,7 +24,7 @@ import org.junit.Test
 import org.neo4j.graphdb.Node
 import org.scalautils.LegacyTripleEquals
 
-class MergeAcceptanceTest
+class MergeNodeAcceptanceTest
   extends ExecutionEngineHelper with Assertions with StatisticsChecker with LegacyTripleEquals {
 
   @Test

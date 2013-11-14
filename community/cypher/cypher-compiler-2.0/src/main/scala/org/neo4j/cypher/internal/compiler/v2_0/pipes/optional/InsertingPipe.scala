@@ -23,12 +23,14 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.{QueryState, Pipe, PipeWithSource}
 import symbols._
 
-case class InsertingPipe(in: Pipe, builder: Pipe => Pipe, noMatch: (ExecutionContext, Seq[String]) => ExecutionContext)
+case class InsertingPipe(in: Pipe,
+                         builder: Pipe => Pipe,
+                         noMatch: (ExecutionContext, Seq[String], QueryState) => ExecutionContext)
   extends Pipe {
   val listenerPipe: ListenerPipe = new ListenerPipe(in)
   val innerPipe: Pipe = builder(listenerPipe)
 
-  def addedIdentifiers: Seq[String] = {
+  val addedIdentifiers: Seq[String] = {
     val identifiersAfterMatch: Set[String] = innerPipe.symbols.identifiers.map(_._1).toSet
     val identifiersBeforeMatch: Set[String] = in.symbols.identifiers.map(_._1).toSet
 
@@ -61,7 +63,7 @@ case class InsertingPipe(in: Pipe, builder: Pipe => Pipe, noMatch: (ExecutionCon
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val innerResult = innerPipe.createResults(state)
     val listener = state.listener
-    new InsertingIterator(listener, innerResult, noMatch(_: ExecutionContext, addedIdentifiers))
+    new InsertingIterator(listener, innerResult, noMatch(_: ExecutionContext, addedIdentifiers, state))
   }
 
   def exists(pred: Pipe => Boolean) = pred(this) || in.exists(pred) || innerPipe.exists(pred)

@@ -31,16 +31,16 @@ case class MergeAst(patterns: Seq[AbstractPattern],
                     onActions: Seq[OnAction],
                     matches: Seq[Pattern],
                     create: Seq[UpdateAction]) {
+
+  val actionsMap = new mutable.HashMap[(String, Action), mutable.Set[UpdateAction]] with mutable.MultiMap[(String, Action), UpdateAction]
+
+  for (
+    actions <- onActions;
+    action <- actions.set) {
+    actionsMap.addBinding((actions.identifier, actions.verb), action)
+  }
+
   def nextStep(): Seq[UpdateAction] = {
-
-    val actionsMap = new mutable.HashMap[(String, Action), mutable.Set[UpdateAction]] with mutable.MultiMap[(String, Action), UpdateAction]
-
-    for (
-      actions <- onActions;
-      action <- actions.set) {
-      actionsMap.addBinding((actions.identifier, actions.verb), action)
-    }
-
     val singleNodeActions: Seq[MergeNodeAction] = patterns.flatMap {
       case ParsedEntity(name, _, props, labelTokens, _) =>
 
@@ -54,8 +54,6 @@ case class MergeAst(patterns: Seq[AbstractPattern],
           case (propertyKey, expression) => PropertyKey(propertyKey) -> expression
         }.toMap
 
-        val predicates = labelPredicates ++ propertyPredicates
-
         val labelActions = labelTokens.map(labelName => LabelAction(Identifier(name), LabelSetOp, Seq(labelName)))
         val propertyActions = props.map {
           case (propertyKey, expression) => {
@@ -64,10 +62,13 @@ case class MergeAst(patterns: Seq[AbstractPattern],
           }
         }
 
-        val actionsFromOnCreateClause = actionsMap.get((name, On.Create)).getOrElse(Set.empty)
-        val actionsFromOnMatchClause = actionsMap.get((name, On.Match)).getOrElse(Set.empty)
+        val actionsFromOnCreateClause = actionsMap.get((name, On.Create)).getOrElse(Seq.empty).toSeq
 
         val onCreate: Seq[UpdateAction] = labelActions ++ propertyActions ++ actionsFromOnCreateClause
+
+        val predicates = labelPredicates ++ propertyPredicates
+
+        val actionsFromOnMatchClause = actionsMap.get((name, On.Match)).getOrElse(Set.empty)
 
         Some(MergeNodeAction(name, propertyMap, labelTokens, predicates, onCreate, actionsFromOnMatchClause.toSeq, None))
 
@@ -78,10 +79,27 @@ case class MergeAst(patterns: Seq[AbstractPattern],
     singleNodeActions ++ getPatternMerges
   }
 
-  private def getPatternMerges = if (matches.isEmpty)
-    None
-  else
-    Some(MergePatternAction(matches, create))
+  def isNotSingleNode(name: String) = {
+    val pattern = patterns.find(_.name == name).get
+    pattern match {
+      case _: ParsedRelation => true
+      case _                 => false
+    }
+  }
+
+  private def getPatternMerges = {
+    val onMatchActions = actionsMap.collect {
+      case ((name, On.Match), actions) if isNotSingleNode(name) => actions
+    }.flatten.toSeq
+    val onCreateActions = actionsMap.collect {
+      case ((name, On.Create), actions) if isNotSingleNode(name) => actions
+    }.flatten.toSeq
+
+    if (!matches.exists(_.isInstanceOf[RelatedTo]))
+      None
+    else
+      Some(MergePatternAction(matches, create ++ onCreateActions, onMatchActions))
+  }
 
 }
 

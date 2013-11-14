@@ -23,6 +23,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
 trait Phase {
+  self =>
 
   def myBuilders: Seq[PlanBuilder]
 
@@ -44,4 +45,14 @@ trait Phase {
 
     plan
   }
+
+  def andThen(other: Phase) = new Phase {
+    def myBuilders: Seq[PlanBuilder] = self.myBuilders ++ other.myBuilders
+
+    override def apply(inPlan: ExecutionPlanInProgress, context: PlanContext): ExecutionPlanInProgress = {
+      val firstStep = self(inPlan, context)
+      other(firstStep, context)
+    }
+  }
 }
+

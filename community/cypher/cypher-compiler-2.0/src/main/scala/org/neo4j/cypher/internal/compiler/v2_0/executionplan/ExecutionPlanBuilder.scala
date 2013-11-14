@@ -79,10 +79,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)
 
     while (continue) {
-      phases.foreach {
-        phase =>
-          planInProgress = phase(planInProgress, context)
-      }
+      planInProgress = phases(planInProgress, context)
 
       if (!planInProgress.query.isSolved) {
         produceAndThrowException(planInProgress)
@@ -179,15 +176,15 @@ The Neo4j Team""")
     throw new SyntaxException(errorMessage)
   }
 
-  val phases: Seq[Phase] = Seq(
-    prepare,  /* Prepares the query by rewriting it before other plan builders start working on it. */
-    matching, /* Pulls in data from the stores, adds named paths, and filters the result */
-    updates,  /* Plans update actions */
-    extract,  /* Handles RETURN and WITH expression */
-    finish    /* Prepares the return set so it looks like the user specified */
-  )
+  val phases =
+    prepare andThen   /* Prepares the query by rewriting it before other plan builders start working on it. */
+    matching andThen  /* Pulls in data from the stores, adds named paths, and filters the result */
+    updates andThen   /* Plans update actions */
+    extract andThen   /* Handles RETURN and WITH expression */
+    finish            /* Prepares the return set so it looks like the user specified */
 
-  lazy val builders = phases.flatMap(_.myBuilders).distinct
+
+  lazy val builders = phases.myBuilders.distinct
 
   /*
   The order of the plan builders here is important. It decides which PlanBuilder gets to go first.
@@ -217,6 +214,7 @@ The Neo4j Team""")
 
   def updates = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
+      new MatchOrCreatePatternBuilder(prepare andThen matching),
       new NamedPathBuilder,
       new CreateNodesAndRelationshipsBuilder(graph), 
       new UpdateActionBuilder(graph)
