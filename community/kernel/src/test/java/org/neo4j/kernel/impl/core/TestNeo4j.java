@@ -24,6 +24,7 @@ import java.util.Random;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -35,16 +36,18 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestNeo4j extends AbstractNeo4jTestCase
 {
     @Test
     public void testBasicNodeRelationships()
     {
-        Node firstNode = null;
-        Node secondNode = null;
-        Relationship rel = null;
+        Node firstNode;
+        Node secondNode;
+        Relationship rel;
         // Create nodes and a relationship between them
         firstNode = getGraphDb().createNode();
         assertNotNull( "Failure creating first node", firstNode );
@@ -60,7 +63,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         assertTrue( firstNode.getRelationships( relType ).iterator().hasNext() );
         assertTrue( secondNode.getRelationships( relType ).iterator().hasNext() );
 
-        Iterable<Relationship> allRels = null;
+        Iterable<Relationship> allRels;
 
         // Verify that both nodes return the relationship we created above
         allRels = firstNode.getRelationships();
@@ -125,6 +128,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     public void testIdUsageInfo()
     {
+        //noinspection deprecation
         NodeManager nm = getGraphDbAPI().getNodeManager();
         long nodeCount = nm.getNumberOfIdsInUse( Node.class );
         long relCount = nm.getNumberOfIdsInUse( Relationship.class );
@@ -172,51 +176,35 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     public void testNodeChangePropertyArray() throws Exception
     {
-        Transaction tx = getTransaction();
-        tx.finish();
-        tx = getGraphDb().beginTx();
+        getTransaction().finish();
+
         Node node;
-        try
+        try ( Transaction tx = getGraphDb().beginTx() )
         {
             node = getGraphDb().createNode();
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
-        tx = getGraphDb().beginTx();
-        try
+
+        try ( Transaction tx = getGraphDb().beginTx() )
         {
             node.setProperty( "test", new String[] { "value1" } );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
-        tx = getGraphDb().beginTx();
-        try
+
+        try (Transaction ignored = getGraphDb().beginTx() )
         {
             node.setProperty( "test", new String[] { "value1", "value2" } );
             // no success, we wanna test rollback on this operation
         }
-        finally
-        {
-            tx.finish();
-        }
-        tx = getGraphDb().beginTx();
-        try
+
+        try (Transaction tx = getGraphDb().beginTx() )
         {
             String[] value = (String[]) node.getProperty( "test" );
             assertEquals( 1, value.length );
             assertEquals( "value1", value[0] );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
+
         setTransaction( getGraphDb().beginTx() );
     }
 
@@ -285,6 +273,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     public void testMultipleShutdown()
     {
+        getTransaction().close();
         getGraphDb().shutdown();
         getGraphDb().shutdown();
     }

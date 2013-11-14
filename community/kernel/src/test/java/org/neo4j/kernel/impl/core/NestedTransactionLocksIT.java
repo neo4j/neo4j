@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
@@ -35,6 +36,7 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.fail;
@@ -67,8 +69,10 @@ public class NestedTransactionLocksIT
             @Override
             public Lock doWork( Void state )
             {
-                Transaction tx = db.beginTx();
-                return tx.acquireWriteLock( resource );
+                try ( Transaction tx = db.beginTx() )
+                {
+                    return tx.acquireWriteLock( resource );
+                }
             }
         };
     }
@@ -78,17 +82,31 @@ public class NestedTransactionLocksIT
     {
         // given
         Node resource = createNode();
-        Transaction realTx = db.beginTx();
-        Transaction nestedTx = db.beginTx();
-        assertNotSame( realTx, nestedTx );
-        OtherThreadExecutor<Void> otherTx = new OtherThreadExecutor<Void>( "other thread", null );
-        
-        // when
-        Lock lock = nestedTx.acquireWriteLock( resource );
-        Future<Lock> future = otherTx.executeDontWait( acquireWriteLock( resource ) );
-        otherTx.waitUntilWaiting();
-        
-        // then
+
+        try ( Transaction outerTx = db.beginTx(); Transaction nestedTx = db.beginTx() )
+        {
+            assertNotSame( outerTx, nestedTx );
+
+            try ( OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<>( "other thread", null ) )
+            {
+                // when
+                Lock lock = nestedTx.acquireWriteLock( resource );
+                Future<Lock> future = tryToAcquireSameLockOnAnotherThread( resource, otherThread );
+
+                // then
+                acquireOnOtherThreadTimesOut( future );
+
+                // and when
+                lock.release();
+
+                //then
+                assertNotNull( future.get() );
+            }
+        }
+    }
+
+    private void acquireOnOtherThreadTimesOut( Future<Lock> future ) throws InterruptedException, ExecutionException
+    {
         try
         {
             future.get( 1, SECONDS );
@@ -97,9 +115,13 @@ public class NestedTransactionLocksIT
         catch ( TimeoutException e )
         {   // Good
         }
-        lock.release();
-        assertNotNull( future.get() );
-        otherTx.shutdown();
+    }
+
+    private Future<Lock> tryToAcquireSameLockOnAnotherThread( Node resource, OtherThreadExecutor<Void> otherThread ) throws TimeoutException
+    {
+        Future<Lock> future = otherThread.executeDontWait( acquireWriteLock( resource ) );
+        otherThread.waitUntilWaiting();
+        return future;
     }
 
     private Node createNode()

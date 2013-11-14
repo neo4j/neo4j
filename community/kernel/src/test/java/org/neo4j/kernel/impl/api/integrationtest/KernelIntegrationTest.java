@@ -21,16 +21,17 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.After;
 import org.junit.Before;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -40,6 +41,7 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public abstract class KernelIntegrationTest
 {
+    @SuppressWarnings("deprecation")
     protected GraphDatabaseAPI db;
     protected ThreadToStatementContextBridge statementContextProvider;
 
@@ -108,6 +110,8 @@ public abstract class KernelIntegrationTest
     protected void startDb()
     {
         TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory().setFileSystem(fs).newImpermanentDatabaseBuilder();
+
+        //noinspection deprecation
         db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,"none").newGraphDatabase();
         statementContextProvider = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
@@ -115,6 +119,10 @@ public abstract class KernelIntegrationTest
 
     protected void stopDb()
     {
+        if ( beansTx != null )
+        {
+            beansTx.finish();
+        }
         db.shutdown();
     }
 

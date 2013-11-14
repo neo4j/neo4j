@@ -80,8 +80,8 @@ public class IndexOperationsIT extends AbstractClusterTest
         long nodeId = createNode( master, key, value, true );
         cluster.sync();
         // -- get Index and IndexManager references to all dbs
-        Map<HighlyAvailableGraphDatabase,IndexManager> indexManagers = new HashMap<HighlyAvailableGraphDatabase, IndexManager>();
-        Map<HighlyAvailableGraphDatabase,Index<Node>> indexes = new HashMap<HighlyAvailableGraphDatabase, Index<Node>>();
+        Map<HighlyAvailableGraphDatabase,IndexManager> indexManagers = new HashMap<>();
+        Map<HighlyAvailableGraphDatabase,Index<Node>> indexes = new HashMap<>();
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             Transaction transaction = db.beginTx();
@@ -147,8 +147,8 @@ public class IndexOperationsIT extends AbstractClusterTest
         HighlyAvailableGraphDatabase db1 = cluster.getMaster(), db2 = cluster.getAnySlave();
         long node = createNode( db1, key, value, false );
         cluster.sync();
-        OtherThreadExecutor<HighlyAvailableGraphDatabase> w1 = new OtherThreadExecutor<HighlyAvailableGraphDatabase>( "w1", db1 );
-        OtherThreadExecutor<HighlyAvailableGraphDatabase> w2 = new OtherThreadExecutor<HighlyAvailableGraphDatabase>( "w2", db2 );
+        OtherThreadExecutor<HighlyAvailableGraphDatabase> w1 = new OtherThreadExecutor<>( "w1", db1 );
+        OtherThreadExecutor<HighlyAvailableGraphDatabase> w2 = new OtherThreadExecutor<>( "w2", db2 );
         Transaction tx1 = w1.execute( new BeginTx() );
         Transaction tx2 = w2.execute( new BeginTx() );
 
@@ -173,8 +173,8 @@ public class IndexOperationsIT extends AbstractClusterTest
         cluster.sync();
         assertNodeAndIndexingExists( cluster.getAnySlave( db1, db2 ), node, key, value );
         
-        w2.shutdown();
-        w1.shutdown();
+        w2.close();
+        w1.close();
     }
     
     private long createNode( HighlyAvailableGraphDatabase author, String key, Object value, boolean index )

@@ -20,35 +20,43 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
+
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class KernelTest
 {
     @Test
     public void shouldNotAllowCreationOfConstraintsWhenInHA() throws Exception
     {
+        //noinspection deprecation
         GraphDatabaseAPI db = new FakeHaDatabase();
         ThreadToStatementContextBridge stmtBridge =
                 db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        db.beginTx();
-        Statement statement = stmtBridge.instance();
 
-        try
+        try ( Transaction ignored = db.beginTx() )
         {
-            statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
-            fail( "expected exception here" );
+            Statement statement = stmtBridge.instance();
+
+            try
+            {
+                statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
+                fail( "expected exception here" );
+            }
+            catch ( InvalidTransactionTypeKernelException e )
+            {
+                assertThat( e.getMessage(), containsString( "HA" ) );
+            }
         }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            assertThat( e.getMessage(), containsString( "HA" ) );
-        }
+
         db.shutdown();
     }
 

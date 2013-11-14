@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -225,8 +227,8 @@ public class TestGraphProperties
         assertThat( properties, inTx( db, hasProperty( key2 ).withValue( value2 ) ) );
         assertThat( properties, inTx( db, hasProperty( key3 ).withValue( value3 ) ) );
 
-        worker1.shutdown();
-        worker2.shutdown();
+        worker1.close();
+        worker2.close();
         db.shutdown();
    }
 
