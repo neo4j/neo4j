@@ -1,0 +1,20 @@
+<table class="form-inline">
+	<tr class="text-center">
+		<td><a ng-click="incrementHours()" class="btn btn-link"><i class="icon-chevron-up"></i></a></td>
+		<td>&nbsp;</td>
+		<td><a ng-click="incrementMinutes()" class="btn btn-link"><i class="icon-chevron-up"></i></a></td>
+		<td ng-show="showMeridian"></td>
+	</tr>
+	<tr>
+		<td class="control-group" ng-class="{'error': !validHours}"><input type="text" ng-model="hours" ng-change="updateHours()" class="span1 text-center" ng-mousewheel="incrementHours()" ng-readonly="readonlyInput" maxlength="2" /></td>
+		<td>:</td>
+		<td class="control-group" ng-class="{'error': !validMinutes}"><input type="text" ng-model="minutes" ng-change="updateMinutes()" class="span1 text-center" ng-readonly="readonlyInput" maxlength="2"></td>
+		<td ng-show="showMeridian"><button ng-click="toggleMeridian()" class="btn text-center">{{meridian}}</button></td>
+	</tr>
+	<tr class="text-center">
+		<td><a ng-click="decrementHours()" class="btn btn-link"><i class="icon-chevron-down"></i></a></td>
+		<td>&nbsp;</td>
+		<td><a ng-click="decrementMinutes()" class="btn btn-link"><i class="icon-chevron-down"></i></a></td>
+		<td ng-show="showMeridian"></td>
+	</tr>
+</table>

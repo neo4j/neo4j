@@ -1,0 +1,31 @@
+article.help
+  .container-fluid
+    section.row-fluid.summary
+      .summary.span3
+        h3 REST DELETE
+        p.lead
+      .details.span9
+        p Use&nbsp;
+          code :DELETE
+          |  to send HTTP DELETE to Neo4j's REST interface.
+        table.table-condensed.table-help
+          tr
+            th Reference:
+            td
+              code
+                a(href='http://docs.neo4j.org/chunked/{{neo4j.version}}/rest-api.html') REST
+          tr
+            th Related:
+            td
+              a(help-topic='rest-get') :help REST GET
+              a(help-topic='rest-post') :help REST POST
+              a(help-topic='rest-put') :help REST PUT
+    section.row-fluid.example
+      .span9.offset3
+        figure
+          pre.code.runnable(mode='rest').
+            :DELETE /db/data/transaction/2
+          figcaption Rollback an open transaction.
+
+
+

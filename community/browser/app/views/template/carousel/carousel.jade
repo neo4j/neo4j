@@ -1,0 +1,9 @@
+.carousel(ng-mouseenter='pause()', ng-mouseleave='play()')
+  .carousel-indicators-wrapper
+    ol.carousel-indicators(ng-show='slides().length > 1')
+      li(ng-repeat='slide in slides()', ng-class='{active: isActive(slide)}', ng-click='select(slide)')
+  .carousel-inner(ng-transclude)
+  a.carousel-control.left(ng-click='prev()', ng-show='currentIndex > 0')
+    | &lsaquo;
+  a.carousel-control.right(ng-click='next()', ng-show='currentIndex +1 < slides().length')
+    | &rsaquo;

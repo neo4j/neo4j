@@ -1,0 +1,15 @@
+{
+  "name": "FileSaver",
+  "main": "./FileSaver.js",
+  "dependencies": {},
+  "homepage": "https://github.com/eligrey/FileSaver.js",
+  "_release": "4966441a34",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "4966441a34754638f55ec3e37baf4e10afa15ede"
+  },
+  "_source": "git://github.com/eligrey/FileSaver.js.git",
+  "_target": "*",
+  "_originalSource": "file-saver"
+}
