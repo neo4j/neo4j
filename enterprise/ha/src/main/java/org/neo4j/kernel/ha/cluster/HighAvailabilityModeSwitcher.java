@@ -19,17 +19,13 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.BindingListener;
@@ -96,6 +92,11 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
@@ -333,12 +334,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized ( xaDataSourceManager )
                 {
+                    console.log("ServerId " + config.get( ClusterSettings.server_id ) + ", ensuring store is present");
                     if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config )
                          && !copyStoreFromMaster( masterUri ) )
                     {
                         continue; // to the outer loop for a retry
                     }
 
+                    console.log("ServerId " + config.get( ClusterSettings.server_id ) + ", ensuring store correctness");
                     /*
                      * We get here either with a fresh store from the master copy above so we need to start the ds
                      * or we already had a store, so we have already started the ds. Either way, make sure it's there.
@@ -350,6 +353,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         continue; // to the outer loop for a retry
                     }
 
+                    console.log("ServerId " + config.get( ClusterSettings.server_id ) + ", starting communcation");
                     if ( !startHaCommunication( xaDataSourceManager, nioneoDataSource, masterUri ) )
                      {
                         continue; // to the outer loop for a retry
@@ -362,7 +366,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             }
             catch ( Throwable t )
             {
-                msgLog.logMessage( "Unable to switch to slave", t );
+                msgLog.error( "Unable to switch to slave", t );
             }
         }
     }
@@ -544,10 +548,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         LifeSupport life = new LifeSupport();
         try
         {
+            console.log("ServerId " + config.get( ClusterSettings.server_id ) + ", stopping services..");
             // Remove the current store - neostore file is missing, nothing we can really do
             stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
             MasterClient20 copyMaster = new MasterClient20( masterUri, logging, null, config );
 
+            console.log("ServerId " + config.get( ClusterSettings.server_id ) + ", setting up temp master client");
             life.add( copyMaster );
             life.start();
 
@@ -555,6 +561,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             console.log( "Copying store from master" );
             new SlaveStoreWriter( config, kernelExtensions, console ).copyStore( copyMaster );
 
+            console.log( "Starting services again" );
             startServicesAgain();
             console.log( "Finished copying store from master" );
             return true;
@@ -576,7 +583,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         List<Class<Lifecycle>> services = new ArrayList( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         for ( Class<Lifecycle> serviceClass : services )
         {
+            console.log( "STARTING: " + serviceClass );
             graphDb.getDependencyResolver().resolveDependency( serviceClass ).start();
+            console.log( "STOPPING: " + serviceClass );
         }
     }
 
@@ -587,9 +596,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         Collections.reverse( services );
         for ( Class<Lifecycle> serviceClass : services )
         {
+            console.log("ServerId " + config.get( ClusterSettings.server_id ) + ", STOPPING: " + serviceClass);
             graphDb.getDependencyResolver().resolveDependency( serviceClass ).stop();
+            console.log("ServerId " + config.get( ClusterSettings.server_id ) + ", STOPPED: " + serviceClass);
         }
-        
+
+        console.log("ServerId " + config.get( ClusterSettings.server_id ) + ", handling branching");
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 
