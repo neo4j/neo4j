@@ -1,8 +1,4 @@
 
-:leveloffset: 2
-
-include::linked-list.asciidoc[]
-
 :leveloffset: 1
 
 include::hyperedges.asciidoc[]
