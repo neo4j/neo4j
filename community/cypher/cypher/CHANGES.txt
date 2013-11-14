@@ -6,6 +6,7 @@ o Fixes 1313
 o Fixes problem with collection index types
 o Changes behaviour of LAST/HEAD/TAIL and collection slice -
   they now all return null for ranges outside a collection
+o Fixed #1471 - SETting a relationship to a map value fails
 
 2.0.0-M06
 ---------

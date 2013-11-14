@@ -45,10 +45,10 @@ case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: 
     commands.LabelAction(expression.toCommand, commands.LabelSetOp, labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
 }
 
-case class SetNodeItem(identifier: Identifier, expression: Expression, token: InputToken) extends SetItem {
+case class SetPropertiesFromMapItem(identifier: Identifier, expression: Expression, token: InputToken) extends SetItem {
   def semanticCheck =
     identifier.semanticCheck(Expression.SemanticContext.Simple) then
-    identifier.constrainType(NodeType()) then
+    identifier.constrainType(NodeType(), RelationshipType()) then
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.constrainType(MapType())
 

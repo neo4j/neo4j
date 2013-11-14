@@ -2863,8 +2863,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
       first)
   }
 
-  val parser = CypherParser()
-
   @Test def should_handle_match_properties_pointing_to_other_parts_of_pattern() {
     val nodeA = SingleNode("a", Seq.empty, Map("foo" -> Property(Identifier("x"), PropertyKey("bar"))))
     test(
@@ -2873,6 +2871,17 @@ class CypherParserTest extends JUnitSuite with Assertions {
         matches(RelatedTo(nodeA, SingleNode("x"), "  UNNAMED23", Seq.empty, Direction.OUTGOING, Map.empty)).
         returns(AllIdentifiers()))
   }
+
+  @Test def should_allow_both_relationships_and_nodes_to_be_set_with_maps() {
+    test(
+      "MATCH (a)-[r:KNOWS]->(b) SET r = { id: 42 }",
+      Query.
+        matches(RelatedTo("a", "b", "r", "KNOWS", Direction.OUTGOING)).
+        tail(Query.updates(MapPropertySetAction(Identifier("r"), LiteralMap(Map("id"->Literal(42))))).returns()).
+        returns(AllIdentifiers()))
+  }
+
+  val parser = CypherParser()
 
   private def test(query: String, expectedQuery: AbstractQuery) {
     val ast = parser.parseToQuery(query)
