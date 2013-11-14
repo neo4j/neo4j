@@ -164,10 +164,12 @@ public class MasterImpl extends LifecycleAdapter implements Master
             throw new TransactionFailureException( "Database is currently not available" );
         }
 
+        boolean beganTx = false;
         try
         {
             Transaction tx = spi.beginTx();
             transactions.put( context, new MasterTransaction( tx ) );
+            beganTx = true;
 
             return packResponse( context, null );
         }
@@ -177,11 +179,14 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( SystemException e )
         {
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
         finally
         {
-            suspendTransaction( context );
+            if(beganTx)
+            {
+                suspendTransaction( context );
+            }
         }
     }
 
