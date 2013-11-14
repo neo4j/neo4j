@@ -19,25 +19,20 @@
  */
 package org.neo4j.desktop.config;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-
 import org.neo4j.desktop.ui.DesktopModel;
 
-public class DatabaseConfiguration
+import java.io.*;
+
+public class ServerConfiguration
 {
-    private DatabaseConfiguration()
+    private ServerConfiguration()
     {
         throw new UnsupportedOperationException();
     }
 
-    public static void copyDefaultDatabaseConfigurationProperties( File file ) throws IOException
+    public static void copyDefaultServerConfigurationProperties( File file ) throws IOException
     {
-        InputStream inputStream = getDefaultDatabaseConfigurationContent();
+        InputStream inputStream = getDefaultServerConfigurationContent();
         if ( inputStream == null )
         {
             // Default configuration could not be found. This can safely be ignored because
@@ -75,8 +70,8 @@ public class DatabaseConfiguration
         }
     }
 
-    public static InputStream getDefaultDatabaseConfigurationContent()
+    public static InputStream getDefaultServerConfigurationContent()
     {
-        return DesktopModel.class.getResourceAsStream( "/org/neo4j/desktop/config/neo4j-default.properties" );
+        return DesktopModel.class.getResourceAsStream( "/org/neo4j/desktop/config/neo4j-server-default.properties" );
     }
 }

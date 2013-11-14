@@ -25,7 +25,9 @@ import java.awt.FlowLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.desktop.config.Environment;
+import org.neo4j.desktop.runtime.DesktopConfigurator;
 
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.ellipsis;
@@ -42,8 +44,10 @@ public enum DatabaseStatus
     public static final Color CHANGING_COLOR = new Color( 1.0f, 1.0f, 0.5f );
     public static final Color STARTED_COLOR = new Color( 0.5f, 1.0f, 0.5f );
 
-    public Component display( Environment environment )
+    public Component display( DesktopModel model, Environment environment )
     {
+        System.out.println("DatabaseStatus.display(" + this.name() + ")");
+
         switch ( this )
         {
             case STOPPED:
@@ -52,7 +56,7 @@ public enum DatabaseStatus
             case STARTING:
                 return createTextStatusDisplay( CHANGING_COLOR, ellipsis( "In just a few seconds, Neo4j will be ready" ) );
             case STARTED:
-                return createStartedStatusDisplay( environment );
+                return createStartedStatusDisplay( model, environment );
             case STOPPING:
                 return createTextStatusDisplay( CHANGING_COLOR, ellipsis( "Neo4j is shutting down" ) );
             default:
@@ -65,9 +69,17 @@ public enum DatabaseStatus
         return createStatusDisplay( color, new JLabel( text ) );
     }
 
-    private static JPanel createStartedStatusDisplay( Environment environment )
+    private static JPanel createStartedStatusDisplay( DesktopModel model, Environment environment )
     {
-        JLabel link = new JLabel( "http://localhost:7474/" );
+        final JLabel link = new JLabel( "http://localhost:7474/" );
+
+        model.register( new DesktopModelListener() {
+            @Override
+            public void desktopModelChanged(DesktopModel model) {
+                link.setText("http://localhost:" + model.getServerPort() +  "/");
+            }
+        });
+
         link.setFont( Components.underlined( link.getFont() ) );
         link.addMouseListener( new OpenBrowserMouseListener( link, environment ) );
 
