@@ -133,6 +133,11 @@ public abstract class ResourcePool<R>
     {
     }
 
+    protected int currentSize()
+    {
+        return current.size();
+    }
+
     protected boolean isAlive( R resource )
     {
         return true;

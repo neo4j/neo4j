@@ -241,8 +241,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             MasterTransaction tx = transactions.get( context );
             if ( tx.finishAsap() )
             {   // If we've tried to finish this tx off earlier then do it now when we have the chance.
-                spi.finishTransaction( false );
-                transactions.remove( context );
+                finishTransaction( context, false );
                 return;
             }
 
@@ -264,11 +263,14 @@ public class MasterImpl extends LifecycleAdapter implements Master
         try
         {
             spi.finishTransaction( success );
-            transactions.remove( txId );
         }
         catch ( Exception e )
         {
             throw Exceptions.launderedException( e );
+        }
+        finally
+        {
+            transactions.remove( txId );
         }
     }
 

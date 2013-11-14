@@ -157,6 +157,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 Channel channel = resource.first();
                 if ( channel.isConnected() )
                 {
+                    msgLog.debug( "Closing channel: " + channel + ". Channel pool size is now " + channelPool.currentSize() );
                     channel.close();
                 }
             }
