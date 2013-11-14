@@ -82,7 +82,8 @@ public class StoreUpgradeIntegrationTest
         }
         catch ( RuntimeException e )
         {
-            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( UnableToUpgradeException.class ) );
+            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf(
+                    StoreUpgrader.UpgradingStoreVersionNotFoundException.class ) );
         }
     }
 

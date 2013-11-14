@@ -69,25 +69,25 @@ public class UpgradableDatabase
                 File storeFile = new File( storeDirectory, store.storeFileName() );
                 if ( !fs.fileExists( storeFile ) )
                 {
-                    throw new StoreUpgrader.UnableToUpgradeException( String.format( "Missing required store file " +
-                            "'%s'.", storeFile.getName() ) );
+                    throw new StoreUpgrader.UpgradeMissingStoreFilesException( storeFile.getName() );
                 }
                 fileChannel = fs.open( storeFile, "r" );
                 if ( fileChannel.size() < expectedVersionBytes.length )
                 {
-                    throw new StoreUpgrader.UnableToUpgradeException( String.format( "'%s' does not contain a store " +
-                            "version, please ensure that the original database was shut down in a clean state.",
-                            storeFile.getName() ) );
+                    throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( storeFile.getName() );
                 }
                 fileChannel.position( fileChannel.size() - expectedVersionBytes.length );
                 byte[] foundVersionBytes = new byte[expectedVersionBytes.length];
                 fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
-                if ( !expectedVersion.equals( UTF8.decode( foundVersionBytes ) ) )
+                String actualVersion = UTF8.decode( foundVersionBytes );
+                if ( !actualVersion.startsWith( store.typeDescriptor() ) )
                 {
-                    throw new StoreUpgrader.UnableToUpgradeException( String.format(
-                            "'%s' has a store version number that we cannot upgrade from. " +
-                            "Expected '%s' but file is version '%s'.",
-                            storeFile.getName(), expectedVersion, UTF8.decode( foundVersionBytes ) ) );
+                    throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( store.storeFileName() );
+                }
+                if ( !expectedVersion.equals( actualVersion ) )
+                {
+                    throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
+                            storeFile.getName(), expectedVersion, actualVersion );
                 }
             }
             catch ( IOException e )
