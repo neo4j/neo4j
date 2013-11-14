@@ -85,14 +85,9 @@ public class TestStoreCopy extends AbstractClusterTest
         slaveDir = cluster.getStoreDir( slave );
         slaveTempCopyDir = new File( slaveDir, COPY_FROM_MASTER_TEMP );
 
-        Transaction transaction = slave.beginTx();
-        try
+        try ( Transaction ignore = slave.beginTx() )
         {
             assertEquals( VALUE, slave.getNodeById( nodeId ).getProperty( KEY ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
     
@@ -143,8 +138,7 @@ public class TestStoreCopy extends AbstractClusterTest
 
     private long createIndexedNode( GraphDatabaseService db, String key, String value )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node n = db.createNode();
             n.setProperty( key, value );
@@ -152,10 +146,6 @@ public class TestStoreCopy extends AbstractClusterTest
             long nodeId = n.getId();
             tx.success();
             return nodeId;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -171,7 +161,7 @@ public class TestStoreCopy extends AbstractClusterTest
 
     private void assertNodeAndIndexingExists( HighlyAvailableGraphDatabase db, long nodeId, String key, Object value )
     {
-        try (Transaction tx = db.beginTx())
+        try ( Transaction ignore = db.beginTx() )
         {
             Node node = db.getNodeById( nodeId );
             assertEquals( "Property '" + key + "'='" + value + "' mismatch on " + node + " for " + db,

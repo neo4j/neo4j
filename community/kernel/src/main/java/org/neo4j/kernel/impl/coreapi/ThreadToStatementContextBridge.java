@@ -75,6 +75,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
 
     public void assertInTransaction()
     {
+        checkIfShutdown();
         // Contract: Persistence manager throws NotInTransactionException if we are not in a transaction.
         persistenceManager.currentKernelTransaction();
     }

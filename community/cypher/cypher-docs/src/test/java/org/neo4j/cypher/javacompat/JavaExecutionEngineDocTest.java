@@ -368,21 +368,24 @@ public class JavaExecutionEngineDocTest
     @Test
     public void set_properties_on_a_node_from_a_map() throws Exception
     {
-        // START SNIPPET: set_properties_on_a_node_from_a_map
-        Map<String, Object> n1 = new HashMap<String, Object>();
-        n1.put( "name", "Andres" );
-        n1.put( "position", "Developer" );
+        try(Transaction tx = db.beginTx())
+        {
+            // START SNIPPET: set_properties_on_a_node_from_a_map
+            Map<String, Object> n1 = new HashMap<>();
+            n1.put( "name", "Andres" );
+            n1.put( "position", "Developer" );
 
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put( "props", n1 );
+            Map<String, Object> params = new HashMap<>();
+            params.put( "props", n1 );
 
-        String query = "MATCH (n) WHERE n.name='Michaela' SET n = {props}";
-        engine.execute( query, params );
-        // END SNIPPET: set_properties_on_a_node_from_a_map
-        dumpToFile( "set_properties_on_a_node_from_a_map", query, params );
+            String query = "MATCH (n) WHERE n.name='Michaela' SET n = {props}";
+            engine.execute( query, params );
+            // END SNIPPET: set_properties_on_a_node_from_a_map
+            dumpToFile( "set_properties_on_a_node_from_a_map", query, params );
 
-        engine.execute( "match (n) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
-        assertThat( michaelaNode.getProperty( "name" ).toString(), is( "Andres" ) );
+            engine.execute( "match (n) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
+            assertThat( michaelaNode.getProperty( "name" ).toString(), is( "Andres" ) );
+        }
     }
 
     @Test

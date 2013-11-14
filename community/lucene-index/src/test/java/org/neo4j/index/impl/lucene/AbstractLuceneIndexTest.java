@@ -77,7 +77,7 @@ public abstract class AbstractLuceneIndexTest
             {
                 tx.success();
             }
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }
