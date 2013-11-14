@@ -29,17 +29,20 @@ import org.junit.Test
 import org.junit.runners.Parameterized.Parameters
 
 @RunWith(value = classOf[Parameterized])
-class NullInsertingPipeTest(name: String,
-                            sourceIter: List[Map[String, Any]],
-                            mapF: Iterator[ExecutionContext] => Iterator[ExecutionContext],
-                            expected: List[Map[String, Any]]) extends Assertions {
+class InsertingPipeTest(name: String,
+                        sourceIter: List[Map[String, Any]],
+                        mapF: Iterator[ExecutionContext] => Iterator[ExecutionContext],
+                        expected: List[Map[String, Any]]) extends Assertions {
 
   @Test
   def test() {
     val sourcePipe = new FakePipe(sourceIter, "x" -> NumberType())
     val builder = (source: Pipe) => MapPipe(source, mapF)
 
-    val nullInsertingPipe = new NullInsertingPipe(sourcePipe, builder)
+    def nullCreator(ctx:ExecutionContext, ignore:Seq[String], ignored:QueryState) =
+      ctx.newWith("z" -> null)
+
+    val nullInsertingPipe = new InsertingPipe(sourcePipe, builder, nullCreator)
     val results = nullInsertingPipe.createResults(QueryStateHelper.empty).toList
 
     assert(expected === results)
@@ -58,7 +61,7 @@ class NullInsertingPipeTest(name: String,
 
 }
 
-object NullInsertingPipeTest {
+object InsertingPipeTest {
 
   @Parameters(name = "{0}")
   def parameters: java.util.Collection[Array[AnyRef]] = {

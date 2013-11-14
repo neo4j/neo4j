@@ -23,15 +23,19 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.{QueryState, Pipe, PipeWithSource}
 import symbols._
 
-case class NullInsertingPipe(in: Pipe, builder: Pipe => Pipe) extends Pipe {
+case class InsertingPipe(in: Pipe,
+                         builder: Pipe => Pipe,
+                         noMatch: (ExecutionContext, Seq[String], QueryState) => ExecutionContext)
+  extends Pipe {
   val listenerPipe: ListenerPipe = new ListenerPipe(in)
   val innerPipe: Pipe = builder(listenerPipe)
 
-  def identifiersAfterMatch: Set[String] = innerPipe.symbols.identifiers.map(_._1).toSet
-  def identifiersBeforeMatch: Set[String] = in.symbols.identifiers.map(_._1).toSet
-  def addedIdentifiers: Seq[String] = (identifiersAfterMatch -- identifiersBeforeMatch).toSeq
-  def nulls = addedIdentifiers.map(_ -> null).toMap
-  val nullF = (in: ExecutionContext) => in.newWith(nulls)
+  val addedIdentifiers: Seq[String] = {
+    val identifiersAfterMatch: Set[String] = innerPipe.symbols.identifiers.map(_._1).toSet
+    val identifiersBeforeMatch: Set[String] = in.symbols.identifiers.map(_._1).toSet
+
+    (identifiersAfterMatch -- identifiersBeforeMatch).toSeq
+  }
 
   def symbols: SymbolTable = innerPipe.symbols
 
@@ -59,7 +63,7 @@ case class NullInsertingPipe(in: Pipe, builder: Pipe => Pipe) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val innerResult = innerPipe.createResults(state)
     val listener = state.listener
-    new NullInsertingIterator(listener, innerResult, nullF)
+    new InsertingIterator(listener, innerResult, noMatch(_: ExecutionContext, addedIdentifiers, state))
   }
 
   def exists(pred: Pipe => Boolean) = pred(this) || in.exists(pred) || innerPipe.exists(pred)

@@ -48,7 +48,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
   def create_node() {
     val tx = graph.beginTx()
     val start = NullPipe
-    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
+    val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
     val queryState = createQueryState
     createNode.createResults(queryState).toList
@@ -65,7 +65,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
   def join_existing_transaction_and_rollback() {
     val tx = graph.beginTx()
     val start = NullPipe
-    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
+    val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
     createNode.createResults(createQueryState).toList
 
@@ -79,7 +79,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
   def join_existing_transaction_and_commit() {
     val tx = graph.beginTx()
     val start = NullPipe
-    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
+    val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
     createNode.createResults(createQueryState).toList
 
@@ -102,7 +102,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
       RelationshipEndpoint(getNode("b", b), Map(), Seq.empty, true), "REL", Map("I" -> Literal("was here")))
 
     val startPipe = NullPipe
-    val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, graph, Seq(createRel))
+    val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(createRel))
 
     val state = createQueryState
     val results: List[MutableMap[String, Any]] = createNodePipe.createResults(state).map(ctx => ctx.m).toList
@@ -133,7 +133,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
     val deleteCommand = DeleteEntityAction(getNode("a", a))
 
     val startPipe = NullPipe
-    val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, graph, Seq(deleteCommand))
+    val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(deleteCommand))
 
     val state = createQueryState
     createNodePipe.createResults(state).toList

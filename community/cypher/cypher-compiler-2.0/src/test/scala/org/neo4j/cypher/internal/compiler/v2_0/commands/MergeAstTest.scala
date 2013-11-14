@@ -28,10 +28,16 @@ import org.scalatest.Assertions
 import org.junit.Test
 
 class MergeAstTest extends Assertions {
+
+  def mergeAst(patterns: Seq[AbstractPattern] = Seq.empty,
+               onActions: Seq[OnAction] = Seq.empty,
+               matches: Seq[Pattern] = Seq.empty,
+               create: Seq[UpdateAction] = Seq.empty) = MergeAst(patterns, onActions, matches, create)
+
   @Test
   def simple_node_without_labels_or_properties() {
     // given
-    val from = MergeAst(Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)), Seq.empty)
+    val from = mergeAst(patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)))
 
     // then
     assert(from.nextStep() === Seq(MergeNodeAction(A, Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
@@ -40,7 +46,7 @@ class MergeAstTest extends Assertions {
   @Test
   def node_with_labels() {
     // given
-    val from = MergeAst(Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq(KeyToken.Unresolved(labelName, Label)), bare = true)), Seq.empty)
+    val from = mergeAst(patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq(KeyToken.Unresolved(labelName, Label)), bare = true)))
 
     // then
     val a = from.nextStep().head
@@ -58,7 +64,7 @@ class MergeAstTest extends Assertions {
   @Test
   def node_with_properties() {
     // given
-    val from = MergeAst(Seq(ParsedEntity(A, Identifier(A), Map(propertyKey.name -> expression), Seq.empty, bare = true)), Seq.empty)
+    val from = mergeAst(patterns = Seq(ParsedEntity(A, Identifier(A), Map(propertyKey.name -> expression), Seq.empty, bare = true)))
 
     assert(from.nextStep() === Seq(MergeNodeAction(A,
       props = Map(propertyKey -> expression),
@@ -72,11 +78,9 @@ class MergeAstTest extends Assertions {
   @Test
   def node_with_on_create() {
     // given MERGE A ON CREATE SET A.prop = exp
-    val from = MergeAst(
-      Seq(
-        ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)),
-      Seq(
-        OnAction(On.Create, A, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
+    val from = mergeAst(
+      patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)),
+      onActions = Seq(OnAction(On.Create, A, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
 
     // then
     assert(from.nextStep() === Seq(MergeNodeAction(A,
@@ -91,11 +95,9 @@ class MergeAstTest extends Assertions {
   @Test
   def node_with_on_match() {
     // given MERGE A ON MATCH SET A.prop = exp
-    val from = MergeAst(
-      Seq(
-        ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)),
-      Seq(
-        OnAction(On.Match, A, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
+    val from = mergeAst(
+      patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)),
+      onActions = Seq(OnAction(On.Match, A, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
 
     // then
     assert(from.nextStep() === Seq(MergeNodeAction(A,

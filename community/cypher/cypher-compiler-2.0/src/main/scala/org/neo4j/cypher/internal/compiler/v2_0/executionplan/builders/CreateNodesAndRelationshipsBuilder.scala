@@ -44,7 +44,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService)
     val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdatingStartItem].updateAction)
     val allCommands = expandCommands(commands, plan.pipe.symbols)
 
-    val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, db, allCommands)
+    val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, allCommands)
     val resultQuery = q.start.filterNot(mutatingQueryTokens.contains) ++ mutatingQueryTokens.map(_.solve)
 
     plan.copy(query = q.copy(start = resultQuery), pipe = resultPipe, isUpdating = true)
@@ -70,8 +70,7 @@ trait UpdateCommandExpander {
     def distinctify(nodes: Seq[UpdateAction]): Seq[UpdateAction] = {
       val createdNodes = mutable.Set[String]()
 
-      nodes.flatMap { node =>
-        node match {
+      nodes.flatMap {
           case CreateNode(key, props, _, _)
             if createdNodes.contains(key) && props.nonEmpty =>
             throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
@@ -89,7 +88,6 @@ trait UpdateCommandExpander {
 
           case x =>
             Some(x)
-        }
       }
     }
 
