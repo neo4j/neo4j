@@ -138,7 +138,7 @@ public class UpgradableDatabaseTestIT
             new UpgradableDatabase( fileSystem ).checkUpgradeable( new File( workingDirectory, "neostore" ) );
             fail( "should not have been able to upgrade" );
         }
-        catch (StoreUpgrader.UnableToUpgradeException e)
+        catch (StoreUpgrader.UnexpectedUpgradingStoreVersionException e)
         {
             assertThat( e.getMessage(), is("'neostore.nodestore.db' has a store version number that we cannot upgrade " +
                     "from. Expected 'NodeStore " + LEGACY_VERSION + "' but file is version 'NodeStore v0.9.5'.") );

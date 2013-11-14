@@ -66,6 +66,14 @@ public enum StoreFile
     {
         return typeDescriptor + " " + LegacyStore.LEGACY_VERSION;
     }
+
+    /**
+     * The first part of the version String.
+     */
+    public String typeDescriptor()
+    {
+        return typeDescriptor;
+    }
     
     public String storeFileName()
     {
