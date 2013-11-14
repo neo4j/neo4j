@@ -42,7 +42,7 @@ public interface Status
     enum Network implements Status
     {
         // transient
-        UnknownFailure( TransientError, "" );
+        UnknownFailure( TransientError, "An unknown network failure occurred, a retry may resolve the issue." );
         private final Code code;
 
         @Override
@@ -60,8 +60,9 @@ public interface Status
     enum Request implements Status
     {
         // client
-        Invalid( ClientError, "" ),
-        InvalidFormat( ClientError, "" );
+        Invalid( ClientError, "The client provided an invalid request." ),
+        InvalidFormat( ClientError, "The client provided a request that was missing required fields, or had values " +
+                                    "that are not allowed." );
         private final Code code;
 
         @Override
@@ -79,12 +80,13 @@ public interface Status
     enum Transaction implements Status
     {
         // database
-        UnknownId( ClientError, ""),
-        ConcurrentRequest( ClientError, "" ),
+        UnknownId( ClientError, "The request referred to a transaction that does not exist."),
+        ConcurrentRequest( ClientError, "There were concurrent requests accessing the same transaction, which is not " +
+                                        "allowed." ),
         // client
-        CouldNotBegin( DatabaseError, "" ),
-        CouldNotRollback( DatabaseError, "" ),
-        CouldNotCommit( DatabaseError, "" );
+        CouldNotBegin( DatabaseError,    "The database was unable to start the transaction." ),
+        CouldNotRollback( DatabaseError, "The database was unable to roll back the transaction." ),
+        CouldNotCommit( DatabaseError,   "The database was unable to commit the transaction." );
         private final Code code;
 
         @Override
@@ -102,17 +104,19 @@ public interface Status
     enum Statement implements Status
     {
         // client
-        InvalidSyntax( ClientError, "" ),
-        /** The syntax is valid, but the query is not semantically valid. */
-        InvalidSemantics( ClientError, "" ),
-        ParameterMissing( ClientError, "" ),
-        /** A constraint that should hold in the query was violated by the data. */
-        ConstraintViolation( ClientError, "" ),
-        EntityNotFound( ClientError, "" ),
-        InvalidType( ClientError, "" ),
-        ArithmeticError( ClientError, "" ),
+        InvalidSyntax( ClientError, "The statement contained invalid or unsupported syntax." ),
+        InvalidSemantics( ClientError, "The statement is syntactically valid, but expresses something that the " +
+                                       "database cannot do." ),
+        ParameterMissing( ClientError, "The statement is referring to a parameter that was not provided in the " +
+                                       "request." ),
+        ConstraintViolation( ClientError, "A constraint imposed by the statement is violated by the data in the " +
+                                          "database." ),
+        EntityNotFound( ClientError,      "The statement is directly referring to an entity that does not exist." ),
+        InvalidType( ClientError,         "The statement attempting to perform operations on values with types that " +
+                                          "are not supported by the operation." ),
+        ArithmeticError( ClientError,     "Invalid use of arithmetic, such as dividing by zero." ),
         // database
-        ExecutionFailure( DatabaseError, "" ),
+        ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
         ;
         private final Code code;
 
@@ -131,9 +135,10 @@ public interface Status
     enum Schema implements Status
     {
         /** A constraint in the database was violated by the query. */
-        ConstraintViolation( ClientError, "" ),
-        NoSuchIndex( ClientError, "" ),
-        NoSuchConstraint( ClientError, "" ),
+        ConstraintViolation( ClientError, "A constraint imposed by the database was violated." ),
+        NoSuchIndex( ClientError, "The request (directly or indirectly) referred to an index that does not exist." ),
+        NoSuchConstraint( ClientError, "The request (directly or indirectly) referred to a constraint that does " +
+                                       "not exist." ),
         ;
         private final Code code;
 
@@ -152,8 +157,10 @@ public interface Status
     enum General implements Status
     {
         // database
-        FailedIndex( DatabaseError, "" ),
-        UnknownFailure( DatabaseError, "" );
+        FailedIndex( DatabaseError, "The request (directly or indirectly) referred to an index that is in a failed " +
+                                    "state. The index needs to be dropped and recreated manually." ),
+        UnknownFailure( DatabaseError, "An unknown failure occurred." );
+
         private final Code code;
 
         @Override

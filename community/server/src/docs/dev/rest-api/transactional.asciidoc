@@ -43,4 +43,5 @@ include::return-results-in-graph-format.asciidoc[]
 
 include::handling-errors.asciidoc[]
 
+include::transactional-status-codes.asciidoc[]
 
