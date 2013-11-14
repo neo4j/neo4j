@@ -91,13 +91,50 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator {
         	rawConfiguration.put(newKey, value);
         }
     }
+
+    public static class ConfigValueChanged implements Migration
+    {
+
+        private final String propertyKey;
+        private final String oldValue;
+        private final String newValue;
+        private final String message;
+
+        public ConfigValueChanged( String propertyKey, String oldValue, String newValue, String message )
+        {
+            this.propertyKey = propertyKey;
+            this.oldValue = oldValue;
+            this.newValue = newValue;
+            this.message = message;
+        }
+
+        @Override
+        public boolean appliesTo( Map<String, String> rawConfiguration )
+        {
+            return rawConfiguration.containsKey( propertyKey )
+                   && rawConfiguration.get( propertyKey ).equalsIgnoreCase( oldValue );
+        }
+
+        @Override
+        public Map<String, String> apply( Map<String, String> rawConfiguration )
+        {
+            rawConfiguration.put( propertyKey, newValue );
+            return rawConfiguration;
+        }
+
+        @Override
+        public String getDeprecationMessage()
+        {
+            return message;
+        }
+    }
     
     public static Migration propertyRenamed(String oldKey, String newKey, String deprecationMessage)
     {
     	return new PropertyRenamed(oldKey, newKey, deprecationMessage);
     }
     
-    private List<Migration> migrations = new ArrayList<Migration>();
+    private List<Migration> migrations = new ArrayList<>();
     
     public void add(Migration migration) 
     {
@@ -115,12 +152,12 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator {
                 if(!printedDeprecationMessage) 
                 {
                     printedDeprecationMessage = true;
-                    log.logMessage( "WARNING! Deprecated configuration options used. See manual for details" );
+                    log.warn( "WARNING! Deprecated configuration options used. See manual for details" );
                 }
 
                 rawConfiguration = migration.apply(rawConfiguration);
 
-                log.logMessage( migration.getDeprecationMessage() );
+                log.warn( migration.getDeprecationMessage() );
             }
         }
         return rawConfiguration;
