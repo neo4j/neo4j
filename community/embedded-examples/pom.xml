@@ -26,7 +26,6 @@
     <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
     <docs-plugin.filter>true</docs-plugin.filter>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/tutorials-java-embedded.html</docs.url>
-    <paxexamversion>2.4.0.RC1</paxexamversion>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
@@ -92,78 +91,8 @@
       <artifactId>mockito-all</artifactId>
     </dependency>
   
-  <!-- OSGi-related -->
-   <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.compendium</artifactId>
-      <version>4.2.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <!-- Pax Exam Dependencies -->
-    <dependency>
-      <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-player</artifactId>
-      <version>${paxexamversion}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.ops4j.pax.url</groupId>
-      <artifactId>pax-url-wrap</artifactId>
-      <version>1.3.3</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-testforge</artifactId>
-      <version>${paxexamversion}</version>
-      <scope>test</scope>
-    </dependency>
-
-     <dependency>
-         <groupId>org.ops4j.pax.exam</groupId>
-         <artifactId>pax-exam-junit4</artifactId>
-         <version>${paxexamversion}</version>
-         <scope>test</scope>
-      </dependency>
-
-      <dependency>
-         <groupId>org.apache.geronimo.specs</groupId>
-         <artifactId>geronimo-atinject_1.0_spec</artifactId>
-         <version>1.0</version>
-         <scope>provided</scope>
-      </dependency>
-
-    <!-- paxrunner -->
-    <dependency>
-      <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-container-native</artifactId>
-      <version>${paxexamversion}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.framework</artifactId>
-      <version>4.0.2</version>
-      <scope>test</scope>
-    </dependency>
-
-
-    <dependency>
-      <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-link-assembly</artifactId>
-      <version>${paxexamversion}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.ops4j.pax.tinybundles</groupId>
-      <artifactId>tinybundles</artifactId>
-      <version>1.0.0</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
+
   <licenses>
     <license>
       <name>Apache License Version 2.0</name>
