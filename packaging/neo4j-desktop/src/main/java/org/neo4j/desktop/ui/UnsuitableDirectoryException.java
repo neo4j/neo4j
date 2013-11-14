@@ -23,9 +23,9 @@ import java.io.File;
 
 import static java.lang.String.format;
 
-class UnsuitableGraphDatabaseDirectory extends Exception
+class UnsuitableDirectoryException extends Exception
 {
-    UnsuitableGraphDatabaseDirectory( String message, File dir )
+    UnsuitableDirectoryException(String message, File dir)
     {
         super( format( message, dir.getAbsolutePath() ) );
     }

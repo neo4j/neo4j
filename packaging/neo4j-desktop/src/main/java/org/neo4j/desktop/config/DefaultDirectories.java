@@ -36,8 +36,7 @@ public class DefaultDirectories
             new File( defaultNeo4jDataDirectory(), "default.graphdb" ) );
     }
 
-    private static File defaultNeo4jDataDirectory()
-    {
+    public static File userDocumentDirectory() {
         ArrayList<File> locations = new ArrayList<File>(  );
 
         switch ( OperatingSystemFamily.detect() )
@@ -55,6 +54,14 @@ public class DefaultDirectories
         locations.add( new File( System.getProperty( "user.home" ) ) );
 
         File documents = selectFirstWritableDirectoryOrElse( locations, new File( System.getProperty( "user.dir" ) ) );
+
+        return documents;
+    }
+
+    private static File defaultNeo4jDataDirectory()
+    {
+        File documents = userDocumentDirectory();
+
         File neo4jData = new File( documents, "Neo4j" );
 
         return ensureIsDirectory( "Neo4j data directory", neo4jData );

@@ -26,11 +26,15 @@ import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.OperatingSystemFamily;
+import org.neo4j.desktop.runtime.DesktopConfigurator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.Version;
+import org.neo4j.server.configuration.Configurator;
 
 import static java.lang.String.format;
 import static org.neo4j.desktop.config.DatabaseConfiguration.copyDefaultDatabaseConfigurationProperties;
@@ -38,12 +42,24 @@ import static org.neo4j.desktop.config.DatabaseConfiguration.copyDefaultDatabase
 public class DesktopModel
 {
     private final Environment environment;
-    private File databaseDirectory;
+    private final DesktopConfigurator serverConfigurator;
+    private final List<DesktopModelListener> listeners = new ArrayList<DesktopModelListener>();
 
     public DesktopModel( Environment environment, File databaseDirectory )
     {
         this.environment = environment;
-        this.databaseDirectory = databaseDirectory;
+        this.serverConfigurator = new DesktopConfigurator();
+
+        serverConfigurator.setDatabaseDirectory( databaseDirectory.getAbsolutePath() );
+    }
+
+    public Configurator getServerConfigurator() {
+        serverConfigurator.refresh();
+        for(DesktopModelListener listener : listeners) {
+            listener.desktopModelChanged(this);
+        }
+
+        return serverConfigurator;
     }
 
     public String getNeo4jVersion()
@@ -51,15 +67,20 @@ public class DesktopModel
         return format( "%s", Version.getKernel().getReleaseVersion() );
     }
 
-    public File getDatabaseDirectory()
+    public int getServerPort()
     {
-        return databaseDirectory;
+        return serverConfigurator.getServerPort();
     }
 
-    public void setDatabaseDirectory( File databaseDirectory ) throws UnsuitableGraphDatabaseDirectory
+    public File getDatabaseDirectory()
     {
-        verifyGraphDirectory( databaseDirectory );
-        this.databaseDirectory = databaseDirectory;
+        return new File( serverConfigurator.getDatabaseDirectory() );
+    }
+
+    public void setDatabaseDirectory( File databaseDirectory ) throws UnsuitableDirectoryException
+    {
+        verifyGraphDirectory(databaseDirectory);
+        serverConfigurator.setDatabaseDirectory( databaseDirectory.getAbsolutePath() );
     }
 
 
@@ -167,43 +188,48 @@ public class DesktopModel
 
     public File getDatabaseConfigurationFile()
     {
-        return new File( databaseDirectory, "neo4j.properties" );
+        return new File( getDatabaseDirectory(), "neo4j.properties" );
+    }
+
+    public File getServerConfigurationFile() {
+        return serverConfigurator.getServerConfigurationFile();
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void prepareGraphDirectoryForStart() throws UnsuitableGraphDatabaseDirectory
+    public void prepareGraphDirectoryForStart() throws UnsuitableDirectoryException
     {
+        File databaseDirectory = new File(serverConfigurator.getDatabaseDirectory() );
         verifyGraphDirectory( databaseDirectory );
         if ( !databaseDirectory.exists() )
         {
             databaseDirectory.mkdirs();
         }
 
-        File configurationFile = getDatabaseConfigurationFile();
+        File configurationFile = serverConfigurator.getDatabaseConfigurationFile();
         if ( !configurationFile.exists() )
         {
             try
             {
-                copyDefaultDatabaseConfigurationProperties( configurationFile );
+                copyDefaultDatabaseConfigurationProperties(configurationFile);
             }
             catch ( IOException e )
             {
-                throw new UnsuitableGraphDatabaseDirectory( "Unable to write default configuration to %s",
+                throw new UnsuitableDirectoryException( "Unable to write default configuration to %s",
                         databaseDirectory );
             }
         }
     }
 
-    private static void verifyGraphDirectory( File dir ) throws UnsuitableGraphDatabaseDirectory
+    private static void verifyGraphDirectory( File dir ) throws UnsuitableDirectoryException
     {
         if ( !dir.isDirectory() )
         {
-            throw new UnsuitableGraphDatabaseDirectory( "%s is not a directory", dir );
+            throw new UnsuitableDirectoryException( "%s is not a directory", dir );
         }
 
         if ( !dir.canWrite() )
         {
-            throw new UnsuitableGraphDatabaseDirectory( "%s is not writeable", dir );
+            throw new UnsuitableDirectoryException( "%s is not writeable", dir );
         }
 
         String[] fileNames = dir.list( new FilenameFilter()
@@ -227,7 +253,7 @@ public class DesktopModel
             }
         }
 
-        throw new UnsuitableGraphDatabaseDirectory(
+        throw new UnsuitableDirectoryException(
                 "%s is neither empty nor does it contain a neo4j graph database", dir );
     }
 
@@ -265,5 +291,9 @@ public class DesktopModel
 
         // file was not readable or not a file
         return null;
+    }
+
+    public void register(DesktopModelListener desktopModelListener) {
+        listeners.add(desktopModelListener);
     }
 }

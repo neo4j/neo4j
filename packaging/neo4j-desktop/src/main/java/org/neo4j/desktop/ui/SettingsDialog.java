@@ -31,7 +31,9 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 
 import org.neo4j.desktop.config.DatabaseConfiguration;
+import org.neo4j.desktop.config.DefaultDirectories;
 import org.neo4j.desktop.config.Environment;
+import org.neo4j.desktop.config.ServerConfiguration;
 
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.createTextButton;
@@ -55,7 +57,8 @@ class SettingsDialog extends JDialog
         this.model = model;
 
        getContentPane().add( withSpacingBorder( withBoxLayout( BoxLayout.Y_AXIS, createPanel(
-            createEditConfigPanel( createEditDatabaseConfigurationButton() ),
+            createEditDatabaseConfigPanel(createEditDatabaseConfigurationButton()),
+            createEditServerConfigPanel( createEditServerConfigurationButton() ),
             createEditVmOptionsPanel( createEditVmOptionsButton() ),
             // disabling extensions for now
             // createExtensionsPanel(),
@@ -80,11 +83,18 @@ class SettingsDialog extends JDialog
         setVisible( false );
     }
 
-    private Component createEditConfigPanel( JButton configurationButton )
+    private Component createEditDatabaseConfigPanel(JButton configurationButton)
     {
         String configFilePath = model.getDatabaseConfigurationFile().getAbsolutePath();
         return withFlowLayout( withTitledBorder( "Database Configuration",
             createPanel( createUnmodifiableTextField( configFilePath ), configurationButton ) ) );
+    }
+
+    private Component createEditServerConfigPanel(JButton configurationButton) {
+        String configFilePath = model.getServerConfigurationFile().getAbsolutePath();
+
+        return withFlowLayout( withTitledBorder( "Server Configuration",
+                createPanel( createUnmodifiableTextField( configFilePath ), configurationButton ) ) );
     }
 
     private Component createEditVmOptionsPanel( JButton editVmOptionsButton )
@@ -113,6 +123,29 @@ class SettingsDialog extends JDialog
                 if (!file.exists())
                 {
                     DatabaseConfiguration.copyDefaultDatabaseConfigurationProperties( file );
+                }
+            }
+        } );
+    }
+
+    private JButton createEditServerConfigurationButton()
+    {
+        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, environment )
+        {
+            @Override
+            protected File getFile()
+            {
+                return model.getServerConfigurationFile();
+            }
+
+            @SuppressWarnings("ResultOfMethodCallIgnored")
+            @Override
+            protected void ensureFileAndParentDirectoriesExists( File file ) throws IOException
+            {
+                file.getParentFile().mkdirs();
+                if (!file.exists())
+                {
+                    ServerConfiguration.copyDefaultServerConfigurationProperties(file);
                 }
             }
         } );

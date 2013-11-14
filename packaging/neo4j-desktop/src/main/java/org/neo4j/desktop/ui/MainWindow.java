@@ -42,6 +42,7 @@ import javax.swing.JTextField;
 
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.runtime.DatabaseActions;
+import org.neo4j.desktop.runtime.DesktopConfigurator;
 
 import static java.lang.String.format;
 import static javax.swing.JFileChooser.APPROVE_OPTION;
@@ -185,7 +186,7 @@ public class MainWindow
         JPanel panel = withLayout( statusPanelLayout, withTitledBorder( "Status", createPanel() ) );
         for ( DatabaseStatus status : DatabaseStatus.values() )
         {
-            panel.add( status.name(), status.display( environment ) );
+            panel.add( status.name(), status.display( model, environment ) );
         }
 
         panel.addMouseListener( new MouseAdapter()
@@ -228,7 +229,7 @@ public class MainWindow
                                 directoryDisplay.setText( model.getDatabaseDirectory().getAbsolutePath() );
                                 return;
                             }
-                            catch ( UnsuitableGraphDatabaseDirectory error )
+                            catch ( UnsuitableDirectoryException error )
                             {
                                 int result = showConfirmDialog(
                                         frame, error.getMessage() + "\nPlease choose a different folder.",
@@ -271,7 +272,7 @@ public class MainWindow
                             databaseActions.start();
                             updateStatus( STARTED );
                         }
-                        catch ( UnsuitableGraphDatabaseDirectory e )
+                        catch ( UnsuitableDirectoryException e )
                         {
                             updateUserWithErrorMessageAndStatus( e );
                         }

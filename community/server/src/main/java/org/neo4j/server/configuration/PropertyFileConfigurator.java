@@ -113,7 +113,7 @@ public class PropertyFileConfigurator extends Configurator.Adapter
             {
                 log.info(
                         "No database tuning properties (org.neo4j.server.db.tuning.properties) found in [%s], using defaults.",
-                        databaseTuningPropertyFileLocation );
+                        configFile.getPath() );
                 return;
             }
         }

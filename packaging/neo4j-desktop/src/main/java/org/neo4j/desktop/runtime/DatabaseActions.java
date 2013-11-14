@@ -52,7 +52,7 @@ public class DatabaseActions
             throw new UnableToStartServerException( "Already started" );
         }
 
-        server = new CommunityNeoServer( new DesktopConfigurator( model ) );
+        server = new CommunityNeoServer( model.getServerConfigurator() );
         try
         {
             server.start();
