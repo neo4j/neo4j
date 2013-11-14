@@ -35,7 +35,7 @@ class CoercedPredicateTest {
     val collection = Collection(Literal(1))
 
     // When
-    val result = CoercedPredicate(collection)(ctx)
+    val result = CoercedPredicate(collection).isTrue(ctx)
 
     // Then
     assertTrue(s"$collection should return true", result)
@@ -46,7 +46,7 @@ class CoercedPredicateTest {
     val collection = Collection()
 
     // When
-    val result = CoercedPredicate(collection)(ctx)
+    val result = CoercedPredicate(collection).isTrue(ctx)
 
     // Then
     assertFalse(s"$collection should return false", result)
@@ -57,7 +57,7 @@ class CoercedPredicateTest {
     val inner = Not(True())
 
     // When
-    val result = CoercedPredicate(inner)(ctx)
+    val result = CoercedPredicate(inner).isTrue(ctx)
 
     // Then
     assertFalse(s"$inner should return false", result)
@@ -68,7 +68,7 @@ class CoercedPredicateTest {
     val inner = True()
 
     // When
-    val result = CoercedPredicate(inner)(ctx)
+    val result = CoercedPredicate(inner).isTrue(ctx)
 
     // Then
     assertTrue(s"$inner should return true", result)
@@ -79,7 +79,7 @@ class CoercedPredicateTest {
     val inner = Literal(null)
 
     // When
-    val result = CoercedPredicate(inner)(ctx)
+    val result = CoercedPredicate(inner).isTrue(ctx)
 
     // Then
     assertFalse(s"$inner should return false", result)

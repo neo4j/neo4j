@@ -22,15 +22,16 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands
 import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Null, Literal}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryStateHelper
+import org.scalatest.Assertions
 
-class RegularExpressionPredicateTest {
+class RegularExpressionPredicateTest extends Assertions {
   @Test def shouldNotMatchIfTheExpressionEvaluatesToNull() {
     val expression = new LiteralRegularExpression(Null(), Literal(".*"))
-    assert(!expression.isMatch(null)(QueryStateHelper.empty))
+    assert(None === expression.isMatch(null)(QueryStateHelper.empty))
   }
 
   @Test def shouldNotMatchIfTheExpressionEvaluatesToNull2() {
     val expression = new RegularExpression(Null(), Literal(".*"))
-    assert(!expression.isMatch(null)(QueryStateHelper.empty))
+    assert(None === expression.isMatch(null)(QueryStateHelper.empty))
   }
 }

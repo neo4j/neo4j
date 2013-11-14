@@ -28,7 +28,7 @@ class FilterPipe(source: Pipe, val predicate: Predicate) extends PipeWithSource(
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
-    input.filter(ctx => predicate.isMatch(ctx)(state))
+    input.filter(ctx => predicate.isTrue(ctx)(state))
 
   override def executionPlanDescription =
     source.executionPlanDescription.andThen(this, "Filter", "pred" -> SimpleVal.fromStr(predicate))

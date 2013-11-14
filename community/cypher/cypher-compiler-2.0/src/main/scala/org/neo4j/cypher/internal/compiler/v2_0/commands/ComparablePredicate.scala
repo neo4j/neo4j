@@ -28,19 +28,16 @@ import org.neo4j.cypher.internal.helpers.IsCollection
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val l: Any = left(m)
     val r: Any = right(m)
 
-    if (l == null && r == null)
-      return compare(0)
-    
-    if(l == null || r == null)
-      return false
+    if (l == null || r == null)
+      return None
 
     val comparisonResult: Int = compare(l, r)(state)
 
-    compare(comparisonResult)
+    Some(compare(comparisonResult))
   }
 
   def sign: String
@@ -64,15 +61,16 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
     else             None
   }
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val a1 = a(m)
     val b1 = b(m)
 
-    val result = (a1, b1) match {
-      case (IsCollection(l), IsCollection(r)) => l == r
-      case _                                  => a1 == b1
+    (a1, b1) match {
+      case (null, _)                          => None
+      case (_, null)                          => None
+      case (IsCollection(l), IsCollection(r)) => Some(l == r)
+      case _                                  => Some(a1 == b1)
     }
-    result
   }
 
   override def toString = a.toString() + " == " + b.toString()

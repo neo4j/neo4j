@@ -132,7 +132,7 @@ object SingleStep {
       miniMap.relationship = r
       miniMap.node = r.getOtherNode(startNode)
 
-      predicate.isMatch(miniMap)(state)
+      predicate.isTrue(miniMap)(state)
     }
   }
 }

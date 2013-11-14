@@ -30,7 +30,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
   with CollectionSupport
   with Closure {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
-    makeTraversable(value).filter(element => predicate.isMatch(m.newWith(id -> element)))
+    makeTraversable(value).filter(element => predicate.isTrue(m.newWith(id -> element)  ))
 
   def rewrite(f: (Expression) => Expression) = f(FilterFunction(collection.rewrite(f), id, predicate.rewrite(f)))
 
