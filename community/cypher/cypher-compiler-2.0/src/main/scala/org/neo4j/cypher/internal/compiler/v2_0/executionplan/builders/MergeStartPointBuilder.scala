@@ -60,12 +60,16 @@ class MergeStartPointBuilder extends PlanBuilder {
   private def findNodeProducer(mergeNodeAction: MergeNodeAction, boundIdentifiers: Set[String], ctx: PlanContext): MergeNodeAction = {
     val identifier = mergeNodeAction.identifier
     val props = mergeNodeAction.props
+    val propsByName = mergeNodeAction.props.map { case (k,v) => k.name->v }
     val labels = mergeNodeAction.labels
     val where = mergeNodeAction.expectations
 
     val newMergeNodeAction: MergeNodeAction = NodeFetchStrategy.findUniqueIndexes(props, labels, ctx) match {
       case indexes if indexes.isEmpty =>
-        val startItem = NodeFetchStrategy.findStartStrategy(identifier, boundIdentifiers, where, ctx)
+        val startItem: RatedStartItem = NodeFetchStrategy.findStartStrategy(identifier, boundIdentifiers, where, ctx) match {
+          case rated@RatedStartItem(index: SchemaIndex, _, _) => rated.copy(s = index.copy(query = Some(propsByName(index.property))))
+          case other                                          => other
+        }
 
         val nodeProducer = PlainMergeNodeProducer(entityProducerFactory.nodeStartItems((ctx, startItem.s)))
         val solvedPredicates = startItem.solvedPredicates

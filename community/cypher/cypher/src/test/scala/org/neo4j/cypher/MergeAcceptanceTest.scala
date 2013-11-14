@@ -393,4 +393,54 @@ class MergeAcceptanceTest
 
     // then does not throw
   }
+
+  @Test
+  def works_fine_with_index() {
+    // given
+    execute("create index on :Person(name)")
+
+    // when
+    val result = execute("MERGE (person:Person {name:'Lasse'}) RETURN person")
+
+    // then does not throw
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+  }
+
+  @Test
+  def works_with_index_and_constraint() {
+    // given
+    execute("create index on :Person(name)")
+    graph.createConstraint("Person", "id")
+
+    // when
+    val result = execute("MERGE (person:Person {name:'Lasse', id:42}) RETURN person")
+
+    // then does not throw
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
+  }
+
+  @Test
+  def works_with_indexed_and_unindexed_property() {
+    // given
+    execute("create index on :Person(name)")
+
+    // when
+    val result = execute("MERGE (person:Person {name:'Lasse', id:42}) RETURN person")
+
+    // then does not throw
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
+  }
+
+  @Test
+  def works_with_two_indexed_properties() {
+    // given
+    execute("create index on :Person(name)")
+    execute("create index on :Person(id)")
+
+    // when
+    val result = execute("MERGE (person:Person {name:'Lasse', id:42}) RETURN person")
+
+    // then does not throw
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
+  }
 }
