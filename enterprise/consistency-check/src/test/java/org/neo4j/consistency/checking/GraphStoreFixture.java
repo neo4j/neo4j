@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
@@ -62,7 +63,7 @@ public abstract class GraphStoreFixture implements TestRule
 
     public void apply( Transaction transaction ) throws IOException
     {
-        applyTransaction( write( transaction, null ) );
+        applyTransaction( transaction );
     }
 
     public DirectStoreAccess directStoreAccess()
@@ -103,21 +104,16 @@ public abstract class GraphStoreFixture implements TestRule
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
-        private ReadableByteChannel write( IdGenerator idGenerator, int localId, int masterId, int myId, Long txId )
+        private ReadableByteChannel write( IdGenerator idGenerator, int localId, int masterId, int myId, long txId )
                 throws IOException
         {
             InMemoryLogBuffer buffer = new InMemoryLogBuffer();
             TransactionWriter writer = new TransactionWriter( buffer, localId );
-            writer.start( globalId, masterId, myId, startTimestamp, txId == null ? 0l : txId );
+            writer.start( globalId, masterId, myId, startTimestamp, txId );
 
             transactionData( new TransactionDataBuilder( writer ), idGenerator );
 
             writer.prepare();
-            if ( txId != null )
-            {
-                writer.commit( false, txId );
-                writer.done();
-            }
             return buffer;
         }
     }
@@ -395,14 +391,18 @@ public abstract class GraphStoreFixture implements TestRule
     }
 
     @SuppressWarnings("deprecation")
-    protected void applyTransaction( ReadableByteChannel transaction ) throws IOException
+    protected void applyTransaction( Transaction transaction ) throws IOException
     {
         GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).setConfig( configuration( false ) ).newGraphDatabase();
         try
         {
-            database.beginTx();
-            database.getDependencyResolver().resolveDependency( XaDataSourceManager.class).getNeoStoreDataSource()
-                    .applyPreparedTransaction( transaction );
+            try ( org.neo4j.graphdb.Transaction tx = database.beginTx() )
+            {
+                NeoStoreXaDataSource dataSource = database.getDependencyResolver()
+                        .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
+                dataSource.applyPreparedTransaction( write( transaction, dataSource.getLastCommittedTxId() ) );
+                tx.success();
+            }
         }
         finally
         {
