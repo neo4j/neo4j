@@ -120,7 +120,7 @@ class InMemoryIndex
         @Override
         public IndexUpdater newPopulatingUpdater() throws IOException
         {
-            return InMemoryIndex.this.newUpdater( IndexUpdateMode.ONLINE );
+            return InMemoryIndex.this.newUpdater( IndexUpdateMode.ONLINE, true );
         }
 
         @Override
@@ -162,7 +162,7 @@ class InMemoryIndex
         @Override
         public IndexUpdater newUpdater( final IndexUpdateMode mode )
         {
-            return InMemoryIndex.this.newUpdater( mode );
+            return InMemoryIndex.this.newUpdater( mode, false );
         }
 
         @Override
@@ -189,18 +189,18 @@ class InMemoryIndex
         }
     }
 
-    protected IndexUpdater newUpdater( IndexUpdateMode mode )
+    protected IndexUpdater newUpdater( IndexUpdateMode mode, boolean populating )
     {
-        return new InMemoryIndexUpdater( mode );
+        return new InMemoryIndexUpdater( populating );
     }
 
     private class InMemoryIndexUpdater implements IndexUpdater
     {
         private final boolean applyIdempotently;
 
-        private InMemoryIndexUpdater( IndexUpdateMode mode )
+        private InMemoryIndexUpdater( boolean applyIdempotently )
         {
-            this.applyIdempotently = IndexUpdateMode.ONLINE == mode;
+            this.applyIdempotently = applyIdempotently;
         }
 
         @Override

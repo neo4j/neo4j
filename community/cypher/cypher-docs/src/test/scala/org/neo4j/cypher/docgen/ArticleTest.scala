@@ -31,6 +31,7 @@ import export.{DatabaseSubGraph, SubGraphExporter}
 import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
+import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
@@ -236,7 +237,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
       newImpermanentDatabaseBuilder().
       newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
-    db.asInstanceOf[ImpermanentGraphDatabase].cleanContent()
+    cleanDatabaseContent( db.asInstanceOf[ImpermanentGraphDatabase] )
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodes")

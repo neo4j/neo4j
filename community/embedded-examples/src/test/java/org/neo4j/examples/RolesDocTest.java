@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
-public class RolesDocTest extends AbstractJavaDocTestbase
+public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
 {
     private static final String NAME = "name";
 
@@ -45,7 +45,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
     {
         ROOT,
         PART_OF,
-        MEMBER_OF;
+        MEMBER_OF
     }
 
     /**
@@ -189,7 +189,7 @@ public class RolesDocTest extends AbstractJavaDocTestbase
         Traverser traverser = traversalDescription.traverse( admins );
         // END SNIPPET: get-admins
 
-        try ( Transaction tx = graphdb().beginTx() )
+        try ( Transaction ignore = graphdb().beginTx() )
         {
             gen.get().addSnippet( "o-get-admins", createOutputSnippet( traverserToString( traverser ) ) );
             String query = "match ({name: 'Admins'})<-[:PART_OF*0..]-(group)<-[:MEMBER_OF]-(user) return user.name, group.name";

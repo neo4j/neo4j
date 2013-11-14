@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
@@ -547,8 +548,11 @@ public class StoreStatementOperations implements
     public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        PrimitiveLongIterator iterator = state.getIndexReader( constraintIndexId( index ) ).lookup( value );
-        return IteratorUtil.single( iterator, StatementConstants.NO_SUCH_NODE );
+        try ( IndexReader reader = state.getFreshIndexReader( constraintIndexId( index ) ) )
+        {
+            PrimitiveLongIterator iterator = reader.lookup( value );
+            return IteratorUtil.single( iterator, StatementConstants.NO_SUCH_NODE );
+        }
     }
 
     private Iterator<DefinedProperty> loadAllPropertiesOf( PrimitiveRecord primitiveRecord )

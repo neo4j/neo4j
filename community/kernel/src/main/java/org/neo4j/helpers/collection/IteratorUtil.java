@@ -36,6 +36,7 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.api.PrimitiveIntIteratorForArray;
@@ -377,6 +378,62 @@ public abstract class IteratorUtil
         {
             return itemIfNone;
         }
+    }
+
+    /**
+     * Returns a new iterator with all elements found in the input iterator that are accepted by the given predicate
+     *
+     * @param predicate predicate to use for selecting elements
+     * @param iterator input source of elements to be filtered
+     * @return new iterator that contains exactly all elements from iterator that are accepted by predicate
+     */
+    public static PrimitiveLongIterator filter( final PrimitiveLongPredicate predicate,
+                                                final PrimitiveLongIterator iterator )
+    {
+        return new PrimitiveLongIterator()
+        {
+            long next = -1;
+            boolean hasNext = false;
+
+            {
+                computeNext();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return hasNext;
+            }
+
+            @Override
+            public long next()
+            {
+                if ( hasNext )
+                {
+                    long result = next;
+                    computeNext();
+                    return result;
+                }
+                else
+                {
+                    throw new NoSuchElementException();
+                }
+            }
+
+            private void computeNext()
+            {
+                while ( iterator.hasNext() )
+                {
+                    next = iterator.next();
+                    if ( predicate.accept( next ) )
+                    {
+                        hasNext = true;
+                        return;
+                    }
+                }
+                hasNext = false;
+            }
+        };
     }
 
     /**
@@ -1088,11 +1145,6 @@ public abstract class IteratorUtil
     public static Set<Long> asSet( PrimitiveLongIterator iterator )
     {
         return internalAsSet( iterator, false );
-    }
-
-    public static Set<Long> asSetAllowDuplicates( PrimitiveLongIterator iterator )
-    {
-        return internalAsSet( iterator, true );
     }
 
     private static Set<Long> internalAsSet( PrimitiveLongIterator iterator, boolean allowDuplicates )

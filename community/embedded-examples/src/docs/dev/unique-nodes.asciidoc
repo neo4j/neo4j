@@ -6,10 +6,36 @@ For an overview of the topic, see <<transactions-unique-nodes>>.
 
 
 [[tutorials-java-embedded-unique-get-or-create]]
-== Get or create unique node ==
+== Get or create unique node using Cypher and unique constraints ==
+
+.Create a Cypher execution engine and a unique constraint
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateDocIT.java
+classifier=test-sources
+tag=prepareExecutionEngineAndConstraint
+----
+
+.Use MERGE to create a unique node
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateDocIT.java
+classifier=test-sources
+tag=getOrCreateWithCypher
+----
+
+
+[[tutorials-java-embedded-unique-get-or-create-with-factory]]
+== Get or create unique node using a legacy index ==
+
+[IMPORTANT]
+While this is a working solution, please consider using the preferred  <<tutorials-java-embedded-unique-get-or-create>> instead.
 
 By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
 entity uniqueness can be guaranteed using an index.
+
 Here the index acts as the lock and will only lock the smallest part needed to guarantee uniqueness across threads and transactions.
 To get the more high-level +get-or-create+ functionality make use of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
 
@@ -28,7 +54,7 @@ tag=prepareUniqueFactory
 component=neo4j-examples
 source=org/neo4j/examples/GetOrCreateDocIT.java
 classifier=test-sources
-tag=getOrCreate
+tag=getOrCreateWithFactory
 ----
 
 [[tutorials-java-embedded-unique-pessimistic]]

@@ -33,6 +33,7 @@ import org.neo4j.cypher.{ CypherException, ExecutionResult, ExecutionEngine }
 import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
+import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
 import org.neo4j.cypher.internal.helpers.{ Materialized, GraphIcing }
 import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
@@ -277,7 +278,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
       newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
     engine = new ExecutionEngine(db)
 
-    db.asInstanceOf[ImpermanentGraphDatabase].cleanContent()
+    cleanDatabaseContent( db )
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodes")

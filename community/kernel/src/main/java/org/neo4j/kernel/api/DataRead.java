@@ -49,10 +49,15 @@ interface DataRead
 
     /**
      * Returns node id of unique node found in the given unique index for value or
-     * StatementConstants.NO_SUCH_NODE if the index does not contain a matching node.
+     * {@link StatementConstants#NO_SUCH_NODE} if the index does not contain a
+     * matching node.
      *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-     *          if no such index found.
+     * If a node is found, a READ lock for the index entry will be held. If no node
+     * is found (if {@link StatementConstants#NO_SUCH_NODE} was returned), a WRITE
+     * lock for the index entry will be held. This is to facilitate unique creation
+     * of nodes, to build get-or-create semantics on top of this method.
+     *
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
     long nodeGetUniqueFromIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException;

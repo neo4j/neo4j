@@ -23,15 +23,17 @@ import java.sql.SQLException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createSqlSnippet;
 
-public class CypherSqlDocIT extends AbstractJavaDocTestbase
+public class CypherSqlDocIT extends ImpermanentGraphJavaDocTestBase
 {
     private static CypherSql cyperSql;
 
