@@ -194,6 +194,7 @@ public abstract class ResourcePool<R>
             currentPeakSize = 0;
             monitor.updatedTargetSize( targetSize );
         }
+
         return resource;
     }
 

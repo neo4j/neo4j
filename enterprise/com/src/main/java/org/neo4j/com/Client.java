@@ -335,9 +335,10 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         Triplet<Channel, ChannelBuffer, ByteBuffer> result = channelPool.acquire();
         if ( result == null )
         {
-            msgLog.logMessage( "Unable to acquire new channel for " + type );
+            msgLog.error( "Unable to acquire new channel for " + type );
             throw new ComException( "Unable to acquire new channel for " + type );
         }
+        msgLog.debug( "Acquired channel: " + result.first() );
         return result;
     }
 
