@@ -302,6 +302,8 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      * If any errors occur while executing statements, the server will roll back the transaction.
      *
      * In this example, we send the server an invalid statement to demonstrate error handling.
+     * 
+     * For more information on the status codes, see <<status-codes>>.
      */
     @Test
     @Documented

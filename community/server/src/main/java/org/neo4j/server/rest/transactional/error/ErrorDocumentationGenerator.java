@@ -28,10 +28,10 @@ import org.neo4j.kernel.impl.util.FileUtils;
  * Generates Asciidoc for {@link Status}.
  *
  * [options="header", cols=">s,^", width="100%"]
- * ===================
+ * |===
  * Status Code                                    |Description
  * Neo.SomeClassification.SomeCategory.SomeTitle  |Some description
- * ===================
+ * |===
  */
 public class ErrorDocumentationGenerator
 {
@@ -63,26 +63,27 @@ public class ErrorDocumentationGenerator
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append( "[options=\"header\", cols=\">s,^,^\", width=\"100%\"]\n" );
-        sb.append( "===================\n" );
-        sb.append( "Classification |Description |Effect on transaction\n" );
+        sb.append( "[options=\"header\", cols=\"<1m,<3,<1\"]\n" );
+        sb.append( "|===\n" );
+        sb.append( "|Classification |Description |Effect on transaction\n" );
 
         for ( Status.Classification classification : Status.Classification.class.getEnumConstants() )
         {
             sb.append( classificationAsRow( classification ) );
         }
-        sb.append( "===================\n" );
+        sb.append( "|===\n" );
 
         return sb.toString();
     }
 
     private String classificationAsRow( Status.Classification classification )
     {
+        // TODO fail on missing description
         String description = classification.description().length() > 0
                 ? classification.description()
                 : "No description available.";
         String txEffect = classification.rollbackTransaction() ? "Rollback" : "None";
-        return classification.name() + " |" + description + " |" + txEffect + "\n";
+        return "|" + classification.name() + " |" + description + " |" + txEffect + "\n";
     }
 
     public String generateStatusCodeDocs()
@@ -91,24 +92,25 @@ public class ErrorDocumentationGenerator
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append( "[options=\"header\", cols=\">s,^\", width=\"100%\"]\n" );
-        sb.append( "===================\n" );
-        sb.append( "Status Code |Description\n" );
+        sb.append( "[options=\"header\", cols=\"<1m,<1\"]\n" );
+        sb.append( "|===\n" );
+        sb.append( "|Status Code |Description\n" );
 
         for ( String code : sortedStatuses.keySet() )
         {
             sb.append(codeAsTableRow(sortedStatuses.get(code)));
         }
 
-        sb.append( "===================\n" );
+        sb.append( "|===\n" );
 
         return sb.toString();
     }
 
     private String codeAsTableRow( Status.Code code )
     {
+        // TODO fail on missing description
         String description = code.description().length() > 0 ? code.description() : "No description available.";
-        return code.serialize() + " |" + description + "\n";
+        return "|" + code.serialize() + " |" + description + "\n";
     }
 
     private TreeMap<String, Status.Code> sortedStatusCodes()
