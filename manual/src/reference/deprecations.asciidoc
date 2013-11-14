@@ -40,4 +40,11 @@ The Reference Node::
 With the introduction of Labels in Neo4j 2.0 the Reference Node becomes obsolete.
 It was deprecated several versions ago, and has now been removed in entirety.
 Instead, labeled nodes become the well-known starting points in your graph.
+You can use a pattern like this to access a reference node:
+`MATCH (ref:MyReference) RETURN ref`.
+Simply use one label per such starting point you want to use.
+_Note that this should be executed once during application initialization, to ensure that only a single reference node is created per label._
+When migrating a database with an existing reference node, add a label to it during migration, and then use it as per the previous pattern.
+This is how to add the label: `START ref=node(0) SET ref:MyReference`.
+In case you have altered the database so a different node is the reference node, substitute the node id in the statement.
 

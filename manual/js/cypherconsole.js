@@ -30,7 +30,7 @@ jQuery( document ).ready(  function()
 function createCypherConsoles( $ )
 {
   var currentButton;
-  var URL_BASE = "http://console-test.neo4j.org/";
+  var URL_BASE = "http://console.neo4j.org/";
   var REQUEST_BASE = URL_BASE + "?";
   
   $('pre.cypher').wrap('<div class="query-outer-wrapper"><div class="query-wrapper" /></div>').each( function()
