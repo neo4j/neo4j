@@ -27,12 +27,20 @@
                          includes="**"/>
             </move>
 
-            <!-- Make the init scripts available to debuild -->
+            <!-- Make the arbiter init scripts available to debuild -->
             <copy toDir="${project.build.outputDirectory}/@{name}/server">
                 <fileset dir="${project.build.sourceDirectory}/../resources/@{name}/debian/">
-                    <include name="*-service"/>
+                    <include name="neo4j-arbiter-service"/>
                 </fileset>
             </copy>
+
+            <!-- Make the Neo4j init scripts available to debuild -->
+            <copy toDir="${project.build.outputDirectory}/@{name}/server">
+                <fileset dir="${project.build.sourceDirectory}/../resources/common">
+                    <include name="neo4j-service"/>
+                </fileset>
+            </copy>
+
 
             <udc_source name="@{name}" packaging="debian" workingDir="${project.build.outputDirectory}"/>
 

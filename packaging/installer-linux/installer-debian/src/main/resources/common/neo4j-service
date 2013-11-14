@@ -58,9 +58,9 @@ do_start()
 	#   0 if daemon has been started
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
-	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
+	start-stop-daemon --chuid ${NEO_USER} --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
 		|| return 1
-	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- \
+	start-stop-daemon --chuid ${NEO_USER} --start --quiet --pidfile $PIDFILE --exec $DAEMON -- \
 		$DAEMON_ARGS \
 		|| return 2
 	# Copy the Neo4j PID to the sytem's PID store
@@ -74,16 +74,19 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE
+	start-stop-daemon --chuid ${NEO_USER} --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE
 	RETVAL="$?"
 	[ "$RETVAL" = 2 ] && return 2
 
-	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
+	start-stop-daemon --chuid ${NEO_USER} --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
 	[ "$?" = 2 ] && return 2
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
 	return "$RETVAL"
 }
+
+# Ensure that the NEO_USER is set to a useful default.
+[ -n "${NEO_USER}" ] || NEO_USER=$NAME
 
 case "$1" in
   start)
@@ -118,7 +121,7 @@ case "$1" in
 		esac
 		;;
 	  *)
-	  	# Failed to stop
+	  # Failed to stop
 		log_end_msg 1
 		;;
 	esac
@@ -128,5 +131,3 @@ case "$1" in
 	exit 3
 	;;
 esac
-
-:
