@@ -69,6 +69,7 @@ installservice() {
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
+      mkdir -p $LAUNCHD_DIR
       sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" -e "s^LAUNCHD_NAME^${LAUNCHD_NAME}^" <"${NEO4J_INSTANCE}/bin/org.neo4j.server.plist" >"${LAUNCHD_DIR}/${LAUNCHD_NAME}.plist"
       launchctl load -w ${LAUNCHD_DIR}/${LAUNCHD_NAME}.plist
       launchctl start ${LAUNCHD_NAME}
