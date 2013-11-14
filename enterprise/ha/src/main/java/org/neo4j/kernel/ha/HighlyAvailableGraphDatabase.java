@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
@@ -108,10 +109,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private HighAvailabilityMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
     private LastUpdateTime lastUpdateTime;
+    private HighAvailabilityMemberContext memberContext;
     private ClusterClient clusterClient;
     private ClusterMemberEvents clusterEvents;
     private ClusterMemberAvailability clusterMemberAvailability;
     private long stateSwitchTimeoutMillis;
+
+    private final LifeSupport paxosLife = new LifeSupport();
 
     private DelegateInvocationHandler clusterEventsDelegateInvocationHandler;
     private DelegateInvocationHandler memberContextDelegateInvocationHandler;
@@ -146,6 +150,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 requestContextFactory, txManager, availabilityGuard, lastUpdateTime, config, msgLog ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
+
+        life.add( paxosLife );
 
         life.add( new DatabaseAvailability( txManager, availabilityGuard ) );
 
@@ -232,18 +238,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         clusterEvents = (ClusterMemberEvents) Proxy.newProxyInstance( ClusterMemberEvents.class.getClassLoader(),
                 new Class[]{ClusterMemberEvents.class, Lifecycle.class}, clusterEventsDelegateInvocationHandler );
-        HighAvailabilityMemberContext memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
+        memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
                 HighAvailabilityMemberContext.class.getClassLoader(),
                 new Class[]{HighAvailabilityMemberContext.class}, memberContextDelegateInvocationHandler );
         clusterMemberAvailability = (ClusterMemberAvailability) Proxy.newProxyInstance(
                 ClusterMemberAvailability.class.getClassLoader(),
                 new Class[]{ClusterMemberAvailability.class}, clusterMemberAvailabilityDelegateInvocationHandler );
 
-        /*
-         *  We need to create these anyway since even in compatibility mode we'll use them for switchover. If it turns
-         *  out we are not going to need zookeeper, just assign them to the class fields. The difference is in when
-         *  they start().
-         */
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider( config.get( ClusterSettings.server_id ),
@@ -320,7 +321,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         memberContextDelegateInvocationHandler.setDelegate( localMemberContext );
         clusterEventsDelegateInvocationHandler.setDelegate( localClusterEvents );
         clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
-        
+
         members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
                 new InstanceId( config.get( ClusterSettings.server_id ) ) );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
@@ -334,10 +335,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
         clusterClient.addClusterListener( highAvailabilityConsoleLogger );
 
-        life.add( clusterClient );
-        life.add( memberStateMachine );
-        life.add( clusterEvents );
-        life.add( localClusterMemberAvailability );
+        paxosLife.add( clusterClient );
+        paxosLife.add( memberStateMachine );
+        paxosLife.add( clusterEvents );
+        paxosLife.add( localClusterMemberAvailability );
 
         DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<>();
         TxHook txHook = (TxHook) Proxy.newProxyInstance( TxHook.class.getClassLoader(), new Class[]{TxHook.class},
@@ -361,7 +362,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         {
             throw new InvalidTransactionTypeKernelException(
                     "Modifying the database schema can only be done on the master server, " +
-                    "this server is a slave. Please issue schema modification commands directly to the master." );
+                            "this server is a slave. Please issue schema modification commands directly to the master." );
         }
     }
 
@@ -390,7 +391,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         /*
          * We always need the mode switcher and we need it to restart on switchover.
          */
-        life.add( highAvailabilityModeSwitcher );
+        paxosLife.add( highAvailabilityModeSwitcher );
 
         /*
          * We don't really switch to master here. We just need to initialize the idGenerator so the initial store
