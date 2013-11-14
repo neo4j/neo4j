@@ -19,12 +19,17 @@
  */
 package org.neo4j.kernel.index;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
@@ -36,13 +41,7 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import org.neo4j.test.ha.ClusterManager;
 
 public class IndexOperationsIT extends AbstractClusterTest
 {
@@ -102,6 +101,9 @@ public class IndexOperationsIT extends AbstractClusterTest
         cluster.shutdown( master );
         indexManagers.remove( master );
         indexes.remove( master );
+
+        cluster.await( ClusterManager.masterAvailable( master ) );
+        cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
 
         // THEN
         // -- the index instances should still be viable to use
