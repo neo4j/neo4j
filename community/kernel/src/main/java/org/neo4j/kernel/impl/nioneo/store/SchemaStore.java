@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -34,16 +33,16 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.util.Arrays.asList;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind.deserialize;
 
-public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>, SchemaRuleAccess
+public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
     public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
     public static final int BLOCK_SIZE = 56; // + BLOCK_HEADER_SIZE == 64
     
+    @SuppressWarnings("deprecation")
     public SchemaStore( File fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory,
             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
             StringLogger stringLogger )
@@ -73,35 +72,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     
     public Iterator<SchemaRule> loadAllSchemaRules()
     {
-        return new PrefetchingIterator<SchemaRule>()
-        {
-            private final long highestId = getHighestPossibleIdInUse();
-            private long currentId = 1; /*record 0 contains the block size*/
-            private final byte[] scratchData = newRecordBuffer();
-
-            @Override
-            protected SchemaRule fetchNextOrNull()
-            {
-                while ( currentId <= highestId )
-                {
-                    long id = currentId++;
-                    DynamicRecord record = forceGetRecord( id );
-                    if ( record.inUse() && record.isStartRecord() )
-                    {
-                        try
-                        {
-                            return forceGetSchemaRule( id, scratchData );
-                        }
-                        catch ( MalformedSchemaRuleException e )
-                        {
-                            // TODO remove this and throw this further up
-                            throw launderedException( e );
-                        }
-                    }
-                }
-                return null;
-            }
-        };
+        return new SchemaStorage( this ).loadAllSchemaRules();
     }
 
     @Override
@@ -110,39 +81,13 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         return loadAllSchemaRules();
     }
 
-    private byte[] newRecordBuffer()
-    {
-        return new byte[getRecordSize()*4];
-    }
-
-    @Override
-    public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
-    {
-        return forceGetSchemaRule( ruleId, newRecordBuffer() );
-    }
-
-    private SchemaRule getSchemaRule( long id, byte[] buffer ) throws MalformedSchemaRuleException
-    {
-        return readSchemaRule( id, getRecords( id ), buffer );
-    }
-
-    private SchemaRule forceGetSchemaRule( long id, byte[] buffer ) throws MalformedSchemaRuleException
-    {
-        Collection<DynamicRecord> records = getRecords( id, RecordLoad.FORCE );
-        for ( DynamicRecord record : records )
-        {
-            ensureHeavy( record );
-        }
-        return readSchemaRule( id, records, buffer );
-    }
-
     public static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records )
             throws MalformedSchemaRuleException
     {
         return readSchemaRule( id, records, new byte[ BLOCK_SIZE * 4 ] );
     }
 
-    private static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer )
+    static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer )
             throws MalformedSchemaRuleException
     {
         ByteBuffer scratchBuffer = concatData( records, buffer );

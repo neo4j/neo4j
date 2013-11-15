@@ -54,6 +54,18 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
     }
 
     @Override
+    public long getHighestPossibleIdInUse()
+    {
+        return delegate.getHighestPossibleIdInUse();
+    }
+
+    @Override
+    public long nextId()
+    {
+        return delegate.nextId();
+    }
+
+    @Override
     public R getRecord( long id )
     {
         return delegate.getRecord( id );

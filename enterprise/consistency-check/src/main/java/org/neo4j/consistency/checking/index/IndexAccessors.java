@@ -21,7 +21,9 @@ package org.neo4j.consistency.checking.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -38,12 +40,30 @@ import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules
 public class IndexAccessors implements Closeable
 {
     private final Map<Long,IndexAccessor> accessors = new HashMap<>();
-    private final List<IndexRule> indexRules;
+    private final List<IndexRule> indexRules = new ArrayList<>();
 
     public IndexAccessors( SchemaIndexProvider provider, RecordStore<DynamicRecord> schemaStore )
             throws IOException, MalformedSchemaRuleException
     {
-        indexRules = loadAllIndexRules( schemaStore );
+        Iterator<IndexRule> rules = loadAllIndexRules( schemaStore ).iterator();
+        for (; ; )
+        {
+            try
+            {
+                if ( rules.hasNext() )
+                {
+                    indexRules.add( rules.next() );
+                }
+                else
+                {
+                    break;
+                }
+            }
+            catch ( Exception e )
+            {
+                // ignore; inconsistencies of the schema store are specifically handled elsewhere.
+            }
+        }
 
         for ( IndexRule indexRule : indexRules )
         {

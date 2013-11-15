@@ -34,6 +34,6 @@ public class KernelTransactionFactory
     {
         return new KernelTransactionImplementation( Mockito.mock( StatementOperationParts.class ),
                 Mockito.mock( LegacyKernelOperations.class ) , false, mock( SchemaWriteGuard.class ), null, null,
-                mock( AbstractTransactionManager.class ), null, null, null, null, null, null, mock( NeoStore.class ), null );
+                mock( AbstractTransactionManager.class ), null, null, null, null, null, mock( NeoStore.class ), null );
     }
 }

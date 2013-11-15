@@ -17,27 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.nioneo.store;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
-import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
-public class SchemaStorage
+public class SchemaStorage implements SchemaRuleAccess
 {
-    private final SchemaStore schemaStore;
+    private final RecordStore<DynamicRecord> schemaStore;
 
-    public SchemaStorage( SchemaStore schemaStore )
+    public SchemaStorage( RecordStore<DynamicRecord> schemaStore )
     {
         this.schemaStore = schemaStore;
     }
@@ -79,6 +78,11 @@ public class SchemaStorage
         return rule;
     }
 
+    public Iterator<IndexRule> allIndexRules()
+    {
+        return schemaRules( IndexRule.class );
+    }
+
     public <T extends SchemaRule> Iterator<T> schemaRules( final Class<T> type, int labelId, Predicate<T> predicate )
     {
         return schemaRules( Functions.cast( type ), type, labelId, predicate );
@@ -100,7 +104,7 @@ public class SchemaStorage
                        rule.getKind().getRuleClass() == ruleType &&
                        predicate.accept( (R) rule );
             }
-        }, schemaStore.loadAllSchemaRules() ) );
+        }, loadAllSchemaRules() ) );
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
@@ -118,7 +122,79 @@ public class SchemaStorage
                 return rule.getKind() == kind &&
                        predicate.accept( (R) rule );
             }
-        }, schemaStore.loadAllSchemaRules() ) );
+        }, loadAllSchemaRules() ) );
+    }
+
+    public <R extends SchemaRule> Iterator<R> schemaRules( final Class<R> ruleClass )
+    {
+        @SuppressWarnings({"UnnecessaryLocalVariable", "unchecked"/*the predicate ensures that this cast is safe*/})
+        Iterator<R> result = (Iterator)filter( new Predicate<SchemaRule>()
+        {
+            @Override
+            public boolean accept( SchemaRule rule )
+            {
+                return ruleClass.isInstance( rule );
+            }
+        }, loadAllSchemaRules() );
+        return result;
+    }
+
+    public Iterator<SchemaRule> loadAllSchemaRules()
+    {
+        return new PrefetchingIterator<SchemaRule>()
+        {
+            private final long highestId = schemaStore.getHighestPossibleIdInUse();
+            private long currentId = 1; /*record 0 contains the block size*/
+            private final byte[] scratchData = newRecordBuffer();
+
+            @Override
+            protected SchemaRule fetchNextOrNull()
+            {
+                while ( currentId <= highestId )
+                {
+                    long id = currentId++;
+                    DynamicRecord record = schemaStore.forceGetRecord( id );
+                    if ( record.inUse() && record.isStartRecord() )
+                    {
+                        try
+                        {
+                            return getSchemaRule( id, scratchData );
+                        }
+                        catch ( MalformedSchemaRuleException e )
+                        {
+                            // TODO remove this and throw this further up
+                            throw new RuntimeException( e );
+                        }
+                    }
+                }
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
+    {
+        return getSchemaRule( ruleId, newRecordBuffer() );
+    }
+
+    private byte[] newRecordBuffer()
+    {
+        return new byte[schemaStore.getRecordSize()*4];
+    }
+
+    private SchemaRule getSchemaRule( long id, byte[] buffer ) throws MalformedSchemaRuleException
+    {
+        Collection<DynamicRecord> records;
+        try
+        {
+            records = schemaStore.getRecords( id );
+        }
+        catch ( Exception e )
+        {
+            throw new MalformedSchemaRuleException( e.getMessage(), e );
+        }
+        return SchemaStore.readSchemaRule( id, records, buffer );
     }
 
     public long newRuleId()

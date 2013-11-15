@@ -466,6 +466,7 @@ public class Neo4jMatchers
 
     }
 
+    @SafeVarargs
     public static <T> TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>> containsOnly( final T... expectedObjects )
     {
         return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>>()
@@ -529,7 +530,7 @@ public class Neo4jMatchers
                     Schema.IndexState currentState = db.schema().getIndexState( current );
                     if ( !currentState.equals( expectedState ) )
                     {
-                        description.appendText( current.toString() );
+                        description.appendValue( current ).appendText( " has state " ).appendValue( currentState );
                         return false;
                     }
                 }
@@ -544,6 +545,7 @@ public class Neo4jMatchers
         };
     }
 
+    @SafeVarargs
     public static <T> TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>> contains( final T... expectedObjects )
     {
         return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>>()

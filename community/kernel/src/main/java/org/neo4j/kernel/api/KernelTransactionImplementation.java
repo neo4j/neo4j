@@ -21,7 +21,6 @@ package org.neo4j.kernel.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.transaction.RollbackException;
 
 import org.neo4j.helpers.Exceptions;
@@ -38,8 +37,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.LockHolder;
-import org.neo4j.kernel.impl.api.PersistenceCache;
-import org.neo4j.kernel.impl.api.SchemaStorage;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
@@ -54,6 +51,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -70,7 +68,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LabelScanStore labelScanStore;
     private final SchemaStorage schemaStorage;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final PersistenceCache persistenceCache;
     private final PersistenceManager persistenceManager;
     private final SchemaIndexProviderMap providerMap;
     private final UpdateableSchemaState schemaState;
@@ -88,7 +85,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
                                             IndexingService indexService,
                                             AbstractTransactionManager transactionManager, NodeManager nodeManager,
-                                            PersistenceCache persistenceCache, UpdateableSchemaState schemaState,
+                                            UpdateableSchemaState schemaState,
                                             LockHolder lockHolder, PersistenceManager persistenceManager,
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
                                             TransactionState legacyTxState )
@@ -100,7 +97,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.labelScanStore = labelScanStore;
         this.indexService = indexService;
         this.providerMap = providerMap;
-        this.persistenceCache = persistenceCache;
         this.schemaState = schemaState;
         this.persistenceManager = persistenceManager;
         this.lockHolder = lockHolder;
@@ -150,11 +146,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 dropCreatedConstraintIndexes();
             }
-            catch ( IllegalStateException e )
-            {
-                throw new TransactionFailureException( e );
-            }
-            catch ( SecurityException e )
+            catch ( IllegalStateException | SecurityException e )
             {
                 throw new TransactionFailureException( e );
             }
