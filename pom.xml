@@ -265,7 +265,6 @@ public class ComponentVersion extends Version
         <module>manual</module>
         <module>packaging</module>
         <module>packaging/installer-linux</module>
-        <module>community/browser</module>
       </modules>
       <properties>
         <attach-docs-phase>verify</attach-docs-phase>
