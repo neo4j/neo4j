@@ -1,0 +1,31 @@
+{
+  "name": "moment",
+  "version": "2.1.0",
+  "scripts": [
+    "moment.js"
+  ],
+  "main": "moment.js",
+  "description": "Parse, validate, manipulate, and display dates in javascript.",
+  "ignore": [
+    ".gitignore",
+    ".travis.yml",
+    "composer.json",
+    "CONTRIBUTING.md",
+    "ender.js",
+    "Gruntfile.js",
+    "package.js",
+    "package.json",
+    "test",
+    "tasks"
+  ],
+  "homepage": "https://github.com/timrwood/moment",
+  "_release": "2.1.0",
+  "_resolution": {
+    "type": "version",
+    "tag": "2.1.0",
+    "commit": "05028e20e526b5f38dde3748833e98d7c8e846e8"
+  },
+  "_source": "git://github.com/timrwood/moment.git",
+  "_target": "~2.1.0",
+  "_originalSource": "moment"
+}

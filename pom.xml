@@ -427,6 +427,18 @@ public class ComponentVersion extends Version
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <id>browser-build</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>browserBuild</name>
+        </property>
+      </activation>
+      <modules>
+        <module>community/browser</module>
+      </modules>
+    </profile>
   </profiles>
 
   <dependencyManagement>

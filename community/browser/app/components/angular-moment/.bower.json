@@ -1,0 +1,14 @@
+{
+  "name": "angular-moment",
+  "_cacheHeaders": {
+    "ETag": "\"1bc88fdc096e398164475a726068a001\"",
+    "Content-Length": "1209",
+    "Content-Type": "text/plain; charset=utf-8",
+    "Content-Disposition": "inline"
+  },
+  "_release": "e-tag:1bc88fdc0",
+  "main": "index.js",
+  "_source": "https://raw.github.com/wallin/angular-moment/master/angular-moment.js",
+  "_target": "*",
+  "_originalSource": "https://raw.github.com/wallin/angular-moment/master/angular-moment.js"
+}

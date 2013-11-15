@@ -1,0 +1,33 @@
+div(ng-controller="CypherResultCtrl", fullscreen)
+  include partials/frame-common-actions
+  .inner
+    .view-result(ng-class='{error: frame.hasErrors}')
+      .view-result-graph.result(ng-show='isActive("graph")')
+        svg(neo-graph, graph-data='frame.response.graph', ng-controller='D3GraphCtrl'
+          style="pointer-events:fill;", preserveAspectRatio="xMidyMid")
+        include partials/legend
+      .view-result-table.result(ng-show='isActive("table")', ng-animate = "'animate-box'")
+        neo-table(table-data='frame.response.table')
+        a.icon-download-alt(exportable 'ng-click'='exportCSV(frame.response.table)', tooltip-placement='left', tooltip='Download CSV')
+      .view-result-error.result(ng-show='frame.detailedErrorText')
+        pre
+          {{ frame.detailedErrorText }}
+
+    .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
+      div(ng-hide='frame.isLoading')
+        span(ng-show='frame.hasErrors')
+          .icon-warning-sign
+          {{frame.errorText}}
+        div(ng-hide='frame.hasErrors')
+          div(ng-show='frame.response.table')
+            .icon-ok
+            include partials/result-status
+      .btn-group(ng-hide='frame.hasErrors')
+        a.btn.btn-small(ng-click='setActive("graph")', ng-class='{active: isActive("graph")}')
+          i.icon-code-fork
+        a.btn.btn-small(ng-click='setActive("table")', ng-class='{active: isActive("table")}')
+          i.icon-table
+
+      span(ng-show='frame.isLoading')
+        .icon-spinner.icon-spin
+        | Executing query...

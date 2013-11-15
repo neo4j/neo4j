@@ -1,0 +1,11 @@
+include partials/inspector
+
+#error Disconnected from Neo4j. {{motd.disconnected}}
+#leftbar(ng-controller = "SidebarCtrl")
+  include partials/nav
+  include partials/drawer
+#main
+  include partials/editor
+  div(frame-stream)
+  //- include partials/stream
+

@@ -1,0 +1,29 @@
+article.help
+  .container-fluid
+    section.row-fluid.summary
+      .summary.span3
+        h3 DROP INDEX ON
+        p.lead Drop a schema index
+      .details.span9
+        p
+          | The&nbsp;
+          code DROP INDEX ON
+          |  clause will an index on all nodes that have a label.
+
+        table.table-condensed.table-help
+          tr
+            th Usage:
+            td
+              code.code.runnable DROP INDEX ON :Person(name)
+          tr
+            th Reference:
+            td
+              code
+                a(href='http://docs.neo4j.org/chunked/{{neo4j.version}}/query-schema-index.html') schema indexes
+              |  manual page
+          tr
+            th Related:
+            td
+              a(help-topic='create-index-on') :help CREATE INDEX ON
+              | &nbsp;
+              a(help-topic='cypher') :help Cypher

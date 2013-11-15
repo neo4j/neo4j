@@ -1,0 +1,8 @@
+{
+  "name": "angular-sanitize",
+  "version": "1.0.8",
+  "main": "./angular-sanitize.js",
+  "dependencies": {
+    "angular": "1.0.8"
+  }
+}

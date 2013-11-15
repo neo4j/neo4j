@@ -1,0 +1,21 @@
+.bs-docs-social {
+    margin-top: 1em;
+    padding: 15px 0;
+    text-align: center;
+    background-color: rgba(245,245,245,0.3);
+    border-top: 1px solid rgba(255,255,255,0.3);
+    border-bottom: 1px solid rgba(221,221,221,0.3);
+}
+.bs-docs-social-buttons {
+  position: absolute;
+  top: 8px;
+    margin-left: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    list-style: none;
+}
+.bs-docs-social-buttons li {
+    list-style: none;
+    display: inline-block;
+    line-height: 1;
+}

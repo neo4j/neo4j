@@ -1,0 +1,8 @@
+{
+  "name": "angular-scenario",
+  "version": "1.0.8",
+  "main": "./angular-scenario.js",
+  "dependencies": {
+    "angular": "1.0.8"
+  }
+}

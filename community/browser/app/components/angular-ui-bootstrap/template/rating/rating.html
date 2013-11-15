@@ -1,0 +1,3 @@
+<span ng-mouseleave="reset()">
+	<i ng-repeat="number in range" ng-mouseenter="enter(number)" ng-click="rate(number)" ng-class="{'icon-star': number <= val, 'icon-star-empty': number > val}"></i>
+</span>

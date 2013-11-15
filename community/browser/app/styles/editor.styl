@@ -1,0 +1,127 @@
+@import 'variables'
+@import 'nib'
+@import 'mixins'
+
+#editor
+  cursor: text
+  user-select: none
+  min-height: 72px
+  background-color: #fff
+  position: relative
+  top: 0
+  left: 0
+  right: 0
+  z-index: 100
+  border-bottom: 1px solid #D6D8DA
+  box-shadow: 0 1px 2px rgba(0,0,0,0.07)
+
+  textarea
+    opacity: 0 // avoid being displayed before CodeMirror has loaded
+
+  .view-editor
+    transist: min-height
+    min-height: 0%
+    overflow-y: auto
+
+  .message-bar
+    height: 49px
+    line-height: 49px
+    padding: 0 24px
+    color: #FFF
+    overflow: hidden
+    position: relative
+    a
+      color: #fff
+    .actions
+      a
+        font-size: 18px
+        position: absolute
+        top: 10px
+        right: 16px
+        line-height: 30px
+        width: 30px
+        text-align: center
+        border-radius: 3px
+        &:hover
+          background-color: rgba(0,0,0,0.4)
+    i
+      border-bottom: 1px dotted #FFF
+    code
+      border: none
+      background-color: #fff
+    &.error
+      background-color: color-error
+      code
+        color: color-error
+        cursor: pointer
+    &.info
+      background-color: color-link
+      code
+        color: color-link
+
+  ul.controls
+    z-index: 1000
+    fixed: top 20px right 16px
+    .divider
+      margin: 0 6px
+      width: 1px
+      padding: 0
+      background-color: #E4E9F1
+    a.balled
+      transist: all 0.2s
+      transform: scale(1)
+      box-shadow: inset 0 2px 2px rgba(0, 0, 0, 0.1)
+      text-shadow: 0 1px 0px rgba(0, 0, 0, 0.1)
+      color: #fff
+      border: 2px solid white
+      background-color: #E5E5E7
+      cursor: default
+      display: inline-block
+      width: 30px
+      height: 30px
+      text-align: center
+      border-radius: 50%
+      vertical-align: middle
+
+      &.active
+        cursor: pointer
+        box-shadow: none
+        text-shadow: none
+        color: #BABABB
+        border: 2px solid #BCBEC0
+        background-color: #fff
+
+        &:hover
+          transform: scale(1.2)
+
+        &.success
+          &:hover
+            color: color-success
+            border: 2px solid color-success
+        &.golden
+          &.enabled
+            color: #fff
+            background-color: color-star
+            border: 2px solid darken(color-star, 8%)
+          &.changed
+            background-color: #fff
+            color: color-star
+            border: 2px solid darken(color-star, 8%)
+          &:hover
+            color: #fff
+            background-color: color-star
+            border: 2px solid darken(color-star, 8%)
+        &.add
+          &:hover
+            color: color-link
+            border: 2px solid color-link
+
+      [class^="icon-"]
+        font-size: 18px
+        line-height: 32px
+        position: relative
+        &.icon-play
+          font-size: 16px
+          left: 1px
+        &.icon-star
+          font-size: 19px
