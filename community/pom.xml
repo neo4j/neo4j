@@ -48,7 +48,6 @@
     <module>server-examples</module>
     <module>server-plugin-test</module>
     <module>licensecheck-config</module>
-    <module>browser</module>
   </modules>
 
   <licenses>
