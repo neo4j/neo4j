@@ -145,6 +145,12 @@ public final class Functions
             {
                 return to.cast( from );
             }
+
+            @Override
+            public String toString()
+            {
+                return "cast(to=" + to.getName() + ")";
+            }
         };
     }
 }
