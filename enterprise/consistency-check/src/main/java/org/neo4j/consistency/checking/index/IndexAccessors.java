@@ -47,8 +47,8 @@ public class IndexAccessors implements Closeable
 
         for ( IndexRule indexRule : indexRules )
         {
-            accessors.put(indexRule.getId(),
-                    provider.getOnlineAccessor( indexRule.getId(), new IndexConfiguration( indexRule.isConstraintIndex() ) ) );
+            accessors.put(indexRule.getId(), provider.getOnlineAccessor(
+                    indexRule.getId(), new IndexConfiguration( indexRule.isConstraintIndex() ) ) );
         }
     }
 
@@ -66,5 +66,11 @@ public class IndexAccessors implements Closeable
     @Override
     public void close() throws IOException
     {
+        for ( IndexAccessor accessor : accessors.values() )
+        {
+            accessor.close();
+        }
+        accessors.clear();
+        indexRules.clear();
     }
 }
