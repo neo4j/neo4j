@@ -109,7 +109,7 @@ choose_user() {
 
 warning() {
   echo "WARNING: this installer is deprecated and may not be the optimal way to install Neo4j on your system.
-  Please see http://docs.neo4j.org/chunked/milestone/server.html for up to date information on installing Neo4j."
+  Please see the Neo4j Manual for up to date information on installing Neo4j."
   read -p 'Press any key to continue'
 }
 

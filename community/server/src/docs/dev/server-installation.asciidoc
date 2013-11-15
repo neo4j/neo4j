@@ -37,31 +37,32 @@ We recommend that you install the Java JDK 7 from the http://www.oracle.com/tech
 1. Download the latest release from http://neo4j.org/download.
    * Select the appropriate Zip distribution.
 2. Right-click the downloaded file, click Extract All.
-   * Refer to the top-level extracted directory as +NEO4J_HOME+.
-3. Double-click on '%NEO4J_HOME%\bin\Neo4j.bat'.
+   * Refer to the top-level extracted directory as: +NEO4J_HOME+
+3. Double-click on '%NEO4J_HOME%\bin\Neo4j.bat'
+4. Stop the server by typing Ctrl-C in the console that got opened.
 
 === As a Windows service ===
 
 1. Download the latest release from http://neo4j.org/download.
    * Select the appropriate Zip distribution.
 2. Right-click the downloaded file, click Extract All.
-   * Refer to the top-level extracted directory as +NEO4J_HOME+.
+   * Refer to the top-level extracted directory as: +NEO4J_HOME+
 
 With administrative rights, Neo4j can be installed as a Windows service.
 
 1. Click Start -> All Programs -> Accessories.
 2. Right click Command Prompt -> Run as Administrator.
 3. Provide authorization and/or the Administrator password.
-4. Navigate to `%NEO4J_HOME%`.
-5. Run `bin\Neo4jInstaller.bat install`.
+4. Navigate to: `%NEO4J_HOME%`
+5. Run: `bin\Neo4jInstaller.bat install`
 
 To uninstall, run `bin\Neo4jInstaller.bat remove` as Administrator.
 
-To query the status of the service, run `bin\Neo4jInstaller.bat status`.
+To query the status of the service, run: `bin\Neo4jInstaller.bat status`
 
-To start the service from the command prompt, run `sc start Neo4j-Server`.
+To start the service from the command prompt, run: `sc start Neo4j-Server`
 
-To stop the service from the command prompt, run `sc stop Neo4j-Server`.
+To stop the service from the command prompt, run: `sc stop Neo4j-Server`
 
 You can also start and stop Neo4j from the Windows Service Manager.
 
@@ -83,28 +84,33 @@ For Debian packages, see the instructions at  http://debian.neo4j.org.
 
 1. Download the latest release from http://neo4j.org/download.
    * Select the appropriate tar.gz distribution for your platform.
-2. Extract the contents of the archive, using `tar -cf <filename>`.
-   * Refer to the top-level extracted directory as +NEO4J_HOME+.
-3. Change directory to `$NEO4J_HOME`.
-   * Run `./bin/neo4j console`.
+2. Extract the contents of the archive, using: `tar -cf <filename>`
+   * Refer to the top-level extracted directory as: +NEO4J_HOME+
+3. Change directory to: `$NEO4J_HOME`
+   * Run: `./bin/neo4j console`
+4. Stop the server by typing Ctrl-C in the console.
 
 === Linux Service ===
 
 Neo4j can participate in the normal system startup and shutdown process.
 The following procedure should work on most popular Linux distributions:
 
-1. `cd $NEO4J_HOME`
-2. `sudo ./bin/neo4j-installer install`
+. `cd $NEO4J_HOME`
+. `sudo ./bin/neo4j-installer install`
 +
 If asked, enter your password to gain super-user privileges.
 
-3. `service neo4j-service status`
+. `sudo service neo4j-service status`
 +
 This should indicate that the server is not running.
 
-4. `service neo4j-service start`
+. `sudo service neo4j-service start`
 +
 This will start the server.
+
+. `sudo service neo4j-service stop`
++
+This will stop the server.
 
 During installation you will be given the option to select the user Neo4j will run as.
 You will be asked to supply a username (defaulting to `neo4j`) and if that user is not present on the system it will be created as a system account and the '$NEO4J_HOME/data' directory will be ++chown++'ed to that user.
@@ -114,9 +120,10 @@ You are encouraged to create a dedicated user for running the service and for th
 After installation you may have to do some platform specific configuration and performance tuning.
 For that, refer to  <<configuration-linux-notes>>.
 
-To remove the server from the set of startup services, the proper command is:
+To remove the server from the set of startup services, the proper commands are:
 
-`service neo4j-service remove`
+. `cd $NEO4J_HOME`
+. `sudo ./bin/neo4j-installer remove`
 
 This will stop the server, if running, and remove it.
 
