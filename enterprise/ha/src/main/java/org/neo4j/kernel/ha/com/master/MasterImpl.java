@@ -80,6 +80,9 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
  */
 public class MasterImpl extends LifecycleAdapter implements Master
 {
+
+    public static final int TX_TIMEOUT_ADDITION = 5 * 1000;
+
     // This is a bridge SPI that MasterImpl requires to function. Eventually this should be split
     // up into many smaller APIs implemented by other services so that this is not needed.
     // This SPI allows MasterImpl to have no direct dependencies, and instead puts those dependencies into the
@@ -143,7 +146,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public void start() throws Throwable
     {
-        this.unfinishedTransactionThresholdMillis = config.get( HaSettings.lock_read_timeout );
+        this.unfinishedTransactionThresholdMillis = config.get( HaSettings.lock_read_timeout ) + TX_TIMEOUT_ADDITION;
         this.unfinishedTransactionsExecutor =
                 Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Unfinished transaction reaper" ) );
         this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new UnfinishedTransactionReaper(),
