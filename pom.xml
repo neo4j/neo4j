@@ -265,7 +265,6 @@ public class ComponentVersion extends Version
         <module>manual</module>
         <module>packaging</module>
         <module>packaging/installer-linux</module>
-        <module>community/browser</module>
       </modules>
       <properties>
         <attach-docs-phase>verify</attach-docs-phase>
@@ -427,6 +426,18 @@ public class ComponentVersion extends Version
           <optional>true</optional>
         </dependency>
       </dependencies>
+    </profile>
+    <profile>
+      <id>browser-build</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>browserBuild</name>
+        </property>
+      </activation>
+      <modules>
+        <module>community/browser</module>
+      </modules>
     </profile>
   </profiles>
 
