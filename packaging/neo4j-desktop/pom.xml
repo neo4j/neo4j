@@ -120,47 +120,6 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <id>include-default-config</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target name="include-default-config">
-                <mkdir dir="${config.destination}" />
-                <copy file="${project.basedir}/../standalone/standalone-community/src/main/distribution/text/community/conf/neo4j.properties"
-                      toFile="${config.destination}/neo4j-default.properties"/>
-                  <copy file="${project.basedir}/../standalone/standalone-community/src/main/distribution/text/community/conf/neo4j-server.properties"
-                        toFile="${config.destination}/neo4j-server-default.properties">
-                      <filterchain>
-                          <linecontains negate="true">
-                              <contains value="database.location"/>
-                          </linecontains>
-                          <linecontains negate="true">
-                              <contains value="rrd"/>
-                          </linecontains>
-                          <linecontains negate="true">
-                              <contains value="db.tuning.properties"/>
-                          </linecontains>
-                          <linecontains negate="true">
-                              <contains value="console_engines"/>
-                          </linecontains>
-                          <linecontains negate="true">
-                              <contains value="log"/>
-                          </linecontains>
-                          <striplinecomments>
-                              <comment value="#"/>
-                              <comment value="--"/>
-                              <comment value="REM "/>
-                              <comment value="rem "/>
-                              <comment value="//"/>
-                          </striplinecomments>
-                      </filterchain>
-                  </copy>
-              </target>
-            </configuration>
-          </execution>
-          <execution>
             <id>fix-license-line-endings</id>
             <phase>generate-resources</phase>
             <goals>

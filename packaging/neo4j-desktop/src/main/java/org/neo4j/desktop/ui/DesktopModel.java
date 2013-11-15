@@ -160,12 +160,13 @@ public class DesktopModel
     {
         if ( OperatingSystemFamily.WINDOWS.isDetected() )
         {
-            return new File( new File ( System.getenv( "APPDDATA" ) ), "neo4j-community.vmoptions" );
+            String appData = System.getenv( "APPDATA" );
+            if ( null != appData )
+            {
+                return new File( new File ( appData ), "neo4j-community.vmoptions" );
+            }
         }
-        else
-        {
-            return new File( new File ( System.getProperty( "user.home" ) ) , ".neo4j-community.vmoptions" );
-        }
+        return new File( new File ( System.getProperty( "user.home" ) ) , ".neo4j-community.vmoptions" );
     }
 
     private File getSystemVmOptionsFile()

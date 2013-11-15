@@ -107,7 +107,7 @@ public class DesktopConfigurator implements Configurator
     }
 
     public int getServerPort() {
-        return configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT);
+        return configuration().getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT );
     }
 
     public File getDatabaseConfigurationFile() {
@@ -115,18 +115,14 @@ public class DesktopConfigurator implements Configurator
     }
 
     public File getServerConfigurationFile() {
-        File serverConfigurationFile = null;
-
         if ( OperatingSystemFamily.WINDOWS.isDetected() )
         {
-            serverConfigurationFile = new File( new File ( System.getenv( "APPDDATA" ) ), "neo4j-server.properties" );
+            String appData = System.getenv( "APPDATA" );
+            if ( null != appData )
+            {
+                return new File( new File ( appData ), "neo4j-server.properties" );
+            }
         }
-        else
-        {
-            serverConfigurationFile =  new File( new File ( System.getProperty( "user.home" ) ) , ".neo4j-server.properties" );
-        }
-
-        return serverConfigurationFile;
+        return new File( new File ( System.getProperty( "user.home" ) ) , ".neo4j-server.properties" );
     }
-
 }
