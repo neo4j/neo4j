@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -277,12 +278,13 @@ public class StoreStatementOperationsTest
         }
     }
 
-    private GraphDatabaseAPI db;
+    @SuppressWarnings("deprecation") private GraphDatabaseAPI db;
     private final Label label1 = label( "first-label" ), label2 = label( "second-label" );
     private final String propertyKey = "name";
     private KernelStatement state;
     private StoreStatementOperations statement;
 
+    @SuppressWarnings("deprecation")
     @Before
     public void before()
     {

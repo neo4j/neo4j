@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
 import static java.lang.String.format;
@@ -87,7 +87,7 @@ public class ConsistencyCheckTasks
         tasks.add( create( nativeStores.getSchemaStore() ));
 
         // PASS 2: Rule integrity and obligation build up
-        final SchemaRecordCheck schemaCheck = new SchemaRecordCheck( (SchemaStore) nativeStores.getSchemaStore() );
+        final SchemaRecordCheck schemaCheck = new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore() ) );
         tasks.add( new SchemaStoreProcessorTask<>(
                 nativeStores.getSchemaStore(), "check_rules", schemaCheck, progress, order,
                 processor, processor ) );

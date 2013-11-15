@@ -72,7 +72,7 @@ public class ProcessFailureException extends Exception
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private static Throwable cause( List<Entry> causes )
     {
-        return causes.size() == 1 ? causes.get( 0 ).failure : null;
+        return causes.size() >= 1 ? causes.get( 0 ).failure : null;
     }
 
     @Override

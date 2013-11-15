@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -176,7 +177,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         checkIfShutdown();
         return new KernelTransactionImplementation( statementOperations, legacyKernelOperations, readOnly,
-                schemaWriteGuard, labelScanStore, indexService, transactionManager, nodeManager, persistenceCache,
+                schemaWriteGuard, labelScanStore, indexService, transactionManager, nodeManager,
                 schemaState, new LockHolderImpl( lockManager, getJTATransaction(), nodeManager ),
                 persistenceManager, providerMap, neoStore, getLegacyTxState() );
     }

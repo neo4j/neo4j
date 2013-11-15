@@ -37,8 +37,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
@@ -74,6 +72,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.Store;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -101,9 +100,6 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -260,7 +256,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
      */
     public NeoStoreXaDataSource( Config config, StoreFactory sf,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
-                                 TransactionInterceptorProviders providers,
+                                 @SuppressWarnings("deprecation") TransactionInterceptorProviders providers,
                                  JobScheduler scheduler, Logging logging,
                                  UpdateableSchemaState updateableSchemaState,
                                  TokenNameLookup tokenNameLookup,
@@ -692,21 +688,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
     private Iterator<IndexRule> loadIndexRules()
     {
-        return map( new Function<SchemaRule, IndexRule>()
-        {
-            @Override
-            public IndexRule apply( SchemaRule schemaRule )
-            {
-                return (IndexRule) schemaRule;
-            }
-        }, filter( new Predicate<SchemaRule>()
-        {
-            @Override
-            public boolean accept( SchemaRule item )
-            {
-                return item.getKind().isIndex();
-            }
-        }, neoStore.getSchemaStore().loadAllSchemaRules() ) );
+        return new SchemaStorage( neoStore.getSchemaStore() ).allIndexRules();
     }
 
     @Override
