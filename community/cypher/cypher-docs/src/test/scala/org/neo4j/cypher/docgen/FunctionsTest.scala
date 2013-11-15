@@ -431,6 +431,20 @@ class FunctionsTest extends DocumentingTestBase {
     )
   }
 
+  @Test def haversin_spherical_distance() {
+    testQuery(
+      title = "spherical distance using the haversin function",
+      text =
+"The haversin function may be used to compute the distance on the surface of a sphere between two points (each given " +
+"by their latitude and longitude). In this example the spherical distance (in km) between Berlin in Germany " +
+"(at lat 52.5, lon 13.4) and San Francisco in California (at lat 37.5, lon -122.3) is calculated using an average " +
+"earth radius of 6371 km.",
+      queryText = """CREATE (ber:City {lat: 52.5, lon: 13.4}), (sf:City {lat: 37.5, lon: -122.3}) RETURN 2*6371*asin(sqrt(haversin(radians(sf.lat-ber.lat))+cos(radians(sf.lat))*cos(radians(ber.lat))*haversin(radians(sf.lon-ber.lon)))) AS dist""",
+      returns = "The distance between Berlin and San Mateo is returned (about 9129 km)",
+      assertions = (p) => assertEquals(9129, p.toList.head("dist").asInstanceOf[Double], 1)
+    )
+  }
+
   @Test def log() {
     testThis(
       title = "LOG",

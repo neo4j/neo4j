@@ -126,6 +126,8 @@ include::floor.asciidoc[]
 
 include::haversin.asciidoc[]
 
+include::spherical-distance-using-the-haversin-function.asciidoc[]
+
 include::log.asciidoc[]
 
 include::log10.asciidoc[]
