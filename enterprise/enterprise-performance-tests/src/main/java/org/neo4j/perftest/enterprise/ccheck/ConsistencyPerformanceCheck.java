@@ -33,7 +33,6 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.kernel.api.direct.SimpleDirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -145,7 +144,7 @@ public class ConsistencyPerformanceCheck
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
 
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
-        return new SimpleDirectStoreAccess( new StoreAccess( neoStore ),
+        return new DirectStoreAccess( new StoreAccess( neoStore ),
                 new LuceneLabelScanStoreBuilder( storeDir, neoStore, fileSystem, logger ).build(), indexes );
     }
 

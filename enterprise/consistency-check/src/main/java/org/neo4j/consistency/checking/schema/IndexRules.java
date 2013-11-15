@@ -22,7 +22,6 @@ package org.neo4j.consistency.checking.schema;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -32,33 +31,27 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 
 public class IndexRules
 {
-    @SuppressWarnings( "unchecked" )
-    public static List<IndexRule> loadAllIndexRules( final RecordStore<DynamicRecord> schemaStore ) throws ConsistencyCheckIncompleteException
+    @SuppressWarnings("unchecked")
+    public static List<IndexRule> loadAllIndexRules( final RecordStore<DynamicRecord> schemaStore )
+            throws MalformedSchemaRuleException
     {
         final List<IndexRule> indexRules = new ArrayList<>();
-        try
+        new RecordStore.Processor<MalformedSchemaRuleException>()
         {
-            new RecordStore.Processor<MalformedSchemaRuleException>()
+            @Override
+            public void processSchema( RecordStore<DynamicRecord> store,
+                                       DynamicRecord record ) throws MalformedSchemaRuleException
             {
-                @Override
-                public void processSchema( RecordStore<DynamicRecord> store,
-                                               DynamicRecord record ) throws MalformedSchemaRuleException
+                if ( record.inUse() && record.isStartRecord() )
                 {
-                    if ( record.inUse() && record.isStartRecord() )
+                    SchemaRule schemaRule = ((SchemaStore) schemaStore).loadSingleSchemaRule( record.getId() );
+                    if ( schemaRule instanceof IndexRule  )
                     {
-                        SchemaRule schemaRule = ((SchemaStore) schemaStore).loadSingleSchemaRule( record.getId() );
-                        if ( schemaRule.getKind() == SchemaRule.Kind.INDEX_RULE )
-                        {
-                            indexRules.add( (IndexRule) schemaRule );
-                        }
+                        indexRules.add( (IndexRule) schemaRule );
                     }
                 }
-            }.applyFiltered( schemaStore );
-            return indexRules;
-        }
-        catch ( MalformedSchemaRuleException e )
-        {
-            throw new ConsistencyCheckIncompleteException( e );
-        }
+            }
+        }.applyFiltered( schemaStore );
+        return indexRules;
     }
 }

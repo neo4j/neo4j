@@ -30,6 +30,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -235,6 +236,14 @@ public interface ConsistencyReport
         /** This record points to a next record that was already part of this dynamic record chain. */
         @Documented
         void dynamicRecordChainCycle( DynamicRecord nextRecord );
+
+        /** This node was not found the in the expected index. */
+        @Documented
+        void notIndexed( IndexRule index, Object propertyValue );
+
+        /** There is another node in the unique index with the same property value. */
+        @Documented
+        void uniqueIndexNotUnique( IndexRule index, Object propertyValue, long duplicateNodeId );
     }
 
     interface RelationshipConsistencyReport

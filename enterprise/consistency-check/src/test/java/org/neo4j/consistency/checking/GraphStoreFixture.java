@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
@@ -57,53 +57,39 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.util.Collections.singletonMap;
 
-public abstract class GraphStoreFixture implements TestRule, DirectStoreAccess
+public abstract class GraphStoreFixture implements TestRule
 {
-    private StoreAccess storeAccess;
-    private LabelScanStore labelScanStore;
-    private SchemaIndexProvider indexes;
+    private DirectStoreAccess directStoreAccess;
 
     public void apply( Transaction transaction ) throws IOException
     {
-        applyTransaction( write( transaction, null ) );
+        applyTransaction( transaction );
     }
 
-    @Override
-    public StoreAccess nativeStores()
+    public DirectStoreAccess directStoreAccess()
     {
-        if (storeAccess == null)
+        if ( directStoreAccess == null )
         {
-            storeAccess = new StoreAccess( directory );
+            StoreAccess nativeStores = new StoreAccess( directory );
+            directStoreAccess = new DirectStoreAccess(
+                    nativeStores,
+                    new LuceneLabelScanStoreBuilder(
+                            directory().getAbsolutePath(),
+                            nativeStores.getRawNeoStore(),
+                            new DefaultFileSystemAbstraction(),
+                            StringLogger.SYSTEM
+                    ).build(),
+                    createIndexes()
+            );
         }
-        return storeAccess;
+        return directStoreAccess;
     }
 
-    @Override
-    public LabelScanStore labelScanStore()
+    private SchemaIndexProvider createIndexes()
     {
-        if ( labelScanStore == null )
-        {
-            labelScanStore = new LuceneLabelScanStoreBuilder(
-                directory().getAbsolutePath(),
-                nativeStores().getRawNeoStore(),
-                new DefaultFileSystemAbstraction(),
-                StringLogger.SYSTEM
-            ).build();
-        }
-        return labelScanStore;
-    }
-
-    @Override
-    public SchemaIndexProvider indexes()
-    {
-        if ( indexes == null )
-        {
-            Config config = new Config( singletonMap( GraphDatabaseSettings.store_dir.name(),
-                    directory().getAbsolutePath() ) );
-            indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config );
-        }
-
-        return indexes;
+        Config config = new Config( singletonMap( GraphDatabaseSettings.store_dir.name(),
+                directory().getAbsolutePath() ) );
+        return new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config );
     }
 
     public File directory()
@@ -118,21 +104,16 @@ public abstract class GraphStoreFixture implements TestRule, DirectStoreAccess
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
-        private ReadableByteChannel write( IdGenerator idGenerator, int localId, int masterId, int myId, Long txId )
+        private ReadableByteChannel write( IdGenerator idGenerator, int localId, int masterId, int myId, long txId )
                 throws IOException
         {
             InMemoryLogBuffer buffer = new InMemoryLogBuffer();
             TransactionWriter writer = new TransactionWriter( buffer, localId );
-            writer.start( globalId, masterId, myId, startTimestamp, txId == null ? 0l : txId );
+            writer.start( globalId, masterId, myId, startTimestamp, txId );
 
             transactionData( new TransactionDataBuilder( writer ), idGenerator );
 
             writer.prepare();
-            if ( txId != null )
-            {
-                writer.commit( false, txId );
-                writer.done();
-            }
             return buffer;
         }
     }
@@ -387,20 +368,10 @@ public abstract class GraphStoreFixture implements TestRule, DirectStoreAccess
 
     protected void stop() throws Throwable
     {
-        if ( indexes != null )
+        if ( directStoreAccess != null )
         {
-            indexes.shutdown();
-            indexes = null;
-        }
-        if ( labelScanStore != null )
-        {
-            labelScanStore.shutdown();
-            labelScanStore = null;
-        }
-        if ( storeAccess != null )
-        {
-            storeAccess.close();
-            storeAccess = null;
+            directStoreAccess.close();
+            directStoreAccess = null;
         }
     }
 
@@ -420,14 +391,18 @@ public abstract class GraphStoreFixture implements TestRule, DirectStoreAccess
     }
 
     @SuppressWarnings("deprecation")
-    protected void applyTransaction( ReadableByteChannel transaction ) throws IOException
+    protected void applyTransaction( Transaction transaction ) throws IOException
     {
         GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).setConfig( configuration( false ) ).newGraphDatabase();
         try
         {
-            database.beginTx();
-            database.getDependencyResolver().resolveDependency( XaDataSourceManager.class).getNeoStoreDataSource()
-                    .applyPreparedTransaction( transaction );
+            try ( org.neo4j.graphdb.Transaction tx = database.beginTx() )
+            {
+                NeoStoreXaDataSource dataSource = database.getDependencyResolver()
+                        .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
+                dataSource.applyPreparedTransaction( write( transaction, dataSource.getLastCommittedTxId() ) );
+                tx.success();
+            }
         }
         finally
         {

@@ -19,15 +19,6 @@
  */
 package org.neo4j.consistency;
 
-import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.FALSE;
-import static org.neo4j.helpers.Settings.NO_DEFAULT;
-import static org.neo4j.helpers.Settings.PATH;
-import static org.neo4j.helpers.Settings.basePath;
-import static org.neo4j.helpers.Settings.options;
-import static org.neo4j.helpers.Settings.osIsWindows;
-import static org.neo4j.helpers.Settings.setting;
-
 import java.io.File;
 
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
@@ -35,6 +26,16 @@ import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+
+import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.FALSE;
+import static org.neo4j.helpers.Settings.NO_DEFAULT;
+import static org.neo4j.helpers.Settings.PATH;
+import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.helpers.Settings.basePath;
+import static org.neo4j.helpers.Settings.options;
+import static org.neo4j.helpers.Settings.osIsWindows;
+import static org.neo4j.helpers.Settings.setting;
 
 /**
  * Settings for consistency checker
@@ -45,6 +46,14 @@ public class ConsistencyCheckSettings
             "This can detect a theoretical inconsistency where a property could be owned by multiple entities. " +
             "However, but the check is very expensive in time and memory, so it is skipped by default.")
     public static final Setting<Boolean> consistency_check_property_owners = setting( "consistency_check_property_owners", BOOLEAN, FALSE );
+
+    @Description("Perform checks on the label scan store. Checking this store is more expensive than " +
+            "checking the native stores, so it may be useful to turn off this check for very large databases.")
+    public static final Setting<Boolean> consistency_check_label_scan_store = setting( "consistency_check_label_scan_store", BOOLEAN, TRUE );
+
+    @Description("Perform checks on indexes. Checking indexes is more expensive than " +
+            "checking the native stores, so it may be useful to turn off this check for very large databases.")
+    public static final Setting<Boolean> consistency_check_indexes = setting( "consistency_check_indexes", BOOLEAN, TRUE );
 
     @Description("Window pool implementation to be used when running consistency check")
     public static final Setting<TaskExecutionOrder> consistency_check_execution_order =

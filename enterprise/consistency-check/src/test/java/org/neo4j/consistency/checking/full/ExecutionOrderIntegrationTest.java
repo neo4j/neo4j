@@ -95,7 +95,7 @@ public class ExecutionOrderIntegrationTest
     public void shouldRunSameChecksInMultiPassAsInSingleSingleThreadedPass() throws Exception
     {
         // given
-        StoreAccess store = fixture.nativeStores();
+        StoreAccess store = fixture.directStoreAccess().nativeStores();
         DiffRecordAccess access = FullCheck.recordAccess( store );
 
         FullCheck singlePass = new FullCheck( config( TaskExecutionOrder.SINGLE_THREADED ),
@@ -110,10 +110,10 @@ public class ExecutionOrderIntegrationTest
         InvocationLog multiPassChecks = new InvocationLog();
 
         // when
-        singlePass.execute( fixture, new LogDecorator( singlePassChecks ), access, new InconsistencyReport( logger,
+        singlePass.execute( fixture.directStoreAccess(), new LogDecorator( singlePassChecks ), access, new InconsistencyReport( logger,
                 singlePassSummary ) );
 
-        multiPass.execute( fixture, new LogDecorator( multiPassChecks ), access, new InconsistencyReport( logger,
+        multiPass.execute( fixture.directStoreAccess(), new LogDecorator( multiPassChecks ), access, new InconsistencyReport( logger,
                 multiPassSummary ) );
 
         // then
