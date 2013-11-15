@@ -3,7 +3,7 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.neo4j.app</groupId>
+  <groupId>org.neo4j.browser</groupId>
   <artifactId>neo4j-browser</artifactId>
   <!-- NOTE: version is always ahead of package.json version  -->
   <version>0.1.24-SNAPSHOT</version>
