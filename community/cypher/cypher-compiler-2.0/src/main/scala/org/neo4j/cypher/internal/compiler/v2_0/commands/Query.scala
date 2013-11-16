@@ -88,7 +88,11 @@ case class Query(returns: Return,
       tailQ.slice.isEmpty &&
       tailQ.aggregation.isEmpty
 
-    if (compactableStart && compactableEnd) {
+    // If we have updating actions, we can't merge with a tail part that has updating start items
+    // That would mess with the order of actions
+    val noUpdateClashes = tail.nonEmpty && !(updatedCommands.nonEmpty && tail.get.start.exists(_.mutating))
+
+    if (compactableStart && compactableEnd && noUpdateClashes) {
       val result = commands.Query(
         hints = hints ++ tailQ.hints,
         start = start ++ tailQ.start,
@@ -100,7 +104,7 @@ case class Query(returns: Return,
         aggregation = None,
         sort = Seq(),
         slice = None,
-        namedPaths = Seq(),
+        namedPaths = namedPaths ++ tailQ.namedPaths,
         tail = tailQ.tail
       )
       result

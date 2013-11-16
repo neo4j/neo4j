@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.{Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.compiler.v2_0.mutation._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CollectionType, AnyType, NodeType, SymbolTable}
 import org.neo4j.cypher.internal.compiler.v2_0.commands._
@@ -29,41 +26,8 @@ import collection.mutable
 import expressions.Identifier
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_0.commands.CreateNodeStartItem
-import org.neo4j.cypher.internal.compiler.v2_0.commands.CreateRelationshipStartItem
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateNode
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.ForeachAction
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-
-class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService)
-  extends PlanBuilder with UpdateCommandExpander with GraphElementPropertyFunctions {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
-    val q = plan.query
-    val mutatingQueryTokens = q.start.filter(applicableTo(plan.pipe))
-
-    val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdatingStartItem].updateAction)
-    val allCommands = expandCommands(commands, plan.pipe.symbols)
-
-    val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, db, allCommands)
-    val resultQuery = q.start.filterNot(mutatingQueryTokens.contains) ++ mutatingQueryTokens.map(_.solve)
-
-    plan.copy(query = q.copy(start = resultQuery), pipe = resultPipe, isUpdating = true)
-  }
-
-  def applicableTo(pipe: Pipe)(start: QueryToken[StartItem]): Boolean = start match {
-    case Unsolved(x: CreateNodeStartItem)         => x.symbolDependenciesMet(pipe.symbols)
-    case Unsolved(x: CreateRelationshipStartItem) => x.symbolDependenciesMet(pipe.symbols)
-    case _                                        => false
-  }
-
-  override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = plan.query.start.flatMap {
-    case Unsolved(x: CreateNodeStartItem)         => plan.pipe.symbols.missingSymbolTableDependencies(x)
-    case Unsolved(x: CreateRelationshipStartItem) => plan.pipe.symbols.missingSymbolTableDependencies(x)
-    case _                                        => Seq()
-  }.map("Unknown identifier `%s`".format(_))
-
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = plan.query.start.exists(applicableTo(plan.pipe))
-}
 
 trait UpdateCommandExpander {
   def expandCommands(commands: Seq[UpdateAction], symbols: SymbolTable): Seq[UpdateAction] = {
