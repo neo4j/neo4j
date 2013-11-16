@@ -173,10 +173,6 @@ For further details on float/double values, see http://docs.oracle.com/javase/sp
 [[graphdb-neo4j-labels]]
 == Labels ==
 
-[NOTE]
-This is a new feature in Neo4j, it is experimental and may still change.
-Your feedback on this addition to the model is very welcome.
-
 A label is a named graph construct that is used to group nodes into sets; all nodes labeled with the same label belongs to the same set.
 Many database queries can work with these sets instead of the whole graph, making queries easier to write and more efficient.
 A node may be labeled with any number of labels, including none, making labels an optional addition to the graph.
@@ -188,19 +184,21 @@ A node may be labeled with any number of labels, including none, making labels a
 "A Label" -> "Node" [label="groups"]
 ----
 
-An example would be a label named 'User' that you label all your nodes representing users with.
+Labels are used when defining contraints and adding indexes for properties.
+
+An example would be a label named +User+ that you label all your nodes representing users with.
 With that in place, you can ask Neo4j to perform operations only on your user nodes, such as finding all users with a given name.
 
 However, you can use labels for much more.
 For instance, since labels can be added and removed during runtime, they can be used to mark temporary states for your nodes.
-You might create an "Offline" label for phones that are offline, a "Happy" label for happy pets, and so on.
+You might create an +Offline+ label for phones that are offline, a +Happy+ label for happy pets, and so on.
 
 === Label names ===
 
 Any non-empty unicode string can be used as a label name.
-In Cypher, you may need to use the backtick (``) syntax to avoid clashes with Cypher identifier rules.
+In Cypher, you may need to use the backtick (++`++) syntax to avoid clashes with Cypher identifier rules.
 By convention, labels are written with CamelCase notation, with the first letter in upper case.
-For instance, 'User' or 'CarOwner'.
+For instance, +User+ or +CarOwner+.
 
 Labels have an id space of an int, meaning the maximum number of labels the database can contain is roughly 2 billion.
 
