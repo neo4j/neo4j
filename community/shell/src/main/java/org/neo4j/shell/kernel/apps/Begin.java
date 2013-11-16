@@ -23,9 +23,9 @@ import java.rmi.RemoteException;
 
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -102,7 +102,7 @@ public class Begin extends NonTransactionProvidingApp
     {
         try
         {
-            return server.getDb().getDependencyResolver().resolveDependency( TxManager.class ).getTransaction();
+            return server.getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).getTransaction();
         }
         catch ( SystemException e )
         {

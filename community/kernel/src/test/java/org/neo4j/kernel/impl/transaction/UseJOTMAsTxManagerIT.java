@@ -34,6 +34,7 @@ import javax.transaction.xa.Xid;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -245,6 +246,6 @@ public class UseJOTMAsTxManagerIT
 
     private TransactionManager txManager( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( TxManager.class );
+        return db.getDependencyResolver().resolveDependency( TransactionManager.class );
     }
 }

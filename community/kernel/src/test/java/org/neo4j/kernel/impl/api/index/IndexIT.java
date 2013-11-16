@@ -29,7 +29,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.TxManager;
+
+import javax.transaction.TransactionManager;
 
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -114,7 +115,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         Transactor transactor = new Transactor(
-                db.getDependencyResolver().resolveDependency( TxManager.class ),
+                db.getDependencyResolver().resolveDependency( TransactionManager.class ),
                 db.getDependencyResolver().resolveDependency( PersistenceManager.class ) );
         transactor.execute( ConstraintIndexCreator.createConstraintIndex( labelId, propertyKey ) );
 

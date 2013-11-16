@@ -29,6 +29,8 @@ import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
@@ -67,7 +69,7 @@ public class TestInstanceJoin
             long nodeId = createNode( master, key, value );
             createNode( master, "something", "unimportant" );
             // Rotating, moving the above transactions away so they are removed on shutdown.
-            rotateLogs( master.getXaDataSourceManager(), master.getKernelPanicGenerator(),
+            rotateLogs( getXaDataSourceManager( master ), getKernelPanicGenerator( master ),
                     master.getDependencyResolver().resolveDependency( StringLogger.class ) );
 
             /*
@@ -85,14 +87,9 @@ public class TestInstanceJoin
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
             slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
-            Transaction transaction = slave.beginTx();
-            try
+            try ( Transaction ignore = slave.beginTx() )
             {
                 assertEquals( "store contents differ", value, slave.getNodeById( nodeId ).getProperty( key ) );
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
         finally
@@ -109,19 +106,25 @@ public class TestInstanceJoin
         }
     }
 
-    private long createNode( HighlyAvailableGraphDatabase db, String key, String value )
+    private KernelPanicEventGenerator getKernelPanicGenerator( HighlyAvailableGraphDatabase database )
     {
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( key, value );
-        tx.success();
-        tx.finish();
-        return node.getId();
+        return database.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class );
     }
 
-    private static HighlyAvailableGraphDatabase start( String storeDir, int i )
+    private XaDataSourceManager getXaDataSourceManager( HighlyAvailableGraphDatabase database )
     {
-        return start( storeDir, i, stringMap() );
+        return database.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+    }
+
+    private long createNode( HighlyAvailableGraphDatabase db, String key, String value )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( key, value );
+            tx.success();
+            return node.getId();
+        }
     }
 
     private static HighlyAvailableGraphDatabase start( String storeDir, int i, Map<String, String> additionalConfig )

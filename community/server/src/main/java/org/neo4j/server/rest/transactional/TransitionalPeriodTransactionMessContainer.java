@@ -20,17 +20,18 @@
 package org.neo4j.server.rest.transactional;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.TxManager;
+
+import javax.transaction.TransactionManager;
 
 public class TransitionalPeriodTransactionMessContainer
 {
     private final GraphDatabaseAPI db;
-    private final TxManager txManager;
+    private final TransactionManager txManager;
 
     public TransitionalPeriodTransactionMessContainer( GraphDatabaseAPI db )
     {
         this.db = db;
-        this.txManager = db.getDependencyResolver().resolveDependency( TxManager.class );
+        this.txManager = db.getDependencyResolver().resolveDependency( TransactionManager.class );
     }
 
     public TransitionalTxManagementKernelTransaction newTransaction()

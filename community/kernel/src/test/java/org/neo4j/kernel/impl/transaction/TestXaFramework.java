@@ -112,7 +112,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     public void setUpFramework()
     {
         getTransaction().finish();
-        tm = getGraphDbAPI().getDependencyResolver().resolveDependency( TxManager.class );
+        tm = getGraphDbAPI().getDependencyResolver().resolveDependency( TransactionManager.class );
         xaDsMgr = getGraphDbAPI().getDependencyResolver().resolveDependency( XaDataSourceManager.class );
     }
 

@@ -25,7 +25,6 @@ import javax.transaction.TransactionManager;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
@@ -36,7 +35,7 @@ public class TestTxSuspendResume
     public void testMultipleTxSameThread() throws Exception
     {
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        TransactionManager tm = graphdb.getDependencyResolver().resolveDependency( TxManager.class );
+        TransactionManager tm = graphdb.getDependencyResolver().resolveDependency( TransactionManager.class );
         tm.begin();
         Node refNode = graphdb.createNode();
         tm.commit();

@@ -1321,11 +1321,11 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( KernelPanicEventGenerator.class.isAssignableFrom( type ) )
             {
-                return (T) kernelPanicEventGenerator;
+                return type.cast( kernelPanicEventGenerator );
             }
             else if ( LifeSupport.class.isAssignableFrom( type ) )
             {
-                return (T) life;
+                return type.cast( life );
             }
             else if ( PersistenceManager.class.isAssignableFrom( type ) && type.isInstance( persistenceManager ) )
             {

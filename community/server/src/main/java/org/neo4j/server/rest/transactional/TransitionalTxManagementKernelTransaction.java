@@ -21,19 +21,19 @@ package org.neo4j.server.rest.transactional;
 
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
+import javax.transaction.InvalidTransactionException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-
-import org.neo4j.kernel.impl.transaction.TxManager;
+import javax.transaction.TransactionManager;
 
 class TransitionalTxManagementKernelTransaction
 {
-    private final TxManager txManager;
+    private final TransactionManager txManager;
 
     private Transaction suspendedTransaction;
 
-    public TransitionalTxManagementKernelTransaction( TxManager txManager )
+    public TransitionalTxManagementKernelTransaction( TransactionManager txManager )
     {
         this.txManager = txManager;
     }
@@ -59,7 +59,7 @@ class TransitionalTxManagementKernelTransaction
             txManager.resume( suspendedTransaction );
             suspendedTransaction = null;
         }
-        catch ( SystemException e )
+        catch ( InvalidTransactionException | SystemException e )
         {
             throw new RuntimeException( e );
         }

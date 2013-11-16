@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -316,7 +315,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node1.setProperty( "someotherproptest", 2 );
         commit();
         TransactionManager txManager = 
-            getGraphDbAPI().getDependencyResolver().resolveDependency( TxManager.class );
+            getGraphDbAPI().getDependencyResolver().resolveDependency( TransactionManager.class );
         
         txManager.begin();
         node.setProperty( "someotherproptest", "testing2" );

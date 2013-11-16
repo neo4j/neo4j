@@ -29,7 +29,6 @@ import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.logging.BufferingLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -68,7 +67,7 @@ public class TestKernelPanic
      
         org.neo4j.graphdb.Transaction gdbTx = graphDb.beginTx();
         TransactionManager txMgr = ((GraphDatabaseAPI)graphDb).getDependencyResolver()
-                .resolveDependency( TxManager.class );
+                .resolveDependency( TransactionManager.class );
         Transaction tx = txMgr.getTransaction();
         
         graphDb.createNode();

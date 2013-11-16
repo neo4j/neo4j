@@ -51,7 +51,7 @@ public abstract class BaseSpringTransactionImpl
 
     private TransactionManager getTxManager()
     {
-        return neo4j.getDependencyResolver().resolveDependency( TxManager.class );
+        return neo4j.getDependencyResolver().resolveDependency( TransactionManager.class );
     }
 
     public void begin() throws NotSupportedException, SystemException

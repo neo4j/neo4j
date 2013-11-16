@@ -62,10 +62,11 @@ public class StreamConsumer implements Runnable
     private final String prefix;
 
     private final StreamExceptionHandler failureHandler;
+    private final Exception stackTraceOfOrigin;
 
     public StreamConsumer( InputStream in, OutputStream out, boolean quiet )
     {
-        this( in, out, quiet, "", PRINT_FAILURES );
+        this( in, out, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES );
     }
 
     public StreamConsumer( InputStream in, OutputStream out, boolean quiet, String prefix,
@@ -76,6 +77,7 @@ public class StreamConsumer implements Runnable
         this.failureHandler = failureHandler;
         this.in = new BufferedReader(new InputStreamReader( in ));
         this.out = new OutputStreamWriter( out );
+        this.stackTraceOfOrigin = new Exception("Stack trace of thread that created this StreamConsumer");
     }
 
     @Override
@@ -95,6 +97,7 @@ public class StreamConsumer implements Runnable
         }
         catch ( IOException exc )
         {
+            exc.addSuppressed( stackTraceOfOrigin );
             failureHandler.handle( exc );
         }
     }

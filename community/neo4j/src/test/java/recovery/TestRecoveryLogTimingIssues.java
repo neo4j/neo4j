@@ -85,8 +85,14 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             BreakPoint.stackTraceMustNotContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", File.class, long.class );
     
     private final BreakPoint[] breakpoints = new BreakPoint[] {
-            SET_VERSION, RELEASE_CURRENT_LOG_FILE, RENAME_LOG_FILE,
-            SET_VERSION_2, RELEASE_CURRENT_LOG_FILE_2, RENAME_LOG_FILE_2, EXIT_RENAME_LOG_FILE_LUCENE, EXIT_RENAME_LOG_FILE_NIONEO };
+            SET_VERSION,
+            RELEASE_CURRENT_LOG_FILE,
+            RENAME_LOG_FILE,
+            SET_VERSION_2,
+            RELEASE_CURRENT_LOG_FILE_2,
+            RENAME_LOG_FILE_2,
+            EXIT_RENAME_LOG_FILE_LUCENE,
+            EXIT_RENAME_LOG_FILE_NIONEO };
     
     @Override
     protected BreakPoint[] breakpoints( int id )
