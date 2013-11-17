@@ -17,16 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.store;
 
 import java.util.Collection;
 
 import org.junit.Test;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -134,6 +136,24 @@ public class SchemaCacheTest
         assertEquals(
                 asSet(  ),
                 asSet( cache.constraintsForLabelAndProperty( 1, 2 ) ) );
+    }
+
+    @Test
+    public void shouldResolveIndexId() throws Exception
+    {
+        // Given
+        Collection<SchemaRule> rules = asList();
+        SchemaCache cache = new SchemaCache( rules );
+
+        cache.addSchemaRule( newIndexRule( 1l, 1, 2 ) );
+        cache.addSchemaRule( newIndexRule( 2l, 1, 3 ) );
+        cache.addSchemaRule( newIndexRule( 3l, 2, 2 ) );
+
+        // When
+        long indexId = cache.indexId( new IndexDescriptor( 1, 3 ) );
+
+        // Then
+        assertThat(indexId, equalTo(2l));
     }
 
     private IndexRule newIndexRule( long id, int label, int propertyKey )

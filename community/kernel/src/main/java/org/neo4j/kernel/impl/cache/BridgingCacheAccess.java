@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.cache;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.PersistenceCache;
-import org.neo4j.kernel.impl.api.SchemaCache;
+import org.neo4j.kernel.impl.api.store.PersistenceCache;
+import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;

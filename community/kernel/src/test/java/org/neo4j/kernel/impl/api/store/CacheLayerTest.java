@@ -17,38 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.store;
 
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.operations.EntityReadOperations;
-import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
-import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class CachingStatementOperationsTest
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
+import static org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
+
+public class CacheLayerTest
 {
-    private final EntityReadOperations entityReadOperations = mock( EntityReadOperations.class );
-    private final SchemaReadOperations schemaReadOperations = mock( SchemaReadOperations.class );
+    private final DiskLayer diskLayer = mock( DiskLayer.class );
     private final PersistenceCache persistenceCache = mock( PersistenceCache.class );
 
     private final SchemaCache schemaCache = mock( SchemaCache.class );
 
-    private final CachingStatementOperations context = new CachingStatementOperations(
-            entityReadOperations, schemaReadOperations, persistenceCache, schemaCache );
+    private final CacheLayer context = new CacheLayer( diskLayer, persistenceCache, schemaCache );
 
     @Test
     public void shouldGetCachedLabelsIfCached() throws EntityNotFoundException

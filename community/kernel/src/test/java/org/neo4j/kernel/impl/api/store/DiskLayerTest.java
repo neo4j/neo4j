@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.store;
 
 import java.lang.reflect.Array;
 import java.util.HashSet;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
@@ -60,7 +60,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
@@ -72,23 +71,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class StoreStatementOperationsTest
+public class DiskLayerTest
 {
-    @Test
-    public void shouldDeclineWriteOps() throws Exception
-    {
-        // When
-        try
-        {
-            statement.nodeAddLabel( state, 12, 12 );
-            fail( "Should have thrown unsupported operation." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-            // ok
-        }
-    }
-
     @Test
     public void should_be_able_to_list_labels_for_node() throws Exception
     {
@@ -99,13 +83,13 @@ public class StoreStatementOperationsTest
         {
             nodeId = db.createNode( label1, label2 ).getId();
             String labelName1 = label1.name(), labelName2 = label2.name();
-            labelId1 = statement.labelGetForName( state, labelName1 );
-            labelId2 = statement.labelGetOrCreateForName( state, labelName2 );
+            labelId1 = statement.labelGetForName( labelName1 );
+            labelId2 = statement.labelGetOrCreateForName( labelName2 );
             tx.success();
         }
 
         // THEN
-        PrimitiveIntIterator readLabels = statement.nodeGetLabels( state, nodeId );
+        PrimitiveIntIterator readLabels = statement.nodeGetLabels( nodeId );
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
                 addToCollection( readLabels, new HashSet<Integer>() ) );
     }
@@ -115,10 +99,10 @@ public class StoreStatementOperationsTest
     {
         // GIVEN
         String labelName = label1.name();
-        int labelId = statement.labelGetOrCreateForName( state, labelName );
+        int labelId = statement.labelGetOrCreateForName( labelName );
 
         // WHEN
-        String readLabelName = statement.labelGetName( state, labelId );
+        String readLabelName = statement.labelGetName( labelId );
 
         // THEN
         assertEquals( labelName, readLabelName );
@@ -146,8 +130,8 @@ public class StoreStatementOperationsTest
         // GIVEN
         Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );
         Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label1, label2 );
-        int labelId1 = statement.labelGetForName( state, label1.name() );
-        int labelId2 = statement.labelGetForName( state, label2.name() );
+        int labelId1 = statement.labelGetForName( label1.name() );
+        int labelId2 = statement.labelGetForName( label2.name() );
 
         // WHEN
         PrimitiveLongIterator nodesForLabel1 = statement.nodesGetForLabel( state, labelId1 );
@@ -210,7 +194,7 @@ public class StoreStatementOperationsTest
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            Property property = single( statement.nodeGetAllProperties( state, nodeId ) );
+            Property property = single( statement.nodeGetAllProperties( nodeId ) );
 
             //then
             assertTrue( property + ".valueEquals(" + value + ")", property.valueEquals( value ) );
@@ -221,7 +205,7 @@ public class StoreStatementOperationsTest
     public void should_create_property_key_if_not_exists() throws Exception
     {
         // WHEN
-        long id = statement.propertyKeyGetOrCreateForName( state, propertyKey );
+        long id = statement.propertyKeyGetOrCreateForName( propertyKey );
 
         // THEN
         assertTrue( "Should have created a non-negative id", id >= 0 );
@@ -231,10 +215,10 @@ public class StoreStatementOperationsTest
     public void should_get_previously_created_property_key() throws Exception
     {
         // GIVEN
-        long id = statement.propertyKeyGetOrCreateForName( state, propertyKey );
+        long id = statement.propertyKeyGetOrCreateForName( propertyKey );
 
         // WHEN
-        long secondId = statement.propertyKeyGetForName( state, propertyKey );
+        long secondId = statement.propertyKeyGetForName( propertyKey );
 
         // THEN
         assertEquals( id, secondId );
@@ -244,10 +228,10 @@ public class StoreStatementOperationsTest
     public void should_be_able_to_get_or_create_previously_created_property_key() throws Exception
     {
         // GIVEN
-        long id = statement.propertyKeyGetOrCreateForName( state, propertyKey );
+        long id = statement.propertyKeyGetOrCreateForName( propertyKey );
 
         // WHEN
-        long secondId = statement.propertyKeyGetOrCreateForName( state, propertyKey );
+        long secondId = statement.propertyKeyGetOrCreateForName( propertyKey );
 
         // THEN
         assertEquals( id, secondId );
@@ -257,7 +241,7 @@ public class StoreStatementOperationsTest
     public void should_fail_if_get_non_existent_property_key() throws Exception
     {
         // WHEN
-        int propertyKey = statement.propertyKeyGetForName( state, "non-existent-property-key" );
+        int propertyKey = statement.propertyKeyGetForName( "non-existent-property-key" );
 
         // THEN
         assertEquals( KeyReadOperations.NO_SUCH_PROPERTY_KEY, propertyKey );
@@ -273,7 +257,7 @@ public class StoreStatementOperationsTest
         try ( Transaction ignored = db.beginTx() )
         {
             // WHEN
-            Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, index, name ) );
+            Set<Long> foundNodes = asUniqueSet( statement.nodesGetFromIndexLookup( state, 1l, name ) );
 
             // THEN
             assertEquals( asSet( mrTaylor.getId() ), foundNodes );
@@ -284,7 +268,7 @@ public class StoreStatementOperationsTest
     private final Label label1 = label( "first-label" ), label2 = label( "second-label" );
     private final String propertyKey = "name";
     private KernelStatement state;
-    private StoreStatementOperations statement;
+    private DiskLayer statement;
 
     @SuppressWarnings("deprecation")
     @Before
@@ -293,18 +277,17 @@ public class StoreStatementOperationsTest
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
-        LabelScanStore labelScanStore = resolver.resolveDependency( LabelScanStore.class );
         NeoStore neoStore = resolver.resolveDependency( XaDataSourceManager.class )
                 .getNeoStoreDataSource().getNeoStore();
-        this.statement = new StoreStatementOperations(
+        this.statement = new DiskLayer(
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),
                 resolver.resolveDependency( LabelTokenHolder.class ),
                 resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                 new SchemaStorage( neoStore.getSchemaStore() ),
                 neoStore,
-                resolver.resolveDependency( PersistenceManager.class ),
                 indexingService );
-        this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ), labelScanStore, null,
+        this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
+                resolver.resolveDependency( LabelScanStore.class ), null,
                 null, null, null );
     }
 
@@ -340,8 +323,8 @@ public class StoreStatementOperationsTest
         try ( Transaction ignored = db.beginTx() )
         {
             db.schema().awaitIndexOnline( index, 10, SECONDS );
-            return statement.indexesGetForLabelAndPropertyKey( state, statement.labelGetForName( state, label.name() ),
-                    statement.propertyKeyGetForName( state, propertyKey ) );
+            return statement.indexesGetForLabelAndPropertyKey( statement.labelGetForName( label.name() ),
+                    statement.propertyKeyGetForName( propertyKey ) );
         }
     }
 

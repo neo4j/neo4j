@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.CacheLoader;
+import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.store;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
-import static org.neo4j.kernel.impl.api.CacheUpdateListener.NO_UPDATES;
+import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
 
 /**
  * This is a cache for the {@link KernelAPI}. Currently it piggy-backs on NodeImpl/RelationshipImpl
@@ -45,8 +45,8 @@ import static org.neo4j.kernel.impl.api.CacheUpdateListener.NO_UPDATES;
  *
  * NOTE:
  * NodeImpl/RelationshipImpl manages caching, locking and transaction state merging. In the future
- * they might disappear and split up into {@link CachingStatementOperations},
- * {@link LockingStatementOperations} and {@link StateHandlingStatementOperations}.
+ * they might disappear and split up into {@link CacheLayer},
+ * {@link org.neo4j.kernel.impl.api.LockingStatementOperations} and {@link org.neo4j.kernel.impl.api.StateHandlingStatementOperations}.
  * <p/>
  * The point is that we need a cache and the implementation is a bit temporary, but might end
  * up being the cache to replace the data within NodeImpl/RelationshipImpl.

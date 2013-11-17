@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.store;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +29,8 @@ import java.util.Map;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.NestingIterable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
@@ -50,6 +52,7 @@ public class SchemaCache
     private final Map<Long, SchemaRule> ruleByIdMap = new HashMap<>();
 
     private final Collection<UniquenessConstraint> constraints = new ArrayList<>();
+    private final Map<IndexDescriptor, Long> indexDescriptorToId = new HashMap<>();
 
     public SchemaCache( Iterable<SchemaRule> initialRules )
     {
@@ -134,6 +137,12 @@ public class SchemaCache
         {
             constraints.add( ruleToConstraint( (UniquenessConstraintRule) rule ) );
         }
+        else if( rule instanceof IndexRule )
+        {
+            indexDescriptorToId.put(
+                    new IndexDescriptor( rule.getLabel(), ((IndexRule) rule).getPropertyKey() ),
+                    rule.getId());
+        }
     }
 
     public void removeSchemaRule( long id )
@@ -155,6 +164,15 @@ public class SchemaCache
         {
             constraints.remove( ruleToConstraint( (UniquenessConstraintRule)rule ) );
         }
+        else if( rule instanceof IndexRule )
+        {
+            indexDescriptorToId.remove( new IndexDescriptor( rule.getLabel(), ((IndexRule) rule).getPropertyKey() ) );
+        }
+    }
+
+    public long indexId( IndexDescriptor index )
+    {
+        return indexDescriptorToId.get( index );
     }
 
     private UniquenessConstraint ruleToConstraint( UniquenessConstraintRule constraintRule )

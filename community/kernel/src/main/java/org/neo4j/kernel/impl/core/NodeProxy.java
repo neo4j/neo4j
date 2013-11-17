@@ -308,7 +308,7 @@ public class NodeProxy implements Node
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
             throw new ThisShouldNotHappenError( "Jake",
-                    "Property key retrieved through kernel API should exist." );
+                    "Property key retrieved through kernel API should exist.", e );
         }
     }
 
