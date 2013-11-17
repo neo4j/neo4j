@@ -19,16 +19,15 @@
  */
 package org.neo4j.consistency;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
@@ -39,8 +38,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogFiles;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConsistencyCheckTool
 {
@@ -97,13 +94,7 @@ public class ConsistencyCheckTool
     {
         if ( arguments.getBoolean( RECOVERY, false, true ) )
         {
-            GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-            try(Transaction ignore = db.beginTx())
-            {
-                db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
-            }
-
-            db.shutdown();
+            new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
         }
         else
         {
