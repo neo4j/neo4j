@@ -19,18 +19,9 @@
  */
 package org.neo4j.kernel;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
 /**
  * This API can be used to get access to services.
@@ -38,44 +29,20 @@ import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
  * @deprecated This will be moved to internal packages in the next major release.
  */
 @Deprecated
-// TODO: The methods exposing internal services directly should go away. It
-// indicates lack of abstractions somewhere.
-// DO NOT ADD MORE USAGE OF THESE!
-public interface GraphDatabaseAPI
-        extends GraphDatabaseService
+public interface GraphDatabaseAPI extends GraphDatabaseService
 {
+    /**
+     * Look up database components for direct access.
+     * Usage of this method is generally an indication of architectural error.
+     */
     DependencyResolver getDependencyResolver();
 
-    @Deprecated
-    NodeManager getNodeManager();
+    /** Provides the unique id assigned to this database. */
+    StoreId storeId();
 
-    @Deprecated
-    LockManager getLockManager();
-
-    @Deprecated
-    XaDataSourceManager getXaDataSourceManager();
-
-    @Deprecated
-    TransactionManager getTxManager();
-
-    @Deprecated
-    RelationshipTypeTokenHolder getRelationshipTypeTokenHolder();
-
-    @Deprecated
-    TxIdGenerator getTxIdGenerator();
-
-    @Deprecated
-    String getStoreDir();
-
-    @Deprecated
+    /** A more fine-grained mechanism for creating transactions, allows modifying transaction-global behavior. */
     TransactionBuilder tx();
 
     @Deprecated
-    KernelPanicEventGenerator getKernelPanicGenerator();
-
-    @Deprecated
-    Guard getGuard();
-
-    @Deprecated
-    StoreId getStoreId();
+    String getStoreDir();
 }

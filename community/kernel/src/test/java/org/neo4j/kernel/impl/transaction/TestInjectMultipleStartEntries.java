@@ -23,14 +23,12 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.transaction.TransactionManager;
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.*;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
@@ -52,7 +50,7 @@ public class TestInjectMultipleStartEntries
         // -- a database with one additional data source and some initial data
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
-        XaDataSourceManager xaDs = db.getXaDataSourceManager();
+        XaDataSourceManager xaDs = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
         XaDataSource additionalDs = new DummyXaDataSource( "dummy", "dummy".getBytes(), new FakeXAResource( "dummy" ) );
         xaDs.registerDataSource( additionalDs );
         Node node = createNodeWithOneRelationshipToIt( db );
@@ -89,7 +87,9 @@ public class TestInjectMultipleStartEntries
             XaDataSource additionalDs, Node node ) throws Exception
     {
         Transaction tx = db.beginTx();
-        additionalDs.getXaConnection().enlistResource( db.getTxManager().getTransaction() );
+        DependencyResolver dependencyResolver = db.getDependencyResolver();
+        TransactionManager transactionManager = dependencyResolver.resolveDependency(TransactionManager.class);
+        additionalDs.getXaConnection().enlistResource( transactionManager.getTransaction() );
         node.delete();
         tx.success();
         try

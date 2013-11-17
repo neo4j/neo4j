@@ -48,7 +48,8 @@ public final class PrimitivesBean extends ManagementBeanProvider
         PrimitivesImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.nodeManager = management.getKernelData().graphDatabase().getNodeManager();
+            this.nodeManager = management.getKernelData().graphDatabase().getDependencyResolver()
+                    .resolveDependency( NodeManager.class );
         }
 
         private final NodeManager nodeManager;

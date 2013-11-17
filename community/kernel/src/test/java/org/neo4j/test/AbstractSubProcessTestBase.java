@@ -238,10 +238,12 @@ public class AbstractSubProcessTestBase
     private static class ThreadTask implements Task
     {
         private final Task task;
+        private final Exception stackTraceOfOrigin;
 
         ThreadTask( Task task )
         {
             this.task = task;
+            this.stackTraceOfOrigin = new Exception("Stack trace of thread that created this ThreadTask");
         }
 
         @Override
@@ -252,7 +254,15 @@ public class AbstractSubProcessTestBase
                 @Override
                 public void run()
                 {
-                    task.run( graphdb );
+                    try
+                    {
+                        task.run( graphdb );
+                    }
+                    catch ( RuntimeException e )
+                    {
+                        e.addSuppressed( stackTraceOfOrigin );
+                        throw e;
+                    }
                 }
             }, task.toString() ).start();
         }

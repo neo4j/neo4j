@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import java.io.File;
+import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 
 import org.junit.Rule;
@@ -31,7 +32,6 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -150,7 +150,7 @@ public class UniqueConstraintHaIT
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
-        TxManager txManager = slave.getDependencyResolver().resolveDependency( TxManager.class );
+        TransactionManager txManager = slave.getDependencyResolver().resolveDependency( TransactionManager.class );
 
         // And given there is a user named bob
         createUser(master, "Bob");

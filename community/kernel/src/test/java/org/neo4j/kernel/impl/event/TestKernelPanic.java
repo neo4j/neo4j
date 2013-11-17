@@ -56,7 +56,7 @@ public class TestKernelPanic
             }
         };
         XaDataSourceManager xaDs =
-            ((GraphDatabaseAPI)graphDb).getXaDataSourceManager();
+            ((GraphDatabaseAPI)graphDb).getDependencyResolver().resolveDependency( XaDataSourceManager.class );
         
         IllBehavingXaDataSource adversarialDataSource =
                 new IllBehavingXaDataSource(UTF8.encode( "554342" ), "adversarialDataSource");
@@ -66,7 +66,8 @@ public class TestKernelPanic
         graphDb.registerKernelEventHandler( panic );
      
         org.neo4j.graphdb.Transaction gdbTx = graphDb.beginTx();
-        TransactionManager txMgr = ((GraphDatabaseAPI)graphDb).getTxManager();
+        TransactionManager txMgr = ((GraphDatabaseAPI)graphDb).getDependencyResolver()
+                .resolveDependency( TransactionManager.class );
         Transaction tx = txMgr.getTransaction();
         
         graphDb.createNode();

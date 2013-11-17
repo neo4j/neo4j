@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -75,7 +76,8 @@ public class TestStandaloneLogExtractor
                 setFileSystem( snapshot ).
                 newImpermanentDatabase( storeDir );
 
-        XaDataSource ds = newDb.getXaDataSourceManager().getNeoStoreDataSource();
+        XaDataSource ds = newDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                .getNeoStoreDataSource();
         LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ) );
         long expectedTxId = 2;
         while ( true )
@@ -110,7 +112,8 @@ public class TestStandaloneLogExtractor
         Node otherNode = db.createNode();
         node.createRelationshipTo( otherNode, MyRelTypes.TEST );
         tx.restart();
-        db.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
+        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                .getNeoStoreDataSource().rotateLogicalLog();
         
         for ( int i = 0; i < 5; i++ )
         {

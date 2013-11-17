@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -666,7 +667,7 @@ public class TestIdGenerator
         tx.finish();
 
         // Verify by loading everything from scratch
-        ((GraphDatabaseAPI) db).getNodeManager().clearCache();
+        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         tx = db.beginTx();
         for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
         {

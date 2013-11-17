@@ -19,6 +19,11 @@
  */
 package org.neo4j.management.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.management.NotCompliantMBeanException;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
@@ -27,10 +32,6 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.XaManager;
 import org.neo4j.management.XaResourceInfo;
-
-import javax.management.NotCompliantMBeanException;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class XaManagerBean extends ManagementBeanProvider
@@ -59,13 +60,13 @@ public final class XaManagerBean extends ManagementBeanProvider
         XaManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.datasourceMananger = management.getKernelData().graphDatabase().getXaDataSourceManager();
+            this.datasourceMananger = xaManager( management );
         }
 
         XaManagerImpl( ManagementData management, boolean isMxBean )
         {
             super( management, isMxBean );
-            this.datasourceMananger = management.getKernelData().graphDatabase().getXaDataSourceManager();
+            this.datasourceMananger = xaManager( management );
         }
 
         public XaResourceInfo[] getXaResources()
@@ -89,6 +90,10 @@ public final class XaManagerBean extends ManagementBeanProvider
                 datasource.getLastCommittedTxId(), datasource.getCurrentLogVersion() );
         }
 
+        private XaDataSourceManager xaManager( ManagementData management )
+        {
+            return management.getKernelData().graphDatabase().getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+        }
     }
 
     public static String toHexString( byte[] branchId )

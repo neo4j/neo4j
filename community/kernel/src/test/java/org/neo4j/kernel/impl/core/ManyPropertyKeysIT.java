@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TargetDirectory;
@@ -120,8 +121,8 @@ public class ManyPropertyKeysIT
 
     private int propertyKeyCount( GraphDatabaseAPI db )
     {
-        //noinspection deprecation
-        return (int) db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore().getPropertyStore().getPropertyKeyTokenStore().getHighId();
+        return (int) db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                .getNeoStoreDataSource().getNeoStore().getPropertyStore().getPropertyKeyTokenStore().getHighId();
     }
     
     private static class WorkerState

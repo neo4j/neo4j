@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
@@ -108,7 +109,8 @@ class RebuildFromLogs
 
     private static NeoStoreXaDataSource getDataSource( GraphDatabaseAPI graphdb, String name )
     {
-        NeoStoreXaDataSource datasource = graphdb.getXaDataSourceManager().getNeoStoreDataSource();
+        NeoStoreXaDataSource datasource = graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                .getNeoStoreDataSource();
         if ( datasource == null )
         {
             throw new NullPointerException( "Could not access " + name );

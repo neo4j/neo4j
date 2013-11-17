@@ -23,15 +23,13 @@ import java.io.File;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
-
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
 import org.neo4j.server.advanced.jmx.ServerManagement;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class BootstrapperTest
 {
@@ -59,7 +57,6 @@ public class BootstrapperTest
         server.start();
 
         assertNotNull( server.getDatabase().getGraph() );
-        assertEquals( dbDir1, server.getDatabase().getGraph().getStoreDir() );
 
         // Change the database location
         String dbDir2 = target.directory( "db2", true ).getAbsolutePath();
@@ -69,7 +66,6 @@ public class BootstrapperTest
 
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
-        assertEquals( dbDir2, server.getDatabase().getGraph().getStoreDir() );
 
     }
 }

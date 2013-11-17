@@ -23,6 +23,7 @@ import java.io.PrintStream;
 
 import org.neo4j.test.StreamConsumer.StreamExceptionHandler;
 
+import static org.neo4j.test.StreamConsumer.IGNORE_FAILURES;
 import static org.neo4j.test.StreamConsumer.PRINT_FAILURES;
 
 /**
@@ -50,13 +51,13 @@ public class ProcessStreamHandler
      */
     public ProcessStreamHandler( Process process, boolean quiet )
     {
-        this( process, quiet, "", PRINT_FAILURES );
+        this( process, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES );
     }
     
     public ProcessStreamHandler( Process process, boolean quiet, String prefix,
             StreamExceptionHandler failureHandler )
     {
-        this( process, quiet, "", PRINT_FAILURES, System.out, System.err );
+        this( process, quiet, prefix, failureHandler, System.out, System.err );
     }
     
     public ProcessStreamHandler( Process process, boolean quiet, String prefix,

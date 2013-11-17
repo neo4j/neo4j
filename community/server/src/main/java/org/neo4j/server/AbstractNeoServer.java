@@ -423,7 +423,7 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
         //noinspection deprecation
-        Guard guard = database.getGraph().getGuard();
+        Guard guard = resolveDependency( Guard.class );
         if ( guard == null )
         {
             throw new RuntimeException( format("Inconsistent configuration. In order to use %s, you must set %s.",

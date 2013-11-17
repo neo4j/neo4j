@@ -43,6 +43,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.server.database.Database;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -68,10 +69,10 @@ public class GraphDbHelper
         return numberOfEntitiesFor( Relationship.class );
     }
 
-    @SuppressWarnings("deprecation")
     private int numberOfEntitiesFor( Class<? extends PropertyContainer> type )
     {
-        return (int) database.getGraph().getNodeManager().getNumberOfIdsInUse( type );
+        return (int) database.getGraph().getDependencyResolver().resolveDependency( NodeManager.class )
+                .getNumberOfIdsInUse( type );
     }
 
     public Map<String, Object> getNodeProperties( long nodeId )

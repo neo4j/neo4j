@@ -35,7 +35,7 @@ public class TestTxSuspendResume
     public void testMultipleTxSameThread() throws Exception
     {
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        TransactionManager tm = graphdb.getTxManager();
+        TransactionManager tm = graphdb.getDependencyResolver().resolveDependency( TransactionManager.class );
         tm.begin();
         Node refNode = graphdb.createNode();
         tm.commit();

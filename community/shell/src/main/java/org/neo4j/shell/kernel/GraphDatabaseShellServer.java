@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -101,7 +102,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     {
         try
         {
-            Transaction tx = getDb().getTxManager().suspend();
+            Transaction tx = getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).suspend();
             if ( tx == null )
             {
                 transactions.remove( clientId );
@@ -124,7 +125,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         {
             try
             {
-                getDb().getTxManager().resume( tx );
+                getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).resume( tx );
             }
             catch ( Exception e )
             {

@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.transaction.TxManager;
+
+import javax.transaction.TransactionManager;
 
 public class TransactionIT extends KernelIntegrationTest
 {
@@ -30,7 +31,7 @@ public class TransactionIT extends KernelIntegrationTest
     public void shouldBeAbleToCommitThroughTransactionManager() throws Exception
     {
         // Given
-        TxManager txManager = db.getDependencyResolver().resolveDependency( TxManager.class );
+        TransactionManager txManager = db.getDependencyResolver().resolveDependency( TransactionManager.class );
 
         db.beginTx();
         Node node = db.createNode();

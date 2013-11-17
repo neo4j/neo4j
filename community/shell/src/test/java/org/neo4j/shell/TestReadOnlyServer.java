@@ -22,8 +22,9 @@ package org.neo4j.shell;
 import java.rmi.RemoteException;
 
 import org.junit.Test;
-import org.neo4j.graphdb.Node;
+
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.shell.kernel.ReadOnlyGraphDatabaseProxy;
@@ -35,41 +36,41 @@ public class TestReadOnlyServer extends AbstractShellTest
     {
         return new GraphDatabaseShellServer( new ReadOnlyGraphDatabaseProxy( db ) );
     }
-    
+
     @Test
     public void executeReadCommands() throws Exception
     {
         Relationship[] rels = createRelationshipChain( 3 );
-        executeCommand( "cd " + getStartNode(rels[0]).getId() );
+        executeCommand( "cd " + getStartNodeId(rels[0]) );
         executeCommand( "ls" );
-        executeCommand( "cd " + getEndNode( rels[0] ).getId() );
+        executeCommand( "cd " + getEndNodeId(rels[0]) );
         executeCommand( "ls", "<", ">" );
         executeCommand( "trav", "me" );
     }
 
-    private Node getEndNode( Relationship rel )
+    @Test
+    public void readOnlyTransactionsShouldNotFail() throws Exception
     {
-        beginTx();
-        try
+        Relationship[] rels = createRelationshipChain( 3 );
+        executeCommand( "begin" );
+        executeCommand( "cd " + getStartNodeId(rels[0]) );
+        executeCommand( "ls" );
+        executeCommand( "commit" );
+    }
+
+    private long getEndNodeId( Relationship rel )
+    {
+        try ( Transaction ignore = db.beginTx() )
         {
-            return rel.getEndNode();
-        }
-        finally
-        {
-            finishTx(false);
+            return rel.getEndNode().getId();
         }
     }
 
-    private Node getStartNode( Relationship rel )
+    private long getStartNodeId( Relationship rel )
     {
-        beginTx();
-        try
+        try ( Transaction ignore = db.beginTx() )
         {
-            return rel.getStartNode();
-        }
-        finally
-        {
-            finishTx(false);
+            return rel.getStartNode().getId();
         }
     }
 
@@ -77,6 +78,5 @@ public class TestReadOnlyServer extends AbstractShellTest
     public void executeWriteCommands() throws Exception
     {
         executeCommandExpectingException( "mknode", "read only" );
-        executeCommandExpectingException( "begin", "read only" );
     }
 }

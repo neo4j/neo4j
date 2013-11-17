@@ -42,6 +42,7 @@ import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
 import org.neo4j.tooling.GlobalGraphOperations
 import scala.reflect.ClassTag
 import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
+import org.neo4j.kernel.impl.core.NodeManager
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -232,7 +233,10 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
 
   protected def assertIsDeleted(pc: PropertyContainer) {
     val internalDb: AbstractGraphDatabase = db.asInstanceOf[AbstractGraphDatabase]
-    if (!internalDb.getNodeManager.isDeleted(pc)) {
+
+    val nodeManager: NodeManager = internalDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+
+    if (!nodeManager.isDeleted(pc)) {
       fail("Expected " + pc + " to be deleted, but it isn't.")
     }
   }

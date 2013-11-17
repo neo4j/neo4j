@@ -26,6 +26,7 @@ import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -69,7 +70,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
     
     private XaDataSource dataSource()
     {
-        if ( dataSource == null ) dataSource = db.getXaDataSourceManager()
+        if ( dataSource == null ) dataSource = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
                 .getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         return dataSource;
     }

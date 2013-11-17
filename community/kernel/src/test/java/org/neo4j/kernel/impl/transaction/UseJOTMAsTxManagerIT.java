@@ -28,11 +28,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 import javax.transaction.xa.Xid;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -86,14 +88,14 @@ public class UseJOTMAsTxManagerIT
     @Test
     public void shouldStartWithJOTM()
     {
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.tx_manager_impl.name(), JOTMTransactionManager.NAME );
         GraphDatabaseAPI db = null;
 
         try
         {
             db = new ImpermanentGraphDatabase( config );
-            assertThat( db.getTxManager(),
+            assertThat( txManager( db ),
                     is( instanceOf( JOTMTransactionManager.class ) ) );
             
             Transaction tx = db.beginTx();
@@ -129,16 +131,16 @@ public class UseJOTMAsTxManagerIT
         GraphDatabaseAPI db = null;
 
         final AtomicBoolean externalResourceWasRolledBack = new AtomicBoolean(false);
-        
+
         try
         {
             db = new ImpermanentGraphDatabase( config );
-            
+
             // Fail onBeforeCommit
             db.registerTransactionEventHandler( failsBeforeCommitTransactionHandler );
-            
+
             Transaction outerTx = db.beginTx();
-            
+
             // Add an external data source
             FakeXAResource externalResource = new FakeXAResource("BananaStorageFacility"){
                 @Override
@@ -148,8 +150,8 @@ public class UseJOTMAsTxManagerIT
                     externalResourceWasRolledBack.set( true );
                 }
             };
-            db.getTxManager().getTransaction().enlistResource( externalResource );
-            
+            txManager( db ).getTransaction().enlistResource( externalResource );
+
             try
             {
                 db.createNode();
@@ -163,7 +165,7 @@ public class UseJOTMAsTxManagerIT
                 {
                     innerTx.finish();
                 }
-                
+
                 outerTx.success();
 
             }
@@ -171,7 +173,7 @@ public class UseJOTMAsTxManagerIT
             {
                 outerTx.finish();
             }
-            
+
             fail("Transaction should have failed.");
 
         } catch(TransactionFailureException e) {
@@ -184,24 +186,24 @@ public class UseJOTMAsTxManagerIT
                 db.shutdown();
             }
         }
-        
+
         // Phew..
         assertThat( externalResourceWasRolledBack.get(), is( true ) );
     }
-    
+
     @Test
     public void shouldSupportRollbacks() throws Exception
     {
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.tx_manager_impl.name(), JOTMTransactionManager.NAME );
         GraphDatabaseAPI neo4j = null;
 
         try
         {
             neo4j = new ImpermanentGraphDatabase( config );
-            neo4j.getTxManager().begin();
+            txManager( neo4j ).begin();
             neo4j.createNode();
-            neo4j.getTxManager().rollback();
+            txManager( neo4j ).rollback();
         }
         finally
         {
@@ -223,14 +225,14 @@ public class UseJOTMAsTxManagerIT
         try
         {
             neo4j = new ImpermanentGraphDatabase( config );
-            
-            Jotm jotm = ((JOTMTransactionManager)neo4j.getTxManager()).getJotmTxManager();
-            
+
+            Jotm jotm = ((JOTMTransactionManager) txManager( neo4j )).getJotmTxManager();
+
             UserTransaction userTx = jotm.getUserTransaction();
             userTx.begin();
-            
+
             neo4j.createNode();
-            
+
             userTx.rollback();
         }
         finally
@@ -240,5 +242,10 @@ public class UseJOTMAsTxManagerIT
                 neo4j.shutdown();
             }
         }
+    }
+
+    private TransactionManager txManager( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( TransactionManager.class );
     }
 }

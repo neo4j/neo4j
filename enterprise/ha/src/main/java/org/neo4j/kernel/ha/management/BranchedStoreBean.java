@@ -140,8 +140,8 @@ public final class BranchedStoreBean extends ManagementBeanProvider
 
         private File extractStorePath( ManagementData management )
         {
-            NeoStoreXaDataSource nioneodb = management.getKernelData().graphDatabase().getXaDataSourceManager()
-                    .getNeoStoreDataSource();
+            NeoStoreXaDataSource nioneodb = management.getKernelData().graphDatabase().getDependencyResolver()
+                    .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
             File path;
             try
             {

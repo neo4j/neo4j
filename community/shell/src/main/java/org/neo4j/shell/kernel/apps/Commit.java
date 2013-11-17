@@ -23,6 +23,7 @@ import java.rmi.RemoteException;
 
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -49,7 +50,7 @@ public class Commit extends NonTransactionProvidingApp
     {
         try
         {
-            return getServer().getDb().getTxManager().getTransaction();
+            return getServer().getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).getTransaction();
         }
         catch ( SystemException e )
         {

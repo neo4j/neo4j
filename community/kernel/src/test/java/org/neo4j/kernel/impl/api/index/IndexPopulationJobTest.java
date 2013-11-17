@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
@@ -591,10 +592,10 @@ public class IndexPopulationJobTest
         }
     }
 
-    @SuppressWarnings( "deprecation" )
     private NeoStoreIndexStoreView newStoreView()
     {
         return new NeoStoreIndexStoreView(
-                db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore() );
+                db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                        .getNeoStoreDataSource().getNeoStore() );
     }
 }

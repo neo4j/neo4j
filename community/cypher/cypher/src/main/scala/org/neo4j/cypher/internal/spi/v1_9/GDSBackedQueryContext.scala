@@ -27,6 +27,7 @@ import java.lang.{Iterable=>JIterable}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.core.NodeManager
 
 class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
 
@@ -87,7 +88,11 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
       def all: Iterator[Node] =
         GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
 
-      def isDeleted(node: Node): Boolean = graph.asInstanceOf[GraphDatabaseAPI].getNodeManager.isDeleted(node)
+      def isDeleted(node: Node): Boolean = {
+        val nodeManager: NodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
+          .resolveDependency(classOf[NodeManager])
+        nodeManager.isDeleted(node)
+      }
     }
   }
 
@@ -129,7 +134,11 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
       def all: Iterator[Relationship] =
         GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
 
-      def isDeleted(node: Relationship): Boolean = graph.asInstanceOf[GraphDatabaseAPI].getNodeManager.isDeleted(node)
+      def isDeleted(rel: Relationship): Boolean = {
+        val nodeManager: NodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
+          .resolveDependency(classOf[NodeManager])
+        nodeManager.isDeleted(rel)
+      }
     }
   }
 }

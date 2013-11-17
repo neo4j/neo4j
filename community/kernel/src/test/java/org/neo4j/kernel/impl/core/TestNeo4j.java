@@ -128,8 +128,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     public void testIdUsageInfo()
     {
-        //noinspection deprecation
-        NodeManager nm = getGraphDbAPI().getNodeManager();
+        NodeManager nm = getGraphDbAPI().getDependencyResolver().resolveDependency( NodeManager.class );
         long nodeCount = nm.getNumberOfIdsInUse( Node.class );
         long relCount = nm.getNumberOfIdsInUse( Relationship.class );
         if ( nodeCount > nm.getHighestPossibleIdInUse( Node.class ) )

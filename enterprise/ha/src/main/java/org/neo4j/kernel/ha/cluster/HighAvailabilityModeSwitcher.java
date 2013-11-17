@@ -80,7 +80,6 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
@@ -110,7 +109,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
             StoreLockerLifecycleAdapter.class,
             XaDataSourceManager.class,
-            TxManager.class,
+            TransactionManager.class,
             NodeManager.class,
             IndexStore.class
     };
@@ -581,21 +580,23 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private void startServicesAgain() throws Throwable
     {
         @SuppressWarnings( "unchecked" )
-        List<Class<Lifecycle>> services = new ArrayList( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        for ( Class<Lifecycle> serviceClass : services )
+        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
+        for ( Class<?> serviceClass : services )
         {
-            graphDb.getDependencyResolver().resolveDependency( serviceClass ).start();
+            Lifecycle service = (Lifecycle) graphDb.getDependencyResolver().resolveDependency( serviceClass );
+            service.start();
         }
     }
 
     @SuppressWarnings( "unchecked" )
     private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
-        List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
+        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         Collections.reverse( services );
-        for ( Class<Lifecycle> serviceClass : services )
+        for ( Class<?> serviceClass : services )
         {
-            graphDb.getDependencyResolver().resolveDependency( serviceClass ).stop();
+            Lifecycle service = (Lifecycle) graphDb.getDependencyResolver().resolveDependency( serviceClass );
+            service.stop();
         }
         
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );

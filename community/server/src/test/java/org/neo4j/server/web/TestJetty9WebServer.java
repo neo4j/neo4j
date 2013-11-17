@@ -88,11 +88,6 @@ public class TestJetty9WebServer {
         @SuppressWarnings("deprecation")
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase()
         {
-            @Override
-            public Guard getGuard()
-            {
-                return dummyGuard;
-            }
         };
 
         ServerConfigurator config = new ServerConfigurator( db );

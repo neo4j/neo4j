@@ -36,6 +36,7 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -76,7 +77,8 @@ public class TestTxTimestamps
             tx.finish();
             expectedCommitTimestamps[i] = System.currentTimeMillis();
         }
-        db.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
+        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                .getNeoStoreDataSource().rotateLogicalLog();
         
         ByteBuffer buffer = ByteBuffer.allocate( 1024*500 );
         FileChannel channel = fileSystem.open( new File( db.getStoreDir(), NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );

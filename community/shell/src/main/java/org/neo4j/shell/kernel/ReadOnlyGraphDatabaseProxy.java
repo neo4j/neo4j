@@ -23,14 +23,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
-import javax.transaction.Status;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
+import javax.transaction.*;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
@@ -63,130 +56,22 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.TransactionBuilder;
-import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDatabaseAPI, IndexManager
 {
     private final GraphDatabaseAPI actual;
-    private final AbstractTransactionManager txManager = new AbstractTransactionManager()
-    {
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-        }
-
-        @Override
-        public void init() throws Throwable
-        {
-        }
-
-        @Override
-        public javax.transaction.Transaction suspend() throws SystemException
-        {
-            return null;
-        }
-
-        @Override
-        public void setTransactionTimeout( int seconds ) throws SystemException
-        {
-            throw new ReadOnlyDbException();
-        }
-
-        @Override
-        public void setRollbackOnly() throws IllegalStateException, SystemException
-        {
-            throw new ReadOnlyDbException();
-        }
-
-        @Override
-        public void rollback() throws IllegalStateException, SecurityException, SystemException
-        {
-            throw new ReadOnlyDbException();
-        }
-
-        @Override
-        public void resume( javax.transaction.Transaction tobj ) throws IllegalStateException,
-                InvalidTransactionException,
-                SystemException
-        {
-            throw new ReadOnlyDbException();
-        }
-
-        @Override
-        public javax.transaction.Transaction getTransaction() throws SystemException
-        {
-            throw new ReadOnlyDbException();
-        }
-
-        @Override
-        public int getStatus() throws SystemException
-        {
-            return Status.STATUS_NO_TRANSACTION;
-        }
-
-        @Override
-        public void commit() throws HeuristicMixedException, HeuristicRollbackException, IllegalStateException,
-                RollbackException, SecurityException, SystemException
-        {
-            throw new ReadOnlyDbException();
-        }
-
-        @Override
-        public void begin() throws NotSupportedException, SystemException
-        {
-            throw new ReadOnlyDbException();
-        }
-
-        @Override
-        public int getEventIdentifier()
-        {
-            return 0;
-        }
-
-        @Override
-        public void doRecovery() throws Throwable
-        {
-        }
-
-        @Override
-        public TransactionState getTransactionState()
-        {
-            return TransactionState.NO_STATE;
-        }
-
-    };
 
     public ReadOnlyGraphDatabaseProxy( GraphDatabaseAPI graphDb )
     {
         this.actual = graphDb;
-    }
-
-    public GraphDatabaseService getActualGraphDb()
-    {
-        return actual;
     }
 
     public Node readOnly( Node actual )
@@ -295,7 +180,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     @Override
     public Schema schema()
     {
-        return new ReadOnlySchemaProxy(actual.schema());
+        return new ReadOnlySchemaProxy( actual.schema() );
     }
 
     @Override
@@ -1048,36 +933,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public NodeManager getNodeManager()
-    {
-        return actual.getNodeManager();
-    }
-
-    @Override
-    public LockManager getLockManager()
-    {
-        return actual.getLockManager();
-    }
-
-    @Override
-    public XaDataSourceManager getXaDataSourceManager()
-    {
-        return actual.getXaDataSourceManager();
-    }
-
-    @Override
-    public TransactionManager getTxManager()
-    {
-        return txManager;
-    }
-
-    @Override
-    public RelationshipTypeTokenHolder getRelationshipTypeTokenHolder()
-    {
-        return actual.getRelationshipTypeTokenHolder();
-    }
-
-    @Override
     public String getStoreDir()
     {
         return actual.getStoreDir();
@@ -1090,27 +945,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public KernelPanicEventGenerator getKernelPanicGenerator()
+    public StoreId storeId()
     {
-        return actual.getKernelPanicGenerator();
-    }
-
-    @Override
-    public Guard getGuard()
-    {
-        return actual.getGuard();
-    }
-
-    @Override
-    public StoreId getStoreId()
-    {
-        return actual.getStoreId();
-    }
-
-    @Override
-    public TxIdGenerator getTxIdGenerator()
-    {
-        return actual.getTxIdGenerator();
+        return actual.storeId();
     }
 
     @Override

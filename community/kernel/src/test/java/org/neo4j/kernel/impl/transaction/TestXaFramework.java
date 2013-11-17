@@ -109,12 +109,11 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     }
 
     @Before
-    @SuppressWarnings("deprecation")
     public void setUpFramework()
     {
         getTransaction().finish();
-        tm = getGraphDbAPI().getTxManager();
-        xaDsMgr = getGraphDbAPI().getXaDataSourceManager();
+        tm = getGraphDbAPI().getDependencyResolver().resolveDependency( TransactionManager.class );
+        xaDsMgr = getGraphDbAPI().getDependencyResolver().resolveDependency( XaDataSourceManager.class );
     }
 
     private static class DummyCommand extends XaCommand
@@ -262,7 +261,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                             @SuppressWarnings("deprecation")
                             public TxIdGenerator getTxIdGenerator()
                             {
-                                return getGraphDbAPI().getTxIdGenerator();
+                                return getGraphDbAPI().getDependencyResolver().resolveDependency( TxIdGenerator.class );
                             }
                         };
                     }
@@ -401,7 +400,9 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
                 new XaFactory(
                         new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
-                        new PlaceboTm( null, getGraphDbAPI().getTxIdGenerator() ), new DefaultLogBufferFactory(),
+                        new PlaceboTm( null, getGraphDbAPI().getDependencyResolver()
+                                .resolveDependency( TxIdGenerator.class ) ),
+                        new DefaultLogBufferFactory(),
                         fileSystem, new DevNullLoggingService(),
                         RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );

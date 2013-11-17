@@ -315,7 +315,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node1.setProperty( "someotherproptest", 2 );
         commit();
         TransactionManager txManager = 
-            getGraphDbAPI().getTxManager();
+            getGraphDbAPI().getDependencyResolver().resolveDependency( TransactionManager.class );
         
         txManager.begin();
         node.setProperty( "someotherproptest", "testing2" );

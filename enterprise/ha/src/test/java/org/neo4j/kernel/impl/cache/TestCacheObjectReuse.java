@@ -23,6 +23,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -37,14 +38,14 @@ public class TestCacheObjectReuse
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).newGraphDatabase();
-        Cache<?> firstCache = first( db.getNodeManager().caches() );
+        Cache<?> firstCache = first( nodeManager( db ).caches() );
         db.shutdown();
         
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).newGraphDatabase();
         try
         {
-            Cache<?> secondCache = first( db.getNodeManager().caches() );
+            Cache<?> secondCache = first( nodeManager( db ).caches() );
             assertEquals( firstCache, secondCache );
         }
         finally
@@ -53,12 +54,17 @@ public class TestCacheObjectReuse
         }
     }
 
+    private NodeManager nodeManager( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( NodeManager.class );
+    }
+
     @Test
     public void highPerformanceCachesAreRecreatedBetweenSessionsIfConfigChanges() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).newGraphDatabase();
-        Cache<?> firstCache = first( db.getNodeManager().caches() );
+        Cache<?> firstCache = first( nodeManager( db ).caches() );
         db.shutdown();
         
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
@@ -67,7 +73,7 @@ public class TestCacheObjectReuse
                 .newGraphDatabase();
         try
         {
-            Cache<?> secondCache = first( db.getNodeManager().caches() );
+            Cache<?> secondCache = first( nodeManager( db ).caches() );
             assertFalse( firstCache.equals( secondCache ) );
         }
         finally

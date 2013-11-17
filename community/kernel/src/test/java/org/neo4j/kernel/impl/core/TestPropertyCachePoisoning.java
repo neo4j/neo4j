@@ -149,7 +149,7 @@ public class TestPropertyCachePoisoning
 
     private void clearCache()
     {
-        graphdb.getNodeManager().clearCache();
+        graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
     }
 
     private abstract class TxThread

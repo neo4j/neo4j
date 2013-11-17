@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import java.util.Iterator;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 
 import org.junit.Before;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
-import org.neo4j.kernel.impl.transaction.TxManager;
 
 import static java.util.Collections.singletonList;
 
@@ -350,7 +350,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     public void shouldNotAllowOldUncommittedTransactionsToResumeAndViolateConstraint() throws Exception
     {
         // Given
-        TxManager txManager = db.getDependencyResolver().resolveDependency( TxManager.class );
+        TransactionManager txManager = db.getDependencyResolver().resolveDependency( TransactionManager.class );
 
         DataWriteOperations s1 = dataWriteOperationsInNewTransaction();
         createNodeWithLabelAndProperty( s1, labelId, propertyKeyId, "Bob" );

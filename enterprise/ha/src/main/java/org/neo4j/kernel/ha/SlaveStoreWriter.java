@@ -42,6 +42,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -101,8 +102,8 @@ public class SlaveStoreWriter
         // Apply pending transactions
         try
         {
-            ServerUtil.applyReceivedTransactions( response, copiedDb.getXaDataSourceManager(),
-                    ServerUtil.txHandlerForFullCopy() );
+            ServerUtil.applyReceivedTransactions( response, copiedDb.getDependencyResolver()
+                    .resolveDependency( XaDataSourceManager.class ), ServerUtil.txHandlerForFullCopy() );
         }
         finally
         {

@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import javax.transaction.SystemException;
+import javax.transaction.TransactionManager;
 
 import org.junit.After;
 import org.junit.Test;
@@ -33,7 +34,6 @@ import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
@@ -86,7 +86,7 @@ public class LabelIT
 
     private void commit( HighlyAvailableGraphDatabase db, javax.transaction.Transaction tx ) throws Exception
     {
-        TxManager txManager = db.getDependencyResolver().resolveDependency( TxManager.class );
+        TransactionManager txManager = db.getDependencyResolver().resolveDependency( TransactionManager.class );
         txManager.resume( tx );
         txManager.commit();
     }
@@ -96,7 +96,7 @@ public class LabelIT
     {
         db.beginTx();
         db.createNode( label );
-        return db.getDependencyResolver().resolveDependency( TxManager.class ).suspend();
+        return db.getDependencyResolver().resolveDependency( TransactionManager.class ).suspend();
     }
 
     private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );

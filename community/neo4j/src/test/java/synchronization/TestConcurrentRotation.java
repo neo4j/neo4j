@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -161,7 +162,8 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         {
             try
             {
-                graphdb.getXaDataSourceManager().getXaDataSource( LuceneDataSource.DEFAULT_NAME ).rotateLogicalLog();
+                graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                        .getXaDataSource( LuceneDataSource.DEFAULT_NAME ).rotateLogicalLog();
                 setSuccess( graphdb, true );
             }
             catch ( Exception e )

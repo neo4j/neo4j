@@ -227,7 +227,7 @@ public class TestRaceOnMultipleNodeImpl
 
     private void clearCaches()
     {
-        graphdb.getNodeManager().clearCache();
+        graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
     }
 
     private static Thread thread( String name, Runnable task )

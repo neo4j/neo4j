@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -255,10 +256,9 @@ public class LuceneIndexRecoveryIT
        directoryFactory.close();
     }
 
-    @SuppressWarnings("deprecation")
     private void rotateLogs()
     {
-       db.getXaDataSourceManager().rotateLogicalLogs();
+       db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
     }
 
     private void createIndex( Label label )

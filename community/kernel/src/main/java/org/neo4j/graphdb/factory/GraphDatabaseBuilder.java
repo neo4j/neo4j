@@ -117,6 +117,7 @@ public class GraphDatabaseBuilder
      * Set a map of config settings into the builder. Overwrites any existing values.
      *
      * @return the builder
+     * @deprecated Use setConfig with explicit {@link Setting} instead
      */
     @SuppressWarnings("deprecation")
     public GraphDatabaseBuilder setConfig( Map<String, String> config )
