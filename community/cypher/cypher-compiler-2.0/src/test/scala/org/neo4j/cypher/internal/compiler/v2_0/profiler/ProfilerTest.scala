@@ -31,7 +31,7 @@ class ProfilerTest extends Assertions with MockitoSugar {
   @Test
   def should_report_simplest_case() {
     //GIVEN
-    val start = NullPipe
+    val start = NullPipe()
     val pipe = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 20)
     val queryContext = mock[QueryContext]
     val profiler = new Profiler
@@ -48,7 +48,7 @@ class ProfilerTest extends Assertions with MockitoSugar {
   @Test
   def should_report_multiple_pipes_case() {
     //GIVEN
-    val start = NullPipe
+    val start = NullPipe()
     val pipe1 = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 25)
     val pipe2 = new ProfilerPipe(pipe1, "bar", rows = 20, dbAccess = 40)
     val pipe3 = new ProfilerPipe(pipe2, "baz", rows = 1, dbAccess = 2)

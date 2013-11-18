@@ -23,22 +23,25 @@ import expressions._
 import values.KeyToken
 import values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_0._
-import mutation.{UpdateAction, PropertySetAction, MergeNodeAction}
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.{MergePatternAction, UpdateAction, PropertySetAction, MergeNodeAction}
 import org.neo4j.cypher.PatternException
 import scala.collection.mutable
 
-case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
-  def nextStep(): Seq[MergeNodeAction] = {
+case class MergeAst(patterns: Seq[AbstractPattern],
+                    onActions: Seq[OnAction],
+                    matches: Seq[Pattern],
+                    create: Seq[UpdateAction]) {
 
-    val actionsMap = new mutable.HashMap[(String, Action), mutable.Set[UpdateAction]] with mutable.MultiMap[(String, Action), UpdateAction]
+  val actionsMap = new mutable.HashMap[(String, Action), mutable.Set[UpdateAction]] with mutable.MultiMap[(String, Action), UpdateAction]
 
-    for (
-      actions <- onActions;
-      action <- actions.set) {
-      actionsMap.addBinding((actions.identifier, actions.verb), action)
-    }
+  for (
+    actions <- onActions;
+    action <- actions.set) {
+    actionsMap.addBinding((actions.identifier, actions.verb), action)
+  }
 
-    patterns.map {
+  def nextStep(): Seq[UpdateAction] = {
+    val singleNodeActions: Seq[MergeNodeAction] = patterns.flatMap {
       case ParsedEntity(name, _, props, labelTokens, _) =>
 
         val labelPredicates = labelTokens.map(labelName => HasLabel(Identifier(name), labelName))
@@ -51,8 +54,6 @@ case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
           case (propertyKey, expression) => PropertyKey(propertyKey) -> expression
         }.toMap
 
-        val predicates = labelPredicates ++ propertyPredicates
-
         val labelActions = labelTokens.map(labelName => LabelAction(Identifier(name), LabelSetOp, Seq(labelName)))
         val propertyActions = props.map {
           case (propertyKey, expression) => {
@@ -61,17 +62,45 @@ case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
           }
         }
 
-        val actionsFromOnCreateClause = actionsMap.get((name, On.Create)).getOrElse(Set.empty)
-        val actionsFromOnMatchClause = actionsMap.get((name, On.Match)).getOrElse(Set.empty)
+        val actionsFromOnCreateClause = actionsMap.get((name, On.Create)).getOrElse(Seq.empty).toSeq
 
         val onCreate: Seq[UpdateAction] = labelActions ++ propertyActions ++ actionsFromOnCreateClause
 
-        MergeNodeAction(name, propertyMap, labelTokens, predicates, onCreate, actionsFromOnMatchClause.toSeq, None)
+        val predicates = labelPredicates ++ propertyPredicates
+
+        val actionsFromOnMatchClause = actionsMap.get((name, On.Match)).getOrElse(Set.empty)
+
+        Some(MergeNodeAction(name, propertyMap, labelTokens, predicates, onCreate, actionsFromOnMatchClause.toSeq, None))
 
       case _ =>
-        throw new PatternException("MERGE only supports single node patterns")
+        None
+    }.toSeq
+
+    singleNodeActions ++ getPatternMerges
+  }
+
+  def isNotSingleNode(name: String) = {
+    val pattern = patterns.find(_.name == name).get
+    pattern match {
+      case _: ParsedRelation => true
+      case _                 => false
     }
   }
+
+  private def getPatternMerges = {
+    val onMatchActions = actionsMap.collect {
+      case ((name, On.Match), actions) if isNotSingleNode(name) => actions
+    }.flatten.toSeq
+    val onCreateActions = actionsMap.collect {
+      case ((name, On.Create), actions) if isNotSingleNode(name) => actions
+    }.flatten.toSeq
+
+    if (!matches.exists(_.isInstanceOf[RelatedTo]))
+      None
+    else
+      Some(MergePatternAction(matches, create ++ onCreateActions, onMatchActions))
+  }
+
 }
 
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.{expressions => commandexpressions}
-import mutation.{UpdateAction, ForeachAction}
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.{CreateNode, UpdateAction, ForeachAction}
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -141,8 +141,14 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction], token: InputToken)
       a => SemanticError(s"Invalid use of ${a.identifier.name} for ${a.name}: already defined prior to ${name}", a.identifier.token, a.token, token)
     }
 
-  def legacyUpdateActions = toCommand.nextStep
-  def toCommand = commands.MergeAst(pattern.toAbstractPatterns, actions.map(_.toAction))
+  def legacyUpdateActions = toCommand.nextStep()
+  def toCommand = {
+    val toAbstractPatterns = pattern.toAbstractPatterns
+    val map = actions.map(_.toAction)
+    val legacyPatterns = pattern.toLegacyPatterns.filterNot(_.isInstanceOf[commands.SingleNode])
+    val creates = pattern.toLegacyCreates.filterNot(_.isInstanceOf[CreateNode])
+    commands.MergeAst(toAbstractPatterns, map, legacyPatterns, creates)
+  }
 
   def addToLegacyQuery(builder: commands.QueryBuilder) = {
     val updates = builder.updates ++ legacyUpdateActions

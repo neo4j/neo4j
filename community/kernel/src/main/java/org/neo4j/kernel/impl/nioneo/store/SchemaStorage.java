@@ -73,7 +73,7 @@ public class SchemaStorage implements SchemaRuleAccess
 
         if ( rules.hasNext() )
         {
-            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "found more than one matching index" );
+            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, String.format("found more than one matching index rule, %s and %s", rule, rules.next()) );
         }
         return rule;
     }

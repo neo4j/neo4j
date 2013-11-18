@@ -40,7 +40,6 @@ This builder is concerned with finding queries that use MERGE, and finds a way t
 class MergeStartPointBuilder extends PlanBuilder {
   val entityProducerFactory = new EntityProducerFactory
 
-
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
 
     val q: PartiallySolvedQuery = plan.query

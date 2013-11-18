@@ -250,7 +250,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val step = trail.toSteps(0).get
     val producer = EntityProducer[Node]("test") { (ctx, state) => Iterator(monitoredNode) }
     val matcher = new MonoDirectionalTraversalMatcher(step, producer)
-    new TraversalMatchPipe(NullPipe, matcher, trail)
+    new TraversalMatchPipe(NullPipe(), matcher, trail)
   }
 }
 

@@ -196,7 +196,7 @@ object NullPlanDescription extends PlanDescription {
 
   def name = ???
 
-  def pipe = NullPipe
+  def pipe = NullPipe()
 
   def render(builder: StringBuilder) {}
 

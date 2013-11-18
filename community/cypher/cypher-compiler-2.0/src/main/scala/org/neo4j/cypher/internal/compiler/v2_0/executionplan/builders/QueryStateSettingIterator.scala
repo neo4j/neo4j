@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.pipes.optional
+package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-class Listener[A](in: Iterator[A]) extends Iterator[A] {
-  var seen: List[A] = List.empty
+import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
 
-  def hasNext: Boolean = in.hasNext
+class QueryStateSettingIterator(input: Iterator[ExecutionContext], state: QueryState)
+  extends Iterator[ExecutionContext] {
+  def hasNext: Boolean = input.hasNext
 
-  def next(): A = {
-    val n = in.next()
-    seen = seen :+ n
-    n
+  def next(): ExecutionContext = {
+    val temp = input.next()
+    state.initialContext = Some(temp)
+    temp
   }
-
-  def clear() {
-    seen = List.empty
-  }
-
-  override def toString(): String = "SEEN: " + seen.toString
 }
