@@ -39,18 +39,22 @@ class CreateRelationshipTest extends GraphDatabaseTestBase with Assertions {
     val aEndNode = RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, bare = true)
     val bEndNode = RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, bare = true)
     val relCreator = new CreateRelationship("r", aEndNode, bEndNode, "RELTYPE", Map("*" -> ParameterExpression("props")))
-    val state = QueryStateHelper.queryStateFrom(graph, graph.beginTx()).copy(params = props)
-    val ctx = ExecutionContext.from("a" -> a, "b" -> b)
 
-    //when
     val tx = graph.beginTx()
-    relCreator.exec(ctx, state)
-    tx.success()
-    tx.finish()
+    try {
+      val state = QueryStateHelper.queryStateFrom(graph, tx).copy(params = props)
+      val ctx = ExecutionContext.from("a" -> a, "b" -> b)
 
-    //then
-    val relationships = a.getRelationships.asScala.toList
-    assert(relationships.size === 1)
-    assert(relationships.head.getProperty("array") === Array(1, 2, 3))
+      //when
+      relCreator.exec(ctx, state)
+
+      //then
+      val relationships = a.getRelationships.asScala.toList
+      assert(relationships.size === 1)
+      assert(relationships.head.getProperty("array") === Array(1, 2, 3))
+      tx.success()
+    } finally {
+      tx.close()
+    }
   }
 }

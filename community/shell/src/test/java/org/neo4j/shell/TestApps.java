@@ -343,14 +343,12 @@ public class TestApps extends AbstractShellTest
         Node strayNode = db.createNode();
         finishTx();
 
-        beginTx();
         executeCommand( "cd -a " + node.getId() );
         executeCommand( "START n = node({self}) RETURN n.name;", nodeOneName );
         executeCommand( "cd -r " + relationship.getId() );
         executeCommand( "START r = relationship({self}) RETURN r.name;", relationshipName );
         executeCommand( "cd " + otherNode.getId() );
         executeCommand( "START n = node({self}) RETURN n.name;", nodeTwoName );
-        finishTx();
 
         executeCommand( "cd -a " + strayNode.getId() );
         beginTx();
@@ -368,7 +366,6 @@ public class TestApps extends AbstractShellTest
         node.createRelationshipTo( otherNode, RELATIONSHIP_TYPE );
         finishTx();
 
-        beginTx();
         executeCommand( "START n = node(" + node.getId() + ") optional match p=n-[r*]-m RETURN p;", "\\d+ ms" );
     }
 
@@ -530,14 +527,18 @@ public class TestApps extends AbstractShellTest
     @Test
     public void cypherNodeStillHasRelationshipsException() throws Exception
     {
+        // Given
+        executeCommand( "create a,b,a-[:x]->b;" );
+
+        // When
         try
         {
-            executeCommand("create a,b,a-[:x]->b;");
-            executeCommand("start n=node(*) delete n;");
+            executeCommand( "start n=node(*) delete n;" );
             fail( "Should have failed with " + NodeStillHasRelationshipsException.class.getName() + " exception" );
         }
         catch ( ShellException e )
         {
+            // Then
             assertThat( e.getStackTraceAsString(), containsString( "still has relationships" ) );
         }
     }
@@ -593,19 +594,21 @@ public class TestApps extends AbstractShellTest
     {
         Map<String, Serializable> variables = genericMap( "id", 0 );
         ShellClient client = newShellClient( shellServer, variables );
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            executeCommand( client, "start n=node({id}) return n;", "1 row" );
+            tx.success();
         }
+        executeCommand( client, "start n=node({id}) return n;", "1 row" );
     }
 
     @Test
     public void canDumpSubgraphWithCypher() throws Exception
     {
         final DynamicRelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
-        db.beginTx();
+        beginTx();
         createRelationshipChain( db.createNode(), type, 1 );
+        finishTx();
         executeCommand( "dump start n=node(0) match n-[r]->m return n,r,m;",
                 "begin",
                 "create _0",
@@ -618,11 +621,12 @@ public class TestApps extends AbstractShellTest
     public void canDumpGraph() throws Exception
     {
         final DynamicRelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
-        db.beginTx();
+        beginTx();
         final Relationship rel = createRelationshipChain( db.createNode(), type, 1 )[0];
         rel.getStartNode().setProperty( "f o o", "bar" );
         rel.setProperty( "since", 2010 );
         rel.getEndNode().setProperty( "flags", new Boolean[]{true, false, true} );
+        finishTx();
         executeCommand( "dump ",
                 "begin",
                 "create \\(_0 \\{\\`f o o\\`:\"bar\"\\}\\)",

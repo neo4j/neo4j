@@ -188,7 +188,7 @@ public class ImdbDocTest
     @After
     public void finishTx()
     {
-        tx.finish();
+        tx.close();
     }
 
     private void rollbackTx()

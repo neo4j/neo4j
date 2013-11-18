@@ -101,21 +101,18 @@ public class TestSlaveOnlyCluster
             electedLatch.await();
 
             HighlyAvailableGraphDatabase slaveDatabase = clusterManager.getDefaultCluster().getAnySlave(  );
-            Transaction tx = slaveDatabase.beginTx();
-            Node node = slaveDatabase.createNode();
-            node.setProperty( "foo", "bar" );
-            long nodeId = node.getId();
-            tx.success();
-            tx.finish();
+            long nodeId;
+            try ( Transaction tx = slaveDatabase.beginTx() )
+            {
+                Node node = slaveDatabase.createNode();
+                node.setProperty( "foo", "bar" );
+                nodeId = node.getId();
+                tx.success();
+            }
 
-            Transaction transaction = master.beginTx();
-            try
+            try ( Transaction ignore = master.beginTx() )
             {
                 assertThat( master.getNodeById( nodeId ).getProperty( "foo" ).toString(), equalTo( "bar" ) );
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
         finally

@@ -19,10 +19,6 @@
  */
 package org.neo4j.index.timeline;
 
-import static java.util.Collections.sort;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -45,10 +41,13 @@ import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.util.Collections.sort;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+
 public class TestTimeline
 {
     private GraphDatabaseService db;
-    private Transaction tx;
 
     @Before
     public void before() throws Exception
@@ -60,17 +59,6 @@ public class TestTimeline
     public void after()
     {
         db.shutdown();
-    }
-
-    private void beginTx()
-    {
-        tx = db.beginTx();
-    }
-
-    private void commitTx()
-    {
-        tx.success();
-        tx.finish();
     }
 
     private interface EntityCreator<T extends PropertyContainer>
@@ -100,47 +88,37 @@ public class TestTimeline
 
     private TimelineIndex<PropertyContainer> nodeTimeline()
     {
-        Transaction transaction = db.beginTx();
-        Index<Node> nodeIndex;
-        try
+        try( Transaction tx = db.beginTx() )
         {
-            nodeIndex = db.index().forNodes( "timeline" );
-            transaction.success();
+            Index<Node> nodeIndex = db.index().forNodes( "timeline" );
+            tx.success();
+            return new LuceneTimeline( db, nodeIndex );
         }
-        finally
-        {
-            transaction.finish();
-        }
-        return new LuceneTimeline( db, nodeIndex );
     }
 
     private TimelineIndex<PropertyContainer> relationshipTimeline()
     {
-        Transaction transaction = db.beginTx();
-        RelationshipIndex relationshipIndex;
-        try
+        try( Transaction tx = db.beginTx() )
         {
-            relationshipIndex = db.index().forRelationships( "timeline" );
-            transaction.success();
+            RelationshipIndex relationshipIndex = db.index().forRelationships( "timeline" );
+            tx.success();
+            return new LuceneTimeline( db, relationshipIndex );
         }
-        finally
-        {
-            transaction.finish();
-        }
-        return new LuceneTimeline( db, relationshipIndex );
     }
 
     private LinkedList<Pair<PropertyContainer, Long>> createTimestamps( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline, long... timestamps )
     {
-        beginTx();
-        LinkedList<Pair<PropertyContainer, Long>> result = new LinkedList<Pair<PropertyContainer,Long>>();
-        for ( long timestamp : timestamps )
+        try( Transaction tx = db.beginTx() )
         {
-            result.add( createTimestampedEntity( creator, timeline, timestamp ) );
+            LinkedList<Pair<PropertyContainer, Long>> result = new LinkedList<>();
+            for ( long timestamp : timestamps )
+            {
+                result.add( createTimestampedEntity( creator, timeline, timestamp ) );
+            }
+            tx.success();
+            return result;
         }
-        commitTx();
-        return result;
     }
 
     private Pair<PropertyContainer, Long> createTimestampedEntity( EntityCreator<PropertyContainer> creator,
@@ -178,10 +156,12 @@ public class TestTimeline
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline, 223456, 12345, 432234 );
-        beginTx();
-        assertEquals( timestamps.get( 1 ).first(), timeline.getFirst() );
-        assertEquals( timestamps.getLast().first(), timeline.getLast() );
-        commitTx();
+        try( Transaction tx = db.beginTx() )
+        {
+            assertEquals( timestamps.get( 1 ).first(), timeline.getFirst() );
+            assertEquals( timestamps.getLast().first(), timeline.getLast() );
+            tx.success();
+        }
     }
 
     private void makeSureRangesAreReturnedInCorrectOrder( EntityCreator<PropertyContainer> creator,
@@ -189,9 +169,11 @@ public class TestTimeline
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 400000, 100000, 500000, 600000, 900000, 800000 );
-        beginTx();
-        assertEquals( sortedEntities( timestamps, false ), asCollection( timeline.getBetween( null, null ).iterator() ) );
-        commitTx();
+        try( Transaction tx = db.beginTx() )
+        {
+            assertEquals( sortedEntities( timestamps, false ), asCollection( timeline.getBetween( null, null ).iterator() ) );
+            tx.success();
+        }
     }
 
     private void makeSureRangesAreReturnedInCorrectReversedOrder( EntityCreator<PropertyContainer> creator,
@@ -199,9 +181,11 @@ public class TestTimeline
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 199999, 400000, 100000, 500000, 600000, 900000, 800000 );
-        beginTx();
-        assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, null, true ).iterator() ) );
-        commitTx();
+        try( Transaction tx = db.beginTx() )
+        {
+            assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, null, true ).iterator() ) );
+            tx.success();
+        }
     }
 
     private void makeSureWeCanQueryLowerDefaultThan1970( EntityCreator<PropertyContainer> creator,
@@ -209,9 +193,11 @@ public class TestTimeline
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 -10000, 0, 10000 );
-        beginTx();
-        assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, 10000L, true ).iterator() ) );
-        commitTx();
+        try( Transaction tx = db.beginTx() )
+        {
+            assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, 10000L, true ).iterator() ) );
+            tx.success();
+        }
     }
 
     private void makeSureUncommittedChangesAreSortedCorrectly( EntityCreator<PropertyContainer> creator,
@@ -220,13 +206,19 @@ public class TestTimeline
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 100000, 500000, 900000, 800000 );
 
-        beginTx();
-        timestamps.addAll( createTimestamps( creator, timeline, 40000, 70000, 20000 ) );
-        assertEquals( sortedEntities( timestamps, false ),
-                asCollection( timeline.getBetween( null, null ).iterator() ) );
-        commitTx();
-        assertEquals( sortedEntities( timestamps, false ),
-                asCollection( timeline.getBetween( null, null ).iterator() ) );
+        try( Transaction tx = db.beginTx() )
+        {
+            timestamps.addAll( createTimestamps( creator, timeline, 40000, 70000, 20000 ) );
+            assertEquals( sortedEntities( timestamps, false ),
+                    asCollection( timeline.getBetween( null, null ).iterator() ) );
+            tx.success();
+        }
+
+        try( Transaction ignore = db.beginTx() )
+        {
+            assertEquals( sortedEntities( timestamps, false ),
+                    asCollection( timeline.getBetween( null, null ).iterator() ) );
+        }
     }
 
     // ======== The tests

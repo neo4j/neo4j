@@ -26,6 +26,7 @@ import java.io.InputStream;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Settings;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -55,9 +56,12 @@ public class StartClientTest
         StartClient.main(new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()});
 
         // Then
-        db.getGraphDatabaseService().beginTx();
-        assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
-                equalTo( "bar" ) );
+        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        {
+            assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
+                    equalTo( "bar" ) );
+            tx.success();
+        }
     }
 
     @Test
@@ -79,8 +83,11 @@ public class StartClientTest
         }
 
         // Then
-        db.getGraphDatabaseService().beginTx();
-        assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
-                equalTo( "bar" ) );
+        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        {
+            assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
+                    equalTo( "bar" ) );
+            tx.success();
+        }
     }
 }

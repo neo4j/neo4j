@@ -272,10 +272,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             }
             catch ( IOException e )
             {
-                log.logMessage( "Unable to close tx log[" + txLog.getName() + "]", e );
+                log.error( "Unable to close tx log[" + txLog.getName() + "]", e );
             }
         }
-        log.logMessage( "TM shutting down", true );
+        log.info( "TM shutting down" );
     }
 
     private void changeActiveLog( String newFileName ) throws IOException
@@ -407,6 +407,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         finally
         {
+            monitor.txCommitted( new XidImpl( tx.getGlobalId(), new byte[0] ) );
             txThreadMap.remove();
             if ( hasAnyLocks )
             {
@@ -573,8 +574,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             }
         }
         tx.doAfterCompletion();
-
-        monitor.txCommitted( new XidImpl( tx.getGlobalId(), new byte[0] ) );
 
         try
         {
