@@ -68,22 +68,19 @@
             <configuration>
               <target name="hipster build">
 
-                <echo>npm install</echo>
                 <exec executable="npm" dir="${project.basedir}" osfamily="unix" failonerror="true">
-                <arg line="config set color false" />
-                </exec>
-                <exec executable="npm" dir="${project.basedir}" osfamily="unix" failonerror="true">
-                <arg line="install" />
+                  <arg line="--color=false install" />
                 </exec>
 
-                <echo>gruntjs build</echo>
-                <exec executable="grunt" dir="${project.basedir}" osfamily="unix" resultproperty="cmdresult">
-                <arg line="--no-color build" />
+                <exec executable="node_modules/.bin/grunt" dir="${project.basedir}" osfamily="unix" resultproperty="cmdresult">
+                  <arg line="--no-color build" />
                 </exec>
+
                 <condition property="cmdsuccess">
                   <equals arg1="${cmdresult}" arg2="0" />
                 </condition>
                 <fail unless="cmdsuccess" />
+
               </target>
             </configuration>
             <goals>
