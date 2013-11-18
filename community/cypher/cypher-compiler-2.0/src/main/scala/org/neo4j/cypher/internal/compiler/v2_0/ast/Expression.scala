@@ -75,9 +75,9 @@ abstract class Expression extends AstNode with SemanticChecking {
   final def constrainType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
     constrainType((possibleType +: possibleTypes).toSet)
   final def constrainType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
-    s => s.constrainType(this, token, typeGen(s))
+    s => s.constrainType(this, typeGen(s))
   final def constrainType(possibleTypes: => TypeSet): SemanticState => Either[SemanticError, SemanticState] =
-    _.constrainType(this, token, possibleTypes)
+    _.constrainType(this, possibleTypes)
 
   def toCommand: CommandExpression
   def toPredicate: CommandPredicate = CoercedPredicate(toCommand)
@@ -119,13 +119,13 @@ case class Identifier(name: String, token: InputToken) extends Expression {
 }
 
 case class Parameter(name: String, token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(BooleanType(), MapType(), NumberType(), StringType(), CollectionType(AnyType()))
+  protected def possibleTypes = TypeSet.all
 
   def toCommand = commandexpressions.ParameterExpression(name)
 }
 
 case class Null(token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(AnyType())
+  protected def possibleTypes = TypeSet.all
 
   def toCommand = commandexpressions.Literal(null)
 }
@@ -147,7 +147,7 @@ case class CountStar(token: InputToken) extends Expression with SimpleTypedExpre
 case class Property(map: Expression, identifier: Identifier, token: InputToken)
   extends Expression with SimpleTypedExpression {
 
-  protected def possibleTypes = Set(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
+  protected def possibleTypes = TypeSet.all
 
   override def semanticCheck(ctx: SemanticContext) =
     map.semanticCheck(ctx) then
@@ -201,7 +201,7 @@ case class Collection(expressions: Seq[Expression], token: InputToken) extends E
 
   private def possibleTypes: TypeGenerator = state => expressions match {
     case Seq() => Set(CollectionType(AnyType()))
-    case _     => expressions.mergeDownTypes(state).map(CollectionType.apply)
+    case _     => expressions.mergeDownTypes(state).reparent(CollectionType(_))
   }
 
   def toCommand = commandexpressions.Collection(expressions.map(_.toCommand):_*)
@@ -247,7 +247,7 @@ case class CollectionIndex(collection: Expression, idx: Expression, token: Input
       collection.constrainType(CollectionType(AnyType())) then
       idx.semanticCheck(ctx) then
       idx.constrainType(IntegerType(), LongType()) then
-      specifyType(collection.types(_).collect { case c: CollectionType => c.innerType })
+      specifyType(collection.types(_).constrain(CollectionType(AnyType())).reparent { case c: CollectionType => c.innerType })
 
   def toCommand = commandexpressions.CollectionIndex(collection.toCommand, idx.toCommand)
 }

@@ -52,12 +52,6 @@ object TypeSet {
         })
     }
 
-    def mergeUp(other: TypeSet): TypeSet = {
-      TypeSet(flatMap {
-        t => other.flatMap(_ mergeUp t)
-      })
-    }
-
     def formattedString: String = {
       val types = toIndexedSeq.map(_.toString)
       types.length match {
@@ -157,8 +151,6 @@ object TypeSet {
       })
     }
 
-    def mergeUp(other: TypeSet): TypeSet = ???
-
     def +(elem: CypherType): Set[CypherType] = copy(ranges + Range(elem, Some(elem)))
     def -(elem: CypherType): Set[CypherType] = ???
 
@@ -229,7 +221,6 @@ sealed abstract class TypeSet extends Set[CypherType] {
   def constrain(other: TypeSet): TypeSet
   def mergeDown(types: CypherType*): TypeSet = mergeDown(TypeSet(types:_*))
   def mergeDown(other: TypeSet): TypeSet
-  def mergeUp(other: TypeSet): TypeSet
 
   def reparent(f: CypherType => CypherType): TypeSet = map(f)
 

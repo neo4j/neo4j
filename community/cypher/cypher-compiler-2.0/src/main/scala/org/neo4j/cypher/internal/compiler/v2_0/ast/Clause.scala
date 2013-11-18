@@ -241,7 +241,7 @@ case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
       expression.constrainType(CollectionType(AnyType())) then withScopedState {
-        val possibleInnerTypes: TypeGenerator = expression.types(_).collect { case c: CollectionType => c.innerType }
+        val possibleInnerTypes: TypeGenerator = expression.types(_).constrain(CollectionType(AnyType())).reparent { case c: CollectionType => c.innerType }
         identifier.declare(possibleInnerTypes) then updates.semanticCheck
       } then updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.token))
 

@@ -72,27 +72,6 @@ class TypeSetTest extends Assertions {
   }
 
   @Test
-  def shouldMergeUpCollectionIterable() {
-    assertEquals(Set(IntegerType()),
-      Set(IntegerType(), StringType(), CollectionType(IntegerType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
-    assertEquals(Set(IntegerType(), CollectionType(StringType())),
-      Set(IntegerType(), StringType(), CollectionType(AnyType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
-  }
-
-  @Test
-  def shouldInferTypeSetsUsingMergeUp() {
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NodeType(), NumberType()))
-    assertEquals(Set(NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NumberType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NodeType(), NumberType(), RelationshipType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(AnyType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(AnyType()) mergeUp Set(NodeType(), NumberType()))
-
-    assertEquals(Set(), Set(RelationshipType()) mergeUp Set(NodeType()))
-    assertEquals(Set(LongType()), Set(RelationshipType(), LongType()) mergeUp Set(NodeType(), NumberType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(AnyType()) mergeUp Set(NodeType(), NumberType()))
-  }
-
-  @Test
   def shouldConstrainTypeSets() {
     assertEquals(Set(IntegerType(), LongType()), Set(IntegerType(), LongType(), StringType(), MapType()) constrain Set(NodeType(), NumberType()))
     assertEquals(Set(CollectionType(StringType())), Set(IntegerType(), CollectionType(StringType())) constrain Set(CollectionType(AnyType())))
