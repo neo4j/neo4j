@@ -58,10 +58,12 @@ public class ConstraintIndexCreator
         IndexDescriptor descriptor = transactor.execute( createConstraintIndex( labelId, propertyKeyId ) );
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
 
+        boolean success = false;
         try
         {
             long indexId = schema.indexGetCommittedId( state, descriptor );
             awaitIndexPopulation( constraint, indexId );
+            success = true;
             return indexId;
         }
         catch ( SchemaRuleNotFoundException e )
@@ -71,8 +73,14 @@ public class ConstraintIndexCreator
         }
         catch ( InterruptedException e )
         {
-            Thread.interrupted();
             throw new CreateConstraintFailureException( constraint, e );
+        }
+        finally
+        {
+            if ( !success )
+            {
+                dropUniquenessConstraintIndex( descriptor );
+            }
         }
     }
 
