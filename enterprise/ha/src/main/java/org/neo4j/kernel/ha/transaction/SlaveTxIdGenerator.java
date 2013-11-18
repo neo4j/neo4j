@@ -29,8 +29,10 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -42,14 +44,17 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     private final int masterId;
     private final RequestContextFactory requestContextFactory;
     private final HaXaDataSourceManager xaDsm;
+    private final AbstractTransactionManager txManager;
 
-    public SlaveTxIdGenerator( int serverId, Master master, int masterId, RequestContextFactory requestContextFactory, HaXaDataSourceManager xaDsm )
+    public SlaveTxIdGenerator( int serverId, Master master, int masterId, RequestContextFactory requestContextFactory,
+                               HaXaDataSourceManager xaDsm, AbstractTransactionManager txManager )
     {
         this.serverId = serverId;
         this.masterId = masterId;
         this.requestContextFactory = requestContextFactory;
         this.master = master;
         this.xaDsm = xaDsm;
+        this.txManager = txManager;
     }
 
     @Override
@@ -57,6 +62,13 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     {
         try
         {
+            // For the first resource to commit against, make sure the master tx is initialized. This is sub
+            // optimal to do here, since we are under a synchronized block, but writing to master from slaves
+            // is discouraged in any case. For details of the background for this call, see TransactionState
+            // and its isRemoteInitialized method.
+            TransactionState txState = txManager.getTransactionState();
+            txState.getTxHook().remotelyInitializeTransaction( identifier, txState );
+
             Response<Long> response = master.commitSingleResourceTransaction(
                     requestContextFactory.newRequestContext( dataSource ), dataSource.getName(),
                     myPreparedTransactionToCommit( dataSource, identifier ) );

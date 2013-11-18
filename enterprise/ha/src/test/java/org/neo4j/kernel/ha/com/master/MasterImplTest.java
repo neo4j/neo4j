@@ -30,6 +30,8 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.impl.util.Monitors;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 
@@ -41,6 +43,8 @@ import static org.mockito.Mockito.*;
 
 public class MasterImplTest
 {
+    private final Monitors monitors = new Monitors( StringLogger.DEV_NULL);
+
     @Test
     public void givenStartedAndInaccessibleWhenInitializeTxThenThrowException() throws Throwable
     {
@@ -53,7 +57,7 @@ public class MasterImplTest
 
         when( spi.isAccessible() ).thenReturn( false );
 
-        MasterImpl instance = new MasterImpl( spi, logging, config );
+        MasterImpl instance = new MasterImpl( spi, monitors , logging, config );
         instance.start();
 
         // When
@@ -81,7 +85,7 @@ public class MasterImplTest
         when( spi.isAccessible() ).thenReturn( true );
         when( spi.beginTx() ).thenReturn( mock( Transaction.class ) );
 
-        MasterImpl instance = new MasterImpl( spi, logging, config );
+        MasterImpl instance = new MasterImpl( spi, monitors, logging, config );
         instance.start();
 
         // When
@@ -106,7 +110,7 @@ public class MasterImplTest
         when( spi.isAccessible() ).thenReturn( true );
         when( spi.beginTx() ).thenThrow( new SystemException("Nope") );
 
-        MasterImpl instance = new MasterImpl( spi, new DevNullLoggingService(), config );
+        MasterImpl instance = new MasterImpl( spi, monitors, new DevNullLoggingService(), config );
         instance.start();
 
         // When

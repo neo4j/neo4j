@@ -51,7 +51,6 @@ import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 public class UniqueConstraintHaIT
 {
-
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() );
 

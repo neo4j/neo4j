@@ -27,8 +27,8 @@ public class ConnectionBroker extends IndexConnectionBroker<LuceneXaConnection>
 {
     private final LuceneDataSource xaDs;
 
-    public ConnectionBroker(TransactionManager transactionManager,
-                            LuceneDataSource dataSource)
+    public ConnectionBroker( TransactionManager transactionManager,
+                             LuceneDataSource dataSource )
     {
         super( transactionManager );
         this.xaDs = dataSource;

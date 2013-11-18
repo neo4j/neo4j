@@ -26,6 +26,7 @@ import javax.transaction.Transaction;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -33,11 +34,13 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.IndexLock;
 import org.neo4j.kernel.impl.locking.IndexEntryLock;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.LockNotFoundException;
 import org.neo4j.kernel.impl.transaction.RagManager;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.logging.Logging;
 
@@ -50,6 +53,10 @@ public class SlaveLockManager implements LockManager
     private final LockManagerImpl local;
     private final Master master;
     private final HaXaDataSourceManager xaDsm;
+    private final AbstractTransactionManager txManager;
+    private final RemoteTxHook txHook;
+    private final AvailabilityGuard availabilityGuard;
+    private final Configuration config;
 
     public static interface Configuration
     {
@@ -57,10 +64,15 @@ public class SlaveLockManager implements LockManager
     }
 
     public SlaveLockManager( RagManager ragManager, RequestContextFactory requestContextFactory, Master master,
-            HaXaDataSourceManager xaDsm )
+            HaXaDataSourceManager xaDsm, AbstractTransactionManager txManager, RemoteTxHook txHook,
+            AvailabilityGuard availabilityGuard, Configuration config )
     {
         this.requestContextFactory = requestContextFactory;
         this.xaDsm = xaDsm;
+        this.txManager = txManager;
+        this.txHook = txHook;
+        this.availabilityGuard = availabilityGuard;
+        this.config = config;
         this.local = new LockManagerImpl( ragManager );
         this.master = master;
     }
@@ -256,17 +268,12 @@ public class SlaveLockManager implements LockManager
 
     private void makeSureTxHasBeenInitialized()
     {
+        if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
+        {
+            // TODO Specific exception instead?
+            throw new RuntimeException( "Timed out waiting for database to switch state" );
+        }
 
-//        int eventIdentifier = txManager.getEventIdentifier();
-//        if ( !txManager.getTransactionState().hasLocks() )
-//        {
-//            if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
-//            {
-//                // TODO Specific exception instead?
-//                throw new RuntimeException( "Timed out waiting for database to switch state" );
-//            }
-//
-//            txHook.initializeTransaction( eventIdentifier );
-//        }
+        txHook.remotelyInitializeTransaction( txManager.getEventIdentifier(), txManager.getTransactionState() );
     }
 }

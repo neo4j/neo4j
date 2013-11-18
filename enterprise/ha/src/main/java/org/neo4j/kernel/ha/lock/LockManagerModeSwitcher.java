@@ -21,31 +21,46 @@ package org.neo4j.kernel.ha.lock;
 
 import java.net.URI;
 
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.RagManager;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
+import org.neo4j.kernel.impl.transaction.TxManager;
 
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
 {
     private final HaXaDataSourceManager xaDsm;
     private final Master master;
     private final RequestContextFactory requestContextFactory;
+    private final AbstractTransactionManager txManager;
+    private final RemoteTxHook remoteTxHook;
+    private final AvailabilityGuard availabilityGuard;
+    private final Config config;
 
     public LockManagerModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                     DelegateInvocationHandler<LockManager> delegate,
                                     HaXaDataSourceManager xaDsm, Master master,
-                                    RequestContextFactory requestContextFactory )
+                                    RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
+                                    RemoteTxHook remoteTxHook, AvailabilityGuard availabilityGuard, Config config )
     {
         super( stateMachine, delegate );
         this.xaDsm = xaDsm;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
+        this.txManager = txManager;
+        this.remoteTxHook = remoteTxHook;
+        this.availabilityGuard = availabilityGuard;
+        this.config = config;
     }
 
     @Override
@@ -57,6 +72,14 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
     @Override
     protected LockManager getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveLockManager( new RagManager(), requestContextFactory, master, xaDsm );
+        return new SlaveLockManager( new RagManager(), requestContextFactory, master, xaDsm, txManager, remoteTxHook,
+                availabilityGuard, new SlaveLockManager.Configuration()
+        {
+            @Override
+            public long getAvailabilityTimeout()
+            {
+                return config.get( HaSettings.lock_read_timeout );
+            }
+        });
     }
 }

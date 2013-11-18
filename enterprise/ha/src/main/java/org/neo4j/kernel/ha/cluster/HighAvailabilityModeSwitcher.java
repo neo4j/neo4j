@@ -86,6 +86,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -143,6 +144,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private final UpdateableSchemaState updateableSchemaState;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
+    private final Monitors monitors;
 
     private volatile URI me;
 
@@ -151,7 +153,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
                                          HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging,
                                          UpdateableSchemaState updateableSchemaState,
-                                         Iterable<KernelExtensionFactory<?>> kernelExtensions )
+                                         Iterable<KernelExtensionFactory<?>> kernelExtensions, Monitors monitors )
     {
         this.bindingNotifier = bindingNotifier;
         this.delegateHandler = delegateHandler;
@@ -162,6 +164,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.logging = logging;
         this.updateableSchemaState = updateableSchemaState;
         this.kernelExtensions = kernelExtensions;
+        this.monitors = monitors;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.life = new LifeSupport();
         this.stateHandler = stateHandler;
@@ -288,7 +291,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         .resolveDependency( TransactionManager.class );
                 MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
 
-                MasterImpl masterImpl = new MasterImpl( spi, logging, config );
+                MasterImpl masterImpl = new MasterImpl( spi, monitors, logging, config );
 
                 MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
                         new BranchDetectingTxVerifier( graphDb ) );

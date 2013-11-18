@@ -377,7 +377,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 xaDataSourceManager, logging, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
 
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, msgLog, config, slaves );
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, msgLog, config, slaves,
+                txManager );
         return txIdGenerator;
     }
 
@@ -387,7 +388,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         idGeneratorFactory = new HaIdGeneratorFactory( master, logging );
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
-                config, logging, updateableSchemaState, kernelExtensions.listFactories() );
+                config, logging, updateableSchemaState, kernelExtensions.listFactories(), monitors );
         /*
          * We always need the mode switcher and we need it to restart on switchover.
          */
@@ -411,7 +412,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (LockManager) Proxy.newProxyInstance( LockManager.class.getClassLoader(),
                         new Class[]{LockManager.class}, lockManagerDelegate );
         new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory );
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, txManager, txHook,
+                availabilityGuard, config );
         return lockManager;
     }
 
