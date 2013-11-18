@@ -1,3 +1,9 @@
+
+2.0.0-RC1
+---------
+o The GCResistantCache is now called the HighPerformanceCache. The configuration for enabling it has changed from
+  'gcr' to 'hpc', although the old setting will remaing functional until the next major release.
+
 2.0.0.M06
 ---------
 o Constraints can now be created in a running HA cluster
