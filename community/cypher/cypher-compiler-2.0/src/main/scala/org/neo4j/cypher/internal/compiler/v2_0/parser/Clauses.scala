@@ -45,7 +45,7 @@ trait Clauses extends Parser
 
   def Merge : Rule1[ast.Merge] = rule("MERGE") {
     group(
-      oneOrMore(keyword("MERGE") ~~ PatternPart, separator = WS) ~>> token ~~> (ast.Pattern(_, _)) ~~ zeroOrMore(MergeAction, separator = WS)
+      group(keyword("MERGE") ~~ PatternPart) ~>> token ~~> ((p, t) => ast.Pattern(Seq(p), t)) ~~ zeroOrMore(MergeAction, separator = WS)
     ) ~>> token ~~> ast.Merge
   }
 
@@ -92,8 +92,8 @@ trait Clauses extends Parser
   )
 
   private def MergeAction = rule("ON") (
-      group(keyword("ON", "MATCH") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnMatch
-    | group(keyword("ON", "CREATE") ~~ Identifier ~~ SetClause) ~>> token ~~> ast.OnCreate
+      group(keyword("ON", "MATCH") ~~ SetClause) ~>> token ~~> ast.OnMatch
+    | group(keyword("ON", "CREATE") ~~ SetClause) ~>> token ~~> ast.OnCreate
   )
 
   private def SetItem : Rule1[ast.SetItem] = rule (

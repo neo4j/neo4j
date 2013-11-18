@@ -265,39 +265,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     )
   }
 
-  @Test def shouldFailIfUnknownIdentifierInMergeActions() {
-    test(
-      "MERGE (n:Person) ON CREATE x SET x.foo = 1",
-      "x not defined (line 1, column 28)"
-    )
-    test(
-      "MERGE (n:Person) ON MATCH x SET x.foo = 1",
-      "x not defined (line 1, column 27)"
-    )
-  }
-
-  @Test def shouldFailIfMergeActionIdentifierNotIntroducedInMerge() {
-    test(
-      "MATCH (n) MERGE (m) ON CREATE n SET n.foo = 1",
-      "Invalid use of n for ON CREATE: already defined prior to MERGE (line 1, column 31)"
-    )
-  }
-
-  @Test def shouldFailIfMergeActionUsesPathIdentifier() {
-    test(
-      "MERGE p=(n:Person) ON CREATE p SET n.foo = 1",
-      "Type mismatch: p already defined with conflicting type Path (expected Node or Relationship) (line 1, column 30)"
-    )
-  }
-
   @Test def shouldFailIfUnknownIdentifierInMergeActionSetClause() {
     test(
-      "MERGE (n:Person) ON CREATE n SET x.foo = 1",
-      "x not defined (line 1, column 34)"
+      "MERGE (n:Person) ON CREATE SET x.foo = 1",
+      "x not defined (line 1, column 32)"
     )
     test(
-      "MERGE (n:Person) ON MATCH n SET x.foo = 1",
-      "x not defined (line 1, column 33)")
+      "MERGE (n:Person) ON MATCH SET x.foo = 1",
+      "x not defined (line 1, column 31)")
   }
 
   @Test def shouldFailIfUsingLegacyOptionalsMatch() {

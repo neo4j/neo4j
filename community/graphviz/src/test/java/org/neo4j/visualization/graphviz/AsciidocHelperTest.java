@@ -48,7 +48,7 @@ public class AsciidocHelperTest
     public void shouldBreakAtTheRightSpotWithOnMatch()
     {
         // given
-        String cypher = "merge (a)\non match a set a.foo = 2";
+        String cypher = "merge (a)\non match set a.foo = 2";
 
         //when
         String snippet = AsciidocHelper.createCypherSnippet(cypher);
@@ -58,7 +58,7 @@ public class AsciidocHelperTest
                 "[source,cypher]\n" +
                 "----\n" +
                 "MERGE (a)\n" +
-                "ON MATCH a SET a.foo = 2\n" +
+                "ON MATCH SET a.foo = 2\n" +
                 "----\n", snippet);
     }
 

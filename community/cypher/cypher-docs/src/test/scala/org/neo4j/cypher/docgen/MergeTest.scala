@@ -93,7 +93,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
       title = "Merge with ON CREATE",
       text = "Merge a node and set properties if the node needs to be created.",
       queryText = """merge (keanu:Person {name:'Keanu Reeves'})
-on create keanu set keanu.created = timestamp()
+on create set keanu.created = timestamp()
 return keanu""",
       returns = "Creates the Keanu node, and sets a timestamp on creation time.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
@@ -104,7 +104,7 @@ return keanu""",
     testQuery(
       title = "Merge with ON MATCH",
       text = "Merging nodes and setting properties on found nodes.",
-      queryText = "merge (person:Person)\non match person set person.found = true\nreturn person",
+      queryText = "merge (person:Person)\non match set person.found = true\nreturn person",
       returns = "Finds all the +Person+ nodes, sets a property on them, and returns them.",
       assertions = (p) => assertStats(p, propertiesSet = 5)
     )
@@ -116,8 +116,8 @@ return keanu""",
       text = "Merge a node and set properties if the node needs to be created.",
       queryText =
         """merge (keanu:Person {name:'Keanu Reeves'})
-on create keanu set keanu.created = timestamp()
-on match keanu set keanu.lastSeen = timestamp()
+on create set keanu.created = timestamp()
+on match set keanu.lastSeen = timestamp()
 return keanu""",
       returns = "The query creates the Keanu node, and sets a timestamp on creation time. If Keanu already existed, a " +
         "different property would have been set.",

@@ -76,7 +76,7 @@ class MergeAstTest extends Assertions {
       Seq(
         ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)),
       Seq(
-        OnAction(On.Create, A, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
+        OnAction(On.Create, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
 
     // then
     assert(from.nextStep() === Seq(MergeNodeAction(A,
@@ -95,7 +95,7 @@ class MergeAstTest extends Assertions {
       Seq(
         ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)),
       Seq(
-        OnAction(On.Match, A, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
+        OnAction(On.Match, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
 
     // then
     assert(from.nextStep() === Seq(MergeNodeAction(A,

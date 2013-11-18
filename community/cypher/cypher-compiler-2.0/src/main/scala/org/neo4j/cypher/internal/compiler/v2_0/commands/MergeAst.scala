@@ -30,12 +30,12 @@ import scala.collection.mutable
 case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
   def nextStep(): Seq[MergeNodeAction] = {
 
-    val actionsMap = new mutable.HashMap[(String, Action), mutable.Set[UpdateAction]] with mutable.MultiMap[(String, Action), UpdateAction]
+    val actionsMap = new mutable.HashMap[Action, mutable.Set[UpdateAction]] with mutable.MultiMap[Action, UpdateAction]
 
     for (
       actions <- onActions;
       action <- actions.set) {
-      actionsMap.addBinding((actions.identifier, actions.verb), action)
+      actionsMap.addBinding(actions.verb, action)
     }
 
     patterns.map {
@@ -61,8 +61,8 @@ case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
           }
         }
 
-        val actionsFromOnCreateClause = actionsMap.get((name, On.Create)).getOrElse(Set.empty)
-        val actionsFromOnMatchClause = actionsMap.get((name, On.Match)).getOrElse(Set.empty)
+        val actionsFromOnCreateClause = actionsMap.get(On.Create).getOrElse(Set.empty)
+        val actionsFromOnMatchClause = actionsMap.get(On.Match).getOrElse(Set.empty)
 
         val onCreate: Seq[UpdateAction] = labelActions ++ propertyActions ++ actionsFromOnCreateClause
 
