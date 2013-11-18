@@ -102,7 +102,9 @@ public class Exceptions
         while ( exception != null )
         {
             if ( !toPeel.accept( exception ) )
+            {
                 break;
+            }
             exception = exception.getCause();
         }
         return exception;
@@ -163,5 +165,22 @@ public class Exceptions
             cause.printStackTrace(System.err);
             return "[ERROR: Unable to serialize stacktrace, UTF-8 not supported.]";
         }
+    }
+    
+    @SuppressWarnings( "rawtypes" )
+    public static boolean contains( Throwable cause, Class... anyOfTheseClasses )
+    {
+        while ( cause != null )
+        {
+            for ( Class cls : anyOfTheseClasses )
+            {
+                if ( cls.isInstance( cause ) )
+                {
+                    return true;
+                }
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 }
