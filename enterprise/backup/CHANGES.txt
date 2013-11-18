@@ -1,5 +1,5 @@
-2.0.0-SNAPSHOT
---------------
+2.0.0-RC1
+---------
 o BREAKING CHANGE: Removed deprecated org.neo4j.backup.check.ConsistencyCheck main class. This is replaced by
   org.neo4j.consistency.ConsistencyCheckTool.
 

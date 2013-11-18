@@ -1,10 +1,13 @@
-2.0.0-SNAPSHOT
---------------
+2.0.0-RC1
+---------
 o BREAKING CHANGE: Removed deprecated method org.neo4j.server.AbstractNeoServer#stopServerOnly(). To stop the server use
   org.neo4j.server.AbstractNeoServer#stop(). If you would like to disconnect the database life cycle from server control
   use org.neo4j.server.WrappingNeoServer.
 o BREAKING CHANGE: org.neo4j.server.database.Database is now an interface. Direct uses of the class can be replaced by
   one of its implementations.
+o Transactional endpoint status codes are now textual rather than numeric. Since the transactional endpoint was introduced
+  in the 2.0.0 series, it is not considered a breaking change. It will, however, require modifying client code that depends
+  on the numeric status codes.
 
 2.0.0-M04
 ---------

@@ -1,5 +1,55 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.0.0-RC1
+---------
+Kernel:
+  o BREAKING CHANGE: Reference node has been removed.
+  o BREAKING CHANGE: All classes under the org.neo4j.kernel package space, except
+    those related to the traversal frameworks, are now deprecated and due to be moved
+    into internal packages. This includes well-known classes such as EmbeddedGraphDatabase
+    and HighlyAvailableGraphDatabase, both of which are replaced by GraphDatabaseFactory
+    and HighlyAvailableGraphDatabaseFactory, respectively.
+  o BREAKING CHANGE: Removed deprecated settings from org.neo4j.graphdb.factory.GraphDatabaseSettings. These settings are
+    no longer effective and can be removed without any effect.
+  o BREAKING CHANGE: Removed deprecated org.neo4j.graphdb.index.IndexProvider (and associated
+    org.neo4j.graphdb.index.IndexIterable and org.neo4j.graphdb.index.IndexProviderKernelExtensionFactory). This has been
+    replaced by the kernel extension mechanism.
+  o BREAKING CHANGE: Removed deprecated org.neo4j.graphdb.PropertyContainer#getPropertyValues(). Instead use
+    org.neo4j.graphdb.PropertyContainer#getPropertyKeys() and org.neo4j.graphdb.PropertyContainer#getProperty(String).
+  o BREAKING CHANGE: Removed deprecated methods from org.neo4j.kernel.GraphDatabaseAPI: #getDiagnosticsManager(),
+    #getMessageLog(), #getIdGeneratorFactory(), #getKernelData() and #getPersistenceSource(). These are internal
+    components which Kernel clients should not need to access. The entire org.neo4j.kernel.GraphDatabaseAPI interface is
+    deprecated and will be removed in future.
+  o BREAKING CHANGE: Deprecated constructors of EmbeddedReadOnlyDatabase and EmbeddedGraphDatabase have been removed,
+    in favor of the long-advertised alternative GraphDatabaseFactory.
+  o BREAKING CHANGE: All deprecated methods in GraphDatabaseAPI have been removed in favor of getDependencyResolver().
+
+Cypher:
+  o Add OPTIONAL MATCH to Cypher
+  o Remove question mark symbol from patterns in Cypher
+  o Fixes 1313
+  o Fixes problem with collection index types
+  o Changes behaviour of LAST/HEAD/TAIL and collection slice -
+    they now all return null for ranges outside a collection
+  o Fixed #1471 - SETting a relationship to a map value fails
+
+Shell:
+  o Add '-' as filename for piping stdin directly into the shell, behaves as a file import.
+
+Server:
+  o BREAKING CHANGE: Removed deprecated method org.neo4j.server.AbstractNeoServer#stopServerOnly(). To stop the server use
+    org.neo4j.server.AbstractNeoServer#stop(). If you would like to disconnect the database life cycle from server control
+    use org.neo4j.server.WrappingNeoServer.
+  o BREAKING CHANGE: org.neo4j.server.database.Database is now an interface. Direct uses of the class can be replaced by
+    one of its implementations.
+  o Transactional endpoint status codes are now textual rather than numeric. Since the transactional endpoint was introduced
+    in the 2.0.0 series, it is not considered a breaking change. It will, however, require modifying client code that depends
+    on the numeric status codes.
+
+Backup:
+  o BREAKING CHANGE: Removed deprecated org.neo4j.backup.check.ConsistencyCheck main class. This is replaced by
+    org.neo4j.consistency.ConsistencyCheckTool.    
+
 2.0.0-M06
 ---------
 o Windows desktop GUI added
