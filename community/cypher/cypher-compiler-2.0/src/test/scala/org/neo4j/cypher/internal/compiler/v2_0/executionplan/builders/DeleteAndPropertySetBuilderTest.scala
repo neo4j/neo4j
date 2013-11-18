@@ -28,7 +28,7 @@ import org.mockito.Mockito
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
 class DeleteAndPropertySetBuilderTest extends BuilderTest {
-  val builder = new UpdateActionBuilder(null)
+  val builder = new UpdateActionBuilder
   val planContext = Mockito.mock(classOf[PlanContext])
 
   @Test

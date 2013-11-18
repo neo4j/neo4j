@@ -26,9 +26,9 @@ import mutation._
 import symbols._
 import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.graphdb.{GraphDatabaseService, NotInTransactionException}
+import org.neo4j.graphdb.NotInTransactionException
 
-class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, val commands: Seq[UpdateAction])
+class ExecuteUpdateCommandsPipe(source: Pipe, val commands: Seq[UpdateAction])
   extends PipeWithSource(source) with CollectionSupport {
 
   assertNothingIsCreatedWhenItShouldNot()

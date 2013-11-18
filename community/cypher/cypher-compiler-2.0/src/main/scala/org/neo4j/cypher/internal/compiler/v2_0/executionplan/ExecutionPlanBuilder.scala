@@ -245,8 +245,7 @@ The Neo4j Team""")
   def updates = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new NamedPathBuilder,
-      new CreateNodesAndRelationshipsBuilder(graph), 
-      new UpdateActionBuilder(graph)
+      new UpdateActionBuilder
     )
   }
 
