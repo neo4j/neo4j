@@ -158,15 +158,15 @@ Neo4j can be installed as a Mac launchd job:
 +
 This should reveal the launchd "org.neo4j.server.7474" job for running the Neo4j Server.
 
-4. `./bin/neo4j-installer status`
+4. `launchctl list | grep neo4j`
 +
 This should indicate that the server is running.
 
-5. `launchctl stop org.neo4j.server.7474`
+5. `launchctl stop org.neo4j.server`
 +
 This should stop the server.
    
-6. `launchctl start org.neo4j.server.7474`
+6. `launchctl start org.neo4j.server`
 +
 This should start the server again.
 
