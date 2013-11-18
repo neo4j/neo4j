@@ -25,8 +25,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static java.lang.String.format;
-
 /**
  * This class handles whether the database as a whole is available to use at all.
  * As it runs as the last service in the lifecycle list, the stop() is called first

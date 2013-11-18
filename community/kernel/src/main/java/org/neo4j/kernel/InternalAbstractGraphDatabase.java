@@ -24,15 +24,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
-import javax.transaction.xa.Xid;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
