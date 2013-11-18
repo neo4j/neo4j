@@ -76,11 +76,6 @@
                 <arg line="install" />
                 </exec>
 
-                <echo>bower install</echo>
-                <exec executable="bower" dir="${project.basedir}" osfamily="unix" failonerror="true">
-                <arg line="install" />
-                </exec>
-
                 <echo>gruntjs build</echo>
                 <exec executable="grunt" dir="${project.basedir}" osfamily="unix" resultproperty="cmdresult">
                 <arg line="--no-color build" />
