@@ -1,3 +1,8 @@
+
+2.0.0-RC1
+---------
+o The GCResistantCacheProvider is now called the HighPerformanceCacheProvider
+
 2.0.0.M06
 ---------
 o Constraints can now be created in a running HA cluster
