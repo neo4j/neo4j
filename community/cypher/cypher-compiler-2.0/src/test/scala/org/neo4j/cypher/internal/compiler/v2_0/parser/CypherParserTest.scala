@@ -2881,21 +2881,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(AllIdentifiers()))
   }
 
-  @Test def should_handle_merge() {
-    val nodeA = MergeNodeAction("a", Map.empty, Seq(UnresolvedLabel("A")), Seq(HasLabel(Identifier("a"), UnresolvedLabel("A"))), Seq(setLabel("a", "A")), Seq.empty, None)
-    val nodeB = MergeNodeAction("a", Map.empty, Seq(UnresolvedLabel("B")), Seq(HasLabel(Identifier("b"), UnresolvedLabel("B"))), Seq(setLabel("b", "B")), Seq.empty, None)
-    val commandPattern = RelatedTo("a", "b", "r", "KNOWS", Direction.OUTGOING)
-    val createRelationship = CreateRelationship("r", RelationshipEndpoint("a"), RelationshipEndpoint("b"), "KNOWS", Map.empty)
-    test(
-      "MERGE (a:A) MERGE (b:B) MERGE (a)-[r:KNOWS]->(b) RETURN *",
-      Query.
-        updates(nodeA, nodeB, MergePatternAction(Seq(commandPattern), Seq(createRelationship), Seq.empty)).
-        returns(AllIdentifiers()))
-  }
-
-  private def setLabel(identifier:String, labelName:String) =
-    LabelAction(Identifier(identifier), LabelSetOp, List(UnresolvedLabel(labelName)))
-
   val parser = CypherParser()
 
   private def test(query: String, expectedQuery: AbstractQuery) {
