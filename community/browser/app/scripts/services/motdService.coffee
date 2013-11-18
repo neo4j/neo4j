@@ -57,6 +57,9 @@ angular.module('neo4jApp.services')
           ],
           disconnected: [
             "Please check if the cord is unplugged."
+          ],
+          welcome: [
+            "<p>Replace with RSS fed snippet.</p>"
           ]
 
         quote: ""
@@ -76,6 +79,7 @@ angular.module('neo4jApp.services')
           @unrecognized = @pickRandomlyFrom(choices.unrecognizable)
           @emptiness = @pickRandomlyFrom(choices.emptiness)
           @disconnected = @pickRandomlyFrom(choices.disconnected)
+          @welcome = @pickRandomlyFrom(choices.welcome)
 
         pickRandomlyFrom: (fromThis) ->
           return fromThis[Math.floor(Math.random() * fromThis.length)]

@@ -40,4 +40,5 @@ app = angular.module('neo4jApp', [
   'ui.codemirror'
   'ui.sortable'
   'angularMoment'
+  'ngSanitize'
 ])
