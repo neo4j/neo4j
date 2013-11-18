@@ -23,6 +23,7 @@ Kernel:
   o BREAKING CHANGE: Deprecated constructors of EmbeddedReadOnlyDatabase and EmbeddedGraphDatabase have been removed,
     in favor of the long-advertised alternative GraphDatabaseFactory.
   o BREAKING CHANGE: All deprecated methods in GraphDatabaseAPI have been removed in favor of getDependencyResolver().
+  o The GCResistantCacheProvider is now called the HighPerformanceCacheProvider
 
 Cypher:
   o Add OPTIONAL MATCH to Cypher
