@@ -35,3 +35,5 @@ Since version 2.0, the previously existing property operators `?` and `!` have b
 This syntax is no longer supported.
 Missing properties are now returned as +null+.
 Please use `(NOT(has(<ident>.prop)) OR <ident>.prop=<value>)` if you really need the old behavior of the `?` operator.
+
+Also, use of `?` for optional nodes an relationships has been removed in favor of the newly introduced `OPTIONAL MATCH`.
