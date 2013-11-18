@@ -79,21 +79,6 @@ angular.module('neo4jApp')
       ]
 
 
-    # welcome handler
-    FrameProvider.interpreters.push
-      type: 'overlay'
-      templateUrl: 'views/frame-overlay.html'
-      matches: "#{cmdchar}welcome"
-      exec: ['$http', ($http) ->
-        (input, q) ->
-          url = "content/guides/welcome.html"
-          $http.get(url)
-          .success(->q.resolve(page: url))
-          .error(->q.reject(error("No such topic to play")))
-          q.promise
-      ]
-
-
     # play handler
     FrameProvider.interpreters.push
       type: 'play'
@@ -102,7 +87,7 @@ angular.module('neo4jApp')
       exec: ['$http', ($http) ->
         step_number = 1
         (input, q) ->
-          topic = topicalize(input[('play'.length+1)..]) or 'learn'
+          topic = topicalize(input[('play'.length+1)..]) or 'welcome'
           url = "content/guides/#{topic}.html"
           $http.get(url)
           .success(->q.resolve(page: url))

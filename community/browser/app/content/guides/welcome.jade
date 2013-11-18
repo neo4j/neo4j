@@ -1,30 +1,27 @@
-.container.overlay
+.container
+  .row.header
+    .span4
+      img(src='images/welcome-logo.png')
+    
+    .span8
+      h2 Getting Started
+      ul.big.undecorated
+        li
+          a(play-topic='intro') Intro
+          |  - a guided tour of Neo4j Browser
+        li
+          a(play-topic='graphs') Graphs
+          |  - learn basic data modeling concepts
+        li
+          a(play-topic='cypher') Cypher
+          |  - create, read, update and delete queries
 
   .hero-unit
-    h1 Hello, world!
-    p This is a template for a simple marketing or informational website. It includes a large callout called the hero unit and three supporting pieces of content. Use it as a starting point to create something more unique.</p>
     p 
-      a.btn.btn-primary.btn-large(href="#") Learn more &raquo;
-
-  .row
-    .span4
-      h2 Heading
-      p Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-      p 
-        a.btn(href="#")View details &raquo;
-    
-    .span4
-      h2 Heading
-      p Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-      p 
-        a.btn(href="#")View details &raquo;
-    .span4
-      h2 Heading
-      p Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
-      p 
-        a.btn(href="#")View details &raquo;
-  hr
+      a(href="{{ motd.callToAction.u}}") {{ motd.callToAction.d }}
 
   footer
-    p &copy; Company 2013
-  
+    p Copyright &copy; 
+      a.no-icon(href='http://neotechnology.com/')  Neo Technology
+      | &nbsp;2002–
+      span= new Date().getFullYear()

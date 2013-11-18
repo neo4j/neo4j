@@ -22,7 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 angular.module('neo4jApp.services')
   .factory 'motdService', [
-    ->
+    '$log'
+    'rssFeedService'
+    ($log, rssFeedService) ->
       class Motd
 
         choices =
@@ -57,6 +59,12 @@ angular.module('neo4jApp.services')
           ],
           disconnected: [
             "Please check if the cord is unplugged."
+          ],
+          callToAction: [
+            {
+              'd': "Every good graph starts with Neo4j."
+              'u':'http://neo4j.org'
+            }
           ]
 
         quote: ""
@@ -76,6 +84,11 @@ angular.module('neo4jApp.services')
           @unrecognized = @pickRandomlyFrom(choices.unrecognizable)
           @emptiness = @pickRandomlyFrom(choices.emptiness)
           @disconnected = @pickRandomlyFrom(choices.disconnected)
+          @callToAction = @pickRandomlyFrom(choices.callToAction)
+          rssFeedService.get().then (feed) =>
+            if feed[0]
+              @callToAction = feed[0]
+
 
         pickRandomlyFrom: (fromThis) ->
           return fromThis[Math.floor(Math.random() * fromThis.length)]

@@ -36,6 +36,5 @@ angular.module('neo4jApp.directives')
       $scope.editor = Editor
     ]
     link: (scope, element, attrs) ->
-      # scope.editor.execScript(":play intro")
-      # scope.frames.create({"input":":welcome"}).fullscreen
+      scope.frames.create({"input":":play welcome"})
 ])
