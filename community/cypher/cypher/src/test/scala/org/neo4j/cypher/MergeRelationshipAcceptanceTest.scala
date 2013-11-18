@@ -163,7 +163,7 @@ class MergeRelationshipAcceptanceTest
     val b = createNode("B")
 
     // when
-    val result = execute("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON CREATE r SET r.name = 'Lola' RETURN r")
+    val result = execute("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON CREATE SET r.name = 'Lola' RETURN r")
 
     // then
     assertStats(result, relationshipsCreated = 1, propertiesSet = 1)
@@ -184,7 +184,7 @@ class MergeRelationshipAcceptanceTest
     relate(a, b, "TYPE")
 
     // when
-    val result = execute("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON MATCH r SET r.name = 'Lola' RETURN r")
+    val result = execute("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON MATCH SET r.name = 'Lola' RETURN r")
 
     // then
     assertStats(result, relationshipsCreated = 0, propertiesSet = 1)

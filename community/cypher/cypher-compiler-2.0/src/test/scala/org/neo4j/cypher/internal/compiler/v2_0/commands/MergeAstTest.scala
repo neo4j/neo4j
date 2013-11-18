@@ -80,7 +80,7 @@ class MergeAstTest extends Assertions {
     // given MERGE A ON CREATE SET A.prop = exp
     val from = mergeAst(
       patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)),
-      onActions = Seq(OnAction(On.Create, A, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
+      onActions = Seq(OnAction(On.Create, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
 
     // then
     assert(from.nextStep() === Seq(MergeNodeAction(A,
@@ -97,7 +97,7 @@ class MergeAstTest extends Assertions {
     // given MERGE A ON MATCH SET A.prop = exp
     val from = mergeAst(
       patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty, bare = true)),
-      onActions = Seq(OnAction(On.Match, A, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
+      onActions = Seq(OnAction(On.Match, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
 
     // then
     assert(from.nextStep() === Seq(MergeNodeAction(A,

@@ -32,11 +32,9 @@ class MergeTest extends ParserTest[ast.Merge, MergeAst] with Query with Expressi
 
   @Test def tests() {
     val node = "nodeName"
-    val nodeOther = "fooName"
     val A = "a"
     val B = "b"
     val labelName = KeyToken.Unresolved("Label", TokenType.Label)
-    val labelOther = KeyToken.Unresolved("Other", TokenType.Label)
     def setProperty(id: String) = PropertySetAction(
       expressions.Property(expressions.Identifier(id), PropertyKey("property")), expressions.TimestampFunction())
 
@@ -52,36 +50,25 @@ class MergeTest extends ParserTest[ast.Merge, MergeAst] with Query with Expressi
     parsing("MERGE (nodeName:Label)") shouldGiveMergeAst
       Seq(ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false))
 
-    parsing("MERGE (nodeName:Label) MERGE (fooName:Other)") shouldGiveMergeAst
-      Seq(ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false),
-          ParsedEntity(nodeOther, expressions.Identifier(nodeOther), Map.empty, Seq(labelOther), bare = false))
-
-
-    parsing("MERGE (nodeName:Label) ON CREATE nodeName SET nodeName.property = timestamp()") shouldGiveMergeAst
+    parsing("MERGE (nodeName:Label) ON CREATE SET nodeName.property = timestamp()") shouldGiveMergeAst
       (Seq(
         ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false)),
-        Seq(OnAction(On.Create, node, Seq(setProperty(node)))))
+        Seq(OnAction(On.Create, Seq(setProperty(node)))))
 
-    parsing("MERGE (nodeName:Label) ON MATCH nodeName SET nodeName.property = timestamp()") shouldGiveMergeAst
+    parsing("MERGE (nodeName:Label) ON MATCH SET nodeName.property = timestamp()") shouldGiveMergeAst
       (Seq(
         ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false)),
-        Seq(OnAction(On.Match, node, Seq(setProperty(node)))))
+        Seq(OnAction(On.Match, Seq(setProperty(node)))))
 
     parsing(
       """MERGE (a:Label)
-MERGE (b:Label)
-ON MATCH a SET a.property = timestamp()
-ON CREATE a SET a.property = timestamp()
-ON CREATE b SET b.property = timestamp()
-ON MATCH b SET b.property = timestamp()""") shouldGiveMergeAst
+ON MATCH SET a.property = timestamp()
+ON CREATE SET a.property = timestamp()""") shouldGiveMergeAst
       (Seq(
-        ParsedEntity(A, expressions.Identifier(A), Map.empty, Seq(labelName), bare = false),
-        ParsedEntity(B, expressions.Identifier(B), Map.empty, Seq(labelName), bare = false)),
+        ParsedEntity(A, expressions.Identifier(A), Map.empty, Seq(labelName), bare = false)),
         Seq(
-          OnAction(On.Match, A, Seq(setProperty(A))),
-          OnAction(On.Create, A, Seq(setProperty(A))),
-          OnAction(On.Create, B, Seq(setProperty(B))),
-          OnAction(On.Match, B, Seq(setProperty(B)))
+          OnAction(On.Match, Seq(setProperty(A))),
+          OnAction(On.Create, Seq(setProperty(A)))
         ))
   }
 

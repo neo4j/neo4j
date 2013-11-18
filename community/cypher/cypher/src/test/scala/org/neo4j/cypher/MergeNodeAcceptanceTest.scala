@@ -60,7 +60,7 @@ class MergeNodeAcceptanceTest
   @Test
   def merge_node_with_label_add_label_on_create() {
     // When
-    val result = execute("merge (a:Label) on create a set a:Foo return a")
+    val result = execute("merge (a:Label) on create set a:Foo return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -78,7 +78,7 @@ class MergeNodeAcceptanceTest
   @Test
   def merge_node_with_label_add_property_on_update() {
     // When
-    val result = execute("merge (a:Label) on create a set a.prop = 42 return a")
+    val result = execute("merge (a:Label) on create set a.prop = 42 return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -114,7 +114,7 @@ class MergeNodeAcceptanceTest
     val existingNode = createLabeledNode("Label")
 
     // When
-    val result = execute("merge (a:Label) on match a set a:Foo return a")
+    val result = execute("merge (a:Label) on match set a:Foo return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -129,7 +129,7 @@ class MergeNodeAcceptanceTest
     val existingNode = createLabeledNode("Label")
 
     // When
-    val result = execute("merge (a:Label) on create a set a.prop = 42 return a")
+    val result = execute("merge (a:Label) on create set a.prop = 42 return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
@@ -143,7 +143,7 @@ class MergeNodeAcceptanceTest
     val existingNode = createLabeledNode("Label")
 
     // When
-    execute("merge (a:Label) on match a set a.prop = 42 return a")
+    execute("merge (a:Label) on match set a.prop = 42 return a")
 
     // Then
     assertInTx(existingNode.getProperty("prop") === 42)
@@ -191,7 +191,7 @@ class MergeNodeAcceptanceTest
 
     // when
     val result =
-      executeScalar[Node]("merge (a:Person {id: 23, country: 'Sweden'}) on match a set a.name='Emil' return a")
+      executeScalar[Node]("merge (a:Person {id: 23, country: 'Sweden'}) on match set a.name='Emil' return a")
 
     // then
     assert(1 === countNodes())
@@ -207,7 +207,7 @@ class MergeNodeAcceptanceTest
 
     // when
     val result =
-      executeScalar[Node]("merge (a:Person {id: 23, country: 'Sweden'}) on create a set a.name='Emil' return a")
+      executeScalar[Node]("merge (a:Person {id: 23, country: 'Sweden'}) on create set a.name='Emil' return a")
 
     // then
     assert(1 === countNodes())
@@ -226,7 +226,7 @@ class MergeNodeAcceptanceTest
 
     // when
     val result =
-      executeScalar[Node]("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match a set a.country='Sweden' return a")
+      executeScalar[Node]("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
 
     // then
     assert(1 === countNodes())
@@ -245,7 +245,7 @@ class MergeNodeAcceptanceTest
 
     // when
     val result =
-      executeScalar[Node]("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match a set a.country='Sweden' return a")
+      executeScalar[Node]("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
 
     // then
     assert(1 === countNodes())
@@ -264,7 +264,7 @@ class MergeNodeAcceptanceTest
 
     // when
     val result =
-      executeScalar[Node]("merge (a:Person:User {id: 23}) on match a set a.country='Sweden' return a")
+      executeScalar[Node]("merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
 
     // then
     assert(1 === countNodes())
@@ -294,7 +294,7 @@ class MergeNodeAcceptanceTest
 
     // when
     val result =
-      executeScalar[Node]("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create a set a.country='Sweden' return a")
+      executeScalar[Node]("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
 
     // then
     assert(1 === countNodes())
@@ -312,7 +312,7 @@ class MergeNodeAcceptanceTest
 
     // when
     val result =
-      executeScalar[Node]("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create a set a.country='Sweden' return a")
+      executeScalar[Node]("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
 
     // then
     assert(1 === countNodes())

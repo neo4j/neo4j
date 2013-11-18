@@ -132,14 +132,8 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction], token: InputToken)
   def name = "MERGE"
 
   def semanticCheck =
-    ensureMergeActionIdentifiersNotDeclared then
     pattern.semanticCheck(Pattern.SemanticContext.Update) then
     actions.semanticCheck
-
-  def ensureMergeActionIdentifiersNotDeclared: SemanticState => Seq[SemanticError] = state =>
-    actions.filter(a => state.symbol(a.identifier.name).isDefined).map {
-      a => SemanticError(s"Invalid use of ${a.identifier.name} for ${a.name}: already defined prior to ${name}", a.identifier.token, a.token, token)
-    }
 
   def legacyUpdateActions = toCommand.nextStep()
   def toCommand = {

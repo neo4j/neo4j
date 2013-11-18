@@ -24,25 +24,21 @@ import symbols._
 
 sealed trait MergeAction extends AstNode with SemanticCheckable {
   def name: String
-  def identifier: Identifier
   def action: SetClause
 
   def verb: Action
-  def toAction = OnAction(verb, identifier.name, action.legacyUpdateActions)
+  def toAction = OnAction(verb, action.legacyUpdateActions)
 
-  def semanticCheck: SemanticCheck =
-    identifier.ensureDefined then
-    identifier.constrainType(NodeType(), RelationshipType()) then
-    action.semanticCheck
+  def semanticCheck: SemanticCheck = action.semanticCheck
 }
 
-case class OnCreate(identifier: Identifier, action: SetClause, token: InputToken) extends MergeAction {
+case class OnCreate(action: SetClause, token: InputToken) extends MergeAction {
   val name = "ON CREATE"
 
   def verb: Action = On.Create
 }
 
-case class OnMatch(identifier: Identifier, action: SetClause, token: InputToken) extends MergeAction {
+case class OnMatch(action: SetClause, token: InputToken) extends MergeAction {
   val name = "ON MATCH"
 
   def verb: Action = On.Match
