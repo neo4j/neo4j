@@ -19,40 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
-
 object IntegerType {
-  lazy val instance = new IntegerType()
+  private val instance = new IntegerType() {
+    override def parentType:CypherType = NumberType()
+    override def toString = "Integer"
+  }
 
   def apply() = instance
 }
 
-class IntegerType extends NumberType {
-  override def parentType:CypherType = NumberType()
-  override def toString = "Integer"
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sealed abstract class IntegerType extends CypherType

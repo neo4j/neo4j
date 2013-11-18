@@ -44,7 +44,7 @@ with CollectionSupport {
     index.evaluateType(NumberType(), symbols)
 
     collection.evaluateType(CollectionType(AnyType()), symbols) match {
-      case collectionType: CollectionType => collectionType.iteratedType
+      case collectionType: CollectionType => collectionType.innerType
       case x if x.isInstanceOf[AnyType]   => AnyType()
       case x                              => throw new CypherTypeException("Expected a collection, but was " + x)
     }
