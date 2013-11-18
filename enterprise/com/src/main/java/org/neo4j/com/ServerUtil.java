@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.com.RequestContext.Tx;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;

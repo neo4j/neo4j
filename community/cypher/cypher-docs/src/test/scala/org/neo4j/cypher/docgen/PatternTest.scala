@@ -56,7 +56,7 @@ They are the parts of the pattern that are already ``bound'' to a set of graph n
 All parts of the pattern must be directly or indirectly connected to a starting point.
 A pattern where parts of the pattern are not reachable from any starting point will be rejected.
 
-[options="header", cols=">s,^,^,^,^", width="100%"]
+[options="header", cols=">s,^,^,^,^"]
 |===================
 |Clause        |Multiple rel. types  |Varlength |Paths |Maps
 |Match         |Yes                  |Yes       |Yes   |-
@@ -119,6 +119,10 @@ If multiple relationship types are acceptable, you can list them, separating the
 This pattern matches a relationship of type +TYPE1+ or +TYPE2+, going from `a` to `b`.
 The relationship is named `r`.
 Multiple relationship types can not be used with `CREATE` or `CREATE UNIQUE`.
+
+[NOTE]
+The use of `?` for optional relationships has been removed in Cypher 2.0 in favor of the newly introduced `OPTIONAL MATCH` clause.
+See <<query-optional-match>> for more information.
 
 == Properties ==
 
