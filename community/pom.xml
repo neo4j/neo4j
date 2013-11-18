@@ -79,9 +79,8 @@ the relevant Commercial Agreement.
 
   <profiles>
     <profile>
-      <id>skip-browser</id>
+      <id>include-browser</id>
       <activation>
-        <activeByDefault>false</activeByDefault>
         <property>
           <name>!skipBrowser</name>
         </property>
