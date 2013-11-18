@@ -59,14 +59,14 @@ Patterns have bound points, or starting points. They are the parts of the patter
 graph nodes or relationships. All parts of the pattern must be directly or indirectly connected to a starting point -- a pattern
 where parts of the pattern are not reachable from any starting point will be rejected.
 
-[options="header", cols=">s,^,^,^,^,^", width="100%"]
-      |===================
-      |Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
-      |Match|Yes|Yes|Yes|Yes|-
-      |Create|-|-|-|Yes|Yes
-      |Create Unique|-|-|-|Yes|Yes
-      |Expressions|-|Yes|Yes|-|-
-      |===================
+[options="header", cols=">s,^,^,^,^,^"]
+|===================
+|Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
+|Match|Yes|Yes|Yes|Yes|-
+|Create|-|-|-|Yes|Yes
+|Create Unique|-|-|-|Yes|Yes
+|Expressions|-|Yes|Yes|-|-
+|===================
 
 == Patterns for related nodes ==
 
