@@ -22,81 +22,80 @@ package org.neo4j.cypher.internal.compiler.v2_0.symbols
 import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
-import scala.collection.immutable.SortedSet
 
 class TypeSetTest extends Assertions {
 
-  implicit def orderingOfCypherType[T <: CypherType] : Ordering[T] = Ordering.by(_.toString)
-
-  @Test
-  def shouldFormatNoType() {
-    assertEquals("", TypeSet().formattedString)
-  }
-
-  @Test
-  def shouldFormatSingleType() {
-    assertEquals("Any", SortedSet(AnyType()).formattedString)
-    assertEquals("Node", SortedSet(NodeType()).formattedString)
-  }
-
-  @Test
-  def shouldFormatTwoTypes() {
-    assertEquals("Any or Node", SortedSet(AnyType(), NodeType()).formattedString)
-    assertEquals("Node or Relationship", SortedSet(RelationshipType(), NodeType()).formattedString)
-  }
-
-  @Test
-  def shouldFormatThreeTypes() {
-	  assertEquals("Any, Node or Relationship", SortedSet(RelationshipType(), AnyType(), NodeType()).formattedString)
-	  assertEquals("Integer, Node or Relationship", SortedSet(RelationshipType(), IntegerType(), NodeType()).formattedString)
-  }
-
   @Test
   def shouldInferTypeSetsUsingMergeDown() {
-    assertEquals(Set(NodeType(), NumberType(), AnyType()), Set(NodeType(), NumberType()) mergeDown Set(NodeType(), NumberType()))
+    assertEquals(TypeSet(NodeType(), NumberType(), AnyType()), TypeSet(NodeType(), NumberType()) mergeDown TypeSet(NodeType(), NumberType()))
 
-    assertEquals(Set(NodeType(), NumberType(), AnyType()), Set(NodeType(), NumberType()) mergeDown Set(NodeType(), NumberType()))
-    assertEquals(Set(NumberType(), AnyType()), Set(NodeType(), NumberType()) mergeDown Set(NumberType()))
-    assertEquals(Set(NodeType(), NumberType(), MapType(), AnyType()), Set(NodeType(), NumberType()) mergeDown Set(NodeType(), NumberType(), RelationshipType()))
-    assertEquals(Set(AnyType()), Set(NodeType(), NumberType()) mergeDown Set(AnyType()))
-    assertEquals(Set(AnyType()), Set(AnyType()) mergeDown Set(NodeType(), NumberType()))
+    assertEquals(TypeSet(NodeType(), NumberType(), AnyType()), TypeSet(NodeType(), NumberType()) mergeDown TypeSet(NodeType(), NumberType()))
+    assertEquals(TypeSet(NumberType(), AnyType()), TypeSet(NodeType(), NumberType()) mergeDown TypeSet(NumberType()))
+    assertEquals(TypeSet(NodeType(), NumberType(), MapType(), AnyType()), TypeSet(NodeType(), NumberType()) mergeDown TypeSet(NodeType(), NumberType(), RelationshipType()))
+    assertEquals(TypeSet(AnyType()), TypeSet(NodeType(), NumberType()) mergeDown TypeSet(AnyType()))
+    assertEquals(TypeSet(AnyType()), TypeSet(AnyType()) mergeDown TypeSet(NodeType(), NumberType()))
 
-    assertEquals(Set(MapType()), Set(RelationshipType()) mergeDown Set(NodeType()))
-    assertEquals(Set(MapType(), NumberType(), AnyType()), Set(RelationshipType(), LongType()) mergeDown Set(NodeType(), NumberType()))
+    assertEquals(TypeSet(MapType()), TypeSet(RelationshipType()) mergeDown TypeSet(NodeType()))
+    assertEquals(TypeSet(MapType(), NumberType(), AnyType()), TypeSet(RelationshipType(), LongType()) mergeDown TypeSet(NodeType(), NumberType()))
   }
 
   @Test
   def shouldMergeDownCollectionIterable() {
-    assertEquals(Set(NumberType(), CollectionType(AnyType()), AnyType()),
-      Set(IntegerType(), CollectionType(StringType())) mergeDown Set(NumberType(), CollectionType(IntegerType())))
+    assertEquals(TypeSet(NumberType(), CollectionType(AnyType()), AnyType()),
+      TypeSet(IntegerType(), CollectionType(StringType())) mergeDown TypeSet(NumberType(), CollectionType(IntegerType())))
   }
 
   @Test
   def shouldMergeUpCollectionIterable() {
-    assertEquals(Set(IntegerType()),
-      Set(IntegerType(), StringType(), CollectionType(IntegerType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
-    assertEquals(Set(IntegerType(), CollectionType(StringType())),
-      Set(IntegerType(), StringType(), CollectionType(AnyType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
+    assertEquals(TypeSet(IntegerType()),
+      TypeSet(IntegerType(), StringType(), CollectionType(IntegerType())) mergeUp TypeSet(NumberType(), CollectionType(StringType())) )
+    assertEquals(TypeSet(IntegerType(), CollectionType(StringType())),
+      TypeSet(IntegerType(), StringType(), CollectionType(AnyType())) mergeUp TypeSet(NumberType(), CollectionType(StringType())) )
   }
 
   @Test
   def shouldInferTypeSetsUsingMergeUp() {
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NodeType(), NumberType()))
-    assertEquals(Set(NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NumberType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NodeType(), NumberType(), RelationshipType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(AnyType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(AnyType()) mergeUp Set(NodeType(), NumberType()))
+    assertEquals(TypeSet(NodeType(), NumberType()), TypeSet(NodeType(), NumberType()) mergeUp TypeSet(NodeType(), NumberType()))
+    assertEquals(TypeSet(NumberType()), TypeSet(NodeType(), NumberType()) mergeUp TypeSet(NumberType()))
+    assertEquals(TypeSet(NodeType(), NumberType()), TypeSet(NodeType(), NumberType()) mergeUp TypeSet(NodeType(), NumberType(), RelationshipType()))
+    assertEquals(TypeSet(NodeType(), NumberType()), TypeSet(NodeType(), NumberType()) mergeUp TypeSet(AnyType()))
+    assertEquals(TypeSet(NodeType(), NumberType()), TypeSet(AnyType()) mergeUp TypeSet(NodeType(), NumberType()))
 
-    assertEquals(Set(), Set(RelationshipType()) mergeUp Set(NodeType()))
-    assertEquals(Set(LongType()), Set(RelationshipType(), LongType()) mergeUp Set(NodeType(), NumberType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(AnyType()) mergeUp Set(NodeType(), NumberType()))
+    assertEquals(TypeSet(), TypeSet(RelationshipType()) mergeUp TypeSet(NodeType()))
+    assertEquals(TypeSet(LongType()), TypeSet(RelationshipType(), LongType()) mergeUp TypeSet(NodeType(), NumberType()))
+    assertEquals(TypeSet(NodeType(), NumberType()), TypeSet(AnyType()) mergeUp TypeSet(NodeType(), NumberType()))
   }
 
   @Test
   def shouldConstrainTypeSets() {
-    assertEquals(Set(IntegerType(), LongType()), Set(IntegerType(), LongType(), StringType(), MapType()) constrain Set(NodeType(), NumberType()))
-    assertEquals(Set(CollectionType(StringType())), Set(IntegerType(), CollectionType(StringType())) constrain Set(CollectionType(AnyType())))
-    assertEquals(Set.empty, Set(IntegerType(), CollectionType(MapType())) constrain Set(CollectionType(NodeType())))
-    assertEquals(Set(IntegerType(), CollectionType(StringType())), Set(IntegerType(), CollectionType(StringType())) constrain Set(AnyType()))
+    assertEquals(TypeSet(IntegerType(), LongType()), TypeSet(IntegerType(), LongType(), StringType(), MapType()) constrain TypeSet(NodeType(), NumberType()))
+    assertEquals(TypeSet(CollectionType(StringType())), TypeSet(IntegerType(), CollectionType(StringType())) constrain TypeSet(CollectionType(AnyType())))
+    assertEquals(TypeSet.empty, TypeSet(IntegerType(), CollectionType(MapType())) constrain TypeSet(CollectionType(NodeType())))
+    assertEquals(TypeSet(IntegerType(), CollectionType(StringType())), TypeSet(IntegerType(), CollectionType(StringType())) constrain TypeSet(AnyType()))
+  }
+
+  @Test
+  def shouldFormatNoType() {
+    assertEquals("()", TypeSet().mkString("(", ", ", " or ", ")"))
+  }
+
+  @Test
+  def shouldFormatSingleType() {
+    assertEquals("(Any)", TypeSet(AnyType()).mkString("(", ", ", " or ", ")"))
+    assertEquals("<Node>", TypeSet(NodeType()).mkString("<", ", ", " and ", ">"))
+  }
+
+  @Test
+  def shouldFormatTwoTypes() {
+    assertEquals("Any or Node", TypeSet(AnyType(), NodeType()).mkString("", ", ", " or ", ""))
+    assertEquals("-Node or Relationship-", TypeSet(RelationshipType(), NodeType()).mkString("-", ", ", " or ", "-"))
+  }
+
+  @Test
+  def shouldFormatThreeTypes() {
+    assertEquals("Integer, Node, Relationship", TypeSet(RelationshipType(), IntegerType(), NodeType()).mkString(", "))
+    assertEquals("(Integer, Node, Relationship)", TypeSet(RelationshipType(), IntegerType(), NodeType()).mkString("(", ", ", ")"))
+    assertEquals("(Any, Node or Relationship)", TypeSet(RelationshipType(), AnyType(), NodeType()).mkString("(", ", ", " or ", ")"))
+    assertEquals("[Integer, Node and Relationship]", TypeSet(RelationshipType(), IntegerType(), NodeType()).mkString("[", ", ", " and ", "]"))
   }
 }

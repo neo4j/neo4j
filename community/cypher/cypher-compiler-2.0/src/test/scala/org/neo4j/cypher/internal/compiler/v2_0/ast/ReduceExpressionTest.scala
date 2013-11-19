@@ -113,7 +113,7 @@ class ReduceExpressionTest extends Assertions {
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors.size === 1)
-    assert(result.errors.head.msg === "Type mismatch: expected String or Number but was Node")
+    assert(result.errors.head.msg === "Type mismatch: expected Number or String but was Node")
     assert(result.errors.head.token === reduceExpression.token)
   }
 

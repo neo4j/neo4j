@@ -40,7 +40,7 @@ class CollectionSliceTest extends Assertions {
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CollectionType(NodeType()), CollectionType(StringType())), slice.types(result.state))
+    assertEquals(TypeSet(CollectionType(NodeType()), CollectionType(StringType())), slice.types(result.state))
   }
 
   @Test

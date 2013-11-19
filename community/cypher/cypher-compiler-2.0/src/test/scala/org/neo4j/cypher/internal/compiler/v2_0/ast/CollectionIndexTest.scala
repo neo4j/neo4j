@@ -39,7 +39,7 @@ class CollectionIndexTest extends Assertions {
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(NodeType(), StringType()), index.types(result.state))
+    assertEquals(TypeSet(NodeType(), StringType()), index.types(result.state))
   }
 
   @Test
