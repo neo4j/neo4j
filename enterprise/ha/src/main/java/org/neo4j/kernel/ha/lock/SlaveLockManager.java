@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.List;
+
 import javax.transaction.Transaction;
 
 import org.neo4j.com.Response;
@@ -32,20 +33,21 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.NodeManager.IndexLock;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.LockNotFoundException;
 import org.neo4j.kernel.impl.transaction.RagManager;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.logging.Logging;
 
 public class SlaveLockManager implements LockManager
 {
     private final AbstractTransactionManager txManager;
-    private final TxHook txHook;
+    private final RemoteTxHook txHook;
     private final AvailabilityGuard availabilityGuard;
     private final Configuration config;
     private final RequestContextFactory requestContextFactory;
@@ -58,7 +60,7 @@ public class SlaveLockManager implements LockManager
         long getAvailabilityTimeout();
     }
 
-    public SlaveLockManager( AbstractTransactionManager txManager, TxHook txHook,
+    public SlaveLockManager( AbstractTransactionManager txManager, RemoteTxHook txHook,
                              AvailabilityGuard availabilityGuard, Configuration config,
                              RagManager ragManager, RequestContextFactory requestContextFactory, Master master,
                              HaXaDataSourceManager xaDsm )
@@ -250,16 +252,17 @@ public class SlaveLockManager implements LockManager
 
     private void makeSureTxHasBeenInitialized()
     {
-        int eventIdentifier = txManager.getEventIdentifier();
-        if ( !txManager.getTransactionState().hasLocks() )
+        if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
         {
-            if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
-            {
-                // TODO Specific exception instead?
-                throw new RuntimeException( "Timed out waiting for database to switch state" );
-            }
+            // TODO Specific exception instead?
+            throw new RuntimeException( "Timed out waiting for database to switch state" );
+        }
 
-            txHook.initializeTransaction( eventIdentifier );
+        TransactionState state = txManager.getTransactionState();
+        if ( !state.isRemotelyInitialized() )
+        {
+            txHook.remotelyInitializeTransaction( txManager.getEventIdentifier() );
+            state.markAsRemotelyInitialized();
         }
     }
 }

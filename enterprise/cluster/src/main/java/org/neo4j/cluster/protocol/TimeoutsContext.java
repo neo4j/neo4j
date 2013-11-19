@@ -21,7 +21,6 @@ package org.neo4j.cluster.protocol;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 
 public interface TimeoutsContext
 {

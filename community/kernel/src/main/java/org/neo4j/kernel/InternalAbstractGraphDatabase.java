@@ -93,9 +93,9 @@ import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.RagManager;
 import org.neo4j.kernel.impl.transaction.ReadOnlyTxManager;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionManagerProvider;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
@@ -175,7 +175,7 @@ public abstract class InternalAbstractGraphDatabase
     protected NodeManager nodeManager;
     protected IndexManagerImpl indexManager;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
-    protected TxHook txHook;
+    protected RemoteTxHook txHook;
     protected FileSystemAbstraction fileSystem;
     protected XaDataSourceManager xaDataSourceManager;
     protected LockManager lockManager;
@@ -817,7 +817,7 @@ public abstract class InternalAbstractGraphDatabase
         };
     }
 
-    protected TxHook createTxHook()
+    protected RemoteTxHook createTxHook()
     {
         return new DefaultTxHook();
     }

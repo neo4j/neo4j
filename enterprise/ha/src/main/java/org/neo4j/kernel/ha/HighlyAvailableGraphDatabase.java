@@ -87,8 +87,8 @@ import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -253,7 +253,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected TxHook createTxHook()
+    protected RemoteTxHook createTxHook()
     {
         clusterEventsDelegateInvocationHandler = new DelegateInvocationHandler();
         memberContextDelegateInvocationHandler = new DelegateInvocationHandler();
@@ -411,9 +411,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         paxosLife.add( clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
-        DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<TxHook>();
-        TxHook txHook = (TxHook) Proxy.newProxyInstance( TxHook.class.getClassLoader(), new Class[]{TxHook.class},
-                txHookDelegate );
+        DelegateInvocationHandler<RemoteTxHook> txHookDelegate = new DelegateInvocationHandler<RemoteTxHook>();
+        RemoteTxHook txHook = (RemoteTxHook) Proxy.newProxyInstance( RemoteTxHook.class.getClassLoader(),
+                new Class[]{RemoteTxHook.class}, txHookDelegate );
         new TxHookModeSwitcher( memberStateMachine, txHookDelegate,
                 master, new TxHookModeSwitcher.RequestContextFactoryResolver()
         {

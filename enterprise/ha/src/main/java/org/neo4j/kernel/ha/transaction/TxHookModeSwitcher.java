@@ -21,26 +21,23 @@ package org.neo4j.kernel.ha.transaction;
 
 import java.net.URI;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
-public class TxHookModeSwitcher extends AbstractModeSwitcher<TxHook>
+public class TxHookModeSwitcher extends AbstractModeSwitcher<RemoteTxHook>
 {
     private final Master master;
     private final RequestContextFactoryResolver requestContextFactory;
     private final DependencyResolver resolver;
 
     public TxHookModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
-                               DelegateInvocationHandler<TxHook> delegate, Master master,
+                               DelegateInvocationHandler<RemoteTxHook> delegate, Master master,
                                RequestContextFactoryResolver requestContextFactory, DependencyResolver resolver )
     {
         super( stateMachine, delegate );
@@ -50,16 +47,16 @@ public class TxHookModeSwitcher extends AbstractModeSwitcher<TxHook>
     }
 
     @Override
-    protected TxHook getMasterImpl()
+    protected RemoteTxHook getMasterImpl()
     {
         return new MasterTxHook();
     }
 
     @Override
-    protected TxHook getSlaveImpl( URI serverHaUri )
+    protected RemoteTxHook getSlaveImpl( URI serverHaUri )
     {
         return new SlaveTxHook( master, resolver.resolveDependency( HaXaDataSourceManager.class ),
-                requestContextFactory, (AbstractTransactionManager)resolver.resolveDependency( TransactionManager.class ) );
+                requestContextFactory );
     }
 
     public interface RequestContextFactoryResolver

@@ -122,11 +122,6 @@ public class TestBasicHaOperations
 
             tx.success();
         }
-        catch ( Throwable ex )
-        {
-            ex.printStackTrace();
-            Assert.fail();
-        }
         finally
         {
             tx.finish();

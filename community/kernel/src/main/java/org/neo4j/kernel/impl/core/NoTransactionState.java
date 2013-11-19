@@ -28,7 +28,7 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -237,7 +237,7 @@ public class NoTransactionState implements TransactionState
     }
     
     @Override
-    public TxHook getTxHook()
+    public RemoteTxHook getTxHook()
     {
         return null;
     }
@@ -246,5 +246,16 @@ public class NoTransactionState implements TransactionState
     public TxIdGenerator getTxIdGenerator()
     {
         return null;
+    }
+
+    @Override
+    public boolean isRemotelyInitialized()
+    {
+        return false;
+    }
+
+    @Override
+    public void markAsRemotelyInitialized()
+    {
     }
 }
