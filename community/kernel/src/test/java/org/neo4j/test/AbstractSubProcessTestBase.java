@@ -127,7 +127,7 @@ public class AbstractSubProcessTestBase
     }
 
     @After
-    public final void stopSubprocesses()
+    public void stopSubprocesses()
     {
         synchronized ( instances )
         {
