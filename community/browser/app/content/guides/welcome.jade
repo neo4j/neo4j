@@ -1,18 +1,24 @@
-.container.overlay
-  .row
+.container
+  .row.header
     .span4
-      img(src='images/about-logo.png')
-      h2 {{ neo4j.version }}
+      img(src='images/welcome-logo.png')
     
-    .span4
+    .span8
       h2 Getting Started
-      p Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-    .span4
-      h2 Heading
-      p Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+      ul.big.undecorated
+        li
+          a(play-topic='intro') Intro
+          |  - a guided tour of Neo4j Browser
+        li
+          a(play-topic='graphs') Graphs
+          |  - learn basic data modeling concepts
+        li
+          a(play-topic='cypher') Cypher
+          |  - create, read, update and delete queries
 
-
-  .hero-unit(ng-bind-html="motd.welcome")
+  .hero-unit
+    p 
+      a(href="{{ motd.callToAction.u}}") {{ motd.callToAction.d }}
 
   footer
     p Copyright &copy; 

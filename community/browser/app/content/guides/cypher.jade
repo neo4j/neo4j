@@ -20,7 +20,7 @@ article.guide
         p
           | Let's use Cypher to generate a small social graph.
         figure
-          pre.pre-scrollable.code(mode='cypher').
+          pre.pre-scrollable.code.runnable(mode='cypher').
             CREATE (ee:Person { name: "Emil", from: "Sweden", klout: 99 }) 
         ul
           li
@@ -43,7 +43,7 @@ article.guide
         p
           | Now find the node representing Emil:
         figure
-          pre.pre-scrollable.code(mode='cypher').
+          pre.pre-scrollable.code.runnable(mode='cypher').
             MATCH (ee:Person) WHERE ee.name = "Emil" RETURN ee;
         ul
           li
@@ -70,7 +70,7 @@ article.guide
           code CREATE
           | clauses can create many nodes and relationships at once.
         figure
-          pre.pre-scrollable.code(mode='cypher').
+          pre.pre-scrollable.code.runnable(mode='cypher').
             MATCH (ee:Person) WHERE ee.name = "Emil"
             CREATE (js:Person { name: "Johan", from: "Sweden", learn: "surfing" }),
             (ir:Person { name: "Ian", from: "England", title: "author" }),
@@ -88,7 +88,7 @@ article.guide
         p.summary
           | For instance, a pattern can be used to find Emil's friends:
         figure
-          pre.pre-scrollable.code(mode='cypher').
+          pre.pre-scrollable.code.runnable(mode='cypher').
             MATCH (ee:Person)-[:KNOWS]-(friends)
             WHERE ee.name = "Emil" RETURN ee, friends
         ul
@@ -113,7 +113,7 @@ article.guide
           | Pattern matching can be used to make recommendations. Johan is learning to surf, so he may want to find
           | a new friend who already does:
         figure
-          pre.pre-scrollable.code(mode='cypher').
+          pre.pre-scrollable.code.runnable(mode='cypher').
             MATCH (js:Person)-[:KNOWS]-()-[:KNOWS]-(surfer)
             WHERE js.name = "Johan" AND surfer.hobby = "surfing"
             RETURN DISTINCT surfer
