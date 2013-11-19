@@ -19,18 +19,17 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static java.lang.Boolean.parseBoolean;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
@@ -74,6 +73,10 @@ import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.lang.Boolean.parseBoolean;
+
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+
 public class BatchInserterImpl implements BatchInserter
 {
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
@@ -92,22 +95,25 @@ public class BatchInserterImpl implements BatchInserter
     private final FileSystemAbstraction fileSystem;
     private StoreLocker storeLocker;
 
+    // Helper structure for setNodeProperty
+    private Set<PropertyRecord> updatedRecords = new HashSet<PropertyRecord>();
+
     BatchInserterImpl( String storeDir )
     {
         this( storeDir, new HashMap<String, String>() );
     }
 
     BatchInserterImpl( String storeDir,
-            Map<String, String> stringParams )
+                       Map<String, String> stringParams )
     {
         this( storeDir, new DefaultFileSystemAbstraction(), stringParams );
     }
-    
+
     BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams )
     {
         this.fileSystem = fileSystem;
-        this.storeDir = new File( FileUtils.fixSeparatorsInPath(storeDir) );
+        this.storeDir = new File( FileUtils.fixSeparatorsInPath( storeDir ) );
 
         rejectAutoUpgrade( stringParams );
         msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
@@ -331,6 +337,7 @@ public class BatchInserterImpl implements BatchInserter
          * thatHas is the record that already has a block for this index
          */
         PropertyRecord current = null, thatFits = null, thatHas = null;
+        updatedRecords.clear();
         /*
          * We keep going while there are records or until we both found the
          * property if it exists and the place to put it, if exists.
@@ -355,7 +362,7 @@ public class BatchInserterImpl implements BatchInserter
                     dynRec.setInUse( false );
                     thatHas.addDeletedRecord( dynRec );
                 }
-                getPropertyStore().updateRecord( thatHas );
+                updatedRecords.add( thatHas );
             }
             /*
              * We check the size after we remove - potentially we can put in the same record.
@@ -395,7 +402,15 @@ public class BatchInserterImpl implements BatchInserter
             primitive.setNextProp( thatFits.getId() );
         }
         thatFits.addPropertyBlock( block );
-        getPropertyStore().updateRecord( thatFits );
+        updatedRecords.add( thatFits );
+
+        // This ensures that a particular record is not updated twice in this method
+        // It could lead to freeId being called multiple times for same id
+        for ( PropertyRecord updatedRecord : updatedRecords )
+        {
+            getPropertyStore().updateRecord( thatFits );
+        }
+
         return result;
     }
 
@@ -961,7 +976,7 @@ public class BatchInserterImpl implements BatchInserter
                             + storeDir + "] for Neo4j kernel store." );
         }
 
-        File store = new File( dir, NeoStore.DEFAULT_NAME);
+        File store = new File( dir, NeoStore.DEFAULT_NAME );
         if ( !fileSystem.fileExists( store ) )
         {
             sf.createNeoStore( store ).close();
