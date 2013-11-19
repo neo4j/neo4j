@@ -759,7 +759,6 @@ public abstract class InternalAbstractGraphDatabase
         catch ( LifecycleException throwable )
         {
             msgLog.warn( "Shutdown failed", throwable );
-            throw throwable;
         }
     }
 
