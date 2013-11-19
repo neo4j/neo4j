@@ -386,8 +386,7 @@ public class TestNode extends AbstractNeo4jTestCase
             @Override
             public void run()
             {
-                Transaction tx = getGraphDb().beginTx();
-                try
+                try( Transaction tx = getGraphDb().beginTx() )
                 {
                     tx.acquireWriteLock( entity );
                     gotTheLock.set( true );
@@ -397,10 +396,6 @@ public class TestNode extends AbstractNeo4jTestCase
                 {
                     e.printStackTrace();
                     throw launderedException( e );
-                }
-                finally
-                {
-                    tx.failure();
                 }
             }
         };

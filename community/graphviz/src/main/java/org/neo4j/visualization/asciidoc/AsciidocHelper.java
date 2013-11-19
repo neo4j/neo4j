@@ -182,7 +182,9 @@ public class AsciidocHelper
 
     static String wrapQuery( final String query )
     {
-        return wrap( wrap( query, MAX_CHARS_PER_LINE, ", ", ",\n  " ), MAX_CHARS_PER_LINE, "),(", "),\n  (" );
+        String wrapped = wrap( query, MAX_CHARS_PER_LINE, ", ", ",\n  " );
+        wrapped = wrap( wrapped, MAX_CHARS_PER_LINE, "),(", "),\n  (" );
+        return wrap( wrapped, MAX_CHARS_PER_LINE, " ", "\n  " );
     }
 
     private static String wrap( final String text, final int maxChars, final String search, final String replace )

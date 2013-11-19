@@ -84,6 +84,8 @@ public final class CypherDoc
             output.append( BlockType.CONSOLE.process( null, state ) );
         }
 
+        database.shutdown();
+
         return output.toString();
     }
 

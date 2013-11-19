@@ -21,6 +21,8 @@ package org.neo4j.kernel;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -62,17 +64,17 @@ public class DatabaseAvailability
         availabilityGuard.deny();
 
         // If possible, wait until current transactions finish before continuing the shutdown
-//        if ( txManager instanceof TxManager )
-//        {
-//            long start = Clock.SYSTEM_CLOCK.currentTimeMillis();
-//
-//            TxManager realTxManager = (TxManager) txManager;
-//            while ( realTxManager.getActiveTxCount() > 0 && Clock.SYSTEM_CLOCK.currentTimeMillis() < start + 20 * 1000
-//                    ) // TODO make configurable
-//            {
-//                Thread.yield();
-//            }
-//        }
+        if ( txManager instanceof TxManager )
+        {
+            // TODO make stop-deadline configurable
+            long deadline = Clock.SYSTEM_CLOCK.currentTimeMillis() + 20 * 1000;
+
+            TxManager realTxManager = (TxManager) txManager;
+            while ( realTxManager.getActiveTxCount() > 0 && Clock.SYSTEM_CLOCK.currentTimeMillis() < deadline)
+            {
+                Thread.yield();
+            }
+        }
     }
 
     @Override

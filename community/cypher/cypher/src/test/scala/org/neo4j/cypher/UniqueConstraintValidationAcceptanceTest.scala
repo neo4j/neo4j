@@ -113,11 +113,15 @@ class UniqueConstraintValidationAcceptanceTest
     for (resolve <- List("delete toRemove", "remove toRemove.key1", "remove toRemove:Label1", "set toRemove.key1 = 'value2'"))
     {
       // WHEN
-      execute(
-        "match (toRemove:Label1) where toRemove.key1 = 'value1' " +
-          resolve +
-          " create ( toAdd:Label1 { seq: {seq}, key1: 'value1' } )",
-        "seq" -> seq)
+      val q = "match (toRemove:Label1 {key1:'value1'}) " +
+        resolve +
+        " create ( toAdd:Label1 { seq: {seq}, key1: 'value1' } )"
+
+      try {
+        execute(q, "seq" -> seq)
+      } catch {
+        case e: Throwable => throw new RuntimeException(q, e)
+      }
 
       // THEN
       val result: ExecutionResult = execute("match (n:Label1) where n.key1 = 'value1' return n.seq as seq")

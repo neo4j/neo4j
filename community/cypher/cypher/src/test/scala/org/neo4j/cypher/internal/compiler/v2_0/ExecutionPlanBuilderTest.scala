@@ -80,43 +80,51 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
   @Test def should_resolve_property_keys() {
     // given
     val tx = graph.beginTx()
-    val node = graph.createNode()
-    node.setProperty("foo", 12l)
+    try {
+      val node = graph.createNode()
+      node.setProperty("foo", 12l)
 
-    val identifier = Identifier("x")
-    val q = Query
-      .start(NodeById("x", node.getId))
-      .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
-      .returns(ReturnItem(Identifier("x"), "x"))
+      val identifier = Identifier("x")
+      val q = Query
+        .start(NodeById("x", node.getId))
+        .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
+        .returns(ReturnItem(Identifier("x"), "x"))
 
-    val execPlanBuilder = new ExecutionPlanBuilder(graph)
-    val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
-    val pkId = queryContext.getPropertyKeyId("foo")
+      val execPlanBuilder = new ExecutionPlanBuilder(graph)
+      val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
+      val pkId = queryContext.getPropertyKeyId("foo")
 
-    // when
-    val commands = execPlanBuilder.buildPipes(planContext, q)._1.asInstanceOf[ExecuteUpdateCommandsPipe].commands
+      // when
+      val commands = execPlanBuilder.buildPipes(planContext, q)._1.asInstanceOf[ExecuteUpdateCommandsPipe].commands
 
-    assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(identifier, PropertyKey("foo", pkId))))
+      assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(identifier, PropertyKey("foo", pkId))))
+    } finally {
+      tx.close()
+    }
   }
 
   @Test def should_resolve_label_ids() {
     // given
     val tx = graph.beginTx()
-    val node = graph.createNode(DynamicLabel.label("Person"))
+    try {
+      val node = graph.createNode(DynamicLabel.label("Person"))
 
-    val q = Query
-      .start(NodeById("x", node.getId))
-      .where(HasLabel(Identifier("x"), Label("Person")))
-      .returns(ReturnItem(Identifier("x"), "x"))
+      val q = Query
+        .start(NodeById("x", node.getId))
+        .where(HasLabel(Identifier("x"), Label("Person")))
+        .returns(ReturnItem(Identifier("x"), "x"))
 
-    val execPlanBuilder = new ExecutionPlanBuilder(graph)
-    val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
-    val labelId = queryContext.getLabelId("Person")
+      val execPlanBuilder = new ExecutionPlanBuilder(graph)
+      val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
+      val labelId = queryContext.getLabelId("Person")
 
-    // when
-    val predicate = execPlanBuilder.buildPipes(planContext, q)._1.asInstanceOf[FilterPipe].predicate
+      // when
+      val predicate = execPlanBuilder.buildPipes(planContext, q)._1.asInstanceOf[FilterPipe].predicate
 
-    assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
+      assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
+    } finally {
+      tx.close()
+    }
   }
 }
 

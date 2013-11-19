@@ -19,15 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PartiallySolvedQuery
+import org.junit.Assert._
 import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Literal, CollectionSliceExpression, Identifier}
-import org.neo4j.cypher.internal.compiler.v2_0.mutation.{RelationshipEndpoint, CreateRelationship, CreateNode}
+import org.neo4j.cypher.internal.compiler.v2_0.mutation._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.CollectionSliceExpression
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Identifier
 
-class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
+class UpdateActionBuilderTest extends BuilderTest {
 
-  val builder = new CreateNodesAndRelationshipsBuilder(null)
+  val builder = new UpdateActionBuilder()
 
   @Test
   def does_not_offer_to_solve_queries_without_start_items() {
@@ -77,6 +80,34 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
       Unsolved(CreateRelationship("r",
         RelationshipEndpoint(CollectionSliceExpression(Identifier("p"), Some(Literal(0)), Some(Literal(1))), Map(), Seq.empty, true),
         RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, true), "LOVES", Map()))))
+
+    assertRejects(q)
+  }
+
+  @Test
+  def does_not_offer_to_solve_done_queries() {
+    val q = PartiallySolvedQuery().
+      copy(updates = Seq(Solved(DeleteEntityAction(Identifier("x")))))
+
+    assertRejects(q)
+  }
+
+  @Test
+  def offers_to_solve_queries() {
+    val q = PartiallySolvedQuery().
+      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x")))))
+    val pipe = createPipe(nodes = Seq("x"))
+
+    val resultPlan = assertAccepts(pipe, q)
+
+    assert(resultPlan.query === q.copy(updates = q.updates.map(_.solve)))
+    assertTrue("Execution plan should contain transaction", resultPlan.isUpdating)
+  }
+
+  @Test
+  def does_not_offer_to_delete_something_not_yet_there() {
+    val q = PartiallySolvedQuery().
+      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x")))))
 
     assertRejects(q)
   }

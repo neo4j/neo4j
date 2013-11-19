@@ -27,6 +27,9 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
+import java.io.PrintWriter
+import org.neo4j.graphdb.ResourceIterator
+import java.util
 
 
 case class ExpectedException[T <: Throwable](e: T) {
@@ -42,7 +45,12 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
     engine = new ExecutionEngine(graph)
   }
 
+  // We need to exhaust the result iterator so that the underlying transaction is closed. Do this by default here so
+  // that individual tests don't need to worry about that.
   def execute(q: String, params: (String, Any)*): ExecutionResult =
+    new EagerExecutionResult(engine.execute(q, params.toMap))
+
+  def executeLazy(q: String, params: (String, Any)*): ExecutionResult =
     engine.execute(q, params.toMap)
 
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
@@ -63,5 +71,37 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
 
     Await.result(future, Duration.apply(length, timeUnit))
   }
+}
 
+class EagerExecutionResult(wrapped: ExecutionResult) extends ExecutionResult {
+  var results = wrapped.toList.iterator
+
+  def hasNext: Boolean = results.hasNext
+
+  def next(): Map[String, Any] = results.next()
+
+  def columns: List[String] = wrapped.columns
+
+  def javaColumns: util.List[String] = wrapped.javaColumns
+
+  def javaColumnAs[T](column: String): ResourceIterator[T] = ???
+
+  def columnAs[T](column: String): Iterator[T] = map {
+    case m => {
+      val item: Any = m.getOrElse(column, throw new EntityNotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")")))
+      item.asInstanceOf[T]
+    }
+  }
+
+  def javaIterator: ResourceIterator[util.Map[String, Any]] = ???
+
+  def dumpToString(writer: PrintWriter): Unit = wrapped.dumpToString(writer)
+
+  def dumpToString(): String = wrapped.dumpToString()
+
+  def queryStatistics(): QueryStatistics = wrapped.queryStatistics()
+
+  def executionPlanDescription(): PlanDescription = wrapped.executionPlanDescription()
+
+  def close(): Unit = {}
 }

@@ -30,7 +30,6 @@ import java.util.concurrent.Executors;
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -182,7 +181,6 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
-
     public static class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
@@ -381,13 +379,13 @@ public abstract class InternalAbstractGraphDatabase
             @Override
             public void available()
             {
-                msgLog.logMessage( "Database is now ready" );
+                msgLog.info( "Database is now ready" );
             }
 
             @Override
             public void unavailable()
             {
-                msgLog.logMessage( "Database is no longer ready" );
+                msgLog.info( "Database is now unavailable" );
             }
         } );
 
@@ -761,6 +759,7 @@ public abstract class InternalAbstractGraphDatabase
         catch ( LifecycleException throwable )
         {
             msgLog.warn( "Shutdown failed", throwable );
+            throw throwable;
         }
     }
 

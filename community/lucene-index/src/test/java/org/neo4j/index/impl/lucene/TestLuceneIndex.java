@@ -38,10 +38,8 @@ import org.apache.lucene.search.TermQuery;
 import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -59,19 +57,11 @@ import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
@@ -131,21 +121,6 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
         assertTrue( index.isWriteable() );
-    }
-
-    @Test
-    public void testStartupInExistingDirectory() {
-        GraphDatabaseService graphDatabase = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Transaction transaction = graphDatabase.beginTx();
-        try
-        {
-            assertNotNull( graphDatabase.index().forNodes("nodes") );
-        }
-        finally
-        {
-            transaction.finish();
-            graphDatabase.shutdown();
-        }
     }
 
     @Test

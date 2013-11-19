@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.{Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{UpdatingStartItem, StartItem}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
-class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander {
+class UpdateActionBuilder extends PlanBuilder with UpdateCommandExpander {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, plan.pipe)
     val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, plan.pipe)
@@ -36,7 +35,7 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with Upd
 
     val commands = expandCommands(updateActions, plan.pipe.symbols)
 
-    val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, db, commands)
+    val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, commands)
 
     plan.copy(
       isUpdating = true,
@@ -56,10 +55,10 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with Upd
   }
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
-    val uas = extractValidUpdateActions(plan, plan.pipe).toSeq
-    val sitems = extractValidStartItems(plan, plan.pipe).toSeq
+    val uas = extractValidUpdateActions(plan, plan.pipe).nonEmpty
+    val sitems = extractValidStartItems(plan, plan.pipe).nonEmpty
 
-    uas.nonEmpty || sitems.nonEmpty
+    uas || sitems
   }
 
   override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = {

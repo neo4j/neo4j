@@ -138,7 +138,7 @@ object PipeLazynessTest extends MockitoSugar {
   private def executeUpdateCommandsPipe = {
     val iter = new LazyIterator[Map[String, Any]](10, (n) => Map("x" -> n))
     val src = new FakePipe(iter, "x" -> NumberType())
-    val pipe = new ExecuteUpdateCommandsPipe(src, null, Seq.empty)
+    val pipe = new ExecuteUpdateCommandsPipe(src, Seq.empty)
     Seq(pipe, iter)
   }
 

@@ -29,7 +29,7 @@ import java.util.Map;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -393,16 +393,14 @@ public abstract class GraphStoreFixture implements TestRule
     @SuppressWarnings("deprecation")
     protected void applyTransaction( Transaction transaction ) throws IOException
     {
-        GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).setConfig( configuration( false ) ).newGraphDatabase();
-        try
+        GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( false ) ).newGraphDatabase();
+        try ( org.neo4j.graphdb.Transaction tx = database.beginTx() )
         {
-            try ( org.neo4j.graphdb.Transaction tx = database.beginTx() )
-            {
-                NeoStoreXaDataSource dataSource = database.getDependencyResolver()
-                        .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
-                dataSource.applyPreparedTransaction( write( transaction, dataSource.getLastCommittedTxId() ) );
-                tx.success();
-            }
+            DependencyResolver resolver = database.getDependencyResolver();
+            XaDataSourceManager xaDataSourceManager = resolver.resolveDependency( XaDataSourceManager.class );
+            NeoStoreXaDataSource dataSource = xaDataSourceManager.getNeoStoreDataSource();
+            dataSource.applyPreparedTransaction( write( transaction, dataSource.getLastCommittedTxId() ) );
+            tx.success();
         }
         finally
         {
@@ -430,7 +428,7 @@ public abstract class GraphStoreFixture implements TestRule
 
     private void generateInitialData()
     {
-        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(directory).setConfig( configuration( true ) ).newGraphDatabase();
+        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( true ) ).newGraphDatabase();
         try
         {
             generateInitialData( graphDb );

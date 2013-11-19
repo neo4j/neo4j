@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+import org.junit.Ignore;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -35,9 +36,13 @@ import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 
+@Ignore( "This test has to be rewritten such that it injects a TxManager.Monitor into the database," +
+         " and uses that to observe that the shut down will wait for the IndexWriter to be closed. " +
+         "We should also add test cases for the new schema indexes and constraint indexes." )
 public class ShutdownRaceIT extends AbstractSubProcessTestBase
 {
     private final CountDownLatch restart = new CountDownLatch( 1 ), last = new CountDownLatch( 1 );
+
     @Test
     public void canHaveShutdownWhileAccessingIndexWriters() throws Exception
     {
@@ -102,18 +107,10 @@ public class ShutdownRaceIT extends AbstractSubProcessTestBase
         @Override
         public void run( final GraphDatabaseAPI graphdb )
         {
-            try
+            try ( Transaction tx = graphdb.beginTx() )
             {
-                Transaction tx = graphdb.beginTx();
-                try
-                {
-                    index( graphdb.index().forNodes( "name" ), graphdb.createNode() );
-                    tx.success();
-                }
-                finally
-                {
-                    tx.finish();
-                }
+                index( graphdb.index().forNodes( "name" ), graphdb.createNode() );
+                tx.success();
             }
             finally
             {

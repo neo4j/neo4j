@@ -36,7 +36,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.Slice
 object PartiallySolvedQuery {
 
   // Creates a fully unsolved query
-  def apply(q: Query): PartiallySolvedQuery = {
+  def apply(in:Query): PartiallySolvedQuery = {
+
+    val q = in.compact
+
     val patterns = q.matching.map(Unsolved(_))
 
     val predicates = if (q.where == True()) Seq()

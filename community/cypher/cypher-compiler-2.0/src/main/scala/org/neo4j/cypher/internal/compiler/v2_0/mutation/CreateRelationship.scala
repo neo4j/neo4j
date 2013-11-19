@@ -42,8 +42,13 @@ case class RelationshipEndpoint(node: Expression, props: Map[String, Expression]
     labels.foreach(_.throwIfSymbolsMissing(symbols))
   }
 
-  def symbolTableDependencies: Set[String] =
-    props.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)
+  def symbolTableDependencies: Set[String] = {
+    val nodeDeps = node match {
+      case _: Identifier => Set[String]()
+      case e => e.symbolTableDependencies
+    }
+    nodeDeps ++ props.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)
+  }
 }
 
 case class CreateRelationship(key: String,
@@ -85,6 +90,10 @@ extends UpdateAction
   }
 
   override def symbolTableDependencies: Set[String] =
-    props.flatMap(_._2.symbolTableDependencies).toSet ++
-    from.symbolTableDependencies ++ to.symbolTableDependencies
+    {
+      val a = props.flatMap(_._2.symbolTableDependencies).toSet
+      val b = from.symbolTableDependencies
+      val c = to.symbolTableDependencies
+      a ++ b ++ c
+    }
 }

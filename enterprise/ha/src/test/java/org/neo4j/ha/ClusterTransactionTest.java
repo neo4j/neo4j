@@ -64,9 +64,7 @@ public class ClusterTransactionTest
                 @Override
                 public Boolean call() throws Exception
                 {
-                    Transaction tx = slave.beginTx();
-
-                    try
+                    try ( Transaction tx = slave.beginTx() )
                     {
                         tx.acquireWriteLock( slave.getNodeById( 0 ) );
                         // Fail
