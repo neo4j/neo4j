@@ -155,7 +155,7 @@
         <dependency>
             <groupId>org.neo4j.browser</groupId>
             <artifactId>neo4j-browser</artifactId>
-            <version>0.1.21</version>
+            <version>0.1.24</version>
         </dependency>
 
         <dependency>
