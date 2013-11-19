@@ -47,7 +47,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
   @Test
   def create_node() {
     val tx = graph.beginTx()
-    val start = NullPipe
+    val start = NullPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
     val queryState = createQueryState
@@ -64,7 +64,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
   @Test
   def join_existing_transaction_and_rollback() {
     val tx = graph.beginTx()
-    val start = NullPipe
+    val start = NullPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
     createNode.createResults(createQueryState).toList
@@ -78,7 +78,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
   @Test
   def join_existing_transaction_and_commit() {
     val tx = graph.beginTx()
-    val start = NullPipe
+    val start = NullPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
     createNode.createResults(createQueryState).toList
@@ -101,7 +101,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
       RelationshipEndpoint(getNode("a", a), Map(), Seq.empty, true),
       RelationshipEndpoint(getNode("b", b), Map(), Seq.empty, true), "REL", Map("I" -> Literal("was here")))
 
-    val startPipe = NullPipe
+    val startPipe = NullPipe()
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(createRel))
 
     val state = createQueryState
@@ -132,7 +132,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
     val node_id: Long = a.getId
     val deleteCommand = DeleteEntityAction(getNode("a", a))
 
-    val startPipe = NullPipe
+    val startPipe = NullPipe()
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(deleteCommand))
 
     val state = createQueryState

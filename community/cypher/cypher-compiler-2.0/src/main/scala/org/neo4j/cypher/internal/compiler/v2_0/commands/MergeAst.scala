@@ -23,55 +23,53 @@ import expressions._
 import values.KeyToken
 import values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_0._
-import mutation.{UpdateAction, PropertySetAction, MergeNodeAction}
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.{MergePatternAction, UpdateAction, PropertySetAction, MergeNodeAction}
 import org.neo4j.cypher.PatternException
-import scala.collection.mutable
 
-case class MergeAst(patterns: Seq[AbstractPattern], onActions: Seq[OnAction]) {
-  def nextStep(): Seq[MergeNodeAction] = {
+case class MergeAst(patterns: Seq[AbstractPattern],
+                    onActions: Seq[OnAction],
+                    matches: Seq[Pattern],
+                    create: Seq[UpdateAction]) {
 
-    val actionsMap = new mutable.HashMap[(String, Action), mutable.Set[UpdateAction]] with mutable.MultiMap[(String, Action), UpdateAction]
+  def nextStep(): Seq[UpdateAction] = singleNodeActions ++ getPatternMerges
 
-    for (
-      actions <- onActions;
-      action <- actions.set) {
-      actionsMap.addBinding((actions.identifier, actions.verb), action)
-    }
+  def singleNodeActions: Seq[MergeNodeAction] = patterns.collect {
+    case ParsedEntity(name, _, props, labelTokens, _) =>
 
-    patterns.map {
-      case ParsedEntity(name, _, props, labelTokens, _) =>
+      val labelPredicates = labelTokens.map(labelName => HasLabel(Identifier(name), labelName))
 
-        val labelPredicates = labelTokens.map(labelName => HasLabel(Identifier(name), labelName))
+      val propertyPredicates = props.map {
+        case (propertyKey, expression) => Equals(Property(Identifier(name), PropertyKey(propertyKey)), expression)
+      }
 
-        val propertyPredicates = props.map {
-          case (propertyKey, expression) => Equals(Property(Identifier(name), PropertyKey(propertyKey)), expression)
+      val propertyMap: Map[KeyToken, Expression] = props.collect {
+        case (propertyKey, expression) => PropertyKey(propertyKey) -> expression
+      }.toMap
+
+      val labelActions = labelTokens.map(labelName => LabelAction(Identifier(name), LabelSetOp, Seq(labelName)))
+      val propertyActions = props.map {
+        case (propertyKey, expression) => {
+          if (propertyKey == "*") throw new PatternException("MERGE does not support map parameters")
+          PropertySetAction(Property(Identifier(name), PropertyKey(propertyKey)), expression)
         }
+      }
 
-        val propertyMap: Map[KeyToken, Expression] = props.collect {
-          case (propertyKey, expression) => PropertyKey(propertyKey) -> expression
-        }.toMap
+      val onCreate: Seq[UpdateAction] = labelActions ++ propertyActions ++ getActionsFor(On.Create)
+      val predicates = labelPredicates ++ propertyPredicates
 
-        val predicates = labelPredicates ++ propertyPredicates
-
-        val labelActions = labelTokens.map(labelName => LabelAction(Identifier(name), LabelSetOp, Seq(labelName)))
-        val propertyActions = props.map {
-          case (propertyKey, expression) => {
-            if (propertyKey == "*") throw new PatternException("MERGE does not support map parameters")
-            PropertySetAction(Property(Identifier(name), PropertyKey(propertyKey)), expression)
-          }
-        }
-
-        val actionsFromOnCreateClause = actionsMap.get((name, On.Create)).getOrElse(Set.empty)
-        val actionsFromOnMatchClause = actionsMap.get((name, On.Match)).getOrElse(Set.empty)
-
-        val onCreate: Seq[UpdateAction] = labelActions ++ propertyActions ++ actionsFromOnCreateClause
-
-        MergeNodeAction(name, propertyMap, labelTokens, predicates, onCreate, actionsFromOnMatchClause.toSeq, None)
-
-      case _ =>
-        throw new PatternException("MERGE only supports single node patterns")
-    }
+      MergeNodeAction(name, propertyMap, labelTokens, predicates, onCreate, getActionsFor(On.Match), None)
   }
+
+  private def getPatternMerges =
+    if (!matches.exists(_.isInstanceOf[RelatedTo]))
+      None
+    else
+      Some(MergePatternAction(matches, create ++ getActionsFor(On.Create), getActionsFor(On.Match)))
+
+  private def getActionsFor(action:Action): Seq[UpdateAction] = onActions.collect {
+    case p if p.verb == action => p.set
+  }.flatten
+
 }
 
 

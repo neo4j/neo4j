@@ -28,14 +28,14 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateNode
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.ForeachAction
+import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
 trait UpdateCommandExpander {
   def expandCommands(commands: Seq[UpdateAction], symbols: SymbolTable): Seq[UpdateAction] = {
     def distinctify(nodes: Seq[UpdateAction]): Seq[UpdateAction] = {
       val createdNodes = mutable.Set[String]()
 
-      nodes.flatMap { node =>
-        node match {
+      nodes.flatMap {
           case CreateNode(key, props, _, _)
             if createdNodes.contains(key) && props.nonEmpty =>
             throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
@@ -53,7 +53,6 @@ trait UpdateCommandExpander {
 
           case x =>
             Some(x)
-        }
       }
     }
 

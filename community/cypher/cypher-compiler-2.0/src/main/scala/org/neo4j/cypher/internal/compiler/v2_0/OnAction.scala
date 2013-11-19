@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0
 
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.UpdateAction
 
-case class OnAction(verb: Action, identifier: String, set: Seq[UpdateAction])
+case class OnAction(verb: Action, set: Seq[UpdateAction])
 
 trait Action
 

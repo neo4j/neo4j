@@ -2425,8 +2425,7 @@ RETURN x0.name""")
   }
 
   @Test
-  def should_iterate_all_node_id_sets_from_start_during_matching()
-  {
+  def should_iterate_all_node_id_sets_from_start_during_matching() {
     // given
     val nodes: List[Node] =
       execute("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
@@ -2441,7 +2440,6 @@ RETURN x0.name""")
     val relationships: List[Relationship] = result.columnAs[Relationship]("r").toList
 
     assert( 6 === relationships.size )
-
   }
 
   @Test

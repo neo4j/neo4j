@@ -55,12 +55,10 @@ trait Pipe {
   def exists(pred: Pipe => Boolean):Boolean
 }
 
-object NullPipe extends Pipe {
-  def internalCreateResults(state: QueryState) = Iterator.single(ExecutionContext.empty)
-
-  val symbols: SymbolTable = SymbolTable()
-
-  val executionPlanDescription = NullPlanDescription
+case class NullPipe(symbols: SymbolTable = SymbolTable(),
+                    executionPlanDescription:PlanDescription = NullPlanDescription) extends Pipe {
+  def internalCreateResults(state: QueryState) =
+    Iterator(state.initialContext getOrElse ExecutionContext.empty)
 
   def exists(pred: Pipe => Boolean) = pred(this)
 }

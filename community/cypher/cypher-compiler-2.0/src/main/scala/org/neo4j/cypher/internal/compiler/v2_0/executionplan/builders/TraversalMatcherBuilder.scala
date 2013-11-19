@@ -127,7 +127,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     entityFactory.nodeStartItems
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
-      plan.pipe == NullPipe &&
+      plan.pipe.isInstanceOf[NullPipe] &&
       !plan.query.optional &&
       extractExpanderStepsFromQuery(plan).nonEmpty
   }

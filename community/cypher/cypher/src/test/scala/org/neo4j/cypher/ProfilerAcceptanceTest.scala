@@ -82,7 +82,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     val result: ExecutionResult = engine.profile("start n=node(*) optional match (n)-->(x) return x")
 
     //WHEN THEN
-    assertDbHits(1)(result)("ColumnFilter", "NullableMatch")
+    assertDbHits(0)(result)("ColumnFilter", "NullableMatch")
     assertDbHits(0)(result)("ColumnFilter", "NullableMatch", "PatternMatch")
   }
 

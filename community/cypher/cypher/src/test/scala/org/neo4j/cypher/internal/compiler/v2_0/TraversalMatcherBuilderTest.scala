@@ -53,7 +53,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
       copy(start = Seq(Unsolved(NodeByIndex("n", "index", Literal("key"), Literal("expression"))))
     )
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(NullPipe, q), ctx))
+    assertFalse("This query should not be accepted", builder.canWorkWith(plan(NullPipe(), q), ctx))
   }
 
   @Test def should_accept_variable_length_paths() {
@@ -85,7 +85,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
 
     assertAcceptsQuery(q)
 
-    val testPlan = plan(NullPipe, q)
+    val testPlan = plan(NullPipe(), q)
     val newPlan = builder.apply(testPlan, ctx)
 
     assertQueryHasNotSolvedPathExpressions(newPlan)
@@ -94,7 +94,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
   @Test def should_handle_global_queries() {
     val q = query("START a=node({self}), b = node(*) MATCH a-->b RETURN b")
 
-    val testPlan = plan(NullPipe, q)
+    val testPlan = plan(NullPipe(), q)
     assertTrue("This query should be accepted", builder.canWorkWith(testPlan, ctx))
 
     val newPlan = builder.apply(testPlan, ctx)
@@ -103,7 +103,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
   }
 
   private def assertAcceptsQuery(q:PartiallySolvedQuery) {
-    assertTrue("Should be able to build on this", builder.canWorkWith(plan(NullPipe, q), ctx))
+    assertTrue("Should be able to build on this", builder.canWorkWith(plan(NullPipe(), q), ctx))
   }
 
   def assertQueryHasNotSolvedPathExpressions(newPlan: ExecutionPlanInProgress) {

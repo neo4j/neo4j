@@ -19,34 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
-import optional.Listener
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{QueryContext, UpdateCountingQueryContext}
-import org.neo4j.cypher.{InternalException, ParameterNotFoundException}
+import org.neo4j.cypher.ParameterNotFoundException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
-
-class ListenerDelegate(var delegate: Option[Listener[ExecutionContext]] = None)
 
 case class QueryState(db: GraphDatabaseService,
                       inner: QueryContext,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
                       timeReader: TimeReader = new TimeReader,
-                      listenerDelegate: ListenerDelegate = new ListenerDelegate()) {
-
-  def listener_=(newListener: Listener[ExecutionContext]) {
-    assert(listenerDelegate.delegate.isEmpty, "Should not set a listener when one already exists")
-    listenerDelegate.delegate = Some(newListener)
-  }
-
-  def listener = {
-    val currentListener = listenerDelegate.delegate.getOrElse(
-      throw new InternalException("Tried to get a listener when no listener exists"))
-    listenerDelegate.delegate = None
-    currentListener
-  }
-
+                      var initialContext: Option[ExecutionContext] = None) {
   def readTimeStamp(): Long = timeReader.getTime
 
   private val updateTrackingQryCtx: UpdateCountingQueryContext = new UpdateCountingQueryContext(inner)
