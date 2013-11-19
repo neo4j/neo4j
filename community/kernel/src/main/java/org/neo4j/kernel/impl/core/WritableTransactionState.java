@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -55,7 +55,7 @@ public class WritableTransactionState implements TransactionState
     private final NodeManager nodeManager;
     private final StringLogger log;
     private final Transaction tx;
-    private final TxHook txHook;
+    private final RemoteTxHook txHook;
     private final TxIdGenerator txIdGenerator;
 
     // State
@@ -262,7 +262,7 @@ public class WritableTransactionState implements TransactionState
     }
 
     public WritableTransactionState( LockManager lockManager,
-            NodeManager nodeManager, Logging logging, Transaction tx, TxHook txHook, TxIdGenerator txIdGenerator )
+            NodeManager nodeManager, Logging logging, Transaction tx, RemoteTxHook txHook, TxIdGenerator txIdGenerator )
     {
         this.lockManager = lockManager;
         this.nodeManager = nodeManager;
@@ -779,7 +779,7 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public TxHook getTxHook()
+    public RemoteTxHook getTxHook()
     {
         return txHook;
     }

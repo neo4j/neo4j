@@ -37,7 +37,7 @@ import static org.neo4j.helpers.Listeners.notifyListeners;
 public class AvailabilityGuard
 {
     private Iterable<AvailabilityListener> listeners = Listeners.newListeners();
-    private Clock clock;
+    private final Clock clock;
 
     public interface AvailabilityListener
     {

@@ -64,7 +64,7 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         @Override
         public AbstractTransactionManager loadTransactionManager(
                 String txLogDir, XaDataSourceManager xaDataSourceManager, KernelPanicEventGenerator kpe,
-                TxHook rollbackHook, StringLogger msgLog,
+                RemoteTxHook rollbackHook, StringLogger msgLog,
                 FileSystemAbstraction fileSystem, TransactionStateFactory stateFactory )
         {
             return new JOTMTransactionManager( xaDataSourceManager, stateFactory );

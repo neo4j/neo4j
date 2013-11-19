@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static java.lang.Thread.currentThread;
-import static java.lang.Thread.getAllStackTraces;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -31,6 +28,8 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.neo4j.helpers.Predicate;
 
 public class DebugUtil
 {
@@ -66,27 +65,78 @@ public class DebugUtil
             throw new RuntimeException( "Can't happen", e );
         }
     }
-
-    public static boolean currentStackTraceContains( String className, String method )
-    {
-        try
-        {
-            return currentStackTraceContains( Class.forName( className ), method );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
     
-    public static boolean currentStackTraceContains( Class<?> cls, String method )
+    public static boolean currentStackTraceContains( Predicate<StackTraceElement> predicate )
     {
-        for ( StackTraceElement stack : getAllStackTraces().get( currentThread() ) )
+        for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
         {
-            if ( stack.getClassName().equals( cls.getName() ) && stack.getMethodName().equals( method ) )
+            if ( predicate.accept( element ) )
+            {
                 return true;
+            }
         }
         return false;
+    }
+    
+    public static Predicate<StackTraceElement> classNameIs( final String className )
+    {
+        return new Predicate<StackTraceElement>()
+        {
+            @Override
+            public boolean accept( StackTraceElement item )
+            {
+                return item.getClassName().equals( className );
+            }
+        };
+    }
+    
+    public static Predicate<StackTraceElement> classNameContains( final String classNamePart )
+    {
+        return new Predicate<StackTraceElement>()
+        {
+            @Override
+            public boolean accept( StackTraceElement item )
+            {
+                return item.getClassName().contains( classNamePart );
+            }
+        };
+    }
+    
+    public static Predicate<StackTraceElement> classIs( final Class<?> cls )
+    {
+        return new Predicate<StackTraceElement>()
+        {
+            @Override
+            public boolean accept( StackTraceElement item )
+            {
+                return item.getClassName().equals( cls.getName() );
+            }
+        };
+    }
+    
+    public static Predicate<StackTraceElement> classNameAndMethodAre( final String className,
+            final String methodName )
+    {
+        return new Predicate<StackTraceElement>()
+        {
+            @Override
+            public boolean accept( StackTraceElement item )
+            {
+                return item.getClassName().equals( className ) && item.getMethodName().equals( methodName );
+            }
+        };
+    }
+    
+    public static Predicate<StackTraceElement> classAndMethodAre( final Class<?> cls, final String methodName )
+    {
+        return new Predicate<StackTraceElement>()
+        {
+            @Override
+            public boolean accept( StackTraceElement item )
+            {
+                return item.getClassName().equals( cls.getName() ) && item.getMethodName().equals( methodName );
+            }
+        };
     }
     
     public static class StackTracer
@@ -143,7 +193,7 @@ public class DebugUtil
     {
         private final Throwable stackTrace;
         private final StackTraceElement[] elements;
-        private boolean considerMessage;
+        private final boolean considerMessage;
 
         Stack( Throwable stackTrace, boolean considerMessage )
         {
@@ -158,27 +208,46 @@ public class DebugUtil
             int hashCode = stackTrace.getMessage() == null || !considerMessage ? 31 :
                 stackTrace.getMessage().hashCode();
             for ( StackTraceElement element : stackTrace.getStackTrace() )
+            {
                 hashCode = hashCode * 9 + element.hashCode();
+            }
             return hashCode;
         }
         
         @Override
         public boolean equals( Object obj )
         {
-            if ( !( obj instanceof Stack) ) return false;
+            if ( !( obj instanceof Stack) )
+            {
+                return false;
+            }
             
             Stack o = (Stack) obj;
             if ( considerMessage )
             {
                 if ( stackTrace.getMessage() == null )
                 {
-                    if ( o.stackTrace.getMessage() != null ) return false;
+                    if ( o.stackTrace.getMessage() != null )
+                    {
+                        return false;
+                    }
                 }
-                else if ( !stackTrace.getMessage().equals( o.stackTrace.getMessage() ) ) return false;
+                else if ( !stackTrace.getMessage().equals( o.stackTrace.getMessage() ) )
+                {
+                    return false;
+                }
             }
-            if ( elements.length != o.elements.length ) return false;
+            if ( elements.length != o.elements.length )
+            {
+                return false;
+            }
             for ( int i = 0; i < elements.length; i++ )
-                if ( !elements[i].equals( o.elements[i] ) ) return false;
+            {
+                if ( !elements[i].equals( o.elements[i] ) )
+                {
+                    return false;
+                }
+            }
             return true;
         }
     }
@@ -221,7 +290,9 @@ public class DebugUtil
         {
             out.println( "Calls made regarding " + name + ":" );
             for ( Map.Entry<T, AtomicInteger> entry : calls.entrySet() )
+            {
                 out.println( "\t" + entry.getKey() + ": " + entry.getValue() );
+            }
         }
     }
 }

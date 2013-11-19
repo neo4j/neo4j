@@ -19,46 +19,35 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import javax.transaction.Transaction;
-
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
-public class SlaveTxHook implements TxHook
+public class SlaveTxHook implements RemoteTxHook
 {
     private final Master master;
     private final HaXaDataSourceManager xaDsm;
     private final RequestContextFactory contextFactory;
-    private final AbstractTransactionManager txManager;
 
     public SlaveTxHook( Master master, HaXaDataSourceManager xaDsm,
-                        TxHookModeSwitcher.RequestContextFactoryResolver contextFactory, AbstractTransactionManager txManager )
+                        TxHookModeSwitcher.RequestContextFactoryResolver contextFactory )
     {
         this.master = master;
         this.xaDsm = xaDsm;
-        this.txManager = txManager;
         this.contextFactory = contextFactory.get();
     }
 
     @Override
-    public void initializeTransaction( int eventIdentifier )
+    public void remotelyInitializeTransaction( int eventIdentifier )
     {
         Response<Void> response = master.initializeTx( contextFactory.newRequestContext( eventIdentifier ) );
         xaDsm.applyTransactions( response );
     }
 
     @Override
-    public boolean hasAnyLocks( Transaction tx )
-    {
-        return txManager.getTransactionState().hasLocks();
-    }
-
-    @Override
-    public void finishTransaction( int eventIdentifier, boolean success )
+    public void remotelyFinishTransaction( int eventIdentifier, boolean success )
     {
         Response<Void> response = master.finishTransaction(
                 contextFactory.newRequestContext( eventIdentifier ), success );

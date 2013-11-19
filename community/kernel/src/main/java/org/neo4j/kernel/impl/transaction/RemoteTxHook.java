@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import javax.transaction.Transaction;
-
-public interface TxHook
+/**
+ * Hook for remote transaction coordination
+ */
+public interface RemoteTxHook
 {
-    void initializeTransaction( int eventIdentifier );
+    void remotelyInitializeTransaction( int eventIdentifier );
     
-    boolean hasAnyLocks( Transaction tx );
-    
-    void finishTransaction( int eventIdentifier, boolean success );
+    void remotelyFinishTransaction( int eventIdentifier, boolean success );
     
     boolean freeIdsDuringRollback();
 }
