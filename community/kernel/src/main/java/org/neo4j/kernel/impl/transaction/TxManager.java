@@ -373,12 +373,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
         }
 
-        boolean hasAnyLocks = false;
         boolean successful = false;
         try
         {
             assertTmOk();
-            hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() != Status.STATUS_ACTIVE
                     && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
             {
@@ -409,23 +407,20 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         {
             monitor.txCommitted( new XidImpl( tx.getGlobalId(), new byte[0] ) );
             txThreadMap.remove();
-            if ( hasAnyLocks )
+            if ( successful )
             {
-                if(successful)
+                tx.finish( true );
+            }
+            else
+            {
+                try
                 {
-                    tx.finish( true );
+                    tx.finish( false );
                 }
-                else
+                catch ( RuntimeException e )
                 {
-                    try
-                    {
-                        tx.finish( false );
-                    }
-                    catch(RuntimeException e)
-                    {
-                        log.error( "Failed to commit transaction, and was then subsequently unable to " +
-                                "finish the failed tx.", e );
-                    }
+                    log.error( "Failed to commit transaction, and was then subsequently unable to " +
+                            "finish the failed tx.", e );
                 }
             }
         }
@@ -644,11 +639,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
         }
 
-        boolean hasAnyLocks = false;
         try
         {
             assertTmOk();
-            hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() == Status.STATUS_ACTIVE ||
                     tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
                     tx.getStatus() == Status.STATUS_PREPARING )
@@ -699,10 +692,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         finally
         {
             txThreadMap.remove();
-            if ( hasAnyLocks )
-            {
-                tx.finish( false );
-            }
+            tx.finish( false );
         }
 
         monitor.txRolledBack( new XidImpl( tx.getGlobalId(), new byte[0] ) );

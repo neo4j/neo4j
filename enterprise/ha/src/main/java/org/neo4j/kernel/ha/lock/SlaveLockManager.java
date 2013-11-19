@@ -39,14 +39,14 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.LockNotFoundException;
 import org.neo4j.kernel.impl.transaction.RagManager;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.logging.Logging;
 
 public class SlaveLockManager implements LockManager
 {
     private final AbstractTransactionManager txManager;
-    private final TxHook txHook;
+    private final RemoteTxHook txHook;
     private final AvailabilityGuard availabilityGuard;
     private final Configuration config;
     private final RequestContextFactory requestContextFactory;
@@ -59,7 +59,7 @@ public class SlaveLockManager implements LockManager
         long getAvailabilityTimeout();
     }
 
-    public SlaveLockManager( AbstractTransactionManager txManager, TxHook txHook,
+    public SlaveLockManager( AbstractTransactionManager txManager, RemoteTxHook txHook,
                              AvailabilityGuard availabilityGuard, Configuration config,
                              RagManager ragManager, RequestContextFactory requestContextFactory, Master master,
                              HaXaDataSourceManager xaDsm )

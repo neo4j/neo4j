@@ -32,7 +32,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -83,7 +83,7 @@ public class NeoStore extends AbstractStore
     private RelationshipTypeTokenStore relTypeStore;
     private LabelTokenStore labelTokenStore;
     private SchemaStore schemaStore;
-    private final TxHook txHook;
+    private final RemoteTxHook txHook;
     private long lastCommittedTx = -1;
     private long latestConstraintIntroducingTx = -1;
 
@@ -92,7 +92,7 @@ public class NeoStore extends AbstractStore
     public NeoStore( File fileName, Config conf,
                      IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                      FileSystemAbstraction fileSystemAbstraction,
-                     StringLogger stringLogger, TxHook txHook,
+                     StringLogger stringLogger, RemoteTxHook txHook,
                      RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore,
                      PropertyStore propStore, RelationshipStore relStore,
                      NodeStore nodeStore, SchemaStore schemaStore )

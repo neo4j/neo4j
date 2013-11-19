@@ -26,7 +26,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -170,7 +170,7 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public TxHook getTxHook()
+    public RemoteTxHook getTxHook()
     {
         return null;
     }
