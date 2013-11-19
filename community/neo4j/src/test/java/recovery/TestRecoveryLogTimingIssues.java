@@ -267,7 +267,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersion() throws Exception
     {
-        System.out.println("logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersion");
         breakpoints[0].enable();
         run( new DoSimpleTransaction() );
         // tx(2) is the first one, for creating the relationship type
@@ -278,7 +277,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeReleaseCurrentLogFile() throws Exception
     {
-        System.out.println("logsShouldContainAllTransactionsEvenIfCrashJustBeforeReleaseCurrentLogFile");
         breakpoints[1].enable();
         run( new DoSimpleTransaction() );
         crashDuringRotateAndVerify( 1, 3 );
@@ -287,7 +285,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustAfterSetActiveVersion() throws Exception
     {
-        System.out.println("logsShouldContainAllTransactionsEvenIfCrashJustAfterSetActiveVersion");
         breakpoints[2].enable();
         run( new DoSimpleTransaction() );
         crashDuringRotateAndVerify( 1, 3 );
@@ -296,7 +293,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersionTwoLogs() throws Exception
     {
-        System.out.println("logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersionTwoLogs");
         breakpoints[3].enable();
         run( new DoSimpleTransaction() );
         run( new RotateLogs() );
@@ -307,7 +303,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeReleaseCurrentLogFileTwoLogs() throws Exception
     {
-        System.out.println("logsShouldContainAllTransactionsEvenIfCrashJustBeforeReleaseCurrentLogFileTwoLogs");
         breakpoints[4].enable();
         run( new DoSimpleTransaction() );
         run( new RotateLogs() );
@@ -318,7 +313,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustAfterSetActiveVersionTwoLogs() throws Exception
     {
-        System.out.println("logsShouldContainAllTransactionsEvenIfCrashJustAfterSetActiveVersionTwoLogs");
         breakpoints[5].enable();
         run( new DoSimpleTransaction() );
         run( new RotateLogs() );
@@ -329,7 +323,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void nextLogVersionAfterCrashBetweenActiveSetToCleanAndRename() throws Exception
     {
-        System.out.println("nextLogVersionAfterCrashBetweenActiveSetToCleanAndRename");
         breakpoints[2].enable();
         runInThread( new Shutdown() );
         breakpointNotification.await();
@@ -340,7 +333,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void nextLogVersionAfterCrashBetweenRenameAndIncrementVersionInCloseShouldBeTheNextOne() throws Exception
     {
-        System.out.println("nextLogVersionAfterCrashBetweenRenameAndIncrementVersionInCloseShouldBeTheNextOne");
         breakpoints[6].enable();
         runInThread( new Shutdown() );
         breakpointNotification.await();
@@ -352,7 +344,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void nextLogVersionAfterCrashBetweenRenameAndIncrementVersionInRotateShouldBeTheNextOne() throws Exception
     {
-        System.out.println("nextLogVersionAfterCrashBetweenRenameAndIncrementVersionInRotateShouldBeTheNextOne");
         breakpoints[7].enable();
         run( new DoSimpleTransaction() );
         runInThread( new RotateLogs( LuceneDataSource.DEFAULT_NAME ) );
@@ -365,7 +356,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void lastLuceneTxAfterRecoveredCrashBetweenRenameAndIncrementVersionInCloseShouldBeCorrect() throws Exception
     {
-        System.out.println("lastLuceneTxAfterRecoveredCrashBetweenRenameAndIncrementVersionInCloseShouldBeCorrect");
         breakpoints[6].enable();
         run( new DoGraphAndIndexTransaction() );
         runInThread( new Shutdown() );
@@ -377,7 +367,6 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void lastNeoTxAfterRecoveredCrashBetweenRenameAndIncrementVersionInCloseShouldBeCorrect() throws Exception
     {
-        System.out.println("lastNeoTxAfterRecoveredCrashBetweenRenameAndIncrementVersionInCloseShouldBeCorrect");
         breakpoints[7].enable();
         run( new DoSimpleTransaction() );
         runInThread( new Shutdown() );
@@ -401,12 +390,5 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             }
         }
         assertTrue( "These versions weren't found " + versionSet, versionSet.isEmpty() );
-    }
-
-    @Override
-    public void stopSubprocesses()
-    {
-        super.stopSubprocesses();
-        System.out.println("stopSubprocess()");
     }
 }
