@@ -33,7 +33,7 @@ class RssFeedService
 
       format = "json"
       username = "neo4jmotd"
-      apiUrl = "http://feeds.delicious.com/v2/#{format}/#{username}?callback=JSON_CALLBACK&count=10?plain=true"
+      apiUrl = "http://assets.neo4j.org/v2/#{format}/#{username}?callback=JSON_CALLBACK&count=10?plain=true"
 
       $http.jsonp(apiUrl)
       .success (results) ->
