@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Ignore;
@@ -42,6 +43,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -60,6 +62,7 @@ import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
@@ -330,6 +333,39 @@ public class FullCheckIntegrationTest
 
         // then
         verifyInconsistency( stats, RecordType.INDEX, RecordType.LABEL_SCAN_DOCUMENT );
+    }
+
+    @Test
+    public void shouldNotReportIndexInconsistenciesIfIndexIsFailed() throws Exception
+    {
+        // this test fails all indexes, and then destroys a record and makes sure we only get a failure for
+        // the label scan store but not for any index
+
+        // given
+        DirectStoreAccess storeAccess = fixture.directStoreAccess();
+
+        // fail all indexes
+        Iterator<IndexRule> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).allIndexRules();
+        while ( rules.hasNext() )
+        {
+            IndexRule rule = rules.next();
+            IndexPopulator populator =
+                storeAccess.indexes().getPopulator( rule.getId(), new IndexConfiguration( false ) );
+            populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
+            populator.close( false );
+
+        }
+
+        for ( Long indexedNodeId : indexedNodes )
+        {
+            storeAccess.nativeStores().getNodeStore().forceUpdateRecord( new NodeRecord( indexedNodeId, -1, -1 ) );
+        }
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( stats, RecordType.LABEL_SCAN_DOCUMENT );
     }
 
     @Test

@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -52,7 +53,14 @@ public class IndexAccessors implements Closeable
             {
                 if ( rules.hasNext() )
                 {
-                    indexRules.add( rules.next() );
+                    // we intentionally only check indexes that are online since
+                    // - populating indexes will be rebuilt on next startup
+                    // - failed indexes have to be dropped by the user anyways
+                    IndexRule indexRule = rules.next();
+                    if ( InternalIndexState.ONLINE == provider.getInitialState( indexRule.getId() ) )
+                    {
+                        indexRules.add( indexRule );
+                    }
                 }
                 else
                 {
