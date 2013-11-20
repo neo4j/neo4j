@@ -400,7 +400,6 @@ public abstract class GraphStoreFixture implements TestRule
             XaDataSourceManager xaDataSourceManager = resolver.resolveDependency( XaDataSourceManager.class );
             NeoStoreXaDataSource dataSource = xaDataSourceManager.getNeoStoreDataSource();
             dataSource.applyPreparedTransaction( write( transaction, dataSource.getLastCommittedTxId() ) );
-            tx.success();
         }
         finally
         {
