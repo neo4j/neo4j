@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.transactional;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -96,6 +97,35 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
+        assertNoErrors( result );
+    }
+
+    /**
+     * Execute statements in an open transaction in REST format for the return.
+     *
+     * Given that you have an open transaction, you can make a number of requests, each of which executes additional
+     * statements, and keeps the transaction open by resetting the transaction timeout. Specifying the `REST` format will
+     * give back full Neo4j Rest API representations of the Neo4j Nodes, Relationships and Paths, if returned.
+     */
+    @Test
+    @Documented
+    public void execute_statements_in_an_open_transaction_using_REST() throws PropertyValueException
+    {
+        // Given
+        String location = POST( getDataUri() + "transaction" ).location();
+
+        // Document
+        ResponseEntity response = gen.get()
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN n','resultDataContents':['REST'] } ] }" ) )
+                .post( location );
+
+        // Then
+        Map<String, Object> result = jsonToMap( response.entity() );
+        ArrayList rest = (ArrayList) ((Map)((ArrayList)((Map)((ArrayList)result.get("results")).get(0)) .get("data")).get(0)).get("rest");
+        String selfUri = ((String)((Map)rest.get(0)).get("self"));
+        assertTrue(selfUri.startsWith(getDatabaseUri()));
         assertNoErrors( result );
     }
 
