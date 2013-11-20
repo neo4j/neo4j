@@ -53,8 +53,8 @@ abstract class CypherType {
     else parentType mergeDown other.parentType
 
   def mergeUp(other: CypherType): Option[CypherType] =
-    if (this.isCoercibleFrom(other)) Some(other)
-    else if (other.isCoercibleFrom(this)) Some(this)
+    if (this.isAssignableFrom(other)) Some(other)
+    else if (other.isAssignableFrom(this)) Some(this)
     else None
 
   def rewrite(f: CypherType => CypherType) = f(this)

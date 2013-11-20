@@ -61,7 +61,7 @@ class CypherTypeTest extends Assertions {
     assertCorrectTypeMergeUp(NumberType(), CollectionType(AnyType()), None)
     assertCorrectTypeMergeUp(LongType(), DoubleType(), None)
     assertCorrectTypeMergeUp(MapType(), DoubleType(), None)
-    assertCorrectTypeMergeUp(BooleanType(), CollectionType(AnyType()), Some(BooleanType()))
+    assertCorrectTypeMergeUp(BooleanType(), CollectionType(AnyType()), None)
   }
 
   private def assertCorrectTypeMergeUp(a: CypherType, b: CypherType, result: Option[CypherType]) {
