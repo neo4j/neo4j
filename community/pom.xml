@@ -155,6 +155,11 @@ the relevant Commercial Agreement.
           <artifactId>licensecheck-config</artifactId>
           <version>${project.version}</version>
         </dependency>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>cypher-parent</artifactId>
+          <version>${project.version}</version>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>
