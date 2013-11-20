@@ -34,28 +34,9 @@ import org.neo4j.kernel.info.LockingTransaction;
 import org.neo4j.kernel.info.WaitingThread;
 import org.neo4j.kernel.logging.Logging;
 
-/**
- * The LockManager can lock resources for reading or writing. By doing this one
- * may achieve different transaction isolation levels. A resource can for now be
- * any object (but null).
- * <p>
- * When acquiring a lock you have to release it. Failure to do so will result in
- * the resource being blocked to all other transactions. Put all locks in a try -
- * finally block.
- * <p>
- * Multiple locks on the same resource held by the same transaction requires the
- * transaction to invoke the release lock method multiple times. If a tx has
- * invoked <CODE>getReadLock</CODE> on the same resource x times in a row it
- * must invoke <CODE>releaseReadLock</CODE> x times to release all the locks.
- * <p>
- * LockManager just maps locks to resources and they do all the hard work
- * together with a resource allocation graph.
- */
 public class LockManagerImpl implements LockManager
 {
-    private final Map<Object,RWLock> resourceLockMap =
-        new HashMap<Object,RWLock>();
-
+    private final Map<Object,RWLock> resourceLockMap = new HashMap<>();
     private final RagManager ragManager;
 
     public LockManagerImpl( RagManager ragManager )
@@ -69,152 +50,48 @@ public class LockManagerImpl implements LockManager
         return ragManager.getDeadlockCount();
     }
 
-    /**
-     * Tries to acquire read lock on <CODE>resource</CODE> for a given
-     * transaction. If read lock can't be acquired the transaction will wait for
-     * the transaction until it can acquire it. If waiting leads to dead lock a
-     * {@link DeadlockDetectedException} will be thrown.
-     *
-     * @param resource
-     *            The resource
-     * @throws DeadlockDetectedException
-     *             If a deadlock is detected
-     * @throws IllegalResourceException
-     */
     @Override
     public void getReadLock( Object resource, Transaction tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        assertValidArguments( resource, tx );
-
-        RWLock lock;
-        synchronized ( resourceLockMap )
-        {
-            lock = resourceLockMap.get( resource );
-            if ( lock == null )
-            {
-                lock = new RWLock( resource, ragManager );
-                resourceLockMap.put( resource, lock );
-            }
-            lock.mark();
-        }
-        lock.acquireReadLock(tx);
+        getRWLockForAcquiring( resource, tx ).acquireReadLock( tx );
     }
 
-    /**
-     * Tries to acquire write lock on <CODE>resource</CODE> for a given
-     * transaction. If write lock can't be acquired the transaction will wait
-     * for the lock until it can acquire it. If waiting leads to dead lock a
-     * {@link DeadlockDetectedException} will be thrown.
-     *
-     * @param resource
-     *            The resource
-     * @throws DeadlockDetectedException
-     *             If a deadlock is detected
-     * @throws IllegalResourceException
-     */
+    @Override
+    public boolean tryReadLock( Object resource, Transaction tx )
+        throws IllegalResourceException
+    {
+        return getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx );
+    }
+
     @Override
     public void getWriteLock( Object resource, Transaction tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        assertValidArguments( resource, tx );
-
-        RWLock lock;
-        synchronized ( resourceLockMap )
-        {
-            lock = resourceLockMap.get( resource );
-            if ( lock == null )
-            {
-                lock = new RWLock( resource, ragManager );
-                resourceLockMap.put( resource, lock );
-            }
-            lock.mark();
-        }
-        lock.acquireWriteLock(tx);
+        getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx );
     }
 
-    private void assertValidArguments( Object resource, Transaction tx )
+    @Override
+    public boolean tryWriteLock( Object resource, Transaction tx )
+        throws IllegalResourceException
     {
-        if ( resource == null || tx == null )
-        {
-            throw new IllegalResourceException( "Null parameter" );
-        }
+        return getRWLockForAcquiring( resource, tx ).tryAcquireWriteLock( tx );
     }
-
-    /**
-     * Releases a read lock held by the current transaction on <CODE>resource</CODE>.
-     * If current transaction don't have read lock a
-     * {@link LockNotFoundException} will be thrown.
-     *
-     * @param resource
-     *            The resource
-     * @throws IllegalResourceException
-     * @throws LockNotFoundException
-     */
+    
     @Override
     public void releaseReadLock( Object resource, Transaction tx )
         throws LockNotFoundException, IllegalResourceException
     {
-        assertValidArguments( resource, tx );
-
-        RWLock lock;
-        synchronized ( resourceLockMap )
-        {
-            lock = resourceLockMap.get( resource );
-            if ( lock == null )
-            {
-                throw new LockNotFoundException( "Lock not found for: "
-                    + resource + " tx:" + tx );
-            }
-            if ( !lock.isMarked() && lock.getReadCount() == 1 &&
-                lock.getWriteCount() == 0 &&
-                lock.getWaitingThreadsCount() == 0 )
-            {
-                resourceLockMap.remove( resource );
-            }
-            lock.releaseReadLock(tx);
-        }
+        getRWLockForReleasing( resource, tx, 1, 0 ).releaseReadLock( tx );
     }
 
-    /**
-     * Releases a write lock held by the current transaction on <CODE>resource</CODE>.
-     * If current transaction don't have read lock a
-     * {@link LockNotFoundException} will be thrown.
-     *
-     * @param resource
-     *            The resource
-     * @throws IllegalResourceException
-     * @throws LockNotFoundException
-     */
     @Override
     public void releaseWriteLock( Object resource, Transaction tx )
         throws LockNotFoundException, IllegalResourceException
     {
-        assertValidArguments( resource, tx );
-
-        RWLock lock;
-        synchronized ( resourceLockMap )
-        {
-            lock = resourceLockMap.get( resource );
-            if ( lock == null )
-            {
-                throw new LockNotFoundException( "Lock not found for: "
-                    + resource + " tx:" + tx );
-            }
-            if ( !lock.isMarked() && lock.getReadCount() == 0 &&
-                lock.getWriteCount() == 1 &&
-                lock.getWaitingThreadsCount() == 0 )
-            {
-                resourceLockMap.remove( resource );
-            }
-            lock.releaseWriteLock(tx);
-        }
+        getRWLockForReleasing( resource, tx, 0, 1 ).releaseWriteLock( tx );
     }
 
-    /**
-     * Utility method for debugging. Dumps info to console of txs having locks
-     * on resources.
-     */
     @Override
     public void dumpLocksOnResource( Object resource, Logging logging )
     {
@@ -257,7 +134,10 @@ public class LockManagerImpl implements LockManager
         {
             for ( RWLock lock : resourceLockMap.values() )
             {
-                if ( visitor.visit( lock.info() ) ) break;
+                if ( visitor.visit( lock.info() ) )
+                {
+                    break;
+                }
             }
         }
         return visitor;
@@ -281,25 +161,21 @@ public class LockManagerImpl implements LockManager
         {
             for ( RWLock lock : resourceLockMap.values() )
             {
-                if ( lock.acceptVisitorIfWaitedSinceBefore( visitor, waitStart ) ) break;
+                if ( lock.acceptVisitorIfWaitedSinceBefore( visitor, waitStart ) )
+                {
+                    break;
+                }
             }
         }
         return visitor;
     }
 
-    /**
-     * Utility method for debugging. Dumps the resource allocation graph to
-     * console.
-     */
     @Override
     public void dumpRagStack( Logging logging )
     {
         logging.getMessagesLog( getClass() ).logLongMessage( "RAG stack", ragManager );
     }
 
-    /**
-     * Utility method for debugging. Dumps info about each lock to console.
-     */
     @Override
     public void dumpAllLocks( Logging logging )
     {
@@ -307,10 +183,55 @@ public class LockManagerImpl implements LockManager
         eachLock( dump );
         dump.done();
     }
+    
+    private void assertValidArguments( Object resource, Transaction tx )
+    {
+        if ( resource == null || tx == null )
+        {
+            throw new IllegalResourceException( "Null parameter" );
+        }
+    }
+    
+    private RWLock getRWLockForAcquiring( Object resource, Transaction tx )
+    {
+        assertValidArguments( resource, tx );
+        synchronized ( resourceLockMap )
+        {
+            RWLock lock = resourceLockMap.get( resource );
+            if ( lock == null )
+            {
+                resourceLockMap.put( resource, lock = new RWLock( resource, ragManager ) );
+            }
+            lock.mark();
+            return lock;
+        }
+    }
+    
+    private RWLock getRWLockForReleasing( Object resource, Transaction tx, int readCountPrerequisite,
+            int writeCountPrerequisite )
+    {
+        assertValidArguments( resource, tx );
+        synchronized ( resourceLockMap )
+        {
+            RWLock lock = resourceLockMap.get( resource );
+            if ( lock == null )
+            {
+                throw new LockNotFoundException( "Lock not found for: "
+                    + resource + " tx:" + tx );
+            }
+            if ( !lock.isMarked() && lock.getReadCount() == readCountPrerequisite &&
+                lock.getWriteCount() == writeCountPrerequisite &&
+                lock.getWaitingThreadsCount() == 0 )
+            {
+                resourceLockMap.remove( resource );
+            }
+            return lock;
+        }
+    }
 
     private static class ListAppendingVisitor implements Visitor<LockInfo, RuntimeException>
     {
-        private final List<LockInfo> result = new ArrayList<LockInfo>();
+        private final List<LockInfo> result = new ArrayList<>();
 
         @Override
         public boolean visit( LockInfo element )

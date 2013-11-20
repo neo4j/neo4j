@@ -171,7 +171,7 @@ public class Exceptions
     public static String stringify( Thread thread, StackTraceElement[] elements )
     {
         StringBuilder builder = new StringBuilder(
-                "\"" + thread.getName() + "\" " + (thread.isDaemon() ? "daemon": "") +
+                "\"" + thread.getName() + "\"" + (thread.isDaemon() ? " daemon": "") +
                 " prio=" + thread.getPriority() +
                 " tid=" + thread.getId() +
                 " " + thread.getState().name().toLowerCase() + "\n" );
@@ -182,6 +182,10 @@ public class Exceptions
             if ( element.isNativeMethod() )
             {
                 builder.append( "(Native method)" );
+            }
+            else if ( element.getFileName() == null )
+            {
+                builder.append( "(Unknown source)" );
             }
             else
             {
