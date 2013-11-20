@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,10 +45,9 @@ public class CacheLayerTest
 {
     private final DiskLayer diskLayer = mock( DiskLayer.class );
     private final PersistenceCache persistenceCache = mock( PersistenceCache.class );
-
     private final SchemaCache schemaCache = mock( SchemaCache.class );
-
-    private final CacheLayer context = new CacheLayer( diskLayer, persistenceCache, schemaCache );
+    private final IndexingService indexingService = mock( IndexingService.class );
+    private final CacheLayer context = new CacheLayer( diskLayer, persistenceCache, indexingService, schemaCache );
 
     @Test
     public void shouldGetCachedLabelsIfCached() throws EntityNotFoundException

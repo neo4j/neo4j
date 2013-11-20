@@ -58,6 +58,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -117,16 +118,18 @@ public class CacheLayer implements StoreReadLayer
 
     private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
-
     private final DiskLayer diskLayer;
+    private final IndexingService indexingService;
 
     public CacheLayer(
             DiskLayer diskLayer,
             PersistenceCache persistenceCache,
+            IndexingService indexingService,
             SchemaCache schemaCache )
     {
         this.diskLayer = diskLayer;
         this.persistenceCache = persistenceCache;
+        this.indexingService = indexingService;
         this.schemaCache = schemaCache;
     }
 
@@ -302,7 +305,7 @@ public class CacheLayer implements StoreReadLayer
     public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        return diskLayer.nodeGetUniqueFromIndexLookup( state, schemaCache.indexId(index), value );
+        return diskLayer.nodeGetUniqueFromIndexLookup( state, schemaCache.indexId( index ), value );
     }
 
     @Override
@@ -315,21 +318,21 @@ public class CacheLayer implements StoreReadLayer
     public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        return diskLayer.nodesGetFromIndexLookup( state, schemaCache.indexId(index), value );
+        return diskLayer.nodesGetFromIndexLookup( state, schemaCache.indexId( index ), value );
     }
 
     @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
             throws SchemaRuleNotFoundException
     {
-        return diskLayer.indexesGetForLabelAndPropertyKey( labelId, propertyKey );
+        return schemaCache.indexDescriptor( labelId, propertyKey );
     }
 
     @Override
     public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return diskLayer.indexGetState( descriptor );
+        return indexingService.getProxyForRule( schemaCache.indexId( descriptor ) ).getState();
     }
 
     @Override
