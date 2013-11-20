@@ -24,8 +24,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.operations.EntityReadOperations;

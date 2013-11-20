@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;

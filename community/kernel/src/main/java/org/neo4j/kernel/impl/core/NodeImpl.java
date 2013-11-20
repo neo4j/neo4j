@@ -32,7 +32,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;

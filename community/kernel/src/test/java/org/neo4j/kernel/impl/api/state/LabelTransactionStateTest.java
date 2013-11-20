@@ -28,12 +28,12 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 

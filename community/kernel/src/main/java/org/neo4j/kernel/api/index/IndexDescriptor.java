@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.index;
 
 import org.neo4j.kernel.api.operations.TokenNameLookup;
 
 import static java.lang.String.format;
 
 /**
- * Description of a single index as needed by the {@link IndexProxy} cake
+ * Description of a single index as needed by the {@link org.neo4j.kernel.impl.api.index.IndexProxy} cake
  * <p/>
  * This is a IndexContext cake level representation of {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}
  */

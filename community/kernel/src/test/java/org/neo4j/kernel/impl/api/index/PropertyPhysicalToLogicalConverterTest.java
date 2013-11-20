@@ -33,7 +33,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.UpdateMode;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;

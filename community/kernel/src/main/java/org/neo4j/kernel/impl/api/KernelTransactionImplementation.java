@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,8 +25,12 @@ import javax.transaction.RollbackException;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
@@ -35,12 +39,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
-import org.neo4j.kernel.impl.api.LockHolder;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 /**
- * This class should replace the {@link KernelTransaction} interface, and take its name, as soon as
+ * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
 public class KernelTransactionImplementation implements KernelTransaction, TxState.Holder

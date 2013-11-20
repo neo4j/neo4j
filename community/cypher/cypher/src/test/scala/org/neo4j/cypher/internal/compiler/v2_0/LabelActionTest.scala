@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import pipes.{NullDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.graphdb.{Direction, Node}
-import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
@@ -30,6 +29,7 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{LabelSetOp, LabelAction}
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.{TokenType, KeyToken}
+import org.neo4j.kernel.api.index.IndexDescriptor
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val queryContext = new SnitchingQueryContext

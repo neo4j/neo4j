@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;

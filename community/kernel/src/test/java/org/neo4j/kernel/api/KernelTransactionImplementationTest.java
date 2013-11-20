@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.LockHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;

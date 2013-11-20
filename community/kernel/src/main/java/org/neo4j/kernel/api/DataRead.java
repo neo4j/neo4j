@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
 interface DataRead
 {

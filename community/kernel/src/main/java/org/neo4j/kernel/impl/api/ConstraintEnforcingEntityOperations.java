@@ -17,11 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.operations;
+package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.api.operations.EntityOperations;
+import org.neo4j.kernel.api.operations.EntityReadOperations;
+import org.neo4j.kernel.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -36,7 +40,7 @@ import org.neo4j.kernel.impl.api.ReleasableLock;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public class ConstraintEnforcingEntityOperations implements EntityOperations
 {

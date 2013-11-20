@@ -24,10 +24,9 @@ import javax.transaction.SystemException;
 
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.Transactor;
+import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;

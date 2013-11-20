@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public class IndexPopulationFailedKernelException extends KernelException
 {

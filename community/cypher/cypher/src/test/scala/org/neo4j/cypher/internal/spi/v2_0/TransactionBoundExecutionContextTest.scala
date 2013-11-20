@@ -28,6 +28,7 @@ import org.mockito.Mockito
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.kernel.api._
+import org.neo4j.kernel.impl.api.{KernelTransactionImplementation, KernelStatement}
 
 class TransactionBoundExecutionContextTest extends JUnitSuite with Assertions with MockitoSugar {
 

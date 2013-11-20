@@ -36,8 +36,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -45,20 +44,18 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.operations.StatementTokenNameLookup;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 
 import static java.lang.String.format;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class NodeProxy implements Node
@@ -70,8 +67,6 @@ public class NodeProxy implements Node
         GraphDatabaseService getGraphDatabase();
 
         NodeManager getNodeManager();
-
-        CleanupService getCleanupService();
 
         NodeImpl lookup( long nodeId, LockType lock );
     }

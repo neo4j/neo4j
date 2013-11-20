@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 
 public interface CacheLoader<T>

@@ -42,7 +42,7 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -57,7 +57,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;

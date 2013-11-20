@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.core;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;

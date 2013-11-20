@@ -22,7 +22,9 @@ package org.neo4j.kernel.api;
 import org.mockito.Mockito;
 
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 

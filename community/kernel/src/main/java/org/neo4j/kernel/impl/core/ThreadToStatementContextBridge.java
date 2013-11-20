@@ -17,20 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.coreapi;
+package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * This is meant to serve as the bridge that makes the Beans API tie transactions to threads. The Beans API
- * will use this to get the appropriate {@link StatementOperations} when it performs operations.
+ * will use this to get the appropriate {@link Statement} when it performs operations.
  */
 public class ThreadToStatementContextBridge extends LifecycleAdapter implements Provider<Statement>
 {

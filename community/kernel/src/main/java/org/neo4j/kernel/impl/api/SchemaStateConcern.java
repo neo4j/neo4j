@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 
 public class SchemaStateConcern implements SchemaStateOperations

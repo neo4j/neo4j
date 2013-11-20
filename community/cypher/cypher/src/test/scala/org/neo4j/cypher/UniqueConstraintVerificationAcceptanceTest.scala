@@ -25,7 +25,7 @@ import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
-import org.neo4j.kernel.api.OperationsFacade
+import org.neo4j.kernel.impl.api.OperationsFacade
 
 class UniqueConstraintVerificationAcceptanceTest
   extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {

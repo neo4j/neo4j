@@ -24,14 +24,14 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.api.StatementOperationParts;
-import org.neo4j.kernel.api.Transactor;
+import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;

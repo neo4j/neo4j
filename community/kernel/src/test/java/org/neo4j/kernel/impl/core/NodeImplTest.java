@@ -30,7 +30,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 

@@ -43,7 +43,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;

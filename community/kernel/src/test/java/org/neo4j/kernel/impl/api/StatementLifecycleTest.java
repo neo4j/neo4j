@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class StatementLifecycleTest
 {

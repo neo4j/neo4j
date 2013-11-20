@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
@@ -38,7 +37,7 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 

@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.index.IndexingService;

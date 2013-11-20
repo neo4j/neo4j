@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
 interface SchemaWrite
 {

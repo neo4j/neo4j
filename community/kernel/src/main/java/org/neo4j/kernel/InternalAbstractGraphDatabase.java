@@ -59,10 +59,10 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.ReadOnlyDatabaseKernelException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.Transactor;
+import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -84,7 +84,7 @@ import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
@@ -116,7 +116,7 @@ import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
@@ -845,11 +845,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 // TODO This should be wrapped as well
                 return InternalAbstractGraphDatabase.this;
-            }
-
-            @Override
-            public CleanupService getCleanupService() {
-                return cleanupService;
             }
 
             @Override

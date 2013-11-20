@@ -41,7 +41,6 @@ import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;

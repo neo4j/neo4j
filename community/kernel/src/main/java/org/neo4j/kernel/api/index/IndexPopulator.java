@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.api.UpdateMode;
+import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 
 /**

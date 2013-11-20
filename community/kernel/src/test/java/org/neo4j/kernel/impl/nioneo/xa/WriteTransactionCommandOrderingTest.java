@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;

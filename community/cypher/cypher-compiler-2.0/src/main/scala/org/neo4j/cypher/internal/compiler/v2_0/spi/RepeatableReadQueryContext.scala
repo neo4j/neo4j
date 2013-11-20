@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.spi
 
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Direction, Node}
-import org.neo4j.kernel.impl.api.index.IndexDescriptor
+import org.neo4j.kernel.api.index.IndexDescriptor
 
 
 trait Locker {

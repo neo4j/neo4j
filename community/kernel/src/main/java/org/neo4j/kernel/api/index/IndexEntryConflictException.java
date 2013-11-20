@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 

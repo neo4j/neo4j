@@ -31,7 +31,7 @@ import org.hamcrest.Matchers._
 import org.neo4j.cypher.PlanDescription
 import org.neo4j.cypher.internal.compiler.v2_0.commands.SchemaIndex
 import org.neo4j.cypher.internal.compiler.v2_0.commands.NodeByIndex
-import org.neo4j.kernel.impl.api.index.IndexDescriptor
+import org.neo4j.kernel.api.index.IndexDescriptor
 
 
 class StartPipePlanDescriptionTest extends MockitoSugar {

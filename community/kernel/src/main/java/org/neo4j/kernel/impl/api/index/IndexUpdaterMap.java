@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.nioneo.store.MultipleUnderlyingStorageExceptions;

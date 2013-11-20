@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 
 public interface Statement extends Resource
 {

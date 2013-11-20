@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
-
+import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class DataStatementArgumentVerificationTest
 {

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.spi
 import org.neo4j.cypher.QueryStatistics
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.junit.{Before, Test}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.Assertions
@@ -30,6 +29,7 @@ import org.mockito.Mockito.when
 import org.mockito.Matchers
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
+import org.neo4j.kernel.api.index.IndexDescriptor
 
 class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   @Test def create_node() {

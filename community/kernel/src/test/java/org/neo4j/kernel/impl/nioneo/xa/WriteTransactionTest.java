@@ -40,7 +40,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;

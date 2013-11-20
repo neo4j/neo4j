@@ -17,11 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -31,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -38,6 +43,7 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
@@ -48,11 +54,9 @@ import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.core.Token;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 

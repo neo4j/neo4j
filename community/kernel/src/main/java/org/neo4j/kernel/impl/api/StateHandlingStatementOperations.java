@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -50,7 +49,7 @@ import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;

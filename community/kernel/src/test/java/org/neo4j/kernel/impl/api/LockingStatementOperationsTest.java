@@ -25,12 +25,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.transaction.LockType;

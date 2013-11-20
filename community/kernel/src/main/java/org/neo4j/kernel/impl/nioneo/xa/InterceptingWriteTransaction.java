@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.util.List;
 
-import org.neo4j.kernel.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;

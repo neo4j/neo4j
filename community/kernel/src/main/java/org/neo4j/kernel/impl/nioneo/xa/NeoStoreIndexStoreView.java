@@ -28,7 +28,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;

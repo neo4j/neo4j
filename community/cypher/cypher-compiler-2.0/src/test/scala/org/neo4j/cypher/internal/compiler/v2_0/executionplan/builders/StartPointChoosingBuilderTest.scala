@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.pipes.FakePipe
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.NodeType
 import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_0.commands._
+import org.neo4j.kernel.api.index.IndexDescriptor
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def builder = new StartPointChoosingBuilder

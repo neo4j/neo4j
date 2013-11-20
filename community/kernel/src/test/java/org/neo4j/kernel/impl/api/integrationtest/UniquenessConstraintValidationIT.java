@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;

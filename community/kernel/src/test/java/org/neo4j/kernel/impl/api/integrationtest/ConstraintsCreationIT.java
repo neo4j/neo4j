@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;

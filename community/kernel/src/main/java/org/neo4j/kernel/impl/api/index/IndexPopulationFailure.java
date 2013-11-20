@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public abstract class IndexPopulationFailure
 {

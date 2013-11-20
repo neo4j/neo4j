@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.spi.v2_0
 
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.api.index.InternalIndexState
-import org.neo4j.kernel.impl.api.index.IndexDescriptor
+import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.Statement

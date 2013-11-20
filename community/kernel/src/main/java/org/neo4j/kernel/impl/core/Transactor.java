@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.core;
 
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
@@ -29,6 +29,8 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.BeginTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;

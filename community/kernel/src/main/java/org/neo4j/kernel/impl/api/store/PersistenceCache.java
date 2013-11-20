@@ -25,7 +25,7 @@ import java.util.Iterator;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;

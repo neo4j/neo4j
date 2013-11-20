@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
 /**
  * Interface for managing the schema of your graph database. This currently includes

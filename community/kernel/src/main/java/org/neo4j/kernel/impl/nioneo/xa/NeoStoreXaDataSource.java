@@ -43,7 +43,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.operations.TokenNameLookup;

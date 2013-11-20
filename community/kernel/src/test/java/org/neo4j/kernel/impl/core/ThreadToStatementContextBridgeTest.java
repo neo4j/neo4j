@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class ThreadToStatementContextBridgeTest
 {

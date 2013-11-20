@@ -25,7 +25,7 @@ import org.neo4j.kernel.{GraphDatabaseAPI}
 import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 trait GraphIcing {
 

@@ -36,8 +36,8 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.SchemaIndex
 import org.neo4j.cypher.internal.compiler.v2_0.commands.AllNodes
 import org.neo4j.cypher.internal.compiler.v2_0.commands.Equals
 import org.neo4j.cypher.internal.compiler.v2_0.commands.NodeByIndexQuery
-import org.neo4j.kernel.impl.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType.PropertyKey
+import org.neo4j.kernel.api.index.IndexDescriptor
 
 class StartPointBuilderTest extends BuilderTest with MockitoSugar {
 

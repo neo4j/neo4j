@@ -29,7 +29,7 @@ import java.util.Set;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.UpdateMode;
+import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;

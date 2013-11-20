@@ -26,7 +26,7 @@ package org.neo4j.kernel.api;
  * 
  * Changes to the graph (i.e. write operations) are performed via a
  * {@link #newTransaction() transaction context} where changes done
- * inside the transaction are visible in read operations for {@link StatementOperations statements}
+ * inside the transaction are visible in read operations for {@link Statement statements}
  * executed within that transaction context.
  */
 public interface KernelAPI

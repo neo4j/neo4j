@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.Transactor;
+import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 
 import static java.util.Collections.singleton;

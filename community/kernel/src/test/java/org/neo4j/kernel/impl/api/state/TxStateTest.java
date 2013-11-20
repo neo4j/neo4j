@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import static org.hamcrest.core.IsEqual.equalTo;
