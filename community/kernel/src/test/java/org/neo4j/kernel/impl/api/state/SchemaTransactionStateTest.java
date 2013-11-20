@@ -31,27 +31,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
+import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -200,7 +192,8 @@ public class SchemaTransactionStateTest
     private final int labelId1 = 10, labelId2 = 12, key1 = 45, key2 = 46;
     private final long nodeId = 20;
 
-    private StatementOperations store;
+    private StoreReadLayer store;
+    private PersistenceManager persistenceManager;
     private OldTxStateBridge oldTxState;
     private TxState txState;
     private StateHandlingStatementOperations txContext;
@@ -215,22 +208,15 @@ public class SchemaTransactionStateTest
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
 
-        store = mock( StatementOperations.class );
+        store = mock( StoreReadLayer.class );
         when( store.indexesGetForLabel( state, labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.indexesGetForLabel( state, labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll( state ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexCreate( eq( state ), anyInt(), anyInt() ) ).thenAnswer( new Answer<IndexDescriptor>()
-        {
-            @Override
-            public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new IndexDescriptor((Integer) invocation.getArguments()[0],
-                        (Integer) invocation.getArguments()[1] );
-            }
-        } );
 
-        txContext = new StateHandlingStatementOperations( store, store, mock( AuxiliaryStoreOperations.class ),
-                mock( ConstraintIndexCreator.class ) );
+        persistenceManager = mock(PersistenceManager.class);
+
+        txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
+                mock( ConstraintIndexCreator.class ), persistenceManager);
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
@@ -272,8 +258,6 @@ public class SchemaTransactionStateTest
             for ( int label : nodeLabels.labelIds )
             {
                 when( store.nodeHasLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
-                when( store.nodeRemoveLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
-                when( store.nodeAddLabel( state, nodeLabels.nodeId, label ) ).thenReturn( false );
 
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )

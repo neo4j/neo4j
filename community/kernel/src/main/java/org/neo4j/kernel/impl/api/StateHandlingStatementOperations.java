@@ -28,25 +28,34 @@ import org.neo4j.kernel.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.EntityReadOperations;
 import org.neo4j.kernel.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.api.operations.KeyReadOperations;
+import org.neo4j.kernel.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
@@ -62,38 +71,39 @@ import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 public class StateHandlingStatementOperations implements
+        KeyReadOperations,
+        KeyWriteOperations,
         EntityReadOperations,
         EntityWriteOperations,
         SchemaReadOperations,
         SchemaWriteOperations
 {
-    private final EntityReadOperations entityReadDelegate;
-    private final SchemaReadOperations schemaReadDelegate;
-    private final AuxiliaryStoreOperations auxStoreOps;
+    private final StoreReadLayer storeLayer;
+    private final LegacyPropertyTrackers legacyPropertyTrackers;
     private final ConstraintIndexCreator constraintIndexCreator;
+    private final PersistenceManager persistenceManager;
 
     public StateHandlingStatementOperations(
-            EntityReadOperations entityReadDelegate,
-            SchemaReadOperations schemaReadDelegate,
-            AuxiliaryStoreOperations auxStoreOps, ConstraintIndexCreator constraintIndexCreator )
+            StoreReadLayer storeLayer, LegacyPropertyTrackers propertyTrackers,
+            ConstraintIndexCreator constraintIndexCreator, PersistenceManager writeTransactionProxy )
     {
-        this.entityReadDelegate = entityReadDelegate;
-        this.schemaReadDelegate = schemaReadDelegate;
-        this.auxStoreOps = auxStoreOps;
+        this.storeLayer = storeLayer;
+        this.legacyPropertyTrackers = propertyTrackers;
         this.constraintIndexCreator = constraintIndexCreator;
+        this.persistenceManager = writeTransactionProxy;
     }
 
     @Override
     public void nodeDelete( KernelStatement state, long nodeId )
     {
-        auxStoreOps.nodeDelete( nodeId );
+        legacyPropertyTrackers.nodeDelete( nodeId );
         state.txState().nodeDoDelete( nodeId );
     }
 
     @Override
     public void relationshipDelete( KernelStatement state, long relationshipId )
     {
-        auxStoreOps.relationshipDelete( relationshipId );
+        legacyPropertyTrackers.relationshipDelete( relationshipId );
         state.txState().relationshipDoDelete( relationshipId );
     }
 
@@ -120,7 +130,7 @@ public class StateHandlingStatementOperations implements
             }
         }
 
-        return entityReadDelegate.nodeHasLabel( state, nodeId, labelId );
+        return storeLayer.nodeHasLabel( state, nodeId, labelId );
     }
 
     @Override
@@ -140,10 +150,10 @@ public class StateHandlingStatementOperations implements
             }
 
             return state.txState().nodeStateLabelDiffSets( nodeId ).applyPrimitiveIntIterator(
-                    entityReadDelegate.nodeGetLabels( state, nodeId ) );
+                    storeLayer.nodeGetLabels( state, nodeId ) );
         }
 
-        return entityReadDelegate.nodeGetLabels( state, nodeId );
+        return storeLayer.nodeGetLabels( state, nodeId );
     }
 
     @Override
@@ -180,11 +190,11 @@ public class StateHandlingStatementOperations implements
         {
             PrimitiveLongIterator wLabelChanges =
                     state.txState().nodesWithLabelChanged( labelId ).applyPrimitiveLongIterator(
-                            entityReadDelegate.nodesGetForLabel( state, labelId ) );
+                            storeLayer.nodesGetForLabel( state, labelId ) );
             return state.txState().nodesDeletedInTx().applyPrimitiveLongIterator( wLabelChanges );
         }
 
-        return entityReadDelegate.nodesGetForLabel( state, labelId );
+        return storeLayer.nodesGetForLabel( state, labelId );
     }
 
     @Override
@@ -216,7 +226,7 @@ public class StateHandlingStatementOperations implements
         {
             if ( !state.txState().constraintDoUnRemove( constraint ) )
             {
-                for ( Iterator<UniquenessConstraint> it = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
+                for ( Iterator<UniquenessConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey(
                         state, labelId, propertyKeyId ); it.hasNext(); )
                 {
                     if ( it.next().equals( labelId, propertyKeyId ) )
@@ -240,20 +250,20 @@ public class StateHandlingStatementOperations implements
     public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
             int labelId, int propertyKeyId )
     {
-        return applyConstraintsDiff( state, schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
+        return applyConstraintsDiff( state, storeLayer.constraintsGetForLabelAndPropertyKey(
                 state, labelId, propertyKeyId ), labelId, propertyKeyId );
     }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
     {
-        return applyConstraintsDiff( state, schemaReadDelegate.constraintsGetForLabel( state, labelId ), labelId );
+        return applyConstraintsDiff( state, storeLayer.constraintsGetForLabel( state, labelId ), labelId );
     }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state )
     {
-        return applyConstraintsDiff( state, schemaReadDelegate.constraintsGetAll( state ) );
+        return applyConstraintsDiff( state, storeLayer.constraintsGetAll( state ) );
     }
 
     private Iterator<UniquenessConstraint> applyConstraintsDiff( KernelStatement state,
@@ -315,7 +325,7 @@ public class StateHandlingStatementOperations implements
         Iterable<IndexDescriptor> committedRules;
         try
         {
-            committedRules = option( schemaReadDelegate.indexesGetForLabelAndPropertyKey( state, labelId,
+            committedRules = option( storeLayer.indexesGetForLabelAndPropertyKey( state, labelId,
                     propertyKey ) );
         }
         catch ( SchemaRuleNotFoundException e )
@@ -354,7 +364,7 @@ public class StateHandlingStatementOperations implements
             }
         }
 
-        return schemaReadDelegate.indexGetState( state, descriptor );
+        return storeLayer.indexGetState( state, descriptor );
     }
 
     private boolean checkIndexState( IndexDescriptor indexRule, DiffSets<IndexDescriptor> diffSet )
@@ -380,10 +390,10 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().indexDiffSetsByLabel( labelId )
-                    .apply( schemaReadDelegate.indexesGetForLabel( state, labelId ) );
+                    .apply( storeLayer.indexesGetForLabel( state, labelId ) );
         }
 
-        return schemaReadDelegate.indexesGetForLabel( state, labelId );
+        return storeLayer.indexesGetForLabel( state, labelId );
     }
 
     @Override
@@ -391,10 +401,10 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().indexChanges().apply( schemaReadDelegate.indexesGetAll( state ) );
+            return state.txState().indexChanges().apply( storeLayer.indexesGetAll( state ) );
         }
 
-        return schemaReadDelegate.indexesGetAll( state );
+        return storeLayer.indexesGetAll( state );
     }
 
     @Override
@@ -403,10 +413,10 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintIndexDiffSetsByLabel( labelId )
-                    .apply( schemaReadDelegate.uniqueIndexesGetForLabel( state, labelId ) );
+                    .apply( storeLayer.uniqueIndexesGetForLabel( state, labelId ) );
         }
 
-        return schemaReadDelegate.uniqueIndexesGetForLabel( state, labelId );
+        return storeLayer.uniqueIndexesGetForLabel( state, labelId );
     }
 
     @Override
@@ -415,10 +425,10 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintIndexChanges()
-                    .apply( schemaReadDelegate.uniqueIndexesGetAll( state ) );
+                    .apply( storeLayer.uniqueIndexesGetAll( state ) );
         }
 
-        return schemaReadDelegate.uniqueIndexesGetAll( state );
+        return storeLayer.uniqueIndexesGetAll( state );
     }
 
     @Override
@@ -430,7 +440,7 @@ public class StateHandlingStatementOperations implements
         {
             TxState txState = state.txState();
             DiffSets<Long> diff = nodesWithLabelAndPropertyDiffSet( state, index, value );
-            long indexNode = entityReadDelegate.nodeGetUniqueFromIndexLookup( state, index, value );
+            long indexNode = storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
 
             if ( diff.isEmpty() )
             {
@@ -468,7 +478,7 @@ public class StateHandlingStatementOperations implements
             }
         }
 
-        return entityReadDelegate.nodeGetUniqueFromIndexLookup( state, index, value );
+        return storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
     }
 
     @Override
@@ -481,12 +491,12 @@ public class StateHandlingStatementOperations implements
             DiffSets<Long> diff = nodesWithLabelAndPropertyDiffSet( state, index, value );
 
             // Apply to actual index lookup
-            PrimitiveLongIterator committed = entityReadDelegate.nodesGetFromIndexLookup( state, index, value );
+            PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexLookup( state, index, value );
             return
                 txState.nodesDeletedInTx().applyPrimitiveLongIterator( diff.applyPrimitiveLongIterator( committed ) );
         }
 
-        return entityReadDelegate.nodesGetFromIndexLookup( state, index, value );
+        return storeLayer.nodesGetFromIndexLookup( state, index, value );
     }
 
     @Override
@@ -496,11 +506,13 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = nodeGetProperty( state, nodeId, property.propertyKeyId() );
         if ( !existingProperty.isDefined() )
         {
-            auxStoreOps.nodeAddStoreProperty( nodeId, property );
+            legacyPropertyTrackers.nodeAddStoreProperty( nodeId, property );
+            persistenceManager.nodeAddProperty( nodeId, property.propertyKeyId(), property.value() );
         }
         else
         {
-            auxStoreOps.nodeChangeStoreProperty( nodeId, (DefinedProperty) existingProperty, property );
+            legacyPropertyTrackers.nodeChangeStoreProperty( nodeId, (DefinedProperty) existingProperty, property );
+            persistenceManager.nodeChangeProperty( nodeId, property.propertyKeyId(), property.value() );
         }
         state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
         return existingProperty;
@@ -513,11 +525,14 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = relationshipGetProperty( state, relationshipId, property.propertyKeyId() );
         if ( !existingProperty.isDefined() )
         {
-            auxStoreOps.relationshipAddStoreProperty( relationshipId, property );
+            legacyPropertyTrackers.relationshipAddStoreProperty( relationshipId, property );
+            persistenceManager.relAddProperty( relationshipId, property.propertyKeyId(), property.value() );
         }
         else
         {
-            auxStoreOps.relationshipChangeStoreProperty( relationshipId, (DefinedProperty) existingProperty, property );
+            legacyPropertyTrackers.relationshipChangeStoreProperty( relationshipId, (DefinedProperty)
+                    existingProperty, property );
+            persistenceManager.relChangeProperty( relationshipId, property.propertyKeyId(), property.value() );
         }
         state.txState().relationshipDoReplaceProperty( relationshipId, existingProperty, property );
         return existingProperty;
@@ -529,11 +544,11 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = graphGetProperty( state, property.propertyKeyId() );
         if ( !existingProperty.isDefined() )
         {
-            auxStoreOps.graphAddStoreProperty( property );
+            persistenceManager.graphAddProperty( property.propertyKeyId(), property.value() );
         }
         else
         {
-            auxStoreOps.graphChangeStoreProperty( (DefinedProperty) existingProperty, property );
+            persistenceManager.graphChangeProperty( property.propertyKeyId(), property.value() );
         }
         state.txState().graphDoReplaceProperty( existingProperty, property );
         return existingProperty;
@@ -546,7 +561,8 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = nodeGetProperty( state, nodeId, propertyKeyId );
         if ( existingProperty.isDefined() )
         {
-            auxStoreOps.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
+            legacyPropertyTrackers.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
+            persistenceManager.nodeRemoveProperty( nodeId, propertyKeyId );
         }
         state.txState().nodeDoRemoveProperty( nodeId, existingProperty );
         return existingProperty;
@@ -559,7 +575,9 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = relationshipGetProperty( state, relationshipId, propertyKeyId );
         if ( existingProperty.isDefined() )
         {
-            auxStoreOps.relationshipRemoveStoreProperty( relationshipId, (DefinedProperty) existingProperty );
+            legacyPropertyTrackers.relationshipRemoveStoreProperty( relationshipId, (DefinedProperty)
+                    existingProperty );
+            persistenceManager.relRemoveProperty( relationshipId, propertyKeyId );
         }
         state.txState().relationshipDoRemoveProperty( relationshipId, existingProperty );
         return existingProperty;
@@ -571,7 +589,7 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = graphGetProperty( state, propertyKeyId );
         if ( existingProperty.isDefined() )
         {
-            auxStoreOps.graphRemoveStoreProperty( (DefinedProperty) existingProperty );
+            persistenceManager.graphRemoveProperty( propertyKeyId );
         }
         state.txState().graphDoRemoveProperty( existingProperty );
         return existingProperty;
@@ -585,7 +603,7 @@ public class StateHandlingStatementOperations implements
             return new PropertyKeyIdIterator( nodeGetAllProperties( state, nodeId ) );
         }
 
-        return entityReadDelegate.nodeGetPropertyKeys( state, nodeId );
+        return storeLayer.nodeGetPropertyKeys( state, nodeId );
     }
 
     @Override
@@ -606,7 +624,7 @@ public class StateHandlingStatementOperations implements
             return Property.noNodeProperty( nodeId, propertyKeyId );
         }
 
-        return entityReadDelegate.nodeGetProperty( state, nodeId, propertyKeyId );
+        return storeLayer.nodeGetProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
@@ -626,10 +644,10 @@ public class StateHandlingStatementOperations implements
                 throw new IllegalStateException( "Node " + nodeId + " has been deleted" );
             }
             return state.txState().nodePropertyDiffSets( nodeId )
-                    .apply( entityReadDelegate.nodeGetAllProperties( state, nodeId ) );
+                    .apply( storeLayer.nodeGetAllProperties( state, nodeId ) );
         }
 
-        return entityReadDelegate.nodeGetAllProperties( state, nodeId );
+        return storeLayer.nodeGetAllProperties( state, nodeId );
     }
 
     @Override
@@ -641,7 +659,7 @@ public class StateHandlingStatementOperations implements
             return new PropertyKeyIdIterator( relationshipGetAllProperties( state, relationshipId ) );
         }
 
-        return entityReadDelegate.relationshipGetPropertyKeys( state, relationshipId );
+        return storeLayer.relationshipGetPropertyKeys( state, relationshipId );
     }
 
     @Override
@@ -661,7 +679,7 @@ public class StateHandlingStatementOperations implements
             }
             return Property.noRelationshipProperty( relationshipId, propertyKeyId );
         }
-        return entityReadDelegate.relationshipGetProperty( state, relationshipId, propertyKeyId );
+        return storeLayer.relationshipGetProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override
@@ -681,11 +699,11 @@ public class StateHandlingStatementOperations implements
                 throw new IllegalStateException( "Relationship " + relationshipId + " has been deleted" );
             }
             return state.txState().relationshipPropertyDiffSets( relationshipId )
-                    .apply( entityReadDelegate.relationshipGetAllProperties( state, relationshipId ) );
+                    .apply( storeLayer.relationshipGetAllProperties( state, relationshipId ) );
         }
         else
         {
-            return entityReadDelegate.relationshipGetAllProperties( state, relationshipId );
+            return storeLayer.relationshipGetAllProperties( state, relationshipId );
         }
     }
 
@@ -697,7 +715,7 @@ public class StateHandlingStatementOperations implements
             return new PropertyKeyIdIterator( graphGetAllProperties( state ) );
         }
 
-        return entityReadDelegate.graphGetPropertyKeys( state );
+        return storeLayer.graphGetPropertyKeys( state );
     }
 
     @Override
@@ -720,10 +738,10 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().graphPropertyDiffSets().apply( entityReadDelegate.graphGetAllProperties( state ) );
+            return state.txState().graphPropertyDiffSets().apply( storeLayer.graphGetAllProperties( state ) );
         }
 
-        return entityReadDelegate.graphGetAllProperties( state );
+        return storeLayer.graphGetAllProperties( state );
     }
 
     private DiffSets<Long> nodesWithLabelAndPropertyDiffSet( KernelStatement state, IndexDescriptor index, Object value )
@@ -812,26 +830,96 @@ public class StateHandlingStatementOperations implements
         }
     }
 
-    // === TODO Below is unnecessary delegate methods
+    //
+    // Methods that delegate directly to storage
+    //
 
     @Override
     public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, index );
+        return storeLayer.indexGetOwningUniquenessConstraintId( state, index );
     }
 
     @Override
     public long indexGetCommittedId( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        return schemaReadDelegate.indexGetCommittedId( state, index );
+        return storeLayer.indexGetCommittedId( state, index );
     }
 
     @Override
     public String indexGetFailure( Statement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return schemaReadDelegate.indexGetFailure( state, descriptor );
+        return storeLayer.indexGetFailure( state, descriptor );
+    }
+
+    @Override
+    public int labelGetForName( Statement state, String labelName )
+    {
+        return storeLayer.labelGetForName( labelName );
+    }
+
+    @Override
+    public String labelGetName( Statement state, int labelId ) throws LabelNotFoundKernelException
+    {
+        return storeLayer.labelGetName( labelId );
+    }
+
+    @Override
+    public int propertyKeyGetForName( Statement state, String propertyKeyName )
+    {
+        return storeLayer.propertyKeyGetForName( propertyKeyName );
+    }
+
+    @Override
+    public String propertyKeyGetName( Statement state, int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
+    {
+        return storeLayer.propertyKeyGetName( propertyKeyId );
+    }
+
+    @Override
+    public Iterator<Token> propertyKeyGetAllTokens( Statement state )
+    {
+        return storeLayer.propertyKeyGetAllTokens();
+    }
+
+    @Override
+    public Iterator<Token> labelsGetAllTokens( Statement state )
+    {
+        return storeLayer.labelsGetAllTokens();
+    }
+
+    @Override
+    public int relationshipTypeGetForName( Statement state, String relationshipTypeName )
+    {
+        return storeLayer.relationshipTypeGetForName( relationshipTypeName );
+    }
+
+    @Override
+    public String relationshipTypeGetName( Statement state, int relationshipTypeId ) throws
+            RelationshipTypeIdNotFoundKernelException
+    {
+        return storeLayer.relationshipTypeGetName( relationshipTypeId );
+    }
+
+    @Override
+    public int labelGetOrCreateForName( Statement state, String labelName ) throws IllegalTokenNameException,
+            TooManyLabelsException
+    {
+        return storeLayer.labelGetOrCreateForName( labelName );
+    }
+
+    @Override
+    public int propertyKeyGetOrCreateForName( Statement state, String propertyKeyName ) throws IllegalTokenNameException
+    {
+        return storeLayer.propertyKeyGetOrCreateForName( propertyKeyName );
+    }
+
+    @Override
+    public int relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName ) throws IllegalTokenNameException
+    {
+        return storeLayer.relationshipTypeGetOrCreateForName( relationshipTypeName );
     }
 }

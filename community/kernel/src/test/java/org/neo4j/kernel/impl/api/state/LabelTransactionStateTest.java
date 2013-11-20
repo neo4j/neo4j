@@ -28,26 +28,17 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
+import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveIntIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
@@ -172,8 +163,6 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         commitNoLabels();
-        when( store.nodeAddLabel( state, nodeId, labelId1 ) ).thenReturn( true );
-
 
         // WHEN
         boolean added = txContext.nodeAddLabel( state, nodeId, labelId1 );
@@ -266,7 +255,7 @@ public class LabelTransactionStateTest
     private final int labelId1 = 10, labelId2 = 12;
     private final long nodeId = 20;
 
-    private StatementOperations store;
+    private StoreReadLayer store;
     private OldTxStateBridge oldTxState;
     private TxState txState;
     private StateHandlingStatementOperations txContext;
@@ -276,30 +265,20 @@ public class LabelTransactionStateTest
     @Before
     public void before() throws Exception
     {
-        store = mock( StatementOperations.class );
+        store = mock( StoreReadLayer.class );
         when( store.indexesGetForLabel( state, labelId1 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexCreate( eq( state ), anyInt(), anyInt() ) ).thenAnswer( new Answer<IndexDescriptor>()
-        {
-            @Override
-            public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new IndexDescriptor(
-                        (Integer) invocation.getArguments()[0],
-                        (Integer) invocation.getArguments()[1] );
-            }
-        } );
 
         oldTxState = mock( OldTxStateBridge.class );
 
         txState = new TxStateImpl( oldTxState, mock( PersistenceManager.class ),
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
-        txContext = new StateHandlingStatementOperations( store, store, mock( AuxiliaryStoreOperations.class ),
-                mock( ConstraintIndexCreator.class ) );
+        txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
+                mock( ConstraintIndexCreator.class ), mock(PersistenceManager.class) );
     }
 
     private static class Labels
@@ -329,8 +308,6 @@ public class LabelTransactionStateTest
             for ( int label : nodeLabels.labelIds )
             {
                 when( store.nodeHasLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
-                when( store.nodeRemoveLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
-                when( store.nodeAddLabel( state, nodeLabels.nodeId, label ) ).thenReturn( false );
 
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )

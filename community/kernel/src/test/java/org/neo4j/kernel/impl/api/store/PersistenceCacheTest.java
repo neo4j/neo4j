@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.KernelStatement;
+import org.neo4j.kernel.impl.api.store.CacheLoader;
+import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;

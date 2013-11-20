@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.store;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,10 +29,14 @@ import java.util.Map;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.NestingIterable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 import static java.util.Collections.unmodifiableCollection;
+
 import static org.neo4j.helpers.collection.Iterables.filter;
 
 /**
@@ -50,6 +54,7 @@ public class SchemaCache
     private final Map<Long, SchemaRule> ruleByIdMap = new HashMap<>();
 
     private final Collection<UniquenessConstraint> constraints = new ArrayList<>();
+    private final Map<Integer, Map<Integer, CommittedIndexDescriptor>> indexDescriptors = new HashMap<>();
 
     public SchemaCache( Iterable<SchemaRule> initialRules )
     {
@@ -134,6 +139,44 @@ public class SchemaCache
         {
             constraints.add( ruleToConstraint( (UniquenessConstraintRule) rule ) );
         }
+        else if( rule instanceof IndexRule )
+        {
+            IndexRule indexRule = (IndexRule) rule;
+            Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( indexRule.getLabel() );
+            if ( byLabel == null )
+            {
+                indexDescriptors.put( indexRule.getLabel(), byLabel = new HashMap<>() );
+            }
+            byLabel.put( indexRule.getPropertyKey(), new CommittedIndexDescriptor( indexRule.getLabel(),
+                    indexRule.getPropertyKey(), indexRule.getId() ) );
+        }
+    }
+    
+    // We could have had this class extend IndexDescriptor instead. That way we could have gotten the id
+    // from an IndexDescriptor instance directly. The problem is that it would only work for index descriptors
+    // instantiated by a SchemaCache. Perhaps that is always the case. Anyways, doing it like that resulted
+    // in unit test failures regarding the schema cache, so this way (the wrapping way) is a more generic
+    // and stable way of doing it.
+    private static class CommittedIndexDescriptor
+    {
+        private final IndexDescriptor descriptor;
+        private final long id;
+
+        public CommittedIndexDescriptor( int labelId, int propertyKey, long id )
+        {
+            this.descriptor = new IndexDescriptor( labelId, propertyKey );
+            this.id = id;
+        }
+        
+        public IndexDescriptor getDescriptor()
+        {
+            return descriptor;
+        }
+        
+        public long getId()
+        {
+            return id;
+        }
     }
 
     public void removeSchemaRule( long id )
@@ -155,10 +198,50 @@ public class SchemaCache
         {
             constraints.remove( ruleToConstraint( (UniquenessConstraintRule)rule ) );
         }
+        else if( rule instanceof IndexRule )
+        {
+            IndexRule indexRule = (IndexRule) rule;
+            Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( indexRule.getLabel() );
+            byLabel.remove( indexRule.getPropertyKey() );
+            if ( byLabel.isEmpty() )
+            {
+                indexDescriptors.remove( indexRule.getLabel() );
+            }
+        }
+    }
+
+    public long indexId( IndexDescriptor index )
+    {
+        Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( index.getLabelId() );
+        if ( byLabel != null )
+        {
+            CommittedIndexDescriptor committed = byLabel.get( index.getPropertyKeyId() );
+            if ( committed != null )
+            {
+                return committed.getId();
+            }
+        }
+        throw new IllegalStateException( "Couldn't resolve index id for " + index +
+                " at this point. Schema rule not committed yet?" );
     }
 
     private UniquenessConstraint ruleToConstraint( UniquenessConstraintRule constraintRule )
     {
         return new UniquenessConstraint( constraintRule.getLabel(), constraintRule.getPropertyKey() );
+    }
+
+    public IndexDescriptor indexDescriptor( int labelId, int propertyKey )
+        throws SchemaRuleNotFoundException
+    {
+        Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( labelId );
+        if ( byLabel != null )
+        {
+            CommittedIndexDescriptor committed = byLabel.get( propertyKey );
+            if ( committed != null )
+            {
+                return committed.getDescriptor();
+            }
+        }
+        throw new SchemaRuleNotFoundException( labelId, propertyKey, "No such index found" );
     }
 }

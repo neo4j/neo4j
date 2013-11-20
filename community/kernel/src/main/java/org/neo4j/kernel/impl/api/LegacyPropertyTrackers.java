@@ -24,35 +24,33 @@ import java.util.List;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 
-public class LegacyAutoIndexAuxStoreOps implements AuxiliaryStoreOperations
+/**
+ * This exists to support the legacy auto indexing feature, and will be removed once that feature has been removed.
+ */
+public class LegacyPropertyTrackers
 {
-    private final AuxiliaryStoreOperations delegate;
     private final List<PropertyTracker<Node>> nodeTrackers;
     private final List<PropertyTracker<Relationship>> relationshipTrackers;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final EntityFactory entityFactory;
 
-    public LegacyAutoIndexAuxStoreOps( AuxiliaryStoreOperations delegate,
-            PropertyKeyTokenHolder propertyKeyTokenHolder,
-            List<PropertyTracker<Node>> nodeTrackers,
-            List<PropertyTracker<Relationship>> relationshipTrackers,
-            EntityFactory entityFactory )
+    public LegacyPropertyTrackers( PropertyKeyTokenHolder propertyKeyTokenHolder,
+                                   List<PropertyTracker<Node>> nodeTrackers,
+                                   List<PropertyTracker<Relationship>> relationshipTrackers,
+                                   EntityFactory entityFactory )
     {
-        this.delegate = delegate;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.nodeTrackers = nodeTrackers;
         this.relationshipTrackers = relationshipTrackers;
         this.entityFactory = entityFactory;
     }
 
-    @Override
     public void nodeAddStoreProperty( long nodeId, DefinedProperty property )
     {
         if ( !nodeTrackers.isEmpty() )
@@ -63,10 +61,8 @@ public class LegacyAutoIndexAuxStoreOps implements AuxiliaryStoreOperations
                 tracker.propertyAdded( node, propertyKeyName( property ), property.value() );
             }
         }
-        delegate.nodeAddStoreProperty( nodeId, property );
     }
 
-    @Override
     public void nodeChangeStoreProperty( long nodeId, DefinedProperty previousProperty, DefinedProperty property )
     {
         if ( !nodeTrackers.isEmpty() )
@@ -78,10 +74,8 @@ public class LegacyAutoIndexAuxStoreOps implements AuxiliaryStoreOperations
                         property.value( null ) );
             }
         }
-        delegate.nodeChangeStoreProperty( nodeId, previousProperty, property );
     }
 
-    @Override
     public void relationshipAddStoreProperty( long relationshipId, DefinedProperty property )
     {
         if ( !relationshipTrackers.isEmpty() )
@@ -92,10 +86,8 @@ public class LegacyAutoIndexAuxStoreOps implements AuxiliaryStoreOperations
                 tracker.propertyAdded( relationship, propertyKeyName( property ), property.value() );
             }
         }
-        delegate.relationshipAddStoreProperty( relationshipId, property );
     }
 
-    @Override
     public void relationshipChangeStoreProperty( long relationshipId, DefinedProperty previousProperty, DefinedProperty property )
     {
         if ( !relationshipTrackers.isEmpty() )
@@ -107,10 +99,8 @@ public class LegacyAutoIndexAuxStoreOps implements AuxiliaryStoreOperations
                         previousProperty.value( null ), property.value( null ) );
             }
         }
-        delegate.relationshipChangeStoreProperty( relationshipId, previousProperty, property );
     }
 
-    @Override
     public void nodeRemoveStoreProperty( long nodeId, DefinedProperty property )
     {
         if ( !nodeTrackers.isEmpty() )
@@ -121,10 +111,8 @@ public class LegacyAutoIndexAuxStoreOps implements AuxiliaryStoreOperations
                 tracker.propertyRemoved( node, propertyKeyName( property ), property.value() );
             }
         }
-        delegate.nodeRemoveStoreProperty( nodeId, property );
     }
 
-    @Override
     public void relationshipRemoveStoreProperty( long relationshipId, DefinedProperty property )
     {
         if ( !relationshipTrackers.isEmpty() )
@@ -135,25 +123,6 @@ public class LegacyAutoIndexAuxStoreOps implements AuxiliaryStoreOperations
                 tracker.propertyRemoved( relationship, propertyKeyName( property ), property.value() );
             }
         }
-        delegate.relationshipRemoveStoreProperty( relationshipId, property );
-    }
-
-    @Override
-    public void graphAddStoreProperty( DefinedProperty property )
-    {
-        delegate.graphAddStoreProperty( property );
-    }
-
-    @Override
-    public void graphChangeStoreProperty( DefinedProperty previousProperty, DefinedProperty property )
-    {
-        delegate.graphChangeStoreProperty( previousProperty, property );
-    }
-
-    @Override
-    public void graphRemoveStoreProperty( DefinedProperty property )
-    {
-        delegate.graphRemoveStoreProperty( property );
     }
 
     private String propertyKeyName( Property property )
@@ -168,7 +137,6 @@ public class LegacyAutoIndexAuxStoreOps implements AuxiliaryStoreOperations
         }
     }
     
-    @Override
     public void nodeDelete( long nodeId )
     {
         if ( !nodeTrackers.isEmpty() )
@@ -186,8 +154,7 @@ public class LegacyAutoIndexAuxStoreOps implements AuxiliaryStoreOperations
             }
         }
     }
-    
-    @Override
+
     public void relationshipDelete( long relationshipId )
     {
         if ( !relationshipTrackers.isEmpty() )

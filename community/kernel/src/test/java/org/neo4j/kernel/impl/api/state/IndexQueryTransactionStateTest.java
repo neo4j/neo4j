@@ -23,27 +23,24 @@ import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.api.StatementOperations;
-import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -360,7 +357,7 @@ public class IndexQueryTransactionStateTest
 
     // exists
 
-    private StatementOperations store;
+    private StoreReadLayer store;
     private OldTxStateBridge oldTxState;
     private StateHandlingStatementOperations txContext;
     private KernelStatement state;
@@ -369,30 +366,20 @@ public class IndexQueryTransactionStateTest
     public void before() throws Exception
     {
         int labelId1 = 10, labelId2 = 12;
-        store = mock( StatementOperations.class );
+        store = mock( StoreReadLayer.class );
         when( store.indexesGetForLabel( state, labelId1 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexCreate( eq( state ), anyInt(), anyInt() ) ).thenAnswer( new Answer<IndexDescriptor>()
-        {
-            @Override
-            public IndexDescriptor answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new IndexDescriptor(
-                        (Integer) invocation.getArguments()[0],
-                        (Integer) invocation.getArguments()[1] );
-            }
-        } );
 
         oldTxState = mock( OldTxStateBridge.class );
 
         TxState txState = new TxStateImpl( oldTxState, mock( PersistenceManager.class ),
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
-        txContext = new StateHandlingStatementOperations( store, store, mock( AuxiliaryStoreOperations.class ),
-                mock( ConstraintIndexCreator.class ) );
+        txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
+                mock( ConstraintIndexCreator.class ), mock(PersistenceManager.class) );
     }
 
     private void assertNoSuchNode( long node )

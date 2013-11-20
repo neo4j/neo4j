@@ -29,13 +29,17 @@ import org.neo4j.kernel.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.StatementOperationParts;
 import org.neo4j.kernel.api.Transactor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.store.CacheLayer;
+import org.neo4j.kernel.impl.api.store.DiskLayer;
+import org.neo4j.kernel.impl.api.store.PersistenceCache;
+import org.neo4j.kernel.impl.api.store.SchemaCache;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -72,7 +76,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  *
  * A read will, similarly, pass through {@link LockingStatementOperations}, which should (but does not currently) grab
  * read locks. It then reaches {@link StateHandlingStatementOperations}, which includes any changes that exist in the
- * current transaction, and then finally {@link StoreStatementOperations} will read the current committed state from
+ * current transaction, and then finally {@link org.neo4j.kernel.impl.api.store.DiskLayer} will read the current committed state from
  * the stores or caches.
  *
  * <h1>A story of JTA</h1>
@@ -126,6 +130,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final StatementOperationParts statementOperations;
 
     private final boolean readOnly;
+    private final LegacyPropertyTrackers legacyPropertyTrackers;
 
     private boolean isShutdown = false;
 
@@ -153,6 +158,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.labelScanStore = labelScanStore;
         this.nodeManager = nodeManager;
 
+        this.legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
+                nodeManager.getNodePropertyTrackers(),
+                nodeManager.getRelationshipPropertyTrackers(),
+                nodeManager );
         this.legacyKernelOperations = new DefaultLegacyKernelOperations( nodeManager );
         this.statementOperations = buildStatementOperations();
     }
@@ -231,38 +240,19 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     private StatementOperationParts buildStatementOperations()
     {
-        // Start off with the store layer.
-        StoreStatementOperations context = new StoreStatementOperations(
-                propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                new SchemaStorage( neoStore.getSchemaStore() ), neoStore,
-                persistenceManager, indexService );
-        StatementOperationParts parts = new StatementOperationParts(
-                context, context, context, context, context, null, null )
-                .additionalPart( AuxiliaryStoreOperations.class, context );
-
-        // + Caching
-        CachingStatementOperations cachingContext = new CachingStatementOperations(
-                parts.entityReadOperations(),
-                parts.schemaReadOperations(),
-                persistenceCache, schemaCache );
-        parts = parts.override( null, null, cachingContext, null, cachingContext, null, null );
-
-        // + Transaction-local state awareness
-        AuxiliaryStoreOperations auxStoreOperations = parts.resolve( AuxiliaryStoreOperations.class );
-        auxStoreOperations = new LegacyAutoIndexAuxStoreOps( auxStoreOperations, propertyKeyTokenHolder,
-                nodeManager.getNodePropertyTrackers(),
-                nodeManager.getRelationshipPropertyTrackers(),
-                nodeManager );
+        // Bottom layer: Read-access to committed data
+        StoreReadLayer storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokenHolder,
+                relationshipTypeTokenHolder, new SchemaStorage( neoStore.getSchemaStore() ), neoStore,
+                indexService ), persistenceCache, indexService, schemaCache );;
 
         // + Transaction state handling
         StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations(
-                parts.entityReadOperations(),
-                parts.schemaReadOperations(),
-                auxStoreOperations,
-                new ConstraintIndexCreator( new Transactor( transactionManager, persistenceManager ), indexService ) );
+                storeLayer, legacyPropertyTrackers,
+                new ConstraintIndexCreator( new Transactor( transactionManager, persistenceManager ), indexService ),
+                persistenceManager );
 
-        parts = parts.override(
-                null, null, stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
+        StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
+                stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
                 new SchemaStateConcern( schemaState ) );
 
         // + Constraints

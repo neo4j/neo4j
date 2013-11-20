@@ -488,8 +488,12 @@ public class ServerUtil
     public static String getHostString(InetSocketAddress socketAddress )
     {
         if (socketAddress.isUnresolved())
+        {
             return socketAddress.getHostName();
+        }
         else
+        {
             return socketAddress.getAddress().getHostAddress();
+        }
     }
 }

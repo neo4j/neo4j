@@ -31,16 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.Predicate;
 
+import static org.neo4j.helpers.Exceptions.stringify;
+
 public class DebugUtil
 {
     public static void printShortStackTrace( Throwable cause, int maxNumberOfStackLines )
     {
-        StringWriter stringWriter = new StringWriter();
-        PrintWriter writer = new PrintWriter( stringWriter );
-        cause.printStackTrace( writer );
-        writer.close();
-        String string = stringWriter.getBuffer().toString();
-        System.out.println( firstLinesOf( string, maxNumberOfStackLines+1 ) );
+        System.out.println( firstLinesOf( stringify( cause ), maxNumberOfStackLines+1 ) );
     }
 
     public static String firstLinesOf( String string, int maxNumberOfLines )
@@ -141,7 +138,7 @@ public class DebugUtil
     
     public static class StackTracer
     {
-        private final Map<Stack, AtomicInteger> uniqueStackTraces = new HashMap<Stack, AtomicInteger>();
+        private final Map<Stack, AtomicInteger> uniqueStackTraces = new HashMap<>();
         private boolean considerMessages = true;
         
         public void add( Throwable t )
@@ -156,27 +153,31 @@ public class DebugUtil
             count.incrementAndGet();
         }
         
-        public void print( PrintStream out )
+        public void print( PrintStream out, int interestThreshold )
         {
+            System.out.println( "Printing stack trace counts:" );
             long total = 0;
             for ( Map.Entry<Stack, AtomicInteger> entry : uniqueStackTraces.entrySet() )
             {
-                out.println( entry.getValue() + " times:" );
-                entry.getKey().stackTrace.printStackTrace( out );
+                if ( entry.getValue().get() >= interestThreshold )
+                {
+                    out.println( entry.getValue() + " times:" );
+                    entry.getKey().stackTrace.printStackTrace( out );
+                }
                 total += entry.getValue().get();
             }
             out.println( "------" );
             out.println( "Total:" + total );
         }
         
-        public StackTracer printAtShutdown( final PrintStream out )
+        public StackTracer printAtShutdown( final PrintStream out, final int interestThreshold )
         {
             Runtime.getRuntime().addShutdownHook( new Thread()
             {
                 @Override
                 public void run()
                 {
-                    print( out );
+                    print( out, interestThreshold );
                 }
             } );
             return this;
@@ -254,7 +255,7 @@ public class DebugUtil
 
     public static class CallCounter<T>
     {
-        private final Map<T, AtomicInteger> calls = new HashMap<T, AtomicInteger>();
+        private final Map<T, AtomicInteger> calls = new HashMap<>();
         private final String name;
 
         public CallCounter( String name )

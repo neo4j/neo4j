@@ -28,14 +28,14 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.kernel.api.KernelStatement;
-import org.neo4j.kernel.api.StatementOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
-import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState.IdGeneration;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.util.DiffSets;
 
 import static java.util.Arrays.asList;
 
@@ -59,15 +59,13 @@ public class StateHandlingStatementOperationsTest
     // tested. This contains general tests or things that are common to all
     // types of state.
 
+    StoreReadLayer inner = mock( StoreReadLayer.class );
+
     @Test
     public void shouldNeverDelegateWrites() throws Exception
     {
-        StatementOperations inner = mock( StatementOperations.class );
-
         KernelStatement state = mockedState();
-        StateHandlingStatementOperations ctx = new StateHandlingStatementOperations( inner, inner,
-                mock( AuxiliaryStoreOperations.class ),
-                mock( ConstraintIndexCreator.class ) );
+        StateHandlingStatementOperations ctx = newTxStateOps( inner );
 
         // When
         ctx.indexCreate( state, 0, 0 );
@@ -91,15 +89,13 @@ public class StateHandlingStatementOperationsTest
     {
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
-        StatementOperations delegate = mock( StatementOperations.class );
         TxState txState = mock( TxState.class );
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( DiffSets.<Long>emptyDiffSets() );
         when( txState.nodesWithChangedProperty( anyInt() ) ).thenReturn( Collections.<Long, Object>emptyMap() );
         KernelStatement state = mockedState( txState );
-        when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( asList( constraint ) ) );
-        StateHandlingStatementOperations context = new StateHandlingStatementOperations( delegate, delegate,
-                mock( AuxiliaryStoreOperations.class ), mock( ConstraintIndexCreator.class ) );
+        StateHandlingStatementOperations context = newTxStateOps( inner );
 
         // when
         context.uniquenessConstraintCreate( state, 10, 66 );
@@ -113,15 +109,12 @@ public class StateHandlingStatementOperationsTest
     {
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
-
-        StatementOperations delegate = mock( StatementOperations.class );
         TxState txState = new TxStateImpl( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         KernelStatement state = mockedState( txState );
-        when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        StateHandlingStatementOperations context = new StateHandlingStatementOperations( delegate, delegate,
-                mock( AuxiliaryStoreOperations.class ), mock( ConstraintIndexCreator.class ) );
+        StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquenessConstraintCreate( state, 10, 66 );
 
         // when
@@ -139,20 +132,18 @@ public class StateHandlingStatementOperationsTest
         UniquenessConstraint constraint1 = new UniquenessConstraint( 11, 66 );
         UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
 
-        StatementOperations delegate = mock( StatementOperations.class );
         TxState txState = new TxStateImpl( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         KernelStatement state = mockedState( txState );
-        when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.constraintsGetForLabelAndPropertyKey( state, 11, 99 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( state, 11, 99 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.constraintsGetForLabel( state, 10 ) )
+        when( inner.constraintsGetForLabel( state, 10 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.constraintsGetForLabel( state, 11 ) )
+        when( inner.constraintsGetForLabel( state, 11 ) )
             .thenAnswer( asAnswer( asIterable( constraint1 ) ) );
-        StateHandlingStatementOperations context = new StateHandlingStatementOperations( delegate, delegate,
-                mock( AuxiliaryStoreOperations.class ), mock( ConstraintIndexCreator.class ) );
+        StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquenessConstraintCreate( state, 10, 66 );
         context.uniquenessConstraintCreate( state, 11, 99 );
 
@@ -173,14 +164,12 @@ public class StateHandlingStatementOperationsTest
         TxState txState = new TxStateImpl( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         KernelStatement state = mockedState( txState );
-        StatementOperations delegate = mock( StatementOperations.class );
-        when( delegate.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.constraintsGetForLabelAndPropertyKey( state, 11, 99 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( state, 11, 99 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( delegate.constraintsGetAll( state ) ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
-        StateHandlingStatementOperations context = new StateHandlingStatementOperations( delegate, delegate,
-                mock( AuxiliaryStoreOperations.class ), mock( ConstraintIndexCreator.class ) );
+        when( inner.constraintsGetAll( state ) ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
+        StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquenessConstraintCreate( state, 10, 66 );
 
         // when
@@ -200,5 +189,12 @@ public class StateHandlingStatementOperationsTest
                 return values.iterator();
             }
         };
+    }
+
+    private StateHandlingStatementOperations newTxStateOps( StoreReadLayer delegate )
+    {
+        return new StateHandlingStatementOperations( delegate,
+                mock( LegacyPropertyTrackers.class ), mock( ConstraintIndexCreator.class ),
+                mock(PersistenceManager.class) );
     }
 }
