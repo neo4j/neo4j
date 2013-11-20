@@ -81,8 +81,8 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -410,8 +410,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         LockManager lockManager =
                 (LockManager) Proxy.newProxyInstance( LockManager.class.getClassLoader(),
                         new Class[]{LockManager.class}, lockManagerDelegate );
-        new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate, txManager, txHook,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, availabilityGuard, config );
+        new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate,
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory );
         return lockManager;
     }
 
