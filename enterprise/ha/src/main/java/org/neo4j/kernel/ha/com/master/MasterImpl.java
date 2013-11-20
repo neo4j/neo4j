@@ -116,7 +116,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     public static final int UNFINISHED_TRANSACTION_CLEANUP_DELAY = 1;
 
-    private SPI spi;
+    private final SPI spi;
     private final StringLogger msgLog;
     private final Config config;
 
@@ -228,16 +228,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     private void resumeTransaction( RequestContext txId )
     {
-        try
-        {
-            Transaction transaction = getTx( txId );
-
-            spi.resumeTransaction( transaction );
-        }
-        catch ( Exception e )
-        {
-            throw Exceptions.launderedException( e );
-        }
+        spi.resumeTransaction( getTx( txId ) );
     }
 
     private void suspendTransaction( RequestContext context )

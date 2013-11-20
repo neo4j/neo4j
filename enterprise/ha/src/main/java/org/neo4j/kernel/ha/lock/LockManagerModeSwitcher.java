@@ -80,7 +80,6 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
                 return config.get( HaSettings.state_switch_timeout );
             }
         };
-
         return new SlaveLockManager( txManager, txHook, availabilityGuard, slaveConfig, new RagManager( txManager ),
                 requestContextFactory, master, xaDsm );
     }
