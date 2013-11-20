@@ -26,7 +26,7 @@ import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class OrderByTest extends DocumentingTestBase {
-  def graphDescription = List("A KNOWS B", "B KNOWS C")
+  override def graphDescription = List("A KNOWS B", "B KNOWS C")
 
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()

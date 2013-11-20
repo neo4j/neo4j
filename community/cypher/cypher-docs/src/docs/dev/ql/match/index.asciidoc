@@ -35,11 +35,23 @@ The following graph is used for the examples below:
 .Graph
 include::includes/cypher-match-graph.asciidoc[]
 
+== Basic node finding ==
+
+:leveloffset: 3
+
 include::get-all-nodes.asciidoc[]
 
 include::get-all-nodes-with-a-label.asciidoc[]
 
 include::related-nodes.asciidoc[]
+
+include::match-with-labels.asciidoc[]
+
+:leveloffset: 2
+
+== Relationship basics ==
+
+:leveloffset: 3
 
 include::outgoing-relationships.asciidoc[]
 
@@ -51,7 +63,11 @@ include::match-by-multiple-relationship-types.asciidoc[]
 
 include::match-by-relationship-type-and-use-an-identifier.asciidoc[]
 
-include::match-with-labels.asciidoc[]
+:leveloffset: 2
+
+== Relationships in depth ==
+
+:leveloffset: 3
 
 include::relationship-types-with-uncommon-characters.asciidoc[]
 
@@ -61,16 +77,24 @@ include::variable-length-relationships.asciidoc[]
 
 include::relationship-identifier-in-variable-length-relationships.asciidoc[]
 
+include::match-with-properties-on-a-variable-length-path.asciidoc[]
+
 include::zero-length-paths.asciidoc[]
-
-include::shortest-path.asciidoc[]
-
-include::all-shortest-paths.asciidoc[]
 
 include::named-path.asciidoc[]
 
 include::matching-on-a-bound-relationship.asciidoc[]
 
-include::match-with-properties-on-a-variable-length-path.asciidoc[]
+:leveloffset: 2
+
+== Shortest path ==
+
+:leveloffset: 3
+
+include::single-shortest-path.asciidoc[]
+
+include::all-shortest-paths.asciidoc[]
+
+:leveloffset: 2
 
 

@@ -29,7 +29,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
   
-  def graphDescription = List(
+  override def graphDescription = List(
     "root X A",
     "root X B",
     "root X C",
@@ -42,7 +42,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create relationship if it is missing",
       text = "+CREATE UNIQUE+ is used to describe the pattern that should be found or created.",
-      queryText = "match (left), (right) where left.name = 'A' and right.name in ['B','C'] create unique (left)-[r:KNOWS]->(right) return r",
+      queryText = "match (lft {name: 'A'}), (rgt) where rgt.name in ['B','C'] create unique (lft)-[r:KNOWS]->(rgt) return r",
       returns = "The left node is matched agains the two right nodes. One relationship already exists and can be " +
         "matched, and the other relationship is created before it is returned.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1))

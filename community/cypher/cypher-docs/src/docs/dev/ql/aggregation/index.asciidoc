@@ -11,9 +11,11 @@ The following examples are assuming the example graph structure below.
 include::includes/cypher-aggregation-graph.asciidoc[]
 
 == COUNT ==
-+COUNT+ is used to count the number of rows. +COUNT+ can be used in two forms -- `COUNT(*)`
-which just counts the number of matching rows, and +COUNT(<identifier>)+, which counts
-the number of non-`null` values in +<identifier>+.
+
++COUNT+ is used to count the number of rows.
++COUNT+ can be used in two forms -- `COUNT(*)` which just counts the number of matching rows, and +COUNT(<identifier>)+, which counts the number of non-`NULL` values in +<identifier>+.
+
+:leveloffset: 3
 
 include::count-nodes.asciidoc[]
 
@@ -22,6 +24,12 @@ include::group-count-relationship-types.asciidoc[]
 include::count-entities.asciidoc[]
 
 include::count-non-null-values.asciidoc[]
+
+:leveloffset: 2
+
+== Statistics ==
+
+:leveloffset: 3
 
 include::sum.asciidoc[]
 
@@ -38,6 +46,8 @@ include::stdevp.asciidoc[]
 include::max.asciidoc[]
 
 include::min.asciidoc[]
+
+:leveloffset: 2
 
 include::collect.asciidoc[]
 

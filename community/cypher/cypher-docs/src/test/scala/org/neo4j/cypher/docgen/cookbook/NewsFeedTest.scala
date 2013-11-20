@@ -30,13 +30,10 @@ class NewsFeedTest extends DocumentingTestBase {
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
   
-  def graphDescription = List()
-
   def section = "cookbook"
   override val noTitle = true;
-
-  @Test def timelineSearch() {
-      executeQuery("""
+  
+  override val setupQueries = List("""
 create 
 (bob{name:'Bob'})-[:STATUS]->(bob_s1{name:'bob_s1', text:'bobs status1',date:1})-[:NEXT]->(bob_s2{name:'bob_s2', text:'bobs status2',date:4}),
 (alice{name:'Alice'})-[:STATUS]->(alice_s1{name:'alice_s1', text:'Alices status1',date:2})-[:NEXT]->(alice_s2{name:'alice_s2', text:'Alices status2',date:5}),
@@ -44,7 +41,9 @@ create
 (joe)-[:FRIEND{status:'CONFIRMED'}]->bob,
 (alice)-[:FRIEND{status:'PENDING'}]->joe,
 (bob)-[:FRIEND{status:'CONFIRMED'}]->alice
-          """);
+""")
+
+  @Test def timelineSearch() {
     testQuery(
       title = "Retrieve the ordered timeline of status updates of all my friends",
       text =

@@ -31,7 +31,7 @@ class GraphityTest extends DocumentingTestBase {
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
   
-  def graphDescription = List(
+  override def graphDescription = List(
     "Joe has Joe_s1",
     "Joe_s1 next Joe_s2",
     "Bill has Bill_s1",

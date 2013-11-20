@@ -5,24 +5,23 @@ Start
 Every query describes a pattern, and in that pattern one can have multiple starting points.
 A starting point is a relationship or a node where a pattern is anchored.
 You can either introduce starting points by id, or by index lookups.
-Note that trying to use an index that doesn't exist will throw an exception.
+Note that trying to use an index that doesn't exist will generate an error.
 
 [NOTE]
 +START+ is optional.
 If you do not specify explicit starting points, Cypher will try and infer starting points from your query.
 This is done based on node labels and predicates contained in your query.
-Additionally, you can use index hints with the +USING+ clause to help Cypher pick an index to use to find starting points, see <<query-using>>.
+See <<cypher-schema>> for more information.
+In general, the +START+ clause is only really needed when using legacy indexes.
+
+This is the graph the examples are using:
 
 .Graph
 include::includes/cypher-start-graph.asciidoc[]
 
-include::node-by-id.asciidoc[]
+== Get node or relationship from index ==
 
-include::relationship-by-id.asciidoc[]
-
-include::multiple-nodes-by-id.asciidoc[]
-
-include::all-nodes.asciidoc[]
+:leveloffset: 3
 
 include::node-by-index-lookup.asciidoc[]
 
@@ -30,5 +29,27 @@ include::relationship-by-index-lookup.asciidoc[]
 
 include::node-by-index-query.asciidoc[]
 
+:leveloffset: 2
+
+== Get node or relationship by id ==
+
+:leveloffset: 3
+
+include::node-by-id.asciidoc[]
+
+include::relationship-by-id.asciidoc[]
+
+include::multiple-nodes-by-id.asciidoc[]
+
+:leveloffset: 2
+
+== Get multiple or all nodes ==
+
+:leveloffset: 3
+
+include::all-nodes.asciidoc[]
+
 include::multiple-starting-points.asciidoc[]
+
+:leveloffset: 2
 

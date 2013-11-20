@@ -27,7 +27,7 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 
 class MultirelationalSocialNetworkTest extends DocumentingTestBase {
-  def graphDescription = List("Joe FOLLOWS Sara", 
+  override def graphDescription = List("Joe FOLLOWS Sara", 
             "Sara FOLLOWS Joe", 
             "Joe LOVES Maria",
             "Maria LOVES Joe",

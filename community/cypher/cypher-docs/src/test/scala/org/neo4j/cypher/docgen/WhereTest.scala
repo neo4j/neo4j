@@ -22,9 +22,11 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class WhereTest extends DocumentingTestBase {
-  def graphDescription = List(
+  override def graphDescription = List(
     "Andres KNOWS Tobias",
     "Andres:Swedish KNOWS Peter")
 
@@ -33,6 +35,9 @@ class WhereTest extends DocumentingTestBase {
     "Tobias" -> Map("age" -> 25l),
     "Peter" -> Map("age" -> 34l)
   )
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section = "Where"
 
@@ -57,7 +62,7 @@ class WhereTest extends DocumentingTestBase {
   @Test def boolean_operations() {
     testQuery(
       title = "Boolean operations",
-      text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT()`. " +
+      text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT`. " +
         "See <<cypher-working-with-null>> for more information on how this works with +NULL+.",
       queryText = """match (n) where n.name = 'Peter' xor (n.age < 30 and n.name = "Tobias") or not (n.name = "Tobias" or n.name="Peter") return n""",
       returns = "This query shows how boolean operators can be used.",
@@ -133,7 +138,7 @@ class WhereTest extends DocumentingTestBase {
 
   @Test def filter_on_null() {
     testQuery(
-      title = "Filter on null values",
+      title = "Filter on NULL",
       text = "Sometimes you might want to test if a value or an identifier is +null+. This is done just like SQL does it, " +
         "with `IS NULL`. Also like SQL, the negative is `IS NOT NULL`, although `NOT(IS NULL x)` also works.",
       queryText = """match (person) where person.name = 'Peter' AND person.belt is null return person""",

@@ -26,7 +26,7 @@ import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class ReturnTest extends DocumentingTestBase {
-  def graphDescription = List("A KNOWS B", "A BLOCKS B")
+  override def graphDescription = List("A KNOWS B", "A BLOCKS B")
 
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()

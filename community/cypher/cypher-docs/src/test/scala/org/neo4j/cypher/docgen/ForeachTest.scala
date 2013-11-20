@@ -22,9 +22,14 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.StatisticsChecker
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class ForeachTest extends DocumentingTestBase with StatisticsChecker {
-  def graphDescription = List("A KNOWS B", "B KNOWS C", "C KNOWS D")
+  override def graphDescription = List("A KNOWS B", "B KNOWS C", "C KNOWS D")
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section = "Foreach"
 

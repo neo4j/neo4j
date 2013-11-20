@@ -64,12 +64,47 @@ trait DocumentationHelper extends GraphIcing {
     new PrintWriter(new File(dir, nicefy(title) + ".asciidoc"), "UTF-8")
   }
 
+  def prepareFormatting(query: String): String = {
+    val str = Prettifier(query.trim())
+    if ((str takeRight 1) == ";") {
+      str
+    } else {
+      str + ";";
+    }
+  }
+
+  def dumpSetupQueries(queries: List[String], dir: File) {
+    dumpQueries(queries, dir, simpleName + "-setup");
+  }
+
+  def dumpSetupConstraintsQueries(queries: List[String], dir: File) {
+    dumpQueries(queries, dir, simpleName + "-setup-constraints");
+  }
+  
+  def dumpPreparationQueries(queries: List[String], dir: File, testid: String) {
+    dumpQueries(queries, dir, simpleName + "-" + nicefy(testid) + ".preparation");
+  }
+  
+  private def dumpQueries(queries: List[String], dir: File, testid: String): String = {
+    if (queries.isEmpty) {
+      ""
+    } else {
+      val queryStrings = queries.map(prepareFormatting)
+      val output = AsciidocHelper.createCypherSnippetFromPreformattedQuery(queryStrings.mkString("\n"))
+      AsciiDocGenerator.dumpToSeparateFile(dir, testid, output);
+    }
+  }
+  
   val path: String = "target/docs/dev/ql/"
 
   val graphvizFileName = "cypher-" + simpleName + "-graph"
 
   def dumpGraphViz(dir: File, graphVizOptions: String): String = {
     emitGraphviz(dir, graphvizFileName, graphVizOptions)
+  }
+
+  def dumpPreparationGraphviz(dir: File, testid: String, graphVizOptions: String): String = {
+    emitGraphviz(dir, simpleName + "-" + nicefy(testid) + ".preparation-graph", graphVizOptions)
   }
 
   private def emitGraphviz(dir: File, testid: String, graphVizOptions: String): String = {
@@ -110,10 +145,13 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
 
   def internalTestQuery(title: String, text: String, queryText: String, returns: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
     parameters = null
-    dumpGraphViz(dir, graphvizOptions.trim)
+    preparationQueries = List()
+    //dumpGraphViz(dir, graphvizOptions.trim)
     if (!graphvizExecutedAfter) {
       dumpGraphViz(dir, graphvizOptions.trim)
     }
+    dumpSetupConstraintsQueries(setupContraintQueries, dir)
+    dumpSetupQueries(setupQueries, dir)
 
     var consoleData: String = ""
     if (generateConsole) {
@@ -135,6 +173,10 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
     val tx1 = db.beginTx()
     try {
       prepare.foreach { (prepareStep: () => Any) => prepareStep() }
+      if (preparationQueries.size > 0) {
+        dumpPreparationQueries(preparationQueries, dir, title)
+        dumpPreparationGraphviz(dir, title, graphvizOptions)
+      }
       keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
       val result = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
       if (expectedException.isDefined) {
@@ -194,11 +236,15 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   val noTitle: Boolean = false
   val graphvizExecutedAfter: Boolean = false
   var parameters: Map[String, Any] = null
+  var preparationQueries: List[String] = List()
 
   def section: String
   val dir = createDir(section)
 
-  def graphDescription: List[String]
+  def graphDescription: List[String] = List()
+
+  val setupQueries: List[String] = List()
+  val setupContraintQueries: List[String] = List()
 
   def indexProps: List[String] = List()
 
@@ -229,6 +275,11 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
 
   def setParameters(params: Map[String, Any]) {
     parameters = params
+  }
+  
+  def executePreparationQueries(queries: List[String]) {
+    preparationQueries = queries
+    preparationQueries.foreach(engine.execute)
   }
 
   protected def assertIsDeleted(pc: PropertyContainer) {
@@ -284,11 +335,15 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
 
     cleanDatabaseContent( db )
 
+    setupContraintQueries.foreach(engine.execute)
+
     db.inTx {
       nodeIndex = db.index().forNodes("nodes")
       relIndex = db.index().forRelationships("rels")
       val g = new GraphImpl(graphDescription.toArray[String])
       val description = GraphDescription.create(g)
+
+      setupQueries.foreach(engine.execute)
 
       nodes = description.create(db).asScala.map {
         case (name, node) => name -> node.getId

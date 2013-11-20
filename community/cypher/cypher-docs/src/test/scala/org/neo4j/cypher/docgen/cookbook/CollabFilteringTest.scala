@@ -26,7 +26,7 @@ import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class CollabFilteringTest extends DocumentingTestBase {
-  def graphDescription = List("Joe knows Bill", "Joe knows Sara", "Sara knows Bill", "Sara knows Ian", "Bill knows Derrick",
+  override def graphDescription = List("Joe knows Bill", "Joe knows Sara", "Sara knows Bill", "Sara knows Ian", "Bill knows Derrick",
     "Bill knows Ian", "Sara knows Jill")
 
   def section = "cookbook"

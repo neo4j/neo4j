@@ -24,7 +24,7 @@ import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
 
 class MutualFriendsAndGroupsTest extends DocumentingTestBase {
-  def graphDescription = List(
+  override def graphDescription = List(
       "Joe member_of_group Group1", 
       "Bob member_of_group Group1", 
       "Bill member_of_group Group1", 

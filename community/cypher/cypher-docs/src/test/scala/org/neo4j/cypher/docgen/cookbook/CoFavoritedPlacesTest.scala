@@ -26,7 +26,7 @@ import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class CoFavoritedPlacesTest extends DocumentingTestBase {
-  def graphDescription = List("Joe favorite CoffeeShop1",
+  override def graphDescription = List("Joe favorite CoffeeShop1",
     "Joe favorite SaunaX",
     "Joe favorite MelsPlace",
     "Jill favorite CoffeeShop1",

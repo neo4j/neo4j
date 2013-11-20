@@ -25,7 +25,7 @@ import org.neo4j.cypher.docgen.DocumentingTestBase
 
 
 class PathTreeTest extends DocumentingTestBase {
-  def graphDescription = List(
+  override def graphDescription = List(
             "Root 2010 Y10", 
             "Root 2011 Y11", 
             "Y10 12 Y10M12", 

@@ -27,7 +27,7 @@ import org.neo4j.cypher.docgen.DocumentingTestBase
 //http://groups.google.com/group/neo4j/browse_thread/thread/57dbec6e904fca42
 
 class MealTestIgnored extends DocumentingTestBase {
-  def graphDescription = List(
+  override def graphDescription = List(
     "Peter eats Potatoes",
     "Peter eats Burger",
     "Burger composed_of Meat",

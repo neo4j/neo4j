@@ -198,6 +198,7 @@ Nodes and relationships are important, but Neo4j uses properties on both of thes
 Properties are expressed in patterns using a map-construct, simply curly brackets surrounding a number of key-expression pairs, separated by commas.
 For example: `{ name: "Andres", sport: "Brazilian Ju-Jitsu" }`.
 If the map is supplied through a parameter, the normal parameter expression is used: `{ paramName }`.
+For more information on parameters, see <<cypher-parameters>>.
 
 Patterns are also used to mutate the graph with `CREATE` and `CREATE UNIQUE`.
 Maps are only used by `CREATE` and `CREATE UNIQUE`.

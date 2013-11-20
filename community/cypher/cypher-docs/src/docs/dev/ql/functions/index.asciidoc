@@ -5,7 +5,7 @@ Functions
 This chapter contains information on all functions in Cypher.
 Note that related information exists in <<query-operators>>.
 
-NOTE: Most functions in Cypher will return +null+ if the input parameter is +null+.
+NOTE: Most functions in Cypher will return +NULL+ if an input parameter is +NULL+.
 
 [[query-predicates]]
 == Predicates ==

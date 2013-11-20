@@ -2,11 +2,10 @@
 Create Unique
 =============
 +CREATE UNIQUE+ is in the middle of +MATCH+ and +CREATE+ -- it will match what it can, and create what is missing.
-+CREATE UNIQUE+ will always make the least change possible to the graph -- if it can use parts of the existing graph,
-it will.
++CREATE UNIQUE+ will always make the least change possible to the graph -- if it can use parts of the existing graph, it will.
 
-Another difference to +MATCH+ is that +CREATE UNIQUE+ assumes the pattern to be unique. If multiple matching subgraphs
-are found an exception will be thrown.
+Another difference to +MATCH+ is that +CREATE UNIQUE+ assumes the pattern to be unique.
+If multiple matching subgraphs are found an error will be generated.
 
 [TIP]
 In the +CREATE UNIQUE+ clause, patterns are used a lot.
@@ -16,7 +15,9 @@ The examples start out with the following data set:
 
 include::includes/cypher-createunique-graph.asciidoc[]
 
-include::create-relationship-if-it-is-missing.asciidoc[]
+== Create unique nodes ==
+
+:leveloffset: 3
 
 include::create-node-if-missing.asciidoc[]
 
@@ -24,7 +25,17 @@ include::create-nodes-with-values.asciidoc[]
 
 include::create-labeled-node-if-missing.asciidoc[]
 
+:leveloffset: 2
+
+== Create unique relationships ==
+
+:leveloffset: 3
+
+include::create-relationship-if-it-is-missing.asciidoc[]
+
 include::create-relationship-with-values.asciidoc[]
+
+:leveloffset: 2
 
 include::describe-complex-pattern.asciidoc[]
 

@@ -25,7 +25,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.cypher.CypherExecutionException
 
 class ConstraintsTest extends DocumentingTestBase {
-  def graphDescription: List[String] = List()
 
   def section: String = "Constraints"
 

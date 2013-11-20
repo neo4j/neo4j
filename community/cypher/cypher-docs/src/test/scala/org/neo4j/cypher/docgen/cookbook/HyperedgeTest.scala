@@ -25,7 +25,7 @@ import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.neo4j.visualization.graphviz.{GraphStyle, AsciiDocSimpleStyle}
 
 class HyperedgeTest extends DocumentingTestBase {
-  def graphDescription = List("User1 in Group1", "User1 in Group2",
+  override def graphDescription = List("User1 in Group1", "User1 in Group2",
     "Group2 canHave Role2", "Group2 canHave Role1",
     "Group1 canHave Role1", "Group1 canHave Role2", "Group1 isA Group",
     "Group2 isA Group", "Role1 isA Role", "Role2 isA Role",

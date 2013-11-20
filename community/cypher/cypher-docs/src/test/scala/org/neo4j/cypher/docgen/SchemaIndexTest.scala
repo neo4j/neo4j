@@ -25,7 +25,7 @@ import org.junit.Test
 import org.neo4j.cypher.internal.helpers.GraphIcing
 
 class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with GraphIcing {
-  def graphDescription = List(
+  override def graphDescription = List(
     "root X A",
     "root X B",
     "root X C",
@@ -50,7 +50,7 @@ class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with Gr
     prepareAndTestQuery(
       title = "Drop index on a label",
       text = "To drop an index on all nodes that have a label, use the +DROP+ +INDEX+ clause.",
-      prepare = executeQuery("create index on :Person(name)"),
+      prepare = executePreparationQueries(List("create index on :Person(name)")),
       queryText = "drop index on :Person(name)",
       returns = "",
       assertions = (p) => assertIndexesOnLabels("Person", List())

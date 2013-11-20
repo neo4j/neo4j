@@ -21,10 +21,12 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Assert._
 import org.junit.Test
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class OptionalMatchTest extends DocumentingTestBase {
 
-  def graphDescription = List(
+  override def graphDescription = List(
     "Charlie:Person ACTED_IN WallStreet:Movie",
     "Martin:Person ACTED_IN WallStreet:Movie",
     "Michael:Person ACTED_IN WallStreet:Movie",
@@ -43,6 +45,9 @@ class OptionalMatchTest extends DocumentingTestBase {
     "WallStreet" -> Map("title" -> "Wall Street"),
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section: String = "OPTIONAL MATCH"
 

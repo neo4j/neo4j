@@ -30,13 +30,10 @@ class ClusteringCoefficientTest extends DocumentingTestBase {
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
-  def graphDescription = List()
-
   def section = "cookbook"
   override val noTitle = true;
-
-  @Test def calculatingClusteringCoefficient() {
-    executeQuery("""
+  
+  override val setupQueries = List("""
 create 
 (_1 {name: "startnode"}),
 (_2),
@@ -51,7 +48,9 @@ _1-[:KNOWS]->_4,
 _1-[:KNOWS]->_5,
 _2-[:KNOWS]->_6,
 _2-[:KNOWS]->_7,
-_3-[:KNOWS]->_4""");
+_3-[:KNOWS]->_4""")
+
+  @Test def calculatingClusteringCoefficient() {
     testQuery(
       title = "Calculating the Clustering Coefficient of a friend network",
       text = """In this example, adapted from 

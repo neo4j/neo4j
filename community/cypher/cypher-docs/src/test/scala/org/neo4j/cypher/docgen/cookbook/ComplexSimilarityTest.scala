@@ -27,15 +27,16 @@ import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class ComplexSimilarityTest extends DocumentingTestBase {
-  def graphDescription = List()
   def section = "cookbook"
 
   override protected def getGraphvizStyle: GraphStyle = {
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
   }
+  
+  override val setupQueries = List(
+      "CREATE (me {name:'me'})-[:ATE {times:10}]->(food {name:'meat'})<-[:ATE {times:5}]-(you {name:'you'})")
 
   @Test def testSimliarity() {
-    executeQuery("CREATE (me {name:'me'})-[:ATE {times:10}]->(food {name:'meat'})<-[:ATE {times:5}]-(you {name:'you'})")
     testQuery(
       title = "Calculate similarities by complex calculations",
       text =

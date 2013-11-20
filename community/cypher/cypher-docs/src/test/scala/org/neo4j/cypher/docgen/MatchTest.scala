@@ -24,10 +24,12 @@ import org.neo4j.graphdb.{DynamicLabel, DynamicRelationshipType, Path, Node}
 import org.junit.Test
 import org.neo4j.tooling.GlobalGraphOperations
 import collection.JavaConverters._
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class MatchTest extends DocumentingTestBase {
 
-  def graphDescription = List(
+  override def graphDescription = List(
     "Charlie:Person ACTED_IN WallStreet:Movie",
     "Martin:Person ACTED_IN WallStreet:Movie",
     "Michael:Person ACTED_IN WallStreet:Movie",
@@ -46,6 +48,9 @@ class MatchTest extends DocumentingTestBase {
     "WallStreet" -> Map("title" -> "Wall Street"),
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section: String = "MATCH"
 
@@ -75,7 +80,7 @@ class MatchTest extends DocumentingTestBase {
   @Test def allRelationships() {
     testQuery(
       title = "Related nodes",
-      text = "The symbol `--` means _related to,_ without regard to type or direction.",
+      text = "The symbol `--` means _related to,_ without regard to type or direction of the relationship.",
       queryText = """match (director {name:'Oliver Stone'})--(movie) return movie.title""",
       returns = """Returns all the movies directed by Oliver Stone.""",
       assertions = (p) => assertEquals(List("Wall Street"), p.columnAs[Node]("movie.title").toList)
@@ -206,10 +211,12 @@ class MatchTest extends DocumentingTestBase {
 
   @Test def shortestPathBetweenTwoNodes() {
     testQuery(
-      title = "Shortest path",
+      title = "Single shortest path",
       text = "Finding a single shortest path between two nodes is as easy as using the `shortestPath` function. It's done like this:",
-      queryText =
-"""match p = shortestPath( (martin:Person {name:"Martin Sheen"} )-[*..15]-(oliver:Person {name:"Oliver Stone"}) )
+      queryText ="""
+match (martin:Person {name:"Martin Sheen"} ),
+      (oliver:Person {name:"Oliver Stone"}),
+      p = shortestPath( (martin)-[*..15]-(oliver) )
 return p""",
       returns = """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parentheses
  you define a single link of a path -- the starting node, the connecting relationship and the end node. Characteristics describing the relationship
@@ -222,7 +229,10 @@ return p""",
     testQuery(
       title = "All shortest paths",
       text = "Finds all the shortest paths between two nodes.",
-      queryText = """start martin=node(%Martin%), michael=node(%Michael%) match p = allShortestPaths( (martin)-[*]-(michael) ) return p""",
+      queryText = """
+match (martin:Person {name:"Martin Sheen"} ),
+      (michael:Person {name:"Michael Douglas"}),
+      p = allShortestPaths( (martin)-[*]-(michael) ) return p""",
       returns = """Finds the two shortest paths between Martin and Michael.""",
       assertions = (p) => assertEquals(2, p.toList.size)
     )
@@ -242,7 +252,7 @@ return p""",
     testQuery(
       title = "Matching on a bound relationship",
       text = """When your pattern contains a bound relationship, and that relationship pattern doesn't specify direction,
-Cypher will try to match the relationship where the connected nodes switch sides.""",
+Cypher will try to match the relationship in both directions.""",
       queryText = """match (a)-[r]-(b) where id(r) = 0 return a,b""",
       returns = "This returns the two connected nodes, once as the start node, and once as the end node.",
       assertions = p => assertEquals(2, p.toSeq.length)
@@ -253,8 +263,8 @@ Cypher will try to match the relationship where the connected nodes switch sides
     testQuery(
       title = "Match with labels",
       text = "To constrain your pattern with labels on nodes, you add it to your pattern nodes, using the label syntax.",
-      queryText = "match (charlie:Person {name:'Charlie Sheen'})-->(movie:Movie) return movie",
-      returns = "Return any nodes connected with Charlie that are labeled +Movie+.",
+      queryText = "match (charlie:Person {name:'Charlie Sheen'})--(movie:Movie) return movie",
+      returns = "Return any nodes connected with the +Person+ Charlie that are labeled +Movie+.",
       assertions = p => assertEquals(List(node("WallStreet")), p.columnAs[Node]("movie").toList)
     )
   }
@@ -265,18 +275,24 @@ Cypher will try to match the relationship where the connected nodes switch sides
       CREATE (charlie)-[:X {blocked:true}]->(:Blocked)<-[:X {blocked:false}]-(martin)"""
 
     prepareAndTestQuery(
-      prepare = executeQuery(preparationQuery),
+      prepare = executePreparationQueries(List(preparationQuery)),
       title = "Match with properties on a variable length path",
-      text = "A variable length relationship with properties defined on in it means that all relationships in the path " +
-        "must have the property set to the given value. In this query, there are two paths between Charile Sheen and his " +
-        "dad Martin Sheen. One of the includes a blocked relationship and the other doesn't." +
-        "`MATCH (charlie:Person {name:'Charlie Sheen'}), (martin:Person {name:'Martin Sheen'})`\n" +
-        "`CREATE (charlie)-[:X {blocked:false}]-(:Unblocked)-[:X {blocked:false}]-(martin)`\n" +
-        "`CREATE (charlie)-[:X {blocked:true}]-(:Blocked)-[:X {blocked:false}]-(martin)`\n",
+      text = """A variable length relationship with properties defined on in it means that all relationships in the path
+must have the property set to the given value. In this query, there are two paths between Charile Sheen and his
+dad Martin Sheen. One of the includes a ``blocked'' relationship and the other doesn't.
+In this case we first alter the original graph by using the following query to add ``blocked'' and ``unblocked'' relationships:
+
+include::includes/match-match-with-properties-on-a-variable-length-path.preparation.asciidoc[]
+
+This means that we are starting out with the following graph:
+
+include::includes/match-match-with-properties-on-a-variable-length-path.preparation-graph.asciidoc[]
+
+""",
       queryText = "MATCH p = (charlie:Person)-[* {blocked:false}]-(martin:Person) " +
         "WHERE charlie.name = 'Charlie Sheen' AND martin.name = 'Martin Sheen' " +
         "RETURN p",
-      returns = "Return any nodes connected with Charlie that are labeled +Movie+.",
+      returns = "Returns the paths between Charlie and Martin Sheen where all relationships have the +blocked+ property set to +FALSE+.",
       assertions = p => {
         val path = p.next()("p").asInstanceOf[Path].asScala
 

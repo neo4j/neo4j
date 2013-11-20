@@ -29,7 +29,7 @@ class RemoveTest extends DocumentingTestBase {
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
-  def graphDescription = List(
+  override def graphDescription = List(
     "Andres:Swedish KNOWS Tobias:Swedish",
     "Andres KNOWS Peter:German:Swedish"
   )

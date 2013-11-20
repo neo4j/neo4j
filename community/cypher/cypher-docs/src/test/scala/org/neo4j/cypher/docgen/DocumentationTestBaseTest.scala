@@ -27,7 +27,7 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 import org.neo4j.cypher.StatisticsChecker
 
 class DocumentationTestBaseTest extends DocumentingTestBase with StatisticsChecker {
-  def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E", "B BLOCKS D")
+  override def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E", "B BLOCKS D")
 
   override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()

@@ -26,7 +26,7 @@ import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class HyperedgeCommonGroupsTest extends DocumentingTestBase {
-  def graphDescription = List(
+  override def graphDescription = List(
       "User1 hasRoleInGroup U1G1R12",
       "U1G1R12 hasGroup Group1",
       "U1G1R12 hasRole Role1",

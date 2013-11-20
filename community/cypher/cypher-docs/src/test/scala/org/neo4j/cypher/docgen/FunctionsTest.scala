@@ -27,7 +27,7 @@ import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class FunctionsTest extends DocumentingTestBase {
-  def graphDescription = List(
+  override def graphDescription = List(
     "A:foo:bar KNOWS B",
     "A KNOWS C",
     "B KNOWS D",

@@ -26,7 +26,6 @@ import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class BoostingRecommendationResultsTest extends DocumentingTestBase {
-  def graphDescription = List()
   def section = "cookbook"
   generateInitialGraphForConsole = false
   override val noTitle = true;
@@ -34,9 +33,8 @@ class BoostingRecommendationResultsTest extends DocumentingTestBase {
   override protected def getGraphvizStyle: GraphStyle = {
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
   }
-
-  @Test def boostingRecommendations() {
-    executeQuery("""create 
+  
+  override val setupQueries = List("""create 
 (clark {name: "Clark Kent"}),
 (lois {name:"Lois Lane"}),
 (jimmy {name:"Jimmy Olsen"}),
@@ -55,6 +53,8 @@ perry-[:WORKSAT {weight: 2, activity: 6}]->dailyplanet,
 lois-[:WORKSAT {weight: 2, activity: 56}]->dailyplanet,
 cooper-[:WORKSAT {weight: 2, activity: 2}]->cnn,
 perry-[:WORKSAT {weight: 2, activity: 3}]->cnn""")
+
+  @Test def boostingRecommendations() {
     testQuery(
       title = "Boosting with properties on relationships",
       text =

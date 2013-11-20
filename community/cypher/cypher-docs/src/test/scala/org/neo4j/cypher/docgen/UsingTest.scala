@@ -23,7 +23,7 @@ import org.junit.Test
 
 class UsingTest extends DocumentingTestBase {
 
-  def graphDescription = List(
+  override def graphDescription = List(
     "Andres:Swedish KNOWS Peter",
     "Stefan:German KNOWS Andres",
     "Emil KNOWS Peter"
@@ -67,7 +67,7 @@ class UsingTest extends DocumentingTestBase {
       title = "Hinting a label scan",
       text = "If the best performance is to be had by scanning all nodes in a label and then filtering on that set, use +USING+ +SCAN+.",
       queryText = "match (m:German) using scan m:German where m.surname = 'Plantikow' return m",
-      returns = "This query does it's work by finding all `:German` labeled nodes and filtering them by the surname property",
+      returns = "This query does its work by finding all `:German` labeled nodes and filtering them by the surname property.",
       assertions = (p) => assert(p.toList === List(Map("m" -> node("Stefan"))))
     )
   }

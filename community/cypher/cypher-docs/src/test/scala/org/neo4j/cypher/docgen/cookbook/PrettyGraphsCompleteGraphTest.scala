@@ -26,7 +26,6 @@ import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class PrettyGraphsCompleteGraphTest extends DocumentingTestBase {
-  def graphDescription = List()
   def section = "cookbook"
   generateInitialGraphForConsole = false
   override val graphvizOptions = "graph [layout=circo]"

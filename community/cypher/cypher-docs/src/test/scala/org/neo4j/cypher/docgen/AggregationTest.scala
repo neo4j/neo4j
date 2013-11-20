@@ -21,9 +21,11 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class AggregationTest extends DocumentingTestBase {
-  def graphDescription = List("A:Person KNOWS B:Person", "A KNOWS C:Person", "A KNOWS D:Person")
+  override def graphDescription = List("A:Person KNOWS B:Person", "A KNOWS C:Person", "A KNOWS D:Person")
 
   override val properties: Map[String, Map[String, Any]] = Map(
     "A" -> Map("property" -> 13),
@@ -31,13 +33,16 @@ class AggregationTest extends DocumentingTestBase {
     "C" -> Map("property" -> 44, "eyes" -> "blue"),
     "D" -> Map("eyes" -> "brown"))
 
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+    
   def section = "Aggregation"
 
   @Test def countNodes() {
     testQuery(
       title = "Count nodes",
       text = "To count the number of nodes, for example the number of nodes connected to one node, you can use `count(*)`.",
-      queryText = "match (n)-->(x) where n.name = 'A' return n, count(*)",
+      queryText = "match (n {name: 'A'})-->(x) return n, count(*)",
       returns = "This returns the start node and the count of related nodes.",
       assertions = p => assertEquals(Map("n" -> node("A"), "count(*)" -> 3), p.toList.head))
   }
@@ -46,7 +51,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "Group Count Relationship Types",
       text = "To count the groups of relationship types, return the types and count them with `count(*)`.",
-      queryText = "match (n)-[r]->() where n.name='A' return type(r), count(*)",
+      queryText = "match (n {name: 'A'})-[r]->() return type(r), count(*)",
       returns = "The relationship types and their group count is returned by the query.",
       assertions = p => assertEquals(Map("type(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
   }
@@ -56,7 +61,7 @@ class AggregationTest extends DocumentingTestBase {
       title = "Count entities",
       text = "Instead of counting the number of results with `count(*)`, it might be more expressive to include " +
         "the name of the identifier you care about.",
-      queryText = "match (n)-->(x) where n.name = 'A' return count(x)",
+      queryText = "match (n {name: 'A'})-->(x) return count(x)",
       returns = "The example query returns the number of connected nodes from the start node.",
       assertions = p => assertEquals(Map("count(x)" -> 3), p.toList.head))
   }
@@ -74,8 +79,8 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "sum",
       text = "The +sum+ aggregation function simply sums all the numeric values it encounters. " +
-        "Nulls are silently dropped. This is an example of how you can use +SUM+.",
-      queryText = "match (n:Person) where has(n.property) return sum(n.property)",
+        "++NULL++s are silently dropped.",
+      queryText = "match (n:Person) return sum(n.property)",
       returns = "This returns the sum of all the values in the property `property`.",
       assertions = p => assertEquals(Map("sum(n.property)" -> (13 + 33 + 44)), p.toList.head))
   }
@@ -84,7 +89,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "avg",
       text = "+avg+ calculates the average of a numeric column.",
-      queryText = "match (n:Person) where has(n.property) return avg(n.property)",
+      queryText = "match (n:Person) return avg(n.property)",
       returns = "The average of all the values in the property `property` is returned by the example query.",
       assertions = p => assertEquals(Map("avg(n.property)" -> 30), p.toList.head))
   }
@@ -93,7 +98,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "min",
       text = "+min+ takes a numeric property as input, and returns the smallest value in that column.",
-      queryText = "match (n:Person) where has(n.property) return min(n.property)",
+      queryText = "match (n:Person) return min(n.property)",
       returns = "This returns the smallest of all the values in the property `property`.",
       assertions = p => assertEquals(Map("min(n.property)" -> 13), p.toList.head))
   }
@@ -102,7 +107,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "max",
       text = "+max+ find the largest value in a numeric column.",
-      queryText = "match (n:Person) where has(n.property) return max(n.property)",
+      queryText = "match (n:Person) return max(n.property)",
       returns = "The largest of all the values in the property `property` is returned.",
       assertions = p => assertEquals(Map("max(n.property)" -> 44), p.toList.head))
   }
@@ -121,18 +126,18 @@ class AggregationTest extends DocumentingTestBase {
       title = "DISTINCT",
       text = """All aggregation functions also take the +DISTINCT+ modifier, which removes duplicates from the values.
 So, to count the number of unique eye colors from nodes related to `a`, this query can be used: """,
-      queryText = "match (a:Person)-->(b) where a.name = 'A' return count(distinct b.eyes)",
+      queryText = "match (a:Person {name: 'A'})-->(b) return count(distinct b.eyes)",
       returns = "Returns the number of eye colors.",
       assertions = p => assertEquals(Map("count(distinct b.eyes)" -> 2), p.toList.head))
   }
 
   @Test def intro() {
-    testQuery(
+    prepareAndTestQuery(
       title = "Introduction",
       text = """To calculate aggregated data, Cypher offers aggregation, much like SQL's +GROUP BY+.
 
-Aggregate functions take multiple input values and calculate an aggregated value from them. Examples are +AVG+ that
-calculate the average of multiple numeric values, or +MIN+ that finds the smallest numeric value in a set of values.
+Aggregate functions take multiple input values and calculate an aggregated value from them.
+Examples are +avg+ that calculates the average of multiple numeric values, or +min+ that finds the smallest numeric value in a set of values.
 
 Aggregation can be done over all the matching sub graphs, or it can be further divided by introducing key values.
 These are non-aggregate expressions, that are used to group the values going into the aggregate functions.
@@ -144,34 +149,48 @@ So, if the return statement looks something like this:
 RETURN n, count(*)
 ----
 
-We have two return expressions -- `n`, and `count(*)`. The first, `n`, is no aggregate function, and so it will be the
-grouping key. The latter, `count(*)` is an aggregate expression. So the matching subgraphs will be divided into
-different buckets, depending on the grouping key. The aggregate function will then run on these buckets, calculating
-the aggregate values.
+We have two return expressions -- `n`, and `count(*)`.
+The first, `n`, is no aggregate function, and so it will be the grouping key.
+The latter, `count(*)` is an aggregate expression.
+So the matching subgraphs will be divided into different buckets, depending on the grouping key.
+The aggregate function will then run on these buckets, calculating the aggregate values.
 
-If you want to use aggregations to sort your result set, the aggregation must be included in the +RETURN+ to be used
-in your +ORDER BY+.
+If you want to use aggregations to sort your result set, the aggregation must be included in the +RETURN+ to be used in your +ORDER BY+.
 
-The last piece of the puzzle is the +DISTINCT+ keyword. It is used to make all values unique before running them through
-an aggregate function.
+The last piece of the puzzle is the +DISTINCT+ keyword.
+It is used to make all values unique before running them through an aggregate function.
 
-An example might be helpful:""",
+An example might be helpful.
+In this case, we are running the query against the following data:
+
+include::includes/aggregation-introduction.preparation-graph.asciidoc[]
+
+""",
+      prepare = executePreparationQueries(List("""
+MATCH (b:Person {name: 'B'}), (c:Person {name: 'C'})
+CREATE (d:Person {name: 'D'}), (b)-[:KNOWS]->(d), (c)-[:KNOWS]->(d) 
+""")),
       queryText = "" +
         "MATCH (me:Person)-->(friend:Person)-->(friend_of_friend:Person) " +
         "WHERE me.name = 'A'" +
         "RETURN count(distinct friend_of_friend), count(friend_of_friend)",
-      returns = "In this example we are trying to find all our friends of friends, and count them. The first aggregate function, " +
-        "+count(distinct friend_of_friend)+, will only see a `friend_of_friend` once -- +DISTINCT+ removes the duplicates. The latter " +
-        "aggregate function, +count(friend_of_friend)+, might very well see the same `friend_of_friend` multiple times. Since there is " +
-        "no real data in this case, an empty result is returned. See the sections below for real data.",
-      assertions = p => assertTrue(true))
+      returns = """
+In this example we are trying to find all our friends of friends, and count them.
+The first aggregate function, +count(DISTINCT friend_of_friend)+, will only see a `friend_of_friend` once -- +DISTINCT+ removes the duplicates.
+The latter aggregate function, +count(friend_of_friend)+, might very well see the same `friend_of_friend` multiple times.
+In this case, both +B+ and +C+ know +D+ and thus +D+ will get counted twice, when not using ++DISTINCT++.
+""",
+      assertions = p => assertEquals(Map("count(distinct friend_of_friend)" -> 1, "count(friend_of_friend)" -> 2), p.toList.head))
   }
 
   @Test def percentileDisc() {
     testQuery(
       title = "percentileDisc",
-      text = "+percentileDisc+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a rounding method, returning the nearest value to the percentile. For interpolated values, see PERCENTILE_CONT.",
-      queryText = "match (n:Person) where has(n.property) return percentileDisc(n.property, 0.5)",
+      text = """
++percentileDisc+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0.
+It uses a rounding method, returning the nearest value to the percentile.
+For interpolated values, see ++percentileCont++.""",
+      queryText = "match (n:Person) return percentileDisc(n.property, 0.5)",
       returns = "The 50th percentile of the values in the property `property` is returned by the example query. In this case, 0.5 is the median, or 50th percentile.",
       assertions = p => assertEquals(Map("percentileDisc(n.property, 0.5)" -> 33), p.toList.head))
   }
@@ -179,8 +198,11 @@ An example might be helpful:""",
   @Test def percentileCont() {
     testQuery(
       title = "percentileCont",
-      text = "+percentileCont+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a linear interpolation method, calculating a weighted average between two values, if the desired percentile lies between them. For nearest values using a rounding method, see PERCENTILE_DISC.",
-      queryText = "match (n:Person) where has(n.property) return percentileCont(n.property, 0.4)",
+      text = """
++percentileCont+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0.
+It uses a linear interpolation method, calculating a weighted average between two values, if the desired percentile lies between them.
+For nearest values using a rounding method, see ++percentileDisc++.""",
+      queryText = "match (n:Person) return percentileCont(n.property, 0.4)",
       returns = "The 40th percentile of the values in the property `property` is returned by the example query, calculated with a weighted average.",
       assertions = p => assertEquals(Map("percentileCont(n.property, 0.4)" -> 29), p.toList.head))
   }
@@ -188,7 +210,10 @@ An example might be helpful:""",
   @Test def stdev() {
     testQuery(
       title = "stdev",
-      text = "+stdev+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N-1 as the denominator, and should be used when taking a sample of the population for an unbiased estimate. When the standard variation of the entire population is being calculated, STDEVP should be used.",
+      text = """
++stdev+ calculates the standard deviation for a given value over a group.
+It uses a standard two-pass method, with `N - 1` as the denominator, and should be used when taking a sample of the population for an unbiased estimate.
+When the standard variation of the entire population is being calculated, +stdevp+ should be used.""",
       queryText = "match (n) where n.name IN ['A','B','C'] return stdev(n.property)",
       returns = "The standard deviation of the values in the property `property` is returned by the example query.",
       assertions = p => assertEquals(15.7162336455, p.toList.head("stdev(n.property)").asInstanceOf[Double], 0.0000001))
@@ -197,7 +222,10 @@ An example might be helpful:""",
   @Test def stdevp() {
     testQuery(
       title = "stdevp",
-      text = "+stdevp+ calculates the standard deviation for a given value over a group. It uses a standard two-pass method, with N as the denominator, and should be used when calculating the standard deviation for an entire population. When the standard variation of only a sample of the population is being calculated, STDEV should be used.",
+      text = """
++stdevp+ calculates the standard deviation for a given value over a group.
+It uses a standard two-pass method, with `N` as the denominator, and should be used when calculating the standard deviation for an entire population.
+When the standard variation of only a sample of the population is being calculated, +stdev+ should be used.""",
       queryText = "match (n) where n.name IN ['A','B','C'] return stdevp(n.property)",
       returns = "The population standard deviation of the values in the property `property` is returned by the example query.",
       assertions = p => assertEquals(12.8322510366, p.toList.head("stdevp(n.property)").asInstanceOf[Double], 0.0000001))

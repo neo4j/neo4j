@@ -29,30 +29,32 @@ class UnionTest extends DocumentingTestBase with StatisticsChecker {
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
   
-  def graphDescription = List(
-    "Lucy:Actor KNOWS Kevin:Actor",
-    "Lucy ACTS_IN Cypher:Movie",
-    "Kevin ACTS_IN Cypher"
-  )
-
-  override val properties: Map[String, Map[String, Any]] = Map(
-    "Lucy" -> Map("name" -> "Lucy Liu"),
-    "Kevin" -> Map("name" -> "Kevin Bacon"),
-    "Cypher" -> Map("title" -> "Cypher")
-  )
+  override val setupQueries = List("""
+create (ah:Actor{name: 'Anthony Hopkins'}),
+  (hm:Actor {name: 'Helen Mirren'}),
+  (hitchcock:Actor {name: 'Hitchcock'}),
+  (hitchcockMovie:Movie {title: 'Hitchcock'}),
+  (ah)-[:KNOWS]->(hm),
+  (ah)-[:ACTS_IN]->(hitchcockMovie),
+  (hm)-[:ACTS_IN]->(hitchcockMovie)
+""")
 
   def section = "Union"
 
   @Test def union_between_two_queries() {
     testQuery(
-      title = "Union two queries",
-      text = "Combining the results from two queries is done using UNION ALL",
+      title = "Combine two queries",
+      text = "Combining the results from two queries is done using +UNION ALL+.",
       queryText =
         """match (n:Actor) return n.name as name
            UNION ALL
            match (n:Movie) return n.title as name""",
-      returns = "The combined result is returned.",
-      assertions = (p) => assert(p.toList === List(Map("name" -> "Lucy Liu"), Map("name" -> "Kevin Bacon"), Map("name" -> "Cypher")))
+      returns = "The combined result is returned, including duplicates.",
+      assertions = (p) => {
+        val result = p.toList
+        assert(result.size === 4)
+        assert(result.toSet === Set(Map("name" -> "Anthony Hopkins"), Map("name" -> "Helen Mirren"), Map("name" -> "Hitchcock")))
+      }
     )
   }
 
@@ -64,8 +66,12 @@ class UnionTest extends DocumentingTestBase with StatisticsChecker {
         """match (n:Actor) return n.name as name
 UNION
 match (n:Movie) return n.title as name""",
-      returns = "The combined result is returned.",
-      assertions = (p) => assert(p.toList === List(Map("name" -> "Lucy Liu"), Map("name" -> "Kevin Bacon"), Map("name" -> "Cypher")))
+      returns = "The combined result is returned, without duplicates.",
+      assertions = (p) => {
+        val result = p.toList
+        assert(result.size === 3)
+        assert(result.toSet === Set(Map("name" -> "Anthony Hopkins"), Map("name" -> "Helen Mirren"), Map("name" -> "Hitchcock")))
+      }
     )
   }
 }

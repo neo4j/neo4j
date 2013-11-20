@@ -30,7 +30,7 @@ class SetTest extends DocumentingTestBase with StatisticsChecker {
   override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
-  def graphDescription = List(
+  override def graphDescription = List(
     "Andres:Swedish KNOWS Peter",
     "Stefan KNOWS Andres",
     "Emil KNOWS Peter")

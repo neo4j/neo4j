@@ -27,7 +27,7 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 
 class PeopleSimilarityFavoritesTest extends DocumentingTestBase {
-  def graphDescription = List("Joe favorite Cats", "Joe favorite Bikes",
+  override def graphDescription = List("Joe favorite Cats", "Joe favorite Bikes",
     "Joe friend Sara",
     "Sara favorite Cats",
     "Sara favorite Bikes",

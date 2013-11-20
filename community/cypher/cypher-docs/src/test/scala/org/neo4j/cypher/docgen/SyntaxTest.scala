@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.cypher.ExecutionResult
 
 class SyntaxTest extends DocumentingTestBase {
-  def graphDescription = List(
+  override def graphDescription = List(
     "A:foo:bar KNOWS B",
     "A KNOWS C",
     "B KNOWS D",

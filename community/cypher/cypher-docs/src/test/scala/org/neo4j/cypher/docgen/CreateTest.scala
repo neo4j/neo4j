@@ -24,7 +24,6 @@ import org.neo4j.graphdb.{ DynamicLabel, Node, Relationship }
 import org.neo4j.cypher.StatisticsChecker
 
 class CreateTest extends DocumentingTestBase with StatisticsChecker {
-  def graphDescription = List()
 
   def section = "Create"
 
@@ -34,15 +33,6 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       text = "Creating a single node is done by issuing the following query.",
       queryText = "create (n)",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
-      assertions = (p) => {})
-  }
-
-  @Test def create_single_node_with_properties() {
-    testQuery(
-      title = "Create single node and set properties",
-      text = "The values for the properties can be any scalar expressions.\n\nCAUTION: This syntax has been deprecated, please use the one in <<create-return-created-node>>.",
-      queryText = "create (n {name : 'Andres', title : 'Developer'})",
-      returns = "Nothing is returned from this query.",
       assertions = (p) => {})
   }
 
@@ -67,7 +57,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
   @Test def create_single_node_with_labels_and_properties() {
     testQuery(
       title = "Create node and add labels and properties",
-      text = "When creating a new node with labels, you can add properties using +VALUES+ at the same time.",
+      text = "When creating a new node with labels, you can add properties at the same time.",
       queryText = "create (n:Person {name : 'Andres', title : 'Developer'})",
       returns = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))

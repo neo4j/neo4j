@@ -20,15 +20,20 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class DeleteTest extends DocumentingTestBase {
-  def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
+  override def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
 
   override val properties = Map(
     "Andres" -> Map("name"->"Andres", "age" -> 36l),
     "Tobias" -> Map("name"->"Tobias", "age" -> 25l),
     "Peter"  -> Map("name"->"Peter",  "age" -> 34l)
   )
+
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section = "Delete"
 
