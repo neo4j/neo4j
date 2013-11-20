@@ -261,6 +261,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         try
         {
             final TransactionManager txManager = graphDb.getDependencyResolver().resolveDependency( TransactionManager.class );
+
+            idGeneratorFactory.switchToMaster();
+
             MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
 
             MasterImpl masterImpl = new MasterImpl( spi, logging, config );
@@ -271,7 +274,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             life.add( masterServer );
             delegateHandler.setDelegate( masterImpl );
 
-            idGeneratorFactory.switchToMaster();
             life.start();
 
             masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress() ).contains

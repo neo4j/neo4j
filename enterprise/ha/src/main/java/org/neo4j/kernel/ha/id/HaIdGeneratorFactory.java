@@ -113,7 +113,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
     private class HaIdGenerator implements IdGenerator
     {
-        private IdGenerator delegate;
+        private volatile IdGenerator delegate;
         private final FileSystemAbstraction fs;
         private final File fileName;
         private final int grabSize;
