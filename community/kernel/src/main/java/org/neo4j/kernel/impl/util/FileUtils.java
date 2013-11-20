@@ -200,13 +200,15 @@ public class FileUtils
     {
         if ( !srcFile.exists() )
         {
-            throw new NotFoundException( "Source file[" + srcFile.getName()
-                    + "] not found" );
+            throw new NotFoundException( "Source file[" + srcFile.getName() + "] not found" );
         }
         if ( renameToFile.exists() )
         {
-            throw new NotFoundException( "Target file[" + renameToFile.getName()
-                    + "] already exists" );
+            throw new NotFoundException( "Target file[" + renameToFile.getName() + "] already exists" );
+        }
+        if ( !renameToFile.getParentFile().isDirectory() )
+        {
+            throw new NotFoundException( "Target directory[" + renameToFile.getParent() + "] does not exists" );
         }
         int count = 0;
         boolean renamed;

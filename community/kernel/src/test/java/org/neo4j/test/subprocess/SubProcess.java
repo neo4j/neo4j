@@ -224,7 +224,7 @@ public abstract class SubProcess<T, P> implements Serializable
             }
             connector = first;
         }
-        private final Map<String, List<BreakPoint>> breakpoints = new HashMap<String, List<BreakPoint>>();
+        private final Map<String, List<BreakPoint>> breakpoints = new HashMap<>();
         private final Map<String, ? extends com.sun.jdi.connect.Connector.Argument> args;
 
         DebuggerConnector( BreakPoint[] breakpoints )
@@ -234,7 +234,7 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 List<BreakPoint> list = this.breakpoints.get( breakpoint.type );
                 if ( list == null )
-                    this.breakpoints.put( breakpoint.type, list = new ArrayList<BreakPoint>() );
+                    this.breakpoints.put( breakpoint.type, list = new ArrayList<>() );
                 list.add( breakpoint );
             }
         }
@@ -311,7 +311,7 @@ public abstract class SubProcess<T, P> implements Serializable
         volatile Handler handler;
         private final com.sun.jdi.event.EventQueue queue;
         private final Map<String, List<BreakPoint>> breakpoints;
-        private final Map<com.sun.jdi.ThreadReference, DebuggerDeadlockCallback> suspended = new HashMap<com.sun.jdi.ThreadReference, DebuggerDeadlockCallback>();
+        private final Map<com.sun.jdi.ThreadReference, DebuggerDeadlockCallback> suspended = new HashMap<>();
         static final DebuggerDeadlockCallback defaultCallback = new DebuggerDeadlockCallback()
         {
             @Override
@@ -390,13 +390,13 @@ public abstract class SubProcess<T, P> implements Serializable
                 }
                 catch ( KillSubProcess kill )
                 {
-                    exitCode = Integer.valueOf( kill.exitCode );
+                    exitCode = kill.exitCode;
                 }
                 finally
                 {
                     if ( exitCode != null )
                     {
-                        events.virtualMachine().exit( exitCode.intValue() );
+                        events.virtualMachine().exit( exitCode );
                     }
                     else
                     {
@@ -444,7 +444,7 @@ public abstract class SubProcess<T, P> implements Serializable
         DebuggedThread[] suspendedThreads()
         {
             if ( suspended.isEmpty() ) return new DebuggedThread[0];
-            List<DebuggedThread> threads = new ArrayList<DebuggedThread>();
+            List<DebuggedThread> threads = new ArrayList<>();
             for ( com.sun.jdi.ThreadReference thread : suspended.keySet() )
             {
                 threads.add( new DebuggedThread( this, thread ) );
@@ -543,7 +543,7 @@ public abstract class SubProcess<T, P> implements Serializable
         Field pid;
         try
         {
-            pid = ( (Class<?>) Class.forName( "java.lang.UNIXProcess" ) ).getDeclaredField( "pid" );
+            pid = Class.forName( "java.lang.UNIXProcess" ).getDeclaredField( "pid" );
             pid.setAccessible( true );
         }
         catch ( Throwable ex )
@@ -638,14 +638,17 @@ public abstract class SubProcess<T, P> implements Serializable
 
     private static class PipeThread extends Thread
     {
-        final CopyOnWriteArrayList<PipeTask> tasks = new CopyOnWriteArrayList<PipeTask>();
+        {
+            setName( getClass().getSimpleName() );
+        }
+        final CopyOnWriteArrayList<PipeTask> tasks = new CopyOnWriteArrayList<>();
 
         @Override
         public void run()
         {
             while ( true )
             {
-                List<PipeTask> done = new ArrayList<PipeTask>();
+                List<PipeTask> done = new ArrayList<>();
                 for ( PipeTask task : tasks )
                 {
                     if ( !task.pipe() )
@@ -797,7 +800,7 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 if ( live == null )
                 {
-                    final Set<Handler> handlers = live = new HashSet<Handler>();
+                    final Set<Handler> handlers = live = new HashSet<>();
                     Runtime.getRuntime().addShutdownHook( new Thread()
                     {
                         @Override
@@ -982,7 +985,7 @@ public abstract class SubProcess<T, P> implements Serializable
             this.subprocess = subprocess;
         }
 
-        public Object dispatch( String name, String[] types, Object[] args ) throws RemoteException, Throwable
+        public Object dispatch( String name, String[] types, Object[] args ) throws Throwable
         {
             Class<?>[] params = new Class<?>[types.length];
             for ( int i = 0; i < params.length; i++ )
