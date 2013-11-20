@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;

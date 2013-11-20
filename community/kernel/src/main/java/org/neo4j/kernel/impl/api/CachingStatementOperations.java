@@ -58,10 +58,13 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.impl.api.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
+import static org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
 
 public class CachingStatementOperations implements
         EntityReadOperations,

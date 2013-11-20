@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.util.DiffSets;
 
 public final class NodeState extends PropertyContainerState
 {

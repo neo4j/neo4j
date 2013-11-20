@@ -37,11 +37,11 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.PrimitiveLongPredicate;
-import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
-import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.api.PrimitiveIntIteratorForArray;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray;
+import org.neo4j.kernel.impl.util.AbstractPrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIteratorForArray;
 
 import static java.util.EnumSet.allOf;
 

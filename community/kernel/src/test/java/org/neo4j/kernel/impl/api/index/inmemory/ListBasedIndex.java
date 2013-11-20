@@ -25,7 +25,7 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 class ListBasedIndex extends InMemoryIndexImplementation
 {

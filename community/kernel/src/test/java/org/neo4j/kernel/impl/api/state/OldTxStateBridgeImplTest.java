@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.logging.DevNullLoggingService;

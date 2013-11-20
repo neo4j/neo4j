@@ -33,7 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
-import org.neo4j.kernel.impl.api.constraints.UnableToValidateConstraintKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;

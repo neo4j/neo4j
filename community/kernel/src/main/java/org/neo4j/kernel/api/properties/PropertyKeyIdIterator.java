@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 public class PropertyKeyIdIterator implements PrimitiveLongIterator
 {

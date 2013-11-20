@@ -30,12 +30,12 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.LockHolder;
-import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.ReleasableLock;
-import org.neo4j.kernel.impl.api.constraints.ConstraintValidationKernelException;
-import org.neo4j.kernel.impl.api.constraints.UnableToValidateConstraintKernelException;
-import org.neo4j.kernel.impl.api.constraints.UniqueConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public class ConstraintEnforcingEntityOperations implements EntityOperations

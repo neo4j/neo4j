@@ -37,8 +37,8 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveInt;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
 

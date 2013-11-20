@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.IOException;
 
 import org.neo4j.index.impl.lucene.Hits;
-import org.neo4j.kernel.impl.api.AbstractPrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.AbstractPrimitiveLongIterator;
 
 public class HitsPrimitiveLongIterator extends AbstractPrimitiveLongIterator
 {

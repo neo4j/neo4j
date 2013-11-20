@@ -43,10 +43,13 @@ import org.neo4j.kernel.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.util.Collections.emptyList;
 

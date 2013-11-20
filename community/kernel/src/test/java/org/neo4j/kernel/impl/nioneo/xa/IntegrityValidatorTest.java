@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import javax.transaction.xa.XAException;
 
 import org.junit.Test;
-import org.neo4j.kernel.impl.api.constraints.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;

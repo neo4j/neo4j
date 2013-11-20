@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.labelscan;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;

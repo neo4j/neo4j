@@ -22,7 +22,7 @@ package org.neo4j.kernel.api;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;

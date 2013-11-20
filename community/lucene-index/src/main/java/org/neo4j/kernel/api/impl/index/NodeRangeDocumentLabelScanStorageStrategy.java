@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.flatten;

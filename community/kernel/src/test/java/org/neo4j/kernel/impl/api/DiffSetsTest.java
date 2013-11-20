@@ -25,6 +25,7 @@ import java.util.Iterator;
 import org.junit.Test;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.impl.util.DiffSets;
 
 import static java.util.Arrays.asList;
 

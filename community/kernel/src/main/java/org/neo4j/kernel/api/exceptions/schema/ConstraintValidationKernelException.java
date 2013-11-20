@@ -17,18 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.constraints;
+package org.neo4j.kernel.api.exceptions.schema;
+
+import org.neo4j.kernel.api.exceptions.KernelException;
 
 /**
- * Constraint violation happens when a user tries to modify data so that it violates
- * an existing constraint.
+ * Constraint validation is the process of finding applicable constraints and verifying that
+ * that they are not being violated. There are two ways that validation can fail: either the
+ * {@linkplain ConstraintViolationKernelException data violates the constraint}, or
+ * {@linkplain UnableToValidateConstraintKernelException the database is unable to perform the validation} for some
+ * internal reason.
  *
  * @see ConstraintVerificationFailedKernelException
  */
-public abstract class ConstraintViolationKernelException extends ConstraintValidationKernelException
+public abstract class ConstraintValidationKernelException extends KernelException
 {
-    protected ConstraintViolationKernelException( String message, Object... parameters )
+    protected ConstraintValidationKernelException( String message, Object... parameters )
     {
         super( message, parameters );
+    }
+
+    protected ConstraintValidationKernelException( Throwable cause, String message, Object... parameters )
+    {
+        super( cause, message, parameters );
     }
 }

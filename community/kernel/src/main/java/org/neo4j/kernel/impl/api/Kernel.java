@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.operations.AuxiliaryStoreOperations;
 import org.neo4j.kernel.api.operations.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.impl.api.constraints.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.TxState;

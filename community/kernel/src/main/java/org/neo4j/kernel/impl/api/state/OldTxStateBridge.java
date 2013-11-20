@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Map;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.util.DiffSets;
 
 /**
  * Temporary anti-corruption while the old {@link org.neo4j.kernel.impl.core.TransactionState} class

@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.kernel.api._
 import org.neo4j.cypher.{FailedIndexException, EntityNotFoundException}
 import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
@@ -40,6 +39,7 @@ import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.cypher.internal.compiler.v2_0.spi._
 import org.neo4j.cypher.internal.compiler.v2_0.spi.IdempotentResult
 import org.neo4j.kernel.impl.coreapi.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator
 
 class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement)
   extends TransactionBoundTokenContext(statement) with QueryContext {

@@ -29,7 +29,7 @@ import org.apache.lucene.search.SearcherManager;
 
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 public interface LabelScanStorageStrategy
 {

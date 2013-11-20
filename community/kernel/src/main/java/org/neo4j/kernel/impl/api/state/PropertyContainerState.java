@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.util.DiffSets;
 
 public class PropertyContainerState extends EntityState
 {

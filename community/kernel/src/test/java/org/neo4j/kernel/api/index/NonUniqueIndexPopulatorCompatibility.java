@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
 

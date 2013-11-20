@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator
-import org.neo4j.kernel.impl.api.PrimitiveIntIterator
+import org.neo4j.kernel.impl.util.{PrimitiveIntIterator, PrimitiveLongIterator}
 
 object JavaConversionSupport
 {

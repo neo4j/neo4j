@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 
 public final class LabelState extends EntityState

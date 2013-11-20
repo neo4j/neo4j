@@ -33,7 +33,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;

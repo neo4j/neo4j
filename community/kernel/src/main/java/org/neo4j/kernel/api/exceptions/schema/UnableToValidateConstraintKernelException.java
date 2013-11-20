@@ -17,11 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api.exceptions.schema;
 
-public interface PrimitiveIntIterator
+/**
+ * Attempting to validate constraints but the apparatus for validation was not available. For example,
+ * this exception is thrown when an index required to implement a uniqueness constraint is not available.
+ */
+public class UnableToValidateConstraintKernelException extends ConstraintValidationKernelException
 {
-    boolean hasNext();
-
-    int next();
+    public UnableToValidateConstraintKernelException( Throwable cause )
+    {
+        super( cause, "Unable to validate constraint." );
+    }
 }

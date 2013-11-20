@@ -27,7 +27,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
 import org.neo4j.kernel.impl.util.ArrayMap;
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.helpers
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.kernel.impl.api.PrimitiveLongIteratorForArray
+import org.neo4j.kernel.impl.util.PrimitiveLongIteratorForArray
 
 class JavaConversionSupportTest extends Assertions {
 

@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.index.bitmaps;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 public class LongPageIterator implements PrimitiveLongIterator
 {

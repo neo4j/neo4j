@@ -24,8 +24,8 @@ import java.util.Iterator;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.kernel.impl.api.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.api.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
