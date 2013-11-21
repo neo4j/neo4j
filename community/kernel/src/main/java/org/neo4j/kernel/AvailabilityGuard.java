@@ -157,7 +157,15 @@ public class AvailabilityGuard
                     return false;
                 }
 
-
+                try
+                {
+                    Thread.sleep( 10 );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.interrupted();
+                    break;
+                }
                 Thread.yield();
             }
 
