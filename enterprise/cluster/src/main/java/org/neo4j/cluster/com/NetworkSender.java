@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster.com;
 
-import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
-
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -34,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -54,6 +53,7 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
@@ -62,6 +62,8 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
 
 /**
  * TCP version of sending messages. This handles sending messages from state machines to other instances
@@ -73,6 +75,7 @@ public class NetworkSender
     public interface Configuration
     {
         int defaultPort(); // This is the default port to try to connect to
+
         int port(); // This is the port we are listening on
     }
 
@@ -88,7 +91,8 @@ public class NetworkSender
     // Sending
     // One executor for each receiving instance, so that one blocking instance cannot block others receiving messages
     private Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
-    private Set<URI> failedInstances = new HashSet<URI>(  ); // Keeps track of what instances we have failed to open connections to
+    private Set<URI> failedInstances = new HashSet<URI>(); // Keeps track of what instances we have failed to open
+    // connections to
     private ClientBootstrap clientBootstrap;
 
     private Configuration config;
@@ -104,11 +108,11 @@ public class NetworkSender
         this.config = config;
         this.receiver = receiver;
         this.msgLog = logging.getMessagesLog( getClass() );
-        me = URI.create( CLUSTER_SCHEME+"://0.0.0.0:"+ config.port() );
+        me = URI.create( CLUSTER_SCHEME + "://0.0.0.0:" + config.port() );
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
             @Override
-            public void listeningAt( URI me)
+            public void listeningAt( URI me )
             {
                 NetworkSender.this.me = me;
             }
@@ -122,7 +126,7 @@ public class NetworkSender
             public void channelClosed( URI to )
             {
             }
-        });
+        } );
     }
 
     @Override
@@ -214,10 +218,11 @@ public class NetworkSender
     {
         final URI to = URI.create( message.getHeader( Message.TO ) );
 
-        ExecutorService senderExecutor = senderExecutors.get(to);
-        if (senderExecutor == null)
+        ExecutorService senderExecutor = senderExecutors.get( to );
+        if ( senderExecutor == null )
         {
-            senderExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender "+to.toASCIIString() ) );
+            senderExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender " + to
+                    .toASCIIString() ) );
             senderExecutors.put( to, senderExecutor );
         }
 
@@ -242,10 +247,10 @@ public class NetworkSender
                 catch ( Exception e )
                 {
                     // Only print out failure message on first fail
-                    if (!failedInstances.contains( to ))
+                    if ( !failedInstances.contains( to ) )
                     {
                         msgLog.warn( "Could not connect to:" + to, e );
-                        failedInstances.add(to);
+                        failedInstances.add( to );
                     }
 
                     return;
@@ -266,7 +271,8 @@ public class NetworkSender
                         {
                             if ( !future.isSuccess() )
                             {
-                                msgLog.debug( "Unable to write " + message + " to " + future.getChannel(), future.getCause() );
+                                msgLog.debug( "Unable to write " + message + " to " + future.getChannel(),
+                                        future.getCause() );
                             }
                         }
                     } );
@@ -277,7 +283,7 @@ public class NetworkSender
                     channel.close();
                 }
             }
-        });
+        } );
     }
 
     protected void openedChannel( final URI uri, Channel ctxChannel )
@@ -414,7 +420,8 @@ public class NetworkSender
         @Override
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
-            if ( !(e.getCause() instanceof ConnectException) )
+            if ( !(e.getCause() instanceof ConnectException ||
+                    e.getCause() instanceof RejectedExecutionException) )
             {
                 msgLog.error( "Receive exception:", e.getCause() );
             }
