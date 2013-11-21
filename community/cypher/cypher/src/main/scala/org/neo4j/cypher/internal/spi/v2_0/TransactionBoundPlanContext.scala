@@ -24,45 +24,27 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
+import org.neo4j.kernel.api.{StatementConstants, Statement}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
 class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
 
-  def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
+  def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
+    evalOrNone(labelName, propertyKey, (labelId: Int, propertyKeyId: Int) =>
+      getOnlineIndex(statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    )
 
-    getOnlineIndex(statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId))
-  }
+  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
+    evalOrNone(labelName, propertyKey, (labelId: Int, propertyKeyId: Int) =>
+      Some(statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    )
 
-  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
-
-    Some(statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
-  }
-
-  private def evalOrNone[T](f: => Option[T]): Option[T] =
-    try { f } catch { case _: SchemaRuleNotFoundException => None }
-
-  private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
-    statement.readOperations().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(descriptor)
-      case _                         => None
-    }
-
-  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
-    val labelId = statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
-
-    val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
-    if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
-  } catch {
-    case _: KernelException => None
-  }
+  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] =
+    evalOrNone(labelName, propertyKey,  { (labelId: Int, propertyKeyId: Int) =>
+      val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
+      if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
+    } )
 
   def checkNodeIndex(idxName: String) {
     if (!gdb.index().existsForNodes(idxName)) {
@@ -75,4 +57,24 @@ class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
       throw new MissingIndexException(idxName)
     }
   }
+
+  private def evalOrNone[T](labelName: String, propertyKey: String, f: (Int, Int) => Option[T]): Option[T] =
+    try {
+      statement.readOperations().labelGetForName(labelName) match {
+        case labelId if labelId == StatementConstants.NO_SUCH_LABEL => None
+        case labelId => statement.readOperations().propertyKeyGetForName(propertyKey) match {
+          case propertyKeyId if propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY => None
+          case propertyKeyId => f(labelId, propertyKeyId)
+        }
+      }
+    }
+    catch {
+      case _: KernelException             => None
+    }
+
+  private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
+    statement.readOperations().indexGetState(descriptor) match {
+      case InternalIndexState.ONLINE => Some(descriptor)
+      case _                         => None
+    }
 }

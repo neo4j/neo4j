@@ -125,16 +125,29 @@ object IndexSeekStrategy extends NodeStrategy {
     val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
     val propertyPredicates: Seq[SolvedPredicate[PropertyKey]] = findEqualityPredicatesOnProperty(node, where)
 
-    for (
-      labelPredicate <- labelPredicates;
-      propertyPredicate <- propertyPredicates if ctx.getIndexRule(labelPredicate.solution, propertyPredicate.solution).nonEmpty
-    ) yield {
-      val schemaIndex = SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, AnyIndex, None)
-      val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, propertyPredicate.solution)
-      val rating = if (optConstraint.isDefined) Single else IndexEquality
-      val predicates = Seq(labelPredicate.predicate, propertyPredicate.predicate)
-      RatedStartItem(schemaIndex, rating, predicates)
+    val result = Seq.newBuilder[RatedStartItem]
+
+    for ( labelPredicate <- labelPredicates;
+          propertyPredicate <- propertyPredicates
+    ) {
+      val labelSolution: IndexSeekStrategy.LabelName = labelPredicate.solution
+      val propertySolution: IndexSeekStrategy.PropertyKey = propertyPredicate.solution
+
+      ctx.getIndexRule(labelSolution, propertySolution) match {
+        case Some(_) =>
+          val schemaIndex = SchemaIndex(node, labelSolution, propertySolution, AnyIndex, None)
+          val rating = ctx.getUniquenessConstraint(labelSolution, propertySolution) match {
+            case Some(constraint) => Single
+            case None             => IndexEquality
+          }
+          val predicates = Seq(labelPredicate.predicate, propertyPredicate.predicate)
+          result += RatedStartItem(schemaIndex, rating, predicates)
+        case None =>
+          // no suitable index found
+      }
     }
+
+    result.result()
   }
 
   private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate]): Seq[SolvedPredicate[PropertyKey]] =
