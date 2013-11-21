@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -45,7 +45,6 @@ public class RemoveOrphanConstraintIndexesOnStartup
         this.log = logging.getMessagesLog( getClass() );
     }
 
-    @SuppressWarnings( "deprecation" )
     public void perform()
     {
         try
