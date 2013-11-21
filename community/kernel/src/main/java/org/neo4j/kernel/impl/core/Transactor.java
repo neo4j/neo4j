@@ -60,7 +60,6 @@ public class Transactor
         try
         {
             beginTransaction();
-            @SuppressWarnings("deprecation")
             KernelTransaction tx = persistenceManager.currentKernelTransaction();
             boolean success = false;
             try
@@ -85,7 +84,7 @@ public class Transactor
                 }
             }
         }
-        catch(HeuristicMixedException | RollbackException | HeuristicRollbackException | SystemException |
+        catch ( HeuristicMixedException | RollbackException | HeuristicRollbackException | SystemException |
                TransactionalException failure )
         {
             previousTransaction = null; // the transaction manager threw an exception, don't resume previous.
