@@ -33,7 +33,6 @@ import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
-import StatementTokenNameLookup
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.cypher.internal.compiler.v2_0.spi._
 import org.neo4j.cypher.internal.compiler.v2_0.spi.IdempotentResult
