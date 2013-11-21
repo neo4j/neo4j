@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands
 
-import expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
 import expressions.Identifier._
 import org.neo4j.graphdb.Direction
 import collection.Seq
@@ -27,12 +27,16 @@ import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.GraphElementPropertyFunctions
 import collection.Map
+import scala.Some
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.AnyType
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 
 trait Pattern extends TypeSafe with AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]
 
   protected def leftArrow(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
+  
   protected def rightArrow(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
 
   def rewrite( f : Expression => Expression) : Pattern
@@ -40,6 +44,9 @@ trait Pattern extends TypeSafe with AstNode[Pattern] {
   def rels:Seq[String]
 
   def identifiers: Seq[String] = possibleStartPoints.map(_._1)
+
+  // Returns information about all nodes contained in this pattern as a sequence of predicates
+  def impliedNodePredicates: Seq[Predicate] = Seq.empty
 }
 
 object Pattern {
@@ -66,8 +73,13 @@ case class SingleNode(name: String,
                       properties: Map[String, Expression]=Map.empty) extends Pattern with GraphElementPropertyFunctions {
   def possibleStartPoints = Seq(name -> NodeType())
 
-  def predicate = True()
-
+  override def impliedNodePredicates = {
+    val mapExpr = Identifier(name)
+    val labelPredicates = labels.map(HasLabel(mapExpr, _))
+    val propertyPredicates = properties.toSeq.map { Property.predicateFromMapEntry(mapExpr, _) }
+    labelPredicates ++ propertyPredicates
+  }
+  
   def rels = Seq.empty
 
   def relTypes = Seq.empty
@@ -112,6 +124,8 @@ case class RelatedTo(left: SingleNode,
 
     if (info == "") "" else "[" + info + "]"
   }
+
+  override def impliedNodePredicates = left.impliedNodePredicates ++ right.impliedNodePredicates
 
   val possibleStartPoints: Seq[(String, MapType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->RelationshipType()
 
@@ -160,6 +174,8 @@ case class VarLengthRelatedTo(pathName: String,
   def symbolTableDependencies = Set.empty
 
   def cloneWithOtherName(newName: String) = copy(pathName = newName)
+
+  override def impliedNodePredicates = left.impliedNodePredicates ++ right.impliedNodePredicates
 
   private def relInfo: String = {
     var info = relTypes.mkString("|")
@@ -213,6 +229,8 @@ case class ShortestPath(pathName: String,
   def cloneWithOtherName(newName: String) = copy(pathName = newName)
 
   def symbolTableDependencies = Set(left.name, right.name)
+
+  override def impliedNodePredicates = left.impliedNodePredicates ++ right.impliedNodePredicates
 
   private def relInfo: String = {
     var info = "["
