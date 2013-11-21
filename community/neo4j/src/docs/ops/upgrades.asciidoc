@@ -27,6 +27,7 @@ From Version,To Version,Upgrade Type
 1.6,1.7,Automatic
 1.7,1.8,Automatic
 1.8,1.9,Automatic
+1.9,2.0,Automatic
 |====
 
 [NOTE]
@@ -44,6 +45,7 @@ To perform a normal upgrade (for minor changes to the database store):
 . cleanly shutdown the database to upgrade, if it is running
 . startup the database with the newer version of Neo4j
 
+[[explicit_upgrade]]
 == Explicit Upgrade ==
 
 To perform a special upgrade (for significant changes to the database store):
@@ -54,6 +56,19 @@ To perform a special upgrade (for significant changes to the database store):
 . the upgrade will happen during startup and the process is done when the database has been successfully started
 . "+allow_store_upgrade=true+" configuration parameter should be removed, set to "+false+" or commented out
 . information about the upgrade and progress indicator is printed in +messages.log+
+
+[[deployment-upgrading-two-zero]]
+== Upgrade 1.9 -> 2.0 ==
+
+This edition adds a new store for labels and one for schema, an index for labels, and also the format of the node store
+has changed. Note that we do not currently support rolling upgrades between 1.9.x and 2.0.
+
+When upgrading, the following will happen and will both take some time, and will require extra disk space:
+
+. A new, empty schema store will be created
+. A new, empty label store will be created
+. A new, empty label scan index will be created
+. The node store will be converted, we need to enlarge each record to make space for labels - this will take time depending on the size of your database
 
 [[deployment-upgrading-one-nine]]
 == Upgrade 1.8 -> 1.9 ==
