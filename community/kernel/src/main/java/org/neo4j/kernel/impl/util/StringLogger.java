@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,6 +35,8 @@ import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.logging.LogMarker;
+
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public abstract class StringLogger
 {
@@ -56,7 +56,7 @@ public abstract class StringLogger
 
         try
         {
-            writer = new PrintWriter( new OutputStreamWriter( stream, DEFAULT_ENCODING ) );
+            writer = new PrintWriter( new OutputStreamWriter( stream, DEFAULT_ENCODING ), true );
         }
         catch ( UnsupportedEncodingException e )
         {
@@ -331,13 +331,17 @@ public abstract class StringLogger
     public void debug( String msg )
     {
         if ( isDebugEnabled() )
+        {
             logMessage( msg );
+        }
     }
 
     public void debug( String msg, Throwable cause )
     {
         if ( isDebugEnabled() )
+        {
             logMessage( msg, cause );
+        }
     }
 
     public boolean isDebugEnabled()
