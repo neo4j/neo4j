@@ -66,7 +66,9 @@ class StartPointChoosingBuilder extends PlanBuilder {
   private def findStartItemsForDisconnectedPatterns(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[RatedStartItem] = {
     val disconnectedPatterns = plan.query.matchPattern.disconnectedPatternsWithout(plan.pipe.symbols.keys)
     val startPointNames = plan.query.start.map(_.token.identifierName)
-    val allPredicates = plan.query.where.map(_.token)
+    // implied node predicates should perhaps be added earlier
+    val allPredicates =
+      plan.query.where.map(_.token) ++ plan.query.patterns.map(_.token).flatMap(_.impliedNodePredicates)
 
     def findSingleNodePoints(startPoints: Set[RatedStartItem]): Iterable[RatedStartItem] =
       startPoints.filter {
