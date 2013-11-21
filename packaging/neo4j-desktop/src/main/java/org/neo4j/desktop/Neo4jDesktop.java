@@ -43,6 +43,7 @@ public final class Neo4jDesktop
     private void start()
     {
         PlatformUI.selectPlatformUI();
+        DesktopIdentification.register();
 
         Environment environment;
         try
