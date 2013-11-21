@@ -98,17 +98,29 @@ public class GraphDatabaseFactory
         } );
     }
 
+    /**
+     * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     */
+    @Deprecated
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()
     {
         return getCurrentState().getKernelExtension();
     }
 
+    /**
+     * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     */
+    @Deprecated
     public GraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
         getCurrentState().addKernelExtensions( newKernelExtensions );
         return this;
     }
 
+    /**
+     * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     */
+    @Deprecated
     @SuppressWarnings( { "rawtypes", "unchecked" } )
     public GraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
     {
@@ -116,23 +128,39 @@ public class GraphDatabaseFactory
         return addKernelExtensions( extensions );
     }
 
+    /**
+     * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     */
+    @Deprecated
     public GraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
         getCurrentState().setKernelExtensions( newKernelExtensions );
         return this;
     }
 
+    /**
+     * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
+     */
+    @Deprecated
     public List<CacheProvider> getCacheProviders()
     {
         return getCurrentState().getCacheProviders();
     }
 
+    /**
+     * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
+     */
+    @Deprecated
     public GraphDatabaseFactory setCacheProviders( Iterable<CacheProvider> newCacheProviders )
     {
         getCurrentState().setCacheProviders( newCacheProviders );
         return this;
     }
 
+    /**
+     * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
+     */
+    @Deprecated
     public List<TransactionInterceptorProvider> getTransactionInterceptorProviders()
     {
         return getCurrentState().getTransactionInterceptorProviders();

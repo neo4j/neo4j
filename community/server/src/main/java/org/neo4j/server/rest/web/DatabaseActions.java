@@ -1540,10 +1540,15 @@ public class DatabaseActions
         return filter( filter, constraints );
     }
 
-    private Iterable<ConstraintDefinition> filteredConstraints( String labelName, ConstraintType type )
+    private Iterable<ConstraintDefinition> filteredConstraints( String labelName, final ConstraintType type )
     {
-        Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( label( labelName ) );
-        return type.filter( constraints );
+        return filter(new Predicate<ConstraintDefinition>(){
+            @Override
+            public boolean accept( ConstraintDefinition item )
+            {
+                return item.isConstraintType( type );
+            }
+        }, graphDb.schema().getConstraints( label( labelName ) ) );
     }
 
     private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )
