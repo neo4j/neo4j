@@ -44,9 +44,9 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
-import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
@@ -277,7 +277,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
                 }
             }, VOID_DESERIALIZER );
         }
-        catch ( UnableToResumeTransactionException e )
+        catch ( TransactionAlreadyActiveException e )
         {
             if ( !success )
             {

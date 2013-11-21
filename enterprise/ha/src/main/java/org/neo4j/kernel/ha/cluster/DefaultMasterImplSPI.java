@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -39,8 +40,13 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
-import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
-import org.neo4j.kernel.impl.core.*;
+import org.neo4j.kernel.impl.core.GraphProperties;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -55,8 +61,8 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     private static final int ID_GRAB_SIZE = 1000;
     private final TransactionManager txManager;
     private final DependencyResolver dependencyResolver;
-    private GraphDatabaseAPI graphDb;
-    private Logging logging;
+    private final GraphDatabaseAPI graphDb;
+    private final Logging logging;
 
     public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging, TransactionManager txManager )
     {
@@ -125,11 +131,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         {
             txManager.resume( transaction );
         }
-        catch ( IllegalStateException e )
-        {
-            throw new UnableToResumeTransactionException( e );
-        }
-        catch ( Throwable e )
+        catch ( Exception e )
         {
             throw Exceptions.launderedException( e );
         }
