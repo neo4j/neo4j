@@ -286,17 +286,40 @@ return the nodes connected to the current node.
 * +START n=node(\{me}) CREATE friend=\{props}, (me)-[r:KNOWS]->(friend);+ will
 create the friend and the relationship according to the variables available.
 
-=== Indexing ===
-It's possible to query and manipulate indexes via the index command.
-Example: +index -i persons name+ (will index the name for the current node or relationship in the "persons" index).
+[[shell-listing-indexes-and-constraints]]
+=== Listing Indexes and Constraints ===
 
-* +-g+ will do exact lookup in the index and display hits. You can supply +-c+ with a command to be executed for each hit. 
-* +-q+ will ask the index a query and display hits. You can supply +-c+ with a command to be executed for each hit.
+The +schema+ command allows to list all existing indexes and constraints together with their current status.
+
+[NOTE]
+This command does not list legacy indexes. For working with legacy indexes, please see <<shell-legacy-indexing>>.
+
+Example: +schema+ (will list all indexes and constraints)
+
+Example: +schema -l :Person -p name+ (will only list indexes or constraints on +:Person+ nodes for the property +name+)
+
+The +schema+ command supports the following parameters:
+
+* +-l :Label+ only list indexes or constraints for the given label +:Label+
+* +-p propertyKey+ only list indexes or constraints for the given property key +propertyKey+
+* +-v+ if an index is in the +FAILED+ state, print a verbose error cause if available
+
+Indexes and constraints can be created or removed using Cypher or the Java Core API. They are updated automatically
+whenever the graph is changed.  See <<graphdb-neo4j-schema>> for more.
+
+[[shell-legacy-indexing]]
+=== Legacy Indexing ===
+It's possible to query and manipulate legacy indexes via the index command.
+
+Example: +index -i persons name+ (will index the name for the current node or relationship in the "persons" legacy index).
+
+* +-g+ will do exact lookup in the legacy index and display hits. You can supply +-c+ with a command to be executed for each hit.
+* +-q+ will ask the legacy index a query and display hits. You can supply +-c+ with a command to be executed for each hit.
 * +--cd+ will change current location to the hit from the query. It's just a convenience for using the +-c+ option.
 * +--ls+ will do a listing of the contents for each hit. It's just a convenience for using the +-c+ option.
-* +-i+ will index a key-value pair in an index for the current node/relationship. If no value is given the property value for that key for the current node is used as value.
-* +-r+ will remove a key-value pair (if it exists) from an index for the current node/relationship. Key and value is optional.
-* +-t+ will set the index type to work with, for example `index -t Relationship --delete friends` will delete the +friends+ relationship index. 
+* +-i+ will index a key-value pair into a legacy index for the current node/relationship. If no value is given the property value for that key for the current node is used as value.
+* +-r+ will remove a key-value pair (if it exists) from a legacy index for the current node/relationship. Key and value are optional.
+* +-t+ will set the legacy index type to work with, for example `index -t Relationship --delete friends` will delete the +friends+ relationship index.
 
 === Transactions ===
 It is useful to be able to test changes, and then being able to commit or rollback said changes.
