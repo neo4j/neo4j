@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.hamcrest.CoreMatchers._
 import org.neo4j.graphdb._
-import org.neo4j.kernel.{EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
+import org.neo4j.kernel.TopLevelTransaction
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.Assert._
 import scala.collection.JavaConverters._
@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
 import org.scalautils.LegacyTripleEquals
-import org.neo4j.helpers.collection.MapUtil
 
 class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker with LegacyTripleEquals {
 
@@ -2612,5 +2611,24 @@ RETURN x0.name""")
     // then
     assert(result("name") === "Foo")
     assert(result("count") === 1)
+  }
+
+  @Test
+  def should_use_index_for_simple_traversal() {
+    // given
+    engine.execute("CREATE INDEX ON :User(name)")
+    graph.inTx { graph.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS ) }
+
+    // when
+    val solvedItems = engine.profile("MATCH (u:User {name: \"Jimbob\"})-[:FOLLOWS]->(leader) RETURN u")
+      .executionPlanDescription()
+      .asJava
+      .getChild("TraversalMatcher")
+      .getArguments
+      .get("solvedItems")
+      .asInstanceOf[java.util.Collection[Any]]
+
+    assert( solvedItems.size() === 1 )
+    assert( "SchemaIndex(u,User,name,AnyIndex,Some(Literal(Jimbob)))" === solvedItems.iterator().next().toString() )
   }
 }
