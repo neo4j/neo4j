@@ -90,7 +90,7 @@ public class Environment
                 e.printStackTrace( System.out );
             }
         }
-        else if ( OperatingSystemFamily.WINDOWS.isDetected() )
+        if ( OperatingSystemFamily.WINDOWS.isDetected() )
         {
             getRuntime().exec( new String[]{"rundll32", "url.dll,FileProtocolHandler", file.getAbsolutePath()} );
             return;
