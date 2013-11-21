@@ -25,8 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import data.SimpleVal
 import symbols._
 import collection.JavaConverters._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.StartItem
 
-class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) extends PipeWithSource(source) {
+class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail, solvedItems: Seq[StartItem] = Seq.empty)
+  extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap {
@@ -45,8 +47,19 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) 
 
   def symbols = trail.symbols(source.symbols)
 
-  def executionPlanDescription =
-    source.executionPlanDescription.andThen(this, "TraversalMatcher", "trail" -> SimpleVal.fromStr(trail))
+  def executionPlanDescription = {
+    if (solvedItems.isEmpty)
+      source.executionPlanDescription.andThen(this,
+        "TraversalMatcher",
+        "trail" -> SimpleVal.fromStr(trail)
+       )
+    else
+      source.executionPlanDescription.andThen(this,
+        "TraversalMatcher",
+        "trail" -> SimpleVal.fromStr(trail),
+        "solvedItems" -> SimpleVal.fromIterable[StartItem](solvedItems, (s: StartItem) => SimpleVal.fromStr(s.toString))
+      )
+  }
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
   }

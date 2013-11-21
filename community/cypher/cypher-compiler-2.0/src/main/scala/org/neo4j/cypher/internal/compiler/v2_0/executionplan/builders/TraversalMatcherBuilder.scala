@@ -56,7 +56,11 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
           where = newWhereClause
         )
 
-        val pipe = new TraversalMatchPipe(plan.pipe, matcher, longestTrail)
+        // Keep track of solved items for profiler
+        val solvedItems =
+          newQ.start.filter(_.solved).map(_.token).filter( (s: StartItem) => plan.query.start.contains(Unsolved(s)) )
+
+        val pipe = new TraversalMatchPipe(plan.pipe, matcher, longestTrail, solvedItems = solvedItems)
 
         plan.copy(pipe = pipe, query = newQ)
     }
