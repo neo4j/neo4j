@@ -284,6 +284,7 @@ How to use indexes in the different APIs:
 * <<query-schema-index, Cypher>>
 * <<tutorials-java-embedded-new-index, Java Core API>>
 * <<rest-api-schema-indexes, REST API>>
+* <<shell-listing-indexes-and-constraints, Listing Indexes via Shell>>
 
 [[graphdb-neo4j-schema-constraints]]
 === Constraints ===
@@ -299,3 +300,4 @@ How to use constraints in the different APIs:
 
 * <<query-constraints, Cypher>>
 * <<rest-api-schema-constraints, REST API>>
+* <<shell-listing-indexes-and-constraints, Listing Constraints via Shell>>
