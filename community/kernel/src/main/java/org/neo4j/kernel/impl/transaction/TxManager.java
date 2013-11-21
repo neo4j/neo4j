@@ -658,23 +658,21 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             SystemException
     {
         assertTmOk( "tx resume" );
-        if ( txThreadMap.get() != null )
+        Transaction associatedTx = txThreadMap.get();
+        if ( associatedTx != null )
         {
-            throw new IllegalStateException( "Transaction already associated" );
+            throw new ThreadAssociatedWithOtherTransactionException( Thread.currentThread(), associatedTx, tx );
         }
-        if ( tx != null )
+        
+        TransactionImpl txImpl = (TransactionImpl) tx;
+        if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
         {
-            TransactionImpl txImpl = (TransactionImpl) tx;
-            if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
+            if ( txImpl.isActive() )
             {
-                if ( txImpl.isActive() )
-                {
-                    throw new IllegalStateException( txImpl + " already active" );
-                }
-                txImpl.markAsActive();
-                txThreadMap.set( txImpl );
+                throw new TransactionAlreadyActiveException( Thread.currentThread(), tx );
             }
-            // generate pro-active event resume
+            txImpl.markAsActive();
+            txThreadMap.set( txImpl );
         }
     }
 
@@ -687,10 +685,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         if ( tx != null )
         {
             txThreadMap.remove();
-
-            // generate pro-active event suspend
             tx.markAsSuspended();
         }
+        // OK to return null here according to the JTA spec (at least 1.1)
         return tx;
     }
 

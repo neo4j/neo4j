@@ -36,7 +36,7 @@ import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.kernel.ha.com.HaRequestType18;
 import org.neo4j.kernel.ha.com.slave.MasterClient18;
-import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
+import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.Clock;
 
@@ -70,7 +70,7 @@ public class MasterServer extends Server<Master, Void>
     @Override
     protected boolean shouldLogFailureToFinishOffChannel( Throwable failure )
     {
-        return !(failure instanceof UnableToResumeTransactionException);
+        return !(failure instanceof TransactionAlreadyActiveException);
     }
 
     public Map<Integer, Collection<RequestContext>> getSlaveInformation()

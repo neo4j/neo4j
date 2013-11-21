@@ -40,6 +40,7 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.StoreWriter;
+import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.Node;
@@ -64,9 +65,12 @@ import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.lang.String.format;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -218,15 +222,16 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private Transaction getTx( RequestContext txId )
     {
         MasterTransaction result = transactions.get( txId );
-        if ( result != null )
+        if ( result == null )
         {
-            // set time stamp to zero so that we don't even try to finish it off
-            // if getting old. This is because if the tx is active and old then
-            // it means it's waiting for a lock and we cannot do anything about it.
-            result.resetTime();
-            return result.transaction;
+            throw new TransactionNotPresentOnMasterException( txId );
         }
-        return null;
+        
+        // set time stamp to zero so that we don't even try to finish it off
+        // if getting old. This is because if the tx is active and old then
+        // it means it's waiting for a lock and we cannot do anything about it.
+        result.resetTime();
+        return result.transaction;
     }
 
     private void resumeTransaction( RequestContext txId )
@@ -369,7 +374,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             resumeTransaction( context );
         }
-        catch ( Exception e )
+        catch ( TransactionNotPresentOnMasterException e )
+        {   // Let these ones through straight away
+            throw e;
+        }
+        catch ( RuntimeException e )
         {
             MasterTransaction masterTransaction = transactions.get( context );
             // It is possible that the transaction is not there anymore, or never was. No need for an NPE to be thrown.
@@ -377,11 +386,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             {
                 masterTransaction.markAsFinishAsap();
             }
-            if ( e instanceof RuntimeException )
-            {
-                throw (RuntimeException) e;
-            }
-            throw new RuntimeException( e );
+            throw e;
         }
 
         finishTransaction0( context, success );
@@ -547,24 +552,22 @@ public class MasterImpl extends LifecycleAdapter implements Master
                             || entry.getValue().finishAsap() )
                     {
                         long displayableTime = (time == 0 ? 0 : (System.currentTimeMillis() - time));
-                        msgLog.logMessage( "Found old tx " + entry.getKey() + ", " +
-                                "" + entry.getValue().transaction + ", " + displayableTime );
+                        String oldTxDescription = format( "old tx %s: %s at age %s ms",
+                                entry.getKey(), entry.getValue().transaction, displayableTime );
                         try
                         {
                             resumeTransaction( entry.getKey() );
                             finishTransaction0( entry.getKey(), false );
-                            msgLog.logMessage( "Rolled back old tx " + entry.getKey() + ", " +
-                                    "" + entry.getValue().transaction + ", " + displayableTime );
+                            msgLog.info( "Rolled back " + oldTxDescription );
                         }
-                        catch ( IllegalStateException e )
+                        catch ( TransactionAlreadyActiveException e )
                         {
-                            // Expected for waiting transactions
+                            // Expected for transactions awaiting locks, just leave them be
                         }
                         catch ( Throwable t )
                         {
                             // Not really expected
-                            msgLog.logMessage( "Unable to roll back old tx " + entry.getKey() + ", " +
-                                    "" + entry.getValue().transaction + ", " + displayableTime, t );
+                            msgLog.warn( "Unable to roll back " + oldTxDescription, t );
                         }
                     }
                 }
@@ -572,7 +575,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             catch ( Throwable t )
             {
                 // The show must go on
-                msgLog.logMessage( "Exception in MasterImpl", t );
+                msgLog.warn( "Exception running " + getClass().getName() + ", although will continue...", t );
             }
         }
     }
