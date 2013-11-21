@@ -443,4 +443,29 @@ class MergeNodeAcceptanceTest
     // then does not throw
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
   }
+
+  @Test
+  def works_with_property_repeated_in_literal_map_in_set() {
+    // given
+    graph.createConstraint("Person","ssn")
+
+    // when
+    val result = execute("MERGE (person:Person {ssn:42}) ON CREATE SET person = {ssn:42,name:'Robert Paulsen'} RETURN person")
+
+    // then - does not throw
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3/*should really be 2!*/)
+  }
+
+  @Test
+  def works_with_property_in_map_that_gets_set() {
+    // given
+    graph.createConstraint("Person","ssn")
+
+    // when
+    val result = execute("MERGE (person:Person {ssn:{p}.ssn}) ON CREATE SET person = {p} RETURN person",
+      "p"->Map("ssn" -> 42, "name"->"Robert Paulsen"))
+
+    // then - does not throw
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3/*should really be 2!*/)
+  }
 }
