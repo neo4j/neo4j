@@ -257,12 +257,17 @@ public class MasterImpl extends LifecycleAdapter implements Master
             // a request and can now again start to be monitored, so that it can be
             // rolled back if it's getting old.
             tx.updateTime();
-
-            spi.suspendTransaction();
         }
-        catch ( Exception e )
+        finally
         {
-            throw Exceptions.launderedException( e );
+            try
+            {
+                spi.suspendTransaction();
+            }
+            catch ( SystemException e )
+            {
+                throw Exceptions.launderedException( e );
+            }
         }
     }
 
@@ -402,7 +407,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return packResponse( context, null );
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, String name )
     {
@@ -512,7 +516,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
                 safeCastLongToInt( labelId ), safeCastLongToInt( propertyKeyId ), propertyValue ) );
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public Response<Void> pushTransaction( RequestContext context, String resourceName, long tx )
     {

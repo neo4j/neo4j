@@ -56,6 +56,8 @@ class TransactionImpl implements Transaction
     private final LinkedList<ResourceElement> resourceList = new LinkedList<>();
 
     private int status = Status.STATUS_ACTIVE;
+    // volatile since at least toString is unsynchronized and reads it,
+    // but all logical operations are guarded with synchronization
     private volatile boolean active = true;
     private List<Synchronization> syncHooks = new ArrayList<>();
 
@@ -102,13 +104,17 @@ class TransactionImpl implements Transaction
     {
         return state;
     }
+    
+    private String getStatusAsString()
+    {
+        return txManager.getTxStatusAsString( status ) + (active ? "" : " (suspended)");
+    }
 
     @Override
     public String toString()
     {
-
         return String.format( "Transaction(%d, owner:\"%s\")[%s,Resources=%d]",
-                eventIdentifier, owner.getName(), txManager.getTxStatusAsString( status ), resourceList.size() );
+                eventIdentifier, owner.getName(), getStatusAsString(), resourceList.size() );
     }
 
     @Override
