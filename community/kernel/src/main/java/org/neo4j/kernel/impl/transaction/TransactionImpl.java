@@ -53,6 +53,8 @@ class TransactionImpl implements Transaction
 
     private final byte globalId[];
     private int status = Status.STATUS_ACTIVE;
+    // volatile since at least toString is unsynchronized and reads it,
+    // but all logical operations are guarded with synchronization
     private volatile boolean active = true;
     private boolean globalStartRecordWritten = false;
 
@@ -107,23 +109,17 @@ class TransactionImpl implements Transaction
     {
         return state;
     }
+    
+    private String getStatusAsString()
+    {
+        return txManager.getTxStatusAsString( status ) + (active ? "" : " (suspended)");
+    }
 
     @Override
     public String toString()
     {
-        StringBuffer txString = new StringBuffer( "Transaction(" +
-            eventIdentifier + ", owner:\"" + owner.getName() + "\")[" + txManager.getTxStatusAsString( status ) +
-            ",Resources=" + resourceList.size() + "]" );
-//        Iterator<ResourceElement> itr = resourceList.iterator();
-//        while ( itr.hasNext() )
-//        {
-//            txString.append( itr.next().toString() );
-//            if ( itr.hasNext() )
-//            {
-//                txString.append( "," );
-//            }
-//        }
-        return txString.toString();
+        return String.format( "Transaction(%d, owner:\"%s\")[%s,Resources=%d]",
+                eventIdentifier, owner.getName(), getStatusAsString(), resourceList.size() );
     }
 
     @Override
