@@ -34,7 +34,7 @@ import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.operations.KeyReadOperations;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeManager;

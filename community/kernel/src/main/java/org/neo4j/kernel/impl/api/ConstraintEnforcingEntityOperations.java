@@ -21,11 +21,10 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.operations.EntityOperations;
-import org.neo4j.kernel.api.operations.EntityReadOperations;
-import org.neo4j.kernel.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.operations.EntityOperations;
+import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
+import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -33,10 +32,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.LockHolder;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.api.ReleasableLock;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;

@@ -45,13 +45,13 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.operations.EntityReadOperations;
-import org.neo4j.kernel.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.api.operations.KeyReadOperations;
-import org.neo4j.kernel.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
+import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.Token;
@@ -100,7 +100,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         return operations.schemaReadOperations();
     }
 
-    final org.neo4j.kernel.api.operations.SchemaWriteOperations schemaWrite()
+    final org.neo4j.kernel.impl.api.operations.SchemaWriteOperations schemaWrite()
     {
         return operations.schemaWriteOperations();
     }

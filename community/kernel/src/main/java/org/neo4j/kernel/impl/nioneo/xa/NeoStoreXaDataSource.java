@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;

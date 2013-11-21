@@ -26,9 +26,9 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeProxy;

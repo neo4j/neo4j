@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.exceptions;
 
 import org.neo4j.kernel.api.EntityType;
-import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 
 import static java.lang.String.format;
 

@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.api.operations.LegacyKernelOperations;
+import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.transaction.LockType;

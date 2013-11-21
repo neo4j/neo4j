@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.lang.String.format;

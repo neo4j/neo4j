@@ -25,7 +25,7 @@ import java.util.Set;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 
 /**
  * Constraint verification happens when a new constraint is created, and the database verifies that existing

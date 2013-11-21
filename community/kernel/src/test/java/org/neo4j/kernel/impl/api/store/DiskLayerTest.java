@@ -38,7 +38,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.operations.KeyReadOperations;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.api.index.IndexDescriptor;

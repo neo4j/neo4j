@@ -168,8 +168,8 @@ import static java.lang.String.format;
 
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
 /**

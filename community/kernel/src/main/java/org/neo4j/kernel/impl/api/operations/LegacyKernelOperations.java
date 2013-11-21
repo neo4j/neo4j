@@ -17,11 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.operations;
+package org.neo4j.kernel.impl.api.operations;
 
-public interface TokenNameLookup
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+
+public interface LegacyKernelOperations
 {
-    String labelGetName( int labelId );
+    long nodeCreate( Statement state );
 
-    String propertyKeyGetName( int propertyKeyId );
+    long relationshipCreate( Statement state, long relationshipTypeId, long startNodeId, long endNodeId )
+            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 }

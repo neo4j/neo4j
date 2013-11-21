@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.api;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.operations.EntityReadOperations;
-import org.neo4j.kernel.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.api.operations.KeyReadOperations;
-import org.neo4j.kernel.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.api.operations.SchemaStateOperations;
-import org.neo4j.kernel.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
+import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 
 public class StatementOperationParts
 {

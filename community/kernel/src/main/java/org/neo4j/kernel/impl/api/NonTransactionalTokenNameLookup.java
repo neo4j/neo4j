@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.Token;

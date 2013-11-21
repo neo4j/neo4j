@@ -17,16 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.operations;
+package org.neo4j.kernel.impl.api.operations;
 
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-
-public interface LegacyKernelOperations
+public interface WriteOperations extends KeyWriteOperations, EntityWriteOperations, SchemaWriteOperations
 {
-    long nodeCreate( Statement state );
-
-    long relationshipCreate( Statement state, long relationshipTypeId, long startNodeId, long endNodeId )
-            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 }

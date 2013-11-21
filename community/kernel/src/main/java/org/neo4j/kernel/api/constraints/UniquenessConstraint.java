@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.kernel.api.operations.TokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 
 // TODO: When we add other types of constraints, we will either want to create a hierarchy, or...
 // TODO: ...rename this to "Constraint" and add a "type" enum (or something like that).
