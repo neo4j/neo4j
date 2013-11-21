@@ -66,8 +66,13 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
      * access to all URIs to the server by listing the rules class in
      * 'neo4j-server.properties':
      *
-     * @@config with the rule source code of:
-     * @@failingRule With this rule registered, any access to the server will be
+     * @@config
+     *
+     * with the rule source code of:
+     * 
+     * @@failingRule
+     * 
+     * With this rule registered, any access to the server will be
      * denied. In a production-quality implementation the rule
      * will likely lookup credentials/claims in a 3rd-party
      * directory service (e.g. LDAP) or in a local database of
@@ -168,8 +173,13 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
      * `/users*type*` will bind the rule to resources matching
      * URIs like `/users/fred/type/premium`.
      *
-     * @@config with the rule source code of:
-     * @@failingRuleWithWildcardPath With this rule registered, any access to URIs under /protected/ will be
+     * @@config
+     * 
+     * with the rule source code of:
+     * 
+     * @@failingRuleWithWildcardPath
+     * 
+     * With this rule registered, any access to URIs under /protected/ will be
      * denied by the server. Using wildcards allows flexible targeting of security rules to
      * arbitrary parts of the server's API, including any unmanaged extensions or managed
      * plugins that have been registered.
@@ -219,7 +229,10 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
      * access to all URIs matching a complex pattern.
      * The config looks like this:
      *
-     * @@config with the rule source code of:
+     * @@config
+     * 
+     * with the rule source code of:
+     * 
      * @@failingRuleWithComplexWildcardPath
      */
     @Test
