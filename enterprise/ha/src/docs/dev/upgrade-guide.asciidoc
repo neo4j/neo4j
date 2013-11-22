@@ -2,27 +2,27 @@
 Upgrading a Neo4j HA Cluster
 ============================
 
-This document describes the steps required to upgrade a Neo4j cluster without disrupting its operation, a process
-referred to as a _rolling upgrade_.
+This document describes the steps required to upgrade a Neo4j cluster without disrupting its operation.
+This process is referred to as a _rolling upgrade_.
 
 == Upgrading from 1.9.x to 2.0 ==
 
-It is currently _not_ possible to do a rolling upgrade from 1.9.x to 2.0. This means that in order for you to upgrade a
-1.9.x cluster to 2.0, you will incur some downtime.
+It is currently _not_ possible to do a rolling upgrade from 1.9.x to 2.0.
+This means that in order for you to upgrade a 1.9.x cluster to 2.0, you will incur some downtime.
 
 === Steps ===
 
 In order to upgrade a cluster from 1.9.x to 2.0, you will need to do the following manually:
 
 . Backup your data!
-. Shut down every cluster member except the master
-. Install the new version of Neo4j for each slave instance - removing the data directory, but keeping the configuration
-. Shut down the master - this brings your cluster completely offline!
-. Follow the instructions listed here <<explicit_upgrade>> for _just_ the master instance - the data in master instance have now been converted to the new Neo4j 2.0 format
-. Shut down the master instance again
-. Distribute the data directory from master to each slave instance - this saves time by not having to re-build stores and indexes for each slave
-. Bring master online
-. Bring slaves online
+. Shut down every cluster member except the master.
+. Install the new version of Neo4j for each slave instance -- removing the data directory, but keeping the configuration.
+. Shut down the master -- this brings your cluster completely offline!
+. Follow the instructions found in <<explicit-upgrade>> for _just_ the master instance -- the data in master instance have now been converted to the new Neo4j 2.0 format.
+. Shut down the master instance again.
+. Distribute the data directory from master to each slave instance -- this saves time by not having to re-build stores and indexes for each slave.
+. Bring master online.
+. Bring slaves online.
 
 Your entire cluster has now been completely converted to Neo4j 2.0.
 
