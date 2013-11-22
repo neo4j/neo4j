@@ -196,10 +196,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             throws IndexNotFoundKernelException
 
     {
-        // this should move somewhere else
-        LockHolder holder = state.locks();
-        holder.acquireSchemaReadLock();
-
         return entityReadOperations.nodesGetFromIndexLookup( state, index, value );
     }
 
@@ -207,10 +203,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        // this should move somewhere else
-        LockHolder holder = state.locks();
-        holder.acquireSchemaReadLock();
-
         assertIndexOnline( state, index );
 
         int labelId = index.getLabelId();
@@ -223,6 +215,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
         }
 
         // If we find the node - hold a READ lock. If we don't find a node - hold a WRITE lock.
+        LockHolder holder = state.locks();
         try ( ReleasableLock r = holder.getReleasableIndexEntryReadLock( labelId, propertyKeyId, stringVal ) )
         {
             long nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
