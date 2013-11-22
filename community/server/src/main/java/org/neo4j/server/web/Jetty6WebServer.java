@@ -126,6 +126,7 @@ public class Jetty6WebServer implements WebServer
 
             connector.setPort( jettyHttpPort );
             connector.setHost( jettyAddr );
+            connector.setHeaderBufferSize( 20*1024 ); // Use a large header size to accomodate large properties being indexed
 
             jetty.addConnector( connector );
 
