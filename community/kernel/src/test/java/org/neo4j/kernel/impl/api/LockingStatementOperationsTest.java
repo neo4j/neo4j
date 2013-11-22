@@ -27,6 +27,8 @@ import org.mockito.InOrder;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
@@ -56,7 +58,32 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeDeleting() throws Exception
+    public void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
+    {
+        // when
+        lockingOps.nodeAddLabel( state, 123, 456 );
+
+        // then
+        order.verify( locks ).acquireNodeWriteLock( 123 );
+        order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
+    }
+
+    @Test
+    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnNode() throws Exception
+    {
+        // given
+        DefinedProperty property = Property.property( 8, 9 );
+
+        // when
+        lockingOps.nodeSetProperty( state, 123, property );
+
+        // then
+        order.verify( locks ).acquireNodeWriteLock( 123 );
+        order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
+    }
+
+    @Test
+    public void shouldAcquireEntityWriteLockBeforeDeletingNode()
     {
         // WHEN
         lockingOps.nodeDelete( state, 123 );
