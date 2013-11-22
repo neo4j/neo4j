@@ -177,7 +177,10 @@ Use +man <command>+ to get more info about a particular command. Some notes:
 
 [[comments]]
 === Comments ===
-Single line comments, which will be ignored, can be made by using the prefix "//". Example:
+
+Single line comments, which will be ignored, can be made by using the prefix `//`. Example:
+
+[source]
 ----
 // This is a comment
 ----
@@ -211,20 +214,24 @@ If you already have two nodes which you'd like to draw a relationship between (w
 === Setting, renaming and removing properties ===
 Property operations are done with the +set+, +mv+ and +rm+ commands.
 These commands operates on the current node/relationship.
-* +set <key> <value>+ with optionally the +-t+ option (for value type) sets a property.
+
+Use +set <key> <value>+, optionally with the +-t+ option (for value type), to set a property.
 Supports every type of value that Neo4j supports. Examples of a property of type +int+:
+
 [source,plain]
 ----
 $ set -t int age 29
 ----
 
 And an example of setting a +double[]+ property:
+
 [source,plain]
 ----
 $ set -t double[] my_values [1.4,12.2,13]
 ----
 
 Example of setting a +String+ property containing a JSON string:
+
 [source,plain]
 ----
 mkrel -c -d i -t DOMAIN_OF --np "{'app':'foobar'}"
@@ -269,8 +276,9 @@ Which means traverse depth first for relationships with type +KNOWS+ disregardin
 See <<shell-options-enum>> for the traversal order option. Even relationship types/directions are supplied using the same format as filters.
 
 === Query with Cypher ===
-You can use Cypher to query the graph. For that, use the +start+ command. You can also use +create+ statements to create nodes and relationships and
-use the +cypher VERSION+ prefix to select a certain cypher version.
+
+You can use Cypher to query the graph. For that, use the +match+ or +start+ command.
+You can also use +create+ statements to create nodes and relationships and use the +cypher VERSION+ prefix to select a certain cypher version.
 
 [TIP]
 Cypher queries need to be terminated by a semicolon `;`.
@@ -294,9 +302,20 @@ The +schema+ command allows to list all existing indexes and constraints togethe
 [NOTE]
 This command does not list legacy indexes. For working with legacy indexes, please see <<shell-legacy-indexing>>.
 
-Example: +schema+ (will list all indexes and constraints)
 
-Example: +schema -l :Person -p name+ (will only list indexes or constraints on +:Person+ nodes for the property +name+)
+List all indexes and constraints:
+
+[source]
+----
+schema
+----
+
+List indexes or constraints on +:Person+ nodes for the property +name+:
+
+[source]
+----
+schema -l :Person -p name
+----
 
 The +schema+ command supports the following parameters:
 
@@ -305,7 +324,7 @@ The +schema+ command supports the following parameters:
 * +-v+ if an index is in the +FAILED+ state, print a verbose error cause if available
 
 Indexes and constraints can be created or removed using Cypher or the Java Core API. They are updated automatically
-whenever the graph is changed.  See <<graphdb-neo4j-schema>> for more.
+whenever the graph is changed.  See <<graphdb-neo4j-schema>> for more information.
 
 [[shell-legacy-indexing]]
 === Legacy Indexing ===
@@ -336,16 +355,18 @@ all open transactions.
 
 As a simple way of exporting a database or a subset of it, the +dump+ command converts the graph of a Cypher result or the whole database into a single Cypher +create+ statement.
 
-[TIP]
-Index export is not yet supported.
+[NOTE]
+Constraint export is not yet supported.
 
 Examples:
-* +dump + dumps the whole database as single cypher create statement
+
+* +dump+ dumps the whole database as single cypher create statement
 * +dump START n=node(\{self}) MATCH p=(n)-[r:KNOWS*]->(m) RETURN n,r,m;+ dumps the transitive friendship graph of the current node.
 * +neo4j-shell -path db1 -c dump START n=node:node_auto_index(name=\'Mattias\') MATCH p=(n)-[r:KNOWS]->(m) RETURN p; | neo4j-shell -path db2+
-imports the subgraph of the first database (db1) into the second (db2)
+  imports the subgraph of the first database (db1) into the second (db2)
 
 ==== Example Dump Scripts ====
+
 include::shell/simple-cypher-result-dump.asciidoc[]
 
 include::shell/database-dump.asciidoc[]
