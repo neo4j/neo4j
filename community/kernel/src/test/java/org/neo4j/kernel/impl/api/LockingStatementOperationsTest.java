@@ -69,6 +69,17 @@ public class LockingStatementOperationsTest
     }
 
     @Test
+    public void shouldAcquireSchemaReadLockBeforeAddingLabelToNode() throws Exception
+    {
+        // when
+        lockingOps.nodeAddLabel( state, 123, 456 );
+
+        // then
+        order.verify( locks ).acquireSchemaReadLock();
+        order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
+    }
+
+    @Test
     public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnNode() throws Exception
     {
         // given
@@ -79,6 +90,20 @@ public class LockingStatementOperationsTest
 
         // then
         order.verify( locks ).acquireNodeWriteLock( 123 );
+        order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeSettingPropertyOnNode() throws Exception
+    {
+        // given
+        DefinedProperty property = Property.property( 8, 9 );
+
+        // when
+        lockingOps.nodeSetProperty( state, 123, property );
+
+        // then
+        order.verify( locks ).acquireSchemaReadLock();
         order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
     }
 

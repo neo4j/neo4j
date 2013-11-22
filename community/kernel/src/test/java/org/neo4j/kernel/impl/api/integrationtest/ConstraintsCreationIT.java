@@ -23,10 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import javax.transaction.xa.XAException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +33,6 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -53,7 +48,6 @@ import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import static java.util.Collections.singletonList;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -66,7 +60,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.kernel.api.properties.Property.property;
 
 public class ConstraintsCreationIT extends KernelIntegrationTest
 {
@@ -258,7 +251,8 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // then
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), asSet( statement.uniqueIndexesGetAll() ) );
+            assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ),
+                    asSet( statement.uniqueIndexesGetAll() ) );
         }
     }
 
@@ -352,43 +346,6 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         UniquenessConstraintRule constraintRule = schema.uniquenessConstraint( labelId, propertyKeyId );
         assertEquals( constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
         assertEquals( indexRule.getId(), constraintRule.getOwnedIndex() );
-    }
-
-    // Note: This test currently depends on circular-dependency components, like the TxManager.
-    // Once transactions are properly decoupled, it should just use two kernel transactions, and not worry
-    // about XA exception codes.
-    @Test
-    public void shouldNotAllowOldUncommittedTransactionsToResumeAndViolateConstraint() throws Exception
-    {
-        // Given
-        TransactionManager txManager = db.getDependencyResolver().resolveDependency( TransactionManager.class );
-
-        DataWriteOperations s1 = dataWriteOperationsInNewTransaction();
-        createNodeWithLabelAndProperty( s1, labelId, propertyKeyId, "Bob" );
-
-        Transaction suspendedTx = txManager.suspend();
-
-        // When
-        SchemaWriteOperations schemaStatement = schemaWriteOperationsInNewTransaction();
-        schemaStatement.uniquenessConstraintCreate( labelId, propertyKeyId );
-        commit();
-
-        DataWriteOperations s3 = dataWriteOperationsInNewTransaction();
-        createNodeWithLabelAndProperty( s3, labelId, propertyKeyId, "Bob" );
-        commit();
-
-        // Then
-        txManager.resume( suspendedTx );
-        try
-        {
-            txManager.commit();
-            fail("Expected this commit to fail :(");
-        }
-        catch( HeuristicRollbackException e )
-        {
-            XAException cause = (XAException) e.getCause();
-            assertThat(cause.errorCode, equalTo(XAException.XA_RBINTEGRITY));
-        }
     }
 
     @Test
@@ -485,14 +442,6 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             result.put( definition, schema.getIndexState( definition ) );
         }
         return result;
-    }
-
-    private void createNodeWithLabelAndProperty( DataWriteOperations statement, int labelId, int propertyKeyId,
-                                                 String value ) throws Exception
-    {
-        long node = statement.nodeCreate();
-        statement.nodeAddLabel( node, labelId );
-        statement.nodeSetProperty( node, property( propertyKeyId, value ));
     }
 
     private int labelId, propertyKeyId;

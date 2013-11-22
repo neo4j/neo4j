@@ -77,7 +77,7 @@ public class TestLockManagerBean
             node.setProperty( "key", "value" );
 
             List<LockInfo> locks = lockManager.getLocks();
-            assertEquals( "unexpected lock count", 1, locks.size() );
+            assertEquals( "unexpected lock count", 2, locks.size() );
             LockInfo lock = locks.get( 0 );
             assertNotNull( "null lock", lock );
             Collection<LockingTransaction> transactions = lock.getLockingTransactions();
