@@ -36,13 +36,13 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 
 import static java.lang.String.format;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class NodeProxy implements Node
@@ -317,16 +318,20 @@ public class NodeProxy implements Node
 
         try ( Statement statement = statementContextProvider.instance() )
         {
-            int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            try
             {
-                throw new NotFoundException( format( "No such property, '%s'.", key ) );
+                int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
+                if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+                {
+                    throw new NotFoundException( format( "No such property, '%s'.", key ) );
+                }
+                return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).value();
             }
-            return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).value();
-        }
-        catch ( EntityNotFoundException | PropertyNotFoundException e )
-        {
-            throw new NotFoundException( e );
+            catch ( EntityNotFoundException | PropertyNotFoundException e )
+            {
+                throw new NotFoundException(
+                        e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+            }
         }
     }
 

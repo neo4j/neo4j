@@ -32,20 +32,21 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.kernel.api.properties.Property.property;
 
@@ -124,16 +125,20 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
 
         try ( Statement statement = statementContextProvider.instance() )
         {
-            int propertyId = statement.readOperations().propertyKeyGetForName( key );
-            if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            try
             {
-                return false;
+                int propertyId = statement.readOperations().propertyKeyGetForName( key );
+                if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+                {
+                    throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
+                }
+                return statement.readOperations().graphGetProperty( propertyId ).value();
             }
-            return statement.readOperations().graphGetProperty( propertyId ).value();
-        }
-        catch ( PropertyNotFoundException e )
-        {
-            throw new NotFoundException( e );
+            catch ( PropertyNotFoundException e )
+            {
+                throw new NotFoundException(
+                        e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+            }
         }
     }
 
