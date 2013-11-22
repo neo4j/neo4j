@@ -47,7 +47,6 @@ goto :main %1
   goto :eof
 
 :install
-
   call %~dps0functions.bat :findJavaHome
   set javaPath=%javaPath:"="""%
 
