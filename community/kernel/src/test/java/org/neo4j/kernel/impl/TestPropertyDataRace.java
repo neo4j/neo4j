@@ -137,9 +137,8 @@ public class TestPropertyDataRace
                             prepare.await();
                             break;
                         }
-                        catch ( InterruptedException e )
+                        catch ( InterruptedException ignored )
                         {
-                            Thread.interrupted(); // reset
                         }
                     }
                     for ( String key : one.getPropertyKeys() )

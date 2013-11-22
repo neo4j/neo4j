@@ -72,9 +72,8 @@ public class MeasureDoNothing extends Thread
             {
                 this.wait( TIME_TO_WAIT );
             }
-            catch ( InterruptedException e )
+            catch ( InterruptedException ignored )
             {
-                Thread.interrupted();
             }
             long time = System.currentTimeMillis() - start;
             if ( time > TIME_BEFORE_BLOCK )

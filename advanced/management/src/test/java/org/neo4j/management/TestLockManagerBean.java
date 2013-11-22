@@ -196,7 +196,6 @@ public class TestLockManagerBean
             }
             catch ( InterruptedException e )
             {
-                Thread.interrupted();
             }
         }
     }

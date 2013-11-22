@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
@@ -30,6 +28,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestIsolationBasic extends AbstractNeo4jTestCase
 {
@@ -82,13 +82,12 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
         {
             public void run()
             {
-                Transaction tx = getGraphDb().beginTx();
-                try
+
+                try ( Transaction ignore = getGraphDb().beginTx() )
                 {
                     node1.setProperty( "key", "new" );
                     rel1.setProperty( "key", "new" );
-                    node1.createRelationshipTo( node2, 
-                        DynamicRelationshipType.withName( "TEST" ) );
+                    node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "TEST" ) );
                     assertPropertyEqual( node1, "key", "new" );
                     assertPropertyEqual( rel1, "key", "new" );
                     assertRelationshipCount( node1, 2 );
@@ -101,14 +100,11 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
                     assertRelationshipCount( node2, 2 );
                     // no tx.success();
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignored )
                 {
-                    e.printStackTrace();
-                    Thread.interrupted();
                 }
                 finally
                 {
-                    tx.finish();
                     assertPropertyEqual( node1, "key", "old" );
                     assertPropertyEqual( rel1, "key", "old" );
                     assertRelationshipCount( node1, 1 );

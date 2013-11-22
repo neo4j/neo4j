@@ -531,15 +531,7 @@ public class IndexingService extends LifecycleAdapter
 
     private void awaitIndexFuture( Future<Void> future ) throws Exception
     {
-        try
-        {
             future.get( 1, MINUTES );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw e;
-        }
     }
 
     private void dropRecoveringIndexes(
@@ -567,7 +559,6 @@ public class IndexingService extends LifecycleAdapter
         }
         catch ( InterruptedException e )
         {
-            Thread.interrupted();
             throw new IndexActivationFailedKernelException( e, "Unable to activate index, thread was interrupted." );
         }
     }

@@ -117,7 +117,6 @@ public class ClusterJoin
         }
         catch ( InterruptedException e )
         {
-            Thread.interrupted();
             logger.warn( "Unable to leave cluster, interrupted", e );
         }
     }

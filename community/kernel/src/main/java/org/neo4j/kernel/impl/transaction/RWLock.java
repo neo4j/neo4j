@@ -564,9 +564,8 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         {
             wait();
         }
-        catch ( InterruptedException e )
+        catch ( InterruptedException ignored )
         {
-            interrupted();
         }
         ragManager.stopWaitOn( this, tx );
     }

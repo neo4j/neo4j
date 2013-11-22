@@ -88,9 +88,8 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
                 {
                     Thread.sleep( 100 );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignored )
                 {
-                    Thread.interrupted();
                 }
                 shutdownProcess();
             }

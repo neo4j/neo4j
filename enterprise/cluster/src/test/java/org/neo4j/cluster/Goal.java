@@ -68,9 +68,8 @@ public class Goal
         {
             Thread.sleep( millis );
         }
-        catch ( InterruptedException e )
+        catch ( InterruptedException ignored )
         {
-            Thread.interrupted();
         }
     }
 

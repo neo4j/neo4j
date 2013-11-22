@@ -565,7 +565,6 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
             }
             catch ( InterruptedException e )
             {   // OK
-                Thread.interrupted();
             }
         }
 

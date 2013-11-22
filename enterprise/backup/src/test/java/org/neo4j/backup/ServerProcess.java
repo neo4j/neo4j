@@ -55,7 +55,7 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<String, Stri
             }
             catch ( InterruptedException e )
             {
-                Thread.interrupted();
+                Thread.currentThread().interrupt();
             }
         }
     }
@@ -73,9 +73,8 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<String, Stri
                 {
                     Thread.sleep( 100 );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignored )
                 {
-                    Thread.interrupted();
                 }
                 shutdownProcess();
             }

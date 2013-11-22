@@ -253,7 +253,6 @@ public class TestRaceOnMultipleNodeImpl
             }
             catch ( InterruptedException e )
             {
-                Thread.interrupted();
             }
         }
     }

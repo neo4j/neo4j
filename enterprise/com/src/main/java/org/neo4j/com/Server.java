@@ -460,9 +460,8 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
                 {
                     Thread.sleep( millis );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignored )
                 {
-                    Thread.interrupted();
                 }
             }
         };

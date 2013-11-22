@@ -86,12 +86,7 @@ public class SchemaIndexTestHelper
         {
             return future.get( 10, SECONDS );
         }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw new RuntimeException( e );
-        }
-        catch ( ExecutionException | TimeoutException e )
+        catch ( InterruptedException | ExecutionException | TimeoutException e )
         {
             throw new RuntimeException( e );
         }
@@ -105,7 +100,6 @@ public class SchemaIndexTestHelper
         }
         catch ( InterruptedException e )
         {
-            Thread.interrupted();
             throw new RuntimeException( e );
         }
     }

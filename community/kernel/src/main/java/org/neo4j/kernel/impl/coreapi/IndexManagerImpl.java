@@ -235,9 +235,8 @@ public class IndexManagerImpl implements IndexManager, IndexProviders
                     throw new TransactionFailureException( "Index creation failed for " + indexName +
                             ", " + result.first(), ex.getCause() );
                 }
-                catch ( InterruptedException ex )
+                catch ( InterruptedException ignored )
                 {
-                    Thread.interrupted();
                 }
                 finally
                 {

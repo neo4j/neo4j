@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.transaction.LockWorker.newResourceObject;
-
 import java.io.File;
 import java.util.Random;
 import java.util.Stack;
@@ -35,6 +29,12 @@ import javax.transaction.Transaction;
 import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.LockWorker.ResourceObject;
+
+import static java.lang.System.currentTimeMillis;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.LockWorker.newResourceObject;
 
 public class TestDeadlockDetection
 {
@@ -316,7 +316,6 @@ public class TestDeadlockDetection
         }
         catch ( InterruptedException e )
         {
-            Thread.interrupted();
         }
     }
 

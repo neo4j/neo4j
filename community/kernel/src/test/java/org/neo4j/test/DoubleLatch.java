@@ -79,7 +79,6 @@ public class DoubleLatch
         }
         catch ( InterruptedException e )
         {
-            Thread.interrupted();
             throw new RuntimeException( e );
         }
     }
