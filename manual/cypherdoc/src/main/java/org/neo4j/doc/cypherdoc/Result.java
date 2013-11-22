@@ -19,19 +19,18 @@
  */
 package org.neo4j.doc.cypherdoc;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 
-class State
+class Result
 {
-    final ExecutionEngine engine;
-    final GraphDatabaseService database;
+    final String query;
+    final String text;
+    final String profile;
 
-    Result latestResult;
-
-    State( ExecutionEngine engine, GraphDatabaseService database )
+    public Result( String query, ExecutionResult result )
     {
-        this.engine = engine;
-        this.database = database;
+        this.query = query;
+        text = result.dumpToString();
+        profile = result.executionPlanDescription().toString();
     }
 }

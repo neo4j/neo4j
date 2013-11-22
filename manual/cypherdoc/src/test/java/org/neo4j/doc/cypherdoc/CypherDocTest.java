@@ -19,13 +19,9 @@
  */
 package org.neo4j.doc.cypherdoc;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.allOf;
-
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,6 +31,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.fail;
+
 public class CypherDocTest
 {
     @Rule
@@ -43,8 +45,7 @@ public class CypherDocTest
     @Test
     public void fullDocumentBlockParsing() throws IOException
     {
-        String content = FileUtils.readFileToString( new File(
-                "src/test/resources/hello-world.asciidoc" ) );
+        String content = FileUtils.readFileToString( resourceFile( "/hello-world.asciidoc" ) );
         List<Block> blocks = CypherDoc.parseBlocks( content );
         List<BlockType> types = new ArrayList<BlockType>();
         for ( Block block : blocks )
@@ -64,9 +65,32 @@ public class CypherDocTest
     }
 
     @Test
+    public void shouldEmitProfileOnTestFailure() throws Exception
+    {
+        // given
+        String content = FileUtils.readFileToString( resourceFile( "/failing-query.asciidoc" ) );
+
+        // when
+        try
+        {
+            CypherDoc.parse( content );
+            fail( "expected exception" );
+        }
+        // then
+        catch ( TestFailureException e )
+        {
+            String failure = e.toString();
+            assertThat( failure, containsString( "Query result doesn't contain the string '1 row'." ) );
+            assertThat( failure, containsString( "Query:" + CypherDoc.EOL + '\t' + CypherDoc.indent( e.result.query ) ) );
+            assertThat( failure, containsString( "Result:" + CypherDoc.EOL + '\t' + CypherDoc.indent( e.result.text ) ) );
+            assertThat( failure, containsString( "Profile:" + CypherDoc.EOL + '\t' + CypherDoc.indent( e.result.profile ) ) );
+        }
+    }
+
+    @Test
     public void fullDocumentParsing() throws IOException
     {
-        String content = FileUtils.readFileToString( new File( "src/test/resources/hello-world.asciidoc" ) );
+        String content = FileUtils.readFileToString( resourceFile( "/hello-world.asciidoc" ) );
         String output = CypherDoc.parse( content );
         assertThat(
                 output,
@@ -80,5 +104,17 @@ public class CypherDocTest
                         containsString( "<span class=\"setup-query\"></span>" ),
                         containsString( "<span class=\"query-output\"></span>" ),
                         containsString( "<simpara role=\"query-output\"></simpara>" ) ) );
+    }
+
+    private File resourceFile( String resource ) throws IOException
+    {
+        try
+        {
+            return new File( getClass().getResource( resource ).toURI() );
+        }
+        catch ( NullPointerException | URISyntaxException e )
+        {
+            throw new IOException( "Could not find resource: " + resource, e );
+        }
     }
 }

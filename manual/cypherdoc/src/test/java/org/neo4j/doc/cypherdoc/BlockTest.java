@@ -19,21 +19,27 @@
  */
 package org.neo4j.doc.cypherdoc;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import java.util.Arrays;
-import java.util.List;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
 
 public class BlockTest
 {
@@ -87,7 +93,7 @@ public class BlockTest
     {
         Block block = Block.getBlock( ADAM_QUERY );
         block.process( state );
-        assertThat( state.latestResult, containsString( "Adam" ) );
+        assertThat( state.latestResult.text, containsString( "Adam" ) );
         block = Block.getBlock( Arrays.asList( COMMENT_BLOCK, "Adam", COMMENT_BLOCK ) );
         assertThat( block.type, sameInstance( BlockType.TEST ) );
         block.process( state );
@@ -107,7 +113,7 @@ public class BlockTest
         assertThat( block.type, sameInstance( BlockType.QUERY ) );
         block.process( state );
         block = Block.getBlock( Arrays.asList( COMMENT_BLOCK, "Nobody", COMMENT_BLOCK ) );
-        expectedException.expect( IllegalArgumentException.class );
+        expectedException.expect( TestFailureException.class );
         expectedException.expectMessage( containsString( "Query result doesn't contain the string" ) );
         block.process( state );
     }

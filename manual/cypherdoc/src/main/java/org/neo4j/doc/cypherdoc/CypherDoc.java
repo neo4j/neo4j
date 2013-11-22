@@ -55,9 +55,6 @@ public final class CypherDoc
 
     /**
      * Parse a string as CypherDoc-enhanced AsciiDoc.
-     * 
-     * @param input
-     * @return
      */
     public static String parse( String input )
     {
@@ -123,5 +120,10 @@ public final class CypherDoc
             blocks.add( Block.getBlock( currentBlock ) );
         }
         return blocks;
+    }
+
+    static String indent( String string )
+    {
+        return string.replace( "\r\n", "\n" ).replace( "\n", EOL + "\t" );
     }
 }

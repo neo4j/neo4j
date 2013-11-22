@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
@@ -103,7 +104,7 @@ enum BlockType
         @Override
         String process( Block block, State state )
         {
-            return AsciidocHelper.createQueryResultSnippet( state.latestResult );
+            return AsciidocHelper.createQueryResultSnippet( state.latestResult.text );
         }
 
         @Override
@@ -118,15 +119,18 @@ enum BlockType
         String process( Block block, State state )
         {
             List<String> tests = block.lines.subList( 1, block.lines.size() - 1 );
-            String result = state.latestResult;
+            String result = state.latestResult.text;
+            List<String> failures = new ArrayList<String>();
             for ( String test : tests )
             {
                 if ( !result.contains( test ) )
                 {
-                    throw new IllegalArgumentException( "Query result doesn't contain the string: '" + test
-                                                        + "'. The query:" + block.toString() + CypherDoc.EOL
-                                                        + CypherDoc.EOL + result );
+                    failures.add( test );
                 }
+            }
+            if ( !failures.isEmpty() )
+            {
+                throw new TestFailureException( state.latestResult, failures );
             }
             return "";
         }
@@ -176,7 +180,7 @@ enum BlockType
                         queryStarted = true;
                     }
                 }
-                else if ( queryStarted )
+                else
                 {
                     if ( line.startsWith( CODE_BLOCK ) )
                     {
@@ -191,8 +195,7 @@ enum BlockType
             String query = StringUtils.join( queryLines, CypherDoc.EOL );
             try (Transaction tx = state.database.beginTx())
             {
-                state.latestResult = state.engine.execute( query )
-                        .dumpToString();
+                state.latestResult = new Result( query, state.engine.profile( query ) );
                 tx.success();
             }
             String prettifiedQuery = state.engine.prettify( query );

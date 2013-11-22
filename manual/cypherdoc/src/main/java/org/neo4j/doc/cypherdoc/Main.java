@@ -29,8 +29,7 @@ import org.apache.commons.io.FileUtils;
  */
 public class Main
 {
-    private static final String[] EXTENSIONS = new String[] { "asciidoc",
-            "adoc" };
+    private static final String[] EXTENSIONS = new String[] { "asciidoc", "adoc" };
 
     /**
      * Transforms the given files or directories (searched recursively for
@@ -38,8 +37,7 @@ public class Main
      * file name (and the relative path if a directory got searched). The first
      * argument is the base destination directory.
      * 
-     * @param args base destination directory.
-     * @param args files/directories to parse.
+     * @param args base destination directory, followed by files/directories to parse.
      */
     public static void main( String[] args )
     {
@@ -73,8 +71,7 @@ public class Main
                             EXTENSIONS, true ) )
                     {
                         String fileInDirName = fileInDir.getAbsolutePath()
-                                .substring( (int) file.getAbsolutePath()
-                                        .length() + 1 )
+                                .substring( file.getAbsolutePath().length() + 1 )
                                 .replace( '/', '-' )
                                 .replace( '\\', '-' );
                         executeFile( fileInDir, fileInDirName, destination );
@@ -86,8 +83,6 @@ public class Main
 
     /**
      * Parse a single file.
-     * 
-     * @param destination TODO
      */
     private static void executeFile( File file, String name, File destinationDir )
     {
