@@ -27,7 +27,7 @@ From Version,To Version,Upgrade Type
 1.6,1.7,Automatic
 1.7,1.8,Automatic
 1.8,1.9,Automatic
-1.9,2.0,Automatic
+1.9,2.0,Explicit
 |====
 
 [NOTE]
@@ -35,40 +35,42 @@ Downgrade is supported only between versions which do not have incompatible stor
 That means that if you did an upgrade where you didn't have to explicitly set the +allow_store_upgrade+ flag to false then you can downgrade without any problems to the previous version used.
 Otherwise downgrading is not supported.
 In any case, downgrading currently cannot be done in a rolling fashion, even in HA deployments.
-Instead, the whole cluster must be shutdown and each machine downgraded individually and then service can be resumed.
+Instead, the whole cluster must be shutdown and each machine downgraded individually and then the service can be resumed.
 
 == Automatic Upgrade ==
 
 To perform a normal upgrade (for minor changes to the database store):
 
-. download the newer version of Neo4j
-. cleanly shutdown the database to upgrade, if it is running
-. startup the database with the newer version of Neo4j
+. Download the newer version of Neo4j.
+. Cleanly shut down the database to upgrade, if it is running.
+. Startup the database with the newer version of Neo4j.
+. The upgrade will happen during startup and the process is done when the database has been successfully started.
 
-[[explicit_upgrade]]
+[[explicit-upgrade]]
 == Explicit Upgrade ==
 
 To perform a special upgrade (for significant changes to the database store):
 
-. make sure the database you are upgrading has been cleanly shut down
-. set the Neo4j configuration parameter "+allow_store_upgrade=true+" in your 'neo4j.properties' or embedded configuration
-. start the database
-. the upgrade will happen during startup and the process is done when the database has been successfully started
-. "+allow_store_upgrade=true+" configuration parameter should be removed, set to "+false+" or commented out
-. information about the upgrade and progress indicator is printed in +messages.log+
+. Download the newer version of Neo4j.
+. Cleanly shut down the database to upgrade, if it is running.
+. Set the Neo4j configuration parameter +allow_store_upgrade=true+ in your 'neo4j.properties' or embedded configuration.
+. Startup the database with the newer version of Neo4j.
+. The upgrade will happen during startup and the process is done when the database has been successfully started.
+. The +allow_store_upgrade+ configuration parameter should be removed, set to +false+ or commented out.
+. Information about the upgrade and progress indicator is printed in 'messages.log'.
 
 [[deployment-upgrading-two-zero]]
 == Upgrade 1.9 -> 2.0 ==
 
-This edition adds a new store for labels and one for schema, an index for labels, and also the format of the node store
-has changed. Note that we do not currently support rolling upgrades between 1.9.x and 2.0.
+This edition adds a new store for labels and one for schema, an index for labels, and also the format of the node store has changed.
+Note that we do not currently support rolling upgrades between 1.9.x and 2.0.
 
 When upgrading, the following will happen and will both take some time, and will require extra disk space:
 
-. A new, empty schema store will be created
-. A new, empty label store will be created
-. A new, empty label scan index will be created
-. The node store will be converted, we need to enlarge each record to make space for labels - this will take time depending on the size of your database
+. A new, empty schema store will be created.
+. A new, empty label store will be created.
+. A new, empty label scan index will be created.
+. The node store will be converted, we need to enlarge each record to make space for labels -- this will take time depending on the size of your database.
 
 [[deployment-upgrading-one-nine]]
 == Upgrade 1.8 -> 1.9 ==
