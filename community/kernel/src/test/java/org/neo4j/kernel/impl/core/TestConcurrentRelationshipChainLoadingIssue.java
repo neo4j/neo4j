@@ -79,8 +79,6 @@ public class TestConcurrentRelationshipChainLoadingIssue
         int iterations = 0;
         while ( currentTimeMillis() < end )
             tryOnce( db, node, iterations++ );
-
-        System.out.println(iterations   );
     }
 
     private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
