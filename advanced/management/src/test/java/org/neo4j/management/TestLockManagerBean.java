@@ -22,11 +22,11 @@ package org.neo4j.management;
 import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -35,10 +35,10 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
 import org.neo4j.kernel.info.ResourceType;
-import org.neo4j.kernel.info.WaitingThread;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestLockManagerBean
 {
@@ -46,6 +46,7 @@ public class TestLockManagerBean
 
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @SuppressWarnings("deprecation")
     private GraphDatabaseAPI graphDb;
 
     @Before
@@ -65,19 +66,14 @@ public class TestLockManagerBean
     @Test
     public void modifiedNodeImpliesLock()
     {
-        Node node;
-        try(Transaction tx = graphDb.beginTx())
-        {
-            node = graphDb.createNode();
-            tx.success();
-        }
+        Node node = createNode();
 
         try(Transaction ignore = graphDb.beginTx())
         {
             node.setProperty( "key", "value" );
 
             List<LockInfo> locks = lockManager.getLocks();
-            assertEquals( "unexpected lock count", 1, locks.size() );
+            assertEquals( "unexpected lock count", 2, locks.size() );
             LockInfo lock = locks.get( 0 );
             assertNotNull( "null lock", lock );
             Collection<LockingTransaction> transactions = lock.getLockingTransactions();
@@ -107,8 +103,7 @@ public class TestLockManagerBean
     @Test
     public void explicitLocksAffectTheLockCount()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             Node root = graphDb.createNode();
             Lock first = tx.acquireReadLock( root );
@@ -132,117 +127,62 @@ public class TestLockManagerBean
             assertEquals( "read count", 1, lock.getReadCount() );
             assertEquals( "write count", 2, lock.getWriteCount() );
         }
-        finally
-        {
-            tx.finish();
-        }
+
         List<LockInfo> locks = lockManager.getLocks();
         assertEquals( "unexpected lock count", 0, locks.size() );
     }
 
     @Test
-    public void canGetToContendedLocksOnly() throws Exception
+    public void shouldCountContendedLocks() throws Exception
     {
-        Node root;
-        try(Transaction tx = graphDb.beginTx())
-        {
-            root = graphDb.createNode();
-            tx.success();
-        }
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            graphDb.createNode();
-            Lock lock = tx.acquireReadLock( root );
+        final Node node = createNode();
+        Thread thread = null;
 
-            List<LockInfo> locks = lockManager.getLocks();
-            assertEquals( "unexpected lock count", 2, locks.size() );
-            for ( LockInfo l : locks )
-            {
-                switch ( l.getResourceType() )
-                {
-                    case NODE:
-                        if ( l.getResourceId().equals( String.valueOf( root.getId() ) ) )
-                        {
-                            assertEquals( "read count", 1, l.getReadCount() );
-                            assertEquals( "write count", 0, l.getWriteCount() );
-                        }
-                        else
-                        {
-                            assertEquals( "read count", 0, l.getReadCount() );
-                            assertEquals( "write count", 1, l.getWriteCount() );
-                        }
-                        break;
-                    default:
-                        fail( "Unexpected locked resource type: " + l.getResourceType() );
-                }
-            }
-            final CountDownLatch latch = new CountDownLatch( 1 );
-            final Node finalRoot = root;
-            Thread t = new Thread()
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            tx.acquireReadLock( node );
+
+            assertEquals( "all locks", 1, lockManager.getLocks().size() );
+            assertEquals( "contended locks", 0, lockManager.getContendedLocks( 0 ).size() );
+
+            thread = new Thread()
             {
                 @Override
                 public void run()
                 {
-                    Transaction tx = graphDb.beginTx();
-                    try
+                    try( Transaction tx = graphDb.beginTx() )
                     {
-                        finalRoot.setProperty( "block", "here" );
+                        tx.acquireWriteLock( node );
                     }
-                    finally
-                    {
-                        tx.finish();
-                    }
-                    latch.countDown();
                 }
             };
-            t.start();
-            awaitWaitingStateIn( t );
+            thread.start();
+            awaitWaitingStateIn( thread );
 
-            locks = lockManager.getLocks();
-            assertEquals( "unexpected lock count", 2, locks.size() );
-            for ( LockInfo l : locks )
-            {
-                switch ( l.getResourceType() )
-                {
-                    case NODE:
-                        if ( "0".equals( l.getResourceId() ) )
-                        {
-                            assertEquals( "read count", 1, l.getReadCount() );
-                            assertEquals( "write count", 0, l.getWriteCount() );
-                            List<WaitingThread> waiters = l.getWaitingThreads();
-                            assertEquals( "unxpected number of waiting threads", 1, waiters.size() );
-                            WaitingThread waiter = waiters.get( 0 );
-                            assertNotNull( waiter );
-                        }
-                        else
-                        {
-                            assertEquals( "read count", 0, l.getReadCount() );
-                            assertEquals( "write count", 1, l.getWriteCount() );
-                        }
-                        break;
-                    default:
-                        fail( "Unexpected locked resource type: " + l.getResourceType() );
-                }
-            }
-            locks = lockManager.getContendedLocks( 0 );
-            assertEquals( "unexpected lock count", 1, locks.size() );
-            LockInfo l = locks.get( 0 );
-            assertEquals( "resource type", ResourceType.NODE, l.getResourceType() );
-            assertEquals( "resource id", "0", l.getResourceId() );
-            assertEquals( "read count", 1, l.getReadCount() );
-            assertEquals( "write count", 0, l.getWriteCount() );
-            List<WaitingThread> waiters = l.getWaitingThreads();
-            assertEquals( "unxpected number of waiting threads", 1, waiters.size() );
-            WaitingThread waiter = waiters.get( 0 );
-            assertNotNull( waiter );
+            assertEquals( "all locks", 1, lockManager.getLocks().size() );
+            assertEquals( "contended locks", 1, lockManager.getContendedLocks( 0 ).size() );
 
-            lock.release();
-            latch.await();
+            LockInfo contended = lockManager.getContendedLocks( 0 ).get( 0 );
+            assertEquals( "resource type", ResourceType.NODE, contended.getResourceType() );
+            assertEquals( "resource id", Long.toString( node.getId() ), contended.getResourceId() );
+            assertEquals( "read count", 1, contended.getReadCount() );
+            assertEquals( "write count", 0, contended.getWriteCount() );
+            assertEquals( "number of waiting thread", 1, contended.getWaitingThreads().size() );
+            assertEquals( "waiting thread name", thread.getName(), contended.getWaitingThreads().get( 0 ).getThreadName() );
         }
         finally
         {
-            tx.finish();
+            if ( thread != null ) thread.join();
+        }
+    }
+
+    private Node createNode()
+    {
+        try( Transaction tx = graphDb.beginTx() )
+        {
+            Node node = graphDb.createNode();
+            tx.success();
+            return node;
         }
     }
 

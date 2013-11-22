@@ -70,6 +70,19 @@ public class LockingStatementOperations implements
     public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
+        // TODO (BBC, 22/11/13):
+        // In order to enforce constraints we need to check whether this change violates constraints; we therefore need
+        // the schema lock to ensure that our view of constraints is consistent.
+        //
+        // We would like this locking to be done naturally when ConstraintEnforcingEntityOperations calls
+        // SchemaReadOperations#constraintsGetForLabel, but the SchemaReadOperations object that
+        // ConstraintEnforcingEntityOperations has a reference to does not lock because of the way the cake is
+        // constructed.
+        //
+        // It would be cleaner if the schema and data cakes were separated so that the SchemaReadOperations object used
+        // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
+        state.locks().acquireSchemaReadLock();
+
         state.locks().acquireNodeWriteLock( nodeId );
         return entityWriteDelegate.nodeAddLabel( state, nodeId, labelId );
     }
@@ -229,6 +242,19 @@ public class LockingStatementOperations implements
     public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
+        // TODO (BBC, 22/11/13):
+        // In order to enforce constraints we need to check whether this change violates constraints; we therefore need
+        // the schema lock to ensure that our view of constraints is consistent.
+        //
+        // We would like this locking to be done naturally when ConstraintEnforcingEntityOperations calls
+        // SchemaReadOperations#constraintsGetForLabel, but the SchemaReadOperations object that
+        // ConstraintEnforcingEntityOperations has a reference to does not lock because of the way the cake is
+        // constructed.
+        //
+        // It would be cleaner if the schema and data cakes were separated so that the SchemaReadOperations object used
+        // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
+        state.locks().acquireSchemaReadLock();
+
         state.locks().acquireNodeWriteLock( nodeId );
         return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
     }
