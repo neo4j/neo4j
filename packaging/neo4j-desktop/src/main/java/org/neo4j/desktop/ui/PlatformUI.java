@@ -30,22 +30,7 @@ public class PlatformUI
         {
             UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
         }
-        catch ( ClassNotFoundException e)
-        {
-            // don't care
-            e.printStackTrace( System.out );
-        }
-        catch ( UnsupportedLookAndFeelException e )
-        {
-            // don't care
-            e.printStackTrace( System.out );
-        }
-        catch ( InstantiationException e )
-        {
-            // don't care
-            e.printStackTrace( System.out );
-        }
-        catch ( IllegalAccessException e )
+        catch ( ClassNotFoundException | UnsupportedLookAndFeelException | InstantiationException | IllegalAccessException e)
         {
             // don't care
             e.printStackTrace( System.out );

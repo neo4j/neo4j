@@ -17,29 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.desktop.config;
+package org.neo4j.desktop.config.osx;
 
-public enum OperatingSystemFamily
+import java.io.File;
+
+import org.neo4j.desktop.config.unix.UnixInstallation;
+
+public class DarwinInstallation extends UnixInstallation
 {
-    WINDOWS,
-    MAC_OS,
-    UNIX;
 
-    public static OperatingSystemFamily detect()
+    @Override
+    protected File getDefaultDirectory()
     {
-        String osName = System.getProperty( "os.name" );
-
-        // Works according to: http://www.osgi.org/Specifications/Reference
-        if ( osName.startsWith( "Windows" ) )
-        {
-            return WINDOWS;
-        }
-
-        if ( osName.startsWith( "Mac OS" ) )
-        {
-            return MAC_OS;
-        }
-
-        return UNIX;
+        // cf. http://stackoverflow.com/questions/567874/how-do-i-find-the-users-documents-folder-with-java-in-os-x
+        return new File( new File( System.getProperty( "user.home" ) ), "Documents" );
     }
 }

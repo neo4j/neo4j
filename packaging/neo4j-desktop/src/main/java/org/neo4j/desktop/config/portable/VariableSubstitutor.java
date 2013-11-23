@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.desktop.ui;
+package org.neo4j.desktop.config.portable;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Function;
 
-public class VariableSubstitutor
+class VariableSubstitutor
 {
     private static final Pattern DEFAULT_PATTERN = Pattern.compile( "\\$\\{([^\\}]+)\\}" );
     private final Pattern pattern;

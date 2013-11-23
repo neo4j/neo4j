@@ -25,9 +25,7 @@ import java.awt.FlowLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import org.apache.commons.configuration.Configuration;
 import org.neo4j.desktop.config.Environment;
-import org.neo4j.desktop.runtime.DesktopConfigurator;
 
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.ellipsis;
@@ -81,7 +79,7 @@ public enum DatabaseStatus
         });
 
         link.setFont( Components.underlined( link.getFont() ) );
-        link.addMouseListener( new OpenBrowserMouseListener( link, environment ) );
+        link.addMouseListener( new OpenBrowserMouseListener( link, model ) );
 
         return createStatusDisplay( STARTED_COLOR, new JLabel( "Neo4j is ready. Browse to " ), link );
     }

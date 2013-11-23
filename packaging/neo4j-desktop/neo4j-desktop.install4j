@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<install4j version="5.1.6" transformSequenceNumber="4">
-  <directoryPresets config="./src/main/install4j/neo4j-community-user-vmoptions.loc" />
+<install4j version="5.1.7" transformSequenceNumber="4">
   <application name="Neo4j Community" distributionSourceDir="" applicationId="8478-6373-2628-9929" mediaDir="." mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="9" lzmaCompression="true" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="false" shrinkRuntime="true" shortName="neo4j-community" publisher="Neo Technology" publisherWeb="http://neotechnology.com" version="@NEO4J_VERSION@" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" installerName="" javaMinVersion="1.7" javaMaxVersion="1.7" allowBetaVM="false" jdkMode="runtimeJre" jdkName="JDK 1.6">
     <languages skipLanguageSelection="false" languageSelectionInPrincipalLanguage="false">
       <principalLanguage id="en" customLocalizationFile="./src/main/install4j/messages_en.utf8" />
@@ -13,7 +12,7 @@
     </searchSequence>
     <variables />
     <mergedProjects />
-    @CODE_SIGNING@
+    <codeSigning macEnabled="false" macPkcs12File="" windowsEnabled="false" windowsKeySource="pkcs12" windowsPvkFile="" windowsSpcFile="" windowsPkcs12File="" />
   </application>
   <files keepModificationTimes="false" missingFilesStrategy="warn" globalExcludeSuffixes="" defaultOverwriteMode="4" defaultUninstallMode="0" launcherOverwriteMode="3" defaultFileMode="644" defaultDirMode="755">
     <filesets />
@@ -25,7 +24,6 @@
     <entries>
       <fileEntry mountPoint="262" file="./target/neo4j-desktop-@NEO4J_VERSION@.jar" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="true" />
       <fileEntry mountPoint="262" file="./src/main/install4j/neo4j-community.vmoptions" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
-      <fileEntry mountPoint="262" file="./src/main/install4j/neo4j-community-user-vmoptions.loc" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/LICENSES.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/NOTICE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/LICENSE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
@@ -298,7 +296,7 @@
                         <object class="com.install4j.api.beans.ScriptProperty">
                           <void property="value">
                             <string>// The result of this script is directly substituted into neo4j-community.vmoptions
-return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j-community.vmoptions";</string>
+return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getVariable("${compiler:sys.fullName}") + context.getVariable("sys.fileSeparator") + "neo4j-community.vmoptions";</string>
                           </void>
                         </object>
                       </void>
@@ -315,15 +313,10 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
                   <java class="java.beans.XMLDecoder">
                     <object class="com.install4j.runtime.beans.actions.text.ReplaceInstallerVariablesAction">
                       <void property="files">
-                        <array class="java.io.File" length="2">
+                        <array class="java.io.File" length="1">
                           <void index="0">
                             <object class="java.io.File">
                               <string>bin/neo4j-community.vmoptions</string>
-                            </object>
-                          </void>
-                          <void index="1">
-                            <object class="java.io.File">
-                              <string>bin/neo4j-community-user-vmoptions.loc</string>
                             </object>
                           </void>
                         </array>

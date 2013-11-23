@@ -21,7 +21,6 @@ package org.neo4j.desktop.runtime;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +29,7 @@ import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 
-import org.neo4j.desktop.config.OperatingSystemFamily;
+import org.neo4j.desktop.config.Installation;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
@@ -42,12 +41,14 @@ public class DesktopConfigurator implements Configurator
 {
     private final CompositeConfiguration compositeConfig = new CompositeConfiguration();
 
-    private final Map<String, String> map = new HashMap<String, String>();
+    private final Map<String, String> map = new HashMap<>();
+    private final Installation installation;
 
     private Configurator propertyFileConfig;
 
-    public DesktopConfigurator()
+    public DesktopConfigurator( Installation installation )
     {
+        this.installation = installation;
         refresh();
     }
 
@@ -57,8 +58,8 @@ public class DesktopConfigurator implements Configurator
         compositeConfig.addConfiguration(new MapConfiguration( map ));
 
         // re-read server properties, then add to config
-        propertyFileConfig = new PropertyFileConfigurator(getServerConfigurationFile());
-        compositeConfig.addConfiguration(propertyFileConfig.configuration());
+        propertyFileConfig = new PropertyFileConfigurator( installation.getServerConfigurationsFile() );
+        compositeConfig.addConfiguration( propertyFileConfig.configuration() );
     }
 
     @Override
@@ -70,7 +71,14 @@ public class DesktopConfigurator implements Configurator
     @Override
     public Map<String, String> getDatabaseTuningProperties()
     {
-        return loadDatabasePropertiesFromFileInDatabaseDirectoryIfExists();
+        try
+        {
+            return load( getDatabaseConfigurationFile() );
+        }
+        catch ( IOException e )
+        {
+            return stringMap();
+        }
     }
 
     @Override
@@ -85,21 +93,11 @@ public class DesktopConfigurator implements Configurator
         return propertyFileConfig.getThirdpartyJaxRsPackages();
     }
 
-    protected Map<String, String> loadDatabasePropertiesFromFileInDatabaseDirectoryIfExists()
-    {
-        try
-        {
-            return load( getDatabaseConfigurationFile() );
-        }
-        catch ( IOException e )
-        {
-            return stringMap();
-        }
-    }
+    public void setDatabaseDirectory( File directory ) {
+        File neo4jProperties = new File( directory, Installation.NEO4J_PROPERTIES_FILENAME );
 
-    public void setDatabaseDirectory(String directory) {
-        map.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, directory );
-        map.put( Configurator.DB_TUNING_PROPERTY_FILE_KEY, new File(directory, "neo4j.properties").getAbsolutePath() );
+        map.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, directory.getAbsolutePath() );
+        map.put( Configurator.DB_TUNING_PROPERTY_FILE_KEY, neo4jProperties.getAbsolutePath() );
     }
 
     public String getDatabaseDirectory() {
@@ -112,17 +110,5 @@ public class DesktopConfigurator implements Configurator
 
     public File getDatabaseConfigurationFile() {
         return new File( map.get( Configurator.DB_TUNING_PROPERTY_FILE_KEY ) );
-    }
-
-    public File getServerConfigurationFile() {
-        if ( OperatingSystemFamily.WINDOWS.isDetected() )
-        {
-            String appData = System.getenv( "APPDATA" );
-            if ( null != appData )
-            {
-                return new File( new File ( appData ), "neo4j-server.properties" );
-            }
-        }
-        return new File( new File ( System.getProperty( "user.home" ) ) , ".neo4j-server.properties" );
     }
 }

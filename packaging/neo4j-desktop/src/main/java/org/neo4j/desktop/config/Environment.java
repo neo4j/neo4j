@@ -19,88 +19,16 @@
  */
 package org.neo4j.desktop.config;
 
-import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 
-import static java.awt.Desktop.getDesktop;
-import static java.awt.Desktop.isDesktopSupported;
-import static java.lang.Runtime.getRuntime;
-import static java.lang.String.format;
-
-import static org.neo4j.desktop.ui.Components.alert;
-
-public class Environment
+/**
+ * Interacts with the environment in a way that abstracts away the specifics of the current operating system.
+ */
+public interface Environment
 {
-    private final File appFile;
+    void openBrowser( String url ) throws IOException, URISyntaxException;
 
-    public Environment() throws URISyntaxException
-    {
-        appFile = new File( Environment.class.getProtectionDomain().getCodeSource().getLocation().toURI() );
-    }
-
-    public File getBaseDirectory()
-    {
-        return appFile != null ? appFile.getParentFile() : new File( "." ).getAbsoluteFile().getParentFile();
-    }
-
-    public void openBrowser( String link )
-    {
-        if ( desktopSupports( Desktop.Action.BROWSE ) )
-        {
-            try
-            {
-                getDesktop().browse( new URI( link ) );
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace( System.out );
-            }
-            catch ( URISyntaxException e )
-            {
-                e.printStackTrace( System.out );
-            }
-        }
-        else
-        {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    public void editFile( File file ) throws IOException
-    {
-        if ( desktopSupports( Desktop.Action.EDIT ) )
-        {
-            try
-            {
-                if ( !file.exists() )
-                {
-                    file.createNewFile();
-                }
-
-                getDesktop().edit( file );
-
-                return;
-            }
-            catch ( IOException e )
-            {
-                // fall through to alert
-                e.printStackTrace( System.out );
-            }
-        }
-        if ( OperatingSystemFamily.WINDOWS.isDetected() )
-        {
-            getRuntime().exec( new String[]{"rundll32", "url.dll,FileProtocolHandler", file.getAbsolutePath()} );
-            return;
-        }
-
-        alert( format( "Could not edit file %s", file.getAbsoluteFile() ) ) ;
-    }
-
-    private boolean desktopSupports( Desktop.Action action )
-    {
-        return isDesktopSupported() && getDesktop().isSupported( action );
-    }
+    void editFile( File file ) throws IOException;
 }

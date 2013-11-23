@@ -17,15 +17,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.desktop.config;
+package org.neo4j.desktop.config.unix;
 
-/**
- * Optionally modifiable configuration value.
- * @param <T> the type of value it provides.
- */
-public interface Value<T>
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+
+import org.neo4j.desktop.config.portable.PortableEnvironment;
+
+class UnixEnvironment extends PortableEnvironment
 {
-    T get();
+    @Override
+    public void openBrowser( String url ) throws IOException, URISyntaxException
+    {
+        if ( isPortableBrowseSupported() )
+        {
+            portableBrowse( url );
+            return;
+        }
 
-    void set( T value );
+        throw new UnsupportedOperationException(  );
+    }
+
+    @Override
+    public void editFile( File file ) throws IOException
+    {
+        if ( isPortableEditFileSupported() )
+        {
+            portableEditFile( file );
+            return;
+        }
+
+        throw new UnsupportedOperationException(  );
+    }
 }
