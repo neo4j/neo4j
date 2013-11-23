@@ -295,14 +295,19 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
     checkParens then
     checkProperties(ctx)
 
-  def checkParens: SemanticCheck =
+  private def checkParens: SemanticCheck =
     when (naked && (!labels.isEmpty || properties.isDefined)) {
       SemanticError("Parentheses are required to identify nodes in patterns", token)
     }
 
-  def checkProperties(ctx: SemanticContext): SemanticCheck =
-    properties.semanticCheck(Expression.SemanticContext.Simple) then
-    properties.constrainType(MapType())
+  private def checkProperties(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
+    case (Some(e: Parameter), SemanticContext.Match) =>
+      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
+    case (Some(e: Parameter), SemanticContext.Merge) =>
+      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
+    case _                                           =>
+      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.constrainType(MapType())
+  }
 
   def legacyName: String
 
@@ -366,8 +371,7 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
     checkNoOptionalRelsForAnExpression(ctx) then
     checkNoVarLengthWhenUpdating(ctx) then
     checkNoLegacyOptionals(ctx) then
-    properties.semanticCheck(Expression.SemanticContext.Simple) then
-    properties.constrainType(MapType())
+    checkProperties(ctx)
 
   private def checkNoLegacyOptionals(ctx: SemanticContext) =
     when (optional) {
@@ -387,6 +391,15 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
         case _                      => None
       }
     }
+
+  private def checkProperties(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
+    case (Some(e: Parameter), SemanticContext.Match) =>
+      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
+    case (Some(e: Parameter), SemanticContext.Merge) =>
+      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
+    case _                                           =>
+      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.constrainType(MapType())
+  }
 
   def isSingleLength = length.fold(true)(_.fold(false)(_.isSingleLength))
 

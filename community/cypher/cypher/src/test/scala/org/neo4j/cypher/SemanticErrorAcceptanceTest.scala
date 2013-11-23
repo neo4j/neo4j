@@ -102,6 +102,30 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     )
   }
 
+  @Test def shouldRejectMapParamInMatchPattern() {
+    test(
+      "MATCH (n:Person {param}) RETURN n",
+      "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\") (line 1, column 17)"
+    )
+
+    test(
+      "MATCH (n:Person)-[:FOO {param}]->(m) RETURN n",
+      "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\") (line 1, column 24)"
+    )
+  }
+
+  @Test def shouldRejectMapParamInMergePattern() {
+    test(
+      "MERGE (n:Person {param}) RETURN n",
+      "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\") (line 1, column 17)"
+    )
+
+    test(
+      "MATCH (n:Person) MERGE (n)-[:FOO {param}]->(m) RETURN n",
+      "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\") (line 1, column 34)"
+    )
+  }
+
   @Test def shouldComplainIfShortestPathHasNoRelationship() {
     test(
       "start n=node(0) match p=shortestPath(n) return p",
