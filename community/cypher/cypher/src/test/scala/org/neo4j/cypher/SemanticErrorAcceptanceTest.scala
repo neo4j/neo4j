@@ -91,7 +91,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
   @Test def shouldComplainIfVarLengthRelInCreate() {
     test(
       "create (a)-[:FOO*2]->(b)",
-      "Variable length relationships cannot be specified in this context (line 1, column 11)"
+      "Variable length relationships cannot be used in CREATE (line 1, column 11)"
+    )
+  }
+
+  @Test def shouldComplainIfVarLengthRelInMerge() {
+    test(
+      "MERGE (a)-[:FOO*2]->(b)",
+      "Variable length relationships cannot be used in MERGE (line 1, column 10)"
     )
   }
 
@@ -177,6 +184,25 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     )
   }
 
+  @Test def shouldNotAllowIdentifierToBeOverwrittenByMergeRelationship() {
+    test(
+      "start a=node(0), r=rel(1) merge (a)-[r:TYP]->()",
+      "r already declared (line 1, column 38)"
+    )
+  }
+
+  @Test def shouldNotAllowIdentifierToBeIntroducedInPatternExpression() {
+    test(
+      "match (n) return (n)-[:TYP]->(b)",
+      "b not defined (line 1, column 31)"
+    )
+
+    test(
+      "match (n) return (n)-[r:TYP]->()",
+      "r not defined (line 1, column 23)"
+    )
+  }
+
   @Test def shouldFailWhenTryingToCreateShortestPaths() {
     test(
       "match a, b create shortestPath((a)-[:T]->(b))",
@@ -185,6 +211,17 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     test(
       "match a, b create allShortestPaths((a)-[:T]->(b))",
       "allShortestPaths(...) cannot be used to CREATE (line 1, column 19)"
+    )
+  }
+
+  @Test def shouldFailWhenTryingToMergeShortestPaths() {
+    test(
+      "match a, b MERGE shortestPath((a)-[:T]->(b))",
+      "shortestPath(...) cannot be used to MERGE (line 1, column 18)"
+    )
+    test(
+      "match a, b MERGE allShortestPaths((a)-[:T]->(b))",
+      "allShortestPaths(...) cannot be used to MERGE (line 1, column 18)"
     )
   }
 

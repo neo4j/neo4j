@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
-import Pattern.SemanticContext.Update
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => legacy, values => commandvalues}
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
@@ -35,7 +34,8 @@ object Pattern {
   sealed trait SemanticContext
   object SemanticContext {
     case object Match extends SemanticContext
-    case object Update extends SemanticContext
+    case object Merge extends SemanticContext
+    case object Create extends SemanticContext
     case object Expression extends SemanticContext
   }
 }
@@ -117,8 +117,9 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
   def token = element.token
 
   def declareIdentifiers(ctx: SemanticContext) = (element, ctx) match {
-    case (n: NamedNodePattern, Update) => n.identifier.declare(NodeType()) then element.declareIdentifiers(ctx)
-    case _                             => element.declareIdentifiers(ctx)
+    case (n: NamedNodePattern, SemanticContext.Match) => element.declareIdentifiers(ctx) // single node identifier may be already bound in MATCH
+    case (n: NamedNodePattern, _)                     => n.identifier.declare(NodeType()) then element.declareIdentifiers(ctx)
+    case _                                            => element.declareIdentifiers(ctx)
   }
   def semanticCheck(ctx: SemanticContext) = element.semanticCheck(ctx)
 
@@ -148,8 +149,9 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
     element.semanticCheck(ctx)
 
   private def checkContext(ctx: SemanticContext) = ctx match {
-    case Update => Some(SemanticError(s"${name}(...) cannot be used to CREATE", token, element.token))
-    case _      => None
+    case SemanticContext.Merge  => Some(SemanticError(s"${name}(...) cannot be used to MERGE", token, element.token))
+    case SemanticContext.Create => Some(SemanticError(s"${name}(...) cannot be used to CREATE", token, element.token))
+    case _                      => None
   }
 
   private def checkContainsSingle(ctx: SemanticContext): SemanticCheck = element match {
@@ -290,9 +292,13 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    checkParens then
+    checkProperties(ctx)
+
+  def checkParens: SemanticCheck =
     when (naked && (!labels.isEmpty || properties.isDefined)) {
       SemanticError("Parentheses are required to identify nodes in patterns", token)
-    } then checkProperties(ctx)
+    }
 
   def checkProperties(ctx: SemanticContext): SemanticCheck =
     properties.semanticCheck(Expression.SemanticContext.Simple) then
@@ -334,9 +340,10 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
 }
 
 case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], properties: Option[Expression], naked: Boolean, token: InputToken) extends NodePattern {
-  override def declareIdentifiers(ctx: SemanticContext) =
-    identifier.implicitDeclaration(NodeType()) then
-    super.declareIdentifiers(ctx)
+  override def declareIdentifiers(ctx: SemanticContext) = ((ctx match {
+    case SemanticContext.Expression => identifier.ensureDefined() then identifier.constrainType(NodeType())
+    case _                          => identifier.implicitDeclaration(NodeType())
+  }): SemanticCheck) then super.declareIdentifiers(ctx)
 
   val legacyName = identifier.name
 }
@@ -373,10 +380,13 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
     }
 
   private def checkNoVarLengthWhenUpdating(ctx: SemanticContext) =
-    when (ctx == SemanticContext.Update && !isSingleLength) {
-      SemanticError("Variable length relationships cannot be specified in this context", token)
+    when (!isSingleLength) {
+      ctx match {
+        case SemanticContext.Merge  => SemanticError("Variable length relationships cannot be used in MERGE", token)
+        case SemanticContext.Create => SemanticError("Variable length relationships cannot be used in CREATE", token)
+        case _                      => None
+      }
     }
-
 
   def isSingleLength = length.fold(true)(_.fold(false)(_.isSingleLength))
 
@@ -444,10 +454,11 @@ case class NamedRelationshipPattern(
   override def declareIdentifiers(ctx: SemanticContext) = {
     val possibleType = if (length.isEmpty) RelationshipType() else CollectionType(RelationshipType())
 
-    (ctx match {
-      case Update => identifier.declare(possibleType)
-      case _      => identifier.implicitDeclaration(possibleType)
-    }) then super.declareIdentifiers(ctx)
+    ((ctx match {
+      case SemanticContext.Match      => identifier.implicitDeclaration(possibleType)
+      case SemanticContext.Expression => identifier.ensureDefined() then identifier.constrainType(possibleType)
+      case _                          => identifier.declare(possibleType)
+    }): SemanticCheck) then super.declareIdentifiers(ctx)
   }
 
   val legacyName = identifier.name
