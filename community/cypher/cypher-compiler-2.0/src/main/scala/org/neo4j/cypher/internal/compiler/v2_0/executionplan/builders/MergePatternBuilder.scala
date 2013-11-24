@@ -34,23 +34,26 @@ import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 This class solves MERGE for patterns. It does this by creating an execution plan that uses normal pattern matching
 to find matches for a pattern. If that step returns nothing, the missing parts of the pattern are created.
 
-By doing it this way, we rely on already existing code to both match and create the elements.*/
-case class MatchOrCreatePatternBuilder(matching: Phase) extends PlanBuilder {
+By doing it this way, we rely on already existing code to both match and create the elements.
+
+This class prepares MergePatternAction objects to be run by creating the match pipe
+*/
+case class MergePatternBuilder(matching: Phase) extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean =
     plan.query.updates.exists {
-      case Unsolved(x: MergePatternAction) => x.symbolDependenciesMet(plan.pipe.symbols)
+      case Unsolved(x: MergePatternAction) => x.updateActions.isEmpty && x.symbolDependenciesMet(plan.pipe.symbols)
       case _                               => false
     }
 
   def apply(in: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
-    val patternAction: MergePatternAction = extractFrom(in.query.updates)
+    val originalMerge: MergePatternAction = extractFrom(in.query.updates)
 
-    val updateActions: Seq[UpdateAction] = MatchOrCreatePatternBuilder.createActions(in.pipe.symbols, patternAction.actions)
-    val plan = solveMatchQuery(in, ctx, patternAction)
-    val newQuery = in.query.copy(updates = in.query.updates.replace(Unsolved(patternAction), Solved(patternAction)))
-    val matchOrCreatePipe = new MatchOrCreatePipe(in.pipe, plan.pipe, updateActions)
+    val updateActions: Seq[UpdateAction] = MergePatternBuilder.createActions(in.pipe.symbols, originalMerge.actions)
+    val matchPipe = solveMatchQuery(in, ctx, originalMerge).pipe
+    val preparedMerge = originalMerge.copy(matchPipe = Some(matchPipe), updateActions = Some(updateActions))
+    val newQuery = in.query.copy(updates = in.query.updates.replace(Unsolved(originalMerge), Unsolved(preparedMerge)))
 
-    in.copy(pipe = matchOrCreatePipe, query = newQuery, isUpdating = true)
+    in.copy(query = newQuery)
   }
 
   private def extractFrom(updates: Seq[QueryToken[UpdateAction]]): MergePatternAction = updates.collect {
@@ -76,7 +79,7 @@ case class MatchOrCreatePatternBuilder(matching: Phase) extends PlanBuilder {
   }
 }
 
-object MatchOrCreatePatternBuilder {
+object MergePatternBuilder {
   def createActions(in: SymbolTable, createRels: Seq[UpdateAction]): Seq[UpdateAction] = {
 
     var symbol = in
