@@ -139,18 +139,6 @@ case class MergeNodeAction(identifier: String,
       onMatch = onMatch.map(_.rewrite(f)),
       maybeNodeProducer = maybeNodeProducer)
 
-  def throwIfSymbolsMissing(in: SymbolTable) {
-
-    if (in.keys.contains(identifier))
-      throw new CypherTypeException(identifier + " already defined.")
-
-    val symbols = in.add(identifier, NodeType())
-
-    expectations.foreach(_.throwIfSymbolsMissing(symbols))
-    onCreate.foreach(_.throwIfSymbolsMissing(symbols))
-    onMatch.foreach(_.throwIfSymbolsMissing(symbols))
-  }
-
   def symbolTableDependencies =
     (expectations.flatMap(_.symbolTableDependencies)
       ++ onCreate.flatMap(_.symbolTableDependencies)

@@ -64,10 +64,6 @@ case class NullPipe(symbols: SymbolTable = SymbolTable(),
 }
 
 abstract class PipeWithSource(source: Pipe) extends Pipe {
-  def throwIfSymbolsMissing(symbols: SymbolTable)
-
-  throwIfSymbolsMissing(source.symbols)
-
   override def createResults(state: QueryState): Iterator[ExecutionContext] = {
     val sourceResult = source.createResults(state)
 

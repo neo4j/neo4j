@@ -152,8 +152,6 @@ case class Pred(identifier: String) extends Predicate {
 
   def arguments = Nil
 
-  def assertInnerTypes(symbols: SymbolTable) {}
-
   def symbolTableDependencies = Set(identifier)
 
   override def toString() = "Pred[%s]".format(identifier)

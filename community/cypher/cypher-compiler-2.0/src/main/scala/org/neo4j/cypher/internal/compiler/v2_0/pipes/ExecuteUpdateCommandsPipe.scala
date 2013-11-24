@@ -100,8 +100,4 @@ class ExecuteUpdateCommandsPipe(source: Pipe, val commands: Seq[UpdateAction])
     source.executionPlanDescription.andThen(this, "UpdateGraph", "commands" -> SimpleVal.fromIterable(commands))
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    commands.foreach(_.throwIfSymbolsMissing(symbols))
-  }
 }

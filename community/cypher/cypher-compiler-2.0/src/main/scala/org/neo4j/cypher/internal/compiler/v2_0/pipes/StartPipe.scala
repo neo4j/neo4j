@@ -43,8 +43,6 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, cre
     source.executionPlanDescription
       .andThen(this, s"${createSource.name}", description: _*)
   }
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }
 
 class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])

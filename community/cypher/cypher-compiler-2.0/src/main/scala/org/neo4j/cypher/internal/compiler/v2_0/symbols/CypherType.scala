@@ -55,8 +55,6 @@ trait CypherType {
 TypeSafe is everything that needs to check it's types
  */
 trait TypeSafe {
-  def throwIfSymbolsMissing(symbols: SymbolTable)
-
   def symbolDependenciesMet(symbols: SymbolTable): Boolean =
     symbolTableDependencies.forall(name => check(symbols, name))
 

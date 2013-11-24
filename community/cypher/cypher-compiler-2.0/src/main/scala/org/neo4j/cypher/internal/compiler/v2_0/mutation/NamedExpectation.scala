@@ -128,10 +128,6 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
 
   def symbolTableDependencies = properties.symboltableDependencies
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    properties.throwIfSymbolsMissing(symbols)
-  }
-
   override def toString: String = {
     val nameStr = if (Identifier.notNamed(name)) s"(${name.drop(9)})" else name
     val props = if (properties.isEmpty)

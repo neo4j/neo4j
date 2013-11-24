@@ -46,11 +46,6 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
 
   def arguments = Seq(left, right)
 
-  def assertInnerTypes(symbols: SymbolTable) {
-    left.throwIfSymbolsMissing(symbols)
-    right.throwIfSymbolsMissing(symbols)
-  }
-
   def symbolTableDependencies = left.symbolTableDependencies ++ right.symbolTableDependencies
 }
 
@@ -83,11 +78,6 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
 
   def arguments = Seq(a, b)
-
-  def assertInnerTypes(symbols: SymbolTable) {
-    a.throwIfSymbolsMissing(symbols)
-    b.throwIfSymbolsMissing(symbols)
-  }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

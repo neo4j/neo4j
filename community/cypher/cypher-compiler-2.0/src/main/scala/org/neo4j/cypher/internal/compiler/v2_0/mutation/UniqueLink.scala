@@ -169,12 +169,6 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   def children = Seq(start.e, end.e, rel.e)
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    start.properties.throwIfSymbolsMissing(symbols)
-    end.properties.throwIfSymbolsMissing(symbols)
-    rel.properties.throwIfSymbolsMissing(symbols)
-  }
-
   def optional: Boolean = false
 
   def possibleStartPoints = Seq(

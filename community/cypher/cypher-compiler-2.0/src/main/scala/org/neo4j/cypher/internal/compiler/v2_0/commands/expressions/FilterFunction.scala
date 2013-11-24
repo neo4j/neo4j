@@ -38,13 +38,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
 
   def arguments: Seq[Expression] = Seq(collection)
 
-  def calculateType(symbols: SymbolTable): CypherType = {
-    val t = collection.evaluateType(CollectionType(AnyType()), symbols)
-
-    predicate.throwIfSymbolsMissing(symbols.add(id, t.iteratedType))
-
-    t
-  }
+  def calculateType(symbols: SymbolTable): CypherType =  collection.evaluateType(CollectionType(AnyType()), symbols)
 
   def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
 }

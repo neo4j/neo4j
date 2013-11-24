@@ -49,7 +49,6 @@ trait ReadOnlyStartItem {
 
   // AstNode implementations
   def children: Seq[AstNode[_]] = Nil
-  def throwIfSymbolsMissing(symbols: SymbolTable) {}
   def symbolTableDependencies:Set[String] = Set.empty
   def rewrite(f: (Expression) => Expression):this.type = this
 }
@@ -107,9 +106,6 @@ abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) e
 
   override def mutating = true
   override def children = Seq(updateAction)
-  override def throwIfSymbolsMissing(symbols: SymbolTable) {
-    updateAction.throwIfSymbolsMissing(symbols)
-  }
   override def symbolTableDependencies = updateAction.symbolTableDependencies
 
   def identifiers: Seq[(String, CypherType)] = updateAction.identifiers

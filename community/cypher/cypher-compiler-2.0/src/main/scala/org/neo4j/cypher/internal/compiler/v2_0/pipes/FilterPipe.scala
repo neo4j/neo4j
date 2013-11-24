@@ -32,8 +32,4 @@ class FilterPipe(source: Pipe, val predicate: Predicate) extends PipeWithSource(
 
   override def executionPlanDescription =
     source.executionPlanDescription.andThen(this, "Filter", "pred" -> SimpleVal.fromStr(predicate))
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    predicate.throwIfSymbolsMissing(symbols)
-  }
 }

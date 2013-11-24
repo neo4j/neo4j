@@ -31,8 +31,6 @@ case class MatchOrCreatePipe(source: Pipe, matchPipe: Pipe, updateActions: Seq[U
   def executionPlanDescription: PlanDescription =
     source.executionPlanDescription.andThenWrap(this, "MatchOrCreate", matchPipe.executionPlanDescription)
 
-  def throwIfSymbolsMissing(symbols: SymbolTable): Unit = {}
-
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val listeningIterator = new QueryStateSettingIterator(input, state)
 

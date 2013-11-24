@@ -45,8 +45,6 @@ case class OptionalMatchBuilder(solveMatch: Phase) extends PlanBuilder {
   case class OptionalMatchPipe(source: Pipe,
                                matchPipe: Pipe,
                                symbols: SymbolTable) extends PipeWithSource(source) {
-    def throwIfSymbolsMissing(symbols: SymbolTable): Unit = {}
-
     protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
       val listeningIterator = new QueryStateSettingIterator(input, state)
 

@@ -88,12 +88,6 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   override def rewrite(f: (Expression) => Expression): CreateNode =
     CreateNode(key, properties.rewrite(f), labels.map(_.typedRewrite[KeyToken](f)), bare)
 
-  override def throwIfSymbolsMissing(symbols: SymbolTable) {
-    properties throwIfSymbolsMissing symbols
-    for (label <- labels)
-      label throwIfSymbolsMissing symbols
-  }
-
   override def symbolTableDependencies: Set[String] =
     properties.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)
 }

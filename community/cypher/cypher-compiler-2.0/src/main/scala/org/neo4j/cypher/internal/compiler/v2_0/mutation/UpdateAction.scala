@@ -29,8 +29,6 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext]
 
-  def throwIfSymbolsMissing(symbols: SymbolTable)
-
   def identifiers: Seq[(String, CypherType)]
 
   def rewrite(f: Expression => Expression): UpdateAction

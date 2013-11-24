@@ -44,8 +44,4 @@ case class MatchPipe(source: Pipe,
 
   override def executionPlanDescription =
     source.executionPlanDescription.andThen(this, "PatternMatch", "g" -> patternGraph)
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    //TODO do it
-  }
 }

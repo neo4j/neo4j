@@ -95,11 +95,6 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
 
   def rewrite(f: (Expression) => Expression) = MapPropertySetAction(element.rewrite(f), mapExpression.rewrite(f))
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    element.evaluateType(MapType(), symbols)
-    mapExpression.evaluateType(MapType(), symbols)
-  }
-
   def symbolTableDependencies = element.symbolTableDependencies ++ mapExpression.symbolTableDependencies
 
   private def id(x: PropertyContainer) = x match {

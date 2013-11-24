@@ -48,6 +48,4 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) 
   def executionPlanDescription =
     source.executionPlanDescription.andThen(this, "TraversalMatcher", "trail" -> SimpleVal.fromStr(trail))
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-  }
 }

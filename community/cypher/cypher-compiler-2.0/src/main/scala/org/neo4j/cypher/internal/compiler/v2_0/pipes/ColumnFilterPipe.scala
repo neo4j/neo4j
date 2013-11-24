@@ -55,8 +55,4 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
         "returnItemNames" -> SimpleVal.fromIterable(returnItemNames))
 
   def dependencies = Seq()
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    returnItems.foreach(_.expression.throwIfSymbolsMissing(symbols))
-  }
 }
