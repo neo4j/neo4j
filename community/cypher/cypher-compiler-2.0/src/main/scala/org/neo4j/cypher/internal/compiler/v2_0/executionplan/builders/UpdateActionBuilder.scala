@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.{Pipe, ExecuteUpdateCommandsPipe}
-import org.neo4j.cypher.internal.compiler.v2_0.mutation.{MergePatternAction, UpdateAction}
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{UpdatingStartItem, StartItem}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
@@ -51,10 +51,7 @@ class UpdateActionBuilder extends PlanBuilder with UpdateCommandExpander {
   }
 
   private def extractValidUpdateActions(plan: ExecutionPlanInProgress, p: Pipe): Seq[QueryToken[UpdateAction]] = {
-    plan.query.updates.filter(cmd =>
-      cmd.unsolved &&
-      cmd.token.symbolDependenciesMet(p.symbols) &&
-      !cmd.token.isInstanceOf[MergePatternAction])
+    plan.query.updates.filter(cmd => cmd.unsolved && cmd.token.symbolDependenciesMet(p.symbols))
   }
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
