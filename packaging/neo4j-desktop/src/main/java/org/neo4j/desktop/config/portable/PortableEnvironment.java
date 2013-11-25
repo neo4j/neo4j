@@ -57,8 +57,18 @@ public abstract class PortableEnvironment implements Environment
         return desktopSupports( Desktop.Action.BROWSE );
     }
 
-    protected static void portableBrowse( String link ) throws IOException, URISyntaxException
+    protected void portableBrowse( String link ) throws IOException, URISyntaxException
     {
         getDesktop().browse( new URI( link ) );
+    }
+
+    protected boolean isPortableOpenSupported()
+    {
+        return desktopSupports( Desktop.Action.OPEN );
+    }
+
+    protected void portableOpen( File file ) throws IOException
+    {
+        getDesktop().open( file );
     }
 }

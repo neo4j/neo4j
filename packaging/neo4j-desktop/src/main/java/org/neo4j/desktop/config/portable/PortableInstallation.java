@@ -21,6 +21,7 @@ package org.neo4j.desktop.config.portable;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +47,22 @@ public abstract class PortableInstallation implements Installation
         }
     }
 
+    @Override
+    public File getPluginsDirectory()
+    {
+        try
+        {
+            File appFile = new File( Installation.class.getProtectionDomain().getCodeSource().getLocation().toURI() );
+            File binDirectory = appFile.getParentFile();
+            File installationDirectory = binDirectory.getParentFile();
+            return new File( installationDirectory, "plugins" );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new CannotFindInstallationDirectory( e );
+        }
+    }
+
     private static class PathAlreadyExistException extends RuntimeException
     {
         public PathAlreadyExistException( File path, String description )
@@ -60,7 +77,14 @@ public abstract class PortableInstallation implements Installation
         {
             super( format( "Could not make %s %s", description, path.getAbsolutePath() ) );
         }
+    }
 
+    private static class CannotFindInstallationDirectory extends RuntimeException
+    {
+        public CannotFindInstallationDirectory( Exception cause )
+        {
+            super( cause );
+        }
     }
 
     @Override

@@ -206,4 +206,14 @@ public class DesktopModel
             }
         }
     }
+
+    public File getPluginsDirectory()
+    {
+        return installation.getPluginsDirectory();
+    }
+
+    public void openDirectory( File directory ) throws IOException
+    {
+        installation.getEnvironment().openDirectory( directory );
+    }
 }

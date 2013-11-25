@@ -64,4 +64,28 @@ class WindowsEnvironment extends PortableEnvironment
     {
         getRuntime().exec( new String[]{"rundll32", "url.dll,FileProtocolHandler", file.getAbsolutePath()} );
     }
+
+    @Override
+    public void openDirectory( File directory ) throws IOException
+    {
+        if ( isPortableOpenSupported() )
+        {
+            try
+            {
+                portableOpen( directory );
+                return;
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace( System.out );
+            }
+        }
+
+        windowsOpenDirectory( directory );
+    }
+
+    private void windowsOpenDirectory( File directory ) throws IOException
+    {
+        getRuntime().exec( new String[] { "explorer", directory.getAbsolutePath() } );
+    }
 }

@@ -31,4 +31,6 @@ public interface Environment
     void openBrowser( String url ) throws IOException, URISyntaxException;
 
     void editFile( File file ) throws IOException;
+
+    void openDirectory( File directory ) throws IOException;
 }

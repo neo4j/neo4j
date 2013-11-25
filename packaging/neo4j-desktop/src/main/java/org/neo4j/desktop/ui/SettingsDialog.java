@@ -53,7 +53,7 @@ class SettingsDialog extends JDialog
             createEditDatabaseConfigPanel(createEditDatabaseConfigurationButton()),
             createEditServerConfigPanel( createEditServerConfigurationButton() ),
             createEditVmOptionsPanel( createEditVmOptionsButton() ),
-//            createExtensionsPanel(),
+            createExtensionsPanel( createOpenPluginsDirectoryButton() ),
             createVerticalSpacing(),
             withFlowLayout( FlowLayout.RIGHT, createPanel(
                 createTextButton( "Close", new ActionListener()
@@ -94,6 +94,13 @@ class SettingsDialog extends JDialog
         String vmOptionsPath = vmOptionsFile.getAbsolutePath();
         return withFlowLayout( withTitledBorder( "Java VM Options (effective on restart)",
                 createPanel( createUnmodifiableTextField( vmOptionsPath ), editVmOptionsButton ) ) );
+    }
+
+    private Component createExtensionsPanel( JButton openPluginsDirectoryButton )
+    {
+        String pluginsDirectory = model.getPluginsDirectory().getAbsolutePath();
+        return withFlowLayout( withTitledBorder( "Plugins and Extensions",
+                createPanel( createUnmodifiableTextField( pluginsDirectory ), openPluginsDirectoryButton ) ) );
     }
 
     private JButton createEditDatabaseConfigurationButton()
@@ -152,5 +159,11 @@ class SettingsDialog extends JDialog
                 return model.getVmOptionsFile();
             }
         } );
+    }
+
+    private JButton createOpenPluginsDirectoryButton()
+    {
+        return Components.createTextButton( "Open",
+                new OpenDirectoryActionListener( this, model.getPluginsDirectory(), model ) );
     }
 }

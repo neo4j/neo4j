@@ -85,4 +85,9 @@ public interface Installation
      * Get the contents for a default neo4j-community.vmoptions file.
      */
     InputStream getDefaultVmOptions();
+
+    /**
+     * Get the directory where jar-files with plugins and extensions are located.
+     */
+    File getPluginsDirectory();
 }

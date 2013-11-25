@@ -36,7 +36,7 @@ class UnixEnvironment extends PortableEnvironment
             return;
         }
 
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException( "Cannot browse to URL: " + url );
     }
 
     @Override
@@ -48,6 +48,18 @@ class UnixEnvironment extends PortableEnvironment
             return;
         }
 
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException( "Cannot edit file: " + file );
+    }
+
+    @Override
+    public void openDirectory( File directory ) throws IOException
+    {
+        if ( isPortableOpenSupported() )
+        {
+            portableOpen( directory );
+            return;
+        }
+
+        throw new UnsupportedOperationException( "Cannot open directory: " + directory );
     }
 }
