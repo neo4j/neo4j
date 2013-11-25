@@ -67,7 +67,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
             // is discouraged in any case. For details of the background for this call, see TransactionState
             // and its isRemoteInitialized method.
             TransactionState txState = txManager.getTransactionState();
-            txState.getTxHook().remotelyInitializeTransaction( identifier, txState );
+            txState.getTxHook().remotelyInitializeTransaction( txManager.getEventIdentifier(), txState );
 
             Response<Long> response = master.commitSingleResourceTransaction(
                     requestContextFactory.newRequestContext( dataSource ), dataSource.getName(),

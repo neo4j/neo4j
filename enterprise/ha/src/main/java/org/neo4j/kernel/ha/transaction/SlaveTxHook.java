@@ -19,24 +19,33 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class SlaveTxHook implements RemoteTxHook
 {
     private final Master master;
     private final HaXaDataSourceManager xaDsm;
+    private final StringLogger log;
     private final RequestContextFactory contextFactory;
 
+    private final Set<Integer> seen = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+
     public SlaveTxHook( Master master, HaXaDataSourceManager xaDsm,
-                        TxHookModeSwitcher.RequestContextFactoryResolver contextFactory )
+                        TxHookModeSwitcher.RequestContextFactoryResolver contextFactory, StringLogger log )
     {
         this.master = master;
         this.xaDsm = xaDsm;
+        this.log = log;
         this.contextFactory = contextFactory.get();
     }
 

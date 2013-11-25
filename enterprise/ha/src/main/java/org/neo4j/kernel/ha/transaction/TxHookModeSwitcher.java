@@ -29,20 +29,24 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TxHookModeSwitcher extends AbstractModeSwitcher<RemoteTxHook>
 {
     private final Master master;
     private final RequestContextFactoryResolver requestContextFactory;
+    private final StringLogger log;
     private final DependencyResolver resolver;
 
     public TxHookModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                DelegateInvocationHandler<RemoteTxHook> delegate, Master master,
-                               RequestContextFactoryResolver requestContextFactory, DependencyResolver resolver )
+                               RequestContextFactoryResolver requestContextFactory, StringLogger log,
+                               DependencyResolver resolver )
     {
         super( stateMachine, delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
+        this.log = log;
         this.resolver = resolver;
     }
 
@@ -56,7 +60,7 @@ public class TxHookModeSwitcher extends AbstractModeSwitcher<RemoteTxHook>
     protected RemoteTxHook getSlaveImpl( URI serverHaUri )
     {
         return new SlaveTxHook( master, resolver.resolveDependency( HaXaDataSourceManager.class ),
-                requestContextFactory );
+                requestContextFactory, log );
     }
 
     public interface RequestContextFactoryResolver
