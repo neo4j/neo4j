@@ -2469,13 +2469,7 @@ RETURN x0.name""")
 
   @Test
   def merge_should_not_support_map_parameters_for_defining_properties() {
-    try {
-      execute("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test")))
-      fail()
-    } catch {
-      case x: PatternException => // expected
-      case _: Throwable => fail()
-    }
+    intercept[SyntaxException](execute("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
   }
 
   @Test
