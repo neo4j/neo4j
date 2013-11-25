@@ -113,6 +113,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     public static final String MASTER = "master";
     public static final String SLAVE = "slave";
     private URI masterHaURI;
+    public static final String INADDR_ANY = "0.0.0.0";
+    private URI slaveHaURI;
 
     public static int getServerId( URI haUri )
     {
@@ -233,6 +235,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             {
                 clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
             }
+            else if ( event.getNewState() == HighAvailabilityMemberState.SLAVE )
+            {
+                clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI );
+            }
             return;
         }
         switch ( event.getNewState() )
@@ -317,6 +323,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             return;
         }
     }
+    
+    private URI createHaURI(Server server) {
+            String hostString = ServerUtil.getHostString(server.getSocketAddress());
+            int port = server.getSocketAddress().getPort();
+            Integer serverId = config.get(ClusterSettings.server_id);
+            String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
+            return URI.create("ha://" + host + ":" + port + "?serverId=" + serverId);
+        }
 
     private void switchToSlave()
     {
@@ -404,10 +418,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             life.add( server );
             life.start();
 
-            URI haUri = URI.create( "ha://" + (ServerUtil.getHostString(server.getSocketAddress()).contains("0.0.0.0")?me.getHost():ServerUtil.getHostString(server.getSocketAddress())) + ":" +
-                    server.getSocketAddress().getPort() + "?serverId=" +
-                    config.get( ClusterSettings.server_id ) );
-            clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );
+            slaveHaURI = createHaURI( server );
+            clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI );
             return true;
         }
         catch ( Throwable t )

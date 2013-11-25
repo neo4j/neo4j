@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
+
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
@@ -319,13 +324,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // and when that election is finished refresh the snapshot
         clusterClient.addClusterListener( new ClusterListener.Adapter()
         {
-            boolean hasRequestedElection = false; // This ensures that the election result is (at least) from our
+            boolean hasRequestedElection = true; // This ensures that the election result is (at least) from our
             // request or thereafter
 
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-                hasRequestedElection = true;
+//                hasRequestedElection = true;
                 clusterClient.performRoleElections();
             }
 
@@ -334,7 +339,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 if ( hasRequestedElection && role.equals( ClusterConfiguration.COORDINATOR ) )
                 {
-                    clusterClient.refreshSnapshot();
+//                    clusterClient.refreshSnapshot();
                     clusterClient.removeClusterListener( this );
                 }
             }
