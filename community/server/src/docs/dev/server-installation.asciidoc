@@ -6,10 +6,10 @@ Server Installation
 
 As a developer, you may wish to download Neo4j and run it locally on your desktop computer.
 We recommend this as an easy way to discover Neo4j.
-For Windows, see <<windows-install>>.
-For Unix/Linux, see <<linux-install>>.
 
-For OSX, see <<osx-install>>.
+* For Windows, see <<windows-install>>.
+* For Unix/Linux, see <<linux-install>>.
+* For OSX, see <<osx-install>>.
 
 As a systems administrator, you may wish to install Neo4j using a packaging system so you can ensure that a cluster of machines have identical installs.
 See <<linux-packages>> for more information on this.
