@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0
 
 import java.math.BigDecimal
 import java.lang.Character
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.IncomparableValuesException
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
 
@@ -41,10 +41,7 @@ trait Comparer extends StringHelper {
     case (null, null) => 0
     case (null, _) => 1
     case (_, null) => -1
-    case (left, right) => {
-      def txt(x: Any) = text(x, qtx.query) + " (" + x.getClass.getSimpleName + ")"
-      throw new SyntaxException("Don't know how to compare that. Left: " + txt(left) + "; Right: " + txt(right))
-    }
+    case (left, right) => throw new IncomparableValuesException(textWithType(left), textWithType(right))
   }
 
   private def areComparableOfSameType(l: AnyRef, r: AnyRef): Boolean =

@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands
 import org.neo4j.cypher.internal.compiler.v2_0._
 import expressions.{Identifier, Literal, Expression}
 import pipes.QueryState
-import symbols._
 import org.neo4j.cypher.internal.helpers.IsCollection
+import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.cypher.IncomparableValuesException
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
@@ -61,12 +62,19 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
     val b1 = b(m)
 
     (a1, b1) match {
-      case (null, _)                          => None
-      case (_, null)                          => None
-      case (IsCollection(l), IsCollection(r)) => Some(l == r)
-      case _                                  => Some(a1 == b1)
+      case (null, _)                                             => None
+      case (_, null)                                             => None
+      case (IsCollection(l), IsCollection(r))                    => Some(l == r)
+      case (l: Node, r) if !r.isInstanceOf[Node]                 => incomparable(l, r)
+      case (l, r: Node) if !l.isInstanceOf[Node]                 => incomparable(l, r)
+      case (l: Relationship, r) if !r.isInstanceOf[Relationship] => incomparable(l, r)
+      case (l, r: Relationship) if !l.isInstanceOf[Relationship] => incomparable(l, r)
+      case _                                                     => Some(a1 == b1)
     }
   }
+
+  private def incomparable(lhs: Any, rhs: Any)(implicit state: QueryState): Nothing =
+    throw new IncomparableValuesException(textWithType(lhs), textWithType(rhs))
 
   override def toString = a.toString() + " == " + b.toString()
 
