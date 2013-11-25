@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.test.TargetDirectory;
 
@@ -35,6 +36,7 @@ import static java.lang.System.getProperty;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.Predicates.stringContains;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -86,8 +88,7 @@ public class DumpProcessInformationTest
 
     private void awaitSignal( Process process ) throws IOException
     {
-        BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
-        try
+        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) ) )
         {
             String line = reader.readLine();
             if ( !SIGNAL.equals( line ) )
@@ -95,10 +96,6 @@ public class DumpProcessInformationTest
                 fail( "Got weird signal " + line );
             }
             // We got signal, great
-        }
-        finally
-        {
-            reader.close();
         }
     }
 }
