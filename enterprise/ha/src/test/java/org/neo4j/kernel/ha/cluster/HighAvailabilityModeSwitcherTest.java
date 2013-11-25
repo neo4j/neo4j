@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import java.net.URI;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
@@ -35,17 +34,23 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 public class HighAvailabilityModeSwitcherTest
 {
     @Test
     public void shouldBroadcastMasterIsAvailableEvenIfAlreadyMaster() throws Exception
     {
         // Given
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
         HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( BindingNotifier.class ),
                 mock( DelegateInvocationHandler.class ), availability,
                 mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
-                mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ) );
+                mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ),
+                scheduledExecutorService );
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
                 HighAvailabilityMemberState.MASTER, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
