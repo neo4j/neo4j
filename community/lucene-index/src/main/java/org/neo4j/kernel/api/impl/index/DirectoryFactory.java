@@ -45,7 +45,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
      */
     void close();
 
-    final DirectoryFactory PERSISTENT = new DirectoryFactory()
+    final static DirectoryFactory PERSISTENT = new DirectoryFactory()
     {
         @SuppressWarnings("ResultOfMethodCallIgnored")
         @Override
@@ -62,7 +62,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
     };
     
-    final class InMemoryDirectoryFactory implements DirectoryFactory
+    final static class InMemoryDirectoryFactory implements DirectoryFactory
     {
         private final Map<File, RAMDirectory> directories = new HashMap<File, RAMDirectory>( );
 
@@ -87,7 +87,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
     }
     
-    final class Single implements DirectoryFactory
+    final static class Single implements DirectoryFactory
     {
         private final Directory directory;
 
@@ -108,7 +108,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
     }
 
-    final class UncloseableDirectory extends Directory
+    final static class UncloseableDirectory extends Directory
     {
 
         private final Directory delegate;
