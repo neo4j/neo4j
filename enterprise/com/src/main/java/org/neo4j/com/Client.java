@@ -87,7 +87,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
 
-    private int chunkSize;
+    private final int chunkSize;
 
     public Client( String hostNameOrIp, int port, Logging logging,
                    StoreId storeId, int frameLength,
@@ -171,6 +171,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
          */
         resourcePoolReleaser = new ResourceReleaser()
         {
+            @Override
             public void release()
             {
                 channelPool.release();
@@ -338,7 +339,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             msgLog.error( "Unable to acquire new channel for " + type );
             throw new ComException( "Unable to acquire new channel for " + type );
         }
-        msgLog.debug( "Acquired channel: " + result.first() );
         return result;
     }
 
@@ -352,6 +352,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         channel.first().close().awaitUninterruptibly();
     }
 
+    @Override
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
