@@ -58,10 +58,24 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val extracted = q.extracted
-    val unsolvedOrdering = q.sort.filter(_.unsolved).nonEmpty
+    val unsolvedOrdering = plan.query.sort.filter(x => x.unsolved && !x.token.expression.containsAggregate).nonEmpty
     val limited = q.slice.exists(_.token.limit.nonEmpty)
 
     extracted && unsolvedOrdering && limited
+  }
+
+  override def missingDependencies(plan: ExecutionPlanInProgress) = if (!plan.query.extracted) {
+    Seq()
+  } else {
+    val aggregations = plan.query.sort.
+                       filter(_.token.expression.containsAggregate).
+                       map(_.token.expression.toString())
+
+    if (aggregations.nonEmpty) {
+      Seq("Aggregation expressions must be listed in the RETURN/WITH clause to be used in ORDER BY")
+    } else {
+      Seq()
+    }
   }
 }
 

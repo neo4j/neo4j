@@ -224,7 +224,14 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def aggregations_must_be_included_in_return() {
     expectError(
       "START a=node(0) RETURN a ORDER BY count(*)",
-      "Aggregation expressions must be listed in the RETURN clause to be used in ORDER BY"
+      "Aggregation expressions must be listed in the RETURN/WITH clause to be used in ORDER BY"
+    )
+  }
+
+  @Test def aggregations_must_be_included_in_return2() {
+    expectError(
+      "START a=node(0) RETURN a ORDER BY count(*) LIMIT 1",
+      "Aggregation expressions must be listed in the RETURN/WITH clause to be used in ORDER BY"
     )
   }
 

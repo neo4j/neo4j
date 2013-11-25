@@ -50,7 +50,7 @@ class SortBuilder extends PlanBuilder with SortingPreparations {
       map(_.token.expression.toString())
 
     if (aggregations.nonEmpty) {
-      Seq("Aggregation expressions must be listed in the RETURN clause to be used in ORDER BY")
+      Seq("Aggregation expressions must be listed in the RETURN/WITH clause to be used in ORDER BY")
     } else {
       Seq()
     }
