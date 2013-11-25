@@ -31,6 +31,7 @@ import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -42,11 +43,12 @@ public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerato
     private StringLogger msgLog;
     private Config config;
     private Slaves slaves;
+    private final AbstractTransactionManager tm;
 
     public TxIdGeneratorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                       DelegateInvocationHandler<TxIdGenerator> delegate, HaXaDataSourceManager xaDsm,
                                       Master master, RequestContextFactory requestContextFactory,
-                                      StringLogger msgLog, Config config, Slaves slaves
+                                      StringLogger msgLog, Config config, Slaves slaves, AbstractTransactionManager tm
     )
     {
         super( stateMachine, delegate );
@@ -56,6 +58,7 @@ public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerato
         this.msgLog = msgLog;
         this.config = config;
         this.slaves = slaves;
+        this.tm = tm;
     }
 
     @Override
@@ -68,6 +71,6 @@ public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerato
     protected TxIdGenerator getSlaveImpl( URI serverHaUri )
     {
         return new SlaveTxIdGenerator( config.get( ClusterSettings.server_id ), master,
-                HighAvailabilityModeSwitcher.getServerId( serverHaUri ), requestContextFactory, xaDsm );
+                HighAvailabilityModeSwitcher.getServerId( serverHaUri ), requestContextFactory, xaDsm, tm);
     }
 }

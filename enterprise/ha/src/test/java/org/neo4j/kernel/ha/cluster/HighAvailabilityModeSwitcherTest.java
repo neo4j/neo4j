@@ -32,6 +32,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.util.Monitors;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.mockito.Mockito.*;
@@ -47,7 +49,7 @@ public class HighAvailabilityModeSwitcherTest
                 mock( DelegateInvocationHandler.class ), availability,
                 mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
                 mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ), mock(
-                UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty() );
+                UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty(), new Monitors( StringLogger.DEV_NULL) );
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,

@@ -198,4 +198,15 @@ public class NoTransactionState implements TransactionState
     {
         return Iterables.empty();
     }
+
+    @Override
+    public boolean isRemotelyInitialized()
+    {
+        return false;
+    }
+
+    @Override
+    public void markAsRemotelyInitialized()
+    {
+    }
 }

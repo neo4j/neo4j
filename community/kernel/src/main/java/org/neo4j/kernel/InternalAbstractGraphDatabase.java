@@ -149,6 +149,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -249,6 +250,7 @@ public abstract class InternalAbstractGraphDatabase
     protected JobScheduler jobScheduler;
     protected UpdateableSchemaState updateableSchemaState;
     protected CleanupService cleanupService;
+    protected Monitors monitors;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String, CacheProvider> cacheProviders;
@@ -394,6 +396,9 @@ public abstract class InternalAbstractGraphDatabase
 
         // Create logger
         this.logging = createLogging();
+
+        // Component monitoring
+        this.monitors = new Monitors( logging.getMessagesLog( Monitors.class ) );
 
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
@@ -1368,6 +1373,14 @@ public abstract class InternalAbstractGraphDatabase
             else if ( IdGeneratorFactory.class.isAssignableFrom( type ) )
             {
                 return type.cast( idGeneratorFactory );
+            }
+            else if ( Monitors.class.isAssignableFrom( type ) )
+            {
+                return type.cast( monitors );
+            }
+            else if ( RemoteTxHook.class.isAssignableFrom( type ) )
+            {
+                return type.cast( txHook );
             }
             else if ( DependencyResolver.class.equals( type ) )
             {

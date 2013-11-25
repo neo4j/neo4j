@@ -23,6 +23,7 @@ import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
 public class SlaveTxHook implements RemoteTxHook
@@ -40,10 +41,17 @@ public class SlaveTxHook implements RemoteTxHook
     }
 
     @Override
-    public void remotelyInitializeTransaction( int eventIdentifier )
+    public void remotelyInitializeTransaction( int eventIdentifier, TransactionState state )
     {
-        Response<Void> response = master.initializeTx( contextFactory.newRequestContext( eventIdentifier ) );
-        xaDsm.applyTransactions( response );
+        if(!state.isRemotelyInitialized())
+        {
+            // Mark first, to ensure we never create more than one transaction on the master (exception below could
+            // cause retries).
+            state.markAsRemotelyInitialized();
+
+            Response<Void> response = master.initializeTx( contextFactory.newRequestContext( eventIdentifier ) );
+            xaDsm.applyTransactions( response );
+        }
     }
 
     @Override

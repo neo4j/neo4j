@@ -62,6 +62,8 @@ public class WritableTransactionState implements TransactionState
     private List<LockElement> lockElements;
     private PrimitiveElement primitiveElement;
 
+    private boolean isRemotelyInitialized = false;
+
     public static class PrimitiveElement
     {
         PrimitiveElement()
@@ -788,5 +790,17 @@ public class WritableTransactionState implements TransactionState
     public TxIdGenerator getTxIdGenerator()
     {
         return txIdGenerator;
+    }
+
+    @Override
+    public boolean isRemotelyInitialized()
+    {
+        return isRemotelyInitialized;
+    }
+
+    @Override
+    public void markAsRemotelyInitialized()
+    {
+        isRemotelyInitialized = true;
     }
 }

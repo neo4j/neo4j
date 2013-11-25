@@ -40,12 +40,23 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public abstract class AbstractTransactionManager implements TransactionManager, Lifecycle
 {
+    public abstract void doRecovery() throws Throwable;
+
+    /**
+     * Returns the {@link TransactionState} associated with the current transaction.
+     * If no transaction is active for the current thread {@link TransactionState#NO_STATE}
+     * should be returned.
+     *
+     * @return state associated with the current transaction for this thread.
+     */
+    public abstract TransactionState getTransactionState();
+
+    public abstract int getEventIdentifier();
+
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
         begin();
     }
-
-    public abstract void doRecovery() throws Throwable;
 
     /**
      * @return which {@link ForceMode} the transaction tied to the calling
@@ -55,17 +66,6 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
     {
         return ForceMode.forced;
     }
-    
-    /**
-     * Returns the {@link TransactionState} associated with the current transaction.
-     * If no transaction is active for the current thread {@link TransactionState#NO_STATE}
-     * should be returned.
-     * 
-     * @return state associated with the current transaction for this thread.
-     */
-    public abstract TransactionState getTransactionState();
-
-    public abstract int getEventIdentifier();
 
     /**
      * @return the error that happened during recovery, if recovery has taken place, null otherwise.

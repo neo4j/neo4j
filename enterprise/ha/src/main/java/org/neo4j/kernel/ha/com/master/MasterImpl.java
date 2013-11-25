@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
+import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
@@ -84,6 +85,10 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
  */
 public class MasterImpl extends LifecycleAdapter implements Master
 {
+    public interface Monitor
+    {
+        void initializeTx( RequestContext context );
+    }
 
     public static final int TX_TIMEOUT_ADDITION = 5 * 1000;
 
@@ -135,16 +140,18 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private final SPI spi;
     private final StringLogger msgLog;
     private final Config config;
+    private final Monitor monitor;
 
     private Map<RequestContext, MasterTransaction> transactions = new ConcurrentHashMap<>();
     private ScheduledExecutorService unfinishedTransactionsExecutor;
     private long unfinishedTransactionThresholdMillis;
 
-    public MasterImpl( SPI spi, Logging logging, Config config )
+    public MasterImpl( SPI spi, Monitors monitors, Logging logging, Config config )
     {
         this.spi = spi;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.config = config;
+        this.monitor = monitors.newMonitor( Monitor.class );
     }
 
     @Override
@@ -167,6 +174,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<Void> initializeTx( RequestContext context )
     {
+        monitor.initializeTx( context );
+
         if ( !spi.isAccessible() )
         {
             throw new TransactionFailureException( "Database is currently not available" );

@@ -59,6 +59,7 @@ public abstract class IndexConnectionBroker<T extends XaConnection>
                                                 + con.getXaResource() + "' in "
                                                 + tx );
                 }
+
                 tx.registerSynchronization( new TxCommitHook( tx ) );
                 txConnectionMap.put( tx, con );
             }
