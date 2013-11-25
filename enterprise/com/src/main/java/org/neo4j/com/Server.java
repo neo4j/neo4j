@@ -19,16 +19,9 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +50,7 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
@@ -70,6 +64,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.Clock;
+
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -90,7 +90,7 @@ import org.neo4j.tooling.Clock;
 public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
 {
     private InetSocketAddress socketAddress;
-    private Clock clock;
+    private final Clock clock;
 
     public interface Configuration
     {
@@ -111,17 +111,17 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
     public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
 
     private ServerBootstrap bootstrap;
-    private T requestTarget;
+    private final T requestTarget;
     private ChannelGroup channelGroup;
     private final Map<Channel, Pair<RequestContext, AtomicLong /*time last heard of*/>> connectedSlaveChannels =
             new ConcurrentHashMap<Channel, Pair<RequestContext, AtomicLong>>();
     private ExecutorService executor;
     private ExecutorService workerExecutor;
     private ExecutorService targetCallExecutor;
-    private StringLogger msgLog;
+    private final StringLogger msgLog;
     private final Map<Channel, PartialRequest> partialRequests =
             new ConcurrentHashMap<Channel, PartialRequest>();
-    private Configuration config;
+    private final Configuration config;
     private final int frameLength;
     private volatile boolean shuttingDown;
 
@@ -136,7 +136,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
 
     private final byte applicationProtocolVersion;
     private long oldChannelThresholdMillis;
-    private TxChecksumVerifier txVerifier;
+    private final TxChecksumVerifier txVerifier;
     private int chunkSize;
 
     public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
@@ -294,6 +294,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
         return INTERNAL_PROTOCOL_VERSION;
     }
 
+    @Override
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
@@ -555,6 +556,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
     {
         return new Runnable()
         {
+            @Override
             @SuppressWarnings("unchecked")
             public void run()
             {

@@ -22,9 +22,6 @@ package org.neo4j.cluster;
 import java.net.URI;
 
 import org.neo4j.cluster.com.BindingNotifier;
-import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
-import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateMachineConversations;
 import org.neo4j.cluster.statemachine.StateMachineProxyFactory;
@@ -64,6 +61,7 @@ public class ProtocolServer implements BindingNotifier
         stateMachines.addMessageProcessor( proxyFactory );
     }
 
+    @Override
     public void addBindingListener( BindingListener listener )
     {
         bindingListeners = Listeners.addListener( listener, bindingListeners );
@@ -80,6 +78,7 @@ public class ProtocolServer implements BindingNotifier
         }
     }
 
+    @Override
     public void removeBindingListener( BindingListener listener )
     {
         bindingListeners = Listeners.removeListener( listener, bindingListeners );

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
@@ -104,6 +105,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
@@ -194,6 +196,7 @@ public abstract class InternalAbstractGraphDatabase
     protected RelationshipAutoIndexerImpl relAutoIndexer;
     protected KernelData extensions;
     protected Caches caches;
+    protected Monitors monitors;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String, CacheProvider> cacheProviders;
@@ -340,6 +343,9 @@ public abstract class InternalAbstractGraphDatabase
 
         // Create logger
         this.logging = createLogging();
+        
+        // Component monitoring
+        this.monitors = new Monitors( logging.getMessagesLog( Monitors.class ) );
 
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
@@ -711,7 +717,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Caches createCaches()
     {
-        return new DefaultCaches( msgLog );
+        return new DefaultCaches( msgLog, monitors );
     }
 
     protected RelationshipProxy.RelationshipLookups createRelationshipLookups()
