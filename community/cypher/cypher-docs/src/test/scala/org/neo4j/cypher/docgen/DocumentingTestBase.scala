@@ -43,6 +43,7 @@ import org.neo4j.tooling.GlobalGraphOperations
 import scala.reflect.ClassTag
 import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.NodeManager
+import org.scalatest.junit.JUnitSuite
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -128,7 +129,7 @@ trait DocumentationHelper extends GraphIcing {
 
 }
 
-abstract class DocumentingTestBase extends Assertions with DocumentationHelper with GraphIcing {
+abstract class DocumentingTestBase extends JUnitSuite with Assertions with DocumentationHelper with GraphIcing {
 
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     internalTestQuery(title, text, queryText, returns, None, None, assertions: _*)
