@@ -49,12 +49,11 @@ goto :main %1
 :install
   echo "WARNING: this installer is deprecated and may not be the optimal way to install Neo4j on your system."
   echo "Please see the Neo4j Manual for up to date information on installing Neo4j."
-  set /p response=Press any key to continue
 
-  call functions.bat :findJavaHome
- set javaPath=%javaPath:"="""%
+  call %~dps0functions.bat :findJavaHome
+  set javaPath=%javaPath:"="""%
 
-  set binPath="%javaPath%\bin\java.exe %loggingProperties% -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -Dorg.neo4j.cluster.logdirectory="%~dps0..\data\log" -jar %~dps0%wrapperJarFilename%  %serviceName%"
+  set binPath="\"%javaPath%\bin\java.exe\" %loggingProperties% -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -Dorg.neo4j.cluster.logdirectory="%~dps0..\data\log" -jar %~dps0%wrapperJarFilename%  %serviceName%"
 
   sc create "%serviceName%" binPath= %binpath% DisplayName= "%serviceDisplayName:"=%" start= %serviceStartType%
   sc start %serviceName%
