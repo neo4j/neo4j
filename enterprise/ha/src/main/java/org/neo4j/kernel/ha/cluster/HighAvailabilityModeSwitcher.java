@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -93,11 +98,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 /**
  * Performs the internal switches from pending to slave/master, by listening for
  * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
@@ -119,6 +119,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     public static final String SLAVE = "slave";
     private URI masterHaURI;
     public static final String INADDR_ANY = "0.0.0.0";
+    private URI slaveHaURI;
 
     public static int getServerId( URI haUri )
     {
@@ -233,15 +234,18 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private void stateChanged( HighAvailabilityMemberChangeEvent event )
     {
         availableMasterId = event.getServerHaUri();
-        // JH: Commented out to test a theory of cluster election problems.
-//        if ( event.getNewState() == event.getOldState() )
-//        {
-//            if ( event.getNewState() == HighAvailabilityMemberState.MASTER )
-//            {
-//                clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
-//            }
-//            return;
-//        }
+        if ( event.getNewState() == event.getOldState() )
+        {
+            if ( event.getNewState() == HighAvailabilityMemberState.MASTER )
+            {
+                clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
+            }
+            else if ( event.getNewState() == HighAvailabilityMemberState.SLAVE )
+            {
+                clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI );
+            }
+            return;
+        }
         switch ( event.getNewState() )
         {
             case TO_MASTER:
@@ -396,8 +400,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             life.add( server );
             life.start();
 
-            URI haUri = createHaURI( server );
-            clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );
+            slaveHaURI = createHaURI( server );
+            clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI );
             return true;
         }
         catch ( Throwable t )

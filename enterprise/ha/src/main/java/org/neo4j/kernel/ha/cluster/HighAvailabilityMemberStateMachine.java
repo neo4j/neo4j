@@ -121,7 +121,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 InstanceId previousElected = context.getElectedMasterId();
 
                 // Check if same coordinator was elected
-                if ( !coordinatorId.equals( previousElected ) )
+//                if ( !coordinatorId.equals( previousElected ) )
                 {
                     state = state.masterIsElected( context, coordinatorId );
 
