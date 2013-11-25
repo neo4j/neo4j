@@ -32,8 +32,9 @@ import org.neo4j.kernel.api.DataWriteOperations
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundPlanContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.scalatest.junit.JUnitSuite
 
-class GraphDatabaseTestBase extends GraphIcing with Assertions {
+class GraphDatabaseTestBase extends JUnitSuite with GraphIcing with Assertions {
 
   var graph: GraphDatabaseAPI with Snitch = null
   var nodes: List[Node] = null
