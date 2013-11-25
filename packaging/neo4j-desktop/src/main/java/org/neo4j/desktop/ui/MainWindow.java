@@ -104,7 +104,6 @@ public class MainWindow
         frame.add( root );
         frame.pack();
         frame.setResizable( false );
-        frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
 
         updateStatus( STOPPED );
     }
@@ -164,6 +163,7 @@ public class MainWindow
             debugWindow.dispose();
         }
         frame.dispose();
+        System.exit( 0 );
     }
 
     private JPanel createStatusPanel( CardLayout statusPanelLayout )
