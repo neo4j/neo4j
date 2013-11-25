@@ -501,6 +501,28 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     assertRejects(query)
   }
 
+  @Test
+  def should_use_implied_node_predicates_to_pick_start_points() {
+    // Given
+    val query = q(
+      patterns = Seq(
+        SingleNode(identifier, labels=Seq(Label(label)), properties=Map(property -> expression)),
+        SingleNode(otherIdentifier))
+    )
+
+    when( context.getIndexRule(label, property) ).thenReturn(Some(new IndexDescriptor(0, 0)))
+    when( context.getUniquenessConstraint(label, property) ).thenReturn(None)
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.toSet === Set(
+      Unsolved(AllNodes(otherIdentifier)),
+      Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None)))
+    )
+  }
+
   private def q(start: Seq[StartItem] = Seq(),
                 where: Seq[Predicate] = Seq(),
                 updates: Seq[UpdateAction] = Seq(),

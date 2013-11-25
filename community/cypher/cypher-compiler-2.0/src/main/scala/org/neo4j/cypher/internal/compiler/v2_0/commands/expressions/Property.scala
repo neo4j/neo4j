@@ -27,6 +27,17 @@ import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.cypher.internal.compiler.v2_0.helpers.IsMap
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{Predicate, Equals}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
+
+object Property {
+  def predicateFromMapEntry(mapExpr: Expression, entry: (String, Expression)): Predicate = {
+    val (propertyKeyName, valueExpression) = entry
+    Equals(Property(mapExpr, PropertyKey(propertyKeyName)), valueExpression)
+  }
+}
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
