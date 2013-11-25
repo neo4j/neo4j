@@ -37,10 +37,6 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
       case (k, v) => k -> v.rewrite(f)
     }
 
-    def throwIfSymbolsMissing(symbols: SymbolTable) {
-      m.values.foreach(_.throwIfSymbolsMissing(symbols))
-    }
-
     def symboltableDependencies: Set[String] = m.values.flatMap(_.symbolTableDependencies).toSet
   }
 

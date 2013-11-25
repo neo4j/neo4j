@@ -58,9 +58,5 @@ class ExtractPipe(val source: Pipe, val expressions: Map[String, Expression]) ex
       .andThen(this, "Extract",
         "symKeys" -> SimpleVal.fromIterable(source.symbols.keys),
         "exprKeys" -> SimpleVal.fromIterable(expressions.keys))
-
-  override def throwIfSymbolsMissing(symbols: SymbolTable) {
-    expressions.foreach(_._2.throwIfSymbolsMissing(symbols))
-  }
 }
 

@@ -57,10 +57,5 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToke
 
   def identifiers = Seq.empty
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    entity.throwIfSymbolsMissing(symbols)
-    labels.foreach(_.throwIfSymbolsMissing(symbols))
-  }
-
   def symbolTableDependencies = entity.symbolTableDependencies ++ labels.flatMap(_.symbolTableDependencies)
 }

@@ -78,8 +78,6 @@ case class SingleNode(name: String,
 
   def symbolTableDependencies = Set.empty
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {}
-
   override def toString: String = {
     val namePart = if (notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
@@ -119,9 +117,6 @@ case class RelatedTo(left: SingleNode,
     new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, properties.rewrite(f))
 
   def rels = Seq(relName)
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-  }
 
   def symbolTableDependencies = Set.empty
 
@@ -188,8 +183,6 @@ case class VarLengthRelatedTo(pathName: String,
 
   def rels = Seq()
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {}
-
   def children = Seq.empty
 
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): VarLengthRelatedTo =
@@ -228,10 +221,6 @@ case class ShortestPath(pathName: String,
     new ShortestPath(pathName, left.rewrite(f), right.rewrite(f), relTypes, dir, maxDepth, single, relIterator)
 
   def rels = Seq()
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    possibleStartPoints.foreach(p => symbols.evaluateType(p._1, p._2))
-  }
 
   def children = Seq.empty
 

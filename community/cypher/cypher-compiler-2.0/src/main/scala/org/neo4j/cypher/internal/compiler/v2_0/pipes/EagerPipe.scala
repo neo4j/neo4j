@@ -27,9 +27,6 @@ case class EagerPipe(src: Pipe) extends PipeWithSource(src) {
 
   def executionPlanDescription: PlanDescription = src.executionPlanDescription.andThen(this, "Eager")
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-  }
-
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.toIterator
 

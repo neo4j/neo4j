@@ -60,9 +60,5 @@ case class PropertySetAction(prop: Property, e: Expression)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = PropertySetAction(prop, e.rewrite(f))
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    e.symbolDependenciesMet(symbols)
-  }
-
   def symbolTableDependencies = prop.symbolTableDependencies ++ e.symbolTableDependencies
 }

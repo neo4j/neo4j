@@ -172,8 +172,6 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
   override def rewrite(f: (Expression) => Expression) = CreateUniqueAction(links.map(_.rewrite(f)): _*)
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {links.foreach(l=>l.throwIfSymbolsMissing(symbols))}
-
   override def symbolTableDependencies = links.flatMap(_.symbolTableDependencies).toSet
 
   override def toString: String = links.mkString(",")

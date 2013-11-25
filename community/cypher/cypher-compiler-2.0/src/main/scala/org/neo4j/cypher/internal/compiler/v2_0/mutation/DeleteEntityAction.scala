@@ -62,9 +62,5 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
   def children = Seq(elementToDelete)
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    elementToDelete.throwIfSymbolsMissing(symbols)
-  }
-
   def symbolTableDependencies = elementToDelete.symbolTableDependencies
 }

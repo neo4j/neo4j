@@ -30,10 +30,6 @@ case class MergePatternAction(patterns: Seq[Pattern], actions: Seq[UpdateAction]
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = ???
 
-  def throwIfSymbolsMissing(symbols: SymbolTable): Unit = {
-    patterns.foreach(_.throwIfSymbolsMissing(symbols))
-  }
-
   def identifiers: Seq[(String, CypherType)] = patterns.flatMap(_.possibleStartPoints)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = MergePatternAction(patterns = patterns.map(_.rewrite(f)),

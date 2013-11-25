@@ -77,10 +77,7 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
   else
     new AllShortestPathsStrategy(expander, ast.maxDepth.getOrElse(15))
 
-  def calculateType(symbols: SymbolTable) = {
-    ast.throwIfSymbolsMissing(symbols)
-    shortestPathStrategy.typ
-  }
+  def calculateType(symbols: SymbolTable) =  shortestPathStrategy.typ
 
   def symbolTableDependencies = ast.symbolTableDependencies
 }

@@ -80,6 +80,4 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
 
     source.executionPlanDescription.andThen(this, "ExtractPath",  "name" -> name, "patterns" -> pats)
   }
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) { }
 }

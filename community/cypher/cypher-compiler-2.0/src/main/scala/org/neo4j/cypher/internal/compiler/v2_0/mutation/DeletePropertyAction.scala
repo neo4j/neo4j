@@ -59,9 +59,5 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
 
   def rewrite(f: (Expression) => Expression) = DeletePropertyAction(element.rewrite(f), propertyKey.rewrite(f))
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    element.evaluateType(MapType(), symbols)
-  }
-
   def symbolTableDependencies = element.symbolTableDependencies
 }

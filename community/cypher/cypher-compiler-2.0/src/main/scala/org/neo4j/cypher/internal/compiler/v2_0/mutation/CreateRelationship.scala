@@ -37,11 +37,6 @@ case class RelationshipEndpoint(node: Expression, props: Map[String, Expression]
   def rewrite(f: (Expression) => Expression): RelationshipEndpoint =
     RelationshipEndpoint(node.rewrite(f), Materialized.mapValues(props, (expression: Expression) => expression.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)), bare)
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    props.throwIfSymbolsMissing(symbols)
-    labels.foreach(_.throwIfSymbolsMissing(symbols))
-  }
-
   def symbolTableDependencies: Set[String] = {
     val nodeDeps = node match {
       case _: Identifier => Set[String]()
@@ -83,14 +78,7 @@ extends UpdateAction
 
   def identifiers = Seq(key-> RelationshipType())
 
-  override def throwIfSymbolsMissing(symbols: SymbolTable) {
-    from.throwIfSymbolsMissing(symbols)
-    to.throwIfSymbolsMissing(symbols)
-    props.throwIfSymbolsMissing(symbols)
-  }
-
-  override def symbolTableDependencies: Set[String] =
-    {
+  override def symbolTableDependencies: Set[String] = {
       val a = props.flatMap(_._2.symbolTableDependencies).toSet
       val b = from.symbolTableDependencies
       val c = to.symbolTableDependencies

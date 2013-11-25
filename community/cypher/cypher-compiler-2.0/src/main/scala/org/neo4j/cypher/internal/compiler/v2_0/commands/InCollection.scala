@@ -51,11 +51,6 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
 
   def arguments: scala.Seq[Expression] = Seq(collection)
 
-  def assertInnerTypes(symbols: SymbolTable) {
-    val innerType = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType
-    predicate.throwIfSymbolsMissing(symbols.add(id, innerType))
-  }
-
   def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
 }
 

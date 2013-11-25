@@ -90,6 +90,4 @@ class ProfilerPipe(source: Pipe, name: String, rows: Int, dbAccess: Int) extends
   }
 
   def symbols: SymbolTable = SymbolTable()
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }

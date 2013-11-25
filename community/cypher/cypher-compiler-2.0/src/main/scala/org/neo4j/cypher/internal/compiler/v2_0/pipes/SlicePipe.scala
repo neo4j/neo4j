@@ -67,11 +67,6 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
       .executionPlanDescription
       .andThen(this, "Slice", Materialized.mapValues(args.toMap, SimpleVal.fromStr).toSeq: _*)
   }
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    skip.foreach(_.throwIfSymbolsMissing(symbols))
-    limit.foreach(_.throwIfSymbolsMissing(symbols))
-  }
 }
 
 class HeadAndTail[T](head:T, tail:Iterator[T]) extends Iterator[T] {

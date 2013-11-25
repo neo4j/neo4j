@@ -51,14 +51,6 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   def identifiers = Nil
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    val t = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType
-
-    val innerSymbols: SymbolTable = symbols.add(id, t)
-
-    actions.foreach(_.throwIfSymbolsMissing(innerSymbols))
-  }
-
   def symbolTableDependencies = {
     val updateActionsDeps: Set[String] = actions.flatMap(_.symbolTableDependencies).toSet
     val updateActionIdentifiers: Set[String] = actions.flatMap(_.identifiers.map(_._1)).toSet

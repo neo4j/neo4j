@@ -62,8 +62,4 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
     val identifiers = Materialized.mapValues(expressions, (e: Expression) => e.evaluateType(AnyType(), source.symbols))
     SymbolTable(identifiers)
   }
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    expressions.values.foreach(e => e.throwIfSymbolsMissing(symbols))
-  }
 }
