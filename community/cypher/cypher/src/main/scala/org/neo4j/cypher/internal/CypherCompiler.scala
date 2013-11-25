@@ -52,7 +52,7 @@ object CypherCompiler {
     def prepare(query: String, context: GraphDatabaseService, statement: Statement): ExecutionPlan = {
       val (version, remainingQuery) = query match {
         case hasVersionDefined(versionName, remainingQuery) => (CypherVersion(versionName), remainingQuery)
-        case _ => (vDefault, query)
+        case _                                              => (defaultVersion, query)
       }
 
       version match {
