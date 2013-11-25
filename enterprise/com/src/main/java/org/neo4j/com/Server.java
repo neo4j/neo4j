@@ -441,11 +441,6 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
                 {
                     finishOffChannel( null, slave );
                 }
-                catch ( TransactionNotPresentOnMasterException e )
-                {
-                    // It's ok, there is nothing to finish anyway, since this is thrown when the transaction was not
-                    // found
-                }
                 catch ( Throwable e )
                 {
                     // Introduce some delay here. it becomes like a busy wait if it never succeeds
@@ -468,7 +463,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
         };
     }
 
-    protected void handleRequest( ChannelBuffer buffer, final Channel channel ) throws IOException
+    protected void handleRequest( ChannelBuffer buffer, final Channel channel )
     {
         Byte continuation = readContinuationHeader( buffer, channel );
         if ( continuation == null )
@@ -615,7 +610,7 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
         targetBuffer.writeBytes( storeId.serialize() );
     }
 
-    private static void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer ) throws IOException
+    private static void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer )
     {
         if ( !txStream.hasNext() )
         {

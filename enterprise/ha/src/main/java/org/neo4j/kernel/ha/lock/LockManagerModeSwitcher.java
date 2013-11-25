@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.RagManager;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.TxManager;
 
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
 {
