@@ -233,14 +233,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private void stateChanged( HighAvailabilityMemberChangeEvent event )
     {
         availableMasterId = event.getServerHaUri();
-        if ( event.getNewState() == event.getOldState() )
-        {
-            if ( event.getNewState() == HighAvailabilityMemberState.MASTER )
-            {
-                clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
-            }
-            return;
-        }
+        // JH: Commented out to test a theory of cluster election problems.
+//        if ( event.getNewState() == event.getOldState() )
+//        {
+//            if ( event.getNewState() == HighAvailabilityMemberState.MASTER )
+//            {
+//                clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
+//            }
+//            return;
+//        }
         switch ( event.getNewState() )
         {
             case TO_MASTER:
