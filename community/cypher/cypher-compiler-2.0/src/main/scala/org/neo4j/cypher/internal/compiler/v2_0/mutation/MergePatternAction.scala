@@ -30,16 +30,18 @@ import org.neo4j.cypher.InternalException
 case class MergePatternAction(patterns: Seq[Pattern],
                               actions: Seq[UpdateAction],
                               onMatch: Seq[UpdateAction],
-                              updateActions: Option[Seq[UpdateAction]] = None,
-                              matchPipe: Option[Pipe] = None) extends UpdateAction {
+                              maybeUpdateActions: Option[Seq[UpdateAction]] = None,
+                              maybeMatchPipe: Option[Pipe] = None) extends UpdateAction {
   def children: Seq[AstNode[_]] = patterns ++ actions ++ onMatch
+
+  def readyToExecute = maybeMatchPipe.nonEmpty && maybeUpdateActions.nonEmpty
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     state.initialContext = Some(context)
 
-    val matchResult = doMatch(state)
+    val matchResult = doMatch(state).toList
     if(matchResult.nonEmpty)
-      return matchResult
+      return matchResult.iterator
 
     val lockedMatchResult = lockAndThenMatch(state, context)
     if(lockedMatchResult.nonEmpty)
@@ -48,18 +50,24 @@ case class MergePatternAction(patterns: Seq[Pattern],
     createThePattern(state, context)
   }
 
-  private def doMatch(state: QueryState) = matchPipe.get.createResults(state)
+  private def matchPipe: Pipe =
+    maybeMatchPipe.getOrElse(throw new InternalException("Query not prepared correctly!"))
+
+  private def updateActions: Seq[UpdateAction] =
+    maybeUpdateActions.getOrElse(throw new InternalException("Query not prepared correctly!"))
+
+  private def doMatch(state: QueryState) = matchPipe.createResults(state)
 
   private def lockAndThenMatch(state: QueryState, ctx: ExecutionContext): Iterator[ExecutionContext] = {
     val lockingQueryContext = state.query.upgradeToLockingQueryContext
     ctx.collect { case (_, node: Node) => node.getId }.toSeq.sorted.
       foreach( id => lockingQueryContext.getLabelsForNode(id) ) // TODO: This locks the nodes. Hack!
-    matchPipe.get.createResults(state)
+    matchPipe.createResults(state)
   }
 
   private def createThePattern(state: QueryState, ctx: ExecutionContext) = {
     // Runs all commands, from left to right, updating the execution context as it passes through
-    val resultingContext = updateActions.get.foldLeft(ctx) {
+    val resultingContext = updateActions.foldLeft(ctx) {
       case (accumulatedContext, action) => singleElementOrFail(action.exec(accumulatedContext, state))
     }
     Iterator(resultingContext)
@@ -81,8 +89,8 @@ case class MergePatternAction(patterns: Seq[Pattern],
       patterns = patterns.map(_.rewrite(f)),
       actions = actions.map(_.rewrite(f)),
       onMatch = onMatch.map(_.rewrite(f)),
-      updateActions = updateActions.map(_.map(_.rewrite(f))),
-      matchPipe = matchPipe)
+      maybeUpdateActions = maybeUpdateActions.map(_.map(_.rewrite(f))),
+      maybeMatchPipe = maybeMatchPipe)
 
   def symbolTableDependencies: Set[String] = {
     val dependencies = (patterns.flatMap(_.symbolTableDependencies) ++ actions.flatMap(_.symbolTableDependencies)).toSet
