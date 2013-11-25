@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>39</version>
+    <version>40</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j.doc</groupId>
@@ -16,12 +16,12 @@
   <packaging>pom</packaging>
 
   <properties>
-    <neo4j.version>2.0.0-M05</neo4j.version>
+    <neo4j.version>2.0.0-RC1</neo4j.version>
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <docs.upstream>${project.build.directory}</docs.upstream>
     <docs.importdir>${docs.upstream}/docs</docs.importdir>
     <docs-plugin.skip>true</docs-plugin.skip>
-    <doctools.version>12</doctools.version>
+    <doctools.version>13</doctools.version>
     <docs.server>neo@docs.neo4j.org</docs.server>
     <docs.rootpath>/data/www/doc/docs.neo4j.org</docs.rootpath>
     <refcard.version>2.0</refcard.version>
