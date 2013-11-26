@@ -247,8 +247,8 @@ Here's an example using some predefined variables available in the build:
  "A Relationship" -> "Start node" [label="has a"]
  "A Relationship" -> "End node" [label="has a"]
  "A Relationship" -> "Relationship type" [label="has a"]
- Name [TEXTNODE]
- "Relationship type" -> Name [label="uniquely identified by" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+ "Name" [TEXTNODE]
+ "Relationship type" -> "Name" [label="uniquely identified by" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
  ----
 ----
 
@@ -261,8 +261,8 @@ Which is rendered as:
 "A Relationship" -> "Start node" [label="has a"]
 "A Relationship" -> "End node" [label="has a"]
 "A Relationship" -> "Relationship type" [label="has a"]
-Name [TEXTNODE]
-"Relationship type" -> Name [label="uniquely identified by" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+"Name" [TEXTNODE]
+"Relationship type" -> "Name" [label="uniquely identified by" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
 ----
 
 The optional second argument given to the dot filter defines the style to use:
