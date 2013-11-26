@@ -21,36 +21,35 @@ package org.neo4j.desktop.ui;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.desktop.config.Environment;
-import org.neo4j.desktop.config.OperatingSystemFamily;
+import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.runtime.DesktopConfigurator;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.Version;
 import org.neo4j.server.configuration.Configurator;
 
 import static java.lang.String.format;
-import static org.neo4j.desktop.config.DatabaseConfiguration.copyDefaultDatabaseConfigurationProperties;
 
 public class DesktopModel
 {
-    private final Environment environment;
     private final DesktopConfigurator serverConfigurator;
-    private final List<DesktopModelListener> listeners = new ArrayList<DesktopModelListener>();
+    private final List<DesktopModelListener> listeners = new ArrayList<>();
+    private final Installation installation;
 
-    public DesktopModel( Environment environment, File databaseDirectory )
+    public DesktopModel( Installation installation )
     {
-        this.environment = environment;
-        this.serverConfigurator = new DesktopConfigurator();
+        this.installation = installation;
+        this.serverConfigurator = new DesktopConfigurator( installation );
 
-        serverConfigurator.setDatabaseDirectory( databaseDirectory.getAbsolutePath() );
+
+        serverConfigurator.setDatabaseDirectory( installation.getDatabaseDirectory() );
     }
 
     public Configurator getServerConfigurator() {
@@ -80,126 +79,29 @@ public class DesktopModel
     public void setDatabaseDirectory( File databaseDirectory ) throws UnsuitableDirectoryException
     {
         verifyGraphDirectory(databaseDirectory);
-        serverConfigurator.setDatabaseDirectory( databaseDirectory.getAbsolutePath() );
+        serverConfigurator.setDatabaseDirectory( databaseDirectory );
     }
 
 
     public File getVmOptionsFile()
     {
-        return getUserVmOptionsFile();
-    }
-
-    private File getUserVmOptionsFile()
-    {
-        // The installer creates a .loc file that contains the path of the actual per-user vmoptions file
-        String location = getUserVmOptionsFileLocation();
-        File vmOptionsFile;
-
-        if ( null == location )
-        {
-            vmOptionsFile = getDefaultUserVmOptionsFile();
-        }
-        else
-        {
-            vmOptionsFile = new File( substituteVars( location ) );
-        }
-
-        if ( null != vmOptionsFile &&  !vmOptionsFile.exists() )
-        {
-            createUserVmOptionsFile( vmOptionsFile );
-        }
-
-        return vmOptionsFile;
-    }
-
-
-    private void createUserVmOptionsFile( File vmOptionsFile )
-    {
-        try {
-            FileWriter writer = new FileWriter( vmOptionsFile );
-            PrintWriter printer = new PrintWriter( writer );
-            try
-            {
-                FileReader reader = new FileReader( getSystemVmOptionsFile() );
-                BufferedReader buffered = new BufferedReader( reader );
-                try
-                {
-                    String line;
-                    while ( ( line = buffered.readLine() ) != null )
-                    {
-                        String trimmed = line.trim();
-                        if ( trimmed.startsWith( "#" ) || ! trimmed.startsWith( "-include-options" ) )
-                        {
-                            printer.println( line );
-                        }
-                    }
-                }
-                finally
-                {
-                    buffered.close();
-                }
-            }
-            finally
-            {
-                printer.close();
-            }
-        }
-        catch ( IOException e )
-        {
-            // ignore
-            e.printStackTrace( System.out );
-        }
-    }
-
-    private String getUserVmOptionsFileLocation()
-    {
-        return readOneLine( new File( environment.getBaseDirectory(), "neo4j-community-user-vmoptions.loc" ) );
-    }
-
-    private File getDefaultUserVmOptionsFile()
-    {
-        if ( OperatingSystemFamily.WINDOWS.isDetected() )
-        {
-            String appData = System.getenv( "APPDATA" );
-            if ( null != appData )
-            {
-                return new File( new File ( appData ), "neo4j-community.vmoptions" );
-            }
-        }
-        return new File( new File ( System.getProperty( "user.home" ) ) , ".neo4j-community.vmoptions" );
-    }
-
-    private File getSystemVmOptionsFile()
-    {
-        return new File( environment.getBaseDirectory(), "neo4j-community.vmoptions" );
-    }
-
-    private String substituteVars( String location )
-    {
-        return new VariableSubstitutor().substitute( location, new Function<String, String>()
-        {
-            @Override
-            public String apply( String name )
-            {
-                String value = System.getenv( name );
-                return value == null ? "" : value;
-            }
-        } );
+        return installation.getVmOptionsFile();
     }
 
     public File getDatabaseConfigurationFile()
     {
-        return new File( getDatabaseDirectory(), "neo4j.properties" );
+        return serverConfigurator.getDatabaseConfigurationFile();
     }
 
-    public File getServerConfigurationFile() {
-        return serverConfigurator.getServerConfigurationFile();
+    public File getServerConfigurationFile()
+    {
+        return installation.getServerConfigurationsFile();
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void prepareGraphDirectoryForStart() throws UnsuitableDirectoryException
     {
-        File databaseDirectory = new File(serverConfigurator.getDatabaseDirectory() );
+        File databaseDirectory = new File( serverConfigurator.getDatabaseDirectory() );
         verifyGraphDirectory( databaseDirectory );
         if ( !databaseDirectory.exists() )
         {
@@ -211,7 +113,7 @@ public class DesktopModel
         {
             try
             {
-                copyDefaultDatabaseConfigurationProperties(configurationFile);
+                writeDefaultDatabaseConfiguration( configurationFile );
             }
             catch ( IOException e )
             {
@@ -258,43 +160,60 @@ public class DesktopModel
                 "%s is neither empty nor does it contain a neo4j graph database", dir );
     }
 
-    private static String readOneLine( File file )
+    public void register( DesktopModelListener desktopModelListener )
     {
-        try
-        {
-            if ( file.exists() && file.isFile() && file.canRead() )
-            {
-                FileReader reader = new FileReader( file );
-                try
-                {
-                    BufferedReader buffered = new BufferedReader( reader );
-                    try
-                    {
-                        return buffered.readLine();
-                    }
-                    finally
-                    {
-                        buffered.close();
-                    }
-
-                }
-                finally
-                {
-                    reader.close();
-                }
-            }
-        }
-        catch (IOException e)
-        {
-            // couldn't read file content
-            return null;
-        }
-
-        // file was not readable or not a file
-        return null;
+        listeners.add( desktopModelListener );
     }
 
-    public void register(DesktopModelListener desktopModelListener) {
-        listeners.add(desktopModelListener);
+    public void editFile( File file ) throws IOException
+    {
+        installation.getEnvironment().editFile( file );
+    }
+
+    public void openBrowser( String url ) throws IOException, URISyntaxException
+    {
+        installation.getEnvironment().openBrowser( url );
+    }
+
+    public void writeDefaultDatabaseConfiguration( File file ) throws IOException
+    {
+        InputStream defaults = installation.getDefaultDatabaseConfiguration();
+        writeInto( file, defaults );
+    }
+
+    public void writeDefaultServerConfiguration( File file ) throws IOException
+    {
+        InputStream defaults = installation.getDefaultServerConfiguration();
+        writeInto( file, defaults );
+    }
+
+    private void writeInto( File file, InputStream data ) throws IOException
+    {
+        if ( data == null )
+        {
+            // Don't bother writing any files if we somehow don't have any default data for them
+            return;
+        }
+
+        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( data ) );
+              PrintWriter writer = new PrintWriter( file ) )
+        {
+            String input = reader.readLine();
+            while ( input != null )
+            {
+                writer.println( input );
+                input = reader.readLine();
+            }
+        }
+    }
+
+    public File getPluginsDirectory()
+    {
+        return installation.getPluginsDirectory();
+    }
+
+    public void openDirectory( File directory ) throws IOException
+    {
+        installation.getEnvironment().openDirectory( directory );
     }
 }

@@ -25,8 +25,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.desktop.config.Environment;
-
 import static java.lang.String.format;
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
@@ -34,12 +32,12 @@ import static javax.swing.JOptionPane.showMessageDialog;
 public abstract class EditFileActionListener implements ActionListener
 {
     private final Component parentComponent;
-    private final Environment environment;
+    private final DesktopModel model;
 
-    EditFileActionListener( Component parentComponent, Environment environment )
+    EditFileActionListener( Component parentComponent, DesktopModel model )
     {
         this.parentComponent = parentComponent;
-        this.environment = environment;
+        this.model = model;
     }
 
     protected abstract File getFile();
@@ -59,7 +57,7 @@ public abstract class EditFileActionListener implements ActionListener
         try
         {
             ensureFileAndParentDirectoriesExists( file );
-            environment.editFile( file );
+            model.editFile( file );
         }
         catch ( IOException e )
         {

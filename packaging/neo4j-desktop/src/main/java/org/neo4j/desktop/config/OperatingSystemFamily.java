@@ -25,11 +25,6 @@ public enum OperatingSystemFamily
     MAC_OS,
     UNIX;
 
-    public boolean isDetected()
-    {
-        return this == detect();
-    }
-
     public static OperatingSystemFamily detect()
     {
         String osName = System.getProperty( "os.name" );

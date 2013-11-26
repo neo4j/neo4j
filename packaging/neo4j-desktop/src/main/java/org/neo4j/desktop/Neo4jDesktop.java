@@ -19,10 +19,11 @@
  */
 package org.neo4j.desktop;
 
-import java.net.URISyntaxException;
-
-import org.neo4j.desktop.config.DefaultDirectories;
-import org.neo4j.desktop.config.Environment;
+import org.neo4j.desktop.config.Installation;
+import org.neo4j.desktop.config.OperatingSystemFamily;
+import org.neo4j.desktop.config.osx.DarwinInstallation;
+import org.neo4j.desktop.config.unix.UnixInstallation;
+import org.neo4j.desktop.config.windows.WindowsInstallation;
 import org.neo4j.desktop.runtime.DatabaseActions;
 import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
@@ -37,32 +38,51 @@ public final class Neo4jDesktop
 {
     public static void main( String[] args )
     {
-        new Neo4jDesktop().start();
+        preStartInitialize();
+
+        Neo4jDesktop app = new Neo4jDesktop();
+        app.start();
+    }
+
+    public static void preStartInitialize()
+    {
+        PlatformUI.selectPlatformUI();
+        DesktopIdentification.register();
     }
 
     private void start()
     {
-        PlatformUI.selectPlatformUI();
-        DesktopIdentification.register();
-
-        Environment environment;
         try
         {
-            environment = new Environment();
+            Installation installation = getInstallation();
+            installation.initialize();
+
+            DesktopModel model = new DesktopModel( installation );
+            DatabaseActions databaseActions = new DatabaseActions( model );
+            addShutdownHook( databaseActions );
+
+            MainWindow window = new MainWindow( databaseActions, installation, model );
+            window.display();
         }
-        catch ( URISyntaxException e )
+        catch ( Exception e )
         {
             alert( e.getMessage() );
             e.printStackTrace( System.out );
-            return;
         }
+    }
 
-        DesktopModel model = new DesktopModel( environment, DefaultDirectories.defaultDatabaseDirectory() );
-        DatabaseActions databaseActions = new DatabaseActions( model );
-        addShutdownHook( databaseActions );
-
-        MainWindow window = new MainWindow( databaseActions, environment, model );
-        window.display();
+    private Installation getInstallation() throws Exception
+    {
+        switch ( OperatingSystemFamily.detect() )
+        {
+            case WINDOWS:
+                return new WindowsInstallation();
+            case MAC_OS:
+                return new DarwinInstallation();
+            case UNIX:
+                return new UnixInstallation();
+        }
+        return new UnixInstallation(); // This is the most generic one, presumably.
     }
 
     protected void addShutdownHook( final DatabaseActions databaseActions )

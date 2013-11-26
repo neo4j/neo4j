@@ -128,9 +128,11 @@
             <configuration>
               <target name="fix-license-line-endings">
                 <mkdir dir="${project.build.directory}/licenses" />
+                <mkdir dir="${project.build.directory}/plugins" />
                 <fixcrlf file="${project.basedir}/../../community/LICENSE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
                 <fixcrlf file="src/main/distribution/text/community/LICENSES.txt" destDir="${project.build.directory}/licenses" eol="dos" />
                 <fixcrlf file="src/main/distribution/text/community/NOTICE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
+                <fixcrlf file="src/main/distribution/text/plugins/README.txt" destDir="${project.build.directory}/plugins" eol="dos" />
               </target>
             </configuration>
           </execution>

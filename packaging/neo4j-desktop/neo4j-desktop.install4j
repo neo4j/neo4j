@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="5.1.6" transformSequenceNumber="4">
-  <directoryPresets config="./src/main/install4j/neo4j-community-user-vmoptions.loc" />
+  <directoryPresets config="./src/main/install4j/install.properties" />
   <application name="Neo4j Community" distributionSourceDir="" applicationId="8478-6373-2628-9929" mediaDir="." mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="9" lzmaCompression="true" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="false" shrinkRuntime="true" shortName="neo4j-community" publisher="Neo Technology" publisherWeb="http://neotechnology.com" version="@NEO4J_VERSION@" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" installerName="" javaMinVersion="1.7" javaMaxVersion="1.7" allowBetaVM="false" jdkMode="runtimeJre" jdkName="JDK 1.6">
     <languages skipLanguageSelection="false" languageSelectionInPrincipalLanguage="false">
       <principalLanguage id="en" customLocalizationFile="./src/main/install4j/messages_en.utf8" />
@@ -20,12 +20,14 @@
     <roots />
     <mountPoints>
       <mountPoint id="262" root="" location="bin" mode="755" />
+      <mountPoint id="386" root="" location="plugins" mode="755" />
       <mountPoint id="210" root="" location="" mode="755" />
     </mountPoints>
     <entries>
       <fileEntry mountPoint="262" file="./target/neo4j-desktop-@NEO4J_VERSION@.jar" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="true" />
       <fileEntry mountPoint="262" file="./src/main/install4j/neo4j-community.vmoptions" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
-      <fileEntry mountPoint="262" file="./src/main/install4j/neo4j-community-user-vmoptions.loc" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./src/main/install4j/install.properties" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="386" file="./target/plugins/README.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/LICENSES.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/NOTICE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/LICENSE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
@@ -35,6 +37,7 @@
         <description />
         <include all="false">
           <entry location="bin" fileType="regular" />
+          <entry location="plugins" fileType="regular" />
         </include>
         <dependencies>
           <component id="157" />
@@ -65,6 +68,7 @@
       <java mainClass="org.neo4j.desktop.Neo4jDesktop" vmParameters="" arguments="" allowVMPassthroughParameters="true" preferredVM="server" bundleRuntime="true">
         <classPath>
           <archive location="bin/neo4j-desktop-@NEO4J_VERSION@.jar" failOnError="false" />
+          <scanDirectory location="plugins" failOnError="false" />
         </classPath>
         <nativeLibraryDirectories />
       </java>
@@ -298,7 +302,7 @@
                         <object class="com.install4j.api.beans.ScriptProperty">
                           <void property="value">
                             <string>// The result of this script is directly substituted into neo4j-community.vmoptions
-return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j-community.vmoptions";</string>
+return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getCompilerVariable("sys.fullName") + context.getVariable("sys.fileSeparator") + "neo4j-community.vmoptions";</string>
                           </void>
                         </object>
                       </void>
@@ -323,7 +327,7 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
                           </void>
                           <void index="1">
                             <object class="java.io.File">
-                              <string>bin/neo4j-community-user-vmoptions.loc</string>
+                              <string>bin/install.properties</string>
                             </object>
                           </void>
                         </array>
@@ -494,6 +498,36 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
             <actions />
             <formComponents />
           </screen>
+          <screen name="" id="356" customizedId="" beanClass="com.install4j.runtime.beans.screens.AdditionalConfirmationsScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
+            <serializedBean>
+              <java class="java.beans.XMLDecoder">
+                <object class="com.install4j.runtime.beans.screens.AdditionalConfirmationsScreen" />
+              </java>
+            </serializedBean>
+            <condition />
+            <validation />
+            <preActivation />
+            <postActivation />
+            <actions />
+            <formComponents>
+              <formComponent name="" id="357" customizedId="" beanClass="com.install4j.runtime.beans.formcomponents.CheckboxComponent" enabled="true" commentSet="false" comment="" insetTop="" insetLeft="" insetBottom="" insetRight="" resetInitOnPrevious="false">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.formcomponents.CheckboxComponent">
+                      <void property="checkboxText">
+                        <string>Also remove configuration and log files?</string>
+                      </void>
+                      <void property="variableName">
+                        <string>alsoRemoveConfig</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <initScript />
+                <visibilityScript />
+              </formComponent>
+            </formComponents>
+          </screen>
           <screen name="" id="16" customizedId="" beanClass="com.install4j.runtime.beans.screens.UninstallationScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
             <serializedBean>
               <java class="java.beans.XMLDecoder">
@@ -512,6 +546,27 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
                   </java>
                 </serializedBean>
                 <condition />
+              </action>
+              <action name="" id="354" customizedId="" beanClass="com.install4j.runtime.beans.actions.files.DeleteFileAction" enabled="true" commentSet="false" comment="" actionElevationType="elevated" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.files.DeleteFileAction">
+                      <void property="files">
+                        <array class="java.io.File" length="1">
+                          <void index="0">
+                            <object class="java.io.File">
+                              <string>${installer:sys.appdataDir}/${compiler:sys.fullName}</string>
+                            </object>
+                          </void>
+                        </array>
+                      </void>
+                      <void property="recursive">
+                        <boolean>true</boolean>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition>context.getBooleanVariable("alsoRemoveConfig")</condition>
               </action>
             </actions>
             <formComponents />

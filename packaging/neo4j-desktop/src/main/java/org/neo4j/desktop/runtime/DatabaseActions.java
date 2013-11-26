@@ -77,7 +77,7 @@ public class DatabaseActions
 
     private Set<Class> extractCauseTypes( Throwable e )
     {
-        Set<Class> types = new HashSet<Class>();
+        Set<Class> types = new HashSet<>();
         types.add( e.getClass() );
         if ( e.getCause() != null )
         {
@@ -107,5 +107,4 @@ public class DatabaseActions
     {
         return server != null;
     }
-
 }

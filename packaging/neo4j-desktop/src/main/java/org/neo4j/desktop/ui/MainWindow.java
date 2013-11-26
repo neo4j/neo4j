@@ -26,32 +26,23 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.neo4j.desktop.config.Environment;
+import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.runtime.DatabaseActions;
-import org.neo4j.desktop.runtime.DesktopConfigurator;
 
 import static java.lang.String.format;
-import static javax.swing.JFileChooser.APPROVE_OPTION;
-import static javax.swing.JFileChooser.CUSTOM_DIALOG;
-import static javax.swing.JFileChooser.DIRECTORIES_ONLY;
-import static javax.swing.JOptionPane.CANCEL_OPTION;
-import static javax.swing.JOptionPane.showConfirmDialog;
 import static javax.swing.SwingUtilities.invokeLater;
-import static org.neo4j.desktop.ui.Components.alert;
+
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
 import static org.neo4j.desktop.ui.Components.createVerticalSpacing;
@@ -62,7 +53,6 @@ import static org.neo4j.desktop.ui.Components.withLayout;
 import static org.neo4j.desktop.ui.Components.withSpacingBorder;
 import static org.neo4j.desktop.ui.Components.withTitledBorder;
 import static org.neo4j.desktop.ui.DatabaseStatus.STARTED;
-import static org.neo4j.desktop.ui.DatabaseStatus.STARTING;
 import static org.neo4j.desktop.ui.DatabaseStatus.STOPPED;
 import static org.neo4j.desktop.ui.Graphics.loadImage;
 
@@ -89,11 +79,11 @@ public class MainWindow
 
     private DatabaseStatus databaseStatus;
 
-    public MainWindow( final DatabaseActions databaseActions, Environment environment, DesktopModel model )
+    public MainWindow( final DatabaseActions databaseActions, Installation installation, DesktopModel model )
     {
         this.model = model;
         this.debugWindow = new SystemOutDebugWindow();
-        this.environment = environment;
+        this.environment = installation.getEnvironment();
         this.databaseActions = databaseActions;
 
         this.frame = new JFrame( "Neo4j Community" );
@@ -152,7 +142,7 @@ public class MainWindow
             @Override
             public void actionPerformed( ActionEvent e )
             {
-                JDialog settingsDialog = new SettingsDialog( frame, environment, model );
+                JDialog settingsDialog = new SettingsDialog( frame, model );
                 settingsDialog.setLocationRelativeTo( null );
                 settingsDialog.setVisible( true );
             }
@@ -173,11 +163,6 @@ public class MainWindow
             debugWindow.dispose();
         }
         frame.dispose();
-        
-        // TODO Wouldn't want to have exit here really, but there's an issue where the JVM
-        // is kept alive by something (possibly the "fallback" shell server in ConsoleService)
-        // preventing it from shutting down properly. When that issue is fixed this should
-        // preferably be removed.
         System.exit( 0 );
     }
 
@@ -205,91 +190,13 @@ public class MainWindow
 
     private JButton createBrowseButton()
     {
-        return Components.createTextButton( ellipsis( "Browse" ), new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                JFileChooser jFileChooser = new JFileChooser();
-                jFileChooser.setFileSelectionMode( DIRECTORIES_ONLY );
-                jFileChooser.setCurrentDirectory( new File( directoryDisplay.getText() ) );
-                jFileChooser.setDialogTitle( "Select database" );
-                jFileChooser.setDialogType( CUSTOM_DIALOG );
-
-                while ( true )
-                {
-                    switch ( jFileChooser.showOpenDialog( frame ) )
-                    {
-                        case APPROVE_OPTION:
-                            File selectedFile = jFileChooser.getSelectedFile();
-
-                            try
-                            {
-                                model.setDatabaseDirectory( selectedFile );
-                                directoryDisplay.setText( model.getDatabaseDirectory().getAbsolutePath() );
-                                return;
-                            }
-                            catch ( UnsuitableDirectoryException error )
-                            {
-                                int result = showConfirmDialog(
-                                        frame, error.getMessage() + "\nPlease choose a different folder.",
-                                        "Invalid folder selected", JOptionPane.OK_CANCEL_OPTION );
-                                switch ( result )
-                                {
-                                    case CANCEL_OPTION:
-                                        return;
-                                    default:
-                                }
-                            }
-
-                        default:
-                            return;
-                }
-
-                }
-            }
-        } );
+        ActionListener actionListener = new BrowseForDatabaseActionListener( frame, directoryDisplay, model );
+        return Components.createTextButton( ellipsis( "Browse" ), actionListener );
     }
 
     private JButton createStartButton()
     {
-        return Components.createTextButton( "Start", new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent event )
-            {
-                updateStatus( STARTING );
-
-                invokeLater( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            model.prepareGraphDirectoryForStart();
-
-                            databaseActions.start();
-                            updateStatus( STARTED );
-                        }
-                        catch ( UnsuitableDirectoryException e )
-                        {
-                            updateUserWithErrorMessageAndStatus( e );
-                        }
-                        catch ( UnableToStartServerException e )
-                        {
-                            updateUserWithErrorMessageAndStatus( e );
-                        }
-                    }
-
-                    private void updateUserWithErrorMessageAndStatus( Exception e )
-                    {
-                        alert( e.getMessage() );
-                        updateStatus( STOPPED );
-                    }
-                } );
-            }
-        } );
+        return Components.createTextButton( "Start", new StartDatabaseActionListener( this, model, databaseActions ) );
     }
 
     private JButton createStopButton()
@@ -314,7 +221,7 @@ public class MainWindow
         } );
     }
 
-    private void updateStatus(DatabaseStatus status)
+    public void updateStatus( DatabaseStatus status )
     {
         browseButton.setEnabled( STOPPED == status );
         settingsButton.setEnabled( STOPPED == status );

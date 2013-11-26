@@ -30,11 +30,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 
-import org.neo4j.desktop.config.DatabaseConfiguration;
-import org.neo4j.desktop.config.DefaultDirectories;
-import org.neo4j.desktop.config.Environment;
-import org.neo4j.desktop.config.ServerConfiguration;
-
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.createTextButton;
 import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
@@ -47,21 +42,18 @@ import static org.neo4j.desktop.ui.Components.withTitledBorder;
 
 class SettingsDialog extends JDialog
 {
-    private final Environment environment;
     private final DesktopModel model;
 
-    SettingsDialog( Frame owner, Environment environment, DesktopModel model )
+    SettingsDialog( Frame owner, DesktopModel model )
     {
         super( owner, "Neo4j Settings", true );
-        this.environment = environment;
         this.model = model;
 
        getContentPane().add( withSpacingBorder( withBoxLayout( BoxLayout.Y_AXIS, createPanel(
             createEditDatabaseConfigPanel(createEditDatabaseConfigurationButton()),
             createEditServerConfigPanel( createEditServerConfigurationButton() ),
             createEditVmOptionsPanel( createEditVmOptionsButton() ),
-            // disabling extensions for now
-            // createExtensionsPanel(),
+            createExtensionsPanel( createOpenPluginsDirectoryButton() ),
             createVerticalSpacing(),
             withFlowLayout( FlowLayout.RIGHT, createPanel(
                 createTextButton( "Close", new ActionListener()
@@ -75,7 +67,6 @@ class SettingsDialog extends JDialog
         ) ) ) );
 
         pack();
-        setResizable( false );
     }
 
     private void close()
@@ -105,9 +96,16 @@ class SettingsDialog extends JDialog
                 createPanel( createUnmodifiableTextField( vmOptionsPath ), editVmOptionsButton ) ) );
     }
 
+    private Component createExtensionsPanel( JButton openPluginsDirectoryButton )
+    {
+        String pluginsDirectory = model.getPluginsDirectory().getAbsolutePath();
+        return withFlowLayout( withTitledBorder( "Plugins and Extensions",
+                createPanel( createUnmodifiableTextField( pluginsDirectory ), openPluginsDirectoryButton ) ) );
+    }
+
     private JButton createEditDatabaseConfigurationButton()
     {
-        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, environment )
+        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, model )
         {
             @Override
             protected File getFile()
@@ -122,7 +120,7 @@ class SettingsDialog extends JDialog
                 file.getParentFile().mkdirs();
                 if (!file.exists())
                 {
-                    DatabaseConfiguration.copyDefaultDatabaseConfigurationProperties( file );
+                    model.writeDefaultDatabaseConfiguration( file );
                 }
             }
         } );
@@ -130,7 +128,7 @@ class SettingsDialog extends JDialog
 
     private JButton createEditServerConfigurationButton()
     {
-        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, environment )
+        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, model )
         {
             @Override
             protected File getFile()
@@ -145,7 +143,7 @@ class SettingsDialog extends JDialog
                 file.getParentFile().mkdirs();
                 if (!file.exists())
                 {
-                    ServerConfiguration.copyDefaultServerConfigurationProperties(file);
+                    model.writeDefaultServerConfiguration( file );
                 }
             }
         } );
@@ -153,7 +151,7 @@ class SettingsDialog extends JDialog
 
     private JButton createEditVmOptionsButton()
     {
-        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, environment )
+        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, model )
         {
             @Override
             protected File getFile()
@@ -161,5 +159,11 @@ class SettingsDialog extends JDialog
                 return model.getVmOptionsFile();
             }
         } );
+    }
+
+    private JButton createOpenPluginsDirectoryButton()
+    {
+        return Components.createTextButton( "Open",
+                new OpenDirectoryActionListener( this, model.getPluginsDirectory(), model ) );
     }
 }

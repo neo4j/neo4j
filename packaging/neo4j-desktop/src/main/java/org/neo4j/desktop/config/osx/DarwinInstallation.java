@@ -17,15 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.desktop.config;
+package org.neo4j.desktop.config.osx;
 
-/**
- * Optionally modifiable configuration value.
- * @param <T> the type of value it provides.
- */
-public interface Value<T>
+import java.io.File;
+
+import org.neo4j.desktop.config.unix.UnixInstallation;
+
+public class DarwinInstallation extends UnixInstallation
 {
-    T get();
 
-    void set( T value );
+    @Override
+    protected File getDefaultDirectory()
+    {
+        // cf. http://stackoverflow.com/questions/567874/how-do-i-find-the-users-documents-folder-with-java-in-os-x
+        return new File( new File( System.getProperty( "user.home" ) ), "Documents" );
+    }
 }
