@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+
 import java.net.URI;
 
 import org.junit.Test;
@@ -36,12 +41,10 @@ import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.mockito.Mockito.*;
-
 public class HighAvailabilityModeSwitcherTest
 {
     @Test
-    public void shouldBroadcastMasterIsAvailableEvenIfAlreadyMaster() throws Exception
+    public void shouldBroadcastMasterIsAvailableIfMasterAndReceiveMasterIsElected() throws Exception
     {
         // Given
         ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
@@ -62,4 +65,77 @@ public class HighAvailabilityModeSwitcherTest
            */
         verify( availability, times( 1 ) ).memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, null );
     }
+
+    @Test
+    public void shouldBroadcastSlaveIsAvailableIfSlaveAndReceivesMasterIsAvailable() throws Exception
+    {
+
+        // Given
+        ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( BindingNotifier.class ),
+                mock( DelegateInvocationHandler.class ), availability,
+                mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
+                mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ), mock(
+                UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty(), new Monitors( StringLogger.DEV_NULL) );
+
+        // When
+        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
+                HighAvailabilityMemberState.SLAVE, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
+
+        // Then
+          /*
+           * The second argument to memberIsAvailable below is null because it has not been set yet. This would require
+           * a switch to master which we don't do here.
+           */
+        verify( availability, times( 1 ) ).memberIsAvailable( HighAvailabilityModeSwitcher.SLAVE, null );
+    }
+
+    @Test
+    public void shouldNotBroadcastIfSlaveAndReceivesMasterIsElected() throws Exception
+    {
+
+        // Given
+        ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( BindingNotifier.class ),
+                mock( DelegateInvocationHandler.class ), availability,
+                mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
+                mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ), mock(
+                UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty(), new Monitors( StringLogger.DEV_NULL) );
+
+        // When
+        toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
+                HighAvailabilityMemberState.SLAVE, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
+
+        // Then
+          /*
+           * The second argument to memberIsAvailable below is null because it has not been set yet. This would require
+           * a switch to master which we don't do here.
+           */
+        verifyZeroInteractions(  availability );
+    }
+
+    @Test
+    public void shouldNotBroadcastIfMasterAndReceivesSlaveIsAvailable() throws Exception
+    {
+
+        // Given
+        ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( BindingNotifier.class ),
+                mock( DelegateInvocationHandler.class ), availability,
+                mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
+                mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ), mock(
+                UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty(), new Monitors( StringLogger.DEV_NULL) );
+
+        // When
+        toTest.slaveIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
+                HighAvailabilityMemberState.MASTER, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
+
+        // Then
+          /*
+           * The second argument to memberIsAvailable below is null because it has not been set yet. This would require
+           * a switch to master which we don't do here.
+           */
+        verifyZeroInteractions(  availability );
+    }
+
 }
