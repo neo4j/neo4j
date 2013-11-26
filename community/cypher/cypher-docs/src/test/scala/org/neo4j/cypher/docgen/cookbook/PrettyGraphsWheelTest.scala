@@ -24,8 +24,9 @@ import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.cypher.StatisticsChecker
 
-class PrettyGraphsWheelTest extends DocumentingTestBase {
+class PrettyGraphsWheelTest extends DocumentingTestBase with StatisticsChecker {
   def section = "cookbook"
   generateInitialGraphForConsole = false
   override val graphvizOptions = "graph [layout=neato]"
@@ -42,7 +43,7 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
         
 - Create a center node.
 - Once per element in the range, create a leaf and connect it to the center.
-- Select two leafs from the center node and connect them.
+- Connect neighbouring leafs.
 - Find the minimum and maximum leaf and connect these.
 - Return the id of the center node.""",
       queryText = """CREATE (center)
@@ -62,6 +63,10 @@ CREATE (last_leaf)-[:X]->(first_leaf)
 RETURN id(center) as id""",
       returns =
 """The query returns the id of the center node.""",
-      assertions = (p) => assertEquals(List(Map("id" -> 0)),p.toList))
-  } 
+      assertions = { (p) =>
+        assertEquals(List(Map("id" -> 0)), p.toList)
+        assertStats(p, nodesCreated = 7, relationshipsCreated = 12, propertiesSet = 6)
+      }
+    )
+  }
 }
