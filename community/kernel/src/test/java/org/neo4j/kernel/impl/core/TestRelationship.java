@@ -891,4 +891,18 @@ public class TestRelationship extends AbstractNeo4jTestCase
         clearCache();
         assertEquals( "Test", node.getProperty( "name" ) );
     }
+
+    @Test
+    public void shouldNotGetTheSameRelationshipMoreThanOnceWhenAskingForTheSameTypeMultipleTimes() throws Exception
+    {
+        // given
+        Node node = getGraphDb().createNode();
+        node.createRelationshipTo( getGraphDb().createNode(), withName( "FOO" ) );
+
+        // when
+        int relationships = count( node.getRelationships( withName( "FOO" ), withName( "FOO" ) ) );
+
+        // then
+        assertEquals( 1, relationships );
+    }
 }

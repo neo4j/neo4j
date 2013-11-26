@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.hamcrest.CoreMatchers._
 import org.neo4j.graphdb._
-import org.neo4j.kernel.{EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
+import org.neo4j.kernel.TopLevelTransaction
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.Assert._
 import scala.collection.JavaConverters._
@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
 import org.scalautils.LegacyTripleEquals
-import org.neo4j.helpers.collection.MapUtil
 
 class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker with LegacyTripleEquals {
 
@@ -753,6 +752,21 @@ foreach(x in [1,2,3] |
     execute("start a = node(0), b = node(1) match p = shortestPath(a-[*]-b) return p").toList
   }
 
+  @Test def shouldNotTraverseSameRelationshipTwiceInShortestPath() {
+    // given
+    createNodes("A", "B")
+    relate("A" -> "KNOWS" -> "B")
+
+    // when
+    val result = execute("MATCH (a{name:'A'}), (b{name:'B'}) MATCH p=allShortestPaths((a)-[:KNOWS|KNOWS*]->(b)) RETURN p").
+      toList
+
+    // then
+    graph.inTx {
+      assert(result.size === 1, result)
+    }
+  }
+
   @Test def shouldBeAbleToTakeParamsInDifferentTypes() {
     createNodes("A", "B", "C", "D", "E")
 
@@ -1160,7 +1174,7 @@ return other""")
 
   @Test def shouldHandleCheckingThatANodeDoesNotHaveAProp() {
     val a = createNode()
-    
+
     val result = execute("start a=node(0) where not has(a.propertyDoesntExist) return a")
     assert(List(Map("a" -> a)) === result.toList)
   }
@@ -1960,7 +1974,7 @@ RETURN x0.name""")
 
     assert(result.toList === List(Map("test" -> "atest")))
   }
-  
+
   @Test
   def substring_with_default_length() {
     val result = execute("return substring('0123456789', 1) as s")
@@ -2366,7 +2380,7 @@ RETURN x0.name""")
     val m = createNode("m")
     relate(n,m,"link")
     val result = execute("start n = node(0) with coalesce(n,n) as n match n--() return n")
-    
+
     assert(result.toList === List(Map("n" -> n)))
   }
 
