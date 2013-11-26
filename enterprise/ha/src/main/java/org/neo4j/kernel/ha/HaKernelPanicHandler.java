@@ -27,7 +27,7 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
-public class HaKernelPanicHandler implements KernelEventHandler
+public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGuard.AvailabilityRequirement
 {
     private final XaDataSourceManager dataSourceManager;
     private final TxManager txManager;
@@ -40,7 +40,7 @@ public class HaKernelPanicHandler implements KernelEventHandler
         this.dataSourceManager = dataSourceManager;
         this.txManager = txManager;
         this.availabilityGuard = availabilityGuard;
-        availabilityGuard.grant();
+        availabilityGuard.grant(this);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class HaKernelPanicHandler implements KernelEventHandler
                         return;
                     }
 
-                    availabilityGuard.deny();
+                    availabilityGuard.deny(this);
                     try
                     {
                         txManager.stop();
@@ -75,7 +75,7 @@ public class HaKernelPanicHandler implements KernelEventHandler
                     }
                     finally
                     {
-                        availabilityGuard.grant();
+                        availabilityGuard.grant(this);
                     }
                 }
             }
@@ -101,5 +101,11 @@ public class HaKernelPanicHandler implements KernelEventHandler
     public ExecutionOrder orderComparedTo( KernelEventHandler other )
     {
         return ExecutionOrder.DOESNT_MATTER;
+    }
+
+    @Override
+    public String description()
+    {
+        return getClass().getSimpleName();
     }
 }

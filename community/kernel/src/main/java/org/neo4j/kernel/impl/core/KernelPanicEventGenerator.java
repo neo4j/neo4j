@@ -34,7 +34,7 @@ public class KernelPanicEventGenerator
         this.kernelEventHandlers = kernelEventHandlers;
     }
     
-    public void generateEvent( final ErrorState error )
+    public void generateEvent( final ErrorState error, final Throwable cause )
     {
         ExecutorService executor = Executors.newSingleThreadExecutor(  );
         executor.execute( new Runnable()
@@ -42,7 +42,7 @@ public class KernelPanicEventGenerator
             @Override
             public void run()
             {
-                kernelEventHandlers.kernelPanic( error );
+                kernelEventHandlers.kernelPanic( error, cause );
             }
         } );
         executor.shutdown();

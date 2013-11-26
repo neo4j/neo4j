@@ -30,6 +30,15 @@ import static org.junit.Assert.assertThat;
 
 public class AvailabilityGuardTest
 {
+    private final AvailabilityGuard.AvailabilityRequirement REQUIREMENT = new AvailabilityGuard.AvailabilityRequirement()
+    {
+        @Override
+        public String description()
+        {
+            return "Thing";
+        }
+    };
+
     @Test
     public void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse() throws Exception
     {
@@ -71,7 +80,7 @@ public class AvailabilityGuardTest
 
         // When
         long start = clock.currentTimeMillis();
-        availabilityGuard.grant();
+        availabilityGuard.grant(REQUIREMENT);
         boolean result = availabilityGuard.isAvailable( 1000 );
         long end = clock.currentTimeMillis();
 
@@ -90,8 +99,8 @@ public class AvailabilityGuardTest
         AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
 
         // When
-        availabilityGuard.grant();
-        availabilityGuard.grant();
+        availabilityGuard.grant(REQUIREMENT);
+        availabilityGuard.grant(REQUIREMENT);
 
         long start = clock.currentTimeMillis();
         boolean result = availabilityGuard.isAvailable( 1000 );
@@ -113,9 +122,9 @@ public class AvailabilityGuardTest
         AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
 
         // When
-        availabilityGuard.grant();
-        availabilityGuard.grant();
-        availabilityGuard.deny();
+        availabilityGuard.grant(REQUIREMENT);
+        availabilityGuard.grant(REQUIREMENT);
+        availabilityGuard.deny(REQUIREMENT);
 
         long start = clock.currentTimeMillis();
         boolean result = availabilityGuard.isAvailable( 1000 );
@@ -141,10 +150,10 @@ public class AvailabilityGuardTest
             @Override
             public void run()
             {
-                availabilityGuard.grant();
+                availabilityGuard.grant(REQUIREMENT);
             }
         } );
-        availabilityGuard.grant();
+        availabilityGuard.grant(REQUIREMENT);
 
         long start = clock.currentTimeMillis();
         boolean result = availabilityGuard.isAvailable( 1000 );
@@ -180,7 +189,7 @@ public class AvailabilityGuardTest
         availabilityGuard.addListener( availabilityListener );
 
         // When
-        availabilityGuard.grant();
+        availabilityGuard.grant(REQUIREMENT);
 
         // Then
         assertThat( notified.get(), equalTo( true ) );
@@ -210,8 +219,8 @@ public class AvailabilityGuardTest
         availabilityGuard.addListener( availabilityListener );
 
         // When
-        availabilityGuard.grant();
-        availabilityGuard.deny();
+        availabilityGuard.grant(REQUIREMENT);
+        availabilityGuard.deny(REQUIREMENT);
 
         // Then
         assertThat( notified.get(), equalTo( true ) );
@@ -232,5 +241,21 @@ public class AvailabilityGuardTest
 
         assertThat( result, equalTo( false ) );
         assertThat( clock.currentTimeMillis(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void shouldExplainWhoIsBlockingAccess() throws
+            Exception
+    {
+        // Given
+        TickingClock clock = new TickingClock( 0, 100 );
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 0 );
+
+        // When
+        availabilityGuard.deny(REQUIREMENT);
+        availabilityGuard.deny(REQUIREMENT);
+
+        // Then
+        assertThat( availabilityGuard.describeWhoIsBlocking(), equalTo( "Blocking components (2): [Thing, Thing]" ) );
     }
 }

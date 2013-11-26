@@ -41,9 +41,8 @@ public class TxManagerTest
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private final KernelPanicEventGenerator panicGenerator = new KernelPanicEventGenerator(
-            new KernelEventHandlers() );
+            new KernelEventHandlers(StringLogger.DEV_NULL) );
     private final XaDataSourceManager mockXaManager = mock( XaDataSourceManager.class );
-    private final TransactionStateFactory txStateFactory = mock(TransactionStateFactory.class);
 
     @Test
     public void settingTmNotOkShouldAttachCauseToSubsequentErrors() throws Exception

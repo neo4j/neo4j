@@ -449,7 +449,7 @@ public abstract class InternalAbstractGraphDatabase
         jobScheduler =
             life.add( new Neo4jJobScheduler( this.toString(), logging.getMessagesLog( Neo4jJobScheduler.class ) ));
 
-        kernelEventHandlers = new KernelEventHandlers();
+        kernelEventHandlers = new KernelEventHandlers(logging.getMessagesLog( KernelEventHandlers.class ));
 
         caches = createCaches();
         diagnosticsManager = life.add( new DiagnosticsManager( logging.getMessagesLog( DiagnosticsManager.class ) ) );
@@ -928,8 +928,8 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( !availabilityGuard.isAvailable( accessTimeout ) )
         {
-            throw new TransactionFailureException( "Database is currently not available " + availabilityGuard
-                    .hashCode() );
+            throw new TransactionFailureException( "Database is currently not available. "
+                    + availabilityGuard.describeWhoIsBlocking() );
         }
 
         try

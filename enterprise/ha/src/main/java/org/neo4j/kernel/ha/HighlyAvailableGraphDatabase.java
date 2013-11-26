@@ -191,7 +191,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // can server (possibly quite outdated) read requests.
         if (!availabilityGuard.isAvailable( stateSwitchTimeoutMillis ))
         {
-            throw new TransactionFailureException( "Timeout waiting to join cluster, or for cluster to elect master" );
+            throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
+                    + availabilityGuard.describeWhoIsBlocking() );
         }
 
         return super.beginTx( forceMode );
@@ -297,7 +298,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-//                hasRequestedElection = true;
                 clusterClient.performRoleElections();
             }
 
@@ -306,7 +306,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 if ( hasRequestedElection && role.equals( ClusterConfiguration.COORDINATOR ) )
                 {
-//                    clusterClient.refreshSnapshot();
                     clusterClient.removeClusterListener( this );
                 }
             }

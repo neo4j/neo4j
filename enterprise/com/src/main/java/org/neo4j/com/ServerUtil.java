@@ -117,7 +117,7 @@ public class ServerUtil
                 logger.logMessage( "Unable to rotate log for " + ds, e );
                 // TODO If we do it in rotate() the transaction semantics for such a failure will change
                 // slightly and that has got to be verified somehow. But to have it in there feels much better.
-                kernelPanicEventGenerator.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
+                kernelPanicEventGenerator.generateEvent( ErrorState.TX_MANAGER_NOT_OK, new Throwable() );
                 throw new ServerFailureException( e );
             }
         }

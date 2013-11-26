@@ -38,7 +38,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * that wants to know what is going on should register ClusterMemberListener implementations
  * which will receive callbacks on state changes.
  */
-public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability
+public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability,
+        AvailabilityGuard.AvailabilityRequirement
 {
     private final HighAvailabilityMemberContext context;
     private final AvailabilityGuard availabilityGuard;
@@ -89,7 +90,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
 
         if ( oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState.SLAVE )
         {
-            availabilityGuard.deny();
+            availabilityGuard.deny(this);
         }
 
         context.setAvailableHaMasterId( null );
@@ -108,6 +109,12 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     public HighAvailabilityMemberState getCurrentState()
     {
         return state;
+    }
+
+    @Override
+    public String description()
+    {
+        return getClass().getSimpleName() + "[" + getCurrentState() + "]";
     }
 
     private class StateMachineClusterEventListener extends ClusterMemberListener.Adapter
@@ -144,7 +151,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     if ( (oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState
                             .SLAVE) && oldState != state )
                     {
-                        availabilityGuard.deny();
+                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
                     }
 
                     logger.debug( "Got masterIsElected(" + coordinatorId + "), changed " + oldState + " -> " +
@@ -186,7 +193,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         if ( oldState == HighAvailabilityMemberState.TO_MASTER && state ==
                                 HighAvailabilityMemberState.MASTER )
                         {
-                            availabilityGuard.grant();
+                            availabilityGuard.grant(HighAvailabilityMemberStateMachine.this);
                         }
                     }
                 }
@@ -211,7 +218,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     if ( oldState == HighAvailabilityMemberState.TO_SLAVE &&
                             state == HighAvailabilityMemberState.SLAVE )
                     {
-                        availabilityGuard.grant();
+                        availabilityGuard.grant(HighAvailabilityMemberStateMachine.this);
                     }
                 }
             }
@@ -247,7 +254,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         context.setAvailableHaMasterId( null );
                         context.setElectedMasterId( null );
 
-                        availabilityGuard.deny();
+                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
                     }
                     catch ( Throwable throwable )
                     {
