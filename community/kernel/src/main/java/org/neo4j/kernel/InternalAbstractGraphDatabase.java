@@ -882,8 +882,8 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( !availabilityGuard.isAvailable( accessTimeout ) )
         {
-            throw new TransactionFailureException( "Database is currently not available " + availabilityGuard
-                    .hashCode() );
+            throw new TransactionFailureException( "Database is currently not available. "
+                    + availabilityGuard.describeWhoIsBlocking() );
         }
 
         if ( transactionRunning() )

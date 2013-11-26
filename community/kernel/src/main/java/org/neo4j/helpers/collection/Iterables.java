@@ -950,4 +950,23 @@ public final class Iterables
             }
         };
     }
+
+    public static String join( String joinString, Iterable<?> iter )
+    {
+        return join( joinString, iter.iterator() );
+    }
+
+    public static String join( String joinString, Iterator<?> iter )
+    {
+        StringBuilder sb = new StringBuilder();
+        while(iter.hasNext())
+        {
+            sb.append( iter.next().toString() );
+            if(iter.hasNext())
+            {
+                sb.append( joinString );
+            }
+        }
+        return sb.toString();
+    }
 }

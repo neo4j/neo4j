@@ -285,7 +285,8 @@ public class SlaveLockManager implements LockManager
         if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
         {
             // TODO Specific exception instead?
-            throw new RuntimeException( "Timed out waiting for database to switch state" );
+            throw new RuntimeException( "Timed out waiting for database to allow operations to proceed. "
+                    + availabilityGuard.describeWhoIsBlocking() );
         }
 
         TransactionState state = txManager.getTransactionState();

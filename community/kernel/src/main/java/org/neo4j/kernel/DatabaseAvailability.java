@@ -31,7 +31,7 @@ import org.neo4j.tooling.Clock;
  * on stop, shutdown or restart, and thus blocks access to everything else for outsiders.
  */
 public class DatabaseAvailability
-        implements Lifecycle
+        implements Lifecycle, AvailabilityGuard.AvailabilityRequirement
 {
     private InternalAbstractGraphDatabase internalAbstractGraphDatabase;
     private TransactionManager txManager;
@@ -54,7 +54,7 @@ public class DatabaseAvailability
     public void start()
             throws Throwable
     {
-        availabilityGuard.grant();
+        availabilityGuard.grant(this);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class DatabaseAvailability
     {
         // Database is no longer available for use
         // Deny beginning new transactions
-        availabilityGuard.deny();
+        availabilityGuard.deny(this);
 
         // If possible, wait until current transactions finish before continuing the shutdown
         if ( txManager instanceof TxManager )
@@ -84,5 +84,11 @@ public class DatabaseAvailability
             throws Throwable
     {
         // TODO: Starting database. Make sure none can access it through lock or CAS
+    }
+
+    @Override
+    public String description()
+    {
+        return getClass().getSimpleName();
     }
 }

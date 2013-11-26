@@ -39,6 +39,13 @@ import static org.mockito.Mockito.mock;
 
 public class TxManagerTest
 {
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
+    private final KernelPanicEventGenerator panicGenerator = new KernelPanicEventGenerator(
+            new KernelEventHandlers(StringLogger.DEV_NULL) );
+    private final XaDataSourceManager mockXaManager = mock( XaDataSourceManager.class );
+
     @Test
     public void settingTmNotOkShouldAttachCauseToSubsequentErrors() throws Exception
     {

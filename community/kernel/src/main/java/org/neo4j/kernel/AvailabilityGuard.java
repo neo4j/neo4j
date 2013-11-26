@@ -19,12 +19,17 @@
  */
 package org.neo4j.kernel;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.tooling.Clock;
+import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.helpers.Listeners.notifyListeners;
+import static org.neo4j.helpers.collection.Iterables.join;
 
 /**
  * The availability guard is what ensures that the database will only take calls when it is in an ok state. It allows
@@ -36,9 +41,6 @@ import static org.neo4j.helpers.Listeners.notifyListeners;
  */
 public class AvailabilityGuard
 {
-    private Iterable<AvailabilityListener> listeners = Listeners.newListeners();
-    private final Clock clock;
-
     public interface AvailabilityListener
     {
         void available();
@@ -46,7 +48,21 @@ public class AvailabilityGuard
         void unavailable();
     }
 
+    /**
+     * Represents a description of why someone is denying access to the database, to help debugging. Components
+     * granting and revoking access should use the same denial reason for both method calls, as it is used to track
+     * who is blocking access to the database.
+     */
+    public interface AvailabilityRequirement
+    {
+        String description();
+    }
+
+    private Iterable<AvailabilityListener> listeners = Listeners.newListeners();
+
     private final AtomicInteger available;
+    private final List<AvailabilityRequirement> blockingComponents = new CopyOnWriteArrayList<>();
+    private final Clock clock;
 
     public AvailabilityGuard( Clock clock, int conditionCount )
     {
@@ -54,7 +70,7 @@ public class AvailabilityGuard
         available = new AtomicInteger( conditionCount );
     }
 
-    public void deny()
+    public void deny( AvailabilityRequirement requirementNotMet )
     {
         int val;
         do
@@ -67,6 +83,8 @@ public class AvailabilityGuard
             }
 
         } while ( !available.compareAndSet( val, val + 1 ) );
+
+        blockingComponents.add( requirementNotMet );
 
         if ( val == 0 )
         {
@@ -81,7 +99,7 @@ public class AvailabilityGuard
         }
     }
 
-    public void grant()
+    public void grant( AvailabilityRequirement requirementNowMet )
     {
         int val;
         do
@@ -94,6 +112,8 @@ public class AvailabilityGuard
             }
 
         } while ( !available.compareAndSet( val, val - 1 ) );
+
+        blockingComponents.remove( requirementNowMet );
 
         if ( val == 1 )
         {
@@ -182,4 +202,26 @@ public class AvailabilityGuard
     {
         listeners = Listeners.removeListener( listener, listeners );
     }
+
+    /** Provide a textual description of what components, if any, are blocking access. */
+    public String describeWhoIsBlocking()
+    {
+        if(blockingComponents.size() > 0 || available.get() > 0)
+        {
+            String causes = join( ", ", Iterables.map( DESCRIPTION, blockingComponents ) );
+            return "Blocking components ("+available.get()+"): [" + causes + "]";
+        }
+        return "No blocking components";
+    }
+
+    public static final Function<AvailabilityRequirement,String> DESCRIPTION = new Function<AvailabilityRequirement,
+            String>()
+    {
+
+        @Override
+        public String apply( AvailabilityRequirement availabilityRequirement )
+        {
+            return availabilityRequirement.description();
+        }
+    };
 }

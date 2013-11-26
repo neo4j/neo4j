@@ -255,7 +255,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         tmOk = false;
         tmNotOkCause = cause;
         log.logMessage( "setting TM not OK", cause );
-        kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
+        kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, tmNotOkCause );
     }
 
     @Override

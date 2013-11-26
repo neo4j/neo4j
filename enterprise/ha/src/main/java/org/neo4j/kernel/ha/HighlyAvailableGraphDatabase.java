@@ -221,6 +221,21 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
+    protected org.neo4j.graphdb.Transaction beginTx( ForceMode forceMode )
+    {
+        // TODO first startup ever we don't have a proper db, so don't even serve read requests
+        // if this is a startup for where we have been a member of this cluster before we
+        // can server (possibly quite outdated) read requests.
+        if (!availabilityGuard.isAvailable( stateSwitchTimeoutMillis ))
+        {
+            throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
+                    + availabilityGuard.describeWhoIsBlocking() );
+        }
+
+        return super.beginTx( forceMode );
+    }
+
+    @Override
     protected Logging createLogging()
     {
         Logging loggingService = life.add( new LogbackWeakDependency().tryLoadLogbackService( config, NEW_LOGGER_CONTEXT,
@@ -330,7 +345,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-//                hasRequestedElection = true;
                 clusterClient.performRoleElections();
             }
 
@@ -339,7 +353,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 if ( hasRequestedElection && role.equals( ClusterConfiguration.COORDINATOR ) )
                 {
-//                    clusterClient.refreshSnapshot();
                     clusterClient.removeClusterListener( this );
                 }
             }
