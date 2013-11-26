@@ -1,8 +1,0 @@
-[[deployment-installation]]
-Installation
-============
-
-Neo4j can be installed as a server, running either as a headless application or system service.
-For information on installing The Neo4j Server, see <<server-installation>>.
-
-

@@ -52,22 +52,22 @@
       </listitem>
       <listitem>
         <para>
-          <link linkend="server">Neo4j Server</link>
-        </para>
-      </listitem>
-      <listitem>
-        <para>
           <link linkend="rest-api">REST API</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <link linkend="security-server">Server Security</link>
+          <link linkend="deployment">Installation</link>
         </para>
       </listitem>
       <listitem>
         <para>
           <link linkend="deployment-upgrading">Upgrading</link>
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <link linkend="security-server">Server Security</link>
         </para>
       </listitem>
     </itemizedlist>

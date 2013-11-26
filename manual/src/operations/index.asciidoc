@@ -14,7 +14,7 @@ include::installation-deployment/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/index.asciidoc[]
+include::configuration.asciidoc[]
 
 :leveloffset: 1
 

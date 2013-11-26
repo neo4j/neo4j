@@ -15,6 +15,18 @@ include::requirements.asciidoc[]
 
 :leveloffset: 2
 
+include::{importdir}/neo4j-server-docs-jar/ops/server-installation.asciidoc[]
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-server-docs-jar/ops/server-cloud.asciidoc[]
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-server-docs-jar/ops/server-debugging.asciidoc[]
+
+:leveloffset: 2
+
 include::{importdir}/neo4j-docs-jar/ops/upgrades.asciidoc[]
 
 :leveloffset: 2

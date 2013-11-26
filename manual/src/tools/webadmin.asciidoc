@@ -2,14 +2,8 @@
 = Web Interface =
 
 The Neo4j Web Interface is the primary user interface for Neo4j.
-With it, you can:
 
-- monitor the Neo4j Server
-- manipulate and browse data
-- interact with the database via various consoles
-- view raw data management objects (JMX MBeans)
-
-The tool is available at http://127.0.0.1:7474/ after you have installed the <<server,Neo4j Server>>.
+The tool is available at http://127.0.0.1:7474/ after you have installed the <<server-installation,Neo4j Server>>.
 
 See the tool itself for more information!
 
