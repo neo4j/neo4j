@@ -65,12 +65,81 @@ To perform a special upgrade (for significant changes to the database store):
 This edition adds a new store for labels and one for schema, an index for labels, and also the format of the node store has changed.
 Note that we do not currently support rolling upgrades between 1.9.x and 2.0.
 
+For Neo4j 2.0, Java 7 is required.
+We recommend that you install the Java JDK 7 from the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Website].
+
 When upgrading, the following will happen and will both take some time, and will require extra disk space:
 
 . A new, empty schema store will be created.
 . A new, empty label store will be created.
 . A new, empty label scan index will be created.
 . The node store will be converted, we need to enlarge each record to make space for labels -- this will take time depending on the size of your database.
+
+=== Cypher compatibility ===
+
+Unless you set the statements to still use Cypher 1.9, they have to be updated for the following changes:
+
+Pattern syntax::
+Parentheses are required around node patterns when labels are used.
+This means that when adding labels to a pattern like `a-->b` you should use something like `(a:Person)-->(b:Company)`.
+It's good practice to use parentheses in node patterns even where they are not strictly required, to enhance readability.
+
+Optional relationships::
+The syntax `(a)-[?]->(x)` for optional relationships has been removed.
+Use `OPTIONAL MATCH` instead (see the corresponding chapter in the Neo4j Manual).
+
+The `!` and `?` property operators::
+Expressions like `node.property = "value"` will not fail when a node without the property is encountered, and will instead return `NULL`.
+This is the same behavior as `node.property! = "value"` in Cypher 1.9.
+The `!` property operator has been removed in 2.0.
+Support for expressions using the `?` property operator, such as `node.property? = "value"`, have also been removed.
+You can use `not(has(node.property)) OR node.property = "value"` instead, which is compatible with both 1.9 and 2.0.
+
+// In 2.0 the following syntax can be used as well: `node.property IS NULL OR node.property = "value"`.
+
+`CREATE` syntax::
+The `CREATE a={foo:’bar’}` syntax has been removed.
+Instead, use `CREATE (a {foo:’bar’})`.
+
+Using `DELETE` to remove properties::
+The `DELETE a.prop` syntax has been removed.
+Instead, use `REMOVE a.prop`.
+
+Using parameters for index keys::
+Parameters can not be used as the key in `START` clauses using indexes (for example `START n=node:index({key}='value')`).
+Use the literal key names instead.
+
+Using parameters to identify nodes in patterns::
+Parameters can not be used to identify nodes in a pattern (ie. `MATCH ({node})-->(other))`).
+Note that this form was only possible when mixing the embedded Java API and Cypher, and thus does not affect users of Neo4j Server.
+
+Iteration syntax in `FOREACH`, `EXTRACT`, etc::
+The iterating functions use a `|` instead of a `:` to separate the components of the statement.
+For example, `EXTRACT(n in ns : n.prop)` is replaced with `EXTRACT(n in ns | n.prop)`.
+The iterating functions include `FOREACH`, `EXTRACT`, `REDUCE`, `ANY`, `ALL`, `SINGLE` and `NONE`.
+
+Alternative `WITH` syntax::
+The alternative `WITH` syntax, `=== <identifiers> ===`, has been removed.
+Use the `WITH` keyword instead.
+
+The Reference Node::
+With the introduction of Labels in Neo4j 2.0 the Reference Node has become obsolete and has been removed.
+Instead, labeled nodes has become the well-known starting points in your graph.
+You can use a pattern like this to access a reference node:
+`MATCH (ref:MyReference) RETURN ref`.
+Simply use one label per such starting point you want to use.
+_Note that this should be executed once during application initialization, to ensure that only a single reference node is created per label._
+When migrating a database with an existing reference node, add a label to it during migration, and then use it as per the previous pattern.
+This is how to add the label: `START ref=node(0) SET ref:MyReference`.
+In case you have altered the database so a different node is the reference node, substitute the node id in the statement.
+
+=== Other significant changes ===
+
+Plugins::
+Plugins are no longer distributed with Neo4j.
+Please see individual maintainers about availability.
+For instance, the source for the Gremlin plugin will be available at: https://github.com/neo4j-contrib/gremlin-plugin
+
 
 [[deployment-upgrading-one-nine]]
 == Upgrade 1.8 -> 1.9 ==

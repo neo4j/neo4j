@@ -4,8 +4,7 @@ REST endpoint for HA status information
 
 == Introduction ==
 
-A common use case for Neo4j HA clusters is to direct all write requests to the master while using slaves for read
-operations, distributing the read load across the cluster and and gain failover capabilities for your deployment.
+A common use case for Neo4j HA clusters is to direct all write requests to the master while using slaves for read operations, distributing the read load across the cluster and and gain failover capabilities for your deployment.
 The most common way to achieve this is to place a load balancer in front of the HA cluster, an example being shown with <<ha-haproxy, HA Proxy>>.
 As you can see in that guide, it makes use of a REST endpoint to discover which instance is the master and direct write load to it.
 In this section, we'll deal with this REST endpoint and explain its semantics.
@@ -25,10 +24,10 @@ To use them, perform an HTTP GET operation on either and the following will be r
 [options="header", cols="2m,<1,<2m,<2m"]
 |========================================================================================
 | Endpoint                           | Instance State  | Returned Code  | Body text
-1.2+^.^| /db/manage/server/ha/master | Master          | 200 OK         | true
+1.3+^.^| /db/manage/server/ha/master | Master          | 200 OK         | true
                                      | Slave           | 404 Not Found  | false
                                      | Unknown         | 404 Not Found  | UNKNOWN
-1.2+^.^| /db/manage/server/ha/slave  | Master          | 404 Not Found  | false
+1.3+^.^| /db/manage/server/ha/slave  | Master          | 404 Not Found  | false
                                      | Slave           | 200 OK         | true
                                      | Unknown         | 404 Not Found  | UNKNOWN
 |========================================================================================
@@ -99,9 +98,7 @@ false* Closing connection #0
 .Unknown status
 [NOTE]
 ===============================
-The `UNKNOWN` status exists to describe when a Neo4j instance is neither master nor slave. For example, the instance
-could be transitioning between states (master to slave in a recovery scenario or slave being promoted to master in
-the event of failure). If the UNKNOWN status is returned, the client should not treat the instance as a master or a
-slave and should instead pick another instance in the cluster to use, wait for the instance to transit from the `UNKNOWN`
-state, or undertake restorative action via systems admin.
+The `UNKNOWN` status exists to describe when a Neo4j instance is neither master nor slave.
+For example, the instance could be transitioning between states (master to slave in a recovery scenario or slave being promoted to master in the event of failure).
+If the `UNKNOWN` status is returned, the client should not treat the instance as a master or a slave and should instead pick another instance in the cluster to use, wait for the instance to transit from the `UNKNOWN` state, or undertake restorative action via systems admin.
 ===============================

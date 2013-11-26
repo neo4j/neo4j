@@ -1,50 +1,9 @@
 [[deprecations]]
 = Deprecations =
 
-This section outlines deprecations in Neo4j 1.9 in order to help you find a smoother transition path to future releases.
-
-Read operations outside of transactions::
-In future releases, read operations are only allowed within transactions.
-This only affects embedded usage, where you can already start to wrap read operations in transactions to be prepared for the future.
-
-The `!` and `?` property operators in Cypher::
-In future releases, expressions like `node.property = "value"` will not fail when a node is encountered without the property, and will instead return null. This is the same behaviour as `node.property! = "value"`, and thus the `!` property operator is deprecated and will be removed.
-Expressions using the `?` property operator, such as `node.property? = "value"`, are also deprecated. Please use `not(has(node.property)) OR node.property = "value"` instead.
-
-Cypher CREATE syntax::
-The `CREATE a={foo:’bar’}` syntax has been deprecated.
-Instead, use `CREATE (a {foo:’bar’})`.
-
-Using DELETE to remove properties in Cypher::
-The `DELETE a.prop` syntax has been deprecated. Instead, use `REMOVE a.prop`.
-
-Using parameters for index keys in Cypher::
-In future releases, parameters can not be used as the key in START clauses using indexes (ie. `START n=node:index({key}='value')`). Use the literal key names instead.
-
-Using parameters to identify nodes in patterns::
-In future releases, parameters can not be used to identify nodes in a pattern (ie. `MATCH ({node})-->(other))`).
-Note that this form was only possible when mixing the embedded Java API and cypher, and thus does not affect users Neo4j Server.
-
-Iteration syntax in `FOREACH`, `EXTRACT`, etc::
-In future releases, the iterating functions will use a `|` instead of a `:` to separate the components of the statement. For example, `EXTRACT(n in ns : n.prop)` is replaced with `EXTRACT(n in ns | n.prop)`. The iterating functions include `FOREACH`, `EXTRACT`, `REDUCE`, `ANY`, `ALL`, `SINGLE` and `NONE`. Note the alternative form using `|` is also possible in Neo4j 1.9.2 and later.
+This section outlines deprecations in Neo4j 2.0 or earlier in order to help you find a smoother transition path to future releases.
 
 Graph Matching::
 The graph-matching component will be removed in future releases.
 
-Plugins::
-Plugins will no longer be distributed with Neo4j.
-Please see individual maintainers about availability.
-For instance, the source for the Gremlin plugin will be available at: https://github.com/neo4j-contrib/gremlin-plugin
-
-The Reference Node::
-With the introduction of Labels in Neo4j 2.0 the Reference Node becomes obsolete.
-It was deprecated several versions ago, and has now been removed in entirety.
-Instead, labeled nodes become the well-known starting points in your graph.
-You can use a pattern like this to access a reference node:
-`MATCH (ref:MyReference) RETURN ref`.
-Simply use one label per such starting point you want to use.
-_Note that this should be executed once during application initialization, to ensure that only a single reference node is created per label._
-When migrating a database with an existing reference node, add a label to it during migration, and then use it as per the previous pattern.
-This is how to add the label: `START ref=node(0) SET ref:MyReference`.
-In case you have altered the database so a different node is the reference node, substitute the node id in the statement.
 
