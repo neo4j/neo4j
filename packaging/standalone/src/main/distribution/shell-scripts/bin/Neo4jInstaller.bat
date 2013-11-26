@@ -47,9 +47,6 @@ goto :main %1
   goto :eof
 
 :install
-  echo "WARNING: this installer is deprecated and may not be the optimal way to install Neo4j on your system."
-  echo "Please see the Neo4j Manual for up to date information on installing Neo4j."
-  set /p response=Press any key to continue
 
   call functions.bat :findJavaHome
  set javaPath=%javaPath:"="""%
