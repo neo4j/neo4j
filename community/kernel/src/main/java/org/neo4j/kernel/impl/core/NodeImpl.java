@@ -32,10 +32,10 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.binarySearch;
+
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
@@ -214,6 +215,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     Iterable<Relationship> getAllRelationshipsOfType( NodeManager nodeManager,
                                                       DirectionWrapper direction, RelationshipType... types )
     {
+        types = deduplicate( types );
         ensureRelationshipMapNotNull( nodeManager );
 
         // We need to check if there are more relationships to load before grabbing
@@ -257,6 +259,32 @@ public class NodeImpl extends ArrayBasedPrimitive
             return Collections.emptyList();
         }
         return new RelationshipIterator( result, this, direction, nodeManager, hasMore, false );
+    }
+
+    private static RelationshipType[] deduplicate( RelationshipType[] types )
+    {
+        int unique = 0;
+        for ( int i = 0; i < types.length; i++ )
+        {
+            String name = types[i].name();
+            for ( int j = 0; j < unique; j++ )
+            {
+                if ( name.equals( types[j].name() ) )
+                {
+                    name = null; // signal that this relationship is not unique
+                    break; // we will not find more than one conflict
+                }
+            }
+            if ( name != null )
+            { // this has to be done outside the inner loop, otherwise we'd never accept a single one...
+                types[unique++] = types[i];
+            }
+        }
+        if ( unique < types.length )
+        {
+            types = Arrays.copyOf( types, unique );
+        }
+        return types;
     }
 
     private RelIdIterator getRelationshipsIterator( DirectionWrapper direction, RelIdArray add,
