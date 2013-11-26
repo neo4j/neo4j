@@ -11,7 +11,6 @@
 
   <groupId>org.neo4j.browser</groupId>
   <artifactId>neo4j-browser</artifactId>
-  <!-- NOTE: version is always ahead of package.json version  -->
   <version>2.0-SNAPSHOT</version>
   <name>Neo4j Browser</name>
   <description>Graph database client.</description>
