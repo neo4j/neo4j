@@ -426,4 +426,10 @@ public class TestApps extends AbstractShellTest
                 "node.getProperty( \"name\" )\n", "Mattias" );
 
     }
+
+    @Test
+    public void canListAllConfiguration() throws Exception
+    {
+        executeCommand( "dbinfo -g Configuration", "\"ephemeral\": \"true\"" );
+    }
 }
