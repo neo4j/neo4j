@@ -195,28 +195,8 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         {
             if ( state == IdGeneratorState.PENDING )
                 throw new IllegalStateException( state.name() );
-
-            try
-            {
-                return delegate.nextIdBatch( size );
-            }
-            catch(UnsupportedOperationException e)
-            {
-                // This is a hack that works around a race condition where a slave switching to master enables access
-                // before it has switched it's id generator type, meaning we may delegate to a slave id generator on
-                // the master. The proper fix for this involves cleanly killing all running transactions and stopping
-                // new transactions before the switch, but this is not yet implemented. Once that is implemented,
-                // this catch can go away.
-                try
-                {
-                    Thread.sleep( 1000 );
-                    return delegate.nextIdBatch( size );
-                }
-                catch ( InterruptedException e1 )
-                {
-                    throw new RuntimeException( e1 );
-                }
-            }
+            
+            return delegate.nextIdBatch( size );
         }
 
         @Override
