@@ -174,6 +174,12 @@ To remove the launchctl service, issue the following command:
 
 `./bin/neo4j-installer remove`
 
+=== A note on Java on OS X Mavericks ===
+
+Unlike previous versions, OS X Mavericks does not come with Java pre-installed. You might encounter that the first time you run Neo4j, where OS X will trigger a popup offering you to install Java SE 6.
+
+Java SE 6 is incompatible with Neo4j 2.0, so we strongly advise you to skip installing Java SE 6 if you have no other uses for it. Instead, for Neoj 2.0 we recommend you install Java SE 7 from Oracle (http://www.oracle.com/technetwork/java/javase/downloads/index.html) as that is what we support for production use. 
+
 == Multiple Server instances on one machine ==
 
 Neo4j can be set up to run as several instances on one machine, providing for instance several databases for development.
