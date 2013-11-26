@@ -25,8 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimerTask;
 
-import org.neo4j.helpers.HostnamePort;
-
 public class UdcTimerTask extends TimerTask
 {
 
@@ -37,7 +35,7 @@ public class UdcTimerTask extends TimerTask
     private final String storeId;
     private final Pinger pinger;
 
-    public UdcTimerTask( HostnamePort hostAddress, UdcInformationCollector collector )
+    public UdcTimerTask( String hostAddress, UdcInformationCollector collector )
     {
         this.storeId = collector.getStoreId();
 

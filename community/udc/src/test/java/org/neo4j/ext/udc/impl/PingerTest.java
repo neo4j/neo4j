@@ -135,7 +135,7 @@ public class PingerTest
     @Test
     public void shouldPingServer()
     {
-        final HostnamePort hostURL = new HostnamePort( hostname, server.getServicePort() );
+        final String hostURL = hostname+":"+ server.getServicePort();
         final Map<String, String> udcFields = new HashMap<String, String>();
         udcFields.put( ID, EXPECTED_STORE_ID );
         udcFields.put( UdcConstants.VERSION, EXPECTED_KERNEL_VERSION );
@@ -163,7 +163,7 @@ public class PingerTest
     public void shouldIncludePingCountInURI() throws IOException
     {
         final int EXPECTED_PING_COUNT = 16;
-        final HostnamePort hostURL = new HostnamePort( hostname, server.getServicePort() );
+        final String hostURL = hostname+":"+ server.getServicePort();
         final Map<String, String> udcFields = new HashMap<String, String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
@@ -182,7 +182,7 @@ public class PingerTest
     public void normalPingSequenceShouldBeOneThenTwoThenThreeEtc() throws Exception
     {
         int[] expectedSequence = {1, 2, 3, 4};
-        final HostnamePort hostURL = new HostnamePort( hostname, server.getServicePort() );
+        final String hostURL = hostname+":"+ server.getServicePort();
         final Map<String, String> udcFields = new HashMap<String, String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
@@ -198,7 +198,7 @@ public class PingerTest
     public void crashPingSequenceShouldBeMinusOneThenTwoThenThreeEtc() throws Exception
     {
         int[] expectedSequence = {-1, 2, 3, 4};
-        final HostnamePort hostURL = new HostnamePort( hostname, server.getServicePort() );
+        final String hostURL = hostname+":"+ server.getServicePort();
         final Map<String, String> udcFields = new HashMap<String, String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ).withCrash() );

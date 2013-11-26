@@ -26,16 +26,14 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Map;
 
-import org.neo4j.helpers.HostnamePort;
-
 public class Pinger
 {
 
-    private final HostnamePort address;
+    private final String address;
     private final UdcInformationCollector collector;
     private int pingCount = 0;
 
-    public Pinger( HostnamePort address, UdcInformationCollector collector )
+    public Pinger( String address, UdcInformationCollector collector )
     {
         this.address = address;
         this.collector = collector;
