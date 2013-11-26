@@ -39,25 +39,25 @@ class MergeTest extends ParserTest[ast.Merge, MergeAst] with Query with Expressi
       expressions.Property(expressions.Identifier(id), PropertyKey("property")), expressions.TimestampFunction())
 
     parsing("MERGE (nodeName)") shouldGiveMergeAst
-      Seq(ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq.empty, bare = true))
+      Seq(ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq.empty))
 
     parsing("MERGE (nodeName {prop:42})") shouldGiveMergeAst
-      Seq(ParsedEntity(node, expressions.Identifier(node), Map("prop" -> expressions.Literal(42)), Seq.empty, bare = false))
+      Seq(ParsedEntity(node, expressions.Identifier(node), Map("prop" -> expressions.Literal(42)), Seq.empty))
 
     parsing("MERGE ({prop:42})") shouldGiveMergeAst
-      Seq(ParsedEntity("  UNNAMED7", expressions.Identifier("  UNNAMED7"), Map("prop" -> expressions.Literal(42)), Seq.empty, bare = false))
+      Seq(ParsedEntity("  UNNAMED7", expressions.Identifier("  UNNAMED7"), Map("prop" -> expressions.Literal(42)), Seq.empty))
 
     parsing("MERGE (nodeName:Label)") shouldGiveMergeAst
-      Seq(ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false))
+      Seq(ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName)))
 
     parsing("MERGE (nodeName:Label) ON CREATE SET nodeName.property = timestamp()") shouldGiveMergeAst
       (Seq(
-        ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false)),
+        ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName))),
         Seq(OnAction(On.Create, Seq(setProperty(node)))))
 
     parsing("MERGE (nodeName:Label) ON MATCH SET nodeName.property = timestamp()") shouldGiveMergeAst
       (Seq(
-        ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName), bare = false)),
+        ParsedEntity(node, expressions.Identifier(node), Map.empty, Seq(labelName))),
         Seq(OnAction(On.Match, Seq(setProperty(node)))))
 
     parsing(
@@ -65,7 +65,7 @@ class MergeTest extends ParserTest[ast.Merge, MergeAst] with Query with Expressi
 ON MATCH SET a.property = timestamp()
 ON CREATE SET a.property = timestamp()""") shouldGiveMergeAst
       (Seq(
-        ParsedEntity(A, expressions.Identifier(A), Map.empty, Seq(labelName), bare = false)),
+        ParsedEntity(A, expressions.Identifier(A), Map.empty, Seq(labelName))),
         Seq(
           OnAction(On.Match, Seq(setProperty(A))),
           OnAction(On.Create, Seq(setProperty(A)))

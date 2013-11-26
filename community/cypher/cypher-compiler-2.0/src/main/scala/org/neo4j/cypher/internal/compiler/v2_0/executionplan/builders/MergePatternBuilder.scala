@@ -140,15 +140,15 @@ object MergePatternBuilder {
     var symbol = in
 
     createRels.flatMap {
-      case rel@CreateRelationship(_, RelationshipEndpoint(Identifier(name), props, labels, bare), _, _, _)
+      case rel@CreateRelationship(_, RelationshipEndpoint(Identifier(name), props, labels), _, _, _)
         if !symbol.hasIdentifierNamed(name) =>
         symbol = symbol.add(name, NodeType())
-        Seq(CreateNode(name, props, labels, bare), rel)
+        Seq(CreateNode(name, props, labels), rel)
 
-      case rel@CreateRelationship(_, _, RelationshipEndpoint(Identifier(name), props, labels, bare), _, _)
+      case rel@CreateRelationship(_, _, RelationshipEndpoint(Identifier(name), props, labels), _, _)
         if !symbol.hasIdentifierNamed(name) =>
         symbol = symbol.add(name, NodeType())
-        Seq(CreateNode(name, props, labels, bare), rel)
+        Seq(CreateNode(name, props, labels), rel)
 
       case x => Some(x)
     }

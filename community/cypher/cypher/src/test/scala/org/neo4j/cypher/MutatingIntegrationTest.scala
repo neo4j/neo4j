@@ -548,6 +548,22 @@ return distinct center""")
     assertThat(createdNode, inTx(graph, hasLabels("FOO")))
     assertStats(result, labelsAdded = 1)
   }
+
+  @Test
+  def complete_graph() {
+    val result =
+      execute("""CREATE (center { count:0 })
+                 FOREACH (x IN range(1,6) | CREATE (leaf { count : x }),(center)-[:X]->(leaf))
+                 WITH center
+                 MATCH (leaf1)<--(center)-->(leaf2)
+                 WHERE id(leaf1)<id(leaf2)
+                 CREATE (leaf1)-[:X]->(leaf2)
+                 WITH center
+                 MATCH (center)-[r]->()
+                 DELETE center,r""")
+
+    assertStats(result, nodesCreated = 7, propertiesSet = 7, relationshipsCreated = 21, nodesDeleted = 1, relationshipsDeleted = 6)
+  }
 }
 
 trait StatisticsChecker extends Assertions {

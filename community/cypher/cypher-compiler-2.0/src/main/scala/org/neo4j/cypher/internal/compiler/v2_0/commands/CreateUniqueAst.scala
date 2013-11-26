@@ -34,12 +34,12 @@ case class CreateUniqueAst(patterns: Seq[AbstractPattern]) {
 
   private def translate(in: AbstractPattern): (Seq[UniqueLink], Seq[NamedPath]) = in match {
     case ParsedRelation(name, props,
-    ParsedEntity(startName, startExp, startProps, startLabels, startBare),
-    ParsedEntity(endName, endExp, endProps, endLabels, endBare), typ, dir, map) if typ.size == 1 =>
+    ParsedEntity(startName, startExp, startProps, startLabels),
+    ParsedEntity(endName, endExp, endProps, endLabels), typ, dir, map) if typ.size == 1 =>
       val link = UniqueLink(
-        start = NamedExpectation(startName, startExp, startProps, startLabels, startBare),
-        end = NamedExpectation(endName, endExp, endProps, endLabels, endBare),
-        rel = NamedExpectation(name, props, bare = props.isEmpty),
+        start = NamedExpectation(startName, startExp, startProps, startLabels),
+        end = NamedExpectation(endName, endExp, endProps, endLabels),
+        rel = NamedExpectation(name, props),
         relType = typ.head,
         dir = dir
       )

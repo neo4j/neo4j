@@ -36,8 +36,8 @@ class CreateRelationshipTest extends GraphDatabaseTestBase with Assertions {
     val b = createNode()
     val javaArray: util.List[Int] = util.Arrays.asList(1, 2, 3)
     val props = Map("props" -> Map("array" -> javaArray))
-    val aEndNode = RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, bare = true)
-    val bEndNode = RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, bare = true)
+    val aEndNode = RelationshipEndpoint(Identifier("a"), Map(), Seq.empty)
+    val bEndNode = RelationshipEndpoint(Identifier("b"), Map(), Seq.empty)
     val relCreator = new CreateRelationship("r", aEndNode, bEndNode, "RELTYPE", Map("*" -> ParameterExpression("props")))
 
     val tx = graph.beginTx()

@@ -87,9 +87,9 @@ object CreateUniqueAstTest {
           dir = Direction.OUTGOING, optional = false)),
 
       expectedLinks = Seq(UniqueLink(
-        start = NamedExpectation("a", bare = true),
-        end = NamedExpectation("b", bare = true),
-        rel = NamedExpectation("r", simplePropMap, bare = false),
+        start = NamedExpectation("a"),
+        end = NamedExpectation("b"),
+        rel = NamedExpectation("r", simplePropMap),
         relType = "REL", dir = Direction.OUTGOING)),
 
       expectedNamedPaths = Seq()

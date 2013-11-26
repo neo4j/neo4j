@@ -316,18 +316,18 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
   def toLegacyNode = commands.SingleNode(legacyName, labels.map(x => UnresolvedLabel(x.name)), properties = legacyProps)
 
   def toLegacyCreates = {
-    val (_, _, labels, bare) = legacyDetails
-    Seq(mutation.CreateNode(legacyName, legacyProps, labels, bare))
+    val (_, _, labels) = legacyDetails
+    Seq(mutation.CreateNode(legacyName, legacyProps, labels))
   }
 
   def toLegacyEndpoint: mutation.RelationshipEndpoint = {
-    val (nodeExpression, props, labels, bare) = legacyDetails
-    mutation.RelationshipEndpoint(nodeExpression, props, labels, bare)
+    val (nodeExpression, props, labels) = legacyDetails
+    mutation.RelationshipEndpoint(nodeExpression, props, labels)
   }
 
   def toAbstractPatterns: Seq[AbstractPattern] = {
-    val (nodeExpression, props, labels, bare) = legacyDetails
-    Seq(ParsedEntity(legacyName, nodeExpression, props, labels, bare))
+    val (nodeExpression, props, labels) = legacyDetails
+    Seq(ParsedEntity(legacyName, nodeExpression, props, labels))
   }
 
   protected lazy val legacyProps: Map[String, CommandExpression] = properties match {
@@ -337,10 +337,8 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
     case None                   => Map[String, CommandExpression]()
   }
 
-  protected lazy val legacyDetails: (legacy.Expression, Map[String, legacy.Expression], Seq[Unresolved], Boolean) = {
-    val props = legacyProps
-    val bare = labels.isEmpty && props.isEmpty
-    (legacy.Identifier(legacyName), legacyProps, labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label)), bare)
+  protected lazy val legacyDetails: (legacy.Expression, Map[String, legacy.Expression], Seq[Unresolved]) = {
+    (legacy.Identifier(legacyName), legacyProps, labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label)))
   }
 }
 

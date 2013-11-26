@@ -31,20 +31,20 @@ import collection.Map
 import org.neo4j.cypher.internal.compiler.v2_0.helpers.IsMap
 
 object NamedExpectation {
-  def apply(name: String, bare: Boolean): NamedExpectation = NamedExpectation(name, Map.empty, bare)
+  def apply(name: String): NamedExpectation = NamedExpectation(name, Map.empty)
 
-  def apply(name: String, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
-    NamedExpectation(name, properties, Seq.empty, bare)
+  def apply(name: String, properties: Map[String, Expression]): NamedExpectation =
+    NamedExpectation(name, properties, Seq.empty)
 
-  def apply(name: String, e: Expression, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
-    new NamedExpectation(name, e, properties, Seq.empty, bare)
+  def apply(name: String, e: Expression, properties: Map[String, Expression]): NamedExpectation =
+    new NamedExpectation(name, e, properties, Seq.empty)
 
-  def apply(name: String, properties: Map[String, Expression], labels: Seq[KeyToken], bare: Boolean): NamedExpectation =
-    new NamedExpectation(name, Identifier(name), properties, labels, bare)
+  def apply(name: String, properties: Map[String, Expression], labels: Seq[KeyToken]): NamedExpectation =
+    new NamedExpectation(name, Identifier(name), properties, labels)
 }
 
 case class NamedExpectation(name: String, e: Expression, properties: Map[String, Expression],
-                            labels: Seq[KeyToken], bare: Boolean)
+                            labels: Seq[KeyToken])
   extends GraphElementPropertyFunctions
   with CollectionSupport
   with TypeSafe {
@@ -125,6 +125,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
     case r: Relationship => r.getId
   }
 
+  def bare = properties.isEmpty && labels.isEmpty
 
   def symbolTableDependencies = properties.symboltableDependencies
 
