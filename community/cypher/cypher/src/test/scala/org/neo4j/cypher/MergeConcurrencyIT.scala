@@ -19,12 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import scala.collection.immutable.Seq
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.neo4j.kernel.impl.util.FileUtils
-import java.io.File
 
 class MergeConcurrencyIT extends ExecutionEngineHelper {
 
@@ -32,9 +28,6 @@ class MergeConcurrencyIT extends ExecutionEngineHelper {
   val threadCount = Runtime.getRuntime.availableProcessors() * 2
 
   @Test def should_handle_ten_simultaneous_threads() {
-    val db = new GraphDatabaseFactory().newEmbeddedDatabase("target/apa").asInstanceOf[GraphDatabaseAPI]
-    try {
-      engine = new ExecutionEngine(db)
       // Given a constraint on :Label(id), create a linked list
       execute("CREATE CONSTRAINT ON (n:Label) ASSERT n.id IS UNIQUE")
 
@@ -58,9 +51,5 @@ class MergeConcurrencyIT extends ExecutionEngineHelper {
       // Now check that the list exists and is a single one:
       val result = execute(s"match p=(:Label {id:1})-[*..1000]->({id:$nodeCount}) return 1")
       assert(result.size === 1)
-    } finally {
-      graph.shutdown()
-      FileUtils.deleteRecursively(new File("target/apa"))
-    }
   }
 }
