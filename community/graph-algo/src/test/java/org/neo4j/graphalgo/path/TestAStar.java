@@ -55,7 +55,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.kernel.Traversal.expanderForAllTypes;
+import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 import static org.neo4j.kernel.Traversal.pathExpanderForAllTypes;
 
 @RunWith( Parameterized.class )
@@ -340,10 +340,10 @@ public class TestAStar extends Neo4jAlgoTestCase
         return Arrays.asList( new Object[][]
         {
             {
-                GraphAlgoFactory.aStar( expanderForAllTypes(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
+                GraphAlgoFactory.aStar( allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
             },
             {
-                new TraversalAStar( pathExpanderForAllTypes(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
+                new TraversalAStar( allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
             }
         } );
     }

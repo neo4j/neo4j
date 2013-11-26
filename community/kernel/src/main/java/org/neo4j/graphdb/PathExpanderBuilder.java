@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.StandardExpander;
 
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -45,7 +46,7 @@ public class PathExpanderBuilder
      * directions}. You start with this and {@link #remove(RelationshipType) remove types} to form a permissive
      * {@link PathExpander} with just a few exceptions in it.
      */
-    public static <STATE> PathExpanderBuilder allTypesAndDirections()
+    public static PathExpanderBuilder allTypesAndDirections()
     {
         return new PathExpanderBuilder( StandardExpander.DEFAULT );
     }
@@ -88,6 +89,21 @@ public class PathExpanderBuilder
     public PathExpanderBuilder remove( RelationshipType type )
     {
         return new PathExpanderBuilder( expander.remove( type ) );
+    }
+    
+    public PathExpanderBuilder addNodeFilter( Predicate<? super Node> filter )
+    {
+        return new PathExpanderBuilder( expander.addNodeFilter( filter ) );
+    }
+    
+    public PathExpanderBuilder addRelationshipFilter( Predicate<? super Relationship> filter )
+    {
+        return new PathExpanderBuilder( expander.addRelationshipFilter( filter ) );
+    }
+    
+    public PathExpanderBuilder addFilter( Predicate<? super Path> filter )
+    {
+        return new PathExpanderBuilder( expander.addPathFilter( filter ) );
     }
 
     /**

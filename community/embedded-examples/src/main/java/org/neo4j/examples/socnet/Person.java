@@ -43,6 +43,7 @@ import org.neo4j.kernel.Uniqueness;
 import static org.neo4j.examples.socnet.RelTypes.FRIEND;
 import static org.neo4j.examples.socnet.RelTypes.NEXT;
 import static org.neo4j.examples.socnet.RelTypes.STATUS;
+import static org.neo4j.graphdb.PathExpanders.forTypeAndDirection;
 
 public class Person
 {
@@ -137,7 +138,7 @@ public class Person
     {
         // use graph algo to calculate a shortest path
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                Traversal.expanderForTypes( FRIEND, Direction.BOTH ), maxDepth );
+                forTypeAndDirection( FRIEND, Direction.BOTH ), maxDepth );
 
         Path path = finder.findSinglePath( underlyingNode,
                 otherPerson.getUnderlyingNode() );
@@ -329,7 +330,7 @@ public class Person
 
     private int getNumberOfPathsToPerson( Person otherPerson )
     {
-        PathFinder<Path> finder = GraphAlgoFactory.allPaths( Traversal.expanderForTypes( FRIEND, Direction.BOTH ), 2 );
+        PathFinder<Path> finder = GraphAlgoFactory.allPaths( forTypeAndDirection( FRIEND, Direction.BOTH ), 2 );
         Iterable<Path> paths = finder.findAllPaths( getUnderlyingNode(), otherPerson.getUnderlyingNode() );
         return IteratorUtil.count( paths );
     }

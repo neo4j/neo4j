@@ -26,6 +26,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -40,10 +41,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
+import static org.neo4j.graphdb.PathExpanders.forTypeAndDirection;
 
 public class PathFindingDocTest
 {
@@ -81,7 +84,10 @@ public class PathFindingDocTest
     {
         try
         {
-            if ( graphDb != null ) graphDb.shutdown();
+            if ( graphDb != null )
+            {
+                graphDb.shutdown();
+            }
         }
         finally
         {
@@ -107,7 +113,7 @@ public class PathFindingDocTest
         // (startNode)-->(middleNode1)-->(endNode)
         //
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.OUTGOING ), 15 );
+                forTypeAndDirection( ExampleTypes.MY_TYPE, Direction.OUTGOING ), 15 );
         Iterable<Path> paths = finder.findAllPaths( startNode, endNode );
         // END SNIPPET: shortestPathUsage
         Path path = paths.iterator().next();
@@ -141,7 +147,7 @@ public class PathFindingDocTest
     {
         // START SNIPPET: dijkstraUsage
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
-                Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ), "cost" );
+                forTypeAndDirection( ExampleTypes.MY_TYPE, Direction.BOTH ), "cost" );
 
         WeightedPath path = finder.findSinglePath( nodeA, nodeB );
 
@@ -198,7 +204,7 @@ public class PathFindingDocTest
             }
         };
         PathFinder<WeightedPath> astar = GraphAlgoFactory.aStar(
-                Traversal.expanderForAllTypes(),
+                allTypesAndDirections(),
                 CommonEvaluators.doubleCostEvaluator( "length" ), estimateEvaluator );
         WeightedPath path = astar.findSinglePath( nodeA, nodeB );
         // END SNIPPET: astarUsage

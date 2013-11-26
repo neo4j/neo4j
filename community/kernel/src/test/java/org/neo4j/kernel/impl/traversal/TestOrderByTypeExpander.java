@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.OrderedByTypeExpander;
@@ -74,7 +74,7 @@ public class TestOrderByTypeExpander extends TraversalTestBase
     @Test
     public void makeSureNodesAreTraversedInCorrectOrder()
     {
-        RelationshipExpander expander =
+        PathExpander expander =
             new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
         Iterator<Node> itr = traversal().depthFirst().expand(
                 expander ).traverse( node( "A1" ) ).nodes().iterator();
@@ -89,7 +89,7 @@ public class TestOrderByTypeExpander extends TraversalTestBase
     @Test
     public void evenDifferentDirectionsKeepsOrder() throws Exception
     {
-        RelationshipExpander expander = new OrderedByTypeExpander()
+        PathExpander expander = new OrderedByTypeExpander()
                 .add( next, INCOMING )
                 .add( firstComment )
                 .add( comment )

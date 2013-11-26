@@ -19,22 +19,20 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.traversal;
-import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_GLOBAL;
-
 import org.neo4j.graphalgo.impl.util.LiteDepthFirstSelector;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
+
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
+import static org.neo4j.kernel.Traversal.traversal;
+import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_GLOBAL;
 
 /**
  * Tries to find paths in a graph from a start node to an end node where the
@@ -54,12 +52,6 @@ public class ExactDepthPathFinder extends TraversalPathFinder
     private final int onDepth;
     private final int startThreshold;
 
-    public ExactDepthPathFinder( RelationshipExpander expander, int onDepth,
-            int startThreshold )
-    {
-        this( toPathExpander( expander ), onDepth, startThreshold );
-    }
-
     public ExactDepthPathFinder( PathExpander expander, int onDepth, int startThreshold )
     {
         this.expander = expander;
@@ -73,18 +65,19 @@ public class ExactDepthPathFinder extends TraversalPathFinder
         TraversalDescription side = traversal().breadthFirst().expand( expander ).uniqueness( RELATIONSHIP_GLOBAL ).order(
                 new BranchOrderingPolicy()
                 {
+                    @Override
                     public BranchSelector create( TraversalBranch startSource, PathExpander expander )
                     {
                         return new LiteDepthFirstSelector( startSource,
                                 startThreshold, expander );
                     }
                 } );
-        
+
         return bidirectionalTraversal()
                 .startSide( side.evaluator( toDepth( onDepth/2 ) ) )
                 .endSide( side.evaluator( toDepth( onDepth-onDepth/2 ) ) )
                 .collisionEvaluator( atDepth( onDepth ) )
-                // TODO Level side selector will make the traversal return wrong result, why? 
+                // TODO Level side selector will make the traversal return wrong result, why?
 //                .sideSelector( SideSelectorPolicies.LEVEL, onDepth )
                 .traverse( start, end );
     }

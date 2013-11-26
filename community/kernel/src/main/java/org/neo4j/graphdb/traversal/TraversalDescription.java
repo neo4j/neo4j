@@ -25,9 +25,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.Uniqueness;
 
 /**
  * Represents a description of a traversal. This interface describes the rules
@@ -183,7 +181,7 @@ public interface TraversalDescription
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription expand( PathExpander<?> expander );
-    
+
     /**
      * Sets the {@link PathExpander} as the expander of relationships,
      * discarding all previous calls to
@@ -200,8 +198,9 @@ public interface TraversalDescription
      *
      * @deprecated Because InitialStateFactory is deprecated
      */
+    @Deprecated
     <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialStateFactory<STATE> initialState );
-    
+
     /**
      * Sets the {@link PathExpander} as the expander of relationships,
      * discarding all previous calls to
@@ -217,34 +216,21 @@ public interface TraversalDescription
      * @return a new traversal description with the new modifications.
      */
     <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialBranchState<STATE> initialState );
-    
-    /**
-     * Sets the {@link RelationshipExpander} as the expander of relationships,
-     * discarding all previous calls to
-     * {@link #relationships(RelationshipType)} and
-     * {@link #relationships(RelationshipType, Direction)} or any other expand method.
-     *
-     * @param expander the {@link RelationshipExpander} to use.
-     * @return a new traversal description with the new modifications.
-     *
-     * @deprecated Because RelationshipExpander is deprecated
-     */
-    TraversalDescription expand( RelationshipExpander expander );
-    
+
     /**
      * @param comparator the {@link Comparator} to use for sorting the paths.
      * @return the paths from this traversal sorted according to {@code comparator}.
      */
     TraversalDescription sort( Comparator<? super Path> comparator );
-    
+
     /**
      * Creates an identical {@link TraversalDescription}, although reversed in
      * how it traverses the graph.
-     * 
+     *
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription reverse();
-    
+
     /**
      * Traverse from a single start node based on all the rules and behavior
      * in this description. A {@link Traverser} is returned which is

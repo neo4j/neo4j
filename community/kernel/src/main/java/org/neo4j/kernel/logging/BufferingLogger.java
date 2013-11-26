@@ -151,7 +151,9 @@ public class BufferingLogger extends StringLogger
         {
             sb.println( message.message );
             if ( message.throwable != null )
+            {
                 message.throwable.printStackTrace( sb );
+            }
         }
         return stringWriter.toString();
     }

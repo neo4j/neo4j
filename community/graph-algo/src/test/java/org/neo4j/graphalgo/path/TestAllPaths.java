@@ -27,13 +27,13 @@ import org.neo4j.graphdb.Path;
 import common.Neo4jAlgoTestCase;
 
 import static org.neo4j.graphalgo.GraphAlgoFactory.allPaths;
-import static org.neo4j.kernel.Traversal.expanderForAllTypes;
+import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 
 public class TestAllPaths extends Neo4jAlgoTestCase
 {
     protected PathFinder<Path> instantiatePathFinder( int maxDepth )
     {
-        return allPaths( expanderForAllTypes(), maxDepth );
+        return allPaths( allTypesAndDirections(), maxDepth );
     }
 
     @Test

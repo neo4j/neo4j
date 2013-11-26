@@ -28,8 +28,8 @@ import java.util.Stack;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
@@ -51,6 +51,7 @@ public class OldTraverserWrapper
         private Iterator<Path> iter;
         private int count;
 
+        @Override
         public TraversalPosition currentPosition()
         {
             return currentPos;
@@ -61,6 +62,7 @@ public class OldTraverserWrapper
             return count;
         }
 
+        @Override
         public Collection<Node> getAllNodes()
         {
             List<Node> result = new ArrayList<Node>();
@@ -71,16 +73,19 @@ public class OldTraverserWrapper
             return result;
         }
 
+        @Override
         public Iterator<Node> iterator()
         {
             return this;
         }
 
+        @Override
         public boolean hasNext()
         {
             return iter.hasNext();
         }
 
+        @Override
         public Node next()
         {
             currentPos = new PositionImpl( this, iter.next() );
@@ -88,6 +93,7 @@ public class OldTraverserWrapper
             return currentPos.currentNode();
         }
 
+        @Override
         public void remove()
         {
             throw new UnsupportedOperationException();
@@ -105,36 +111,43 @@ public class OldTraverserWrapper
             this.count = traverser.numberOfNodesReturned();
         }
 
+        @Override
         public Node currentNode()
         {
             return position.endNode();
         }
 
+        @Override
         public int depth()
         {
             return position.length();
         }
 
+        @Override
         public boolean isStartNode()
         {
             return position.length() == 0;
         }
 
+        @Override
         public boolean notStartNode()
         {
             return !isStartNode();
         }
 
+        @Override
         public Relationship lastRelationshipTraversed()
         {
             return position.lastRelationship();
         }
 
+        @Override
         public Node previousNode()
         {
             return position.lastRelationship().getOtherNode( position.endNode() );
         }
 
+        @Override
         public int returnedNodesCount()
         {
             return count;
@@ -175,7 +188,7 @@ public class OldTraverserWrapper
         return result;
     }
 
-    private static RelationshipExpander toExpander(
+    private static PathExpander toExpander(
             Object[] relationshipTypesAndDirections )
     {
         Stack<Object[]> entries = new Stack<Object[]>();
@@ -253,7 +266,7 @@ public class OldTraverserWrapper
             this.traverser = traverser;
             this.evaluator = stopEvaluator;
         }
-        
+
         @Override
         public Evaluation evaluate( Path path )
         {

@@ -19,9 +19,11 @@
  */
 package org.neo4j.ext.udc;
 
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.Settings;
+
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.TRUE;
@@ -29,10 +31,6 @@ import static org.neo4j.helpers.Settings.illegalValueMessage;
 import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.setting;
-
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.Settings;
 
 public class UdcSettings
 {

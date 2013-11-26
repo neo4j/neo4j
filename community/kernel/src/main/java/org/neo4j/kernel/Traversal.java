@@ -20,12 +20,10 @@
 package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
@@ -131,23 +129,6 @@ public class Traversal
     }
 
     /**
-     * Creates a new {@link RelationshipExpander} which is set to expand
-     * relationships with {@code type} and {@code direction}.
-     *
-     * @param type the {@link RelationshipType} to expand.
-     * @param dir the {@link Direction} to expand.
-     * @return a new {@link RelationshipExpander}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypeAndDirection}
-     */
-    @Deprecated
-    public static Expander expanderForTypes( RelationshipType type,
-            Direction dir )
-    {
-        return StandardExpander.create( type, dir );
-    }
-
-    /**
      * Creates a new {@link PathExpander} which is set to expand
      * relationships with {@code type} and {@code direction}.
      *
@@ -162,21 +143,6 @@ public class Traversal
     public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type, Direction dir )
     {
         return StandardExpander.create( type, dir );
-    }
-
-    /**
-     * Creates a new {@link RelationshipExpander} which is set to expand
-     * relationships with {@code type} in any direction.
-     *
-     * @param type the {@link RelationshipType} to expand.
-     * @return a new {@link RelationshipExpander}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forType}
-     */
-    @Deprecated
-    public static Expander expanderForTypes( RelationshipType type )
-    {
-        return StandardExpander.create( type, Direction.BOTH );
     }
 
     /**
@@ -196,21 +162,6 @@ public class Traversal
     }
 
     /**
-     * Returns an empty {@link Expander} which, if not modified, will expand
-     * all relationships when asked to expand a {@link Node}. Criterias
-     * can be added to narrow the {@link Expansion}.
-     * @return an empty {@link Expander} which, if not modified, will expand
-     * all relationship for {@link Node}s.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#allTypesAndDirections}
-     */
-    @Deprecated
-    public static Expander emptyExpander()
-    {
-        return StandardExpander.DEFAULT; // TODO: should this be a PROPER empty?
-    }
-
-    /**
      * Returns an empty {@link PathExpander} which, if not modified, will expand
      * all relationships when asked to expand a {@link Node}. Criterias
      * can be added to narrow the {@link Expansion}.
@@ -227,25 +178,6 @@ public class Traversal
     }
 
     /**
-     * Creates a new {@link RelationshipExpander} which is set to expand
-     * relationships with two different types and directions.
-     *
-     * @param type1 a {@link RelationshipType} to expand.
-     * @param dir1 a {@link Direction} to expand.
-     * @param type2 another {@link RelationshipType} to expand.
-     * @param dir2 another {@link Direction} to expand.
-     * @return a new {@link RelationshipExpander}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypesAndDirections}
-     */
-    @Deprecated
-    public static Expander expanderForTypes( RelationshipType type1,
-            Direction dir1, RelationshipType type2, Direction dir2 )
-    {
-        return StandardExpander.create( type1, dir1, type2, dir2 );
-    }
-
-    /**
      * Creates a new {@link PathExpander} which is set to expand
      * relationships with two different types and directions.
      *
@@ -263,27 +195,6 @@ public class Traversal
             Direction dir1, RelationshipType type2, Direction dir2 )
     {
         return StandardExpander.create( type1, dir1, type2, dir2 );
-    }
-
-    /**
-     * Creates a new {@link RelationshipExpander} which is set to expand
-     * relationships with multiple types and directions.
-     *
-     * @param type1 a {@link RelationshipType} to expand.
-     * @param dir1 a {@link Direction} to expand.
-     * @param type2 another {@link RelationshipType} to expand.
-     * @param dir2 another {@link Direction} to expand.
-     * @param more additional pairs or type/direction to expand.
-     * @return a new {@link RelationshipExpander}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypesAndDirections}
-     */
-    @Deprecated
-    public static Expander expanderForTypes( RelationshipType type1,
-            Direction dir1, RelationshipType type2, Direction dir2,
-            Object... more )
-    {
-        return StandardExpander.create( type1, dir1, type2, dir2, more );
     }
 
     /**
@@ -306,19 +217,6 @@ public class Traversal
             Object... more )
     {
         return StandardExpander.create( type1, dir1, type2, dir2, more );
-    }
-
-    /**
-     * Returns a {@link RelationshipExpander} which expands relationships
-     * of all types and directions.
-     * @return a relationship expander which expands all relationships.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#allTypesAndDirections}
-     */
-    @Deprecated
-    public static Expander expanderForAllTypes()
-    {
-        return expanderForAllTypes( Direction.BOTH );
     }
 
     /**
@@ -335,20 +233,6 @@ public class Traversal
     }
 
     /**
-     * Returns a {@link RelationshipExpander} which expands relationships
-     * of all types in the given {@code direction}.
-     * @return a relationship expander which expands all relationships in
-     * the given {@code direction}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forDirection}
-     */
-    @Deprecated
-    public static Expander expanderForAllTypes( Direction direction )
-    {
-        return StandardExpander.create( direction );
-    }
-
-    /**
      * Returns a {@link PathExpander} which expands relationships
      * of all types in the given {@code direction}.
      * @return a path expander which expands all relationships in
@@ -361,29 +245,6 @@ public class Traversal
     public static <STATE> PathExpander<STATE> pathExpanderForAllTypes( Direction direction )
     {
         return StandardExpander.create( direction );
-    }
-
-    public static Expander expander( PathExpander expander )
-    {
-        if ( expander instanceof Expander )
-        {
-            return (Expander) expander;
-        }
-        return StandardExpander.wrap( expander );
-    }
-
-    /**
-     * Returns a {@link RelationshipExpander} wrapped as an {@link Expander}.
-     * @param expander {@link RelationshipExpander} to wrap.
-     * @return a {@link RelationshipExpander} wrapped as an {@link Expander}.
-     */
-    public static Expander expander( RelationshipExpander expander )
-    {
-        if ( expander instanceof Expander )
-        {
-            return (Expander) expander;
-        }
-        return StandardExpander.wrap( expander );
     }
 
     /**

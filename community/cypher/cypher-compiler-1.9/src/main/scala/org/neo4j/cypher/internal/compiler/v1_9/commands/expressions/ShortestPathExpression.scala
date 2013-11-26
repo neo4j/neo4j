@@ -26,7 +26,7 @@ import org.neo4j.graphalgo.GraphAlgoFactory
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.kernel.Traversal
-import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, Expander}
+import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, PathExpander, PathExpanders, PathExpanderBuilder}
 import org.neo4j.cypher.internal.compiler.v1_9.commands.{Pattern, PathExtractor, ShortestPath}
 import org.neo4j.cypher.internal.compiler.v1_9.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v1_9.pipes.QueryState
@@ -61,12 +61,12 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
 
   def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(ast.rewrite(f)))
 
-  private lazy val expander: Expander = if (ast.relTypes.isEmpty) {
-    Traversal.expanderForAllTypes(ast.dir)
+  private lazy val expander: PathExpander[Any] = if (ast.relTypes.isEmpty) {
+    PathExpanders.forDirection(ast.dir)
   } else {
-    ast.relTypes.foldLeft(Traversal.emptyExpander()) {
+    ast.relTypes.foldLeft(PathExpanderBuilder.empty()) {
       case (e, t) => e.add(DynamicRelationshipType.withName(t), ast.dir)
-    }
+    }.build()
   }
 
   val foo = if (ast.single)
@@ -86,7 +86,7 @@ trait FOO {
   def findResult(start: Node, end: Node): Stream[Path]
 }
 
-class SingleShortestPathFOO(expander: Expander, depth: Int) extends FOO {
+class SingleShortestPathFOO(expander: PathExpander[Any], depth: Int) extends FOO {
   private val finder = GraphAlgoFactory.shortestPath(expander, depth)
 
   def findResult(start: Node, end: Node): Stream[Path] = {
@@ -94,7 +94,7 @@ class SingleShortestPathFOO(expander: Expander, depth: Int) extends FOO {
   }
 }
 
-class AllShortestPathsFOO(expander: Expander, depth: Int) extends FOO {
+class AllShortestPathsFOO(expander: PathExpander[Any], depth: Int) extends FOO {
   private val finder = GraphAlgoFactory.shortestPath(expander, depth)
 
   def findResult(start: Node, end: Node): Stream[Path] = {

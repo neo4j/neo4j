@@ -19,16 +19,17 @@
  */
 package org.neo4j.graphalgo.path;
 
-import static org.junit.Assert.assertNotNull;
-
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.path.ExactDepthPathFinder;
 import org.neo4j.graphdb.Path;
-import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 
 public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
 {
@@ -55,7 +56,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     
     private PathFinder<Path> newFinder()
     {
-        return new ExactDepthPathFinder( Traversal.expanderForAllTypes(), 4, 4 );
+        return new ExactDepthPathFinder( allTypesAndDirections(), 4, 4 );
     }
     
     @Test

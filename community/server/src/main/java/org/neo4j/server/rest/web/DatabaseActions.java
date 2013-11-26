@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
 
 import org.neo4j.graphalgo.CommonEvaluators;
@@ -36,14 +35,14 @@ import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
@@ -67,12 +66,12 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.util.SingleNodePath;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.PropertySettingStrategy;
-import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
+import org.neo4j.server.rest.domain.ExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
 import org.neo4j.server.rest.domain.TraverserReturnType;
@@ -102,7 +101,10 @@ import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import com.sun.jersey.api.core.HttpContext;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.PathExpanders.forDirection;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -581,26 +583,27 @@ public class DatabaseActions
 
     @SuppressWarnings("unchecked")
     public ListRepresentation getNodeRelationships( long nodeId,
-                                                    RelationshipDirection direction, Collection<String> types )
+            RelationshipDirection direction, Collection<String> types )
             throws NodeNotFoundException
     {
         Node node = node( nodeId );
-        Expander expander;
+        PathExpander expander;
         if ( types.isEmpty() )
         {
-            expander = Traversal.expanderForAllTypes( direction.internal );
+            expander = forDirection( direction.internal );
         }
         else
         {
-            expander = Traversal.emptyExpander();
+            PathExpanderBuilder builder = PathExpanderBuilder.empty();
             for ( String type : types )
             {
-                expander = expander.add(
+                builder = builder.add(
                         DynamicRelationshipType.withName( type ),
                         direction.internal );
             }
+            expander = builder.build();
         }
-        return RelationshipRepresentation.list( expander.expand( node ) );
+        return RelationshipRepresentation.list( expander.expand( new SingleNodePath( node ), null ) );
     }
 
     // Relationship properties
@@ -1244,7 +1247,7 @@ public class DatabaseActions
             Integer maxDepthObj = (Integer) map.get( "max_depth" );
             int maxDepth = (maxDepthObj != null) ? maxDepthObj : 1;
 
-            RelationshipExpander expander = RelationshipExpanderBuilder.describeRelationships( map );
+            PathExpander expander = ExpanderBuilder.describeRelationships( map );
 
             String algorithm = (String) map.get( "algorithm" );
             algorithm = (algorithm != null) ? algorithm : "shortestPath";
@@ -1254,7 +1257,7 @@ public class DatabaseActions
         }
 
         private PathFinder<? extends Path> getAlgorithm( String algorithm,
-                                                         RelationshipExpander expander, int maxDepth )
+                                                         PathExpander expander, int maxDepth )
         {
             if ( algorithm.equals( "shortestPath" ) )
             {

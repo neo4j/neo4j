@@ -24,23 +24,16 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Expander;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.Traversal;
 
-// import org.neo4j.graphdb.Traverser.Order;
-// import org.neo4j.graphdb.traversal.TraversalDescription;
-// import org.neo4j.graphdb.traversal.Uniqueness;
-// import org.neo4j.kernel.Traversal;
-
-public class RelationshipExpanderBuilder
+public class ExpanderBuilder
 {
-
     @SuppressWarnings( "unchecked" )
-    public static RelationshipExpander describeRelationships( Map<String, Object> description )
+    public static PathExpander describeRelationships( Map<String, Object> description )
     {
-        Expander expander = Traversal.emptyExpander();
+        PathExpanderBuilder builder = PathExpanderBuilder.empty();
 
         Object relationshipsDescription = description.get( "relationships" );
         if ( relationshipsDescription != null )
@@ -61,11 +54,11 @@ public class RelationshipExpanderBuilder
                 String name = (String) map.get( "type" );
                 RelationshipType type = DynamicRelationshipType.withName( name );
                 String directionName = (String) map.get( "direction" );
-                expander = ( directionName == null ) ? expander.add( type ) : expander.add( type,
+                builder = ( directionName == null ) ? builder.add( type ) : builder.add( type,
                         stringToEnum( directionName, RelationshipDirection.class, true ).internal );
             }
         }
-        return expander;
+        return builder.build();
     }
 
     // TODO Refactor - same method exists in TraversalDescriptionBuilder
@@ -98,5 +91,4 @@ public class RelationshipExpanderBuilder
         }
         throw new RuntimeException( "Unregognized " + enumClass.getSimpleName() + " '" + name + "'" );
     }
-
 }

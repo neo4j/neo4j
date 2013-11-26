@@ -33,21 +33,19 @@ import java.util.regex.Pattern;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.OrderedByTypeExpander;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -734,17 +732,17 @@ public abstract class TransactionProvidingApp extends AbstractApp
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
                 caseInsensitiveFilters, looseFilters );
-        Expander expander = Traversal.emptyExpander();
         if ( matches == null )
         {
             return EMPTY_EXPANDER;
         }
+        PathExpanderBuilder builder = PathExpanderBuilder.empty();
         for ( Map.Entry<String, Direction> entry : matches.entrySet() )
         {
-            expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
+            builder = builder.add( DynamicRelationshipType.withName( entry.getKey() ),
                     entry.getValue() );
         }
-        return (PathExpander) expander;
+        return builder.build();
     }
 
     protected static PathExpander toSortedExpander( GraphDatabaseService db, Direction defaultDirection,
@@ -753,13 +751,13 @@ public abstract class TransactionProvidingApp extends AbstractApp
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
                 caseInsensitiveFilters, looseFilters );
-        Expander expander = new OrderedByTypeExpander();
+        PathExpanderBuilder builder = PathExpanderBuilder.empty();
         for ( Map.Entry<String, Direction> entry : matches.entrySet() )
         {
-            expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
+            builder = builder.add( DynamicRelationshipType.withName( entry.getKey() ),
                     entry.getValue() );
         }
-        return (PathExpander) expander;
+        return builder.build();
     }
 
     private static final PathExpander EMPTY_EXPANDER = new PathExpander()

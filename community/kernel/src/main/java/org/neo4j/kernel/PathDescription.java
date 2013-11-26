@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.kernel.Traversal.expanderForTypes;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchState;
@@ -36,58 +34,58 @@ import org.neo4j.graphdb.traversal.BranchState;
 /**
  * Experimental and very crude utility for building a slightly more powerful
  * expander to use in a traversal.
- * 
+ *
  * @author Mattias Persson
  */
 public class PathDescription
 {
-    private final List<Expander> steps;
-    
+    private final List<PathExpander> steps;
+
     public PathDescription()
     {
-        this( new ArrayList<Expander>() );
+        this( new ArrayList<PathExpander>() );
     }
-    
-    private PathDescription( List<Expander> steps )
+
+    private PathDescription( List<PathExpander> steps )
     {
         this.steps = steps;
     }
-    
+
     public PathDescription step( RelationshipType type )
     {
-        return step( expanderForTypes( type ) );
+        return step( PathExpanders.allTypesAndDirections() );
     }
-    
+
     public PathDescription step( RelationshipType type, Direction direction )
     {
-        return step( expanderForTypes( type, direction ) );
+        return step( PathExpanders.forTypeAndDirection( type, direction ) );
     }
-    
-    public PathDescription step( Expander expander )
+
+    public PathDescription step( PathExpander expander )
     {
-        List<Expander> newSteps = new ArrayList<Expander>( steps );
+        List<PathExpander> newSteps = new ArrayList<PathExpander>( steps );
         newSteps.add( expander );
         return new PathDescription( newSteps );
     }
-    
+
     public PathExpander build()
     {
         return new CrudeAggregatedExpander( steps );
     }
-    
+
     private static class CrudeAggregatedExpander implements PathExpander
     {
-        private final List<Expander> steps;
+        private final List<PathExpander> steps;
 
-        CrudeAggregatedExpander( List<Expander> steps )
+        CrudeAggregatedExpander( List<PathExpander> steps )
         {
             this.steps = steps;
         }
-        
+
         @Override
         public Iterable<Relationship> expand( Path path, BranchState state )
         {
-            Expander expansion;
+            PathExpander expansion;
             try
             {
                 expansion = steps.get( path.length() );
@@ -96,15 +94,17 @@ public class PathDescription
             {
                 return Collections.emptyList();
             }
-            return expansion.expand( path.endNode() );
+            return expansion.expand( path, state );
         }
 
         @Override
         public PathExpander reverse()
         {
-            List<Expander> reversedSteps = new ArrayList<Expander>();
-            for ( Expander step : steps )
-                reversedSteps.add( step.reversed() );
+            List<PathExpander> reversedSteps = new ArrayList<PathExpander>();
+            for ( PathExpander step : steps )
+            {
+                reversedSteps.add( step.reverse() );
+            }
             Collections.reverse( reversedSteps );
             return new CrudeAggregatedExpander( reversedSteps );
         }

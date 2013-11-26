@@ -20,17 +20,20 @@
 package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 
-// Tentative Expansion API
+/**
+ * @deprecated due to under usage and adding complexity.
+ */
+@Deprecated
 interface Expansion<T> extends Iterable<T>
 {
-    Expander expander();
+    PathExpander expander();
 
     Expansion<Node> nodes();
 
