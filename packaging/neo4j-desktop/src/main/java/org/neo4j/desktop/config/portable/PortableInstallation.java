@@ -52,15 +52,26 @@ public abstract class PortableInstallation implements Installation
     {
         try
         {
-            File appFile = new File( Installation.class.getProtectionDomain().getCodeSource().getLocation().toURI() );
-            File binDirectory = appFile.getParentFile();
-            File installationDirectory = binDirectory.getParentFile();
+            File installationDirectory = getInstallationDirectory();
             return new File( installationDirectory, "plugins" );
         }
         catch ( URISyntaxException e )
         {
             throw new CannotFindInstallationDirectory( e );
         }
+    }
+
+    @Override
+    public File getInstallationDirectory() throws URISyntaxException
+    {
+        return getInstallationBinDirectory().getParentFile();
+    }
+
+    @Override
+    public File getInstallationBinDirectory() throws URISyntaxException
+    {
+        File appFile = new File( Installation.class.getProtectionDomain().getCodeSource().getLocation().toURI() );
+        return appFile.getParentFile();
     }
 
     private static class PathAlreadyExistException extends RuntimeException

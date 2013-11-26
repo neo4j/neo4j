@@ -20,6 +20,8 @@
 package org.neo4j.desktop.config.windows;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.util.Properties;
 
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.portable.PortableInstallation;
@@ -29,10 +31,14 @@ import static javax.swing.filechooser.FileSystemView.getFileSystemView;
 public class WindowsInstallation extends PortableInstallation
 {
     private final WindowsEnvironment environment;
+    private final Properties installProperties;
 
     public WindowsInstallation() throws Exception
     {
         environment = new WindowsEnvironment();
+        installProperties = new Properties();
+        File installPropertiesFile = new File( getInstallationBinDirectory(), INSTALL_PROPERTIES_FILENAME );
+        installProperties.load( new FileInputStream( installPropertiesFile ) );
     }
 
     @Override
@@ -52,7 +58,7 @@ public class WindowsInstallation extends PortableInstallation
     public File getConfigurationDirectory()
     {
         File appData = new File( System.getenv( "APPDATA" ) );
-        return new File( appData, "Neo4j Community" ); // TODO move the string part into install4j
+        return new File( appData, installProperties.getProperty( "win.appdata.subdir" ) );
     }
 
     @Override

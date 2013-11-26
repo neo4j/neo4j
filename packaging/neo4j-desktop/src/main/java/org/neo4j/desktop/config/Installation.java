@@ -21,6 +21,7 @@ package org.neo4j.desktop.config;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 
 /**
  * The Installation represents the "static" part of the configuration on a particular system. It abstracts away
@@ -34,6 +35,7 @@ public interface Installation
     String DEFAULT_DATABASE_CONFIG_RESOURCE_NAME = "/org/neo4j/desktop/config/neo4j-default.properties";
     String DEFAULT_SERVER_CONFIG_RESOURCE_NAME = "/org/neo4j/desktop/config/neo4j-server-default.properties";
     String DEFAULT_VMOPTIONS_TEMPLATE_RESOURCE_NAME = "/org/neo4j/desktop/config/vmoptions.template";
+    String INSTALL_PROPERTIES_FILENAME = "install.properties";
 
     /**
      * Get a facade for interacting with the environment, such as opening file editors and browsing URLs.
@@ -90,4 +92,14 @@ public interface Installation
      * Get the directory where jar-files with plugins and extensions are located.
      */
     File getPluginsDirectory();
+
+    /**
+     * Get the directory into which Neo4j Desktop has been installed.
+     */
+    File getInstallationDirectory() throws URISyntaxException;
+
+    /**
+     * Get the directory where the neo4j-desktop.jar file has been installed into.
+     */
+    File getInstallationBinDirectory() throws URISyntaxException;
 }
