@@ -28,11 +28,11 @@ class QueryTest extends Assertions {
   @Test
   def shouldCompactCreateStatements() {
     val end = Query.
-      start(CreateNodeStartItem(CreateNode("b", Map(), Seq.empty, bare = true))).
+      start(CreateNodeStartItem(CreateNode("b", Map(), Seq.empty))).
       returns()
 
     val start = Query.
-      start(CreateNodeStartItem(CreateNode("a", Map(), Seq.empty, bare = true))).
+      start(CreateNodeStartItem(CreateNode("a", Map(), Seq.empty))).
       tail(end).
       returns(AllIdentifiers())
 
@@ -40,8 +40,8 @@ class QueryTest extends Assertions {
 
     val expected = Query.
       start(
-      CreateNodeStartItem(CreateNode("a", Map(), Seq.empty, bare = true)),
-      CreateNodeStartItem(CreateNode("b", Map(), Seq.empty, bare = true))).
+      CreateNodeStartItem(CreateNode("a", Map(), Seq.empty)),
+      CreateNodeStartItem(CreateNode("b", Map(), Seq.empty))).
       returns()
 
     assert(expected === compacted)

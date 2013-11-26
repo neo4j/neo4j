@@ -24,8 +24,9 @@ import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.cypher.StatisticsChecker
 
-class PrettyGraphsStarTest extends DocumentingTestBase {
+class PrettyGraphsStarTest extends DocumentingTestBase with StatisticsChecker {
   def section = "cookbook"
   generateInitialGraphForConsole = false
   override val graphvizOptions = "graph [layout=neato]"
@@ -46,6 +47,10 @@ foreach( x in range(1,6) |
 return id(center) as id;""",
       returns =
 """The query returns the id of the center node.""",
-      assertions = (p) => assertEquals(List(Map("id" -> 0)),p.toList))
+      assertions = { (p) =>
+        assertStats(p, nodesCreated = 7, relationshipsCreated = 6)
+        assertEquals(List(Map("id" -> 0)),p.toList)
+      }
+    )
   } 
 }

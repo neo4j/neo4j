@@ -20,12 +20,12 @@
 package org.neo4j.cypher.docgen.cookbook
 
 import org.junit.Test
-import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.cypher.StatisticsChecker
 
-class PrettyGraphsCompleteGraphTest extends DocumentingTestBase {
+class PrettyGraphsCompleteGraphTest extends DocumentingTestBase with StatisticsChecker {
   def section = "cookbook"
   generateInitialGraphForConsole = false
   override val graphvizOptions = "graph [layout=circo]"
@@ -38,11 +38,11 @@ class PrettyGraphsCompleteGraphTest extends DocumentingTestBase {
     testQuery(
       title = "Complete graph",
       text =
-"""For this graph, a root node is created, and used to hang a number 
-        of nodes from. Then, two nodes are selected, hanging from the center, with the requirement that the 
-        id of the first is less than the id of the next. This is to prevent double relationships and 
-        self relationships. Using said match, relationships between all these nodes are created. Lastly, 
-        the center node and all relationships connected to it are removed.""",
+"""For this graph, a root node is created, and used to hang a number
+of nodes from. Then, two nodes are selected, hanging from the center, with the requirement that the
+id of the first is less than the id of the next. This is to prevent double relationships and
+self relationships. Using said match, relationships between all these nodes are created. Lastly,
+the center node and all relationships connected to it are removed.""",
       queryText = """create (center)
 foreach( x in range(1,6) |
    create (leaf {count : x}), (center)-[:X]->(leaf)
@@ -56,6 +56,7 @@ MATCH (center)-[r]->()
 DELETE center,r;""",
       returns =
 """Nothing is returned by this query.""",
-      assertions = (p) => assertTrue(true))
+      assertions = (p) => assertStats(p, nodesCreated = 7, propertiesSet = 6, relationshipsCreated = 21, nodesDeleted = 1, relationshipsDeleted = 6)
+    )
   } 
 }

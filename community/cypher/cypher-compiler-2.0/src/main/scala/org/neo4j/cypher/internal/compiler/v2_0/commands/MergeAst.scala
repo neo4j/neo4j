@@ -34,7 +34,7 @@ case class MergeAst(patterns: Seq[AbstractPattern],
   def nextStep(): Seq[UpdateAction] = singleNodeActions ++ getPatternMerges
 
   def singleNodeActions: Seq[MergeNodeAction] = patterns.collect {
-    case ParsedEntity(name, _, props, labelTokens, _) =>
+    case ParsedEntity(name, _, props, labelTokens) =>
 
       val labelPredicates = labelTokens.map(labelName => HasLabel(Identifier(name), labelName))
 

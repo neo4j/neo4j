@@ -20,107 +20,58 @@
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_0.mutation._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CollectionType, AnyType, NodeType, SymbolTable}
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import collection.mutable
 import expressions.Identifier
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateNode
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.ForeachAction
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
+/*
+Expands a query. Example:
+
+CREATE (a {name:'A'})-[:KNOWS]->(b {name:'B'})
+
+is expanded into:
+
+CREATE (a {name:'A'}), 
+       (b {name:'B'}), 
+       (a)-[:KNOWS]->(b)
+ */
 trait UpdateCommandExpander {
-  def expandCommands(commands: Seq[UpdateAction], symbols: SymbolTable): Seq[UpdateAction] = {
-    def distinctify(nodes: Seq[UpdateAction]): Seq[UpdateAction] = {
-      val createdNodes = mutable.Set[String]()
+  def expandCommands(commands: Seq[UpdateAction], initialSymbols: SymbolTable): Seq[UpdateAction] = {
 
-      nodes.flatMap {
-          case CreateNode(key, props, _, _)
-            if createdNodes.contains(key) && props.nonEmpty =>
-            throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
+    var symbols: SymbolTable = initialSymbols
+    val actions = Seq.newBuilder[UpdateAction]
 
-          case CreateNode(key, props, labels, bare)
-            if !bare && createdNodes.contains(key) =>
-            throw new SyntaxException("Node `%s` has already been created. Can't assign properties or labels to it again.".format(key))
+    def add(action: UpdateAction) {
+      actions += action
+      symbols  = symbols.add(action.identifiers.toMap)
+    }
 
-          case CreateNode(key, _, _, _) if createdNodes.contains(key) =>
-            None
+    def addCreateNodeIfNecessary(e: RelationshipEndpoint) =
+      e.node match {
+        case Identifier(name) if !symbols.checkType(name, NodeType()) =>
+          add(CreateNode(name, e.props, e.labels))
+          e.asBare
 
-          case x@CreateNode(key, _, _, _) =>
-            createdNodes += key
-            Some(x)
-
-          case x =>
-            Some(x)
+        case _  =>
+          e
       }
-    }
 
-    def alsoCreateNode(e: RelationshipEndpoint, symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNode] = e.node match {
-      case Identifier(name) =>
-        val nodeFromUnderlyingPipe = symbols.checkType(name, NodeType())
-
-        val nodeFromOtherCommand = commands.exists {
-          case CreateNode(n, _, _, _) => n == name
-          case _                      => false
-        }
-
-        if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand) {
-          Seq(CreateNode(name, e.props, e.labels, e.bare))
-        }
-        else {
-          Seq()
-        }
-
-      case _ =>
-        Seq()
-    }
-
-    val missingCreateNodeActions = commands.flatMap {
-      case ForeachAction(coll, id, actions) =>
-        val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(CollectionType(AnyType()), symbols).iteratedType))
-        Seq(ForeachAction(coll, id, expandedCommands))
+    commands.foreach {
+      case foreach: ForeachAction =>
+        val expandedCommands = expandCommands(foreach.actions, foreach.addInnerIdentifier(symbols)).toList
+        add(foreach.copy(actions = expandedCommands))
 
       case createRel: CreateRelationship =>
-        alsoCreateNode(createRel.from, symbols, commands) ++
-          alsoCreateNode(createRel.to, symbols, commands) ++ commands
-      case _                             => commands
+        val from = addCreateNodeIfNecessary(createRel.from)
+        val to = addCreateNodeIfNecessary(createRel.to)
+        add(createRel.copy(from = from, to = to))
+
+      case x =>
+        add(x)
     }
-    val distinctMissingCreateNodeActions = missingCreateNodeActions.distinct
-    val distinctifiedCreateNodeActions = distinctify(distinctMissingCreateNodeActions)
-    val sortedCreateNodeActions = new SortedUpdateActionIterator(distinctifiedCreateNodeActions, symbols).toSeq
-    sortedCreateNodeActions
+
+    actions.result()
   }
-
-  class SortedUpdateActionIterator(var commandsLeft: Seq[UpdateAction], var symbols: SymbolTable)
-    extends Iterator[UpdateAction] {
-    def hasNext = commandsLeft.nonEmpty
-
-    def next() = {
-      if (commandsLeft.isEmpty) {
-        Iterator.empty.next()
-      }
-      else {
-
-        //Let's get all the commands that are ready to run, and sort them so node creation happens before
-        //relationship creation
-        val nextCommands = commandsLeft.filter(action => action.symbolDependenciesMet(symbols)).sortWith {
-          case (a: CreateNode, _) => true
-          case (_, a: CreateNode) => false
-          case _                  => false
-        }
-
-        if (nextCommands.isEmpty) {
-          throw new ThisShouldNotHappenError("Andres", "This query should never have been built in the first place")
-        }
-
-        val head = nextCommands.head
-
-        commandsLeft = commandsLeft.filterNot(_ == head)
-        symbols = symbols.add(head.identifiers.toMap)
-        head
-      }
-    }
-  }
-
 }

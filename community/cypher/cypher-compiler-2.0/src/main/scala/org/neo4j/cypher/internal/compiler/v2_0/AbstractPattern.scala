@@ -51,14 +51,13 @@ object PatternWithEnds {
 }
 
 object ParsedEntity {
-  def apply(name:String) = new ParsedEntity(name, Identifier(name), Map.empty, Seq.empty, true)
+  def apply(name:String) = new ParsedEntity(name, Identifier(name), Map.empty, Seq.empty)
 }
 
 case class ParsedEntity(name: String,
                         expression: Expression,
                         props: Map[String, Expression],
-                        labels: Seq[KeyToken],
-                        bare: Boolean) extends AbstractPattern with GraphElementPropertyFunctions {
+                        labels: Seq[KeyToken]) extends AbstractPattern with GraphElementPropertyFunctions {
   def makeOutgoing = this
 
   def parsedEntities = Seq(this)
