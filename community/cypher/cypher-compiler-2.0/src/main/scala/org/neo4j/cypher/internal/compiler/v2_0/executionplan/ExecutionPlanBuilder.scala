@@ -216,7 +216,8 @@ The Neo4j Team""")
     def myBuilders: Seq[PlanBuilder] = Seq(
       new NamedPathBuilder,
       new UpdateActionBuilder,
-      new MatchOrCreatePatternBuilder(prepare andThen matching)
+      new MatchOrCreatePatternBuilder(prepare andThen matching),
+      new MergeErrorReporter
     )
   }
 

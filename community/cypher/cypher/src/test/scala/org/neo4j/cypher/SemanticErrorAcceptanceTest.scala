@@ -371,6 +371,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     )
   }
 
+  @Test def shouldMakeItClearThatAtLeastOneNodeMustBeBoundForPatternMerge() {
+    test(
+      "MERGE (a {prop:1})-[:FOO]->(b {prop:2})",
+      "MERGE needs at least one bound identifier in patterns - bind one of a, b"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)
