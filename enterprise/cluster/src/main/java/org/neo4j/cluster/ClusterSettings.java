@@ -117,4 +117,6 @@ public class ClusterSettings
 
     @Description( "Timeout for waiting for other members to finish a role election. Defaults to ha.paxos_timeout." )
     public static final Setting<Long> election_timeout = setting( "ha.election_timeout", DURATION, paxos_timeout );
+
+    public static final Setting<String> instance_name = setting("ha.instance_name", STRING, (String) null);
 }

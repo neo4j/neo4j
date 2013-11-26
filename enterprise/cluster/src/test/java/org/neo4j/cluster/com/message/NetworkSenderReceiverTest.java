@@ -139,6 +139,12 @@ public class NetworkSenderReceiverTest
                 {
                     return 5001;
                 }
+
+                @Override
+                public String name()
+                {
+                    return null;
+                }
             }, new DevNullLoggingService() )
             {
                 @Override
@@ -268,6 +274,12 @@ public class NetworkSenderReceiverTest
                 public int defaultPort()
                 {
                     return 5001;
+                }
+
+                @Override
+                public String name()
+                {
+                    return null;
                 }
             }, new DevNullLoggingService()));
 

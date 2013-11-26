@@ -83,6 +83,12 @@ public class NetworkedServerFactory
             {
                 return 5001;
             }
+
+            @Override
+            public String name()
+            {
+                return null;
+            }
         }, logging);
 
         final NetworkSender sender = new NetworkSender(new NetworkSender.Configuration()

@@ -69,6 +69,8 @@ public class NetworkReceiver
         HostnamePort clusterServer();
 
         int defaultPort();
+
+        String name(); // Name of this cluster instance. Null in most cases, but tools may use e.g. "Backup"
     }
 
     public interface NetworkChannelsListener
@@ -215,10 +217,18 @@ public class NetworkReceiver
 
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
     {
+        String uri;
+
         if (address.getAddress().getHostAddress().startsWith( "0" ))
-            return new URI( CLUSTER_SCHEME + "://0.0.0.0:"+address.getPort() ); // Socket.toString() already prepends a /
+            uri =  CLUSTER_SCHEME + "://0.0.0.0:"+address.getPort(); // Socket.toString() already prepends a /
         else
-            return new URI( CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress()+":"+address.getPort() ); // Socket.toString() already prepends a /
+            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress()+":"+address.getPort(); // Socket.toString() already prepends a /
+
+        // Add name if given
+        if (config.name() != null)
+            uri += "/?name="+config.name();
+
+        return URI.create( uri );
     }
 
     public void listeningAt( final URI me )
