@@ -66,9 +66,12 @@ class WithTest extends DocumentingTestBase {
   @Test def alternative_way_to_write_with() {
     testQuery(
       title = "Alternative syntax of WITH",
-      text = "If you prefer a more visual way of writing your query, you can use " +
-        "equal-signs as delimiters before and after the column list. Use at least three " +
-        "before the column list, and at least three after.",
+      text = """
+If you prefer a more visual way of writing your query, you can use equal-signs as delimiters before and after the column list.
+Use at least three before the column list, and at least three after.
+
+CAUTION: This syntax has been deprecated.
+""",
       queryText = """
 start david=node(%D%) match david--otherPerson-->()
 ========== otherPerson, count(*) as foaf ==========

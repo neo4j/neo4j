@@ -100,6 +100,6 @@ false* Closing connection #0
 ===============================
 The `UNKNOWN` status exists to describe when a Neo4j instance is neither master nor slave.
 For example, the instance could be transitioning between states (master to slave in a recovery scenario or slave being promoted to master in the event of failure).
-If the `UNKNOW` status is returned, the client should not treat the instance as a master or a slave and should instead pick another instance in the cluster to use, wait for the instance to transit from the `UNKNOWN` state, or undertake restorative action via systems admin.
+If the `UNKNOWN` status is returned, the client should not treat the instance as a master or a slave and should instead pick another instance in the cluster to use, wait for the instance to transit from the `UNKNOWN` state, or undertake restorative action via systems admin.
 ===============================
 
