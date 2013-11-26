@@ -125,6 +125,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 {
                     state = state.masterIsElected( context, coordinatorId );
 
+
                     context.setElectedMasterId( coordinatorId );
                     final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
                             state, coordinatorId,
@@ -163,7 +164,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             {
                 if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
                 {
-                    if ( !roleUri.equals( context.getAvailableHaMaster() ) )
+//                    if ( !roleUri.equals( context.getAvailableHaMaster() ) )
                     {
                         HighAvailabilityMemberState oldState = state;
                         context.setAvailableHaMasterId( roleUri );
@@ -207,8 +208,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                                 }
                             } );
 
-                    if ( oldState == HighAvailabilityMemberState.TO_SLAVE && state == HighAvailabilityMemberState
-                            .SLAVE )
+                    if ( oldState == HighAvailabilityMemberState.TO_SLAVE &&
+                            state == HighAvailabilityMemberState.SLAVE )
                     {
                         availabilityGuard.grant();
                     }

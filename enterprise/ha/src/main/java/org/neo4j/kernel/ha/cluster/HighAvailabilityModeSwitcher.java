@@ -205,13 +205,27 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     @Override
     public void masterIsElected( HighAvailabilityMemberChangeEvent event )
     {
-        stateChanged( event );
+        if ( event.getNewState() == event.getOldState() && event.getOldState() == HighAvailabilityMemberState.MASTER )
+        {
+            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
+        }
+        else
+        {
+            stateChanged( event );
+        }
     }
 
     @Override
     public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
     {
-        stateChanged( event );
+        if ( event.getNewState() == event.getOldState() && event.getOldState() == HighAvailabilityMemberState.SLAVE )
+        {
+            clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI );
+        }
+        else
+        {
+            stateChanged( event );
+        }
     }
 
     @Override
@@ -231,14 +245,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         availableMasterId = event.getServerHaUri();
         if ( event.getNewState() == event.getOldState() )
         {
-            if ( event.getNewState() == HighAvailabilityMemberState.MASTER )
-            {
-                clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
-            }
-            else if ( event.getNewState() == HighAvailabilityMemberState.SLAVE )
-            {
-                clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI );
-            }
             return;
         }
         switch ( event.getNewState() )
