@@ -93,7 +93,10 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             throw new ClassCastException( "Illegal type parameter " + type );
         }
-        if ( t == Object.class ) t = (Class) NoInterface.class;
+        if ( t == Object.class )
+        {
+            t = (Class) NoInterface.class;
+        }
         if ( !t.isInterface() )
         {
             throw new ClassCastException( t + " is not an interface" );
@@ -117,7 +120,10 @@ public abstract class SubProcess<T, P> implements Serializable
     public T start( P parameter, BreakPoint... breakpoints )
     {
         DebuggerConnector debugger = null;
-        if ( breakpoints != null && breakpoints.length != 0 ) debugger = new DebuggerConnector( breakpoints );
+        if ( breakpoints != null && breakpoints.length != 0 )
+        {
+            debugger = new DebuggerConnector( breakpoints );
+        }
         DispatcherTrapImpl callback;
         try
         {
@@ -167,9 +173,15 @@ public abstract class SubProcess<T, P> implements Serializable
                 e.printStackTrace();
             }
         }
-        if ( dispatcher == null ) throw new IllegalStateException( "failed to start sub process" );
+        if ( dispatcher == null )
+        {
+            throw new IllegalStateException( "failed to start sub process" );
+        }
         Handler handler = new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">", debugDispatch );
-        if ( debugDispatch != null ) debugDispatch.handler = handler;
+        if ( debugDispatch != null )
+        {
+            debugDispatch.handler = handler;
+        }
         return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t }, live( handler ) ) );
     }
     
@@ -185,7 +197,10 @@ public abstract class SubProcess<T, P> implements Serializable
 
     private String classPath( String parentClasspath )
     {
-        if ( classPathFilter == null ) return parentClasspath;
+        if ( classPathFilter == null )
+        {
+            return parentClasspath;
+        }
         StringBuilder result = new StringBuilder();
         for ( String part : parentClasspath.split( File.pathSeparator ) )
         {
@@ -234,7 +249,9 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 List<BreakPoint> list = this.breakpoints.get( breakpoint.type );
                 if ( list == null )
+                {
                     this.breakpoints.put( breakpoint.type, list = new ArrayList<>() );
+                }
                 list.add( breakpoint );
             }
         }
@@ -364,12 +381,18 @@ public abstract class SubProcess<T, P> implements Serializable
                                 DebuggerDeadlockCallback callback = suspended.get( thread );
                                 try
                                 {
-                                    if ( callback != null ) callback.deadlock( new DebuggedThread( this, thread ) );
+                                    if ( callback != null )
+                                    {
+                                        callback.deadlock( new DebuggedThread( this, thread ) );
+                                    }
                                 }
                                 catch ( DeadlockDetectedError deadlock )
                                 {
                                     @SuppressWarnings( "hiding" ) Handler handler = this.handler;
-                                    if ( handler != null ) handler.kill( false );
+                                    if ( handler != null )
+                                    {
+                                        handler.kill( false );
+                                    }
                                 }
                             }
                         }
@@ -409,7 +432,10 @@ public abstract class SubProcess<T, P> implements Serializable
         private void setup( com.sun.jdi.ReferenceType type )
         {
             List<BreakPoint> list = breakpoints.get( type.name() );
-            if ( list == null ) return;
+            if ( list == null )
+            {
+                return;
+            }
             for ( BreakPoint breakpoint : list )
             {
                 breakpoint.setup( type );
@@ -419,20 +445,29 @@ public abstract class SubProcess<T, P> implements Serializable
         private void callback( com.sun.jdi.event.LocatableEvent event ) throws KillSubProcess
         {
             List<BreakPoint> list = breakpoints.get( event.location().declaringType().name() );
-            if ( list == null ) return;
+            if ( list == null )
+            {
+                return;
+            }
             com.sun.jdi.Method method = event.location().method();
             for ( BreakPoint breakpoint : list )
             {
                 if ( breakpoint.matches( method.name(), method.argumentTypeNames() ) )
                 {
-                    if ( breakpoint.enabled ) breakpoint.invoke( new DebugInterface( this, event ) );
+                    if ( breakpoint.enabled )
+                    {
+                        breakpoint.invoke( new DebugInterface( this, event ) );
+                    }
                 }
             }
         }
 
         void suspended( com.sun.jdi.ThreadReference thread, DebuggerDeadlockCallback callback )
         {
-            if ( callback == null ) callback = defaultCallback;
+            if ( callback == null )
+            {
+                callback = defaultCallback;
+            }
             suspended.put( thread, callback );
         }
 
@@ -443,7 +478,10 @@ public abstract class SubProcess<T, P> implements Serializable
 
         DebuggedThread[] suspendedThreads()
         {
-            if ( suspended.isEmpty() ) return new DebuggedThread[0];
+            if ( suspended.isEmpty() )
+            {
+                return new DebuggedThread[0];
+            }
             List<DebuggedThread> threads = new ArrayList<>();
             for ( com.sun.jdi.ThreadReference thread : suspended.keySet() )
             {
@@ -656,7 +694,10 @@ public abstract class SubProcess<T, P> implements Serializable
                         done.add( task );
                     }
                 }
-                if ( !done.isEmpty() ) tasks.removeAll( done );
+                if ( !done.isEmpty() )
+                {
+                    tasks.removeAll( done );
+                }
                 if ( tasks.isEmpty() )
                 {
                     synchronized ( PipeThread.class )
@@ -740,13 +781,18 @@ public abstract class SubProcess<T, P> implements Serializable
             return dispatcher;
         }
 
+        @Override
         public synchronized Object trap( @SuppressWarnings( "hiding" ) Dispatcher dispatcher )
         {
-            if ( this.dispatcher != null ) throw new IllegalStateException( "Dispatcher already trapped!" );
+            if ( this.dispatcher != null )
+            {
+                throw new IllegalStateException( "Dispatcher already trapped!" );
+            }
             this.dispatcher = dispatcher;
             return parameter;
         }
 
+        @Override
         @SuppressWarnings( "unchecked" )
         public SubProcess<?, Object> getSubProcess()
         {
@@ -827,7 +873,10 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             try
             {
-                if ( live != null ) live.remove( handler );
+                if ( live != null )
+                {
+                    live.remove( handler );
+                }
             }
             catch ( UnsupportedOperationException ok )
             {
@@ -926,7 +975,10 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 // handled by exit
             }
-            if ( stopper.isAlive() ) stopper.interrupt();
+            if ( stopper.isAlive() )
+            {
+                stopper.interrupt();
+            }
             dead( this );
             return await( process );
         }
@@ -936,6 +988,7 @@ public abstract class SubProcess<T, P> implements Serializable
             return new ProcessStreamHandler( process, true ).waitForResult();
         }
 
+        @Override
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
         {
             try
@@ -959,7 +1012,7 @@ public abstract class SubProcess<T, P> implements Serializable
             }
             catch ( RemoteException ex )
             {
-                throw new IllegalStateException( "Subprocess connection disrupted", ex );
+                throw new ConnectionDisruptedException( ex );
             }
         }
 
@@ -985,6 +1038,7 @@ public abstract class SubProcess<T, P> implements Serializable
             this.subprocess = subprocess;
         }
 
+        @Override
         public Object dispatch( String name, String[] types, Object[] args ) throws Throwable
         {
             Class<?>[] params = new Class<?>[types.length];
@@ -1006,6 +1060,7 @@ public abstract class SubProcess<T, P> implements Serializable
             }
         }
 
+        @Override
         public void stop() throws RemoteException
         {
             subprocess.doStop( true );
