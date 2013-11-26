@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
 
-case class CreateNode(key: String, properties: Map[String, Expression], labels: Seq[KeyToken], bare: Boolean = true)
+case class CreateNode(key: String, properties: Map[String, Expression], labels: Seq[KeyToken])
   extends UpdateAction
   with GraphElementPropertyFunctions
   with CollectionSupport {
@@ -86,7 +86,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   override def children = properties.map(_._2).toSeq ++ labels.flatMap(_.children)
 
   override def rewrite(f: (Expression) => Expression): CreateNode =
-    CreateNode(key, properties.rewrite(f), labels.map(_.typedRewrite[KeyToken](f)), bare)
+    CreateNode(key, properties.rewrite(f), labels.map(_.typedRewrite[KeyToken](f)))
 
   override def symbolTableDependencies: Set[String] =
     properties.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)

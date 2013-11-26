@@ -27,7 +27,6 @@ import commands.values.KeyToken
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
-import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.{Node, Direction}
 import collection.Map
 import org.neo4j.cypher.internal.compiler.v2_0.helpers.{IsMap, MapSupport}
@@ -35,9 +34,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.helpers.{IsMap, MapSupport}
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
     new UniqueLink(
-      NamedExpectation(start, Map.empty, bare = true),
-      NamedExpectation(end, Map.empty, bare = true),
-      NamedExpectation(relName, Map.empty, bare = true), relType, dir)
+      NamedExpectation(start, Map.empty),
+      NamedExpectation(end, Map.empty),
+      NamedExpectation(relName, Map.empty), relType, dir)
 }
 
 case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
@@ -68,8 +67,8 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         case List() =>
           val expectations = rel.getExpectations(context, state)
           val createRel = CreateRelationship(rel.name,
-            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty, bare = true),
-            RelationshipEndpoint(Literal(endNode), Map(), Seq.empty, bare = true), relType, expectations.properties)
+            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty),
+            RelationshipEndpoint(Literal(endNode), Map(), Seq.empty), relType, expectations.properties)
           Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name))))
         case List(r) => Some(this->Traverse(rel.name -> r))
         case _ => throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
@@ -85,12 +84,12 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         val relExpectations = rel.getExpectations(context, state)
         val createRel = if (dir == Direction.OUTGOING) {
           CreateRelationship(rel.name,
-            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty, bare = true),
-            RelationshipEndpoint(Identifier(other.name), Map(), Seq.empty, bare = true), relType, relExpectations.properties)
+            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty),
+            RelationshipEndpoint(Identifier(other.name), Map(), Seq.empty), relType, relExpectations.properties)
         } else {
           CreateRelationship(rel.name,
-            RelationshipEndpoint(Identifier(other.name), Map(), Seq.empty, bare = true),
-            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty, bare = true), relType, relExpectations.properties)
+            RelationshipEndpoint(Identifier(other.name), Map(), Seq.empty),
+            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty), relType, relExpectations.properties)
         }
 
         val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)
@@ -145,9 +144,9 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     rel.properties.symboltableDependencies
 
   def rewrite(f: (Expression) => Expression): UniqueLink = {
-    val s = NamedExpectation(start.name, start.properties.rewrite(f), start.labels.map(_.typedRewrite[KeyToken](f)), start.bare)
-    val e = NamedExpectation(end.name, end.properties.rewrite(f), end.labels.map(_.typedRewrite[KeyToken](f)), end.bare)
-    val r = NamedExpectation(rel.name, rel.properties.rewrite(f), rel.labels.map(_.typedRewrite[KeyToken](f)), rel.bare)
+    val s = NamedExpectation(start.name, start.properties.rewrite(f), start.labels.map(_.typedRewrite[KeyToken](f)))
+    val e = NamedExpectation(end.name, end.properties.rewrite(f), end.labels.map(_.typedRewrite[KeyToken](f)))
+    val r = NamedExpectation(rel.name, rel.properties.rewrite(f), rel.labels.map(_.typedRewrite[KeyToken](f)))
     UniqueLink(s, e, r, relType, dir)
   }
 

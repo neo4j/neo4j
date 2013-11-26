@@ -49,8 +49,9 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper
     assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog) RETURN n AS node", List("Person"))
   }
 
-  @Test def Recreating_and_labelling_the_same_node_twice_is_forbidden() {
+  @Test def Recreating_and_labelling_the_same_node_twice_differently_is_forbidden() {
     assertDoesNotWork("CREATE (n: FOO)-[:test]->b, (n: BAR)-[:test2]->c")
+    assertDoesNotWork("CREATE (c)<-[:test2]-(n: FOO), (n: BAR)<-[:test]-(b)")
     assertDoesNotWork("CREATE n :Foo CREATE (n :Bar)-[:OWNS]->(x:Dog)")
     assertDoesNotWork("CREATE n {} CREATE (n :Bar)-[:OWNS]->(x:Dog)")
     assertDoesNotWork("CREATE n :Foo CREATE (n {})-[:OWNS]->(x:Dog)")
@@ -100,7 +101,6 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper
     val result = execute(q).toList
 
     graph.inTx {
-
       if (result.isEmpty) {
         val n = graph.getNodeById(0)
         assert(n.labels === expectedLabels)

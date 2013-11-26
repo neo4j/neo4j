@@ -189,7 +189,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def create_with_identifier_already_existing2() {
     expectError(
       "START a=node(0) CREATE UNIQUE (a {name:'foo'})-[:KNOWS]->() RETURN a",
-      "Can't create `a` with properties here. It already exists in this context"
+      "Can't create `a` with properties or labels here. It already exists in this context"
     )
   }
 

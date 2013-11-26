@@ -108,9 +108,9 @@ class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
 
   @Test
   def should_resolve_label_keytoken_on_unique_link_pattern() {
-    val aNode = NamedExpectation("a", properties = Map.empty, Seq(unresolvedFoo), bare = false)
-    val bNode = NamedExpectation("b", properties = Map.empty, Seq(unresolvedBar), bare = false)
-    val rel = NamedExpectation("r", bare = true)
+    val aNode = NamedExpectation("a", properties = Map.empty, Seq(unresolvedFoo))
+    val bNode = NamedExpectation("b", properties = Map.empty, Seq(unresolvedBar))
+    val rel = NamedExpectation("r")
 
     val q = Query.
       start(CreateUniqueStartItem(CreateUniqueAction(UniqueLink(aNode, bNode, rel, "KNOWS", Direction.OUTGOING)))).

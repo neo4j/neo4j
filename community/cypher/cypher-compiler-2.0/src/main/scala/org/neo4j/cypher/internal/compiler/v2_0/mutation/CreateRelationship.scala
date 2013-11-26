@@ -29,13 +29,13 @@ import org.neo4j.graphdb.Node
 import collection.Map
 
 object RelationshipEndpoint {
-  def apply(name:String) = new RelationshipEndpoint(Identifier(name), Map.empty, Seq.empty, true)
+  def apply(name:String) = new RelationshipEndpoint(Identifier(name), Map.empty, Seq.empty)
 }
 
-case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Seq[KeyToken], bare: Boolean)
+case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Seq[KeyToken])
   extends GraphElementPropertyFunctions {
   def rewrite(f: (Expression) => Expression): RelationshipEndpoint =
-    RelationshipEndpoint(node.rewrite(f), Materialized.mapValues(props, (expression: Expression) => expression.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)), bare)
+    RelationshipEndpoint(node.rewrite(f), Materialized.mapValues(props, (expression: Expression) => expression.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)))
 
   def symbolTableDependencies: Set[String] = {
     val nodeDeps = node match {
@@ -44,6 +44,10 @@ case class RelationshipEndpoint(node: Expression, props: Map[String, Expression]
     }
     nodeDeps ++ props.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)
   }
+
+  def asBare = copy(props = Map.empty, labels = Seq.empty)
+
+  def bare = props.isEmpty && labels.isEmpty
 }
 
 case class CreateRelationship(key: String,

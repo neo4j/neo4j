@@ -38,7 +38,7 @@ class CreateMissingNodesTest extends Assertions {
   }
 
   private def endPoint(name: String, props: Map[String, Expression] = Map.empty, labels: Seq[KeyToken] = Seq.empty) =
-    RelationshipEndpoint(Identifier(name), props, labels, props.isEmpty && labels.isEmpty)
+    RelationshipEndpoint(Identifier(name), props, labels)
 
   @Test def should_handle_properties() {
     // Given (@a)-[:FOO]->(b {id:42})
@@ -48,7 +48,7 @@ class CreateMissingNodesTest extends Assertions {
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b", props), "FOO", Map.empty)
     val result = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(result.toList === List(CreateNode("b", props, Seq.empty, bare = false), relationship))
+    assert(result.toList === List(CreateNode("b", props, Seq.empty), relationship))
   }
 
   @Test def should_handle_labels() {
@@ -59,7 +59,7 @@ class CreateMissingNodesTest extends Assertions {
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b", labels = labels), "FOO", Map.empty)
     val result = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(result.toList === List(CreateNode("b", Map.empty, labels, bare = false), relationship))
+    assert(result.toList === List(CreateNode("b", Map.empty, labels), relationship))
   }
 
   @Test def should_handle_labels_and_properties() {
@@ -71,7 +71,7 @@ class CreateMissingNodesTest extends Assertions {
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b", labels = labels, props = props), "FOO", Map.empty)
     val result = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(result.toList === List(CreateNode("b", props, labels, bare = false), relationship))
+    assert(result.toList === List(CreateNode("b", props, labels), relationship))
   }
 
   @Test def should_not_create_nodes() {
@@ -85,5 +85,5 @@ class CreateMissingNodesTest extends Assertions {
     assert(result.toList === List(bareNode("b"), r1, bareNode("c"), r2))
   }
 
-  private def bareNode(name: String) = CreateNode(name, Map.empty, Seq.empty, bare = true)
+  private def bareNode(name: String) = CreateNode(name, Map.empty, Seq.empty)
 }

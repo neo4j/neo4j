@@ -98,8 +98,8 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
     val tx = graph.beginTx()
 
     val createRel = CreateRelationship("r",
-      RelationshipEndpoint(getNode("a", a), Map(), Seq.empty, true),
-      RelationshipEndpoint(getNode("b", b), Map(), Seq.empty, true), "REL", Map("I" -> Literal("was here")))
+      RelationshipEndpoint(getNode("a", a), Map(), Seq.empty),
+      RelationshipEndpoint(getNode("b", b), Map(), Seq.empty), "REL", Map("I" -> Literal("was here")))
 
     val startPipe = NullPipe()
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(createRel))

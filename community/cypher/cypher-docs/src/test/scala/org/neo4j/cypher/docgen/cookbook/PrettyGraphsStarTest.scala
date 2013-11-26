@@ -24,8 +24,9 @@ import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.cypher.StatisticsChecker
 
-class PrettyGraphsStarTest extends DocumentingTestBase {
+class PrettyGraphsStarTest extends DocumentingTestBase with StatisticsChecker {
   def section = "cookbook"
   generateInitialGraphForConsole = false
   override val graphvizOptions = "graph [layout=neato]"

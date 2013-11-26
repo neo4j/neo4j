@@ -20,18 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Identifier
 import data.SimpleVal
 import mutation._
 import symbols._
 import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.NotInTransactionException
+import collection.mutable
 
-class ExecuteUpdateCommandsPipe(source: Pipe, val commands: Seq[UpdateAction])
-  extends PipeWithSource(source) with CollectionSupport {
-
-  assertNothingIsCreatedWhenItShouldNot()
+case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])
+  extends PipeWithSource(source) with CollectionSupport with NoLushEntityCreation {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = input.flatMap {
     case ctx => executeMutationCommands(ctx, state, commands.size == 1)
@@ -63,41 +62,61 @@ class ExecuteUpdateCommandsPipe(source: Pipe, val commands: Seq[UpdateAction])
     }
   }
 
-
-  private def extractEntities(action: UpdateAction): Seq[NamedExpectation] = action match {
-    case CreateNode(key, props, labels, bare)        => Seq(NamedExpectation(key, props, labels, bare))
-    case CreateRelationship(key, from, to, _, props) => Seq(NamedExpectation(key, props, Seq.empty, bare = true)) ++
-                                                            extractIfEntity(from) ++
-                                                            extractIfEntity(to)
-    case CreateUniqueAction(links@_*)                => links.flatMap(l => Seq(l.start, l.end, l.rel))
-    case _                                           => Seq()
-  }
-
-
-  def extractIfEntity(from: RelationshipEndpoint): Option[NamedExpectation] = {
-    from match {
-      case RelationshipEndpoint(Identifier(key), props, labels, bare) => Some(NamedExpectation(key, props, labels, bare))
-      case _                                                          => None
-    }
-  }
-
-  private def assertNothingIsCreatedWhenItShouldNot() {
-    val entities: Seq[NamedExpectation] = commands.flatMap(cmd => extractEntities(cmd))
-
-    val entitiesWithProps = entities.filter(_.properties.nonEmpty)
-    entitiesWithProps.foreach(l => if (source.symbols.keys.contains(l.name))
-      throw new SyntaxException("Can't create `%s` with properties here. It already exists in this context".format(l.name))
-    )
-
-    // lush is the opposite of bare
-    val lushEntities = entities.filter(! _.bare)
-    lushEntities.foreach(l => if (source.symbols.keys.contains(l.name))
-      throw new SyntaxException("Can't create `%s` with properties or labels here. It already exists in this context".format(l.name))
-    )
-  }
-
   override def executionPlanDescription =
     source.executionPlanDescription.andThen(this, "UpdateGraph", "commands" -> SimpleVal.fromIterable(commands))
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
+
+  def sourceSymbols: SymbolTable = source.symbols
 }
+
+// TODO: Write unit tests for this
+trait NoLushEntityCreation {
+  def commands: Seq[UpdateAction]
+
+  def sourceSymbols: SymbolTable
+
+  assertNothingIsCreatedWhenItShouldNot()
+
+  private def extractEntities(action: UpdateAction): Seq[NamedExpectation] = action match {
+    case CreateNode(key, props, labels)              => Seq(NamedExpectation(key, props, labels))
+    case CreateRelationship(key, from, to, _, props) => Seq(NamedExpectation(key, props, Seq.empty)) ++
+      extractIfEntity(from) ++
+      extractIfEntity(to)
+    case CreateUniqueAction(links@_*)                => links.flatMap(l => Seq(l.start, l.end, l.rel))
+    case _                                           => Seq()
+  }
+
+  private def extractIfEntity(from: RelationshipEndpoint): Option[NamedExpectation] =
+    from match {
+      case RelationshipEndpoint(Identifier(key), props, labels) => Some(NamedExpectation(key, props, labels))
+      case _                                                    => None
+    }
+
+  private def assertNothingIsCreatedWhenItShouldNot() {
+    var symbols = sourceSymbols
+    val lushNodes = new mutable.HashMap[String, NamedExpectation]
+
+    commands.foreach {
+      cmd =>
+        val namedExpectations = extractEntities(cmd)
+
+        // If we find multiple lush elements, make sure they all have the same lushness
+        namedExpectations.filter(expectation => !expectation.bare).foreach {
+          lushExpectation =>
+            lushNodes.get(lushExpectation.name) match {
+              case None if symbols.hasIdentifierNamed(lushExpectation.name) => failOn(lushExpectation.name)
+              case None                                                     => lushNodes += lushExpectation.name -> lushExpectation
+              case Some(x) if x != lushExpectation                          => failOn(lushExpectation.name)
+              case Some(x)                                                  => // same thing we've already seen. move along
+            }
+        }
+
+        symbols = symbols.add(cmd.identifiers.toMap)
+    }
+  }
+
+  private def failOn(name:String)=
+    throw new SyntaxException("Can't create `%s` with properties or labels here. It already exists in this context".format(name))
+}
+
