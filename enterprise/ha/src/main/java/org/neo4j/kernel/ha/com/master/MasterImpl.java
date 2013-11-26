@@ -69,7 +69,6 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
-import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
@@ -146,12 +145,12 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private ScheduledExecutorService unfinishedTransactionsExecutor;
     private long unfinishedTransactionThresholdMillis;
 
-    public MasterImpl( SPI spi, Monitors monitors, Logging logging, Config config )
+    public MasterImpl( SPI spi, Monitor monitor, Logging logging, Config config )
     {
         this.spi = spi;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.config = config;
-        this.monitor = monitors.newMonitor( Monitor.class );
+        this.monitor = monitor;
     }
 
     @Override

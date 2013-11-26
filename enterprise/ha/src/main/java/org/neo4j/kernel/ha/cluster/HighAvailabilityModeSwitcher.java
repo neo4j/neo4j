@@ -131,7 +131,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private URI availableMasterId;
 
     private final HighAvailabilityMemberStateMachine stateHandler;
-    private BindingNotifier bindingNotifier;
+    private final BindingNotifier bindingNotifier;
     private final DelegateInvocationHandler delegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final GraphDatabaseAPI graphDb;
@@ -302,7 +302,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         .resolveDependency( TransactionManager.class );
                 MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
 
-                MasterImpl masterImpl = new MasterImpl( spi, monitors, logging, config );
+                MasterImpl masterImpl = new MasterImpl( spi, monitors.newMonitor( MasterImpl.Monitor.class ),
+                        logging, config );
 
                 MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
                         new BranchDetectingTxVerifier( graphDb ) );
