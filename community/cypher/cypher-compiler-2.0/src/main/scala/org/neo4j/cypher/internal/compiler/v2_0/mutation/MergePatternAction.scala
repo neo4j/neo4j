@@ -22,19 +22,75 @@ package org.neo4j.cypher.internal.compiler.v2_0.mutation
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.{SymbolTable, CypherType}
 import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{Pattern, AstNode}
+import org.neo4j.graphdb.Node
+import org.neo4j.cypher.InternalException
 
-case class MergePatternAction(patterns: Seq[Pattern], actions: Seq[UpdateAction], onMatch: Seq[UpdateAction]) extends UpdateAction {
-  def children: Seq[AstNode[_]] = ???
+case class MergePatternAction(patterns: Seq[Pattern],
+                              actions: Seq[UpdateAction],
+                              onMatch: Seq[UpdateAction],
+                              maybeUpdateActions: Option[Seq[UpdateAction]] = None,
+                              maybeMatchPipe: Option[Pipe] = None) extends UpdateAction {
+  def children: Seq[AstNode[_]] = patterns ++ actions ++ onMatch
 
-  def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = ???
+  def readyToExecute = maybeMatchPipe.nonEmpty && maybeUpdateActions.nonEmpty
+
+  def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
+    state.initialContext = Some(context)
+
+    val matchResult = doMatch(state).toList
+    if(matchResult.nonEmpty)
+      return matchResult.iterator
+
+    val lockedMatchResult = lockAndThenMatch(state, context)
+    if(lockedMatchResult.nonEmpty)
+      return lockedMatchResult
+
+    createThePattern(state, context)
+  }
+
+  private def matchPipe: Pipe =
+    maybeMatchPipe.getOrElse(throw new InternalException("Query not prepared correctly!"))
+
+  private def updateActions: Seq[UpdateAction] =
+    maybeUpdateActions.getOrElse(throw new InternalException("Query not prepared correctly!"))
+
+  private def doMatch(state: QueryState) = matchPipe.createResults(state)
+
+  private def lockAndThenMatch(state: QueryState, ctx: ExecutionContext): Iterator[ExecutionContext] = {
+    val lockingQueryContext = state.query.upgradeToLockingQueryContext
+    ctx.collect { case (_, node: Node) => node.getId }.toSeq.sorted.
+      foreach( id => lockingQueryContext.getLabelsForNode(id) ) // TODO: This locks the nodes. Hack!
+    matchPipe.createResults(state)
+  }
+
+  private def createThePattern(state: QueryState, ctx: ExecutionContext) = {
+    // Runs all commands, from left to right, updating the execution context as it passes through
+    val resultingContext = updateActions.foldLeft(ctx) {
+      case (accumulatedContext, action) => singleElementOrFail(action.exec(accumulatedContext, state))
+    }
+    Iterator(resultingContext)
+  }
+
+  private def singleElementOrFail(inner: Iterator[ExecutionContext]): ExecutionContext = {
+    val temp = inner.next()
+
+    if (inner.hasNext)
+      throw new InternalException("Creating a missing element in MERGE resulted in multiple elements")
+
+    temp
+  }
 
   def identifiers: Seq[(String, CypherType)] = patterns.flatMap(_.possibleStartPoints)
 
-  def rewrite(f: (Expression) => Expression): UpdateAction = MergePatternAction(patterns = patterns.map(_.rewrite(f)),
-    actions = actions.map(_.rewrite(f)),
-    onMatch = onMatch.map(_.rewrite(f)))
+  def rewrite(f: (Expression) => Expression): UpdateAction =
+    MergePatternAction(
+      patterns = patterns.map(_.rewrite(f)),
+      actions = actions.map(_.rewrite(f)),
+      onMatch = onMatch.map(_.rewrite(f)),
+      maybeUpdateActions = maybeUpdateActions.map(_.map(_.rewrite(f))),
+      maybeMatchPipe = maybeMatchPipe)
 
   def symbolTableDependencies: Set[String] = {
     val dependencies = (patterns.flatMap(_.symbolTableDependencies) ++ actions.flatMap(_.symbolTableDependencies)).toSet
@@ -42,9 +98,8 @@ case class MergePatternAction(patterns: Seq[Pattern], actions: Seq[UpdateAction]
     dependencies -- introducedIdentifiers
   }
 
-  override def symbolDependenciesMet(symbols: SymbolTable): Boolean = {
+  override def symbolDependenciesMet(symbols: SymbolTable): Boolean =
     patterns.exists {
       pattern => pattern.possibleStartPoints.exists { case (k, _) => symbols.hasIdentifierNamed(k) }
     }
-  }
 }

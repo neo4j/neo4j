@@ -310,4 +310,26 @@ class MergeRelationshipAcceptanceTest
     // when then fails
     intercept[CypherExecutionException](execute("CREATE (a:A) MERGE (a)-[:KNOWS]->(:Person {id:666})"))
   }
+
+  @Test def should_work_well_inside_foreach() {
+    val a = createLabeledNode("Start")
+    relate(a, createNode("prop" -> 2), "FOO")
+
+    val result = execute("match (a:Start) foreach(x in [1,2,3] | merge (a)-[:FOO]->({prop: x}) )")
+    assertStats(result, nodesCreated = 2, propertiesSet = 2, relationshipsCreated = 2)
+  }
+
+  @Test def should_handle_two_merges_inside_foreach() {
+    val a = createLabeledNode("Start")
+    val b = createLabeledNode(Map("prop" -> 42), "End")
+
+    val result = execute("match (a:Start) foreach(x in [42] | merge (b:End {prop: x}) merge (a)-[:FOO]->(b) )")
+    assertStats(result, nodesCreated = 0, propertiesSet = 0, relationshipsCreated = 1)
+
+    graph.inTx {
+      val rel = a.getRelationships.iterator().next()
+      assert(rel.getStartNode === a)
+      assert(rel.getEndNode === b)
+    }
+  }
 }
