@@ -19,14 +19,14 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import static org.neo4j.ext.udc.UdcConstants.PING;
-
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Map;
 
 import org.neo4j.helpers.HostnamePort;
+
+import static org.neo4j.ext.udc.UdcConstants.PING;
 
 public class Pinger
 {
@@ -52,7 +52,10 @@ public class Pinger
 
         Map<String, String> usageDataMap = collector.getUdcParams();
 
-        StringBuilder uri = new StringBuilder( "http://" + address + "/" + "?" );
+        String hostname = address.getHost();
+        int port = address.getPort();
+        String hostnamePort = port == 0 ? hostname : hostname + ":" + port;
+        StringBuilder uri = new StringBuilder( "http://" + hostnamePort + "/" + "?" );
 
         for ( String key : usageDataMap.keySet() )
         {
