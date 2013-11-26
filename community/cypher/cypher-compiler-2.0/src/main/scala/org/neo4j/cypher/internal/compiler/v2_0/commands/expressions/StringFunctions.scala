@@ -71,6 +71,8 @@ trait StringHelper {
     case x                  => x.toString
   }
 
+  protected def textWithType(x: Any)(implicit qs: QueryState) = s"${text(x, qs.query)} (${x.getClass.getSimpleName})"
+
   private def makeString(m: QueryContext => Map[String, Any], qtx: QueryContext) = m(qtx).map {
     case (k, v) => k + " -> " + text(v, qtx)
   }.mkString("{", ", ", "}")

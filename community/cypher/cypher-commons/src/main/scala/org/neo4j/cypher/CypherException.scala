@@ -74,4 +74,5 @@ class MergeConstraintConflictException(message: String) extends CypherException(
 
 class ArithmeticException(message: String) extends CypherException(message)
 
-class IllegalValueException(message: String) extends CypherException(message)
+class IncomparableValuesException(lhs: String, rhs: String)
+  extends SyntaxException(s"Don't know how to compare that. Left: ${lhs}; Right: ${rhs}")
