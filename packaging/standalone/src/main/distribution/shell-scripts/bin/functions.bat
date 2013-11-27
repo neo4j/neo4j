@@ -6,11 +6,11 @@ rem
   if not "%JAVA_HOME%" == "" (
     
     if exist "%JAVA_HOME%\bin\javac.exe" (
-      set javaPath= "%JAVA_HOME%\jre"
+      set javaPath="%JAVA_HOME%\jre"
       goto:eof
     )
 
-    set javaPath= "%JAVA_HOME%"
+    set javaPath="%JAVA_HOME%"
     goto:eof
   )
 
