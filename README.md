@@ -24,12 +24,15 @@ you can read the [RepositoryOverview.md](RepositoryOverview.md).
 Building Neo4j
 --------------
 
-Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.0.x and a recent version of Java 7.
+Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.0.x and a recent version of [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/index.html).
+
+The Neo4j Browser module is built using [Node.js](http://nodejs.org/). For skipping that part of the build, see below.
 
 * A plain `mvn clean install` will only build the individual jar files. 
 * Test execution is, of course, part of the build.
 * To add execution of integration tests, use: `mvn clean install -DrunITs`
 * In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`
+* To skip building the browser module, use `-DskipBrowser` (note that you might not be able to build the server without it.)
 * To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`
 * To build the documentation see the [Neo4j manual](manual)
 * When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.

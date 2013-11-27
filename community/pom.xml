@@ -79,6 +79,17 @@ the relevant Commercial Agreement.
 
   <profiles>
     <profile>
+      <id>include-browser</id>
+      <activation>
+        <property>
+          <name>!skipBrowser</name>
+        </property>
+      </activation>
+      <modules>
+        <module>browser</module>
+      </modules>
+    </profile>
+    <profile>
       <id>freeze</id>
       <activation>
         <activeByDefault>false</activeByDefault>
