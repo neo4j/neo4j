@@ -48,11 +48,17 @@ goto :main %1
 
 :install
   call %~dps0functions.bat :findJavaHome
-  set javaPath=%javaPath:"="""%
+
+  rem Remove quotes from javaPath so that it can have /bin/java appended to it
+  rem See http://ss64.com/nt/syntax-esc.html, "Removing quotes"
+  set javaPath=###%javaPath%###
+  set javaPath=%javaPath:"###=%
+  set javaPath=%javaPath:###"=%
+  set javaPath=%javaPath:###=%
 
   set binPath="\"%javaPath%\bin\java.exe\" %loggingProperties% -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -Dorg.neo4j.cluster.logdirectory="%~dps0..\data\log" -jar %~dps0%wrapperJarFilename%  %serviceName%"
 
-  sc create "%serviceName%" binPath= %binpath% DisplayName= "%serviceDisplayName:"=%" start= %serviceStartType%
+  sc create "%serviceName%" binPath= %binPath% DisplayName= "%serviceDisplayName:"=%" start= %serviceStartType%
   sc start %serviceName%
   @echo off
   goto :eof
