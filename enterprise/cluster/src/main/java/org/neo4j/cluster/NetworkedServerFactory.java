@@ -77,6 +77,17 @@ public class NetworkedServerFactory
             {
                 return config.get( ClusterSettings.cluster_server );
             }
+            @Override
+            public int defaultPort()
+            {
+                return 5001;
+            }
+
+            @Override
+            public String name()
+            {
+                return null;
+            }
         }, logging);
 
         final NetworkSender sender = new NetworkSender(new NetworkSender.Configuration()

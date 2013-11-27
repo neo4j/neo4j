@@ -20,6 +20,7 @@
   <artifactId>neo4j-graph-algo</artifactId>
   <groupId>org.neo4j</groupId>
   <version>2.0-SNAPSHOT</version>
+
   <packaging>jar</packaging>
   <name>Neo4j - Graph Algorithms</name>
   <description>Graph algorithms for Neo4j.</description>

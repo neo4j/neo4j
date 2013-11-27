@@ -96,7 +96,7 @@ public class ClusterMembers
     {
         ClusterMember clusterMember = members.get( server );
         if ( clusterMember == null )
-            throw new IllegalStateException( "Member " + server + " not found in " + members );
+            throw new IllegalStateException( "Member " + server + " not found in " + new HashMap(members) );
         return clusterMember;
     }
     

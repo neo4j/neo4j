@@ -23,13 +23,15 @@ import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Map;
-
 import javax.transaction.Transaction;
+
+import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.BindingNotifier;
+import org.neo4j.cluster.logging.NettyLoggerFactory;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
@@ -201,8 +203,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Logging createLogging()
     {
-        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, NEW_LOGGER_CONTEXT,
+        Logging loggingService = life.add( new LogbackWeakDependency().tryLoadLogbackService( config, NEW_LOGGER_CONTEXT,
                 DEFAULT_TO_CLASSIC ) );
+
+        // Set Netty logger
+        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( loggingService ) );
+
+        return loggingService;
     }
 
     @Override
@@ -388,6 +395,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, logging, updateableSchemaState, kernelExtensions.listFactories(), monitors );
+
         /*
          * We always need the mode switcher and we need it to restart on switchover.
          */

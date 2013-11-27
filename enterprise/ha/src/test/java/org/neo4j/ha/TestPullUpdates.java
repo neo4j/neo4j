@@ -165,13 +165,14 @@ public class TestPullUpdates
                     .newGraphDatabase();
             slave.shutdown();
 
-            long nodeId = -1;
-            Transaction tx = master.beginTx();
-            Node node = master.createNode();
-            node.setProperty( "from", "master" );
-            nodeId = node.getId();
-            tx.success();
-            tx.finish();
+            long nodeId;
+            try ( Transaction tx = master.beginTx() )
+            {
+                Node node = master.createNode();
+                node.setProperty( "from", "master" );
+                nodeId = node.getId();
+                tx.success();
+            }
 
             // Store is already in place, should pull updates
             slave = new HighlyAvailableGraphDatabaseFactory().
@@ -181,14 +182,12 @@ public class TestPullUpdates
                     .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup
                     .newGraphDatabase();
 
-            Transaction transaction = slave.beginTx();
-            try
+            slave.beginTx().close(); // Make sure switch to slave completes and so does the update pulling on startup
+
+            try ( Transaction tx = slave.beginTx() )
             {
                 assertEquals( "master", slave.getNodeById( nodeId ).getProperty( "from" ) );
-            }
-            finally
-            {
-                transaction.finish();
+                tx.success();
             }
         }
         finally

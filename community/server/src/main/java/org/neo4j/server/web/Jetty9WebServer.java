@@ -42,6 +42,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import ch.qos.logback.access.jetty.RequestLogImpl;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -131,7 +133,11 @@ public class Jetty9WebServer implements WebServer
         {
             jetty = new Server( new QueuedThreadPool( jettyMaxThreads ) );
 
-            ServerConnector connector = new ServerConnector(jetty);
+            HttpConfiguration httpConfig = new HttpConfiguration();
+            httpConfig.setRequestHeaderSize( 20 * 1024 );
+            HttpConnectionFactory httpFactory = new HttpConnectionFactory( httpConfig );
+
+            ServerConnector connector = new ServerConnector(jetty, httpFactory);
 
             connector.setPort( jettyHttpPort );
             connector.setHost( jettyAddr );

@@ -153,7 +153,7 @@ public enum ClusterState
                                     !memberList.get( context.me ).equals( context.boundAt() ) )
                             {
                                 context.getLogger( ClusterState.class ).info( String.format( "%s joining:%s, " +
-                                        "last delivered:%d", context.me.toString(),
+                                        "last delivered:%d", context.myName(),
                                         context.getConfiguration().toString(),
                                         state.getLatestReceivedInstanceId().getId() ) );
 
@@ -426,9 +426,10 @@ public enum ClusterState
                             boolean isInCluster = context.configuration.getMembers().containsKey( joiningId );
                             boolean isCurrentlyAlive = !context.heartbeatContext.getFailed().contains( joiningId );
                             boolean messageComesFromSameHost = request.getJoiningId().equals( context.getMyId() );
+                            boolean otherInstanceJoiningWithSameId = context.isInstanceWithIdCurrentlyJoining(joiningId);
 
                             boolean somethingIsWrong =
-                                    isInCluster && !messageComesFromSameHost && isCurrentlyAlive ;
+                                    (isInCluster && !messageComesFromSameHost && isCurrentlyAlive) || otherInstanceJoiningWithSameId ;
 
                             if ( somethingIsWrong )
                             {
@@ -440,6 +441,8 @@ public enum ClusterState
                             }
                             else
                             {
+                                context.instanceIsJoining(joiningId);
+
                                 outgoing.offer( message.copyHeadersTo( respond( ClusterMessage.configurationResponse, message,
                                         new ClusterMessage.ConfigurationResponseState( context.getConfiguration()
                                                 .getRoles(), context.getConfiguration().getMembers(),

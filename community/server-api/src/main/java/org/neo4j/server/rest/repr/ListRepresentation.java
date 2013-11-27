@@ -55,9 +55,21 @@ public class ListRepresentation extends Representation
 
     void serialize( ListSerializer serializer )
     {
-        for ( Representation repr : content )
+        Iterator<? extends Representation> contentIterator = content.iterator();
+
+        try
         {
-            repr.addTo( serializer );
+            while ( contentIterator.hasNext() )
+            {
+                Representation repr = contentIterator.next();
+                repr.addTo( serializer );
+            }
+        }
+        finally
+        {
+            // Make sure we exhaust this iterator in case it has an internal close mechanism
+            while (contentIterator.hasNext())
+                contentIterator.next();
         }
     }
 
