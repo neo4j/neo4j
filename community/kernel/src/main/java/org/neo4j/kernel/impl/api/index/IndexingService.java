@@ -220,8 +220,15 @@ public class IndexingService extends LifecycleAdapter
             Pair<IndexDescriptor, SchemaIndexProvider.Descriptor> descriptors = entry.getValue();
             IndexDescriptor indexDescriptor = descriptors.first();
             SchemaIndexProvider.Descriptor providerDescriptor = descriptors.other();
+
+            /*
+             * Passing in "false" for unique here may seem surprising, and.. well, yes, it is, I was surprised too.
+             * However, it is actually perfectly safe, because whenever we have constraint indexes here, they will
+             * be in a state where they didn't finish populating, and despite the fact that we re-create them here,
+             * they will get dropped as soon as recovery is completed by the constraint system.
+             */
             IndexProxy indexProxy =
-                createAndStartPopulatingIndexProxy( indexId, indexDescriptor, providerDescriptor, state == State.RUNNING );
+                createAndStartPopulatingIndexProxy( indexId, indexDescriptor, providerDescriptor, false );
             indexMap.putIndexProxy( indexId, indexProxy );
         }
 
@@ -432,14 +439,14 @@ public class IndexingService extends LifecycleAdapter
     private IndexProxy createAndStartPopulatingIndexProxy( final long ruleId,
                                                            final IndexDescriptor descriptor,
                                                            final SchemaIndexProvider.Descriptor providerDescriptor,
-                                                           final boolean unique ) throws IOException
+                                                           final boolean constraint ) throws IOException
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         IndexPopulator populator =
-            getPopulatorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( unique ) );
+            getPopulatorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( constraint ) );
 
         FailedIndexProxyFactory failureDelegateFactory =
             new FailedPopulatingIndexProxyFactory( descriptor, providerDescriptor, populator, indexUserDescription );
@@ -461,8 +468,8 @@ public class IndexingService extends LifecycleAdapter
                     OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
                             descriptor, providerDescriptor,
                             getOnlineAccessorFromProvider( providerDescriptor, ruleId,
-                                                           new IndexConfiguration( unique ) ) );
-                    if ( unique )
+                                                           new IndexConfiguration( constraint ) ) );
+                    if ( constraint )
                     {
                         return new TentativeConstraintIndexProxy( flipper, onlineProxy );
                     }
@@ -471,7 +478,7 @@ public class IndexingService extends LifecycleAdapter
                 catch ( IOException e )
                 {
                     return
-                        createAndStartFailedIndexProxy( ruleId, descriptor, providerDescriptor, unique, failure( e ) );
+                        createAndStartFailedIndexProxy( ruleId, descriptor, providerDescriptor, constraint, failure( e ) );
                 }
             }
         } );
