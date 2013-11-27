@@ -19,14 +19,15 @@
  */
 package org.neo4j.graphalgo.path;
 
-import static org.neo4j.graphalgo.GraphAlgoFactory.allPaths;
-import static org.neo4j.kernel.Traversal.expanderForAllTypes;
-
 import org.junit.Test;
+
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Path;
 
 import common.Neo4jAlgoTestCase;
+
+import static org.neo4j.graphalgo.GraphAlgoFactory.allPaths;
+import static org.neo4j.kernel.Traversal.expanderForAllTypes;
 
 public class TestAllPaths extends Neo4jAlgoTestCase
 {
@@ -39,7 +40,7 @@ public class TestAllPaths extends Neo4jAlgoTestCase
     public void testCircularGraph()
     {
         /* Layout
-         * 
+         *
          * (a)---(b)===(c)---(e)
          *         \   /
          *          (d)
@@ -69,7 +70,7 @@ public class TestAllPaths extends Neo4jAlgoTestCase
         graph.makeEdge( "b", "c" );
         graph.makeEdge( "b", "c" );
         graph.makeEdge( "c", "d" );
-        
+
         PathFinder<Path> finder = instantiatePathFinder( 10 );
         Iterable<Path> paths = finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) );
         assertPaths( paths, "a,b,c,d", "a,b,c,d", "a,b,c,d",

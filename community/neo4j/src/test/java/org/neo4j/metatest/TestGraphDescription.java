@@ -23,30 +23,36 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.GraphHolder;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class TestGraphDescription implements GraphHolder
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( TestGraphDescription.class );
     private static GraphDatabaseService graphdb;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
@@ -63,7 +69,7 @@ public class TestGraphDescription implements GraphHolder
     @Graph( "I know you" )
     public void canCreateGraphFromSingleString() throws Exception
     {
-        verifyIknowYou( "know", "I" );
+        verifyIKnowYou( "know", "I" );
     }
 
     @Test
@@ -75,22 +81,60 @@ public class TestGraphDescription implements GraphHolder
         Node n = graph.get( "a" );
         while ( unique.add( n ) )
         {
-            n = n.getSingleRelationship(
-                    DynamicRelationshipType.withName( "TO" ),
-                    Direction.OUTGOING ).getEndNode();
+            try(Transaction ignored = graphdb.beginTx())
+            {
+                n = n.getSingleRelationship(
+                        DynamicRelationshipType.withName( "TO" ),
+                        Direction.OUTGOING ).getEndNode();
+            }
         }
         assertEquals( graph.size(), unique.size() );
     }
-    
+
+    @Test
+    @Graph( { "a:Person EATS b:Banana" } )
+    public void ensurePeopleCanEatBananas() throws Exception
+    {
+        Map<String, Node> graph = data.get();
+        Node a = graph.get( "a" );
+        Node b = graph.get( "b" );
+
+        try(Transaction ignored = graphdb.beginTx())
+        {
+            assertTrue( a.hasLabel( label( "Person" ) ) );
+            assertTrue( b.hasLabel( label( "Banana" ) ) );
+        }
+    }
+
+    @Test
+    @Graph( { "a:Person EATS b:Banana", "a EATS b:Apple" } )
+    public void ensurePeopleCanEatBananasAndApples() throws Exception
+    {
+        Map<String, Node> graph = data.get();
+        Node a = graph.get( "a" );
+        Node b = graph.get( "b" );
+
+        try(Transaction ignored = graphdb.beginTx())
+        {
+            assertTrue( "Person label missing", a.hasLabel( label( "Person" ) ) );
+            assertTrue( "Banana label missing", b.hasLabel( label( "Banana" ) ) );
+            assertTrue( "Apple label missing", b.hasLabel( label( "Apple" ) ) );
+        }
+    }
+
     @Test
     @Graph( value = { "I know you" }, autoIndexNodes=true )
     public void canAutoIndexNodes() throws Exception
     {
         data.get();
-        assertTrue(
-                "can't look up node.",
-                graphdb().index().getNodeAutoIndexer().getAutoIndex().get(
-                        "name", "I" ).hasNext() );
+
+        try(Transaction ignored = graphdb.beginTx())
+        {
+            assertTrue(
+                    "can't look up node.",
+                    graphdb().index().getNodeAutoIndexer().getAutoIndex().get(
+                            "name", "I" ).hasNext() );
+        }
     }
     
     @Test
@@ -99,10 +143,14 @@ public class TestGraphDescription implements GraphHolder
     public void canAutoIndexNodesExplicitProps() throws Exception
     {
         data.get();
-        assertTrue(
-                "can't look up node.",
-                graphdb().index().getNodeAutoIndexer().getAutoIndex().get(
-                        "name", "I" ).hasNext() );
+
+        try(Transaction ignored = graphdb.beginTx())
+        {
+            assertTrue(
+                    "can't look up node.",
+                    graphdb().index().getNodeAutoIndexer().getAutoIndex().get(
+                            "name", "I" ).hasNext() );
+        }
     }
 
     @Test
@@ -116,47 +164,53 @@ public class TestGraphDescription implements GraphHolder
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex()
             throws Exception
     {
-        System.out.println( data.get() );
-        verifyIknowYou( "knows", "me" );
-        assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
-        assertFalse( "node autoindex enabled.",
-                graphdb().index().getNodeAutoIndexer().isEnabled() );
-        assertTrue(
-                "can't look up rel.",
-                graphdb().index().getRelationshipAutoIndexer().getAutoIndex().get(
-                        "name", "relProp" ).hasNext() );
-        assertTrue( "relationship autoindex enabled.",
-                graphdb().index().getRelationshipAutoIndexer().isEnabled() );
+        data.get();
+        verifyIKnowYou( "knows", "me" );
+        try(Transaction ignored = graphdb.beginTx())
+        {
+            assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
+            assertFalse( "node autoindex enabled.",
+                    graphdb().index().getNodeAutoIndexer().isEnabled() );
+            assertTrue(
+                    "can't look up rel.",
+                    graphdb().index().getRelationshipAutoIndexer().getAutoIndex().get(
+                            "name", "relProp" ).hasNext() );
+            assertTrue( "relationship autoindex enabled.",
+                    graphdb().index().getRelationshipAutoIndexer().isEnabled() );
+        }
     }
 
     @Graph( value = { "I know you" }, nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ) } ) } )
-    private void verifyIknowYou( String type, String myName )
+    private void verifyIKnowYou( String type, String myName )
     {
-        Map<String, Node> graph = data.get();
-        assertEquals( "Wrong graph size.", 2, graph.size() );
-        Node I = graph.get( "I" );
-        assertNotNull( "The node 'I' was not defined", I );
-        Node you = graph.get( "you" );
-        assertNotNull( "The node 'you' was not defined", you );
-        assertEquals( "'I' has wrong 'name'.", myName, I.getProperty( "name" ) );
-        assertEquals( "'you' has wrong 'name'.", "you",
-                you.getProperty( "name" ) );
+        try(Transaction ignored = graphdb.beginTx())
+        {
+            Map<String, Node> graph = data.get();
+            assertEquals( "Wrong graph size.", 2, graph.size() );
+            Node I = graph.get( "I" );
+            assertNotNull( "The node 'I' was not defined", I );
+            Node you = graph.get( "you" );
+            assertNotNull( "The node 'you' was not defined", you );
+            assertEquals( "'I' has wrong 'name'.", myName, I.getProperty( "name" ) );
+            assertEquals( "'you' has wrong 'name'.", "you",
+                    you.getProperty( "name" ) );
 
-        Iterator<Relationship> rels = I.getRelationships().iterator();
-        assertTrue( "'I' has too few relationships", rels.hasNext() );
-        Relationship rel = rels.next();
-        assertEquals( "'I' is not related to 'you'", you, rel.getOtherNode( I ) );
-        assertEquals( "Wrong relationship type.", type, rel.getType().name() );
-        assertFalse( "'I' has too many relationships", rels.hasNext() );
+            Iterator<Relationship> rels = I.getRelationships().iterator();
+            assertTrue( "'I' has too few relationships", rels.hasNext() );
+            Relationship rel = rels.next();
+            assertEquals( "'I' is not related to 'you'", you, rel.getOtherNode( I ) );
+            assertEquals( "Wrong relationship type.", type, rel.getType().name() );
+            assertFalse( "'I' has too many relationships", rels.hasNext() );
 
-        rels = you.getRelationships().iterator();
-        assertTrue( "'you' has too few relationships", rels.hasNext() );
-        rel = rels.next();
-        assertEquals( "'you' is not related to 'i'", I, rel.getOtherNode( you ) );
-        assertEquals( "Wrong relationship type.", type, rel.getType().name() );
-        assertFalse( "'you' has too many relationships", rels.hasNext() );
+            rels = you.getRelationships().iterator();
+            assertTrue( "'you' has too few relationships", rels.hasNext() );
+            rel = rels.next();
+            assertEquals( "'you' is not related to 'i'", I, rel.getOtherNode( you ) );
+            assertEquals( "Wrong relationship type.", type, rel.getType().name() );
+            assertFalse( "'you' has too many relationships", rels.hasNext() );
 
-        assertEquals( "wrong direction", I, rel.getStartNode() );
+            assertEquals( "wrong direction", I, rel.getStartNode() );
+        }
     }
 
     @BeforeClass

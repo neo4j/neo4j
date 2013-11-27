@@ -19,8 +19,10 @@
 package org.neo4j.examples;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -30,11 +32,13 @@ import org.neo4j.kernel.Uniqueness;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
-import static org.junit.Assert.*;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
+import static org.junit.Assert.assertEquals;
 
-public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
-{    
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+
+public class UniquenessOfPathsDocTest extends ImpermanentGraphJavaDocTestBase
+{
     /**
      * Uniqueness of Paths in traversals.
      * 
@@ -44,9 +48,9 @@ public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
      * 
      * @@graph
      * 
-     * In order to return all descendants 
+     * In order to return all descendants
      * of +Pet0+ which have the relation +owns+ to +Principal1+ (+Pet1+ and +Pet3+),
-     * the Uniqueness of the traversal needs to be set to 
+     * the Uniqueness of the traversal needs to be set to
      * +NODE_PATH+ rather than the default +NODE_GLOBAL+ so that nodes
      * can be traversed more that once, and paths that have
      * different nodes but can have some nodes in common (like the
@@ -58,7 +62,7 @@ public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
      * 
      * @@output
      * 
-     * In the default `path.toString()` implementation, `(1)--[knows,2]-->(4)` denotes 
+     * In the default `path.toString()` implementation, `(1)--[knows,2]-->(4)` denotes
      * a node with ID=1 having a relationship with ID 2 or type `knows` to a node with ID-4.
      * 
      * Let's create a new +TraversalDescription+ from the old one,
@@ -87,8 +91,7 @@ public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
         Node start = data.get().get( "Pet0" );
         gen.get().addSnippet( "graph", createGraphVizWithNodeId("Descendants Example Graph", graphdb(), gen.get().getTitle()) );
         gen.get();
-        gen.get()
-                .addTestSourceSnippets( this.getClass(), "traverser", "traverseNodeGlobal" );
+        gen.get().addTestSourceSnippets( this.getClass(), "traverser", "traverseNodeGlobal" );
         // START SNIPPET: traverser
         final Node target = data.get().get( "Principal1" );
         TraversalDescription td = Traversal.description()
@@ -98,11 +101,8 @@ public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
             @Override
             public Evaluation evaluate( Path path )
             {
-                if ( path.endNode().equals( target ) )
-                {
-                    return Evaluation.INCLUDE_AND_PRUNE;
-                }
-                return Evaluation.EXCLUDE_AND_CONTINUE;
+                boolean endNodeIsTarget = path.endNode().equals( target );
+                return Evaluation.of( endNodeIsTarget, !endNodeIsTarget );
             }
         } );
         
@@ -111,10 +111,13 @@ public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
         String output = "";
         int count = 0;
         //we should get two paths back, through Pet1 and Pet3
-        for ( Path path : results )
-        {       
-            count++;
-            output += path.toString() + "\n";
+        try ( Transaction ignore = db.beginTx() )
+        {
+            for ( Path path : results )
+            {
+                count++;
+                output += path.toString() + "\n";
+            }
         }
         gen.get().addSnippet( "output", createOutputSnippet( output ) );
         assertEquals( 2, count );
@@ -126,13 +129,15 @@ public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
         String output2 = "";
         count = 0;
         // we should get two paths back, through Pet1 and Pet3
-        for ( Path path : results )
+        try ( Transaction tx = db.beginTx() )
         {
-            count++;
-            output2 += path.toString() + "\n";
+            for ( Path path : results )
+            {
+                count++;
+                output2 += path.toString() + "\n";
+            }
         }
-        gen.get()
-                .addSnippet( "outNodeGlobal", createOutputSnippet( output2 ) );
+        gen.get().addSnippet( "outNodeGlobal", createOutputSnippet( output2 ) );
         assertEquals( 1, count );
     }
 }

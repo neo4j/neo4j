@@ -21,10 +21,14 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.traversal.BranchSelector;
-import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.graphdb.traversal.SideSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.TraversalContext;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public abstract class AbstractSelectorOrderer<T> implements SideSelector
 {
     private static final BranchSelector EMPTY_SELECTOR = new BranchSelector()
@@ -106,9 +110,5 @@ public abstract class AbstractSelectorOrderer<T> implements SideSelector
     {
         return selectorIndex == 0 ? Direction.OUTGOING : Direction.INCOMING;
     }
-    
-    protected void endCurrentSelector()
-    {
-        selectors[selectorIndex] = EMPTY_SELECTOR;
-    }
+
 }

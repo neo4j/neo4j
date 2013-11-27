@@ -334,7 +334,7 @@ public class TestCommonIterators
         File file = createTextFileWithLines( lines );
         try
         {
-            Iterable<String> iterable = IteratorUtil.asIterable( file );
+            Iterable<String> iterable = IteratorUtil.asIterable( file, "UTF-8" );
             assertEquals( Arrays.asList( lines ), IteratorUtil.asCollection( iterable ) );
         }
         finally

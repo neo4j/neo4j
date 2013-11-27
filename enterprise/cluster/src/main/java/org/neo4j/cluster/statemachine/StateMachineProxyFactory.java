@@ -21,7 +21,6 @@ package org.neo4j.cluster.statemachine;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -29,7 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
@@ -44,19 +43,20 @@ import org.neo4j.cluster.com.message.MessageType;
  * where "name" corresponds to the name of the method.
  */
 public class StateMachineProxyFactory
-        implements MessageProcessor, BindingListener
+        implements MessageProcessor
 {
     private StateMachines stateMachines;
     private StateMachineConversations conversations;
-    private volatile URI serverId;
+    private volatile InstanceId me;
 
     private Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<String, ResponseFuture>();
 
 
-    public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations )
+    public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations, InstanceId me )
     {
         this.stateMachines = stateMachines;
         this.conversations = conversations;
+        this.me = me;
     }
 
     public <CLIENT> CLIENT newProxy( Class<CLIENT> proxyInterface )
@@ -75,26 +75,26 @@ public class StateMachineProxyFactory
     {
         if ( method.getName().equals( "toString" ) )
         {
-            return serverId == null ? "" : serverId.toString();
+            return me.toString();
         }
 
         if ( method.getName().equals( "equals" ) )
         {
-            return ((StateMachineProxyHandler) Proxy.getInvocationHandler( arg )).getStateMachineProxyFactory()
-                    .serverId.equals( serverId );
+            return ((StateMachineProxyHandler) Proxy.getInvocationHandler( arg )).getStateMachineProxyFactory().me.equals( me );
         }
 
         String conversationId = conversations.getNextConversationId();
 
         try
         {
-            MessageType typeAsEnum = (MessageType) Enum.valueOf( (Class<? extends Enum>) stateMachine.getMessageType
-                    (), method.getName() );
+            Class<? extends MessageType> messageType = stateMachine.getMessageType();
+            MessageType typeAsEnum = (MessageType) Enum.valueOf( (Class<? extends Enum>) messageType, method.getName() );
             Message<?> message = Message.internal( typeAsEnum, arg );
-            if ( serverId != null )
+            if ( me != null )
             {
-                message.setHeader( Message.CONVERSATION_ID, conversationId ).setHeader( Message.CREATED_BY,
-                        serverId.toString() );
+                message.
+                    setHeader( Message.CONVERSATION_ID, conversationId ).
+                    setHeader( Message.CREATED_BY,me.toString() );
             }
 
             if ( method.getReturnType().equals( Void.TYPE ) )
@@ -115,12 +115,6 @@ public class StateMachineProxyFactory
         {
             throw new IllegalStateException( "No state machine can handle the method " + method.getName() );
         }
-    }
-
-    @Override
-    public void listeningAt( URI me )
-    {
-        serverId = me;
     }
 
     @Override

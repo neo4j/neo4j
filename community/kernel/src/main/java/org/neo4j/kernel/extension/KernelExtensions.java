@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.extension;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -31,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
@@ -42,6 +40,9 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+
 public class KernelExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
     private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
@@ -49,12 +50,12 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     private final LifeSupport life = new LifeSupport();
     private final Map<Iterable<String>, Lifecycle> extensions = new HashMap<Iterable<String>, Lifecycle>();
     private Iterable<KernelExtensionListener> listeners = Listeners.newListeners();
-    private final Config config;
+    private final UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy;
 
     public KernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Config config,
-                             DependencyResolver dependencyResolver )
+            DependencyResolver dependencyResolver, UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy )
     {
-        this.config = config;
+        this.unsatisfiedDepencyStrategy = unsatisfiedDepencyStrategy;
         this.kernelExtensionFactories = Iterables.addAll( new ArrayList<KernelExtensionFactory<?>>(),
                 kernelExtensionFactories );
         this.dependencyResolver = dependencyResolver;
@@ -93,14 +94,18 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     @Override
     public void init() throws Throwable
     {
-        if ( config.get( GraphDatabaseSettings.load_kernel_extensions ) )
+        for ( KernelExtensionFactory kernelExtensionFactory : kernelExtensionFactories )
         {
-            for ( KernelExtensionFactory kernelExtensionFactory : kernelExtensionFactories )
-            {
-                Object configuration = getKernelExtensionDependencies( kernelExtensionFactory );
+            Object configuration = getKernelExtensionDependencies( kernelExtensionFactory );
 
-                extensions.put( kernelExtensionFactory.getKeys(), life.add( kernelExtensionFactory.newKernelExtension
-                        ( configuration ) ) );
+            try
+            {
+                extensions.put( kernelExtensionFactory.getKeys(),
+                        life.add( kernelExtensionFactory.newKernelExtension( configuration ) ) );
+            }
+            catch ( UnsatisfiedDepencyException e )
+            {
+                unsatisfiedDepencyStrategy.handle( kernelExtensionFactory, e );
             }
         }
 
@@ -192,18 +197,12 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         listeners = Listeners.removeListener( listener, listeners );
     }
 
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
     @Override
-    public <T> T resolveDependency( final Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
+    public <T> T resolveDependency( final Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
     {
-        return selector.select( type, filter( new Predicate()
-        {
-            @Override
-            public boolean accept( Object extension )
-            {
-                return type.isInstance( extension );
-            }
-        }, life.getLifecycleInstances() ) );
+        Iterable<Lifecycle> filtered = filter( new TypeFilter( type ), life.getLifecycleInstances() );
+        Iterable<T> casted = map( new CastFunction( type ), filtered );
+        return selector.select( type, casted );
     }
 
     private Object getKernelExtensionDependencies( KernelExtensionFactory<?> factory )
@@ -214,13 +213,65 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
                 new KernelExtensionHandler() );
     }
 
+    public Iterable<KernelExtensionFactory<?>> listFactories()
+    {
+        return kernelExtensionFactories;
+    }
+
+    private static class TypeFilter<T> implements Predicate
+    {
+        private final Class<T> type;
+
+        public TypeFilter( Class<T> type )
+        {
+            this.type = type;
+        }
+
+        @Override
+        public boolean accept( Object extension )
+        {
+            return type.isInstance( extension );
+        }
+    }
+
     private class KernelExtensionHandler
             implements InvocationHandler
     {
         @Override
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
         {
-            return dependencyResolver.resolveDependency( method.getReturnType() );
+            try
+            {
+                return dependencyResolver.resolveDependency( method.getReturnType() );
+            }
+            catch ( IllegalArgumentException e )
+            {
+                throw new UnsatisfiedDepencyException( e );
+            }
+        }
+    }
+
+    private class CastFunction<T> implements Function<Object, T>
+    {
+        private final Class<T> type;
+
+        public CastFunction( Class<T> type )
+        {
+            this.type = type;
+        }
+
+        @Override
+        public T apply( Object o )
+        {
+            return type.cast( o );
+        }
+    }
+    
+    static class UnsatisfiedDepencyException extends RuntimeException
+    {
+        public UnsatisfiedDepencyException( Throwable cause )
+        {
+            super( cause );
         }
     }
 }

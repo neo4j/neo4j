@@ -19,16 +19,14 @@
  */
 package org.neo4j.ha;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -41,13 +39,32 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
+    @Before
+    public void stableCluster()
+    {
+        // Ensure a stable cluster before starting tests
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+    }
+
     @Test
     public void start_tx_as_slave_and_finish_it_after_having_switched_to_master_should_not_succeed() throws Exception
     {
@@ -59,7 +76,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         Transaction tx = db.beginTx();
         try
         {
-            db.getReferenceNode().setProperty( "name", "slave" );
+            db.createNode().setProperty( "name", "slave" );
             tx.success();
         }
         finally
@@ -68,10 +85,13 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             assertFinishGetsTransactionFailure( tx );
         }
 
-        cluster.await( ClusterManager.masterAvailable() );
+        cluster.await( masterAvailable() );
 
         // THEN
         assertEquals( db, cluster.getMaster() );
+        // to prevent a deadlock scenario which occurs if this test exists (and @After starts)
+        // before the db has recovered from its KERNEL_PANIC
+        awaitFullyOperational( db );
     }
 
     @Test
@@ -84,7 +104,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         Transaction tx = db.beginTx();
         try
         {
-            db.getReferenceNode().setProperty( "name", "slave" );
+            db.createNode().setProperty( "name", "slave" );
             tx.success();
         }
         finally
@@ -99,6 +119,9 @@ public class TransactionConstraintsIT extends AbstractClusterTest
 
         // THEN
         assertFalse( db.isMaster() );
+        // to prevent a deadlock scenario which occurs if this test exists (and @After starts)
+        // before the db has recovered from its KERNEL_PANIC
+        awaitFullyOperational( db );
     }
     
     @Test
@@ -222,23 +245,36 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         deadlockDetectionBetween( cluster.getAnySlave(), cluster.getMaster() );
     }
     
-    private void deadlockDetectionBetween( HighlyAvailableGraphDatabase slave1, HighlyAvailableGraphDatabase slave2 ) throws Exception
+    private void deadlockDetectionBetween( HighlyAvailableGraphDatabase slave1, final HighlyAvailableGraphDatabase slave2 ) throws Exception
     {
         // GIVEN
         // -- two members acquiring a read lock on the same entity
-        OtherThreadExecutor<HighlyAvailableGraphDatabase> thread2 = new OtherThreadExecutor<HighlyAvailableGraphDatabase>( "T2", slave2 );
+        final Node commonNode;
+        try(Transaction tx = slave1.beginTx())
+        {
+            commonNode = slave1.createNode();
+            tx.success();
+        }
+
+        OtherThreadExecutor<HighlyAvailableGraphDatabase> thread2 = new OtherThreadExecutor<>( "T2", slave2 );
         Transaction tx1 = slave1.beginTx();
         Transaction tx2 = thread2.execute( new BeginTx() );
-        tx1.acquireReadLock( slave1.getReferenceNode() );
-        thread2.execute( new AcquireReadLock( tx2, slave2.getReferenceNode() ) );
+        tx1.acquireReadLock( commonNode );
+        thread2.execute( new AcquireReadLockOnReferenceNode( tx2, commonNode ) );
         // -- and one of them wanting (and awaiting) to upgrade its read lock to a write lock
-        Future<Lock> writeLockFuture = thread2.executeDontWait( new AcquireWriteLock( tx2, slave2.getReferenceNode() ) );
+        Future<Lock> writeLockFuture = thread2.executeDontWait( new AcquireWriteLock( tx2, new Callable<Node>(){
+            @Override
+            public Node call() throws Exception
+            {
+                return commonNode;
+            }
+        } ) );
         thread2.waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
         
         try
         {
             // WHEN
-            tx1.acquireWriteLock( slave1.getReferenceNode() );
+            tx1.acquireWriteLock( commonNode );
             fail( "Deadlock exception should have been thrown" );
         }
         catch ( DeadlockDetectedException e )
@@ -247,12 +283,12 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         }
         finally
         {
-            tx1.finish();
+            tx1.close();
         }
         
         assertNotNull( writeLockFuture.get() );
         thread2.execute( new FinishTx( tx2, true ) );
-        thread2.shutdown();
+        thread2.close();
     }
 
     @Ignore( "Known issue where locks acquired from Transaction#acquireXXXLock() methods doesn't get properly released when calling Lock#release() method" )
@@ -262,8 +298,8 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         // GIVEN
         // -- a slave acquiring a lock on an ubiquitous node
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        OtherThreadExecutor<HighlyAvailableGraphDatabase> masterWorker = new OtherThreadExecutor<HighlyAvailableGraphDatabase>( "master worker", master );
-        Node node = createNode( master );
+        OtherThreadExecutor<HighlyAvailableGraphDatabase> masterWorker = new OtherThreadExecutor<>( "master worker", master );
+        final Node node = createNode( master );
         cluster.sync();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         Transaction slaveTx = slave.beginTx();
@@ -278,12 +314,19 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             // THEN
             // -- that entity should be able to be locked from another member
             Transaction masterTx = masterWorker.execute( new BeginTx() );
-            masterWorker.execute( new AcquireWriteLock( masterTx, node ), 1, SECONDS );
+            masterWorker.execute( new AcquireWriteLock( masterTx, new Callable<Node>()
+            {
+                @Override
+                public Node call() throws Exception
+                {
+                    return node;
+                }
+            } ), 1, SECONDS );
         }
         finally
         {
             slaveTx.finish();
-            masterWorker.shutdown();
+            masterWorker.close();
         }
     }
     
@@ -359,39 +402,71 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         }
     }
     
-    private static class AcquireReadLock implements WorkerCommand<HighlyAvailableGraphDatabase, Lock>
+    private static class AcquireReadLockOnReferenceNode implements WorkerCommand<HighlyAvailableGraphDatabase, Lock>
     {
         private final Transaction tx;
-        private final Node node;
+        private final Node commonNode;
 
-        public AcquireReadLock( Transaction tx, Node node )
+        public AcquireReadLockOnReferenceNode( Transaction tx, Node commonNode )
         {
             this.tx = tx;
-            this.node = node;
+            this.commonNode = commonNode;
         }
 
         @Override
         public Lock doWork( HighlyAvailableGraphDatabase state )
         {
-            return tx.acquireReadLock( node );
+            return tx.acquireReadLock( commonNode );
         }
     }
 
     private static class AcquireWriteLock implements WorkerCommand<HighlyAvailableGraphDatabase, Lock>
     {
         private final Transaction tx;
-        private final Node node;
+        private final Callable<Node> callable;
 
-        public AcquireWriteLock( Transaction tx, Node node )
+        public AcquireWriteLock( Transaction tx, Callable<Node> callable )
         {
             this.tx = tx;
-            this.node = node;
+            this.callable = callable;
         }
 
         @Override
-        public Lock doWork( HighlyAvailableGraphDatabase state )
+        public Lock doWork( HighlyAvailableGraphDatabase state ) throws Exception
         {
-            return tx.acquireWriteLock( node );
+            return tx.acquireWriteLock( callable.call() );
+        }
+    }
+
+    @Rule
+    public DumpProcessInformationRule dumpInfo = new DumpProcessInformationRule( 1, MINUTES, localVm( System.out ) );
+
+    private void awaitFullyOperational( GraphDatabaseService db ) throws InterruptedException
+    {
+        while ( true )
+        {
+            try
+            {
+                doABogusTransaction( db );
+                break;
+            }
+            catch ( Exception e )
+            {
+                Thread.sleep( 100 );
+            }
+        }
+    }
+
+    private void doABogusTransaction( GraphDatabaseService db ) throws Exception
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            db.createNode();
+        }
+        finally
+        {
+            tx.finish();
         }
     }
 }

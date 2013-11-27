@@ -19,15 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,6 +35,7 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -58,13 +50,23 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
+
 public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
@@ -80,16 +82,12 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
     long createNode()
     {
         GraphDatabaseAPI graphdb = server().getDatabase().getGraph();
-        Transaction tx = graphdb.beginTx();
-        Node node;
-        try {
-            node = graphdb.createNode();
-
+        try ( Transaction tx = graphdb.beginTx() )
+        {
+            Node node = graphdb.createNode();
             tx.success();
-        } finally {
-            tx.finish();
+            return node.getId();
         }
-        return node.getId();
     }
 
     /**
@@ -119,11 +117,11 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldCreateANamedNodeIndex() throws JsonParseException
+    public void shouldCreateANamedNodeIndex()
     {
         String indexName = "favorites";
         int expectedIndexes = helper.getNodeIndexes().length + 1;
-        Map<String, String> indexSpecification = new HashMap<String, String>();
+        Map<String, String> indexSpecification = new HashMap<>();
         indexSpecification.put( "name", indexName );
 
         gen().noGraph()
@@ -137,11 +135,11 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldCreateANamedNodeIndexWithSpaces() throws JsonParseException
+    public void shouldCreateANamedNodeIndexWithSpaces()
     {
         String indexName = "favorites with spaces";
         int expectedIndexes = helper.getNodeIndexes().length + 1;
-        Map<String, String> indexSpecification = new HashMap<String, String>();
+        Map<String, String> indexSpecification = new HashMap<>();
         indexSpecification.put( "name", indexName );
 
         gen()
@@ -214,7 +212,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     private Object generateNodeIndexCreationPayload( String key, String value, String nodeUri )
     {
-        Map<String, String> results = new HashMap<String, String>();
+        Map<String, String> results = new HashMap<>();
         results.put( "key", key );
         results.put( "value", value );
         results.put( "uri", nodeUri );
@@ -294,6 +292,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void orderedResultsAreSupersetOfUnordered() throws Exception
     {
+        // Given
         String indexName = "bobTheIndex";
         String key = "Name";
         String value = "Builder";
@@ -308,6 +307,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         LinkedHashMap<String, String> nodeMapUnordered = (LinkedHashMap) hits.iterator().next();
 
+        // When
         entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
                         + "?query=Name:Build~0.1%20AND%20Gender:Male&order=score" ).entity();
@@ -315,6 +315,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         LinkedHashMap<String, String> nodeMapOrdered = (LinkedHashMap) hits.iterator().next();
 
+        // Then
         for ( Map.Entry<String, String> unorderedEntry : nodeMapUnordered.entrySet() )
         {
             assertEquals( "wrong entry for key: " + unorderedEntry.getKey(),
@@ -411,8 +412,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
      * "http://uri.for.node.to.index"
      */
     @Test
-    public void shouldRespondWith201CreatedWhenIndexingJsonNodeUri() throws 
-            JsonParseException
+    public void shouldRespondWith201CreatedWhenIndexingJsonNodeUri()
     {
         final long nodeId = helper.createNode();
         final String key = "key";
@@ -508,7 +508,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 201, responseToPost.getStatus() );
         String indexLocation2 = responseToPost.getHeaders()
                 .getFirst( HttpHeaders.LOCATION );
-        Map<String, String> uriToName = new HashMap<String, String>();
+        Map<String, String> uriToName = new HashMap<>();
         uriToName.put( indexLocation1, name1 );
         uriToName.put( indexLocation2, name2 );
         responseToPost.close();
@@ -547,7 +547,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldReturn204WhenRemovingNodeIndexes() throws  JsonParseException
+    public void shouldReturn204WhenRemovingNodeIndexes()
     {
         String indexName = "kvnode";
         helper.createNodeIndex( indexName );
@@ -566,7 +566,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldBeAbleToRemoveIndexingById() throws  JsonParseException
+    public void shouldBeAbleToRemoveIndexingById()
     {
         String key1 = "kvkey1";
         String key2 = "kvkey2";
@@ -598,7 +598,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldBeAbleToRemoveIndexingByIdAndKey() throws  JsonParseException
+    public void shouldBeAbleToRemoveIndexingByIdAndKey()
     {
         String key1 = "kvkey1";
         String key2 = "kvkey2";
@@ -630,7 +630,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldBeAbleToRemoveIndexingByIdAndKeyAndValue() throws JsonParseException
+    public void shouldBeAbleToRemoveIndexingByIdAndKeyAndValue()
     {
         String key1 = "kvkey1";
         String key2 = "kvkey2";
@@ -753,16 +753,20 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
         assertEquals( value, data.get( key ) );
         assertEquals(Arrays.asList( 1, 2, 3), data.get( "array" ) );
-        Node node = graphdb().index().forNodes(index).get(key, value).getSingle();
-        assertEquals(value, node.getProperty(key));
-        assertArrayEquals(new int[]{1, 2, 3}, (int[]) node.getProperty("array"));
+        Node node;
+        try ( Transaction tx = graphdb().beginTx() )
+        {
+            node = graphdb().index().forNodes(index).get(key, value).getSingle();
+        }
+        assertThat(node, inTx( graphdb(), hasProperty( key ).withValue( value ) ));
+        assertThat(node, inTx( graphdb(), hasProperty( "array" ).withValue( new int[]{1, 2, 3} ) ));
     }
 
     /**
      * Get or create unique node (existing).
      * 
      * Here,
-     * a node is not created but the existing unique node returned, since another node 
+     * a node is not created but the existing unique node returned, since another node
      * is indexed with the same data already. The node data returned is then that of the
      * already existing node.
      */
@@ -773,8 +777,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         final String index = "people", key = "name", value = "Peter";
 
         GraphDatabaseService graphdb = graphdb();
-        Transaction tx = graphdb.beginTx();
-        try
+        try ( Transaction tx = graphdb().beginTx() )
         {
             Node peter = graphdb.createNode();
             peter.setProperty( key, value );
@@ -782,10 +785,6 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
             graphdb.index().forNodes( index ).add( peter, key, value );
 
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         helper.createNodeIndex( index );
@@ -838,7 +837,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
      * 
      * Here, in case
      * of an already existing node, an error should be returned. In this
-     * example, an existing node indexed with the same data 
+     * example, an existing node indexed with the same data
      * is found and an error is returned.
      */
     @Documented
@@ -850,8 +849,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         GraphDatabaseService graphdb = graphdb();
         helper.createNodeIndex( index );
         
-        Transaction tx = graphdb.beginTx();
-        try
+        try ( Transaction tx = graphdb.beginTx() )
         {
             Node peter = graphdb.createNode();
             peter.setProperty( key, value );
@@ -860,12 +858,8 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
        
-        final RestRequest request = RestRequest.req();
+        RestRequest.req();
         
         ResponseEntity response = gen.get().noGraph()
                                     .expectedStatus( 409 /* conflict */)
@@ -883,10 +877,70 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, data.get( "sequence" ) );
     }
 
-    
+    /**
+     * Add an existing node to unique index (not indexed).
+     * 
+     * Associates a node with the given key/value pair in the given unique
+     * index.
+     * 
+     * In this example, we are using `create_or_fail` uniqueness.
+     */
+    @Documented
+    @Test
+    public void addExistingNodeToUniqueIndexAdded() throws Exception
+    {
+        final String indexName = "favorites";
+        final String key = "some-key";
+        final String value = "some value";
+        long nodeId = createNode();
+        // implicitly create the index
+        gen().noGraph()
+                .expectedStatus( 201 /* created */ )
+                .payload(
+                        JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
+                                functionalTestHelper.nodeUri( nodeId ) ) ) )
+                .post( functionalTestHelper.indexNodeUri( indexName ) + "?uniqueness=create_or_fail" );
+        // look if we get one entry back
+        JaxRsResponse response = RestRequest.req()
+                .get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) );
+        String entity = response.getEntity();
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        assertEquals( 1, hits.size() );
+    }
+
+    /**
+     * Add an existing node to unique index (already indexed).
+     * 
+     * In this case, the node already exists in the index, and thus we get a `HTTP 409` status response,
+     * as we have set the uniqueness to `create_or_fail`.
+     * 
+     */
+    @Documented
+    @Test
+    public void addExistingNodeToUniqueIndexExisting() throws Exception
+    {
+        final String indexName = "favorites";
+        final String key = "some-key";
+        final String value = "some value";
+        long nodeId = createNode();
+        // implicitly create the index
+        gen().noGraph()
+                .expectedStatus( 201 /* created */ )
+                .payload(
+                        JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
+                                functionalTestHelper.nodeUri( nodeId ) ) ) )
+                .post( functionalTestHelper.indexNodeUri( indexName ) + "?uniqueness=create_or_fail" );
+        gen().noGraph()
+                .expectedStatus( 409 /* conflict */ )
+                .payload(
+                        JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
+                                functionalTestHelper.nodeUri( nodeId ) ) ) )
+                .post( functionalTestHelper.indexNodeUri( indexName ) + "?uniqueness=create_or_fail" );
+    }
+
     /**
      * Backward Compatibility Test (using old syntax ?unique)
-     * Put node if absent - Create. 
+     * Put node if absent - Create.
      * 
      * Add a node to an index unless a node already exists for the given index data. In
      * this case, a new node is created since nothing existing is found in the index.
@@ -897,10 +951,11 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
     {
         final String index = "people", key = "name", value = "Mattias";
         helper.createNodeIndex( index );
+        String uri = functionalTestHelper.nodeIndexUri() + index + "?unique";
         gen().expectedStatus( 201 /* created */ )
                  .payloadType( MediaType.APPLICATION_JSON_TYPE )
                  .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
-                 .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
+                 .post( uri );
     }
 
     private static <T> T assertCast( Class<T> type, Object object )
@@ -908,6 +963,4 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertTrue( type.isInstance( object ) );
         return type.cast( object );
     }
-    
-    
 }

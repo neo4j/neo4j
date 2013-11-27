@@ -45,7 +45,7 @@ import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.shell.util.json.JSONObject;
 
 @Service.Implementation( App.class )
-public class IndexProviderShellApp extends GraphDatabaseApp
+public class IndexProviderShellApp extends TransactionProvidingApp
 {
     {
         addOptionDefinition( "g", new OptionDefinition( OptionValueType.NONE,
@@ -87,7 +87,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
     @Override
     public String getDescription()
     {
-        return "Access the integrated index for your Neo4j graph database. " +
+        return "Access the legacy indexes for your Neo4j graph database. " +
         "Use -g for getting nodes, -i and -r to manipulate.\nExamples:\n" +
         "$ index -i persons name  (will index property 'name' with its value for current node in the 'persons' index)\n" +
         "$ index -g persons name \"Thomas A. Anderson\"  (will get nodes matching that name from the 'persons' index)\n" +
@@ -239,7 +239,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         {
             return;
         }
-        String oldValue = value != null ? 
+        String oldValue = value != null ?
                 getServer().getDb().index().setConfiguration( index, key, value ) :
                 getServer().getDb().index().removeConfiguration( index, key );
         printWarning( out );
@@ -256,7 +256,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         Class<? extends PropertyContainer> entityType = getEntityType( parser );
         if ( getIndex( indexName, entityType, null ) != null )
         {
-            out.println( entityType.getClass().getSimpleName() + " index '" + indexName + "' already exists" ); 
+            out.println( entityType.getClass().getSimpleName() + " index '" + indexName + "' already exists" );
             return;
         }
         

@@ -44,11 +44,9 @@ public interface XaConnection
      */
     XAResource getXaResource();
 
-    boolean enlistResource( Transaction javaxTx )
-        throws SystemException, RollbackException;
+    boolean enlistResource( Transaction javaxTx ) throws SystemException, RollbackException;
 
-    boolean delistResource( Transaction tx, int tmsuccess )
-        throws java.lang.IllegalStateException, javax.transaction.SystemException;
+    boolean delistResource( Transaction tx, int tmsuccess ) throws IllegalStateException, SystemException;
 
     /**
      * Destroys this connection and depending on <CODE>XAResource</CODE>

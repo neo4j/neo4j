@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Test;
+
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.util.RelIdArray;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -27,11 +33,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import org.junit.Test;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.util.RelIdArray;
 
 public class TestOperationsOnDeletedRelationships
 {

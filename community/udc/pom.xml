@@ -3,20 +3,21 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.2-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-udc</artifactId>
   <name>Neo4j - Usage Data Collection</name>
-  <version>1.9.2-SNAPSHOT</version>
+  <version>2.0-SNAPSHOT</version>
   <description>Collects simple statistics about server deployment.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
     <bundle.namespace>org.neo4j.ext.udc</bundle.namespace>
     <short-name>udc</short-name>
+    <version-package>udc.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/usage-data-collector.html</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
@@ -194,7 +195,7 @@
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
-      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
     </site>
   </distributionManagement>
 

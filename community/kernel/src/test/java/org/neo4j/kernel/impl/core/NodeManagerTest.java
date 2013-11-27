@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,14 +28,27 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class NodeManagerTest
 {
@@ -51,7 +57,7 @@ public class NodeManagerTest
     @Before
     public void init()
     {
-        db = new ImpermanentGraphDatabase();
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
     
     @After
@@ -74,7 +80,7 @@ public class NodeManagerTest
         delete( node );
 
         //THEN
-        assertThat( tracker.removed, is( "1:wut" ) );
+        assertThat( tracker.removed, is( "0:wut" ) );
     }
 
     @Test
@@ -95,7 +101,7 @@ public class NodeManagerTest
         tx.finish();
 
         //THEN prop is removed only once
-        assertThat( tracker.removed, is( "1:wut" ) );
+        assertThat( tracker.removed, is( "0:wut" ) );
     }
 
     @Test
@@ -120,7 +126,6 @@ public class NodeManagerTest
     {
         // GIVEN
         // Three nodes
-        Node referenceNode = db.getReferenceNode();
         Transaction tx = db.beginTx();
         Node firstCommittedNode = db.createNode();
         Node secondCommittedNode = db.createNode();
@@ -140,12 +145,12 @@ public class NodeManagerTest
         Node secondAdditionalNode = db.createNode();
         thirdCommittedNode.delete();
         List<Node> allNodes = addToCollection( getNodeManager().getAllNodes(), new ArrayList<Node>() );
-        Set<Node> allNodesSet = new HashSet<Node>( allNodes );
+        Set<Node> allNodesSet = new HashSet<>( allNodes );
         tx.finish();
 
         // THEN
         assertEquals( allNodes.size(), allNodesSet.size() );
-        assertEquals( asSet( referenceNode, firstCommittedNode, firstAdditionalNode, secondAdditionalNode ), allNodesSet );
+        assertEquals( asSet( firstCommittedNode, firstAdditionalNode, secondAdditionalNode ), allNodesSet );
     }
     
     @Test
@@ -172,7 +177,7 @@ public class NodeManagerTest
         thirdCommittedRelationship.delete();
         List<Relationship> allRelationships = addToCollection( getNodeManager().getAllRelationships(),
                 new ArrayList<Relationship>() );
-        Set<Relationship> allRelationshipsSet = new HashSet<Relationship>( allRelationships );
+        Set<Relationship> allRelationshipsSet = new HashSet<>( allRelationships );
         tx.finish();
 
         // THEN
@@ -180,27 +185,44 @@ public class NodeManagerTest
         assertEquals( asSet( firstCommittedRelationship, firstAdditionalRelationship, secondAdditionalRelationship ),
                 allRelationshipsSet );
     }
-    
+
     @Test
     public void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
     {
         // GIVEN
-        Transaction tx = db.beginTx();
-        Node node1 = db.createNode();
-        Node node2 = db.createNode();
-        tx.success();
-        tx.finish();
-        
-        // WHEN
+        {
+            Transaction tx = db.beginTx();
+            db.createNode();
+            db.createNode();
+            tx.success();
+            tx.finish();
+        }
+
+        // WHEN iterator is started
+        Transaction transaction = db.beginTx();
         Iterator<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
         allNodes.next();
-        tx = db.beginTx();
-        Node node3 = db.createNode();
-        tx.success();
-        tx.finish();
 
-        // THEN
-        assertEquals( asList( node1, node2, node3 ), addToCollection( allNodes, new ArrayList<Node>() ) );
+        // and WHEN another node is then added
+        Thread thread = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Transaction newTx = db.beginTx();
+                assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
+                db.createNode();
+                newTx.success();
+                newTx.finish();
+            }
+        } );
+        thread.start();
+        thread.join();
+
+
+        // THEN the new node is picked up by the iterator
+        assertThat( addToCollection( allNodes, new ArrayList<Node>() ).size(), is( 2 ) );
+        transaction.finish();
     }
     
     @Test
@@ -214,17 +236,17 @@ public class NodeManagerTest
         tx.finish();
         
         // WHEN
-        Iterator<Relationship> allRelationships = GlobalGraphOperations.at( db ).getAllRelationships().iterator();
         tx = db.beginTx();
+        Iterator<Relationship> allRelationships = GlobalGraphOperations.at( db ).getAllRelationships().iterator();
         Relationship relationship3 = createRelationshipAssumingTxWith( "key", 3 );
-        tx.success();
-        tx.finish();
 
         // THEN
         assertEquals( asList( relationship1, relationship2, relationship3 ),
                 addToCollection( allRelationships, new ArrayList<Relationship>() ) );
+        tx.success();
+        tx.finish();
     }
-    
+
     private void delete( Relationship relationship )
     {
         Transaction tx = db.beginTx();

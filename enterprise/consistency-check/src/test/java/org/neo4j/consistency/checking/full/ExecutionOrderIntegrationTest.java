@@ -19,17 +19,9 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.withSettings;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,8 +29,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
+import org.neo4j.consistency.checking.CheckerEngine;
+import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.PrimitiveRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -57,14 +52,24 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-import org.neo4j.test.GraphStoreFixture;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.withSettings;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
 
 public class ExecutionOrderIntegrationTest
 {
@@ -75,17 +80,12 @@ public class ExecutionOrderIntegrationTest
         protected void generateInitialData( GraphDatabaseService graphDb )
         {
             // TODO: create bigger sample graph here
-            org.neo4j.graphdb.Transaction tx = graphDb.beginTx();
-            try
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
             {
                 Node node1 = set( graphDb.createNode() );
                 Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
                 node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "C" ) );
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
     };
@@ -95,7 +95,7 @@ public class ExecutionOrderIntegrationTest
     public void shouldRunSameChecksInMultiPassAsInSingleSingleThreadedPass() throws Exception
     {
         // given
-        StoreAccess store = fixture.storeAccess();
+        StoreAccess store = fixture.directStoreAccess().nativeStores();
         DiffRecordAccess access = FullCheck.recordAccess( store );
 
         FullCheck singlePass = new FullCheck( config( TaskExecutionOrder.SINGLE_THREADED ),
@@ -110,10 +110,11 @@ public class ExecutionOrderIntegrationTest
         InvocationLog multiPassChecks = new InvocationLog();
 
         // when
-        singlePass.execute( store, new LogDecorator( singlePassChecks ), access,
-                new InconsistencyReport( logger, singlePassSummary ) );
-        multiPass.execute( store, new LogDecorator( multiPassChecks ), access,
-                new InconsistencyReport( logger, multiPassSummary ) );
+        singlePass.execute( fixture.directStoreAccess(), new LogDecorator( singlePassChecks ), access, new InconsistencyReport( logger,
+                singlePassSummary ) );
+
+        multiPass.execute( fixture.directStoreAccess(), new LogDecorator( multiPassChecks ), access, new InconsistencyReport( logger,
+                multiPassSummary ) );
 
         // then
         verifyZeroInteractions( logger );
@@ -136,20 +137,27 @@ public class ExecutionOrderIntegrationTest
 
     static Config config( TaskExecutionOrder executionOrder )
     {
-        return new Config( stringMap( ConsistencyCheckSettings.consistency_check_execution_order.name(),
-                executionOrder.name() ),
+        return new Config( stringMap(
+                ConsistencyCheckSettings.consistency_check_execution_order.name(), executionOrder.name() ),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private static class InvocationLog
     {
-        private final Map<String, Throwable> data = new HashMap<String, Throwable>();
-        private final Map<String, Integer> duplicates = new HashMap<String, Integer>();
+        private final Map<String, Throwable> data = new HashMap<>();
+        private final Map<String, Integer> duplicates = new HashMap<>();
 
         @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void log( PendingReferenceCheck check, InvocationOnMock invocation )
         {
-            StringBuilder entry = new StringBuilder( invocation.getMethod().getName() ).append( '(' );
+            Method method = invocation.getMethod();
+            if ( Object.class == method.getDeclaringClass() && "finalize".equals( method.getName() ) )
+            {
+                /* skip invocations to finalize - they are not of interest to us,
+                 * and GC is not predictable enough to reliably trace this. */
+                return;
+            }
+            StringBuilder entry = new StringBuilder( method.getName() ).append( '(' );
             entry.append( check );
             for ( Object arg : invocation.getArguments() )
             {
@@ -178,31 +186,35 @@ public class ExecutionOrderIntegrationTest
     {
         if ( !singlePassChecks.keySet().equals( multiPassChecks.keySet() ) )
         {
-            Map<String, Throwable> missing = new HashMap<String, Throwable>( singlePassChecks );
-            Map<String, Throwable> extras = new HashMap<String, Throwable>( multiPassChecks );
+            Map<String, Throwable> missing = new HashMap<>( singlePassChecks );
+            Map<String, Throwable> extras = new HashMap<>( multiPassChecks );
             missing.keySet().removeAll( multiPassChecks.keySet() );
             extras.keySet().removeAll( singlePassChecks.keySet() );
+
+            StringBuilder headers = new StringBuilder("\n");
             StringWriter diff = new StringWriter();
             PrintWriter writer = new PrintWriter( diff );
             if ( !missing.isEmpty() )
             {
                 writer.append( "These expected checks were missing:\n" );
-                for ( Throwable check : missing.values() )
+                for ( Map.Entry<String, Throwable> check : missing.entrySet() )
                 {
                     writer.append( "  " );
-                    check.printStackTrace( writer );
+                    headers.append( "Missing: " ).append( check.getKey() ).append( "\n" );
+                    check.getValue().printStackTrace( writer );
                 }
             }
             if ( !extras.isEmpty() )
             {
                 writer.append( "These extra checks were not expected:\n" );
-                for ( Throwable check : extras.values() )
+                for ( Map.Entry<String, Throwable> check : extras.entrySet() )
                 {
                     writer.append( "  " );
-                    check.printStackTrace( writer );
+                    headers.append( "Unexpected: " ).append( check.getKey() ).append( "\n" );
+                    check.getValue().printStackTrace( writer );
                 }
             }
-            fail( diff.toString() );
+            fail( headers.toString() + diff.toString() );
         }
     }
 
@@ -215,10 +227,10 @@ public class ExecutionOrderIntegrationTest
             this.log = log;
         }
 
-        <REC extends AbstractBaseRecord, REP extends ConsistencyReport<REC, REP>> RecordCheck<REC, REP> logging(
+        <REC extends AbstractBaseRecord, REP extends ConsistencyReport> RecordCheck<REC, REP> logging(
                 RecordCheck<REC, REP> checker )
         {
-            return new LoggingChecker<REC, REP>( checker, log );
+            return new LoggingChecker<>( checker, log );
         }
 
         @Override
@@ -251,22 +263,36 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport>
-        decoratePropertyKeyChecker(
-                RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
+        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport>
+        decoratePropertyKeyTokenChecker(
+                RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> decorateLabelChecker(
-                RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> checker )
+        public RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
+                RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+        {
+            return logging( checker );
+        }
+
+        @Override
+        public RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
+                RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
+        {
+            return logging( checker );
+        }
+
+        @Override
+        public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
+                RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
         {
             return logging( checker );
         }
     }
 
-    private static class LoggingChecker<REC extends AbstractBaseRecord, REP extends ConsistencyReport<REC, REP>>
+    private static class LoggingChecker<REC extends AbstractBaseRecord, REP extends ConsistencyReport>
             implements RecordCheck<REC, REP>
     {
         private final RecordCheck<REC, REP> checker;
@@ -279,15 +305,16 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public void check( REC record, REP report, RecordAccess records )
+        public void check( REC record, CheckerEngine<REC, REP> engine, RecordAccess records )
         {
-            checker.check( record, report, new ComparativeLogging( (DiffRecordAccess) records, log ) );
+            checker.check( record, engine, new ComparativeLogging( (DiffRecordAccess) records, log ) );
         }
 
         @Override
-        public void checkChange( REC oldRecord, REC newRecord, REP report, DiffRecordAccess records )
+        public void checkChange( REC oldRecord, REC newRecord, CheckerEngine<REC, REP> engine,
+                                 DiffRecordAccess records )
         {
-            checker.checkChange( oldRecord, newRecord, report, new ComparativeLogging( records, log ) );
+            checker.checkChange( oldRecord, newRecord, engine, new ComparativeLogging( records, log ) );
         }
     }
 
@@ -308,7 +335,7 @@ public class ExecutionOrderIntegrationTest
         {
             reference.dispatch( mock( (Class<PendingReferenceCheck<T>>) reporter.getClass(),
                     withSettings().spiedInstance( reporter )
-                            .defaultAnswer( new ReporterSpy<T>( reference, reporter, log ) ) ) );
+                            .defaultAnswer( new ReporterSpy<>( reference, reporter, log ) ) ) );
         }
     }
 
@@ -349,7 +376,7 @@ public class ExecutionOrderIntegrationTest
 
         private <T extends AbstractBaseRecord> LoggingReference<T> logging( RecordReference<T> actual )
         {
-            return new LoggingReference<T>( actual, log );
+            return new LoggingReference<>( actual, log );
         }
 
         @Override
@@ -374,6 +401,12 @@ public class ExecutionOrderIntegrationTest
         public RecordReference<NeoStoreRecord> previousGraph()
         {
             return logging( access.previousGraph() );
+        }
+
+        @Override
+        public DynamicRecord changedSchema( long id )
+        {
+            return access.changedSchema( id );
         }
 
         @Override
@@ -407,6 +440,12 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
+        public RecordReference<DynamicRecord> schema( long id )
+        {
+            return logging( access.schema( id ) );
+        }
+
+        @Override
         public RecordReference<NodeRecord> node( long id )
         {
             return logging( access.node( id ) );
@@ -425,13 +464,13 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+        public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
         {
-            return logging( access.relationshipLabel( id ) );
+            return logging( access.relationshipType( id ) );
         }
 
         @Override
-        public RecordReference<PropertyIndexRecord> propertyKey( int id )
+        public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
         {
             return logging( access.propertyKey( id ) );
         }
@@ -449,9 +488,27 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordReference<DynamicRecord> relationshipLabelName( int id )
+        public RecordReference<DynamicRecord> relationshipTypeName( int id )
         {
-            return logging( access.relationshipLabelName( id ) );
+            return logging( access.relationshipTypeName( id ) );
+        }
+
+        @Override
+        public RecordReference<DynamicRecord> nodeLabels( long id )
+        {
+            return logging( access.nodeLabels( id ) );
+        }
+
+        @Override
+        public RecordReference<LabelTokenRecord> label( int id )
+        {
+            return logging( access.label( id ) );
+        }
+
+        @Override
+        public RecordReference<DynamicRecord> labelName( int id )
+        {
+            return logging( access.labelName( id ) );
         }
 
         @Override

@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.plugins.BadPluginInvocationException;
@@ -68,11 +69,19 @@ public class ExtensionService
         this.graphDb = database.getGraph();
     }
 
+    public OutputFormat getOutputFormat()
+    {
+        return output;
+    }
+
     private Node node( long id ) throws NodeNotFoundException
     {
-        try
+        try(Transaction tx = graphDb.beginTx())
         {
-            return graphDb.getNodeById( id );
+            Node node = graphDb.getNodeById( id );
+
+            tx.success();
+            return node;
         }
         catch ( NotFoundException e )
         {
@@ -82,9 +91,12 @@ public class ExtensionService
 
     private Relationship relationship( long id ) throws RelationshipNotFoundException
     {
-        try
+        try(Transaction tx = graphDb.beginTx())
         {
-            return graphDb.getRelationshipById( id );
+            Relationship relationship = graphDb.getRelationshipById( id );
+
+            tx.success();
+            return relationship;
         }
         catch ( NotFoundException e )
         {
@@ -193,7 +205,7 @@ public class ExtensionService
         }
         catch ( Exception e )
         {
-            return output.serverError( e.getCause() );
+            return output.serverError( e );
         }
     }
 
@@ -212,7 +224,7 @@ public class ExtensionService
         }
         catch ( Exception e )
         {
-            return output.serverError( e.getCause() );
+            return output.serverError( e );
         }
     }
 
@@ -248,7 +260,7 @@ public class ExtensionService
         }
         catch ( Exception e )
         {
-            return output.serverError( e.getCause() );
+            return output.serverError( e );
         }
     }
 
@@ -267,7 +279,7 @@ public class ExtensionService
         }
         catch ( Exception e )
         {
-            return output.serverError( e.getCause() );
+            return output.serverError( e );
         }
     }
 

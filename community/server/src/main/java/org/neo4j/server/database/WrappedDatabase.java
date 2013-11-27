@@ -20,42 +20,41 @@
 package org.neo4j.server.database;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerConfigurator;
 
-public class WrappedDatabase extends Database {
+public class WrappedDatabase extends CommunityDatabase
+{
+    private final AbstractGraphDatabase db;
 
-	@SuppressWarnings("deprecation")
-	public WrappedDatabase(AbstractGraphDatabase db) {
-		this.graph = db;
-	}
-	
-	@Override
-	public void init() throws Throwable 
-	{
-		
-	}
-
-	@Override
-	public void start() throws Throwable 
-	{
-		
-	}
-
-	@Override
-	public void stop() throws Throwable 
-	{
-		
-	}
-
-    @Override
-	public void shutdown()
+    public WrappedDatabase( AbstractGraphDatabase db )
     {
-        
-    }
-    
-    @Override
-	public String getLocation()
-    {
-        return graph.getStoreDir();
+        this( db, new ServerConfigurator( db ) );
     }
 
+    public WrappedDatabase( AbstractGraphDatabase db, Configurator configurator )
+    {
+        super( configurator );
+        this.db = db;
+        try
+        {
+            start();
+        }
+        catch ( Throwable throwable )
+        {
+            throw new RuntimeException( throwable );
+        }
+    }
+
+    @Override
+    protected AbstractGraphDatabase createDb()
+    {
+        return db;
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        // No-op
+    }
 }

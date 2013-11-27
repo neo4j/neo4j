@@ -21,12 +21,18 @@ package org.neo4j.server.helpers;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -39,83 +45,17 @@ public class ServerHelper
             return;
         }
 
-        new Transactor( server.getDatabase().getGraph(), new UnitOfWork()
-        {
+        rollbackAllOpenTransactions( server );
 
-            @Override
-            public void doWork()
-            {
-                deleteAllNodesAndRelationships( server );
-
-                deleteAllIndexes( server );
-            }
-
-            private void deleteAllNodesAndRelationships( final NeoServer server )
-            {
-                Iterable<Node> allNodes = GlobalGraphOperations.at( server.getDatabase().getGraph() ).getAllNodes();
-                for ( Node n : allNodes )
-                {
-                    Iterable<Relationship> relationships = n.getRelationships();
-                    for ( Relationship rel : relationships )
-                    {
-                        rel.delete();
-                    }
-                    if ( n.getId() != 0 )
-                    { // Don't delete the reference node - tests depend on it
-                      // :-(
-                        n.delete();
-                    }
-                    else
-                    { // Remove all state from the reference node instead
-                        for ( String key : n.getPropertyKeys() )
-                        {
-                            n.removeProperty( key );
-                        }
-                    }
-                }
-            }
-
-            private void deleteAllIndexes( final NeoServer server )
-            {
-                IndexManager indexManager = server.getDatabase().getGraph().index();
-                
-                for ( String indexName : indexManager.nodeIndexNames() )
-                {
-                	try{
-	                    server.getDatabase().getGraph().index()
-	                            .forNodes( indexName )
-	                            .delete();
-                	} catch(UnsupportedOperationException e) {
-                		// Encountered a read-only index.
-                	}
-                }
-
-                for ( String indexName : indexManager.relationshipIndexNames() )
-                {
-                	try {
-	                    server.getDatabase().getGraph().index()
-	                            .forRelationships( indexName )
-	                            .delete();
-                	} catch(UnsupportedOperationException e) {
-                		// Encountered a read-only index.
-                	}
-                }
-                
-                for(String k : indexManager.getNodeAutoIndexer().getAutoIndexedProperties()) 
-                {
-                    indexManager.getNodeAutoIndexer().stopAutoIndexingProperty(k);
-                }
-                indexManager.getNodeAutoIndexer().setEnabled(false);
-                
-                for(String k : indexManager.getRelationshipAutoIndexer().getAutoIndexedProperties()) 
-                {
-                    indexManager.getRelationshipAutoIndexer().stopAutoIndexingProperty(k);
-                }
-                indexManager.getRelationshipAutoIndexer().setEnabled(false);
-            }
-        } ).execute();
+        cleanTheDatabase( server.getDatabase().getGraph() );
 
         removeLogs( server );
+    }
+
+    public static void cleanTheDatabase( GraphDatabaseAPI db )
+    {
+        new Transactor( db, new DeleteAllData( db ) ).execute();
+        new Transactor( db, new DeleteAllSchema( db ) ).execute();
     }
 
     private static void removeLogs( NeoServer server )
@@ -136,28 +76,183 @@ public class ServerHelper
         return createServer( false, null );
     }
 
-    public static NeoServer createPersistentServer(File path) throws IOException
+    public static NeoServer createPersistentServer( File path ) throws IOException
     {
         return createServer( true, path );
     }
 
     private static NeoServer createServer( boolean persistent, File path ) throws IOException
     {
-        ServerBuilder builder = ServerBuilder.server();
+        CommunityServerBuilder builder = CommunityServerBuilder.server();
         configureHostname( builder );
-        if ( persistent ) builder = builder.persistent();
+        if ( persistent )
+        {
+            builder = builder.persistent();
+        }
         NeoServer server = builder
-                .usingDatabaseDir( path != null ? path.getAbsolutePath() : null)
+                .usingDatabaseDir( path != null ? path.getAbsolutePath() : null )
                 .build();
+
+        checkServerCanStart( server.baseUri().getHost(), server.baseUri().getPort() );
+
         server.start();
         return server;
     }
 
-    private static void configureHostname( ServerBuilder builder )
+    private static void checkServerCanStart( String host, int port ) throws IOException
+    {
+        ServerSocket serverSocket = null;
+        try
+        {
+            serverSocket = new ServerSocket( port, 1, InetAddress.getByName( host ) );
+        }
+        catch ( IOException ex )
+        {
+            throw new RuntimeException( "Unable to start server on " + host + ":" + port, ex );
+        }
+        finally
+        {
+            if ( serverSocket != null )
+            {
+                serverSocket.close();
+            }
+        }
+    }
+
+    private static void configureHostname( CommunityServerBuilder builder )
     {
         String hostName = System.getProperty( "neo-server.test.hostname" );
-        if (StringUtils.isNotEmpty( hostName )) {
+        if ( StringUtils.isNotEmpty( hostName ) )
+        {
             builder.onHost( hostName );
+        }
+    }
+
+    private static void rollbackAllOpenTransactions( NeoServer server )
+    {
+        server.getTransactionRegistry().rollbackAllSuspendedTransactions();
+    }
+
+    private static class DeleteAllData implements UnitOfWork
+    {
+        private final GraphDatabaseAPI db;
+
+        public DeleteAllData( GraphDatabaseAPI db )
+        {
+            this.db = db;
+        }
+
+        @Override
+        public void doWork()
+        {
+            deleteAllNodesAndRelationships();
+            deleteAllIndexes();
+        }
+
+        private void deleteAllNodesAndRelationships()
+        {
+            Iterable<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes();
+            for ( Node n : allNodes )
+            {
+                Iterable<Relationship> relationships = n.getRelationships();
+                for ( Relationship rel : relationships )
+                {
+                    rel.delete();
+                }
+                if ( n.getId() != 0 )
+                { // Don't delete the reference node - tests depend on it
+                    // :-(
+                    n.delete();
+                }
+                else
+                { // Remove all state from the reference node instead
+                    for ( String key : n.getPropertyKeys() )
+                    {
+                        n.removeProperty( key );
+                    }
+                }
+            }
+        }
+
+        private void deleteAllIndexes()
+        {
+            IndexManager indexManager = db.index();
+
+            for ( String indexName : indexManager.nodeIndexNames() )
+            {
+                try
+                {
+                    db.index()
+                      .forNodes( indexName )
+                      .delete();
+                }
+                catch ( UnsupportedOperationException e )
+                {
+                    // Encountered a read-only index.
+                }
+            }
+
+            for ( String indexName : indexManager.relationshipIndexNames() )
+            {
+                try
+                {
+                    db.index()
+                      .forRelationships( indexName )
+                      .delete();
+                }
+                catch ( UnsupportedOperationException e )
+                {
+                    // Encountered a read-only index.
+                }
+            }
+
+            for ( String k : indexManager.getNodeAutoIndexer().getAutoIndexedProperties() )
+            {
+                indexManager.getNodeAutoIndexer().stopAutoIndexingProperty( k );
+            }
+            indexManager.getNodeAutoIndexer().setEnabled( false );
+
+            for ( String k : indexManager.getRelationshipAutoIndexer().getAutoIndexedProperties() )
+            {
+                indexManager.getRelationshipAutoIndexer().stopAutoIndexingProperty( k );
+            }
+            indexManager.getRelationshipAutoIndexer().setEnabled( false );
+        }
+    }
+
+    private static class DeleteAllSchema implements UnitOfWork
+    {
+        private final GraphDatabaseAPI db;
+
+        public DeleteAllSchema( GraphDatabaseAPI db )
+        {
+            this.db = db;
+        }
+
+        @Override
+        public void doWork()
+        {
+            deleteAllIndexRules();
+            deleteAllConstraints();
+        }
+
+        private void deleteAllIndexRules()
+        {
+            for ( IndexDefinition index : db.schema().getIndexes() )
+            {
+                if ( !index.isConstraintIndex() )
+                {
+                    index.drop();
+                }
+            }
+        }
+
+        private void deleteAllConstraints()
+        {
+            for ( ConstraintDefinition constraint : db.schema().getConstraints() )
+            {
+                constraint.drop();
+            }
         }
     }
 }

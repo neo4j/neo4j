@@ -1,0 +1,86 @@
+Important-Read Carefully: This End-User License Agreement ("EULA") is a legal agreement between you (either an
+individual or a single legal entity) and Neo Technology, Inc. (“Licensor”) and covers your use of install4j and related 
+software components ("Software Product" or install4j) that are licensed to Licensor by ej-technologies GmbH
+(ej-technologies).
+
+If you do not agree to the terms of this EULA, then do not download, install or use the Software Product or the Software
+Product License. By explicitly accepting this EULA you are acknowledging and agreeing to be bound by the following 
+terms:
+
+Grant of License
+
+The Software Product is owned by ej-technologies. It is licensed, not sold. The Software Product is protected by copyright
+laws and international copyright treaties, as well as other intellectual property laws and treaties. ej-technologies reserves 
+all intellectual property rights, including copyrights and trademark rights.
+
+Licensor grants you a non-exclusive, non-transferable sub- license to use the Software Product for your internal use and 
+solely in conjunction with your use of Neo4j software.  You may not disclose the Software Product License in any way.
+
+You may make copies of the Software Product and the Software Product License as reasonably necessary for the use
+authorized above, including as needed for backup and/or archival purposes. No other copies may be made. Each copy 
+must reproduce all copyright and other proprietary rights notices on or in the Software Product.
+
+Restrictions
+
+You may not use, copy, or distribute the Software Product, except as granted by this EULA, without written authorization
+from Licensor or ej-technologies.  You may not tamper with, alter, or use the Software Product in a way that disables, 
+circumvents, or otherwise defeats its built-in licensing verification and enforcement capabilities.  You may not remove or 
+alter any trademark, logo, copyright or other proprietary notice, legend, symbol or label in the Software Product. You may 
+not modify or create derivative copies of the Software Product License.  You may not reverse engineer, decompile, defeat 
+license encryption mechanisms, or disassemble the Software Product or Software Product License except and only to the 
+extent that such activity is expressly permitted by applicable law notwithstanding this limitation. You may not rent, lease, 
+lend, or in any way distribute or transfer any rights in this EULA or the Software Product to third parties without 
+Licensor’s and ej-technologies' written approval, and subject to written agreement by the recipient of the terms of this 
+EULA.
+
+The Software Product is not fault-tolerant and is not designed, manufactured or intended for use or resale as on-line
+control equipment in hazardous environments requiring fail-safe performance, in which the failure of the Software 
+Product, or any software, tool, process, or service that was developed using the Software Product, could lead directly to 
+death, personal injury, or severe physical or environmental damage ("High Risk Activities"). Accordingly, Licensor, ej-
+technologies and its suppliers and licensors specifically disclaim any express or implied warranty of fitness for High Risk 
+Activities. You agree that Licensor, ej-technologies and its suppliers and licensors will not be liable for any claims or 
+damages arising from the use of the Software Product, or any software, tool, process, or service that was developed using 
+the Software Product, in such applications.
+
+Warranty Disclaimer
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, LICENSOR, EJ-TECHNOLOGIES AND ITS THIRD PARTY SUPPLIERS AND
+LICENSORS DISCLAIM ALL REPRESENTATIONS, WARRANTIES, AND CONDITIONS, EXPRESSED, IMPLIED, STATUTORY, OR OTHERWISE,
+INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OR CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, FITNESS
+FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. THE ENTIRE RISK ARISING OUT OF USE OR PERFORMANCE OF THE
+SOFTWARE PRODUCT REMAINS WITH YOU.
+
+Limitation of Liability
+
+(a)	Consequential Damages Waiver.  UNDER NO CIRCUMSTANCES, SHALL ANY LICENSOR PARTY OR EJ-TECHNOLOGIES BE LIABLE TO YOU
+FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, RELIANCE, OR CONSEQUENTIAL DAMAGES, (INCLUDING, WITHOUT
+LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION AND THE LIKE)
+ARISING OUT OF OR RELATING TO THE USE AND/OR INABILITY TO USE THE SOFTWARE PRODUCT.
+
+(b)	Limitation of Damages.  WITHOUT LIMITING THE FOREGOING, IN NO EVENT SHALL LICENSOR’S OR EJ-TECHNOLIGIES TOTAL
+CUMULATIVE LIABILITY TO YOU FOR ALL DAMAGES, LOSSES AND CAUSES OF ACTION (WHETHER IN CONTRACT, TORT, INCLUDING
+NEGLIGENCE AND STRICT LIABILITY, OR OTHERWISE) EXCEED THE TOTAL AMOUNT OF ONE HUNDRED DOLLARS ($100.00).  THE PARTIES
+AGREE THAT THESE LIMITATIONS SHALL APPLY EVEN IF THIS AGREEMENT OR ANY LIMITED REMEDY SPECIFIED HEREIN IS FOUND TO HAVE
+FAILED OF ITS ESSENTIAL PURPOSE.
+
+SOME JURISDICTIONS MAY NOT ALLOW THE EXCLUSION OR LIMITATION OF INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR OTHER DAMAGES,
+SO THE ABOVE LIMITATIONS OR EXCLUSIONS MAY NOT APPLY TO YOU.  IN SUCH EVENT, THE LIABILITY OF LICENSOR AND
+EJ-TECHNOLOGIES FOR SUCH DAMAGES WITH RESPECT TO THE SOFTWARE AND SERVICES WILL BE LIMITED TO THE GREATEST EXTENT
+PERMITTED BY APPLICABLE LAW IN SUCH JURISDICTION.
+
+General
+
+Licensor or ej-technologies may terminate this EULA if you fail to comply with any term or condition of this EULA. In
+such event, you must destroy all copies of the Software Product and Software Product Licenses.
+
+This EULA is governed by the laws of the State of California, USA. The United Nations Convention for the International
+Sale of Goods shall not apply.
+
+This EULA is the entire agreement, and supersedes any other communications or advertising with respect to the Software
+Product; this EULA may be modified only by written agreement signed by authorized representatives of you and 
+Licensor.
+
+If any provision of this EULA is held invalid, the remainder of this EULA shall continue in full force and effect.
+
+All rights not expressly granted in this agreement are retained by Licensor and ej-technologies.
+

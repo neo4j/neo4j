@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.impl;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,16 +41,17 @@ import org.neo4j.shell.util.json.JSONObject;
  */
 public abstract class AbstractApp implements App
 {
-	private Map<String, OptionDefinition> optionDefinitions =
-		new HashMap<String, OptionDefinition>();
+	private final Map<String, OptionDefinition> optionDefinitions =	new HashMap<>();
 	private AppShellServer server;
 	
-	public String getName()
+	@Override
+    public String getName()
 	{
 		return this.getClass().getSimpleName().toLowerCase();
 	}
 
-	public OptionDefinition getOptionDefinition( String option )
+	@Override
+    public OptionDefinition getOptionDefinition( String option )
 	{
 		return this.optionDefinitions.get( option );
 	}
@@ -63,7 +62,8 @@ public abstract class AbstractApp implements App
 		this.optionDefinitions.put( option, definition );
 	}
 	
-	public String[] getAvailableOptions()
+	@Override
+    public String[] getAvailableOptions()
 	{
 		String[] result = this.optionDefinitions.keySet().toArray(
 			new String[ this.optionDefinitions.size() ] );
@@ -73,53 +73,51 @@ public abstract class AbstractApp implements App
 
 	public void setServer( AppShellServer server )
 	{
+        if ( this.server != null )
+            throw new IllegalStateException( "Server already set" );
 		this.server = server;
 	}
 	
-	public AppShellServer getServer()
+	@Override
+    public AppShellServer getServer()
 	{
 		return this.server;
 	}
 	
-	public String getDescription()
+	@Override
+    public String getDescription()
 	{
 		return null;
 	}
 	
-	public String getDescription( String option )
+	@Override
+    public String getDescription( String option )
 	{
 		OptionDefinition definition = this.optionDefinitions.get( option );
 		return definition == null ? null : definition.getDescription();
 	}
 	
-	public void shutdown()
+	@Override
+    public void shutdown()
 	{
 	    // Default behaviour is to do nothing
 	}
 	
-	public List<String> completionCandidates( String partOfLine, Session session )
-	{
+	@Override
+    public List<String> completionCandidates( String partOfLine, Session session ) throws ShellException
+    {
 	    return Collections.emptyList();
 	}
 
-	protected String multiply( String string, int count ) throws RemoteException
-	{
-	    StringBuilder builder = new StringBuilder();
-		for ( int i = 0; i < count; i++ )
-		{
-			builder.append( string );
-		}
-		return builder.toString();
-	}
-	protected static Map<String, Object> parseFilter( String filterString,
+    protected static Map<String, Object> parseFilter( String filterString,
 	    Output out ) throws RemoteException, ShellException
 	{
 	    if ( filterString == null )
 	    {
-	        return new HashMap<String, Object>();
+	        return new HashMap<>();
 	    }
 	    
-	    Map<String, Object> map = null;
+	    Map<String, Object> map;
 	    String signsOfJSON = ":";
 	    int numberOfSigns = 0;
 	    for ( int i = 0; i < signsOfJSON.length(); i++ )
@@ -155,7 +153,7 @@ public abstract class AbstractApp implements App
 	    }
 	    else
 	    {
-	        map = new HashMap<String, Object>();
+	        map = new HashMap<>();
 	        map.put( filterString, null );
 	    }
 	    return map;
@@ -165,7 +163,7 @@ public abstract class AbstractApp implements App
         throws JSONException
 	{
         JSONObject object = new JSONObject( jsonString );
-        Map<String, Object> result = new HashMap<String, Object>();
+        Map<String, Object> result = new HashMap<>();
         for ( String name : JSONObject.getNames( object ) )
         {
             Object value = object.get( name );
@@ -196,19 +194,10 @@ public abstract class AbstractApp implements App
             throw new IllegalArgumentException( e.getMessage(), e );
         }
     }
-    
-    public static void safeClose( Closeable object )
+
+    @Override
+    public boolean takesOptions()
     {
-        if ( object != null )
-        {
-            try
-            {
-                object.close();
-            }
-            catch ( IOException e )
-            {
-                // I'd guess it's OK
-            }
-        }
+        return !optionDefinitions.isEmpty();
     }
 }

@@ -22,10 +22,13 @@ package org.neo4j.server.modules;
 import java.net.URI;
 import java.util.List;
 
+import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.test.Mute;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
@@ -36,6 +39,9 @@ import static org.mockito.Mockito.when;
 
 public class DiscoveryModuleTest
 {
+    @Rule
+    public Mute mute = Mute.mute( Mute.System.err );
+    
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldRegisterAtRootByDefault() throws Exception

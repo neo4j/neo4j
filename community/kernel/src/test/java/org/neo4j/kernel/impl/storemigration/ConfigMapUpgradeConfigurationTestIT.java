@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
-
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
 
 public class ConfigMapUpgradeConfigurationTestIT
 {
@@ -49,7 +48,7 @@ public class ConfigMapUpgradeConfigurationTestIT
     @Test
     public void shouldNotAllowAutomaticUpgradeIfConfigParameterIsFalse()
     {
-        Config config = defaultConfig( stringMap( Config.ALLOW_STORE_UPGRADE, "false" ) );
+        Config config = defaultConfig( stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), "false" ) );
 
         try
         {
@@ -64,7 +63,7 @@ public class ConfigMapUpgradeConfigurationTestIT
     @Test
     public void shouldNotAllowAutomaticUpgradeIfConfigParameterIsTrue()
     {
-        Config config = defaultConfig( stringMap( Config.ALLOW_STORE_UPGRADE, "false" ) );
+        Config config = defaultConfig( stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), "false" ) );
 
         try
         {

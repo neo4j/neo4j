@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -33,18 +31,16 @@ public interface Store
      * Returns the id of next free record.
      *
      * @return The id of the next free record
-     * @throws IOException
-     *             If unable to
      */
-    public long nextId();
+    long nextId();
 
-    public String getTypeDescriptor();
+    String getTypeDescriptor();
 
-    public long getHighestPossibleIdInUse();
+    long getHighestPossibleIdInUse();
 
-    public long getNumberOfIdsInUse();
+    long getNumberOfIdsInUse();
 
-    public WindowPoolStats getWindowPoolStats();
+    WindowPoolStats getWindowPoolStats();
 
-    public void logIdUsage( StringLogger.LineLogger logger );
+    void logIdUsage( StringLogger.LineLogger logger );
 }

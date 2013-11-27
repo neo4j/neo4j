@@ -19,17 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,44 +38,76 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.FakeClock;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.WrappedDatabase;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
-import org.neo4j.tooling.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
-import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 public class DatabaseActionsTest
 {
-    private static DatabaseActions actions;
     private static GraphDbHelper graphdbHelper;
     private static Database database;
-    private static LeaseManager leaseManager;
+    private static AbstractGraphDatabase graph;
+    private static DatabaseActions actions;
 
     @BeforeClass
-    public static void clearDb() throws IOException
+    public static void createDb() throws IOException
     {
-        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, null );
+        graph = (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );
-        leaseManager = new LeaseManager( new FakeClock() );
-        actions = new DatabaseActions( database, leaseManager, ForceMode.forced );
+        actions = new TransactionWrappedDatabaseActions( new LeaseManager( new FakeClock() ), ForceMode.forced,
+                database.getGraph() );
     }
 
     @AfterClass
     public static void shutdownDatabase() throws Throwable
     {
-        database.stop();
+        graph.shutdown();
+    }
+
+    @After
+    public void clearDb()
+    {
+        ServerHelper.cleanTheDatabase( graph );
     }
 
     private long createNode( Map<String, Object> properties )
@@ -127,7 +149,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void nodeInDatabaseShouldBeRetreivable() throws NodeNotFoundException
+    public void nodeInDatabaseShouldBeRetrievable() throws NodeNotFoundException
     {
         long nodeId = new GraphDbHelper( database ).createNode();
         assertNotNull( actions.getNode( nodeId ) );
@@ -155,7 +177,7 @@ public class DatabaseActionsTest
         }
     }
 
-    @Test( expected = PropertyValueException.class )
+    @Test(expected = PropertyValueException.class)
     public void shouldFailOnTryingToStoreMixedArraysAsAProperty() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
@@ -214,9 +236,10 @@ public class DatabaseActionsTest
         properties.put( "neo", "Thomas A. Anderson" );
         properties.put( "number", 15L );
         Transaction tx = database.getGraph().beginTx();
+        Node node;
         try
         {
-            Node node = database.getGraph().createNode();
+            node = database.getGraph().createNode();
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 node.setProperty( entry.getKey(), entry.getValue() );
@@ -229,8 +252,15 @@ public class DatabaseActionsTest
             tx.finish();
         }
 
-        Map<String, Object> readProperties = serialize( actions.getAllNodeProperties( nodeId ) );
-        assertEquals( properties, readProperties );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertEquals( properties, serialize( actions.getAllNodeProperties( nodeId ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -272,10 +302,18 @@ public class DatabaseActionsTest
         long nodeId = createNode( map( "emptyArray", new int[]{} ) );
 
         // When
-        actions.setNodeProperty( nodeId, "emptyArray", new ArrayList<Object>() );
+        actions.setNodeProperty( nodeId, "emptyArray", new ArrayList<>() );
 
         // Then
-        Representation val = actions.getNodeProperty( nodeId, "emptyArray" );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertThat( ((List<Object>) serialize( actions.getNodeProperty( nodeId, "emptyArray" ) )).size(), is( 0 ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -284,7 +322,15 @@ public class DatabaseActionsTest
         String key = "foo";
         Object value = "bar";
         long nodeId = createNode( Collections.singletonMap( key, value ) );
-        assertEquals( value, serialize( actions.getNodeProperty( nodeId, key ) ) );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertEquals( value, serialize( actions.getNodeProperty( nodeId, key ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -353,7 +399,7 @@ public class DatabaseActionsTest
     public void shouldNotCreateRelationshipBetweenNonExistentNodes() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
-        Map<String, Object> properties = Collections.<String, Object>emptyMap();
+        Map<String, Object> properties = Collections.emptyMap();
         try
         {
             actions.createRelationship( nodeId, nodeId * 1000, "Loves", properties );
@@ -378,7 +424,7 @@ public class DatabaseActionsTest
     public void shouldAllowCreateRelationshipWithSameStartAsEndNode() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
-        Map<String, Object> properties = Collections.<String, Object>emptyMap();
+        Map<String, Object> properties = Collections.emptyMap();
         RelationshipRepresentation rel = actions.createRelationship( nodeId, nodeId, "Loves", properties );
         assertNotNull( rel );
 
@@ -417,7 +463,7 @@ public class DatabaseActionsTest
         actions.removeNodeProperty( nodeId, "foo" );
     }
 
-    @Test( expected = NoSuchPropertyException.class )
+    @Test(expected = NoSuchPropertyException.class)
     public void shouldReturnFalseIfNodePropertyNotRemoved() throws Exception
     {
         Map<String, Object> properties = new HashMap<String, Object>();
@@ -462,8 +508,15 @@ public class DatabaseActionsTest
             tx.finish();
         }
 
-        Map<String, Object> readProperties = serialize( actions.getAllRelationshipProperties( relationshipId ) );
-        assertEquals( properties, readProperties );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertEquals( properties, serialize( actions.getAllRelationshipProperties( relationshipId ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -477,7 +530,16 @@ public class DatabaseActionsTest
         long relationshipId = graphdbHelper.createRelationship( "LOVES" );
         graphdbHelper.setRelationshipProperties( relationshipId, properties );
 
-        Object relationshipProperty = serialize( actions.getRelationshipProperty( relationshipId, "foo" ) );
+        Transaction transaction = graph.beginTx();
+        Object relationshipProperty;
+        try
+        {
+            relationshipProperty = serialize( actions.getRelationshipProperty( relationshipId, "foo" ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         assertEquals( "bar", relationshipProperty );
     }
 
@@ -505,27 +567,46 @@ public class DatabaseActionsTest
         graphdbHelper.createRelationship( "LIKES", graphdbHelper.createNode(), nodeId );
         graphdbHelper.createRelationship( "HATES", nodeId, graphdbHelper.createNode() );
 
-        verifyRelReps( 3,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.all, Collections.<String>emptyList() ) );
-        verifyRelReps( 1,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.in, Collections.<String>emptyList() ) );
-        verifyRelReps( 2,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.out, Collections.<String>emptyList() ) );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            verifyRelReps( 3,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.all,
+                            Collections.<String>emptyList() ) );
+            verifyRelReps( 1,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.in, Collections.<String>emptyList() ) );
+            verifyRelReps( 2,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.out,
+                            Collections.<String>emptyList() ) );
 
-        verifyRelReps( 3,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.all, Arrays.asList( "LIKES", "HATES" ) ) );
-        verifyRelReps( 1,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.in, Arrays.asList( "LIKES", "HATES" ) ) );
-        verifyRelReps( 2,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.out, Arrays.asList( "LIKES", "HATES" ) ) );
+            verifyRelReps( 3,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.all, Arrays.asList( "LIKES",
+                            "HATES" ) ) );
+            verifyRelReps( 1,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.in, Arrays.asList( "LIKES",
+                            "HATES" ) ) );
+            verifyRelReps( 2,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.out, Arrays.asList( "LIKES",
+                            "HATES" ) ) );
 
-        verifyRelReps( 2, actions.getNodeRelationships( nodeId, RelationshipDirection.all, Arrays.asList( "LIKES" ) ) );
-        verifyRelReps( 1, actions.getNodeRelationships( nodeId, RelationshipDirection.in, Arrays.asList( "LIKES" ) ) );
-        verifyRelReps( 1, actions.getNodeRelationships( nodeId, RelationshipDirection.out, Arrays.asList( "LIKES" ) ) );
+            verifyRelReps( 2, actions.getNodeRelationships( nodeId, RelationshipDirection.all,
+                    Arrays.asList( "LIKES" ) ) );
+            verifyRelReps( 1, actions.getNodeRelationships( nodeId, RelationshipDirection.in,
+                    Arrays.asList( "LIKES" ) ) );
+            verifyRelReps( 1, actions.getNodeRelationships( nodeId, RelationshipDirection.out,
+                    Arrays.asList( "LIKES" ) ) );
 
-        verifyRelReps( 1, actions.getNodeRelationships( nodeId, RelationshipDirection.all, Arrays.asList( "HATES" ) ) );
-        verifyRelReps( 0, actions.getNodeRelationships( nodeId, RelationshipDirection.in, Arrays.asList( "HATES" ) ) );
-        verifyRelReps( 1, actions.getNodeRelationships( nodeId, RelationshipDirection.out, Arrays.asList( "HATES" ) ) );
+            verifyRelReps( 1, actions.getNodeRelationships( nodeId, RelationshipDirection.all,
+                    Arrays.asList( "HATES" ) ) );
+            verifyRelReps( 0, actions.getNodeRelationships( nodeId, RelationshipDirection.in,
+                    Arrays.asList( "HATES" ) ) );
+            verifyRelReps( 1, actions.getNodeRelationships( nodeId, RelationshipDirection.out,
+                    Arrays.asList( "HATES" ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -533,19 +614,30 @@ public class DatabaseActionsTest
     {
         long nodeId = graphdbHelper.createNode();
 
-        verifyRelReps( 0,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.all, Collections.<String>emptyList() ) );
-        verifyRelReps( 0,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.in, Collections.<String>emptyList() ) );
-        verifyRelReps( 0,
-                actions.getNodeRelationships( nodeId, RelationshipDirection.out, Collections.<String>emptyList() ) );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            verifyRelReps( 0,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.all,
+                            Collections.<String>emptyList() ) );
+            verifyRelReps( 0,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.in,
+                            Collections.<String>emptyList() ) );
+            verifyRelReps( 0,
+                    actions.getNodeRelationships( nodeId, RelationshipDirection.out,
+                            Collections.<String>emptyList() ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
     public void shouldBeAbleToSetRelationshipProperties() throws Exception
     {
         long relationshipId = graphdbHelper.createRelationship( "KNOWS" );
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 10 );
         actions.setAllRelationshipProperties( relationshipId, properties );
@@ -559,7 +651,8 @@ public class DatabaseActionsTest
         String key = "foo";
         Object value = "bar";
         actions.setRelationshipProperty( relationshipId, key, value );
-        assertEquals( Collections.singletonMap( key, value ), graphdbHelper.getRelationshipProperties( relationshipId ) );
+        assertEquals( Collections.singletonMap( key, value ),
+                graphdbHelper.getRelationshipProperties( relationshipId ) );
     }
 
     @Test
@@ -591,7 +684,7 @@ public class DatabaseActionsTest
                 .size() );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     private void verifyRelReps( int expectedSize, ListRepresentation repr )
     {
         List<Object> relreps = serialize( repr );
@@ -620,8 +713,17 @@ public class DatabaseActionsTest
 
         actions.createNodeIndex( MapUtil.map( "name", indexName ) );
 
-        assertFalse( serialize( actions.getIndexedNodes( indexName, key, value ) ).iterator()
-                .hasNext() );
+        Transaction transaction = graph.beginTx();
+        List<Object> listOfIndexedNodes;
+        try
+        {
+            listOfIndexedNodes = serialize( actions.getIndexedNodes( indexName, key, value ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+        assertFalse( listOfIndexedNodes.iterator().hasNext() );
         actions.addToNodeIndex( indexName, key, value, nodeId );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key, value ) );
     }
@@ -634,26 +736,26 @@ public class DatabaseActionsTest
         long nodeId = graphdbHelper.createNode();
         String indexName = "fulltext-node";
         graphdbHelper.createNodeFullTextIndex( indexName );
-        assertFalse( serialize( actions.getIndexedNodes( indexName, key, value ) ).iterator()
-                .hasNext() );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertFalse( serialize( actions.getIndexedNodes( indexName, key, value ) ).iterator()
+                    .hasNext() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
         actions.addToNodeIndex( indexName, key, value, nodeId );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key, value ) );
-        assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key, "the value with spaces" ) );
+        assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key,
+                "the value with spaces" ) );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.queryIndexedNodes( indexName, key, "the" ) );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.queryIndexedNodes( indexName, key, "value" ) );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.queryIndexedNodes( indexName, key, "with" ) );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.queryIndexedNodes( indexName, key, "spaces" ) );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.queryIndexedNodes( indexName, key, "*spaces*" ) );
-        assertTrue( graphdbHelper.getIndexedNodes( indexName, key, "nohit" )
-                .isEmpty() );
-    }
-
-    // TODO remove once reference node is gone
-    @Test
-    public void shouldBeAbleToGetReferenceNode() throws Exception
-    {
-        NodeRepresentation rep = actions.getReferenceNode();
-        actions.getNode( rep.getId() );
+        assertTrue( graphdbHelper.getIndexedNodes( indexName, key, "nohit" ).isEmpty() );
     }
 
     @Test
@@ -666,9 +768,22 @@ public class DatabaseActionsTest
         String indexName = "node";
         graphdbHelper.addNodeToIndex( indexName, key, value, nodeId );
         int counter = 0;
-        for ( Object rep : serialize( actions.getIndexedNodes( indexName, key, value ) ) )
+
+        Transaction transaction = graph.beginTx();
+        List<Object> indexedNodes;
+        try
         {
-            Map<String, Object> serialized = (Map<String, Object>) rep;
+            indexedNodes = serialize( actions.getIndexedNodes( indexName, key, value ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
+        for ( Object indexedNode : indexedNodes )
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> serialized = (Map<String, Object>) indexedNode;
             NodeRepresentationTest.verifySerialisation( serialized );
             assertNotNull( serialized.get( "indexed" ) );
             counter++;
@@ -792,7 +907,7 @@ public class DatabaseActionsTest
         graphdbHelper.createRelationship( "to", d, g );
         graphdbHelper.createRelationship( "to", e, g );
         graphdbHelper.createRelationship( "to", c, g );
-        return new long[] { a, g };
+        return new long[]{a, g};
     }
 
     private void createRelationshipWithProperties( long start, long end, Map<String, Object> properties )
@@ -839,76 +954,131 @@ public class DatabaseActionsTest
         createRelationshipWithProperties( e, x, costOneProperties );
         createRelationshipWithProperties( e, f, map( "cost", (double) 2 ) );
         createRelationshipWithProperties( x, y, map( "cost", (double) 2 ) );
-        return new long[] { start, x };
+        return new long[]{start, x};
     }
 
     @Test
     public void shouldBeAbleToTraverseWithDefaultParameters()
     {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
-                TraverserReturnType.node ) );
-        assertEquals( 2, hits.size() );
+
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertEquals( 2, serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+                    TraverserReturnType.node ) ).size() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
     public void shouldBeAbleToTraverseDepthTwo()
     {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map( "max_depth", 2 ),
-                TraverserReturnType.node ) );
-        assertEquals( 3, hits.size() );
+
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertEquals( 3, serialize( actions.traverse( startNode, MapUtil.map( "max_depth", 2 ),
+                    TraverserReturnType.node ) ).size() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
     public void shouldBeAbleToTraverseEverything()
     {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse(
-                startNode,
-                MapUtil.map( "return_filter", MapUtil.map( "language", "javascript", "body", "true;" ), "max_depth", 10 ),
-                TraverserReturnType.node ) );
-        assertEquals( 6, hits.size() );
-        hits = serialize( actions.traverse( startNode,
-                MapUtil.map( "return_filter", MapUtil.map( "language", "builtin", "name", "all" ), "max_depth", 10 ),
-                TraverserReturnType.node ) );
-        assertEquals( 6, hits.size() );
+
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertEquals( 6, serialize( actions.traverse(
+                    startNode,
+                    MapUtil.map( "return_filter", MapUtil.map( "language", "javascript", "body", "true;" ), "max_depth",
+                            10 ),
+                    TraverserReturnType.node ) ).size() );
+            assertEquals( 6, serialize( actions.traverse( startNode,
+                    MapUtil.map( "return_filter", MapUtil.map( "language", "builtin", "name", "all" ), "max_depth",
+                            10 ),
+                    TraverserReturnType.node ) ).size() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
     public void shouldBeAbleToUseCustomReturnFilter()
     {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map( "prune_evaluator", MapUtil.map(
-                "language", "builtin", "name", "none" ), "return_filter", MapUtil.map( "language", "javascript",
-                "body", "position.endNode().getProperty( 'name' ).contains( 'o' )" ) ), TraverserReturnType.node ) );
-        assertEquals( 3, hits.size() );
+
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertEquals( 3, serialize( actions.traverse( startNode, MapUtil.map( "prune_evaluator", MapUtil.map(
+                    "language", "builtin", "name", "none" ), "return_filter", MapUtil.map( "language", "javascript",
+                    "body", "position.endNode().getProperty( 'name' ).contains( 'o' )" ) ), TraverserReturnType.node ) )
+                    .size() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
     public void shouldBeAbleToTraverseWithMaxDepthAndPruneEvaluatorCombined()
     {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse( startNode,
-                MapUtil.map( "max_depth", 2, "prune_evaluator", MapUtil.map( "language", "javascript", "body",
-                        "position.endNode().getProperty('name').equals('Emil')" ) ), TraverserReturnType.node ) );
-        assertEquals( 3, hits.size() );
-        hits = serialize( actions.traverse( startNode,
-                MapUtil.map( "max_depth", 1, "prune_evaluator", MapUtil.map( "language", "javascript", "body",
-                        "position.endNode().getProperty('name').equals('Emil')" ) ), TraverserReturnType.node ) );
-        assertEquals( 2, hits.size() );
+
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertEquals( 3, serialize( actions.traverse( startNode,
+                    MapUtil.map( "max_depth", 2, "prune_evaluator", MapUtil.map( "language", "javascript", "body",
+                            "position.endNode().getProperty('name').equals('Emil')" ) ),
+                    TraverserReturnType.node ) ).size() );
+            assertEquals( 2, serialize( actions.traverse( startNode,
+                    MapUtil.map( "max_depth", 1, "prune_evaluator", MapUtil.map( "language", "javascript", "body",
+                            "position.endNode().getProperty('name').equals('Emil')" ) ), TraverserReturnType.node ) )
+                    .size() );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
     public void shouldBeAbleToGetRelationshipsIfSpecified()
     {
         long startNode = createBasicTraversableGraph();
-        ListRepresentation traverse = actions.traverse( startNode, new HashMap<String, Object>(),
-                TraverserReturnType.relationship );
-        List<Object> hits = serialize( traverse );
+
+        Transaction transaction = graph.beginTx();
+        List<Object> hits;
+        try
+        {
+            hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+                    TraverserReturnType.relationship ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
         for ( Object hit : hits )
         {
-            RelationshipRepresentationTest.verifySerialisation( (Map<String, Object>) hit );
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) hit;
+            RelationshipRepresentationTest.verifySerialisation( map );
         }
     }
 
@@ -916,11 +1086,22 @@ public class DatabaseActionsTest
     public void shouldBeAbleToGetPathsIfSpecified()
     {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
-                TraverserReturnType.path ) );
+
+        Transaction transaction = graph.beginTx();
+        List<Object> hits;
+        try
+        {
+            hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+                    TraverserReturnType.path ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
 
         for ( Object hit : hits )
         {
+            @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>) hit;
             assertThat( map, hasKey( "start" ) );
             assertThat( map, hasKey( "end" ) );
@@ -932,21 +1113,37 @@ public class DatabaseActionsTest
     public void shouldBeAbleToGetFullPathsIfSpecified()
     {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
-                TraverserReturnType.fullpath ) );
+        Transaction transaction = graph.beginTx();
+        List<Object> hits;
+        try
+        {
+            hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+                    TraverserReturnType.fullpath ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
 
         for ( Object hit : hits )
         {
+            @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>) hit;
+            @SuppressWarnings("unchecked")
             Collection<Object> relationships = (Collection<Object>) map.get( "relationships" );
-            for ( Object relationship : relationships )
+            for ( Object rel : relationships )
             {
-                RelationshipRepresentationTest.verifySerialisation( (Map<String, Object>) relationship );
+                @SuppressWarnings("unchecked")
+                Map<String, Object> relationship = (Map<String, Object>) rel;
+                RelationshipRepresentationTest.verifySerialisation( relationship );
             }
+            @SuppressWarnings("unchecked")
             Collection<Object> nodes = (Collection<Object>) map.get( "nodes" );
-            for ( Object node : nodes )
+            for ( Object n : nodes )
             {
-                NodeRepresentationTest.verifySerialisation( (Map<String, Object>) node );
+                @SuppressWarnings("unchecked")
+                Map<String, Object> node = (Map<String, Object>) n;
+                NodeRepresentationTest.verifySerialisation( node );
             }
             assertThat( map, hasKey( "start" ) );
             assertThat( map, hasKey( "end" ) );
@@ -960,28 +1157,35 @@ public class DatabaseActionsTest
         long[] nodes = createMoreComplexGraph();
 
         // /paths
-        List<Object> result = serialize( actions.findPaths(
-                nodes[0],
-                nodes[1],
-                MapUtil.map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
-                        MapUtil.map( "type", "to", "direction", "out" ) ) ) );
-        assertPaths( 2, nodes, 2, result );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            List<Object> result = serialize( actions.findPaths(
+                    nodes[0],
+                    nodes[1],
+                    MapUtil.map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
+                            MapUtil.map( "type", "to", "direction", "out" ) ) ) );
+            assertPaths( 2, nodes, 2, result );
+            // /path
+            Map<String, Object> path = serialize( actions.findSinglePath(
+                    nodes[0],
+                    nodes[1],
+                    MapUtil.map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
+                            MapUtil.map( "type", "to", "direction", "out" ) ) ) );
+            assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
 
-        // /path
-        Map<String, Object> path = serialize( actions.findSinglePath(
-                nodes[0],
-                nodes[1],
-                MapUtil.map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
-                        MapUtil.map( "type", "to", "direction", "out" ) ) ) );
-        assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
-
-        // /path {single: false} (has no effect)
-        path = serialize( actions.findSinglePath(
-                nodes[0],
-                nodes[1],
-                MapUtil.map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
-                        MapUtil.map( "type", "to", "direction", "out" ), "single", false ) ) );
-        assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
+            // /path {single: false} (has no effect)
+            path = serialize( actions.findSinglePath(
+                    nodes[0],
+                    nodes[1],
+                    MapUtil.map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
+                            MapUtil.map( "type", "to", "direction", "out" ), "single", false ) ) );
+            assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -989,22 +1193,29 @@ public class DatabaseActionsTest
     {
         long[] nodes = createDijkstraGraph( true );
 
-        // /paths
-        List<Object> result = serialize( actions.findPaths(
-                nodes[0],
-                nodes[1],
-                map( "algorithm", "dijkstra", "cost_property", "cost", "relationships",
-                        map( "type", "to", "direction", "out" ) ) ) );
-        assertPaths( 1, nodes, 6, result );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            // /paths
+            assertPaths( 1, nodes, 6, serialize( actions.findPaths(
+                    nodes[0],
+                    nodes[1],
+                    map( "algorithm", "dijkstra", "cost_property", "cost", "relationships",
+                            map( "type", "to", "direction", "out" ) ) ) ) );
 
-        // /path
-        Map<String, Object> path = serialize( actions.findSinglePath(
-                nodes[0],
-                nodes[1],
-                map( "algorithm", "dijkstra", "cost_property", "cost", "relationships",
-                        map( "type", "to", "direction", "out" ) ) ) );
-        assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
-        assertEquals( 6.0d, path.get( "weight" ) );
+            // /path
+            Map<String, Object> path = serialize( actions.findSinglePath(
+                    nodes[0],
+                    nodes[1],
+                    map( "algorithm", "dijkstra", "cost_property", "cost", "relationships",
+                            map( "type", "to", "direction", "out" ) ) ) );
+            assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
+            assertEquals( 6.0d, path.get( "weight" ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
@@ -1013,39 +1224,155 @@ public class DatabaseActionsTest
         long[] nodes = createDijkstraGraph( false );
 
         // /paths
-        List<Object> result = serialize( actions.findPaths(
-                nodes[0],
-                nodes[1],
-                map( "algorithm", "dijkstra", "cost_property", "cost", "default_cost", 1, "relationships",
-                        map( "type", "to", "direction", "out" ) ) ) );
-        assertPaths( 1, nodes, 6, result );
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            List<Object> result = serialize( actions.findPaths(
+                    nodes[0],
+                    nodes[1],
+                    map( "algorithm", "dijkstra", "cost_property", "cost", "default_cost", 1, "relationships",
+                            map( "type", "to", "direction", "out" ) ) ) );
+            assertPaths( 1, nodes, 6, result );
 
-        // /path
-        Map<String, Object> path = serialize( actions.findSinglePath(
-                nodes[0],
-                nodes[1],
-                map( "algorithm", "dijkstra", "cost_property", "cost", "default_cost", 1, "relationships",
-                        map( "type", "to", "direction", "out" ) ) ) );
-        assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
-        assertEquals( 6.0d, path.get( "weight" ) );
+            // /path
+            Map<String, Object> path = serialize( actions.findSinglePath(
+                    nodes[0],
+                    nodes[1],
+                    map( "algorithm", "dijkstra", "cost_property", "cost", "default_cost", 1, "relationships",
+                            map( "type", "to", "direction", "out" ) ) ) );
+            assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
+            assertEquals( 6.0d, path.get( "weight" ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
-    @Test( expected = NotFoundException.class )
+    @Test(expected = NotFoundException.class)
     public void shouldHandleNoFoundPathsCorrectly()
     {
         long[] nodes = createMoreComplexGraph();
-        serialize( actions.findSinglePath(
+        actions.findSinglePath(
                 nodes[0],
                 nodes[1],
                 map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
-                        map( "type", "to", "direction", "in" ), "single", false ) ) );
+                        map( "type", "to", "direction", "in" ), "single", false ) );
     }
+
+    @Test
+    public void shouldAddLabelToNode() throws Exception
+    {
+        // GIVEN
+        long node = actions.createNode( null ).getId();
+        Collection<String> labels = new ArrayList<String>();
+        String labelName = "Wonk";
+        labels.add( labelName );
+
+        // WHEN
+        actions.addLabelToNode( node, labels );
+
+        // THEN
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            Iterable<String> result = graphdbHelper.getNodeLabels( node );
+            assertEquals( labelName, single( result ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+    }
+
+    @Test
+    public void shouldRemoveLabelFromNode() throws Exception
+    {
+        // GIVEN
+        String labelName = "mylabel";
+        long node = actions.createNode( null, label( labelName ) ).getId();
+
+        // WHEN
+        actions.removeLabelFromNode( node, labelName );
+
+        // THEN
+        assertEquals( 0, graphdbHelper.getLabelCount( node ) );
+    }
+
+    @Test
+    public void shouldListExistingLabelsOnNode() throws Exception
+    {
+        // GIVEN
+        long node = graphdbHelper.createNode();
+        String labelName1 = "LabelOne", labelName2 = "labelTwo";
+        graphdbHelper.addLabelToNode( node, labelName1 );
+        graphdbHelper.addLabelToNode( node, labelName2 );
+
+        // WHEN
+
+        Transaction transaction = graph.beginTx();
+        List<String> labels;
+        try
+        {
+            labels = (List) serialize( actions.getNodeLabels( node ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
+        // THEN
+        assertEquals(
+                asSet( labelName1, labelName2 ),
+                asSet( labels ) );
+    }
+
+    @Test
+    public void getNodesWithLabel() throws Exception
+    {
+        // GIVEN
+        String label1 = "first", label2 = "second";
+        long node1 = graphdbHelper.createNode( label( label1 ) );
+        long node2 = graphdbHelper.createNode( label( label1 ), label( label2 ) );
+        graphdbHelper.createNode( label( label2 ) );
+
+        // WHEN
+        Transaction transaction = graph.beginTx();
+        List<Object> representation;
+        try
+        {
+            representation = serialize( actions.getNodesWithLabel( label1, map() ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+        // THEN
+        assertEquals( asSet( node1, node2 ), asSet( Iterables.map( new Function<Object, Long>()
+        {
+            @Override
+            public Long apply( Object from )
+            {
+                Map<?, ?> nodeMap = (Map<?, ?>) from;
+                return nodeUriToId( (String) nodeMap.get( "self" ) );
+            }
+        }, representation ) ) );
+    }
+
+    @Test(expected =/*THEN*/IllegalArgumentException.class)
+    public void getNodesWithLabelAndSeveralPropertiesShouldFail() throws Exception
+    {
+        // WHEN
+        actions.getNodesWithLabel( "Person", map( "name", "bob", "age", 12 ) );
+    }
+
 
     private void assertPaths( int numPaths, long[] nodes, int length, List<Object> result )
     {
         assertEquals( numPaths, result.size() );
         for ( Object path : result )
         {
+            @SuppressWarnings("unchecked")
             Map<String, Object> serialized = (Map<String, Object>) path;
             assertTrue( serialized.get( "start" )
                     .toString()
@@ -1055,5 +1382,143 @@ public class DatabaseActionsTest
                     .endsWith( "/" + nodes[1] ) );
             assertEquals( length, serialized.get( "length" ) );
         }
+    }
+
+    @Test
+    public void shouldCreateSchemaIndex() throws Exception
+    {
+        // GIVEN
+        String labelName = "person", propertyKey = "name";
+
+        // WHEN
+        actions.createSchemaIndex( labelName, Arrays.asList( propertyKey ) );
+
+        // THEN
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            Iterable<IndexDefinition> defs = graphdbHelper.getSchemaIndexes( labelName );
+            assertEquals( 1, count( defs ) );
+            assertEquals( propertyKey, first( first( defs ).getPropertyKeys() ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+    }
+
+    @Test
+    public void shouldDropSchemaIndex() throws Exception
+    {
+        // GIVEN
+        String labelName = "user", propertyKey = "login";
+        IndexDefinition index = graphdbHelper.createSchemaIndex( labelName, propertyKey );
+
+        // WHEN
+        actions.dropSchemaIndex( labelName, propertyKey );
+
+        // THEN
+        Transaction transaction = graph.beginTx();
+        try
+        {
+            assertFalse( "Index should have been dropped", asSet( graphdbHelper.getSchemaIndexes( labelName ) )
+                    .contains( index ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+    }
+
+    @Test
+    public void shouldGetSchemaIndexes() throws Exception
+    {
+        // GIVEN
+        String labelName = "mylabel", propertyKey = "name";
+        graphdbHelper.createSchemaIndex( labelName, propertyKey );
+
+        // WHEN
+        Transaction transaction = graph.beginTx();
+        List<Object> serialized;
+        try
+        {
+            serialized = serialize( actions.getSchemaIndexes( labelName ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
+        // THEN
+        assertEquals( 1, serialized.size() );
+        Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
+        assertEquals( labelName, definition.get( "label" ) );
+        assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
+    }
+
+    @Test
+    public void shouldCreatePropertyUniquenessConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "person", propertyKey = "name";
+
+        // WHEN
+        actions.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
+
+        // THEN
+        Transaction tx  = graph.beginTx();
+        try
+        {
+            Iterable<ConstraintDefinition> defs = graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey );
+            assertEquals( asSet( propertyKey ), asSet( single( defs ).getPropertyKeys() ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    @Test
+    public void shouldDropPropertyUniquenessConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "user", propertyKey = "login";
+        ConstraintDefinition index = graphdbHelper.createPropertyUniquenessConstraint( labelName,
+                asList( propertyKey ) );
+
+        // WHEN
+        actions.dropPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
+
+        // THEN
+        assertFalse( "Constraint should have been dropped",
+                asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ) );
+    }
+
+    @Test
+    public void shouldGetPropertyUniquenessConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "mylabel", propertyKey = "name";
+        graphdbHelper.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
+
+        // WHEN
+        Transaction transaction = graph.beginTx();
+        List<Object> serialized;
+        try
+        {
+            serialized = serialize( actions.getPropertyUniquenessConstraint( labelName, asList( propertyKey ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
+        // THEN
+        assertEquals( 1, serialized.size() );
+        Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
+        assertEquals( labelName, definition.get( "label" ) );
+        assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
+        assertEquals( "UNIQUENESS", definition.get( "type" ) );
     }
 }

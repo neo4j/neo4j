@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,8 +52,7 @@ public class PersistenceWindowPool implements WindowPool
     // == recordSize
     private final int blockSize;
     private FileChannel fileChannel;
-    private final ConcurrentMap<Long,PersistenceRow> activeRowWindows =
-        new ConcurrentHashMap<Long,PersistenceRow>();
+    private final ConcurrentMap<Long,PersistenceRow> activeRowWindows;
     private long availableMem = 0;
     private long memUsed = 0;
     private int brickCount = 0;
@@ -62,7 +60,7 @@ public class PersistenceWindowPool implements WindowPool
     private BrickElement brickArray[] = new BrickElement[0];
     private int brickMiss = 0;
 
-    private static final int REFRESH_BRICK_COUNT = 50000;
+    static final int REFRESH_BRICK_COUNT = 50000;
     private final FileChannel.MapMode mapMode;
 
     private int hit = 0;
@@ -72,15 +70,17 @@ public class PersistenceWindowPool implements WindowPool
     private boolean useMemoryMapped = true;
 
     private final boolean readOnly;
-    
+
     private final AtomicBoolean refreshing = new AtomicBoolean();
     private final AtomicInteger avertedRefreshes = new AtomicInteger();
     private final AtomicLong refreshTime = new AtomicLong();
     private final AtomicInteger refreshes = new AtomicInteger();
-    private StringLogger log;
+    private final StringLogger log;
+    private final BrickElementFactory brickFactory;
 
     /**
      * Create new pool for a store.
+     *
      *
      * @param storeName
      *            Name of store that use this pool
@@ -90,12 +90,16 @@ public class PersistenceWindowPool implements WindowPool
      *            A fileChannel to the store
      * @param mappedMem
      *            Number of bytes dedicated to memory mapped windows
-     * @throws IOException
-     *             If unable to create pool
+     * @param activeRowWindows
+     *            Data structure for storing active "row windows", generally just provide a concurrent hash map.
+     * @throws UnderlyingStorageException If unable to create pool
      */
     public PersistenceWindowPool( File storeName, int blockSize,
-        FileChannel fileChannel, long mappedMem,
-        boolean useMemoryMappedBuffers, boolean readOnly, StringLogger log )
+                                  FileChannel fileChannel, long mappedMem,
+                                  boolean useMemoryMappedBuffers, boolean readOnly,
+                                  ConcurrentMap<Long, PersistenceRow> activeRowWindows,
+                                  BrickElementFactory brickFactory,
+                                  StringLogger log )
     {
         this.storeName = storeName;
         this.blockSize = blockSize;
@@ -103,6 +107,8 @@ public class PersistenceWindowPool implements WindowPool
         this.availableMem = mappedMem;
         this.useMemoryMapped = useMemoryMappedBuffers;
         this.readOnly = readOnly;
+        this.activeRowWindows = activeRowWindows;
+        this.brickFactory = brickFactory;
         this.mapMode = readOnly ? MapMode.READ_ONLY : MapMode.READ_WRITE;
         this.log = log;
         setupBricks();
@@ -118,8 +124,6 @@ public class PersistenceWindowPool implements WindowPool
      * @param operationType
      *            The type of operation (READ or WRITE)
      * @return A locked window encapsulating the position
-     * @throws IOException
-     *             If unable to acquire the window
      */
     @Override
     public PersistenceWindow acquire( long position, OperationType operationType )
@@ -129,6 +133,7 @@ public class PersistenceWindowPool implements WindowPool
         {
             refreshBricks();
         }
+        BrickElement theBrick = null;
         while ( window == null )
         {
             if ( brickSize > 0 )
@@ -138,27 +143,18 @@ public class PersistenceWindowPool implements WindowPool
                 {
                     expandBricks( brickIndex + 1 );
                 }
-                BrickElement brick = brickArray[brickIndex];
-                window = brick.getWindow();
-                if ( window != null && !window.markAsInUse() )
-                {
-                    // Oops, a refreshBricks call from another thread just closed
-                    // this window, treat it as if we hadn't even found it.
-                    window = null;
-                }
-
-                // assert window == null || window.encapsulates( position );
-                brick.setHit();
+                theBrick = brickArray[brickIndex];
+                window = theBrick.getAndMarkWindow();
             }
             if ( window == null )
             {
                 // There was no mapped window for this brick. Go for active window instead.
-                
+
                 // Should be AtomicIntegers, but it's completely OK to miss some
                 // updates for these statistics, right?
                 miss++;
                 brickMiss++;
-    
+
                 // Lock-free implementation of instantiating an active window for this position
                 // See if there's already an active window for this position
                 PersistenceRow dpw = activeRowWindows.get( position );
@@ -167,7 +163,7 @@ public class PersistenceWindowPool implements WindowPool
                     window = dpw;
                     break;
                 }
-                
+
                 // Either there was no active window for this position or it got
                 // closed right before we managed to mark it as in use.
                 // Either way instantiate a new active window for this position
@@ -184,7 +180,12 @@ public class PersistenceWindowPool implements WindowPool
                     // Someone else put it there before us. Close this row
                     // which was unnecessarily opened. The next go in this loop
                     // will get that one instead.
-                    dpw.close();
+                    dpw.close();;
+                    if(theBrick != null)
+                    {
+                        // theBrick may be null here if brick size is 0.
+                        theBrick.unLock();
+                    }
                 }
             }
             else
@@ -201,15 +202,15 @@ public class PersistenceWindowPool implements WindowPool
     {
         return (int) (position * blockSize / brickSize);
     }
-    
+
     private long brickIndexToPosition( int brickIndex )
     {
         return (long) brickIndex * brickSize / blockSize;
     }
-    
+
     void dumpStatistics()
     {
-        log.logMessage( storeName + " hit=" + hit + " miss=" + miss + " switches="
+        log.info( storeName + " hit=" + hit + " miss=" + miss + " switches="
                         + switches + " ooe=" + ooe );
     }
 
@@ -219,8 +220,6 @@ public class PersistenceWindowPool implements WindowPool
      *
      * @param window
      *            The window to be released
-     * @throws IOException
-     *             If unable to release window
      */
     @Override
     public void release( PersistenceWindow window )
@@ -230,20 +229,32 @@ public class PersistenceWindowPool implements WindowPool
             if ( window instanceof PersistenceRow )
             {
                 PersistenceRow dpw = (PersistenceRow) window;
-
-                // If the corresponding window has been instantiated while we had
-                // this active row we need to hand over the changes to that
-                // window if the window isn't memory mapped.
-                if ( brickSize > 0 && dpw.isDirty() )
-                    applyChangesToWindowIfNecessary( dpw );
-
-                if ( dpw.writeOutAndCloseIfFree( readOnly ) )
+                try
                 {
-                    activeRowWindows.remove( dpw.position(), dpw );
+                    // If the corresponding window has been instantiated while we had
+                    // this active row we need to hand over the changes to that
+                    // window if the window isn't memory mapped.
+                    if ( brickSize > 0 && dpw.isDirty() )
+                    {
+                        applyChangesToWindowIfNecessary( dpw );
+                    }
+                    if ( dpw.writeOutAndCloseIfFree( readOnly ) )
+                    {
+                        activeRowWindows.remove( dpw.position(), dpw );
+                    }
+                    else
+                    {
+                        dpw.reset();
+                    }
                 }
-                else
+                finally
                 {
-                    dpw.reset();
+                    if ( brickSize > 0 )
+                    {
+                        int brickIndex = positionToBrickIndex( dpw.position() );
+                        BrickElement theBrick = brickArray[brickIndex];
+                        theBrick.unLock();
+                    }
                 }
             }
         }
@@ -296,7 +307,9 @@ public class PersistenceWindowPool implements WindowPool
     public void flushAll()
     {
         if ( readOnly )
+        {
             return;
+        }
 
         for ( BrickElement element : brickArray )
         {
@@ -408,7 +421,7 @@ public class PersistenceWindowPool implements WindowPool
         brickArray = new BrickElement[brickCount];
         for ( int i = 0; i < brickCount; i++ )
         {
-            BrickElement element = new BrickElement( i );
+            BrickElement element = brickFactory.create( i );
             brickArray[i] = element;
         }
     }
@@ -416,7 +429,7 @@ public class PersistenceWindowPool implements WindowPool
     /**
      * Called during expanding of bricks where we see that we use too much
      * memory and need to release some windows.
-     * 
+     *
      * @param nr the number of windows to free.
      */
     private void freeWindows( int nr )
@@ -458,8 +471,10 @@ public class PersistenceWindowPool implements WindowPool
     private void refreshBricks()
     {
         if ( brickMiss < REFRESH_BRICK_COUNT || brickSize <= 0 )
+        {
             return;
-     
+        }
+
         if ( refreshing.compareAndSet( false, true ) )
         {
             // No one is doing refresh right now, go ahead and do it
@@ -482,14 +497,14 @@ public class PersistenceWindowPool implements WindowPool
             avertedRefreshes.incrementAndGet();
         }
     }
-    
+
     private synchronized void doRefreshBricks()
     {
         brickMiss = 0;
         Pair<List<BrickElement>, List<BrickElement>> currentMappings = gatherMappedVersusUnmappedWindows();
         List<BrickElement> mappedBricks = currentMappings.first();
         List<BrickElement> unmappedBricks = currentMappings.other();
-        
+
         // Fill up unused memory, i.e. map unmapped bricks as much as available memory allows
         // and request patterns signals. Start the loop from the end of the array where the
         // bricks with highest hit ratio are.
@@ -498,13 +513,15 @@ public class PersistenceWindowPool implements WindowPool
         {
             BrickElement unmappedBrick = unmappedBricks.get( unmappedIndex-- );
             if ( unmappedBrick.getHit() == 0 )
+            {
                 // We have more memory available, but no more windows have actually
                 // been requested so don't map unused random windows.
                 return;
-            
+            }
+
             allocateNewWindow( unmappedBrick );
         }
-        
+
         // Switch bad/unused mappings. Start iterating over mapped bricks
         // from the beginning (those with lowest hit ratio) and unmapped from the end
         // (or rather where the fill-up-unused-memory loop above left off) where we've
@@ -515,17 +532,21 @@ public class PersistenceWindowPool implements WindowPool
             BrickElement mappedBrick = mappedBricks.get( mappedIndex++ );
             BrickElement unmappedBrick = unmappedBricks.get( unmappedIndex-- );
             if ( mappedBrick.getHit() >= unmappedBrick.getHit() )
+            {
                 // We've passed a point where we don't have any unmapped brick
                 // with a higher hit ratio then the lowest mapped brick. We're done.
                 break;
-            
+            }
+
             LockableWindow window = mappedBrick.getWindow();
             if (window.writeOutAndCloseIfFree( readOnly ) )
             {
                 mappedBrick.setWindow( null );
                 memUsed -= brickSize;
                 if ( allocateNewWindow( unmappedBrick ) )
+                {
                     switches++;
+                }
             }
         }
     }
@@ -533,10 +554,10 @@ public class PersistenceWindowPool implements WindowPool
     /**
      * Goes through all bricks in this pool and divides them between mapped and unmapped,
      * i.e. those with a mapped persistence window assigned to it and those without.
-     * 
+     *
      * The two {@link List lists} coming back are also sorted where the first element
      * has got the lowest {@link BrickElement#getHit()} ratio, and the last the highest.
-     * 
+     *
      * @return all bricks in this pool divided into mapped and unmapped.
      */
     private Pair<List<BrickElement>, List<BrickElement>> gatherMappedVersusUnmappedWindows()
@@ -548,9 +569,13 @@ public class PersistenceWindowPool implements WindowPool
             BrickElement be = brickArray[i];
             be.snapshotHitCount();
             if ( be.getWindow() != null )
+            {
                 mappedBricks.add( be );
+            }
             else
+            {
                 unmappedBricks.add( be );
+            }
             be.refresh();
         }
         Collections.sort( unmappedBricks, BRICK_SORTER );
@@ -562,7 +587,7 @@ public class PersistenceWindowPool implements WindowPool
      * Called every time we request a brick that has a greater index than
      * the current brick count. This happens as the underlying file channel
      * grows as new blocks/records are added to it.
-     * 
+     *
      * @param newBrickCount the size to expand the brick count to.
      */
     private synchronized void expandBricks( int newBrickCount )
@@ -577,10 +602,12 @@ public class PersistenceWindowPool implements WindowPool
             }
             for ( int i = brickArray.length; i < tmpArray.length; i++ )
             {
-                BrickElement be = new BrickElement( i );
+                BrickElement be = brickFactory.create( i );
                 tmpArray[i] = be;
                 if ( memUsed + brickSize <= availableMem )
+                {
                     allocateNewWindow( be );
+                }
             }
             brickArray = tmpArray;
             brickCount = tmpArray.length;
@@ -593,12 +620,12 @@ public class PersistenceWindowPool implements WindowPool
      * caught and logged as well as a counter incremented. It's OK if
      * a memory mapping fails, because we can fall back on temporary
      * {@link PersistenceRow persistence rows}.
-     * 
+     *
      * @param brick the {@link BrickElement} to allocate a new window for.
      * @return {@code true} if the window was successfully allocated,
      * otherwise {@code false}.
      */
-    private boolean allocateNewWindow( BrickElement brick )
+    boolean allocateNewWindow( BrickElement brick )
     {
         try
         {
@@ -618,7 +645,24 @@ public class PersistenceWindowPool implements WindowPool
                 dpw.readFullWindow();
                 window = dpw;
             }
-            brick.setWindow( window );
+            while ( true )
+            {
+                /*
+                 * This is a busy wait, given that rows are kept for a very short time. What we do is lock the brick so
+                 * no rows can be mapped over it, then we wait for every row mapped over it to be released (which can
+                 * happen because releasing the row does not acquire a lock). When that happens, we can go ahead and
+                 * map the window here. If a thread was waiting for this lock, after it acquires it, it will discover
+                 * the window in place, so it will never allocate a row.
+                 */
+                synchronized ( brick )
+                {
+                    if ( brick.lockCount.get() == 0 )
+                    {
+                        brick.setWindow( window );
+                        break;
+                    }
+                }
+            }
             memUsed += brickSize;
             return true;
         }
@@ -639,7 +683,7 @@ public class PersistenceWindowPool implements WindowPool
     {
         try
         {
-            log.logMessage( "[" + storeName + "] brickCount=" + brickCount
+            log.info( "[" + storeName + "] brickCount=" + brickCount
                             + " brickSize=" + brickSize + "b mappedMem=" + availableMem
                             + "b (storeSize=" + fileChannel.size() + "b)" );
         }
@@ -652,12 +696,12 @@ public class PersistenceWindowPool implements WindowPool
 
     private void logWarn( String logMessage )
     {
-        log.logMessage( "[" + storeName + "] " + logMessage );
+        log.warn( "[" + storeName + "] " + logMessage );
     }
 
     private void logWarn( String logMessage, Throwable cause )
     {
-        log.logMessage( "[" + storeName + "] " + logMessage, cause );
+        log.warn( "[" + storeName + "] " + logMessage, cause );
     }
 
     @Override
@@ -668,76 +712,6 @@ public class PersistenceWindowPool implements WindowPool
                 brickSize, hit, miss, ooe, switches, avgRefreshTime, refreshes.get(), avertedRefreshes.get() );
     }
 
-    private static class BrickElement
-    {
-        private final int index;
-        private int hitCount;
-        private int hitCountSnapshot;
-        private volatile LockableWindow window;
-
-        BrickElement( int index )
-        {
-            this.index = index;
-        }
-
-        void setWindow( LockableWindow window )
-        {
-            this.window = window;
-        }
-
-        LockableWindow getWindow()
-        {
-            return window;
-        }
-
-        int index()
-        {
-            return index;
-        }
-
-        void setHit()
-        {
-            hitCount += 10;
-            if ( hitCount < 0 )
-            {
-                hitCount -= 10;
-            }
-        }
-
-        int getHit()
-        {
-            return hitCount;
-        }
-
-        void refresh()
-        {
-            if ( window == null )
-            {
-                hitCount /= 1.25;
-            }
-            else
-            {
-                hitCount /= 1.15;
-            }
-        }
-
-        void snapshotHitCount()
-        {
-            hitCountSnapshot = hitCount;
-        }
-
-        int getHitCountSnapshot()
-        {
-            return hitCountSnapshot;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "" + hitCount + (window == null ? "x" : "o");
-        }
-    }
-
     /**
      * Sorts {@link BrickElement} by their {@link BrickElement#getHit()} ratio.
      * Lowest hit ratio will make that brick end up at a lower index in list,
@@ -745,6 +719,7 @@ public class PersistenceWindowPool implements WindowPool
      */
     private static final Comparator<BrickElement> BRICK_SORTER = new Comparator<BrickElement>()
     {
+        @Override
         public int compare( BrickElement o1, BrickElement o2 )
         {
             return o1.getHitCountSnapshot() - o2.getHitCountSnapshot();

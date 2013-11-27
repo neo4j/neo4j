@@ -19,23 +19,28 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.neo4j.graphdb.traversal.Evaluators.includeIfAcceptedByAny;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.Traversal.traversal;
-
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Predicate;
 
-public class TestMultipleFilters extends AbstractTestBase
+import static org.neo4j.graphdb.traversal.Evaluators.includeIfAcceptedByAny;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.Traversal.traversal;
+
+public class TestMultipleFilters extends TraversalTestBase
 {
+
+    private Transaction tx;
+
     @Before
     public void setupGraph()
     {
@@ -48,6 +53,14 @@ public class TestMultipleFilters extends AbstractTestBase
         //                 v   v
         //                (d)  (e)
         createGraph( "a TO b", "b TO d", "b TO e", "b TO k", "a TO c", "c TO f", "c TO k" );
+
+        tx = beginTx();
+    }
+
+    @After
+    public void tearDown()
+    {
+         tx.finish();
     }
     
     private static class MustBeConnectedToNodeFilter implements Predicate<Path>, Evaluator

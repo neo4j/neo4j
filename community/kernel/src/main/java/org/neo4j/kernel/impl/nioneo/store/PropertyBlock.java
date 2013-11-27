@@ -20,17 +20,20 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class PropertyBlock
+import org.neo4j.kernel.api.properties.DefinedProperty;
+
+public class PropertyBlock implements Cloneable
 {
+    private static final long KEY_BITMASK = 0xFFFFFFL;
+
     private static final int MAX_ARRAY_TOSTRING_SIZE = 4;
-    private final List<DynamicRecord> valueRecords = new LinkedList<DynamicRecord>();
+    private final List<DynamicRecord> valueRecords = new LinkedList<>();
     private long[] valueBlocks;
-    // private boolean inUse;
-    private boolean isCreated;
 
     public PropertyType getType()
     {
@@ -50,7 +53,13 @@ public class PropertyBlock
     public int getKeyIndexId()
     {
         // [][][][][][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
-        return (int) (valueBlocks[0]&0xFFFFFF);
+        return (int) (valueBlocks[0] & KEY_BITMASK);
+    }
+
+    public void setKeyIndexId( int key )
+    {
+        valueBlocks[0] &= ~KEY_BITMASK;
+        valueBlocks[0] |= key;
     }
 
     public void setSingleBlock( long value )
@@ -108,44 +117,13 @@ public class PropertyBlock
         return valueRecords.isEmpty();
     }
 
-    public PropertyData newPropertyData( PropertyRecord parent )
-    {
-        return newPropertyData( parent, null );
-    }
-
-    public PropertyData newPropertyData( PropertyRecord parent,
-            Object extractedValue )
-    {
-        return getType().newPropertyData( this, parent.getId(), extractedValue );
-    }
-
     public void setValueBlocks( long[] blocks )
     {
-        assert ( blocks == null || blocks.length <= PropertyType.getPayloadSizeLongs() ) : ( "i was given an array of size " + blocks.length );
+        int expectedPayloadSize = PropertyType.getPayloadSizeLongs();
+        assert ( blocks == null || blocks.length <= expectedPayloadSize) : (
+                "I was given an array of size " + blocks.length +", but I wanted it to be " + expectedPayloadSize );
         this.valueBlocks = blocks;
         valueRecords.clear();
-    }
-
-    /*
-    public boolean inUse()
-    {
-        return inUse;
-    }
-
-    public void setInUse( boolean inUse )
-    {
-        this.inUse = inUse;
-    }
-    */
-
-    public boolean isCreated()
-    {
-        return isCreated;
-    }
-
-    public void setCreated()
-    {
-        isCreated = true;
     }
 
     /**
@@ -166,30 +144,43 @@ public class PropertyBlock
     {
         StringBuilder result = new StringBuilder("PropertyBlock[");
         PropertyType type = getType();
+        if ( valueBlocks != null )
+        {
+            result.append( "blocks=" ).append( valueBlocks.length ).append( "," );
+        }
         result.append( type == null ? "<unknown type>" : type.name() ).append( ',' );
         result.append( "key=" ).append( valueBlocks == null ? "?" : Integer.toString( getKeyIndexId() ) );
-        if ( type != null ) switch ( type )
+        if ( type != null )
         {
-        case STRING:
-        case ARRAY:
-            result.append( ",firstDynamic=" ).append( getSingleValueLong() );
-            break;
-        default:
-            Object value = type.getValue( this, null );
-            if ( value != null && value.getClass().isArray() )
+            switch ( type )
             {
-                int length = Array.getLength( value );
-                StringBuilder buf = new StringBuilder( value.getClass().getComponentType().getSimpleName() ).append( "[" );
-                for ( int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++ )
+            case STRING:
+            case ARRAY:
+                result.append( ",firstDynamic=" ).append( getSingleValueLong() );
+                break;
+            default:
+                Object value = type.getValue( this, null );
+                if ( value != null && value.getClass().isArray() )
                 {
-                    if ( i != 0 ) buf.append( "," );
-                    buf.append( Array.get( value, i ) );
+                    int length = Array.getLength( value );
+                    StringBuilder buf = new StringBuilder( value.getClass().getComponentType().getSimpleName() ).append( "[" );
+                    for ( int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++ )
+                    {
+                        if ( i != 0 )
+                        {
+                            buf.append( "," );
+                        }
+                        buf.append( Array.get( value, i ) );
+                    }
+                    if ( length > MAX_ARRAY_TOSTRING_SIZE )
+                    {
+                        buf.append( ",..." );
+                    }
+                    value = buf.append( "]" );
                 }
-                if ( length > MAX_ARRAY_TOSTRING_SIZE ) buf.append( ",..." );
-                value = buf.append( "]" );
+                result.append( ",value=" ).append( value );
+                break;
             }
-            result.append( ",value=" ).append( value );
-            break;
         }
         if ( !isLight() )
         {
@@ -207,5 +198,32 @@ public class PropertyBlock
         }
         result.append( ']' );
         return result.toString();
+    }
+
+    @Override
+    public PropertyBlock clone()
+    {
+        PropertyBlock result = new PropertyBlock();
+        if ( valueBlocks != null )
+        {
+            result.valueBlocks = valueBlocks.clone();
+        }
+        for ( DynamicRecord valueRecord : valueRecords )
+        {
+            result.valueRecords.add( valueRecord.clone() );
+        }
+        return result;
+    }
+
+    public boolean hasSameContentsAs( PropertyBlock other )
+    {
+        // Assumption (which happens to be true) that if a heavy (long string/array) property
+        // changes it will get another id, making the valueBlocks values differ.
+        return Arrays.equals( valueBlocks, other.valueBlocks );
+    }
+
+    public DefinedProperty newPropertyData( PropertyStore propertyStore )
+    {
+        return getType().readProperty( getKeyIndexId(), this, propertyStore );
     }
 }

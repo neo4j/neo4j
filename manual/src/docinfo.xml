@@ -47,22 +47,27 @@
       </listitem>
       <listitem>
         <para>
-          <link linkend="tutorials-java-embedded">Using Neo4j embedded in Java applications</link>
-        </para>
-      </listitem>
-      <listitem>
-        <para>
           <link linkend="languages">Languages / Remote Client Libraries</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <link linkend="server">Neo4j Server</link>
+          <link linkend="rest-api">REST API</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <link linkend="rest-api">REST API</link>
+          <link linkend="deployment">Installation</link>
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <link linkend="deployment-upgrading">Upgrading</link>
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <link linkend="security-server">Server Security</link>
         </para>
       </listitem>
     </itemizedlist>

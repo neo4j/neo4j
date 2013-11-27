@@ -19,23 +19,33 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
-
 import java.io.PrintWriter;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.shell.impl.CollectingOutput;
+import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
+import static org.neo4j.shell.ShellLobby.remoteLocation;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
 
 public class ShellDocTest
 {
+    private final static String NL = System.getProperty( "line.separator" );
+
     private AppCommandParser parse( final String line ) throws Exception
     {
         return new AppCommandParser( new GraphDatabaseShellServer( null ), line );
@@ -51,6 +61,21 @@ public class ShellDocTest
         assertTrue( parser.options().containsKey( "a" ) );
         assertTrue( parser.arguments().isEmpty() );
     }
+    
+    @Test
+    public void parsingUnrecognizedOptionShouldFail() throws Exception
+    {
+        String unrecognizedOption = "unrecognized-option";
+        try
+        {
+            parse( "ls --" + unrecognizedOption );
+            fail( "Should fail when encountering unrecognized option" );
+        }
+        catch ( ShellException e )
+        {
+            assertThat( e.getMessage(), containsString( unrecognizedOption ) );
+        }
+    }
 
     @Test
     public void testParserArguments() throws Exception
@@ -62,19 +87,21 @@ public class ShellDocTest
         assertEquals( 2, parser.arguments().size() );
         assertEquals( "key", parser.arguments().get( 0 ) );
         assertEquals( "value", parser.arguments().get( 1 ) );
-        assertException( "set -tsd" );
+        assertShellException( "set -tsd" );
     }
-
+    
     @Test
-    public void testEnableRemoteShell() throws Exception
+    public void testEnableRemoteShellOnCustomPort() throws Exception
     {
         int port = 8085;
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().
-                setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( ShellSettings.remote_shell_enabled, "true" ).
                 setConfig( ShellSettings.remote_shell_port, "" + port ).
                 newGraphDatabase();
-        ShellLobby.newClient( port );
+        RemoteClient client = new RemoteClient( NO_INITIAL_SESSION, remoteLocation( port ), new CollectingOutput() );
+        client.evaluate( "help" );
+        client.shutdown();
         graphDb.shutdown();
     }
 
@@ -82,11 +109,13 @@ public class ShellDocTest
     public void testEnableServerOnDefaultPort() throws Exception
     {
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
-                setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
                 newGraphDatabase();
         try
         {
-            ShellLobby.newClient();
+            RemoteClient client = new RemoteClient( NO_INITIAL_SESSION, remoteLocation(), new CollectingOutput() );
+            client.evaluate( "help" );
+            client.shutdown();
         }
         finally
         {
@@ -97,10 +126,11 @@ public class ShellDocTest
     @Test
     public void testRemoveReferenceNode() throws Exception
     {
-        GraphDatabaseAPI db = new ImpermanentGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "sample session", server );
+        doc.add( "mknode --cd", "", "Create a node");
         doc.add( "pwd", "", "where are we?" );
         doc.add( "set name \"Jon\"", "", "On the current node, set the key \"name\" to value \"Jon\"" );
         doc.add( "start n=node(0) return n;", "Jon", "send a cypher query" );
@@ -114,11 +144,51 @@ public class ShellDocTest
                 "end node" );
         doc.add( "pwd", "0", "print current history stack" );
         doc.add( "ls -avr", "KNOWS", "verbose list relationships" );
+        db.beginTx();
         doc.run();
-        doc.add( "rmnode -f 0", "", "delete node 0 (reference node)" );
-        doc.add( "cd", "", "cd back to the reference node" );
-        doc.add( "pwd", "(?)", "the reference node doesn't exist now" );
+        doc.add( "rmnode -f 0", "", "delete node 0" );
+        doc.add( "cd 0", "", "cd back to node 0" );
+        doc.add( "pwd", "(?)", "the node doesn't exist now" );
         doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
+        server.shutdown();
+        db.shutdown();
+    }
+
+    @Test
+    public void testDumpCypherResultSimple() throws Exception
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Documenter doc = new Documenter( "simple cypher result dump", server );
+            doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
+            doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "create a relationship" );
+            doc.add( "dump START n=node({self}) MATCH (n)-[r]-(m) return n,r,m;",
+                    "create (_0 {`name`:\"Neo\"})", "Export the cypher statement results" );
+            doc.run();
+        }
+        server.shutdown();
+        db.shutdown();
+    }
+
+    @Test
+    public void testDumpDatabase() throws Exception
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
+
+        Documenter doc = new Documenter( "database dump", server );
+        doc.add( "create index on :Person(name);", "", "create an index" );
+        doc.add( "create (m:Person:Hacker {name:'Mattias'}), (m)-[:KNOWS]->(m);", "", "create one labeled node and a relationship" );
+        doc.add( "dump", "begin" +
+                NL +"create index on :`Person`(`name`);" +
+                NL +"create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
+                NL +"create _0-[:`KNOWS`]->_0" +
+                NL +";" +
+                NL +"commit", "Export the whole database including indexes" );
+        doc.run();
         server.shutdown();
         db.shutdown();
     }
@@ -131,6 +201,7 @@ public class ShellDocTest
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "a matrix example", server );
+        doc.add("mknode --cd", "", "Create a reference node");
         doc.add( "mkrel -t ROOT -c -v", "created",
                 "create the Thomas Andersson node" );
         doc.add( "cd 1", "", "go to the new node" );
@@ -175,34 +246,39 @@ public class ShellDocTest
                 "return zionist.name;",
                 "Trinity",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-        doc.add( "cypher 1.9 start morpheus = node:node_auto_index(name='Morpheus') " +
+        doc.add( "cypher 2.0 start morpheus = node:node_auto_index(name='Morpheus') " +
                 "match morpheus-[:KNOWS]-zionist " +
                 "return zionist.name;",
                 "Cypher",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-        doc.add( "profile start morpheus = node:node_auto_index(name='Morpheus') " +
-                "match morpheus-[:KNOWS]-zionist " +
-                "return zionist.name;",
-                "ColumnFilter",
-                "profile the query by displaying more query execution information" );
-        doc.run();
+//        doc.add( "profile start morpheus = node:node_auto_index(name='Morpheus') " +
+//                "match morpheus-[:KNOWS]-zionist " +
+//                "return zionist.name;",
+//                "ColumnFilter",
+//                "profile the query by displaying more query execution information" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            doc.run();
+        }
         server.shutdown();
-        PrintWriter writer = doc.getWriter( "shell-matrix-example-graph" );
-        writer.println( createGraphVizWithNodeId( "Shell Matrix Example", db,
-                "graph" ) );
-        writer.flush();
-        writer.close();
+        
+        try ( PrintWriter writer = doc.getWriter( "shell-matrix-example-graph" );
+                Transaction tx = db.beginTx() )
+        {
+            writer.println( createGraphVizWithNodeId( "Shell Matrix Example", db, "graph" ) );
+            writer.flush();
+        }
         db.shutdown();
     }
 
-    private void assertException( final String command )
+    private void assertShellException( final String command ) throws Exception
     {
         try
         {
             this.parse( command );
-            fail( "Should fail" );
+            fail( "Should fail with " + ShellException.class.getSimpleName() );
         }
-        catch ( Exception e )
+        catch ( ShellException e )
         {
             // Good
         }

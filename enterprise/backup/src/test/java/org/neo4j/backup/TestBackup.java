@@ -19,29 +19,23 @@
  */
 package org.neo4j.backup;
 
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.FilenameFilter;
-import java.net.InetAddress;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
@@ -51,6 +45,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
+
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestBackup
 {
@@ -77,7 +78,7 @@ public class TestBackup
     {
         createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
-        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
         createInitialDataSet( backupPath );
         try
         {
@@ -96,7 +97,7 @@ public class TestBackup
     {
         createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
-        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
         try
         {
             backup.incremental( backupPath.getPath() );
@@ -118,7 +119,7 @@ public class TestBackup
         {
             createInitialDataSet( serverPath );
             server = startServer( serverPath );
-            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
             shutdownServer( server );
             server = null;
@@ -164,7 +165,7 @@ public class TestBackup
         {
             createInitialDataSet( serverPath );
             server = startServer( serverPath );
-            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
             shutdownServer( server );
             server = null;
@@ -225,7 +226,7 @@ public class TestBackup
         ServerInterface server = startServer( serverPath );
 
         // START SNIPPET: onlineBackup
-        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
         backup.full( backupPath.getPath() );
         // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
@@ -245,7 +246,7 @@ public class TestBackup
     {
         createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
-        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
 
         // First check full
         backup.full( backupPath.getPath() );
@@ -270,7 +271,7 @@ public class TestBackup
         ServerInterface server = startServer( serverPath );
 
         // Grab initial backup from server A
-        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
         backup.full( backupPath.getPath() );
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
@@ -314,7 +315,7 @@ public class TestBackup
             throw new RuntimeException( e );
         }
         */
-        ServerInterface server = new EmbeddedServer( path.getPath() );
+        ServerInterface server = new EmbeddedServer( path.getPath(), "127.0.0.1:6362" );
         server.awaitStarted();
         return server;
     }
@@ -331,7 +332,7 @@ public class TestBackup
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "backup", "Is great" );
-        db.getReferenceNode().createRelationshipTo( node,
+        db.createNode().createRelationshipTo( node,
                 DynamicRelationshipType.withName( "LOVES" ) );
         tx.success();
         tx.finish();
@@ -344,8 +345,8 @@ public class TestBackup
     {
         return new GraphDatabaseFactory().
             newEmbeddedDatabaseBuilder( path.getPath() ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.FALSE ).
-            setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
+            setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
             newGraphDatabase();
     }
 
@@ -357,7 +358,7 @@ public class TestBackup
         node.setProperty( "myKey", "myValue" );
         Index<Node> nodeIndex = db.index().forNodes( "db-index" );
         nodeIndex.add( node, "myKey", "myValue" );
-        db.getReferenceNode().createRelationshipTo( node,
+        db.createNode().createRelationshipTo( node,
                 DynamicRelationshipType.withName( "KNOWS" ) );
         tx.success();
         tx.finish();
@@ -373,7 +374,7 @@ public class TestBackup
         try
         {
             db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
             Transaction tx = db.beginTx();
@@ -382,7 +383,7 @@ public class TestBackup
             tx.success();
             tx.finish();
 
-            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
             long lastCommittedTxForLucene = getLastCommittedTx( backupPath.getPath() );
 
@@ -393,7 +394,8 @@ public class TestBackup
                 index.add( node, "key", "value" + i );
                 tx.success();
                 tx.finish();
-                backup.incremental( backupPath.getPath() );
+                backup = backup.incremental( backupPath.getPath() );
+                assertTrue( "Should be consistent", backup.isConsistent() );
                 assertEquals( lastCommittedTxForLucene + i + 1,
                         getLastCommittedTx( backupPath.getPath() ) );
             }
@@ -414,12 +416,21 @@ public class TestBackup
         try
         {
             db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
-            db.index().forNodes( "created-no-commits" );
+            Transaction transaction = db.beginTx();
+            try
+            {
+                db.index().forNodes( "created-no-commits" );
+                transaction.success();
+            }
+            finally
+            {
+                transaction.finish();
+            }
 
-            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
         }
         finally
@@ -431,6 +442,7 @@ public class TestBackup
         }
     }
 
+    @SuppressWarnings("deprecation")
     private long getLastCommittedTx( String path )
     {
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
@@ -451,27 +463,42 @@ public class TestBackup
         String key = "name";
         String value = "Neo";
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             newGraphDatabase();
 
-        Index<Node> index = db.index().forNodes( key );
         Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( key, value );
-        tx.success();
-        tx.finish();
-        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
+        Index<Node> index;
+        Node node;
+        try
+        {
+            index = db.index().forNodes( key );
+            node = db.createNode();
+            node.setProperty( key, value );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
+        OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
 
         tx = db.beginTx();
-        index.add( node, key, value );
-        tx.success();
-        tx.finish();
+        try
+        {
+            index.add( node, key, value );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         db.shutdown();
     }
@@ -483,12 +510,12 @@ public class TestBackup
         FileUtils.deleteDirectory( new File( sourcePath ) );
 
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             newGraphDatabase();
         try
         {
             assertStoreIsLocked( sourcePath );
-            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
+            OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
             assertStoreIsLocked( sourcePath );
         }
         finally

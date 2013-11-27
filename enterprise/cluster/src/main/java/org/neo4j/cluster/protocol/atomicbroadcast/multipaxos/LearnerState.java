@@ -73,6 +73,8 @@ public enum LearnerState
                             org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( instanceId );
 
+                            StringLogger logger = context.clusterContext.getLogger( getClass() );
+
                             // Skip if we already know about this
                             if ( instanceId.getId() <= context.learnerContext
                                     .getLastDeliveredInstanceId() )
@@ -84,7 +86,6 @@ public enum LearnerState
 
                             instance.closed( learnState.getValue(), message.getHeader( Message.CONVERSATION_ID ) );
 
-                            StringLogger logger = context.clusterContext.getLogger( getClass() );
                             /*
                              * The conditional below is simply so that no expensive deserialization will happen if we
                              * are not to print anything anyway if debug is not enabled.
@@ -94,7 +95,11 @@ public enum LearnerState
                                 String description;
                                 if ( instance.value_2 instanceof Payload )
                                 {
-                                    description = new AtomicBroadcastSerializer().receive( (Payload) instance.value_2 ).toString();
+                                    AtomicBroadcastSerializer atomicBroadcastSerializer = new
+                                            AtomicBroadcastSerializer( context.getLenientObjectInputStreamFactory(),
+                                            context.getLenientObjectOutputStreamFactory() );
+
+                                    description = atomicBroadcastSerializer.receive( (Payload) instance.value_2 ).toString();
                                 }
                                 else
                                 {
@@ -149,8 +154,7 @@ public enum LearnerState
                             {
                                 // Found hole - we're waiting for this to be filled, i.e. timeout already set
                                 context.clusterContext.getLogger( LearnerState.class ).debug( "*** GOT " + instanceId
-                                        + ", WAITING FOR " + (context.learnerContext.getLastDeliveredInstanceId() +
-                                        1) );
+                                        + ", WAITING FOR " + (context.learnerContext.getLastDeliveredInstanceId() + 1) );
 
                                 context.timeouts.setTimeout( "learn", Message.timeout( LearnerMessage.learnTimedout,
                                         message ) );
@@ -257,8 +261,7 @@ public enum LearnerState
                                 {
                                     org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId id = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( instanceId );
                                     PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( id );
-                                    if ( !instance.isState( PaxosInstance.State.closed ) && !instance.isState(
-                                            PaxosInstance.State.delivered ) )
+                                    if ( !instance.isState( PaxosInstance.State.closed ) && !instance.isState( PaxosInstance.State.delivered ) )
                                     {
                                         for ( org.neo4j.cluster.InstanceId node : context.heartbeatContext.getAlive() )
                                         {

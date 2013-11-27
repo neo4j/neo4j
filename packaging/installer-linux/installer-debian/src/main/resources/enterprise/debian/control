@@ -1,0 +1,15 @@
+Source: neo4j-enterprise
+Section: misc
+Priority: optional
+Maintainer: ${neo4j.debian.maintainer}
+Build-Depends: debhelper (>= 5)
+Standards-Version: 3.7.2
+Homepage: http://neo4j.org/
+
+Package: neo4j-enterprise
+Architecture: all
+Depends: ${misc:Depends}, daemon, adduser, psmisc, lsof, lsb-base, java7-runtime | j2re1.7
+Conflicts: 
+Replaces: neo4j, neo4j-advanced
+Description: graph database server
+ Neo4j server is a database that stores data as graphs rather than tables.

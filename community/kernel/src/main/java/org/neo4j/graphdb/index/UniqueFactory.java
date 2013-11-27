@@ -39,6 +39,28 @@ import org.neo4j.graphdb.Transaction;
  */
 public abstract class UniqueFactory<T extends PropertyContainer>
 {
+    public static class UniqueEntity<T extends PropertyContainer>
+    {
+        private final T entity;
+        private final boolean created;
+
+        UniqueEntity( T entity, boolean created )
+        {
+            this.entity = entity;
+            this.created = created;
+        }
+
+        public T entity()
+        {
+            return this.entity;
+        }
+
+        public boolean wasCreated()
+        {
+            return this.created;
+        }
+    }
+
     /**
      * Implementation of {@link UniqueFactory} for {@link Node}.
      *
@@ -191,11 +213,25 @@ public abstract class UniqueFactory<T extends PropertyContainer>
      */
     public final T getOrCreate( String key, Object value )
     {
+        return getOrCreateWithOutcome( key, value ).entity();
+    }
+    
+    /**
+     * Get the indexed entity, creating it (exactly once) if no indexed entity exists.
+     * Includes the outcome, i.e. whether the entity was created or not.
+     * @param key the key to find the entity under in the index.
+     * @param value the value the key is mapped to for the entity in the index.
+     * @return the unique entity in the index as well as whether or not it was created,
+     * wrapped in a {@link UniqueEntity}.
+     */
+    public final UniqueEntity<T> getOrCreateWithOutcome( String key, Object value )
+    {
+        // Index reads implies asserting we're in a transaction.
         T result = index.get( key, value ).getSingle();
+        boolean wasCreated = false;
         if ( result == null )
         {
-            Transaction tx = graphDatabase().beginTx();
-            try
+            try ( Transaction tx = graphDatabase().beginTx() )
             {
                 Map<String, Object> properties = Collections.singletonMap( key, value );
                 T created = create( properties );
@@ -204,6 +240,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
                 {
                     initialize( created, properties );
                     result = created;
+                    wasCreated = true;
                 }
                 else
                 {
@@ -211,12 +248,8 @@ public abstract class UniqueFactory<T extends PropertyContainer>
                 }
                 tx.success();
             }
-            finally
-            {
-                tx.finish();
-            }
         }
-        return result;
+        return new UniqueEntity<>( result, wasCreated );
     }
 
     /**

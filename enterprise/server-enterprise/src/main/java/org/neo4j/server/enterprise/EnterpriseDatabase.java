@@ -30,7 +30,6 @@ import org.neo4j.server.database.GraphDatabaseFactory;
 
 public class EnterpriseDatabase extends CommunityDatabase
 {
-
     enum DatabaseMode implements GraphDatabaseFactory
     {
         SINGLE
@@ -67,25 +66,14 @@ public class EnterpriseDatabase extends CommunityDatabase
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public void start() throws Throwable
+    protected AbstractGraphDatabase createDb()
     {
-        try
-        {
-            GraphDatabaseFactory factory = DatabaseMode.valueOf( serverConfiguration.getString(
-                    Configurator.DB_MODE_KEY, DatabaseMode.SINGLE.name() ).toUpperCase() );
+        GraphDatabaseFactory factory = DatabaseMode.valueOf( serverConfiguration.getString(
+            Configurator.DB_MODE_KEY, DatabaseMode.SINGLE.name() ).toUpperCase() );
 
-            this.graph = (AbstractGraphDatabase) factory.createDatabase(
-                    serverConfiguration.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
-                            Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ),
-                    getDbTuningPropertiesWithServerDefaults() );
-
-            log.info( "Successfully started database" );
-        }
-        catch ( Exception e )
-        {
-            log.error( "Failed to start database.", e );
-            throw e;
-        }
+        return (AbstractGraphDatabase) factory.createDatabase(
+                serverConfiguration.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
+                        Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ),
+                getDbTuningPropertiesWithServerDefaults() );
     }
 }

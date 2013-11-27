@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.extension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Base class for testing a {@link org.neo4j.kernel.extension.KernelExtensionFactory}. The base test cases in this
@@ -52,10 +52,9 @@ public abstract class KernelExtensionFactoryContractTest
         this.key = key;
     }
 
-    public GraphDatabaseAPI graphdb( String name, boolean loadExtensions, int instance )
+    public GraphDatabaseAPI graphdb( String name, int instance )
     {
         Map<String, String> config = configuration( true, instance );
-        config.put( GraphDatabaseSettings.load_kernel_extensions.name(), Boolean.toString( loadExtensions ) );
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
     }
 
@@ -138,7 +137,7 @@ public abstract class KernelExtensionFactoryContractTest
     @Test
     public void canLoadKernelExtension() throws Exception
     {
-        GraphDatabaseService graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        GraphDatabaseService graphdb = graphdb( "graphdb", 0 );
         try
         {
             assertTrue( "Failed to load extension", getExtensions( graphdb ).isRegistered( extClass ) );

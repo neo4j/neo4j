@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 
 import org.junit.Rule;
@@ -28,10 +26,12 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.*;
 
 public class TestIdReuse
 {
@@ -71,31 +71,32 @@ public class TestIdReuse
         File file = new File( storeDir, fileName );
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).
             newImpermanentDatabaseBuilder( storeDir.getPath() ).
-            setConfig( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE ).
+            setConfig( GraphDatabaseSettings.use_memory_mapped_buffers, Settings.FALSE ).
             newGraphDatabase();
         for ( int i = 0; i < 5; i++ )
         {
-            setSomeAndRemoveSome( db.getReferenceNode(), value );
+            setAndRemoveSomeProperties( db, value );
         }
         db.shutdown();
         long sizeBefore = file.length();
         db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir.getPath() );
         for ( int i = 0; i < iterations; i++ )
         {
-            setSomeAndRemoveSome( db.getReferenceNode(), value );
+            setAndRemoveSomeProperties( db, value );
         }
         db.shutdown();
         assertEquals( sizeBefore, file.length() );
     }
     
-    private void setSomeAndRemoveSome( Node node, Object value )
+    private void setAndRemoveSomeProperties( GraphDatabaseService graphDatabaseService, Object value )
     {
-        Transaction tx = node.getGraphDatabase().beginTx();
+        Transaction tx = graphDatabaseService.beginTx();
+        Node commonNode = graphDatabaseService.createNode();
         try
         {
             for ( int i = 0; i < 10; i++ )
             {
-                node.setProperty( "key" + i, value );
+                commonNode.setProperty( "key" + i, value );
             }
             tx.success();
         }
@@ -103,12 +104,12 @@ public class TestIdReuse
         {
             tx.finish();
         }
-        tx = node.getGraphDatabase().beginTx();
+        tx = graphDatabaseService.beginTx();
         try
         {
             for ( int i = 0; i < 10; i++ )
             {
-                node.removeProperty( "key" + i );
+                commonNode.removeProperty( "key" + i );
             }
             tx.success();
         }

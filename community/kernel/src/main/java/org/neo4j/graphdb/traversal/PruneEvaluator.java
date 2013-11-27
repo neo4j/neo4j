@@ -37,7 +37,7 @@ public interface PruneEvaluator
      * Default {@link PruneEvaluator}, does not prune any parts of the
      * traversal.
      */
-    static final PruneEvaluator NONE = new PruneEvaluator()
+    PruneEvaluator NONE = new PruneEvaluator()
     {
         public boolean pruneAfter( Path position )
         {

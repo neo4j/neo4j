@@ -19,15 +19,16 @@
  */
 package org.neo4j.helpers;
 
+import java.net.InetAddress;
+import java.net.URI;
+
+import org.junit.Test;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import java.net.URI;
-
-import org.junit.Test;
 
 public class HostnamePortTest
 {
@@ -129,5 +130,13 @@ public class HostnamePortTest
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host1:1234" ) ) );
         // no scheme means no ports and no host, so both null therefore comparison fails
         assertFalse( hostnamePortSinglePort.matches( URI.create( "host1:1234" ) ) );
+    }
+
+    @Test
+    public void testHostnameLookup() throws Exception
+    {
+        String hostName = InetAddress.getLocalHost().getHostName();
+        HostnamePort hostnamePort = new HostnamePort( hostName, 1234 );
+        assertThat( hostnamePort.toString( null ), equalTo( InetAddress.getByName( hostName ).getHostAddress()+":1234" ) );
     }
 }

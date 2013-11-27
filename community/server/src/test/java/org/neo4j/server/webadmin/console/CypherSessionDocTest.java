@@ -41,28 +41,29 @@ package org.neo4j.server.webadmin.console;
 
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.WrappingDatabase;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.server.database.WrappedDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 public class CypherSessionDocTest
 {
     @Test
     public void shouldReturnASingleNode() throws Throwable
     {
-        ImpermanentGraphDatabase graphdb = new ImpermanentGraphDatabase();
-        Database database = new WrappingDatabase( graphdb );
+        AbstractGraphDatabase graphdb = (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Database database = new WrappedDatabase( graphdb );
         CypherExecutor executor = new CypherExecutor( database, StringLogger.DEV_NULL );
         executor.start();
         try
         {
             CypherSession session = new CypherSession( executor );
-            Pair<String, String> result = session.evaluate( "start a=node(0) return a" );
+            Pair<String, String> result = session.evaluate( "create (a) return a" );
             assertThat( result.first(), containsString( "Node[0]" ) );
         }
         finally

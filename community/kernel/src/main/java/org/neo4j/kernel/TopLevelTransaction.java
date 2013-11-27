@@ -20,17 +20,19 @@
 package org.neo4j.kernel;
 
 import javax.transaction.RollbackException;
-import javax.transaction.Status;
-import javax.transaction.SystemException;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public class TopLevelTransaction implements Transaction
 {
     static class TransactionOutcome
@@ -63,20 +65,21 @@ public class TopLevelTransaction implements Transaction
             return failure;
         }
     }
-    
+
+    private final PersistenceManager persistenceManager;
     private final AbstractTransactionManager transactionManager;
     protected final TransactionOutcome transactionOutcome = new TransactionOutcome();
-    private final LockManager lockManager;
     private final TransactionState state;
 
-    public TopLevelTransaction( AbstractTransactionManager transactionManager, LockManager lockManager,
+    public TopLevelTransaction( PersistenceManager persistenceManager, AbstractTransactionManager transactionManager,
             TransactionState state )
     {
+        this.persistenceManager = persistenceManager;
         this.transactionManager = transactionManager;
-        this.lockManager = lockManager;
         this.state = state;
     }
 
+    @Override
     public void failure()
     {
         transactionOutcome.failed();
@@ -96,25 +99,20 @@ public class TopLevelTransaction implements Transaction
         }
     }
 
+    @Override
     public void success()
     {
         transactionOutcome.success();
     }
-    
-    protected boolean isMarkedAsSuccessful()
-    {
-        try
-        {
-            return transactionOutcome.canCommit() && transactionManager.getTransaction().getStatus() !=
-                    Status.STATUS_MARKED_ROLLBACK;
-        }
-        catch ( SystemException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
 
-    public void finish()
+    @Override
+    public final void finish()
+    {
+        close();
+    }
+    
+    @Override
+    public void close()
     {
         try
         {
@@ -123,7 +121,6 @@ public class TopLevelTransaction implements Transaction
             {
                 if ( transactionOutcome.canCommit()  )
                 {
-                    // TODO Why call transaction commit, since it just delegates back to TxManager.commit()?
                     transaction.commit();
                 }
                 else
@@ -140,13 +137,11 @@ public class TopLevelTransaction implements Transaction
         {
             if ( transactionOutcome.successCalled() )
             {
-                throw new TransactionFailureException(
-                    "Unable to commit transaction", e );
+                throw new TransactionFailureException( "Unable to commit transaction", e );
             }
             else
             {
-                throw new TransactionFailureException(
-                    "Unable to rollback transaction", e );
+                throw new TransactionFailureException( "Unable to rollback transaction", e );
             }
         }
     }
@@ -154,12 +149,14 @@ public class TopLevelTransaction implements Transaction
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
+        persistenceManager.ensureKernelIsEnlisted();
         return state.acquireWriteLock( entity );
     }
 
     @Override
     public Lock acquireReadLock( PropertyContainer entity )
     {
+        persistenceManager.ensureKernelIsEnlisted();
         return state.acquireReadLock( entity );
     }
 }

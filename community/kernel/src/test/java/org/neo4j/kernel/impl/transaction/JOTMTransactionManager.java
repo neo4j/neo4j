@@ -64,7 +64,7 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         @Override
         public AbstractTransactionManager loadTransactionManager(
                 String txLogDir, XaDataSourceManager xaDataSourceManager, KernelPanicEventGenerator kpe,
-                TxHook rollbackHook, StringLogger msgLog,
+                RemoteTxHook rollbackHook, StringLogger msgLog,
                 FileSystemAbstraction fileSystem, TransactionStateFactory stateFactory )
         {
             return new JOTMTransactionManager( xaDataSourceManager, stateFactory );
@@ -76,7 +76,7 @@ public class JOTMTransactionManager extends AbstractTransactionManager
     private final TransactionManager current;
     private final Jotm jotm;
     private final XaDataSourceManager xaDataSourceManager;
-    private final Map<Transaction, TransactionState> states = new HashMap<Transaction, TransactionState>();
+    private final Map<Transaction, TransactionState> states = new HashMap<>();
     private final TransactionStateFactory stateFactory;
 
     private JOTMTransactionManager( XaDataSourceManager xaDataSourceManager, TransactionStateFactory stateFactory )
@@ -97,7 +97,7 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         {
             try
             {
-                registry = LocateRegistry.createRegistry( 1099 );
+                LocateRegistry.createRegistry( 1099 );
             }
             catch ( RemoteException re )
             {
@@ -191,10 +191,10 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         return current.suspend();
     }
 
-	@Override
-	public void start() throws Throwable
-	{
-	}
+    @Override
+    public void start() throws Throwable
+    {
+    }
 
     /**
      * Stops the JOTM instance.
@@ -205,15 +205,15 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         jotm.stop();
     }
 
-	@Override
-	public void shutdown() throws Throwable
-	{
-	}
-	
-	public Jotm getJotmTxManager()
-	{
-	    return jotm;
-	}
+    @Override
+    public void shutdown() throws Throwable
+    {
+    }
+
+    public Jotm getJotmTxManager()
+    {
+        return jotm;
+    }
 
     @Override
     public void doRecovery() throws Throwable
@@ -223,7 +223,6 @@ public class JOTMTransactionManager extends AbstractTransactionManager
             @Override
             public void returnXAResource( String rmName, XAResource rmXares )
             {
-                return;
             }
         };
 
@@ -255,4 +254,5 @@ public class JOTMTransactionManager extends AbstractTransactionManager
             throw new RuntimeException( e );
         }
     }
+
 }

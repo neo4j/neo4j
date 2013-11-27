@@ -19,28 +19,19 @@
  */
 package recovery;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
-
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -53,6 +44,16 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInfo;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
 
+import static java.nio.ByteBuffer.allocate;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+
 public class TestRecoveryVerification
 {
     private static class TestGraphDatabase extends InternalAbstractGraphDatabase
@@ -62,7 +63,7 @@ public class TestRecoveryVerification
         TestGraphDatabase( String dir, RecoveryVerifier recoveryVerifier )
         {
             super( dir, stringMap(), Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class )
-                    , Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
+                    , Iterables.<KernelExtensionFactory<?>,
                     KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
                     Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
             this.verifier = recoveryVerifier;
@@ -107,7 +108,7 @@ public class TestRecoveryVerification
         }
         catch ( RuntimeException e )
         {
-            assertEquals( RecoveryVerificationException.class, e.getCause().getClass() );
+            assertEquals( e.getMessage(), RecoveryVerificationException.class, e.getCause().getClass() );
         }
     }
 
@@ -118,11 +119,11 @@ public class TestRecoveryVerification
         String dir = produceNonCleanDbWhichWillRecover2PCsOnStartup( "order", count );
         // Just make it recover
         new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( GraphDatabaseSettings
-                .keep_logical_logs, GraphDatabaseSetting.TRUE ).newGraphDatabase().shutdown();
+                .keep_logical_logs, Settings.TRUE ).newGraphDatabase().shutdown();
         verifyOrderedRecords( dir, count );
     }
 
-    private void verifyOrderedRecords( String storeDir, int expectedCount ) throws FileNotFoundException, IOException
+    private void verifyOrderedRecords( String storeDir, int expectedCount ) throws IOException
     {
         /* Look in the .v0 log for the 2PC records and that they are ordered by txId */
         RandomAccessFile file = new RandomAccessFile( new File( storeDir, "nioneo_logical.log.v0" ), "r" );
@@ -134,16 +135,12 @@ public class TestRecoveryVerification
             readLogHeader( buffer, channel, true );
             long lastOne = -1;
             int counted = 0;
-            for ( LogEntry entry = null; (entry = readEntry( buffer, channel, cf )) != null; )
+            for ( LogEntry entry; (entry = readEntry( buffer, channel, cf )) != null; )
             {
                 if ( entry instanceof TwoPhaseCommit )
                 {
                     long txId = ((TwoPhaseCommit) entry).getTxId();
-                    if ( lastOne == -1 )
-                    {
-                        lastOne = txId;
-                    }
-                    else
+                    if ( lastOne != -1 )
                     {
                         assertEquals( lastOne + 1, txId );
                     }

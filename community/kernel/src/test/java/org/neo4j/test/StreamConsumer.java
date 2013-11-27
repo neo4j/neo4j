@@ -30,28 +30,54 @@ import java.io.Writer;
 /**
  * A simple Runnable that is meant to consume the output and error streams of a
  * detached process, for debugging purposes.
- *
  */
 public class StreamConsumer implements Runnable
 {
-
+    public interface StreamExceptionHandler
+    {
+        void handle( IOException failure );
+    }
+    
+    public static StreamExceptionHandler PRINT_FAILURES = new StreamExceptionHandler()
+    {
+        @Override
+        public void handle( IOException failure )
+        {
+            failure.printStackTrace();
+        }
+    };
+    
+    public static StreamExceptionHandler IGNORE_FAILURES = new StreamExceptionHandler()
+    {
+        @Override
+        public void handle( IOException failure )
+        {
+        }
+    };
+    
     private final BufferedReader in;
     private final Writer out;
 
-    private boolean quiet;
-    private String prefix;
+    private final boolean quiet;
+    private final String prefix;
+
+    private final StreamExceptionHandler failureHandler;
+    private final Exception stackTraceOfOrigin;
 
     public StreamConsumer( InputStream in, OutputStream out, boolean quiet )
     {
-        this(in, out, quiet, "");
+        this( in, out, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES );
     }
 
-    public StreamConsumer( InputStream in, OutputStream out, boolean quiet, String prefix )
+    public StreamConsumer( InputStream in, OutputStream out, boolean quiet, String prefix,
+            StreamExceptionHandler failureHandler )
     {
         this.quiet = quiet;
         this.prefix = prefix;
+        this.failureHandler = failureHandler;
         this.in = new BufferedReader(new InputStreamReader( in ));
         this.out = new OutputStreamWriter( out );
+        this.stackTraceOfOrigin = new Exception("Stack trace of thread that created this StreamConsumer");
     }
 
     @Override
@@ -62,7 +88,7 @@ public class StreamConsumer implements Runnable
             String line;
             while ( ( line = in.readLine()) != null)
             {
-                if (!quiet)
+                if ( !quiet )
                 {
                     out.write( prefix+line+"\n" );
                     out.flush();
@@ -71,7 +97,8 @@ public class StreamConsumer implements Runnable
         }
         catch ( IOException exc )
         {
-            System.err.println( "Child I/O Transfer - " + exc );
+            exc.addSuppressed( stackTraceOfOrigin );
+            failureHandler.handle( exc );
         }
     }
 }

@@ -29,10 +29,12 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 final class Aggregator
 {
     private final Map<ProgressListener.MultiPartProgressListener, ProgressListener.MultiPartProgressListener.State> states =
-            new ConcurrentHashMap<ProgressListener.MultiPartProgressListener, ProgressListener.MultiPartProgressListener.State>();
+            new ConcurrentHashMap<>();
     private Indicator indicator;
-    private volatile long progress; // accessed through updater
-    private volatile int last; // accessed through updater
+    @SuppressWarnings("unused"/*accessed through updater*/)
+    private volatile long progress;
+    @SuppressWarnings("unused"/*accessed through updater*/)
+    private volatile int last;
     private static final AtomicLongFieldUpdater<Aggregator> PROGRESS = newUpdater( Aggregator.class, "progress" );
     private static final AtomicIntegerFieldUpdater<Aggregator> LAST =
             AtomicIntegerFieldUpdater.newUpdater( Aggregator.class, "last" );
@@ -99,8 +101,8 @@ final class Aggregator
         }
     }
 
-    public void signalFailure( Throwable e )
+    public void signalFailure( String part, Throwable e )
     {
-        completion.signalFailure( e );
+        completion.signalFailure( part, e );
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.server.rest.discovery;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -30,7 +29,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.configuration.Configuration;
-import org.mortbay.log.Log;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -43,6 +44,7 @@ import org.neo4j.server.rest.repr.OutputFormat;
 public class DiscoveryService
 {
 
+    private static final Logger LOGGER = Log.getLogger(DiscoveryService.class);
     private final Configuration configuration;
     private final OutputFormat outputFormat;
 
@@ -67,16 +69,16 @@ public class DiscoveryService
 
     @GET
     @Produces( MediaType.WILDCARD )
-    public Response redirectToWebadmin()
+    public Response redirectToBrowser()
     {
         try
         {
-            return Response.seeOther( new URI( Configurator.DEFAULT_WEB_ADMIN_PATH ) )
+            return Response.seeOther( new URI( Configurator.BROWSER_PATH ) )
                     .build();
         }
         catch ( URISyntaxException e )
         {
-            Log.warn( e.getMessage() );
+            LOGGER.warn( e.getMessage() );
             return Response.serverError()
                     .build();
         }

@@ -27,6 +27,10 @@ import java.nio.channels.OverlappingFileLockException;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public class StoreLocker
 {
     public static final String STORE_LOCK_FILENAME = "store_lock";

@@ -19,23 +19,26 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import static junit.framework.Assert.assertEquals;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class PathImplTest
 {
@@ -44,8 +47,8 @@ public class PathImplTest
     public void pathsWithTheSameContentsShouldBeEqual() throws Exception
     {
         // Given
-        Path firstPath  = new PathImpl.Builder(node(1337l)).push( rel( 1337l, 7331l) ).build();
-        Path secondPath = new PathImpl.Builder(node(1337l)).push( rel( 1337l, 7331l) ).build();
+        Path firstPath = new PathImpl.Builder( node( 1337l ) ).push( rel( 1337l, 7331l ) ).build();
+        Path secondPath = new PathImpl.Builder( node( 1337l ) ).push( rel( 1337l, 7331l ) ).build();
 
         // When Then
         assertEquals( firstPath, secondPath );
@@ -56,20 +59,20 @@ public class PathImplTest
     public void pathsWithDifferentLengthAreNotEqual() throws Exception
     {
         // Given
-        Path firstPath  = new PathImpl.Builder(node(1337l)).push( rel( 1337l, 7331l) ).build();
-        Path secondPath = new PathImpl.Builder(node(1337l)).push( rel( 1337l, 7331l) ).push( rel( 7331l, 13l ) ).build();
+        Path firstPath = new PathImpl.Builder( node( 1337l ) ).push( rel( 1337l, 7331l ) ).build();
+        Path secondPath = new PathImpl.Builder( node( 1337l ) ).push( rel( 1337l, 7331l ) ).push( rel( 7331l, 13l ) ).build();
 
         // When Then
-        assertThat(firstPath, not(equalTo( secondPath )));
-        assertThat(secondPath, not(equalTo( firstPath )));
+        assertThat( firstPath, not( equalTo( secondPath ) ) );
+        assertThat( secondPath, not( equalTo( firstPath ) ) );
     }
 
-    private Node node(final long id)
+    private Node node( final long id )
     {
-        return new MockNode(id);
+        return new MockNode( id );
     }
 
-    private Relationship rel(final long fromId, final long toId)
+    private Relationship rel( final long fromId, final long toId )
     {
         return new MockRelationship( fromId, toId );
     }
@@ -118,13 +121,9 @@ public class PathImplTest
             return null;
         }
 
-        @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return null;
-        }
     }
 
+    @SuppressWarnings("deprecation")
     class MockNode extends MockPropertyContainer implements Node
     {
 
@@ -142,9 +141,9 @@ public class PathImplTest
         }
 
         @Override
-        public boolean equals(Object other)
+        public boolean equals( Object other )
         {
-            return other != null && ((Node)other).getId() == id;
+            return other instanceof Node && ((Node) other).getId() == id;
         }
 
         // Unimplemented
@@ -243,6 +242,28 @@ public class PathImplTest
         {
             return null;
         }
+
+        @Override
+        public void addLabel( Label label )
+        {
+        }
+
+        @Override
+        public void removeLabel( Label label )
+        {
+        }
+
+        @Override
+        public boolean hasLabel( Label label )
+        {
+            return false;
+        }
+
+        @Override
+        public ResourceIterable<Label> getLabels()
+        {
+            return null;
+        }
     }
 
     class MockRelationship extends MockPropertyContainer implements Relationship
@@ -251,7 +272,7 @@ public class PathImplTest
         private final long fromNode;
         private final long toNode;
 
-        public MockRelationship(long fromNode, long toNode)
+        public MockRelationship( long fromNode, long toNode )
         {
             this.fromNode = fromNode;
 
@@ -265,15 +286,15 @@ public class PathImplTest
         }
 
         @Override
-        public boolean equals(Object other)
+        public boolean equals( Object other )
         {
-            return ((Relationship)other).getId() == getId();
+            return other instanceof Relationship && ((Relationship) other).getId() == getId();
         }
 
         @Override
         public Node getOtherNode( Node node )
         {
-            return node.getId() == fromNode ? new MockNode(toNode) : new MockNode(fromNode);
+            return node.getId() == fromNode ? new MockNode( toNode ) : new MockNode( fromNode );
         }
 
         @Override

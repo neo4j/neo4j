@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-import org.neo4j.tooling.FakeClock;
+import org.neo4j.helpers.FakeClock;
 
 public class ResourcePoolTest
 {
@@ -72,7 +72,6 @@ public class ResourcePoolTest
     @Test
     public void shouldTimeoutGracefully() throws InterruptedException
     {
-
         FakeClock clock = new FakeClock();
 
         ResourcePool.CheckStrategy timeStrategy = new ResourcePool.CheckStrategy.TimeoutCheckStrategy( 100, clock );

@@ -34,7 +34,6 @@ import org.neo4j.server.modules.ServerModule;
 public class JMXManagementModule implements ServerModule
 {
     private final NeoServer server;
-    private ServerManagement serverManagement;
 
     public JMXManagementModule( NeoServer server )
     {
@@ -46,7 +45,7 @@ public class JMXManagementModule implements ServerModule
     {
         try
         {
-            serverManagement = new ServerManagement( server );
+            ServerManagement serverManagement = new ServerManagement( server );
             MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
             beanServer.registerMBean( serverManagement, createObjectName() );
         }
@@ -57,8 +56,7 @@ public class JMXManagementModule implements ServerModule
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         try
         {
             MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();

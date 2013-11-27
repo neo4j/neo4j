@@ -19,22 +19,15 @@
  */
 package org.neo4j.server.enterprise;
 
-import static org.neo4j.cluster.client.ClusterClient.adapt;
-import static org.neo4j.helpers.Exceptions.exceptionsOfType;
-import static org.neo4j.helpers.Exceptions.peel;
-import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.configuration.Configurator.DB_TUNING_PROPERTY_FILE_KEY;
-import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE_KEY;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.jboss.netty.channel.ChannelException;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Args;
@@ -42,11 +35,17 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.kernel.logging.ClassicLoggingService;
-import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 
-import ch.qos.logback.classic.LoggerContext;
+import static org.neo4j.cluster.client.ClusterClient.adapt;
+import static org.neo4j.helpers.Exceptions.exceptionsOfType;
+import static org.neo4j.helpers.Exceptions.peel;
+import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.server.configuration.Configurator.DB_TUNING_PROPERTY_FILE_KEY;
+import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE_KEY;
 
 /**
  * Wrapper around a {@link ClusterClient} to fit the environment of the Neo4j server,
@@ -76,18 +75,14 @@ public class StandaloneClusterClient
 
     protected void addShutdownHook()
     {
-        Runtime.getRuntime()
-                .addShutdownHook( new Thread()
-                {
-                    @Override
-                    public void run()
-                    {
-                        if ( life != null )
-                        {
-                            life.shutdown();
-                        }
-                    }
-                } );
+        Runtime.getRuntime().addShutdownHook( new Thread()
+        {
+            @Override
+            public void run()
+            {
+                life.shutdown();
+            }
+        } );
     }
 
 
@@ -107,11 +102,13 @@ public class StandaloneClusterClient
         try
         {
             Logging logging = logging();
+            ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
             new StandaloneClusterClient( logging, new ClusterClient( adapt( new Config( config ) ),
-                    logging, new NotElectableElectionCredentialsProvider() ) );
+                    logging, new NotElectableElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory )  );
         }
         catch ( LifecycleException e )
         {
+            @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
             Throwable cause = peel( e, exceptionsOfType( LifecycleException.class ) );
             if ( cause instanceof ChannelException )
                 System.err.println( "ERROR: " + cause.getMessage() +
@@ -169,19 +166,7 @@ public class StandaloneClusterClient
                 new File( new File( new File ( home, "data" ), "log" ), "arbiter" ).getPath() );
         Config config = new Config( stringMap( InternalAbstractGraphDatabase.Configuration.store_dir.name(), logDir ) );
 
-        // Copied from InternalAbstractGraphDatabase#createStringLogger
-        Logging logging;
-        try
-        {
-            StandaloneClusterClient.class.getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
-            LogbackService logback = new LogbackService( config, (LoggerContext) getSingleton().getLoggerFactory() );
-            logging = logback;
-        }
-        catch ( ClassNotFoundException e )
-        {
-            logging = new ClassicLoggingService( config );
-        }
-        return logging;
+        return new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
     }
     
     private static File extractDbTuningProperties( String propertiesFile )

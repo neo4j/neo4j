@@ -51,6 +51,6 @@ public class WrappingNeoServer extends CommunityNeoServer {
 
 	@Override
 	protected Database createDatabase() {
-		return new WrappedDatabase( (AbstractGraphDatabase) db );
+		return new WrappedDatabase( (AbstractGraphDatabase) db, configurator );
 	}
 }

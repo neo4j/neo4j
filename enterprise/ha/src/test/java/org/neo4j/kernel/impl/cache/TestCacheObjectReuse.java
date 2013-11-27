@@ -19,32 +19,33 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-@Ignore( "Impermanent graph database doesn't use GC resistant cache" )
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+
+@Ignore( "Impermanent graph database doesn't use High-Performance Cache" )
 public class TestCacheObjectReuse
 {
     @Test
-    public void gcrCachesCanBeReusedBetweenSessions() throws Exception
+    public void highPerformanceCachesCanBeReusedBetweenSessions() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.cache_type, GCResistantCacheProvider.NAME ).newGraphDatabase();
-        Cache<?> firstCache = first( db.getNodeManager().caches() );
+                .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).newGraphDatabase();
+        Cache<?> firstCache = first( nodeManager( db ).caches() );
         db.shutdown();
         
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.cache_type, GCResistantCacheProvider.NAME ).newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).newGraphDatabase();
         try
         {
-            Cache<?> secondCache = first( db.getNodeManager().caches() );
+            Cache<?> secondCache = first( nodeManager( db ).caches() );
             assertEquals( firstCache, secondCache );
         }
         finally
@@ -53,21 +54,26 @@ public class TestCacheObjectReuse
         }
     }
 
+    private NodeManager nodeManager( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( NodeManager.class );
+    }
+
     @Test
-    public void gcrCachesAreRecreatedBetweenSessionsIfConfigChanges() throws Exception
+    public void highPerformanceCachesAreRecreatedBetweenSessionsIfConfigChanges() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.cache_type, GCResistantCacheProvider.NAME ).newGraphDatabase();
-        Cache<?> firstCache = first( db.getNodeManager().caches() );
+                .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).newGraphDatabase();
+        Cache<?> firstCache = first( nodeManager( db ).caches() );
         db.shutdown();
         
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.cache_type, GCResistantCacheProvider.NAME )
-                .setConfig( GraphDatabaseSettings.node_cache_array_fraction, "10" )
+                .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME )
+                .setConfig( HighPerformanceCacheSettings.node_cache_array_fraction, "10" )
                 .newGraphDatabase();
         try
         {
-            Cache<?> secondCache = first( db.getNodeManager().caches() );
+            Cache<?> secondCache = first( nodeManager( db ).caches() );
             assertFalse( firstCache.equals( secondCache ) );
         }
         finally

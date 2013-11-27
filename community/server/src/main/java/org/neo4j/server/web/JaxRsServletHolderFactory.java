@@ -23,17 +23,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.mortbay.jetty.servlet.ServletHolder;
+import com.sun.jersey.api.core.ClassNamesResourceConfig;
+import com.sun.jersey.api.core.PackagesResourceConfig;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
-
-import com.sun.jersey.api.core.ClassNamesResourceConfig;
-import com.sun.jersey.api.core.PackagesResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 /**
  * Different {@link ServerModule}s can register services at the same mount point.
@@ -53,12 +52,12 @@ public abstract class JaxRsServletHolderFactory
             this.injectables.addAll( injectableProviders );
         }
     }
-    
+
     public void remove( List<String> items )
     {
         this.items.removeAll( items );
     }
-    
+
     public ServletHolder create( Collection<InjectableProvider<?>> defaultInjectables, boolean wadlEnabled )
     {
         Collection<InjectableProvider<?>> injectableProviders = mergeInjectables( defaultInjectables, injectables );
@@ -104,7 +103,7 @@ public abstract class JaxRsServletHolderFactory
         String result = sb.toString();
         return result.substring( 0, result.length() - 2 );
     }
-    
+
     public static class Packages extends JaxRsServletHolderFactory
     {
         @Override
@@ -113,7 +112,7 @@ public abstract class JaxRsServletHolderFactory
             servletHolder.setInitParameter( PackagesResourceConfig.PROPERTY_PACKAGES, packages );
         }
     }
-    
+
     public static class Classes extends JaxRsServletHolderFactory
     {
         @Override

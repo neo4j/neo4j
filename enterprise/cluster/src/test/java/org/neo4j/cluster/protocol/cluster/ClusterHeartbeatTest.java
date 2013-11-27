@@ -26,11 +26,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.InstanceId;
 
-/**
- * TODO
- */
 public class ClusterHeartbeatTest
         extends ClusterMockTest
 {

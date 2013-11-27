@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.annotations;
 
+import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
+import static org.neo4j.kernel.impl.util.FileUtils.newFilePrintWriter;
+
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.Collections;
@@ -167,14 +168,8 @@ public abstract class AnnotationProcessor extends AbstractProcessor
         {
             file.getParentFile().mkdirs();
         }
-        new FileWriter( file, true ).append( line ).append( "\n" ).close();
-    }
 
-    Writer append( String... path ) throws IOException
-    {
-        FileObject file = processingEnv.getFiler().getResource( StandardLocation.CLASS_OUTPUT, "", path( path ) );
-        URI uri = file.toUri();
-        return new FileWriter( new File( uri.toString() ), true );
+        newFilePrintWriter( file, UTF_8 ).append( line ).append( "\n" ).close();
     }
 
     private String path( String[] path )

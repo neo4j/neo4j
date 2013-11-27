@@ -34,12 +34,11 @@ public class AddDeleteQuit
     public static void main( String[] args )
     {
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
-        Index<Node> index = db.index().forNodes( "index" );
         Transaction tx = db.beginTx();
         try
         {
-            Node node = db.createNode();
-            index.add( node, "key", "value" );
+            Index<Node> index = db.index().forNodes( "index" );
+            index.add( db.createNode(), "key", "value" );
             index.delete();
             tx.success();
         }

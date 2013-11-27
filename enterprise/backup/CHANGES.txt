@@ -1,3 +1,13 @@
+2.0.0-RC1
+---------
+o BREAKING CHANGE: Removed deprecated org.neo4j.backup.check.ConsistencyCheck main class. This is replaced by
+  org.neo4j.consistency.ConsistencyCheckTool.
+
+1.9.4 (2013-09-19)
+------------------
+o Backup tool and command line utility now exit with status 1 in case the
+  target store has mismatching store ID with the source.
+
 1.9.RC2 (2013-04-30)
 --------------------
 o Reverts default backup port to 6362

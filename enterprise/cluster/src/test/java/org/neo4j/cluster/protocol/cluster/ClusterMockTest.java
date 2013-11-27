@@ -52,6 +52,7 @@ import org.neo4j.cluster.VerifyInstanceConfiguration;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
@@ -151,7 +152,7 @@ public class ClusterMockTest
             } );
             server.newClient( AtomicBroadcast.class ).addAtomicBroadcastListener( new AtomicBroadcastListener()
             {
-                AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer();
+                AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer(new ObjectStreamFactory(), new ObjectStreamFactory());
 
                 @Override
                 public void receive( Payload value )
@@ -444,7 +445,7 @@ public class ClusterMockTest
         }
 
         private final Queue<ClusterAction> actions = new LinkedList<ClusterAction>();
-        private final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer();
+        private final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer(new ObjectStreamFactory(), new ObjectStreamFactory());
 
         private int rounds = 100;
         private long now = 0;
@@ -585,7 +586,7 @@ public class ClusterMockTest
                 {
                     Cluster server = servers.get( serverDown - 1 ).newClient( Cluster.class );
                     network.getNetworkLatencyStrategy().getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
-                            .nodeIsDown( server.toString() );
+                            .nodeIsDown( "server"+server.toString() );
                     logger.getLogger().debug( server + " is down" );
                 }
             }, time );
@@ -601,8 +602,7 @@ public class ClusterMockTest
                     Cluster server = servers.get( serverUp - 1 ).newClient( Cluster.class );
                     network.getNetworkLatencyStrategy()
                             .getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
-                            .nodeIsUp( server
-                                    .toString() );
+                            .nodeIsUp( "server"+server.toString() );
                     logger.getLogger().debug( server + " is up" );
                 }
             }, time );

@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 
 import org.junit.AfterClass;
@@ -31,13 +28,17 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIDocIT extends ExclusiveServerTestBase
 {
@@ -45,9 +46,10 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIDocIT extends Exc
     private static FunctionalTestHelper functionalTestHelper;
 
     @ClassRule
-    public static TemporaryFolder staticFolder = new TemporaryFolder(  );
+    public static TemporaryFolder staticFolder = new TemporaryFolder();
 
-    public @Rule
+    public
+    @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     @Before
@@ -55,10 +57,11 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIDocIT extends Exc
     {
         gen.get().setSection( "dev/rest-api" );
     }
+
     @BeforeClass
     public static void allocateServer() throws IOException
     {
-        server = ServerBuilder.server()
+        server = CommunityServerBuilder.server()
                 .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
                 .withAutoIndexingEnabledForNodes( "foo", "bar" )
                 .build();
@@ -104,7 +107,8 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIDocIT extends Exc
         String responseBody = gen.get()
                 .expectedStatus( 201 )
                 .payload(
-                        "{\"name\":\"relationship_auto_index\", \"config\":{\"type\":\"fulltext\",\"provider\":\"lucene\"}}" )
+                        "{\"name\":\"relationship_auto_index\", \"config\":{\"type\":\"fulltext\"," +
+                                "\"provider\":\"lucene\"}}" )
                 .post( functionalTestHelper.relationshipIndexUri() )
                 .entity();
 

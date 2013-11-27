@@ -1,0 +1,27 @@
+.container
+  .row.header
+    .span4
+      img(src='images/welcome-logo.png')
+    
+    .span8
+      h2 Getting Started
+      ul.big.undecorated
+        li
+          a(play-topic='intro') Intro
+          |  - a guided tour of Neo4j Browser
+        li
+          a(play-topic='graphs') Graphs
+          |  - learn basic data modeling concepts
+        li
+          a(play-topic='cypher') Cypher
+          |  - create, read, update and delete queries
+
+  .hero-unit
+    p 
+      a(href="{{ motd.callToAction.u}}") {{ motd.callToAction.d }}
+
+  footer
+    p Copyright &copy; 
+      a.no-icon(href='http://neotechnology.com/')  Neo Technology
+      | &nbsp;2002–
+      span= new Date().getFullYear()

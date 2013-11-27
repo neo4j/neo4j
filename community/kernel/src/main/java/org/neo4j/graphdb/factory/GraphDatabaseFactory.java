@@ -19,24 +19,20 @@
  */
 package org.neo4j.graphdb.factory;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.index.IndexIterable;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
+import static org.neo4j.helpers.Settings.TRUE;
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
@@ -46,22 +42,26 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
  */
 public class GraphDatabaseFactory
 {
-    protected List<IndexProvider> indexProviders;
-    protected List<KernelExtensionFactory<?>> kernelExtensions;
-    protected List<CacheProvider> cacheProviders;
-    protected List<TransactionInterceptorProvider> txInterceptorProviders;
-    protected FileSystemAbstraction fileSystem;
+    private final GraphDatabaseFactoryState state;
 
     public GraphDatabaseFactory()
     {
-        indexProviders = Iterables.toList( Service.load( IndexProvider.class ) );
-        kernelExtensions = new ArrayList<KernelExtensionFactory<?>>();
-        for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
-        {
-            kernelExtensions.add( factory );
-        }
-        cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
-        txInterceptorProviders = Iterables.toList( Service.load( TransactionInterceptorProvider.class ) );
+        this( new GraphDatabaseFactoryState() );
+    }
+
+    protected GraphDatabaseFactory(GraphDatabaseFactoryState state)
+    {
+        this.state = state;
+    }
+
+    protected GraphDatabaseFactoryState getCurrentState()
+    {
+        return state;
+    }
+
+    protected GraphDatabaseFactoryState getStateCopy()
+    {
+        return new GraphDatabaseFactoryState( getCurrentState() );
     }
 
     public GraphDatabaseService newEmbeddedDatabase( String path )
@@ -71,8 +71,10 @@ public class GraphDatabaseFactory
 
     public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( final String path )
     {
+        final GraphDatabaseFactoryState state = getStateCopy();
         return new GraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
         {
+            @SuppressWarnings("deprecation")
             @Override
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
@@ -80,70 +82,94 @@ public class GraphDatabaseFactory
 
                 if ( TRUE.equalsIgnoreCase( config.get( read_only.name() ) ) )
                 {
-                    return new EmbeddedReadOnlyGraphDatabase( path, config, indexProviders, kernelExtensions,
-                            cacheProviders, txInterceptorProviders );
+                    return new EmbeddedReadOnlyGraphDatabase( path, config,
+                            state.getKernelExtension(),
+                            state.getCacheProviders(),
+                            state.getTransactionInterceptorProviders() );
                 }
                 else
                 {
-                    return new EmbeddedGraphDatabase( path, config, indexProviders, kernelExtensions, cacheProviders,
-                            txInterceptorProviders );
+                    return new EmbeddedGraphDatabase( path, config,
+                            state.getKernelExtension(),
+                            state.getCacheProviders(),
+                            state.getTransactionInterceptorProviders() );
                 }
             }
         } );
     }
 
-    public Iterable<IndexProvider> getIndexProviders()
+    /**
+     * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     */
+    @Deprecated
+    public Iterable<KernelExtensionFactory<?>> getKernelExtension()
     {
-        return indexProviders;
+        return getCurrentState().getKernelExtension();
     }
 
     /**
-     * Sets an {@link org.neo4j.graphdb.index.IndexProvider} iterable source.
-     * {@link org.neo4j.kernel.ListIndexIterable} is a flexible provider that works well with
-     * dependency injection.
-     *
-     * @param indexIterable It's actually Iterable<IndexProvider>, but internally typecasted
-     *                      to workaround bug https://issues.apache.org/jira/browse/ARIES-834 .
+     * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
      */
-    public void setIndexProviders( IndexIterable indexIterable )
+    @Deprecated
+    public GraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
-        indexProviders.clear();
-        for ( IndexProvider indexProvider : indexIterable )
-        {
-            this.indexProviders.add( indexProvider );
-        }
+        getCurrentState().addKernelExtensions( newKernelExtensions );
+        return this;
     }
 
-    public Iterable<KernelExtensionFactory<?>> getKernelExtension()
+    /**
+     * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     */
+    @Deprecated
+    @SuppressWarnings( { "rawtypes", "unchecked" } )
+    public GraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
     {
-        return kernelExtensions;
+        List extensions = asList(newKernelExtension );
+        return addKernelExtensions( extensions );
     }
 
-    public void setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    /**
+     * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
+     */
+    @Deprecated
+    public GraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
-        kernelExtensions.clear();
-        for ( KernelExtensionFactory<?> newKernelExtension : newKernelExtensions )
-        {
-            kernelExtensions.add( newKernelExtension );
-        }
+        getCurrentState().setKernelExtensions( newKernelExtensions );
+        return this;
     }
 
-    public void setCacheProviders( Iterable<CacheProvider> newCacheProviders )
+    /**
+     * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
+     */
+    @Deprecated
+    public List<CacheProvider> getCacheProviders()
     {
-        cacheProviders.clear();
-        for ( CacheProvider newCacheProvider : newCacheProviders )
-        {
-            cacheProviders.add( newCacheProvider );
-        }
+        return getCurrentState().getCacheProviders();
     }
 
-    public void setTransactionInterceptorProviders( Iterable<TransactionInterceptorProvider>
-                                                            transactionInterceptorProviders )
+    /**
+     * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
+     */
+    @Deprecated
+    public GraphDatabaseFactory setCacheProviders( Iterable<CacheProvider> newCacheProviders )
     {
-        txInterceptorProviders.clear();
-        for ( TransactionInterceptorProvider newTxInterceptorProvider : transactionInterceptorProviders )
-        {
-            txInterceptorProviders.add( newTxInterceptorProvider );
-        }
+        getCurrentState().setCacheProviders( newCacheProviders );
+        return this;
     }
+
+    /**
+     * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
+     */
+    @Deprecated
+    public List<TransactionInterceptorProvider> getTransactionInterceptorProviders()
+    {
+        return getCurrentState().getTransactionInterceptorProviders();
+    }
+
+    public GraphDatabaseFactory setTransactionInterceptorProviders( Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    {
+        getCurrentState().setTransactionInterceptorProviders( transactionInterceptorProviders );
+        return this;
+    }
+
 }

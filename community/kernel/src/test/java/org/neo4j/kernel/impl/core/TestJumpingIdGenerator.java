@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.nioneo.store.NodeStore.RECORD_SIZE;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,12 +29,8 @@ import java.nio.ByteBuffer;
 import org.junit.Test;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.core.JumpingFileSystemAbstraction.JumpingFileChannel;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
-import org.neo4j.test.IdJumpingFileSystemAbstraction;
-import org.neo4j.test.IdJumpingIdGeneratorFactory;
-import org.neo4j.test.IdJumpingFileSystemAbstraction.IdJumpingFileChannel;
-
-import static org.junit.Assert.assertEquals;
 
 public class TestJumpingIdGenerator
 {
@@ -39,11 +38,11 @@ public class TestJumpingIdGenerator
     public void testIt() throws Exception
     {
         int sizePerJump = 1000;
-        IdGeneratorFactory factory = new IdJumpingIdGeneratorFactory( sizePerJump );
+        IdGeneratorFactory factory = new JumpingIdGeneratorFactory( sizePerJump );
         IdGenerator generator = factory.get( IdType.NODE );
         for ( int i = 0; i < sizePerJump/2; i++ )
         {
-            assertEquals( (long)i, generator.nextId() );
+            assertEquals( i, generator.nextId() );
         }
         
         for ( int i = 0; i < sizePerJump-1; i++ )
@@ -71,11 +70,11 @@ public class TestJumpingIdGenerator
     public void testOffsettedFileChannel() throws Exception
     {
         File fileName = new File("target/var/neostore.nodestore.db");
-        IdJumpingFileSystemAbstraction offsettedFileSystem = new IdJumpingFileSystemAbstraction( 10 );
+        JumpingFileSystemAbstraction offsettedFileSystem = new JumpingFileSystemAbstraction( 10 );
         offsettedFileSystem.deleteFile( fileName );
         offsettedFileSystem.mkdirs( fileName.getParentFile() );
-        IdGenerator idGenerator = new IdJumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
-        IdJumpingFileChannel channel = (IdJumpingFileChannel) offsettedFileSystem.open( fileName, "rw" );
+        IdGenerator idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
+        JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" );
         
         for ( int i = 0; i < 16; i++ )
         {
@@ -83,8 +82,8 @@ public class TestJumpingIdGenerator
         }
         
         channel.close();
-        channel = (IdJumpingFileChannel) offsettedFileSystem.open( fileName, "rw" );
-        idGenerator = new IdJumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
+        channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" );
+        idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
         
         for ( int i = 0; i < 16; i++ )
         {
@@ -95,20 +94,20 @@ public class TestJumpingIdGenerator
         offsettedFileSystem.shutdown();
     }
 
-    private byte readSomethingLikeNodeRecord( IdJumpingFileChannel channel, long id ) throws IOException
+    private byte readSomethingLikeNodeRecord( JumpingFileChannel channel, long id ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( 9 );
-        channel.position( id*9 );
+        ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
+        channel.position( id*RECORD_SIZE );
         channel.read( buffer );
         buffer.flip();
         buffer.getLong();
         return buffer.get();
     }
 
-    private void writeSomethingLikeNodeRecord( IdJumpingFileChannel channel, long id, int justAByte ) throws IOException
+    private void writeSomethingLikeNodeRecord( JumpingFileChannel channel, long id, int justAByte ) throws IOException
     {
-        channel.position( id*9 );
-        ByteBuffer buffer = ByteBuffer.allocate( 9 );
+        channel.position( id*RECORD_SIZE );
+        ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
         buffer.putLong( 4321 );
         buffer.put( (byte) justAByte );
         buffer.flip();

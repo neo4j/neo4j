@@ -19,9 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -36,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import javax.transaction.TransactionManager;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
@@ -61,11 +60,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -73,7 +74,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.ClosableIterable;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
@@ -84,9 +85,9 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -96,7 +97,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
-import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
@@ -170,6 +173,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     final IndexStore indexStore;
     private final XaFactory xaFactory;
+    private final TransactionManager txManager;
     IndexProviderStore providerStore;
     private IndexTypeCache typeCache;
     private boolean closed;
@@ -182,23 +186,20 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     // Used for assertion after recovery has been completed.
     private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<IndexIdentifier>();
-    private final TxIdGenerator txIdGenerator;
 
     /**
      * Constructs this data source.
-     * @param logging 
-     *
      * @throws InstantiationException if the data source couldn't be
      *                                instantiated
      */
     public LuceneDataSource( Config config, IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction,
-                             XaFactory xaFactory, TxIdGenerator txIdGenerator, Logging logging )
+                             XaFactory xaFactory, TransactionManager txManager )
     {
         super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
         this.config = config;
         this.indexStore = indexStore;
         this.xaFactory = xaFactory;
-        this.txIdGenerator = txIdGenerator;
+        this.txManager = txManager;
         this.typeCache = new IndexTypeCache( indexStore );
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
@@ -264,13 +265,14 @@ public class LuceneDataSource extends LogBackedXaDataSource
         DependencyResolver dummy = new DependencyResolver.Adapter()
         {
             @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
             {
                 return (T) LuceneDataSource.this.config;
             }
         };
-        xaContainer = xaFactory.newXaContainer( this, new File( this.baseStorePath, "lucene.log"), cf, tf,
-                TransactionStateFactory.noStateFactory( null ), new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ) );
+        xaContainer = xaFactory.newXaContainer( this, new File( this.baseStorePath, "lucene.log"), cf,
+                InjectedTransactionValidator.ALLOW_ALL, tf, TransactionStateFactory.noStateFactory( null ),
+                new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ), false );
         closed = false;
         if ( !isReadOnly )
         {
@@ -346,7 +348,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             LuceneIndex index = indexes.get( identifier );
             if ( index == null )
             {
-                index = new LuceneIndex.NodeIndex( luceneIndexImplementation, graphDb, identifier );
+                index = new LuceneIndex.NodeIndex( luceneIndexImplementation, graphDb, identifier, txManager );
                 indexes.put( identifier, index );
             }
             return index;
@@ -365,7 +367,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             LuceneIndex index = indexes.get( identifier );
             if ( index == null )
             {
-                index = new LuceneIndex.RelationshipIndex( luceneIndexImplementation, gdb, identifier );
+                index = new LuceneIndex.RelationshipIndex( luceneIndexImplementation, gdb, identifier, txManager );
                 indexes.put( identifier, index );
             }
             return (RelationshipIndex) index;
@@ -397,7 +399,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private class LuceneTransactionFactory extends XaTransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier, TransactionState state )
+        public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
             return createTransaction( identifier, this.getLogicalLog(), state );
         }
@@ -620,7 +622,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         IndexSearcher searcher = new IndexSearcher( reader );
         IndexType type = getType( identifier, false );
         if ( type.getSimilarity() != null )
+        {
             searcher.setSimilarity( type.getSimilarity() );
+        }
         return searcher;
     }
 
@@ -754,7 +758,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         List<Fieldable> fields = document.getFields();
         for ( Fieldable field : fields )
         {
-            if ( !LuceneIndex.KEY_DOC_ID.equals( field.name() ) )
+            if ( !(LuceneIndex.KEY_DOC_ID.equals( field.name() ) ||
+                   LuceneIndex.KEY_END_NODE_ID.equals( field.name() ) ||
+                   LuceneIndex.KEY_START_NODE_ID.equals( field.name() )))
             {
                 return false;
             }
@@ -857,12 +863,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return this.xaContainer;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
+    public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     {   // Never include logical logs since they are of little importance
-        final Collection<File> files = new ArrayList<File>();
-        final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<SnapshotDeletionPolicy>();
+        final Collection<File> files = new ArrayList<>();
+        final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<>();
         makeSureAllIndexesAreInstantiated();
         for ( IndexReference writer : getAllIndexes() )
         {
@@ -890,14 +895,16 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         }
         files.add( providerStore.getFile() );
-        return new ClosableIterable<File>()
+        return new PrefetchingResourceIterator<File>()
         {
+            private final Iterator<File> filesIterator = files.iterator();
+            
             @Override
-            public Iterator<File> iterator()
+            protected File fetchNextOrNull()
             {
-                return files.iterator();
+                return filesIterator.hasNext() ? filesIterator.next() : null;
             }
-
+            
             @Override
             public void close()
             {
@@ -974,14 +981,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
                     @Override
                     File ensureDirectoryExists( FileSystemAbstraction fileSystem, File dir )
                     {
-                        if ( !dir.exists() )
+                        if ( !dir.exists() && !dir.mkdirs() )
                         {
-                            if ( !dir.mkdirs() )
-                            {
-                                String message = String.format( "Unable to create directory path[%s] for Neo4j store" +
-                                        ".", dir.getAbsolutePath() );
-                                throw new RuntimeException( message );
-                            }
+                            String message = String.format( "Unable to create directory path[%s] for Neo4j store" +
+                                    ".", dir.getAbsolutePath() );
+                            throw new RuntimeException( message );
                         }
                         return dir;
 

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Iterator;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -66,12 +65,6 @@ public class TestConcurrentModificationOfRelationshipChains
         }
     };
 
-    @After
-    public void shutdown()
-    {
-        graphDb.shutdown();
-    }
-
     @Test
     public void relationshipChainPositionCachePoisoningFromSameThreadReReadNode()
     {
@@ -81,10 +74,12 @@ public class TestConcurrentModificationOfRelationshipChains
 
         deleteRelationshipInSameThread( db, firstFromSecondBatch );
 
+        Transaction transaction = db.beginTx();
         for ( Relationship rel : db.getNodeById( relsCreated.second() ).getRelationships() )
         {
             rel.getId();
         }
+        transaction.finish();
     }
 
     @Test
@@ -96,10 +91,12 @@ public class TestConcurrentModificationOfRelationshipChains
 
         deleteRelationshipInDifferentThread( db, firstFromSecondBatch );
 
+        Transaction transaction = db.beginTx();
         for ( Relationship rel : db.getNodeById( relsCreated.second() ).getRelationships() )
         {
             rel.getId();
         }
+        transaction.finish();
     }
 
     @Test
@@ -172,7 +169,10 @@ public class TestConcurrentModificationOfRelationshipChains
         tx.success();
         tx.finish();
 
-        db.getNodeManager().clearCache();
-        return Triplet.of( node1.getRelationships(), node1.getId(), firstFromSecondBatch );
+        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        Transaction transaction = db.beginTx();
+        Iterable<Relationship> relationships = node1.getRelationships();
+        transaction.finish();
+        return Triplet.of( relationships, node1.getId(), firstFromSecondBatch );
     }
 }

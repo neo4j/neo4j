@@ -39,6 +39,10 @@ public interface Master
 
     Response<Integer> createRelationshipType( RequestContext context, String name );
 
+    Response<Integer> createPropertyKey( RequestContext context, String name );
+
+    Response<Integer> createLabel( RequestContext context, String name );
+    
     /**
      * Called when the first write operation of lock is performed for a transaction.
      */
@@ -82,4 +86,11 @@ public interface Master
 
     Response<Void> copyTransactions( RequestContext context, String dsName,
                                      long startTxId, long endTxId );
+
+    Response<LockResult> acquireSchemaReadLock( RequestContext context );
+
+    Response<LockResult> acquireSchemaWriteLock( RequestContext context );
+
+    Response<LockResult> acquireIndexEntryWriteLock( RequestContext context,
+                                                     long labelId, long propertyKeyId, String propertyValue );
 }

@@ -20,19 +20,23 @@
 package synchronization;
 
 import java.util.concurrent.CountDownLatch;
+
 import org.apache.lucene.index.IndexWriter;
 import org.junit.Test;
+
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class TestConcurrentRotation extends AbstractSubProcessTestBase
 {
@@ -107,7 +111,12 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            assertTrue( (Boolean) graphdb.getReferenceNode().getProperty( "success" ) );
+            try(Transaction ignored = graphdb.beginTx())
+            {
+                // TODO: Pass a node reference around of assuming the id will be deterministically assigned,
+                // artifact of removing the reference node, upon which this test used to depend.
+                assertTrue( (Boolean) graphdb.getNodeById(3).getProperty( "success" ) );
+            }
         }
     }
 
@@ -116,15 +125,10 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 for ( int i = 0; i < 3; i++ ) graphdb.index().forNodes( "index" + i ).add( graphdb.createNode(), "name", "" + i );
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
     }
@@ -143,21 +147,23 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
-            for ( int i = 0; i < count; i++ ) graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
+            try(Transaction ignored = graphdb.beginTx())
+            {
+                for ( int i = 0; i < count; i++ ) graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
+            }
             if ( resume ) resumeFlushThread();
         }
     }
     
     private static class RotateIndexLogTask implements Task
     {
-        private volatile boolean success;
-        
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
             try
             {
-                graphdb.getXaDataSourceManager().getXaDataSource( LuceneDataSource.DEFAULT_NAME ).rotateLogicalLog();
+                graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                        .getXaDataSource( LuceneDataSource.DEFAULT_NAME ).rotateLogicalLog();
                 setSuccess( graphdb, true );
             }
             catch ( Exception e )
@@ -173,15 +179,12 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         
         private void setSuccess( GraphDatabaseAPI graphdb, boolean success )
         {
-            Transaction tx = graphdb.beginTx();
-            graphdb.getReferenceNode().setProperty( "success", success );
-            tx.success();
-            tx.finish();
-        }
-
-        public boolean isSuccess()
-        {
-            return success;
+            try(Transaction tx = graphdb.beginTx())
+            {
+                Node node = graphdb.createNode();
+                node.setProperty( "success", success );
+                tx.success();
+            }
         }
     }
 }

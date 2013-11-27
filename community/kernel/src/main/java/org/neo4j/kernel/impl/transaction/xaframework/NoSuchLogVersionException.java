@@ -25,16 +25,9 @@ public class NoSuchLogVersionException extends MissingLogDataException
 
     public NoSuchLogVersionException( long version )
     {
-        super( "No such log version: '" + version + "'. This means we a log file that we expected to find was missing. " +
-                "If you are unable to start the database due to this problem, please make sure that the correct logical " +
-                "log files are in the database directory." );
-        this.version = version;
-    }
-
-    public NoSuchLogVersionException( long version, String filename )
-    {
-        super( "No such log version: '" + version + "'. This means we a log file that we expected to find was missing. " +
-                "The log filename in question is '" + filename + "'." );
+        super( "No such log version: '" + version + "'. This means we encountered a log file that we expected " +
+                "to find was missing. If you are unable to start the database due to this problem, please make " +
+                "sure that the correct logical log files are in the database directory." );
         this.version = version;
     }
 

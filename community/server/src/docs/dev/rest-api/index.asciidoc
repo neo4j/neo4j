@@ -4,13 +4,15 @@ REST API
 
 include::introduction.asciidoc[]
 
+include::transactional.asciidoc[]
+
 include::service-root.asciidoc[]
 
 include::streaming.asciidoc[]
 
 include::cypher.asciidoc[]
 
-include::property-values.asciidoc[]
+include::properties.asciidoc[]
 
 include::nodes.asciidoc[]
 
@@ -22,19 +24,25 @@ include::node-properties.asciidoc[]
 
 include::relationship-properties.asciidoc[]
 
+include::node-labels.asciidoc[]
+
 include::indexes.asciidoc[]
 
-include::indexes-unique.asciidoc[]
-
-include::indexes-auto.asciidoc[]
-
-include::indexes-configurable-auto.asciidoc[]
+include::constraints.asciidoc[]
 
 include::traversals.asciidoc[]
 
 include::graph-algos.asciidoc[]
 
 include::batch-operations.asciidoc[]
+
+include::legacy-indexes.asciidoc[]
+
+include::indexes-unique.asciidoc[]
+
+include::indexes-auto.asciidoc[]
+
+include::indexes-configurable-auto.asciidoc[]
 
 include::wadl.asciidoc[]
 

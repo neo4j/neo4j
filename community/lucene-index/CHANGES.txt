@@ -1,3 +1,12 @@
+1.9.4 (2013-09-19)
+------------------
+o Fixed issue where querying an index for "*:*" while having removed entities
+  from it in the same transaction might result in exceptions.
+
+1.9.3
+-----
+o Stop keeping norms in Lucene indexes, saving space and memory
+
 1.9.RC1 (2013-04-15)
 --------------------
 o Lucene upgraded to 3.6.2

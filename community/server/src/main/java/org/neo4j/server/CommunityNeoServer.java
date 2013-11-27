@@ -28,6 +28,7 @@ import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.DiscoveryModule;
 import org.neo4j.server.modules.ManagementApiModule;
+import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.SecurityRulesModule;
 import org.neo4j.server.modules.ServerModule;
@@ -38,7 +39,7 @@ import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
 import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.web.Jetty6WebServer;
+import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.webadmin.rest.AdvertisableService;
 import org.neo4j.server.webadmin.rest.JmxService;
@@ -57,7 +58,7 @@ public class CommunityNeoServer extends AbstractNeoServer
         init();
     }
 
-	@Override
+    @Override
 	protected PreFlightTasks createPreflightTasks()
     {
 		return new PreFlightTasks(
@@ -78,7 +79,8 @@ public class CommunityNeoServer extends AbstractNeoServer
         		new RESTApiModule(webServer, database, configurator.configuration()), 
         		new ManagementApiModule(webServer, configurator.configuration()),
                 new ThirdPartyJAXRSModule(webServer, configurator, this),
-                new WebAdminModule(webServer, configurator.configuration(), database), 
+                new WebAdminModule(webServer ),
+                new Neo4jBrowserModule(webServer, configurator.configuration(), database),
                 new StatisticModule(webServer, statisticsCollector, configurator.configuration()),
                 new SecurityRulesModule(webServer, configurator.configuration()));
 	}
@@ -92,7 +94,7 @@ public class CommunityNeoServer extends AbstractNeoServer
 	@Override
 	protected WebServer createWebServer()
     {
-		return new Jetty6WebServer();
+		return new Jetty9WebServer();
 	}
 
     @Override

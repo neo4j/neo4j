@@ -62,9 +62,17 @@ public enum HeartbeatState
 
                         case join:
                         {
-                            context.getClusterContext().getLogger( HeartbeatState.class ).warn( "Received join" );
-                            // Setup heartbeat timeouts
-                            context.startHeartbeatTimers( message );
+                            for ( InstanceId instanceId : context.getClusterContext().getOtherInstances() )
+                            {
+                                // Setup heartbeat timeouts for the other instance
+                                context.getClusterContext().timeouts.setTimeout(
+                                        HeartbeatMessage.i_am_alive + "-" + instanceId,
+                                        timeout( HeartbeatMessage.timed_out, message, instanceId ) );
+
+                                // Send first heartbeat immediately
+                                outgoing.offer( timeout( HeartbeatMessage.sendHeartbeat, message, instanceId) );
+                            }
+
                             return heartbeat;
                         }
                     }
@@ -86,10 +94,14 @@ public enum HeartbeatState
                     {
                         case i_am_alive:
                         {
-                            HeartbeatMessage.IAmAliveState state = (HeartbeatMessage.IAmAliveState) message
-                                    .getPayload();
+                            HeartbeatMessage.IAmAliveState state = message.getPayload();
 
-                            context.getClusterContext().getLogger( HeartbeatState.class ).warn( "Received i am alive " + state );
+                            if (context.getClusterContext().isMe( state.getServer() ) )
+                            {
+                                break;
+                            }
+
+                            context.getClusterContext().getLogger( HeartbeatState.class ).debug( "Received " + state );
 
                             if ( state.getServer() == null )
                             {
@@ -135,7 +147,8 @@ public enum HeartbeatState
                         {
 
                             InstanceId server = message.getPayload();
-                            context.getClusterContext().getLogger( HeartbeatState.class ).warn( "Received timed out for server " + server );
+                            context.getClusterContext().getLogger( HeartbeatState.class )
+                                    .debug( "Received timed out for server " + server );
                             // Check if this node is no longer a part of the cluster
                             if ( context.getClusterContext().getConfiguration().getMembers().containsKey( server ) )
                             {
@@ -170,10 +183,9 @@ public enum HeartbeatState
                         {
                             InstanceId to = message.getPayload();
 
-                            context.getClusterContext().getLogger( HeartbeatState.class ).warn( "Received send heartbeat to " + to );
-
                             // Check if this node is no longer a part of the cluster
-                            if ( context.getClusterContext().getConfiguration().getMembers().containsKey( to ) )
+                            if (!context.getClusterContext().isMe( to )
+                                    && context.getClusterContext().getConfiguration().getMembers().containsKey( to ) )
                             {
                                 URI toSendTo = context.getClusterContext().getConfiguration().getUriForId( to );
                                 // Send heartbeat message to given server
@@ -191,24 +203,32 @@ public enum HeartbeatState
 
                         case reset_send_heartbeat:
                         {
-
                             InstanceId to = message.getPayload();
-                            context.getClusterContext().getLogger( HeartbeatState.class ).warn( "Received reset send heartbeat " + to );
 
-                            String timeoutName = HeartbeatMessage.sendHeartbeat + "-" + to;
-                            context.getClusterContext().timeouts.cancelTimeout( timeoutName );
-                            context.getClusterContext().timeouts.setTimeout( timeoutName, Message.timeout(
-                                    HeartbeatMessage.sendHeartbeat, message, to ) );
+                            if ( !context.getClusterContext().isMe( to ) )
+                            {
+                                String timeoutName = HeartbeatMessage.sendHeartbeat + "-" + to;
+                                context.getClusterContext().timeouts.cancelTimeout( timeoutName );
+                                context.getClusterContext().timeouts.setTimeout( timeoutName, timeout(
+                                        HeartbeatMessage.sendHeartbeat, message, to ) );
+                            }
                             break;
                         }
 
                         case suspicions:
                         {
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
-                            context.getClusterContext().getLogger( HeartbeatState.class ).warn( "Received suspicions as " + suspicions );
+                            context.getClusterContext().getLogger( HeartbeatState.class )
+                                    .debug( "Received suspicions as " + suspicions );
 
                             URI from = new URI( message.getHeader( Message.FROM ) );
                             InstanceId fromId = context.getClusterContext().getConfiguration().getServerId( from );
+                            /*
+                             * Remove ourselves from the suspicions received - we just received a message,
+                             * it's not normal to be considered failed. Whatever it was, it was transient and now it has
+                             * passed.
+                             */
+                            suspicions.getSuspicions().remove( context.getClusterContext().getMyId() );
                             context.suspicions( fromId, suspicions.getSuspicions() );
 
                             break;
@@ -216,7 +236,7 @@ public enum HeartbeatState
 
                         case leave:
                         {
-                            context.getClusterContext().getLogger( HeartbeatState.class ).warn( "Received leave" );
+                            context.getClusterContext().getLogger( HeartbeatState.class ).debug( "Received leave" );
                             return start;
                         }
 

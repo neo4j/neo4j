@@ -19,25 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.matchers.JUnitMatchers.containsString;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.backup.BackupTool.MISMATCHED_STORE_ID;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -46,14 +27,35 @@ import java.util.Properties;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.test.TargetDirectory;
+
+import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.backup.BackupTool.MISMATCHED_STORE_ID;
 
 public class BackupToolTest
 {
@@ -140,12 +142,19 @@ public class BackupToolTest
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        new BackupTool( service, systemOut ).run( args );
-
-        // then
-        verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
-        verify( systemOut ).println( "Backup failed." );
-        verify( systemOut ).println( format( MISMATCHED_STORE_ID, expected, encountered ) );
+        try
+        {
+            new BackupTool( service, systemOut ).run( args );
+            fail( "should exit abnormally" );
+        }
+        catch ( BackupTool.ToolFailureException e )
+        {
+            // then
+            verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
+            verify( systemOut ).println( "Backup failed." );
+            verifyNoMoreInteractions( systemOut ); // no exception traced to stdout
+            assertEquals( format( MISMATCHED_STORE_ID, expected, encountered ), e.getMessage()  );
+        }
     }
 
     @Test
@@ -166,7 +175,7 @@ public class BackupToolTest
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
-        WindowPoolImplementation expectedPoolImplementation = !GraphDatabaseSetting.osIsWindows() ?
+        WindowPoolImplementation expectedPoolImplementation = !Settings.osIsWindows() ?
                 WindowPoolImplementation.SCAN_RESISTANT :
                 WindowPoolImplementation.MOST_FREQUENTLY_USED;
         assertEquals( expectedPoolImplementation,
@@ -302,4 +311,5 @@ public class BackupToolTest
 
         verifyZeroInteractions( service );
     }
+
 }

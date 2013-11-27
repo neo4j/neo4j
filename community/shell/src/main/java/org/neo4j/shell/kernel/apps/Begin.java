@@ -23,6 +23,7 @@ import java.rmi.RemoteException;
 
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -34,7 +35,7 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 @Service.Implementation(App.class)
-public class Begin extends ReadOnlyGraphDatabaseApp
+public class Begin extends NonTransactionProvidingApp
 {
     @Override
     public String getDescription()
@@ -55,9 +56,9 @@ public class Begin extends ReadOnlyGraphDatabaseApp
 
         Transaction tx = currentTransaction( getServer() );
 
+        // This is a "begin" app so it will leave a transaction open. Don't close it in here
         getServer().getDb().beginTx();
-            
-        Integer txCount = (Integer) session.get( Commit.TX_COUNT );
+        Integer txCount = session.getCommitCount();
 
         int count;
         if ( txCount == null )
@@ -66,18 +67,20 @@ public class Begin extends ReadOnlyGraphDatabaseApp
             {
                 count = 0;
                 out.println( "Transaction started" );
-            } else
+            }
+            else
             {
                 count = 1;
                 out.println( "Warning: transaction found that was not started by the shell." );
             }
-        } else
+        }
+        else
         {
             count = txCount;
             out.println( String.format( "Nested transaction started (Tx count: %d)", count + 1 ) );
         }
 
-        session.set( Commit.TX_COUNT, ++count );
+        session.setCommitCount( ++count );
         return Continuation.INPUT_COMPLETE;
     }
 
@@ -99,8 +102,9 @@ public class Begin extends ReadOnlyGraphDatabaseApp
     {
         try
         {
-            return server.getDb().getTxManager().getTransaction();
-        } catch ( SystemException e )
+            return server.getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).getTransaction();
+        }
+        catch ( SystemException e )
         {
             throw new ShellException( e.getMessage() );
         }

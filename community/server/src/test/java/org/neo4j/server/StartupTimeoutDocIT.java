@@ -19,92 +19,94 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.helpers.Transactor;
+import org.neo4j.server.helpers.UnitOfWork;
 import org.neo4j.server.modules.ServerModule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class StartupTimeoutDocIT
 {
-
-    TargetDirectory target = TargetDirectory.forTest( StartupTimeoutDocIT.class );
-    private static final String DIRSEP = File.separator;
-
-    @Rule
-    public TargetDirectory.TestDirectory test = target.cleanTestDirectory();
-
-    public CommunityNeoServer server;
-
-    @After
-    public void stopServer()
+    @Test
+    public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException
     {
-    	if(server != null)
-    	{
-    		server.stop();
-    		server = null;
-    	}
+        // GIVEN
+        Configurator configurator = buildProperties().withStartupTimeout( 1 ).atPort( 7480 ).build();
+        server = createSlowServer( configurator, true );
+
+        // WHEN
+        try
+        {
+            server.start();
+            fail( "Should have been interrupted." );
+        }
+        catch ( ServerStartupException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( "Startup took longer than" ) );
+        }
     }
 
 	@Test
-	public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException 
+	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
 	{
-		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 1);
-		server = createSlowServer(configurator);
-		
-		try {
-			server.start();
-			fail("Should have been interrupted.");
-		} catch(ServerStartupException e) {
-			// ok!
-		}
-		
-	}
-    
-	@Test
-	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException 
-	{
-		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 100);
-		server = new CommunityNeoServer(configurator){
-			@Override
-			protected Iterable<ServerModule> createServerModules(){
-				return Arrays.asList();
-			}
-		};
+		Configurator configurator = buildProperties().withStartupTimeout( 100 ).atPort( 7480 ).build();
+        server = new CommunityNeoServer( configurator )
+        {
+            @Override
+            protected Iterable<ServerModule> createServerModules()
+            {
+                return Arrays.asList();
+            }
+        };
 
         // When
-		try {
-			server.start();
-		} catch(ServerStartupException e) {
-			fail("Should not have been interupted.");
-		}
+        try
+        {
+            server.start();
+        }
+        catch ( ServerStartupException e )
+        {
+            fail( "Should not have been interupted." );
+        }
 
         // Then
         InterruptThreadTimer timer = server.getDependencyResolver().resolveDependency( InterruptThreadTimer.class );
 
-        assertThat(timer.getState(), is( InterruptThreadTimer.State.IDLE));
+        assertThat( timer.getState(), is( InterruptThreadTimer.State.IDLE ) );
 	}
-    
+
 	@Test
-	public void shouldNotTimeOutIfTimeoutDisabled() throws IOException 
+	public void shouldNotTimeOutIfTimeoutDisabled() throws IOException
 	{
-		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 0);
-		server = createSlowServer(configurator);
+		Configurator configurator = buildProperties().withStartupTimeout( 0 ).atPort( 7480 ).build();
+        server = createSlowServer( configurator, false );
 
         // When
         server.start();
@@ -113,47 +115,264 @@ public class StartupTimeoutDocIT
         // No exceptions should have been thrown
 	}
 
-	private CommunityNeoServer createSlowServer(Configurator configurator) {
-		CommunityNeoServer server = new CommunityNeoServer(configurator){
-			@Override
-			protected Iterable<ServerModule> createServerModules(){
-				ServerModule slowModule = new ServerModule() {
-					@Override
-					public void start(StringLogger logger) {
-						try {
-							Thread.sleep(1000 * 5);
-						} catch (InterruptedException e) {
-                            throw new RuntimeException( e );
-						}
-					}
+    private CommunityNeoServer createSlowServer( Configurator configurator, final boolean preventMovingFurtherThanStartingModules )
+    {
+        final AtomicReference<Runnable> timerStartSignal = new AtomicReference<>();
+        CommunityNeoServer server = new CommunityNeoServer( configurator )
+        {
+            @Override
+            protected InterruptThreadTimer createInterruptStartupTimer()
+            {
+                /* Create an InterruptThreadTimer that won't start its count down until server modules have
+                 * started to load (and in the case of these tests wait long enough for the timer to trigger.
+                 * This makes it deterministic precisely where in the startup sequence the interrupt happens.
+                 * Whereas this is a bit too deterministic compared to the real world, this is a test that must
+                 * complete in the same way every time. Another test should verify that an interrupt happening
+                 * anywhere in the startup sequence still aborts the startup and cleans up properly. */
 
-					@Override
-					public void stop() { }
-        		};
-				return Arrays.asList(slowModule);
-			}
-		};
-		return server;
+                InterruptThreadTimer realTimer = super.createInterruptStartupTimer();
+                return timerThatStartsWhenModulesStartsLoading( realTimer );
+            }
+
+            private InterruptThreadTimer timerThatStartsWhenModulesStartsLoading( final InterruptThreadTimer realTimer )
+            {
+                return new InterruptThreadTimer()
+                {
+                    @Override
+                    public boolean wasTriggered()
+                    {
+                        return realTimer.wasTriggered();
+                    }
+
+                    @Override
+                    public void stopCountdown()
+                    {
+                        realTimer.stopCountdown();
+                    }
+
+                    @Override
+                    public void startCountdown()
+                    {
+                        timerStartSignal.set( new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                realTimer.startCountdown();
+                            }
+                        } );
+                    }
+
+                    @Override
+                    public long getTimeoutMillis()
+                    {
+                        return realTimer.getTimeoutMillis();
+                    }
+
+                    @Override
+                    public State getState()
+                    {
+                        return realTimer.getState();
+                    }
+                };
+            }
+
+            @Override
+            protected Iterable<ServerModule> createServerModules()
+            {
+                ServerModule slowModule = new ServerModule()
+                {
+                    @Override
+                    public void start( StringLogger logger )
+                    {
+                        timerStartSignal.get().run();
+                        try
+                        {
+                            Thread.sleep( 1000 * 5 );
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+
+                        if ( preventMovingFurtherThanStartingModules )
+                        {
+                            fail( "Should not get here" );
+                        }
+                    }
+
+                    @Override
+                    public void stop()
+                    {
+                    }
+                };
+                return Arrays.asList( slowModule );
+            }
+        };
+        return server;
 	}
-	
-	private Configurator buildProperties() throws IOException
+
+    private ConfiguratorBuilder buildProperties() throws IOException
     {
         new File( test.directory().getAbsolutePath() + DIRSEP + "conf" ).mkdirs();
 
         Properties databaseProperties = new Properties();
-        String databasePropertiesFileName = test.directory().getAbsolutePath() + DIRSEP + "conf"+ DIRSEP +"neo4j.properties";
+        String databasePropertiesFileName = test.directory().getAbsolutePath() + DIRSEP + "conf" + DIRSEP
+                + "neo4j.properties";
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Properties serverProperties = new Properties();
-        String serverPropertiesFilename = test.directory().getAbsolutePath() + DIRSEP + "conf"+ DIRSEP +"neo4j-server.properties";
+        String serverPropertiesFilename = test.directory().getAbsolutePath() + DIRSEP + "conf" + DIRSEP
+                + "neo4j-server.properties";
         serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, test.directory().getAbsolutePath()
-                + DIRSEP + "data"+ DIRSEP +"graph.db" );
+                + DIRSEP + "data" + DIRSEP + "graph.db" );
 
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
         serverProperties.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, serverPropertiesFilename );
-        serverProperties.store( new FileWriter(serverPropertiesFilename), null);
-        	
-        return new PropertyFileConfigurator(new File(serverPropertiesFilename));
+        serverProperties.store( new FileWriter( serverPropertiesFilename ), null );
+
+        return new ConfiguratorBuilder( new PropertyFileConfigurator( new File( serverPropertiesFilename ) ) );
     }
-	
+
+    public @Rule
+    ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+
+    TargetDirectory target = TargetDirectory.forTest( StartupTimeoutDocIT.class );
+    private static final String DIRSEP = File.separator;
+
+    @Rule
+    public TargetDirectory.TestDirectory test = target.testDirectory();
+
+    public CommunityNeoServer server;
+    public @Rule TestName testName = new TestName();
+
+    @After
+    public void stopServer()
+    {
+        if ( server != null )
+        {
+            server.stop();
+            server = null;
+        }
+    }
+
+    @Before
+    public void printTestName()
+    {
+        // MP: Historically this test class has provided pretty flaky tests, mostly only reproducible on CI systems.
+        // to be able to know in which order tests executed might give hints about problems (while we're debugging
+        // the flakiness).
+        System.out.println( "=== Executing: " +
+                StartupTimeoutDocIT.class.getSimpleName() + "#" + testName.getMethodName() );
+    }
+
+    private void clearAll()
+    {
+        new Transactor( dbRule.getGraphDatabaseService(), new UnitOfWork()
+        {
+            @Override
+            public void doWork()
+            {
+                deleteAllNodesAndRelationships( dbRule.getGraphDatabaseService() );
+
+                deleteAllIndexes( dbRule.getGraphDatabaseService() );
+            }
+
+            private void deleteAllNodesAndRelationships( final GraphDatabaseService db )
+            {
+                Iterable<Node> allNodes = GlobalGraphOperations.at(db).getAllNodes();
+                for ( Node n : allNodes )
+                {
+                    Iterable<Relationship> relationships = n.getRelationships();
+                    for ( Relationship rel : relationships )
+                    {
+                        rel.delete();
+                    }
+                    if ( n.getId() != 0 )
+                    { // Don't delete the reference node - tests depend on it
+                        // :-(
+                        n.delete();
+                    }
+                    else
+                    { // Remove all state from the reference node instead
+                        for ( String key : n.getPropertyKeys() )
+                        {
+                            n.removeProperty( key );
+                        }
+                    }
+                }
+            }
+
+            private void deleteAllIndexes( final GraphDatabaseService db )
+            {
+                IndexManager indexManager = db.index();
+
+                for ( String indexName : indexManager.nodeIndexNames() )
+                {
+                    try
+                    {
+                        db.index().forNodes( indexName ).delete();
+                    }
+                    catch ( UnsupportedOperationException e )
+                    {
+                        // Encountered a read-only index.
+                    }
+                }
+
+                for ( String indexName : indexManager.relationshipIndexNames() )
+                {
+                    try
+                    {
+                        db.index().forRelationships( indexName ).delete();
+                    }
+                    catch ( UnsupportedOperationException e )
+                    {
+                        // Encountered a read-only index.
+                    }
+                }
+
+                for ( String k : indexManager.getNodeAutoIndexer().getAutoIndexedProperties() )
+                {
+                    indexManager.getNodeAutoIndexer().stopAutoIndexingProperty( k );
+                }
+                indexManager.getNodeAutoIndexer().setEnabled( false );
+
+                for ( String k : indexManager.getRelationshipAutoIndexer().getAutoIndexedProperties() )
+                {
+                    indexManager.getRelationshipAutoIndexer().stopAutoIndexingProperty( k );
+                }
+                indexManager.getRelationshipAutoIndexer().setEnabled( false );
+            }
+        } ).execute();
+    }
+
+    /**
+     * Produces more readable and understandable test code where this builder is used compared to raw Configurator.
+     */
+	private static class ConfiguratorBuilder
+	{
+	    private final Configurator configurator;
+
+        public ConfiguratorBuilder( Configurator initialConfigurator )
+        {
+            this.configurator = initialConfigurator;
+        }
+
+        public ConfiguratorBuilder atPort( int port )
+        {
+            configurator.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, port );
+            return this;
+        }
+
+        public ConfiguratorBuilder withStartupTimeout( int seconds )
+        {
+            configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, seconds );
+            return this;
+        }
+
+        public Configurator build()
+        {
+            return configurator;
+        }
+	}
 }

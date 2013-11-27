@@ -20,12 +20,9 @@
 package org.neo4j.test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestGraphDatabaseBuilder extends GraphDatabaseBuilder
 {
-    protected EphemeralFileSystemAbstraction fileSystem;
-    
     public TestGraphDatabaseBuilder( DatabaseCreator creator )
     {
         super( creator );

@@ -32,18 +32,21 @@ class DynamicRecordCheck
 {
     private final int blockSize;
     private final DynamicStore dereference;
+    private final RecordStore<DynamicRecord> store;
 
     DynamicRecordCheck( RecordStore<DynamicRecord> store, DynamicStore dereference )
     {
         this.blockSize = store.getRecordSize() - store.getRecordHeaderSize();
         this.dereference = dereference;
+        this.store = store;
     }
 
     @Override
     public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
-                             ConsistencyReport.DynamicConsistencyReport report, DiffRecordAccess records )
+                             CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
+                             DiffRecordAccess records )
     {
-        check( newRecord, report, records );
+        check( newRecord, engine, records );
         if ( oldRecord.inUse() && !Record.NO_NEXT_BLOCK.is( oldRecord.getNextBlock() ) )
         {
             if ( !newRecord.inUse() || oldRecord.getNextBlock() != newRecord.getNextBlock() )
@@ -51,7 +54,7 @@ class DynamicRecordCheck
                 DynamicRecord next = dereference.changed( records, oldRecord.getNextBlock() );
                 if ( next == null )
                 {
-                    report.nextNotUpdated();
+                    engine.report().nextNotUpdated();
                 }
                 // TODO: how to check that the owner of 'next' is now a different property record.
                 // TODO: implement previous logic? DynamicRecord must change from used to unused or from unused to used
@@ -60,7 +63,9 @@ class DynamicRecordCheck
     }
 
     @Override
-    public void check( DynamicRecord record, ConsistencyReport.DynamicConsistencyReport report, RecordAccess records )
+    public void check( DynamicRecord record,
+                       CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
+                       RecordAccess records )
     {
         if ( !record.inUse() )
         {
@@ -68,42 +73,43 @@ class DynamicRecordCheck
         }
         if ( record.getLength() == 0 )
         {
-            report.emptyBlock();
+            engine.report().emptyBlock();
         }
         else if ( record.getLength() < 0 )
         {
-            report.invalidLength();
+            engine.report().invalidLength();
         }
         if ( !Record.NO_NEXT_BLOCK.is( record.getNextBlock() ) )
         {
             if ( record.getNextBlock() == record.getId() )
             {
-                report.selfReferentialNext();
+                engine.report().selfReferentialNext();
             }
             else
             {
-                report.forReference( dereference.lookup( records, record.getNextBlock() ), this );
+                engine.comparativeCheck( dereference.lookup( records, record.getNextBlock() ), this );
             }
             if ( record.getLength() < blockSize )
             {
-                report.recordNotFullReferencesNext();
+                engine.report().recordNotFullReferencesNext();
             }
         }
     }
 
     @Override
     public void checkReference( DynamicRecord record, DynamicRecord next,
-                                ConsistencyReport.DynamicConsistencyReport report, RecordAccess records )
+                                CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
+                                RecordAccess records )
     {
         if ( !next.inUse() )
         {
-            report.nextNotInUse( next );
+            engine.report().nextNotInUse( next );
         }
         else
         {
             if ( next.getLength() <= 0 )
             {
-                report.emptyNextBlock( next );
+                engine.report().emptyNextBlock( next );
             }
         }
     }

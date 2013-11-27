@@ -19,8 +19,27 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
+
+import org.hamcrest.CoreMatchers;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Matchers;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests basic sanity and various scenarios for HeartbeatContext.
@@ -42,131 +61,146 @@ public class HeartbeatContextTest
 
     private HeartbeatContext toTest;
     private ClusterContext context;
-//
-//    @Before
-//    public void setup()
-//    {
-//        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>(  );
-//        for ( int i = 0; i < instanceIds.length; i++ )
-//        {
-//            members.put( instanceIds[i], URI.create( initialHosts[i] ) );
-//        }
-//        ClusterConfiguration config = new ClusterConfiguration( "clusterName", initialHosts );
-//        config.setMembers( members );
-//
-//        context = mock( ClusterContext.class );
-//
-//        when( context.getConfiguration() ).thenReturn( config );
-//        when( context.getMyId() ).thenReturn( instanceIds[0] );
-//
-//        toTest = new HeartbeatContext(
-//                context, mock( LearnerContext.class ),
-//                Executors.newSingleThreadExecutor() );
-//    }
-//
-//    @Test
-//    public void testSaneInitialState()
-//    {
-//
-//        // In config, not suspected yet
-//        assertFalse( toTest.alive( instanceIds[0] ) );
-//        // Not in config
-//        assertFalse( toTest.alive( new InstanceId( 4 ) ) );
-//
-//        // By default, instances start off as alive
-//        assertEquals( instanceIds.length, Iterables.count( toTest.getAlive() ) );
-//        assertEquals( 0, toTest.getFailed().size() );
-//
-//        for ( InstanceId initialHost : instanceIds )
-//        {
-//            assertFalse( toTest.isFailed( initialHost ) );
-//        }
-//    }
-//
-//    @Test
-//    public void testSuspicions()
-//    {
-//        InstanceId suspect = instanceIds[1];
-//        toTest.suspect( suspect );
-//        assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
-//        assertEquals( Collections.singletonList( context.getMyId() ), toTest.getSuspicionsOf( suspect ) );
-//        // Being suspected by just one (us) is not enough
-//        assertFalse( toTest.isFailed( suspect ) );
-//        assertTrue( toTest.alive( suspect ) ); // This resets the suspicion above
-//
-//        // If we suspect an instance twice in a row, it shouldn't change its status in any way.
-//        toTest.suspect( suspect );
-//        toTest.suspect( suspect );
-//        assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
-//        assertEquals( Collections.singletonList( context.getMyId() ), toTest.getSuspicionsOf( suspect ) );
-//        assertFalse( toTest.isFailed( suspect ) );
-//        assertTrue( toTest.alive( suspect ) );
-//
-//        // The other one sends suspicions too
-//        InstanceId newSuspiciousBastard = instanceIds[2];
-//        toTest.suspicions( newSuspiciousBastard, Collections.singleton( suspect ) );
-//        toTest.suspect( suspect );
-//        // Now two instances suspect it, it should be reported failed
-//        assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
-//        assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( newSuspiciousBastard ) );
-//        List<InstanceId> suspiciousBastards = new ArrayList<InstanceId>( 2 );
-//        suspiciousBastards.add( context.getMyId() );
-//        suspiciousBastards.add( newSuspiciousBastard );
-//        assertEquals( suspiciousBastards, toTest.getSuspicionsOf( suspect ) );
-//        assertTrue( toTest.isFailed( suspect ) );
-//        assertTrue( toTest.alive( suspect ) );
-//    }
-//
-//    @Test
-//    public void testFailedInstanceBecomingAlive()
-//    {
-//        InstanceId suspect = instanceIds[1];
-//        InstanceId newSuspiciousBastard = instanceIds[2];
-//        toTest.suspicions( newSuspiciousBastard, Collections.singleton( suspect ) );
-//        toTest.suspect( suspect );
-//
-//        // Just make sure
-//        assertTrue( toTest.isFailed( suspect ) );
-//
-//        // Ok, here it is. We received a heartbeat, so it is alive.
-//        toTest.alive( suspect );
-//        // It must no longer be failed
-//        assertFalse( toTest.isFailed( suspect ) );
-//
-//        // Simulate us stopping receiving heartbeats again
-//        toTest.suspect( suspect );
-//        assertTrue( toTest.isFailed( suspect ) );
-//
-//        // Assume the other guy started receiving heartbeats first
-//        toTest.suspicions( newSuspiciousBastard, Collections.<InstanceId>emptySet() );
-//        assertFalse( toTest.isFailed( suspect ) );
-//    }
-//
-//    /**
-//     * Tests the following scenario:
-//     * Instance A (the one this test simulates) sees instance C down. B agrees.
-//     * Instance A sees instance B down.
-//     * Instance C starts responding again.
-//     * Instance A should now consider C alive.
-//     */
-//    @Test
-//    public void testOneInstanceComesAliveAfterAllOtherFail()
-//    {
-//        InstanceId instanceB = instanceIds[1];
-//        InstanceId instanceC = instanceIds[2];
-//
-//        // Both A and B consider C down
-//        toTest.suspect( instanceC );
-//        toTest.suspicions( instanceB, Collections.singleton( instanceC ) );
-//        assertTrue( toTest.isFailed( instanceC ) );
-//
-//        // A sees B as down
-//        toTest.suspect( instanceB );
-//        assertTrue( toTest.isFailed( instanceB ) );
-//
-//        // C starts responding again
-//        assertTrue( toTest.alive( instanceC ) );
-//
-//        assertFalse( toTest.isFailed( instanceC ) );
-//    }
+
+    @Before
+    public void setup()
+    {
+        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>(  );
+        for ( int i = 0; i < instanceIds.length; i++ )
+        {
+            members.put( instanceIds[i], URI.create( initialHosts[i] ) );
+        }
+        ClusterConfiguration config = new ClusterConfiguration( "clusterName", StringLogger.DEV_NULL, initialHosts );
+        config.setMembers( members );
+
+        context = mock( ClusterContext.class );
+
+        when( context.getConfiguration() ).thenReturn( config );
+        when( context.getMyId() ).thenReturn( instanceIds[0] );
+        when( context.getLogger( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class) );
+
+        toTest = new HeartbeatContext(
+                context, mock( LearnerContext.class ),
+                Executors.newSingleThreadExecutor() );
+    }
+
+    @Test
+    public void testSaneInitialState()
+    {
+
+        // In config, not suspected yet
+        assertFalse( toTest.alive( instanceIds[0] ) );
+        // Not in config
+        assertFalse( toTest.alive( new InstanceId( 4 ) ) );
+
+        // By default, instances start off as alive
+        assertEquals( instanceIds.length, Iterables.count( toTest.getAlive() ) );
+        assertEquals( 0, toTest.getFailed().size() );
+
+        for ( InstanceId initialHost : instanceIds )
+        {
+            assertFalse( toTest.isFailed( initialHost ) );
+        }
+    }
+
+    @Test
+    public void testSuspicions()
+    {
+        InstanceId suspect = instanceIds[1];
+        toTest.suspect( suspect );
+        assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
+        assertEquals( Collections.singletonList( context.getMyId() ), toTest.getSuspicionsOf( suspect ) );
+        // Being suspected by just one (us) is not enough
+        assertFalse( toTest.isFailed( suspect ) );
+        assertTrue( toTest.alive( suspect ) ); // This resets the suspicion above
+
+        // If we suspect an instance twice in a row, it shouldn't change its status in any way.
+        toTest.suspect( suspect );
+        toTest.suspect( suspect );
+        assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
+        assertEquals( Collections.singletonList( context.getMyId() ), toTest.getSuspicionsOf( suspect ) );
+        assertFalse( toTest.isFailed( suspect ) );
+        assertTrue( toTest.alive( suspect ) );
+
+        // The other one sends suspicions too
+        InstanceId newSuspiciousBastard = instanceIds[2];
+        toTest.suspicions( newSuspiciousBastard, Collections.singleton( suspect ) );
+        toTest.suspect( suspect );
+        // Now two instances suspect it, it should be reported failed
+        assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
+        assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( newSuspiciousBastard ) );
+        List<InstanceId> suspiciousBastards = new ArrayList<InstanceId>( 2 );
+        suspiciousBastards.add( context.getMyId() );
+        suspiciousBastards.add( newSuspiciousBastard );
+        assertEquals( suspiciousBastards, toTest.getSuspicionsOf( suspect ) );
+        assertTrue( toTest.isFailed( suspect ) );
+        assertTrue( toTest.alive( suspect ) );
+    }
+
+    @Test
+    public void testFailedInstanceBecomingAlive()
+    {
+        InstanceId suspect = instanceIds[1];
+        InstanceId newSuspiciousBastard = instanceIds[2];
+        toTest.suspicions( newSuspiciousBastard, Collections.singleton( suspect ) );
+        toTest.suspect( suspect );
+
+        // Just make sure
+        assertTrue( toTest.isFailed( suspect ) );
+
+        // Ok, here it is. We received a heartbeat, so it is alive.
+        toTest.alive( suspect );
+        // It must no longer be failed
+        assertFalse( toTest.isFailed( suspect ) );
+
+        // Simulate us stopping receiving heartbeats again
+        toTest.suspect( suspect );
+        assertTrue( toTest.isFailed( suspect ) );
+
+        // Assume the other guy started receiving heartbeats first
+        toTest.suspicions( newSuspiciousBastard, Collections.<InstanceId>emptySet() );
+        assertFalse( toTest.isFailed( suspect ) );
+    }
+
+    /**
+     * Tests the following scenario:
+     * Instance A (the one this test simulates) sees instance C down. B agrees.
+     * Instance A sees instance B down.
+     * Instance C starts responding again.
+     * Instance A should now consider C alive.
+     */
+    @Test
+    public void testOneInstanceComesAliveAfterAllOtherFail()
+    {
+        InstanceId instanceB = instanceIds[1];
+        InstanceId instanceC = instanceIds[2];
+
+        // Both A and B consider C down
+        toTest.suspect( instanceC );
+        toTest.suspicions( instanceB, Collections.singleton( instanceC ) );
+        assertTrue( toTest.isFailed( instanceC ) );
+
+        // A sees B as down
+        toTest.suspect( instanceB );
+        assertTrue( toTest.isFailed( instanceB ) );
+
+        // C starts responding again
+        assertTrue( toTest.alive( instanceC ) );
+
+        assertFalse( toTest.isFailed( instanceC ) );
+    }
+    @Test
+    public void shouldConsultSuspicionsOnlyFromCurrentClusterMembers() throws Exception
+    {
+        // Given
+        InstanceId notInCluster = new InstanceId( -1 ); // backup, for example
+        toTest.suspicions( notInCluster, Iterables.toSet( Iterables.<InstanceId, InstanceId>iterable( instanceIds[1] ) ) );
+
+        // When
+        List<InstanceId> suspicions = toTest.getSuspicionsOf ( instanceIds[1] );
+
+        // Then
+        assertThat( suspicions.size(), CoreMatchers.equalTo( 0 ) );
+
+    }
 }

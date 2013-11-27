@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -41,13 +36,20 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import com.sun.jersey.api.client.*;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientRequest.Builder;
+import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -56,7 +58,7 @@ import com.sun.jersey.api.client.ClientRequest.Builder;
  * 
  * The filename of the resulting ASCIIDOC test file is derived from the title.
  * 
- * The title is determined by either a JavaDoc perioed terminated first title line,
+ * The title is determined by either a JavaDoc period terminated first title line,
  * the @Title annotation or the method name, where "_" is replaced by " ".
  */
 public class RESTDocsGenerator extends AsciiDocGenerator
@@ -65,9 +67,9 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     private static final Builder REQUEST_BUILDER = ClientRequest.create();
 
-    private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] { "Content-Type", "Location" } );
+    private static final List<String> RESPONSE_HEADERS = Arrays.asList( "Content-Type", "Location" );
 
-    private static final List<String> REQUEST_HEADERS = Arrays.asList( new String[] { "Content-Type", "Accept" } );
+    private static final List<String> REQUEST_HEADERS = Arrays.asList( "Content-Type", "Accept" );
 
     public static final Producer<RESTDocsGenerator> PRODUCER = new Producer<RESTDocsGenerator>()
     {
@@ -87,11 +89,11 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     };
 
     private int expectedResponseStatus = -1;
-    private MediaType expectedMediaType = MediaType.APPLICATION_JSON_TYPE;
+    private MediaType expectedMediaType = MediaType.valueOf( "application/json; charset=UTF-8" );
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
-    private final List<String> expectedHeaderFields = new ArrayList<String>();
+    private final List<String> expectedHeaderFields = new ArrayList<>();
     private String payload;
-    private Map<String, String> addedRequestHeaders = new TreeMap<String, String>(  );
+    private final Map<String, String> addedRequestHeaders = new TreeMap<>(  );
     private boolean noDoc = false;
     private boolean noGraph = false;
     private int headingLevel = 3;
@@ -138,7 +140,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      * Set the expected status of the response. The test will fail if the
      * response has a different status. Defaults to HTTP 200 OK.
      * 
-     * @param expectedResponseStatus the expected response status
+     * @param expectedStatus the expected response status
      */
     public RESTDocsGenerator expectedStatus( final ClientResponse.Status expectedStatus)
     {
@@ -386,10 +388,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         {
             data.setEntity( response.getEntity( String.class ) );
         }
-        try {
-        } catch (UniformInterfaceException uie) {
-            //ok
-        }
         if ( response.getType() != null )
         {
             assertTrue( "wrong response type: "+ data.entity, response.getType().isCompatible( type ) );
@@ -399,7 +397,10 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             assertNotNull( "wrong headers: "+ data.entity, response.getHeaders()
                     .get( headerField ) );
         }
-        if (noDoc) data.setIgnore();
+        if ( noDoc )
+        {
+            data.setIgnore();
+        }
         data.setTitle( title );
         data.setDescription( description );
         data.setMethod( request.getMethod() );
@@ -407,7 +408,17 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setStatus( responseCode );
         assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
         getResponseHeaders( data, response.getHeaders(), headerFields );
-        document( data );
+        if ( graph == null )
+        {
+            document( data );
+        }
+        else
+        {
+            try ( Transaction transaction = graph.beginTx() )
+            {
+                document( data );
+            }
+        }
         return new ResponseEntity( response, data.entity );
     }
 
@@ -426,7 +437,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private <T> Map<String, String> getHeaders( final MultivaluedMap<String, T> headers, final List<String> filter,
             final Collection<String> additionalFilter )
     {
-        Map<String, String> filteredHeaders = new TreeMap<String, String>();
+        Map<String, String> filteredHeaders = new TreeMap<>();
         for ( Entry<String, List<T>> header : headers.entrySet() )
         {
             String key = header.getKey();
@@ -481,17 +492,16 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     protected void document( final DocumentationData data )
     {
-        if (data.ignore) return;
-        Writer fw = null;
-        try
+        if (data.ignore)
         {
-            String name = data.title.replace( " ", "-" )
-                    .toLowerCase();
-            String filename = name + ".asciidoc";
-            File dir = new File( new File( new File( "target" ), "docs" ),
-                    section );
-            data.description = replaceSnippets( data.description, dir, name );
-            fw = AsciiDocGenerator.getFW( dir, filename );
+            return;
+        }
+        String name = data.title.replace( " ", "-" ).toLowerCase();
+        String filename = name + ".asciidoc";
+        File dir = new File( new File( new File( "target" ), "docs" ), section );
+        data.description = replaceSnippets( data.description, dir, name );
+        try ( Writer fw = AsciiDocGenerator.getFW( dir, filename ) )
+        {
             String longSection = section.replaceAll( "\\(|\\)", "" )+"-" + name.replaceAll( "\\(|\\)", "" );
             if(longSection.indexOf( "/" )>0)
             {
@@ -573,21 +583,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             e.printStackTrace();
             fail();
         }
-        finally
-        {
-            if ( fw != null )
-            {
-                try
-                {
-                    fw.close();
-                }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
-                    fail();
-                }
-            }
-        }
     }
 
     private String getAsciidocHeading( final String heading )
@@ -597,7 +592,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     }
 
     public void writeEntity( final StringBuilder sb, final String entity )
-            throws IOException
     {
         if ( entity != null )
         {

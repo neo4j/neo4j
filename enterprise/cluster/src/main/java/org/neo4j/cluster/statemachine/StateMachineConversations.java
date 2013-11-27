@@ -19,10 +19,9 @@
  */
 package org.neo4j.cluster.statemachine;
 
-import java.net.URI;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.InstanceId;
 
 /**
  * Generate id's for state machine conversations. This should be shared between all state machines in a server.
@@ -30,19 +29,17 @@ import org.neo4j.cluster.BindingListener;
  * These conversation id's can be used to uniquely identify conversations between distributed state machines.
  */
 public class StateMachineConversations
-        implements BindingListener
 {
-    private AtomicLong nextConversationId = new AtomicLong();
-    private String serverId;
+    private final AtomicLong nextConversationId = new AtomicLong();
+    private final String serverId;
+
+    public StateMachineConversations( InstanceId me )
+    {
+        serverId = me.toString();
+    }
 
     public String getNextConversationId()
     {
         return serverId + "/" + nextConversationId.incrementAndGet() + "#";
-    }
-
-    @Override
-    public void listeningAt( URI me )
-    {
-        serverId = me.toString();
     }
 }

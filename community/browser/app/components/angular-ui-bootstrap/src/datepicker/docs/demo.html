@@ -1,0 +1,9 @@
+<div ng-controller="DatepickerDemoCtrl">
+    <datepicker ng-model="dt" show-weeks="showWeeks" starting-day="1" date-disabled="disabled(date, mode)" min="minDate" max="'2015-06-22'"></datepicker>
+    <pre>Selected date is: <em>{{dt | date:'fullDate' }}</em></pre>
+
+    <button class="btn btn-small btn-inverse" ng-click="today()">Today</button>
+    <button class="btn btn-small btn-success" ng-click="toggleWeeks()">Toggle Weeks</button>
+    <button class="btn btn-small btn-danger" ng-click="clear()">Clear</button>
+    <button class="btn btn-small" ng-click="toggleMin()">After today restriction</button>
+</div>

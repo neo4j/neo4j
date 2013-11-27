@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -33,14 +31,22 @@ import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 
+import static java.lang.String.format;
+
 /**
  * Default file system abstraction that creates files using the underlying file system.
+ *
+ * @deprecated This will be moved to internal packages in the next major release.
  */
+@Deprecated
 public class DefaultFileSystemAbstraction
         implements FileSystemAbstraction
 {
@@ -165,5 +171,20 @@ public class DefaultFileSystemAbstraction
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         FileUtils.copyRecursively( fromDirectory, toDirectory );
+    }
+
+    private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
+            new HashMap<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem>();
+
+    @Override
+    public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
+            Class<K> clazz, Function<Class<K>, K> creator )
+    {
+        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
+        if (fileSystem == null)
+        {
+            thirdPartyFileSystems.put( clazz, fileSystem = creator.apply( clazz ) );
+        }
+        return clazz.cast( fileSystem );
     }
 }

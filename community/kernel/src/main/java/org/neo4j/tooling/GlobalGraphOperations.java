@@ -20,12 +20,29 @@
 package org.neo4j.tooling;
 
 import java.util.Iterator;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Token;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 /**
  * A tool for doing global operations, for example {@link #getAllNodes()}.
@@ -33,18 +50,23 @@ import org.neo4j.kernel.impl.core.NodeManager;
 public class GlobalGraphOperations
 {
     private final NodeManager nodeManager;
+    private final CleanupService cleanupService;
+    private final ThreadToStatementContextBridge statementCtxProvider;
 
     private GlobalGraphOperations( GraphDatabaseService db )
     {
-        this.nodeManager = ((GraphDatabaseAPI) db).getNodeManager();
+        GraphDatabaseAPI dbApi = (GraphDatabaseAPI) db;
+        DependencyResolver resolver = dbApi.getDependencyResolver();
+        this.nodeManager = resolver.resolveDependency( NodeManager.class );
+        this.cleanupService = resolver.resolveDependency( CleanupService.class );
+        this.statementCtxProvider = resolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     /**
      * Get a {@link GlobalGraphOperations} for the given {@code db}.
-     * 
-     * @param db
-     *            the {@link GraphDatabaseService} to get global operations for.
-     * @return a {@link GlobalGraphOperations} for the given {@code db}.
+     *
+     * @param db the {@link GraphDatabaseService} to get global operations for.
+     * @return {@link GlobalGraphOperations} for the given {@code db}.
      */
     public static GlobalGraphOperations at( GraphDatabaseService db )
     {
@@ -53,11 +75,12 @@ public class GlobalGraphOperations
 
     /**
      * Returns all nodes in the graph.
-     * 
+     *
      * @return all nodes in the graph.
      */
     public Iterable<Node> getAllNodes()
     {
+        assertInTransaction();
         return new Iterable<Node>()
         {
             @Override
@@ -70,11 +93,12 @@ public class GlobalGraphOperations
 
     /**
      * Returns all relationships in the graph.
-     * 
+     *
      * @return all relationships in the graph.
      */
     public Iterable<Relationship> getAllRelationships()
     {
+        assertInTransaction();
         return new Iterable<Relationship>()
         {
             @Override
@@ -87,16 +111,129 @@ public class GlobalGraphOperations
 
     /**
      * Returns all relationship types currently in the underlying store. Relationship types are
-     * added to the underlying store the first time they are used in a successfully commited
+     * added to the underlying store the first time they are used in a successfully committed
      * {@link Node#createRelationshipTo node.createRelationshipTo(...)}. Note that this method is
      * guaranteed to return all known relationship types, but it does not guarantee that it won't
      * return <i>more</i> than that (e.g. it can return "historic" relationship types that no longer
-     * have any relationships in the node space).
-     * 
+     * have any relationships in the graph).
+     *
      * @return all relationship types in the underlying store
      */
     public Iterable<RelationshipType> getAllRelationshipTypes()
     {
+        assertInTransaction();
         return nodeManager.getRelationshipTypes();
+    }
+
+    /**
+     * Returns all labels currently in the underlying store. Labels are added to the store the first
+     * they are used. This method guarantees that it will return all labels currently in use. However,
+     * it may also return <i>more</i> than that (e.g. it can return "historic" labels that are no longer used).
+     *
+     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @return all labels in the underlying store.
+     */
+    public ResourceIterable<Label> getAllLabels()
+    {
+        assertInTransaction();
+        return new ResourceIterable<Label>()
+        {
+            @Override
+            public ResourceIterator<Label> iterator()
+            {
+                Statement statement = statementCtxProvider.instance();
+                return cleanupService.resourceIterator( map( new Function<Token, Label>()
+                {
+
+                    @Override
+                    public Label apply( Token labelToken )
+                    {
+                        return label( labelToken.name() );
+                    }
+                }, statement.readOperations().labelsGetAllTokens() ), statement );
+            }
+        };
+    }
+
+    /**
+     * Returns all property keys currently in the underlying store. This method guarantees that it will return all
+     * property keys currently in use. However, it may also return <i>more</i> than that (e.g. it can return "historic"
+     * labels that are no longer used).
+     *
+     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @return all labels in the underlying store.
+     */
+    public ResourceIterable<String> getAllPropertyKeys()
+    {
+        assertInTransaction();
+        return new ResourceIterable<String>()
+        {
+            @Override
+            public ResourceIterator<String> iterator()
+            {
+                Statement statement = statementCtxProvider.instance();
+                return cleanupService.resourceIterator( map( new Function<Token, String>() {
+
+                    @Override
+                    public String apply( Token propertyToken )
+                    {
+                        return propertyToken.name();
+                    }
+                }, statement.readOperations().propertyKeyGetAllTokens() ), statement );
+            }
+        };
+    }
+
+    /**
+     * Returns all {@link Node nodes} with a specific {@link Label label}.
+     *
+     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param label the {@link Label} to return nodes for.
+     * @return {@link Iterable} containing nodes with a specific label.
+     */
+    public ResourceIterable<Node> getAllNodesWithLabel( final Label label )
+    {
+        assertInTransaction();
+        return new ResourceIterable<Node>()
+        {
+            @Override
+            public ResourceIterator<Node> iterator()
+            {
+                return allNodesWithLabel( label.name() );
+            }
+        };
+    }
+
+    private ResourceIterator<Node> allNodesWithLabel( String label )
+    {
+        Statement statement = statementCtxProvider.instance();
+
+        int labelId = statement.readOperations().labelGetForName( label );
+        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
+        {
+            statement.close();
+            return emptyIterator();
+        }
+
+        final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
+        return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
+        {
+            @Override
+            public Node apply( long nodeId )
+            {
+                return nodeManager.getNodeById( nodeId );
+            }
+        }, nodeIds ), statement );
+    }
+
+    private void assertInTransaction()
+    {
+        statementCtxProvider.assertInTransaction();
     }
 }

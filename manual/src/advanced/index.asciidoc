@@ -1,0 +1,37 @@
+[[advanced-usage]]
+= Advanced Usage =
+
+[partintro]
+--
+This part contains information on advanced usage of Neo4j.
+Among the topics covered are embedding Neo4j in your own software and writing plugins for the Neo4j Server.
+--
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-server-examples-docs-jar/dev/index.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-examples-docs-jar/dev/index.asciidoc[]
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-cypher-docs-docs-jar/dev/java/index.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-kernel-docs-jar/dev/batchinsert.asciidoc[]
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-lucene-index-docs-jar/dev/batchinsertindex.asciidoc[]
+

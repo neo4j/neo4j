@@ -24,14 +24,30 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SingleLoggingService;
 
 /**
  * Test factory for graph databases
  */
-public class TestGraphDatabaseFactory
-    extends GraphDatabaseFactory
+public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
+    private Logging overrideLoggingAndUseThis;
+
+    public TestGraphDatabaseFactory()
+    {
+       super( new TestGraphDatabaseFactoryState() );
+    }
+
+    public TestGraphDatabaseFactory(Logging logging)
+    {
+        super( new TestGraphDatabaseFactoryState() );
+        this.overrideLoggingAndUseThis = logging;
+    }
+
     public GraphDatabaseService newImpermanentDatabase()
     {
         return newImpermanentDatabaseBuilder().newGraphDatabase();
@@ -46,33 +62,100 @@ public class TestGraphDatabaseFactory
     {
         return newImpermanentDatabaseBuilder( ImpermanentGraphDatabase.PATH );
     }
-    
+
+    @Override
+    protected TestGraphDatabaseFactoryState getCurrentState()
+    {
+        return (TestGraphDatabaseFactoryState) super.getCurrentState();
+    }
+
+    @Override
+    protected TestGraphDatabaseFactoryState getStateCopy()
+    {
+        return new TestGraphDatabaseFactoryState( getCurrentState() );
+    }
+
+    public FileSystemAbstraction getFileSystem()
+    {
+        return getCurrentState().getFileSystem();
+    }
+
+    public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
+    {
+        getCurrentState().setFileSystem( fileSystem );
+        return this;
+    }
+
+    @Override
+    public TestGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    {
+        return (TestGraphDatabaseFactory) super.addKernelExtensions( newKernelExtensions );
+    }
+
+    @Override
+    public TestGraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
+    {
+        return (TestGraphDatabaseFactory) super.addKernelExtension( newKernelExtension );
+    }
+
+    public boolean isSystemOutLogging()
+    {
+        return getCurrentState().isSystemOutLogging();
+    }
+
+    public TestGraphDatabaseFactory setSystemOutLogging( boolean systemOutLogging )
+    {
+        getCurrentState().setSystemOutLogging( systemOutLogging );
+        return this;
+    }
+
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final String storeDir )
     {
+        final TestGraphDatabaseFactoryState state = getStateCopy();
         return new TestGraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
+            @SuppressWarnings("deprecation")
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
-                return new ImpermanentGraphDatabase( storeDir, config, indexProviders, kernelExtensions,
-                        cacheProviders, txInterceptorProviders )
+                return new ImpermanentGraphDatabase( storeDir, config,
+                        state.getKernelExtension(),
+                        state.getCacheProviders(),
+                        state.getTransactionInterceptorProviders() )
                 {
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()
                     {
-                        if ( TestGraphDatabaseFactory.this.fileSystem != null )
-                            return TestGraphDatabaseFactory.this.fileSystem;
+                        FileSystemAbstraction fs = state.getFileSystem();
+                        if ( fs != null )
+                        {
+                            return fs;
+                        }
                         else
+                        {
                             return super.createFileSystemAbstraction();
+                        }
+                    }
+
+                    @Override
+                    protected Logging createLogging()
+                    {
+                        if(overrideLoggingAndUseThis != null)
+                        {
+                            return overrideLoggingAndUseThis;
+                        }
+
+                        if ( state.isSystemOutLogging() )
+                        {
+                            return new SingleLoggingService( StringLogger.SYSTEM );
+                        }
+                        else
+                        {
+                            return super.createLogging();
+                        }
                     }
                 };
             }
         } );
-    }
-    
-    public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
-    {
-        this.fileSystem = fileSystem;
-        return this;
     }
 }

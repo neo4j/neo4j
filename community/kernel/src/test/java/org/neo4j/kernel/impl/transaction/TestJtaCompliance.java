@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
@@ -37,6 +33,8 @@ import org.junit.Test;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
+import static org.junit.Assert.*;
+
 public class TestJtaCompliance extends AbstractNeo4jTestCase
 {
     // the TransactionManager to use when testing for JTA compliance
@@ -47,11 +45,11 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
     public void setUpFramework()
     {
         getTransaction().finish();
-        tm = getGraphDbAPI().getTxManager();
-        xaDsMgr = getGraphDbAPI().getXaDataSourceManager();
-        java.util.Map<String,String> map1 = new java.util.HashMap<String,String>();
+        tm = getGraphDbAPI().getDependencyResolver().resolveDependency( TransactionManager.class );
+        xaDsMgr = getGraphDbAPI().getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+        java.util.Map<String,String> map1 = new java.util.HashMap<>();
         map1.put( "store_dir", "target/var" );
-        java.util.Map<String,String> map2 = new java.util.HashMap<String,String>();
+        java.util.Map<String,String> map2 = new java.util.HashMap<>();
         map2.put( "store_dir", "target/var" );
         try
         {
@@ -401,12 +399,13 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         assertEquals( 2, calls1.length );
         assertEquals( "prepare", calls1[0].getMethodName() );
         args = calls1[0].getArgs();
-        assertTrue( ((Xid) args[0]).equals( xid1 ) );
+        assertTrue( args[0].equals( xid1 ) );
         assertEquals( "commit", calls1[1].getMethodName() );
         args = calls1[1].getArgs();
-        assertTrue( ((Xid) args[0]).equals( xid1 ) );
+        assertTrue( args[0].equals( xid1 ) );
         assertEquals( false, ((Boolean) args[1]).booleanValue() );
         // res2
+
         assertEquals( 0, calls2.length );
     }
 

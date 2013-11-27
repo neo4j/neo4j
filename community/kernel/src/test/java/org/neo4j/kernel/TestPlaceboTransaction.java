@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
@@ -31,27 +26,29 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
+
+import static org.mockito.Mockito.*;
 
 public class TestPlaceboTransaction
 {
     private AbstractTransactionManager mockTxManager;
     private Transaction mockTopLevelTx;
     private PlaceboTransaction placeboTx;
-    private LockManager lockManager;
     private TransactionState state;
     private PropertyContainer resource;
-    
+    private PersistenceManager persistenceManager;
+
     @Before
     public void before() throws Exception
     {
         mockTxManager = mock( AbstractTransactionManager.class );
         mockTopLevelTx = mock( Transaction.class );
         when( mockTxManager.getTransaction() ).thenReturn( mockTopLevelTx );
-        lockManager = mock( LockManager.class );
         state = mock( TransactionState.class );
-        placeboTx = new PlaceboTransaction( mockTxManager, lockManager, state );
+        persistenceManager = mock( PersistenceManager.class );
+        placeboTx = new PlaceboTransaction( persistenceManager,mockTxManager, state );
         resource = mock( PropertyContainer.class );
     }
 
@@ -106,6 +103,7 @@ public class TestPlaceboTransaction
         placeboTx.acquireReadLock( resource );
         
         // then
+        verify( persistenceManager ).ensureKernelIsEnlisted();
         verify( state ).acquireReadLock( resource );
     }
 
@@ -116,6 +114,7 @@ public class TestPlaceboTransaction
         placeboTx.acquireWriteLock( resource );
         
         // then
+        verify( persistenceManager ).ensureKernelIsEnlisted();
         verify( state ).acquireWriteLock( resource );
     }
 }

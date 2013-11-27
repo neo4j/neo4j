@@ -70,7 +70,7 @@ public class LogFiles
         for ( File logFile : fs.listFiles( fromDirectory ) )
         {
             if ( filter.accept( fromDirectory, logFile.getName() ) )
-                StoreFiles.moveFile( fs, logFile.getName(), fromDirectory, toDirectory );
+                StoreFile.moveFile( fs, logFile.getName(), fromDirectory, toDirectory );
         }
     }
 }

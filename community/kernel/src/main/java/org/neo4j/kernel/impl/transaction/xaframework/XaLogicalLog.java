@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -53,6 +48,11 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
+
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
  * this log information about the transaction (such as started, prepared and
@@ -60,15 +60,15 @@ import org.neo4j.kernel.logging.Logging;
  * will also be written to the log.
  * <p/>
  * Normally you don't have to do anything with this log except open it after it
- * has been instanciated (see {@link XaContainer}). The only method that may be
+ * has been instantiated (see {@link XaContainer}). The only method that may be
  * of use when implementing a XA compatible resource is the
  * {@link #getCurrentTxIdentifier}. Leave everything else be unless you know
  * what you're doing.
  * <p/>
- * When the log is opened it will be scaned for uncompleted transactions and
+ * When the log is opened it will be scanned for uncompleted transactions and
  * those transactions will be re-created. When scan of log is complete all
  * transactions that hasn't entered prepared state will be marked as done
- * (implies rolledback) and dropped. All transactions that have been prepared
+ * (implies rolled back) and dropped. All transactions that have been prepared
  * will be held in memory until the transaction manager tells them to commit.
  * Transaction that already started commit but didn't get flagged as done will
  * be re-committed.
@@ -93,13 +93,12 @@ public class XaLogicalLog implements LogLoader
     private final XaCommandFactory cf;
     private final XaTransactionFactory xaTf;
     private char currentLog = CLEAN;
-    private boolean autoRotate = true;
-    private long rotateAtSize = 25 * 1024 * 1024; // 25MB
+    private boolean autoRotate;
+    private long rotateAtSize;
 
     private final LogBufferFactory logBufferFactory;
     private boolean doingRecovery;
     private long lastRecoveredTx = -1;
-    private long recoveredTxCount;
 
     private final StringLogger msgLog;
 
@@ -109,12 +108,14 @@ public class XaLogicalLog implements LogLoader
     private final LogPruneStrategy pruneStrategy;
     private final XaLogicalLogFiles logFiles;
     private final PartialTransactionCopier partialTransactionCopier;
+    private final InjectedTransactionValidator injectedTxValidator;
 
     private final TransactionStateFactory stateFactory;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem,
-                         Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory )
+                         Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
+                         long rotateAtSize, InjectedTransactionValidator injectedTxValidator )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
@@ -124,6 +125,8 @@ public class XaLogicalLog implements LogLoader
         this.fileSystem = fileSystem;
         this.pruneStrategy = pruneStrategy;
         this.stateFactory = stateFactory;
+        this.rotateAtSize = rotateAtSize;
+        this.autoRotate = rotateAtSize > 0;
         this.logFiles = new XaLogicalLogFiles( fileName, fileSystem );
 
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
@@ -131,6 +134,7 @@ public class XaLogicalLog implements LogLoader
         msgLog = logging.getMessagesLog( getClass() );
 
         this.partialTransactionCopier = new PartialTransactionCopier( sharedBuffer, cf, msgLog, positionCache, this, xidIdentMap );
+        this.injectedTxValidator = injectedTxValidator;
     }
 
     synchronized void open() throws IOException
@@ -227,14 +231,14 @@ public class XaLogicalLog implements LogLoader
             }
             if ( logVersionChanged )
                 xaTf.setVersion( logVersion );
-            
+
             long lastTxId = xaTf.getLastCommittedTx();
             LogIoUtils.writeLogHeader( sharedBuffer, logVersion, lastTxId );
             previousLogLastCommittedTx = lastTxId;
             positionCache.putHeader( logVersion, previousLogLastCommittedTx );
             fileChannel.write( sharedBuffer );
             scanIsComplete = true;
-            msgLog.logMessage( openedLogicalLogMessage( fileToOpen, lastTxId, true ), true );
+            msgLog.info( openedLogicalLogMessage( fileToOpen, lastTxId, true ) );
         }
     }
 
@@ -259,14 +263,21 @@ public class XaLogicalLog implements LogLoader
         return nextIdentifier;
     }
 
+    /**
+     * @param highestKnownCommittedTx is the highest committed tx id when this transaction *started*. This is used
+     *                                to perform prepare-time checks that need to know the state of the system when
+     *                                the transaction started. Specifically, it is used by constraint validation, to
+     *                                ensure that transactions that began before a constraint was enabled are checked
+     *                                to ensure they do not violate the constraint.
+     */
     // returns identifier for transaction
     // [TX_START][xid[gid.length,bid.lengh,gid,bid]][identifier][format id]
-    public synchronized int start( Xid xid, int masterId, int myId ) throws XAException
+    public synchronized int start( Xid xid, int masterId, int myId, long highestKnownCommittedTx ) throws XAException
     {
         int xidIdent = getNextIdentifier();
         long timeWritten = System.currentTimeMillis();
         LogEntry.Start start = new LogEntry.Start( xid, xidIdent, masterId,
-                myId, -1, timeWritten );
+                myId, -1, timeWritten, highestKnownCommittedTx );
         /*
          * We don't write the entry yet. We will store it and hope
          * that when the commands/commit/prepare/done entry are going to be
@@ -286,7 +297,7 @@ public class XaLogicalLog implements LogLoader
             start.setStartPosition( position );
             LogIoUtils.writeStart( writeBuffer, identifier, start.getXid(),
                     start.getMasterId(), start.getLocalId(),
-                    start.getTimeWritten() );
+                    start.getTimeWritten(), start.getLastCommittedTxWhenTransactionStarted() );
         }
         catch ( IOException e )
         {
@@ -329,24 +340,9 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    // [TX_1P_COMMIT][identifier]
-    public synchronized void commitOnePhase( int identifier, long txId, ForceMode forceMode )
-            throws XAException
+    public void forget( int identifier )
     {
-        LogEntry.Start startEntry = xidIdentMap.get( identifier );
-        assert startEntry != null;
-        assert txId != -1;
-        try
-        {
-            positionCache.cacheStartPosition( txId, startEntry, logVersion );
-            LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, System.currentTimeMillis() );
-            forceMode.force( writeBuffer );
-        }
-        catch ( IOException e )
-        {
-            throw Exceptions.withCause(
-                    new XAException( "Logical log unable to mark 1P-commit [" + identifier + "] " ), e );
-        }
+        xidIdentMap.remove( identifier );
     }
 
     // [DONE][identifier]
@@ -381,9 +377,26 @@ public class XaLogicalLog implements LogLoader
         }
 
         xidIdentMap.remove( identifier );
-        // force to make sure done record is there if 2PC tx and global log
-        // marks tx as committed
-//        fileChannel.force( false );
+    }
+
+    // [TX_1P_COMMIT][identifier]
+    public synchronized void commitOnePhase( int identifier, long txId, ForceMode forceMode )
+            throws XAException
+    {
+        LogEntry.Start startEntry = xidIdentMap.get( identifier );
+        assert startEntry != null;
+        assert txId != -1;
+        try
+        {
+            positionCache.cacheStartPosition( txId, startEntry, logVersion );
+            LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, System.currentTimeMillis() );
+            forceMode.force( writeBuffer );
+        }
+        catch ( IOException e )
+        {
+            throw Exceptions.withCause(
+                    new XAException( "Logical log unable to mark 1P-commit [" + identifier + "] " ), e );
+        }
     }
 
     // [TX_2P_COMMIT][identifier]
@@ -451,12 +464,13 @@ public class XaLogicalLog implements LogLoader
         int identifier = entry.getIdentifier();
         if ( identifier >= nextIdentifier )
         {
-            nextIdentifier = (identifier + 1);
+            nextIdentifier = identifier + 1;
         }
         // re-create the transaction
         Xid xid = entry.getXid();
         xidIdentMap.put( identifier, entry );
-        XaTransaction xaTx = xaTf.create( identifier, stateFactory.create( null ) );
+        XaTransaction xaTx = xaTf.create( identifier, entry.getLastCommittedTxWhenTransactionStarted(),
+                stateFactory.create( null ) );
         xaTx.setRecovered();
         recoveredTxMap.put( identifier, xaTx );
         xaRm.injectStart( xid, xaTx );
@@ -513,7 +527,6 @@ public class XaLogicalLog implements LogLoader
         if ( doingRecovery )
         {
             lastRecoveredTx = txId;
-            recoveredTxCount++;
         }
     }
 
@@ -710,7 +723,7 @@ public class XaLogicalLog implements LogLoader
         xaTf.getAndSetNewVersion();
         pruneStrategy.prune( this );
 
-        msgLog.logMessage( "Closed log " + fileName, true );
+        msgLog.info( "Closed log " + fileName );
     }
 
     static long[] readAndAssertLogHeader( ByteBuffer localBuffer,
@@ -756,7 +769,7 @@ public class XaLogicalLog implements LogLoader
          * renamed and then the version is updated. If a crash occurs in between those
          * two we need to detect and repair it the next startup */
         xaTf.setVersion( logVersion );
-        
+
         long lastCommittedTx = header[1];
         previousLogLastCommittedTx = lastCommittedTx;
         positionCache.putHeader( logVersion, previousLogLastCommittedTx );
@@ -994,7 +1007,7 @@ public class XaLogicalLog implements LogLoader
      * @throws IOException If an IO error occurs when reading the log file
      */
     @Override
-	public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
+    public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
             throws IOException
     {
         synchronized ( this )
@@ -1224,14 +1237,13 @@ public class XaLogicalLog implements LogLoader
         logRecoveryMessage( "applyTxWithoutTxId log version: " + logVersion +
                 ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
 
-        long logEntriesFound = 0;
         scanIsComplete = false;
         LogDeserializer logApplier = getLogDeserializer( byteChannel );
         xidIdent = getNextIdentifier();
+
         long startEntryPosition = writeBuffer.getFileChannelPosition();
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
         {
-            logEntriesFound++;
         }
         byteChannel.close();
         startEntry = logApplier.getStartEntry();
@@ -1239,10 +1251,20 @@ public class XaLogicalLog implements LogLoader
         {
             throw new IOException( "Unable to find start entry" );
         }
+
+        try
+        {
+            injectedTxValidator.assertInjectionAllowed( startEntry.getLastCommittedTxWhenTransactionStarted() );
+        }
+        catch ( XAException e )
+        {
+            throw new IOException( e );
+        }
+
         startEntry.setStartPosition( startEntryPosition );
-//        System.out.println( "applyTxWithoutTxId#before 1PC @ pos: " + writeBuffer.getFileChannelPosition() );
         LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
                 xidIdent, nextTxId, System.currentTimeMillis() );
+
         LogIoUtils.writeLogEntry( commit, writeBuffer );
         // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
         forceMode.force( writeBuffer );
@@ -1263,22 +1285,16 @@ public class XaLogicalLog implements LogLoader
             throw new IOException( e );
         }
 
-//        LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );
-//        LogIoUtils.writeLogEntry( done, writeBuffer );
-        // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
         scanIsComplete = true;
-//        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
+
         logRecoveryMessage( "Applied external tx and generated tx id=" + nextTxId );
 
         checkLogRotation();
-//        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
 
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )
             throws IOException
     {
-//        System.out.println( "applyFullTx#start @ pos: " + writeBuffer.getFileChannelPosition() );
-        long logEntriesFound = 0;
         scanIsComplete = false;
         LogDeserializer logApplier = getLogDeserializer( byteChannel );
         int xidIdent = getNextIdentifier();
@@ -1288,7 +1304,7 @@ public class XaLogicalLog implements LogLoader
         {
             while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
             {
-                logEntriesFound++;
+
             }
             successfullyApplied = true;
         }
@@ -1319,7 +1335,6 @@ public class XaLogicalLog implements LogLoader
         }
         startEntry.setStartPosition( startEntryPosition );
         positionCache.cacheStartPosition( logApplier.getCommitEntry().getTxId(), startEntry, logVersion );
-//        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
         checkLogRotation();
     }
 
@@ -1420,7 +1435,8 @@ public class XaLogicalLog implements LogLoader
         this.logVersion = xaTf.getCurrentVersion();
         if ( xaTf.getCurrentVersion() != (currentVersion + 1) )
         {
-            throw new IOException( "version change failed" );
+            throw new IOException( "Version change failed, expected " + (currentVersion + 1) + ", but was " +
+                    xaTf.getCurrentVersion() );
         }
         pruneStrategy.prune( this );
         fileChannel = newLog;
@@ -1488,28 +1504,32 @@ public class XaLogicalLog implements LogLoader
         currentLog = c;
     }
 
+    @Deprecated
     public void setAutoRotateLogs( boolean autoRotate )
     {
         this.autoRotate = autoRotate;
     }
 
+    @Deprecated
     public boolean isLogsAutoRotated()
     {
         return this.autoRotate;
     }
 
+    @Deprecated
     public void setLogicalLogTargetSize( long size )
     {
         this.rotateAtSize = size;
     }
 
+    @Deprecated
     public long getLogicalLogTargetSize()
     {
         return this.rotateAtSize;
     }
 
     @Override
-	public File getFileName( long version )
+    public File getFileName( long version )
     {
         return new File( fileName.getPath() + ".v" + version);
     }
@@ -1561,7 +1581,7 @@ public class XaLogicalLog implements LogLoader
     }
 
     @Override
-	public long getHighestLogVersion()
+    public long getHighestLogVersion()
     {
         return logVersion;
     }

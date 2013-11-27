@@ -17,7 +17,9 @@ SYNOPSIS
 [[shell-manpage-description]]
 DESCRIPTION
 -----------
-Neo4j shell is a command-line shell for browsing the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
+Neo4j shell is a command-line shell for running Cypher queries.
+There's also commands to get information about the database.
+In addition, you can browse the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
 The shell can connect directly to a graph database on the file system.
 To access local a local database used by other processes, use the readonly mode.
 
@@ -51,6 +53,10 @@ LOCAL OPTIONS
 
 *-c* 'COMMAND'::
   Command line to execute. After executing it the shell exits.
+
+*-file* 'FILE'::
+  File to read and execute. After executing it the shell exits. 
+  If '-' is supplied as filename data is read from stdin instead.
 
 *-config* 'CONFIG'::
   The path to the Neo4j configuration file to be used.

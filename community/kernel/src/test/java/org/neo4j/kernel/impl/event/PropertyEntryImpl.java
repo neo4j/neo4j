@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.event.PropertyEntry;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.event.PropertyEntry;
 
 class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
 {
@@ -42,21 +42,25 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
         this.valueBeforeTx = valueBeforeTx;
     }
     
+    @Override
     public T entity()
     {
         return this.entity;
     }
 
+    @Override
     public String key()
     {
         return this.key;
     }
 
+    @Override
     public Object value()
     {
         return this.value;
     }
 
+    @Override
     public Object previouslyCommitedValue()
     {
         return this.valueBeforeTx;
@@ -88,6 +92,13 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
         assertEquals( entry.entity(), entity() );
         assertEquals( entry.key(), key() );
         assertEqualsMaybeNull( entry.previouslyCommitedValue(), previouslyCommitedValue() );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "PropertyEntry[entity=" + entity + ", key=" + key + ", value=" + value + ", valueBeforeTx="
+                + valueBeforeTx + "]";
     }
 
     public static void assertEqualsMaybeNull( Object o1, Object o2 )

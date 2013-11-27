@@ -1,3 +1,34 @@
+1.9.5 (2013-11-11)
+------------------
+o Fixed a bug around channel handling which might lead to messages being delayed and leading
+  to false heartbeat failures
+o It is now possible to specify 0.0.0.0 for ha.cluster_server and properly wait for messages
+  on all interfaces
+o Removed all usage of getHostName() that might lead to problems on instances with improperly
+  configured DNS
+o Fixed election bug which might lead to infinite wait on elections
+o Fixed election bug which might lead to votes being discarded and result in the wrong master
+  being elected
+o Instances no longer expect heartbeats from themselves so they can't timeout on their own
+o Instances will now ignore suspicions from ex cluster members
+o Instances will now ignore suspicions for themselves
+
+1.9.4 (2013-09-19)
+------------------
+o Suspicions on failed instances are now printed only once, no longer
+  spamming messages.log.
+o Fixed issue where a failing cluster instance might delay messages between
+  the rest of the instances.
+
+1.9.3 (2013-08-30)
+------------------
+o Fixes issue which might lead to eternal elections
+o UUID for Available messages is now ignored, allowing for upgrades from 1.9.2
+
+1.9.1 (2013-07-16)
+------------------
+o Fixes bug where a single instance cluster will perpetually try to perform elections
+
 1.9 (2013-05-13)
 ----------------
 o Coordinator doesn't ask itself for snapshots, solving a bug where starting an arbiter first would make the

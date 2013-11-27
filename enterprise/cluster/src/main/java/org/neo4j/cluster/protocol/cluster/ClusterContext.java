@@ -19,6 +19,10 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.collection.Iterables.filter;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +31,8 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
@@ -53,17 +59,21 @@ public class ClusterContext
     private Executor executor;
     private Logging logging;
     private List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage.ConfigurationRequestState>();
-    private String joiningClusterName;
+    private String joiningClusterName; // for debugging
     private Iterable<URI> joiningInstances;
     URI boundAt;
     private boolean joinDenied;
+
+    private ObjectInputStreamFactory objectInputStreamFactory;
+    private ObjectOutputStreamFactory objectOutputStreamFactory;
 
     public ClusterContext( InstanceId me, ProposerContext proposerContext,
                            LearnerContext learnerContext,
                            ClusterConfiguration configuration,
                            Timeouts timeouts, Executor executor,
-                           Logging logging
-    )
+                           Logging logging,
+                           ObjectInputStreamFactory objectInputStreamFactory,
+                           ObjectOutputStreamFactory objectOutputStreamFactory )
     {
         this.me = me;
         this.proposerContext = proposerContext;
@@ -72,6 +82,8 @@ public class ClusterContext
         this.timeouts = timeouts;
         this.executor = executor;
         this.logging = logging;
+        this.objectInputStreamFactory = objectInputStreamFactory;
+        this.objectOutputStreamFactory = objectOutputStreamFactory;
     }
 
     // Cluster API
@@ -88,7 +100,7 @@ public class ClusterContext
     // Implementation
     public void created( String name )
     {
-        configuration = new ClusterConfiguration( name, Collections.singleton( boundAt ) );
+        configuration = new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ), Collections.singleton( boundAt ) );
         joined();
     }
 
@@ -210,11 +222,6 @@ public class ClusterContext
         return me.equals( server );
     }
 
-    public boolean isElectedAs( String roleName )
-    {
-        return me.equals( configuration.getElected( roleName ) );
-    }
-
     public boolean isInCluster()
     {
         return Iterables.count( configuration.getMemberURIs() ) != 0;
@@ -223,6 +230,14 @@ public class ClusterContext
     public Iterable<URI> getJoiningInstances()
     {
         return joiningInstances;
+    }
+
+    public ObjectOutputStreamFactory getObjectOutputStreamFactory() {
+        return objectOutputStreamFactory;
+    }
+
+    public ObjectInputStreamFactory getObjectInputStreamFactory() {
+        return objectInputStreamFactory;
     }
 
     public List<ClusterMessage.ConfigurationRequestState> getDiscoveredInstances()
@@ -264,5 +279,10 @@ public class ClusterContext
     public boolean hasJoinBeenDenied()
     {
         return joinDenied;
+    }
+
+    public Iterable<InstanceId> getOtherInstances()
+    {
+        return filter( not( in( me ) ), configuration.getMemberIds() );
     }
 }

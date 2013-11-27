@@ -20,23 +20,21 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
+import java.util.Set;
 
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
+import static java.util.Collections.emptySet;
+
 public class NoTransactionState implements TransactionState
 {
-    protected final PropertyIndex[] EMPTY_PROPERTY_INDEX_ARRAY = new PropertyIndex[0];
-
     @Override
     public LockElement acquireWriteLock( Object resource )
     {
@@ -48,7 +46,7 @@ public class NoTransactionState implements TransactionState
     {
         throw new NotInTransactionException();
     }
-    
+
     @Override
     public ArrayMap<Integer, Collection<Long>> getCowRelationshipRemoveMap( NodeImpl node )
     {
@@ -100,87 +98,51 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap( Primitive primitive )
+    public ArrayMap<Integer, DefinedProperty> getCowPropertyRemoveMap( Primitive primitive )
     {
         return null;
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> getCowPropertyAddMap( Primitive primitive )
+    public ArrayMap<Integer, DefinedProperty> getCowPropertyAddMap( Primitive primitive )
     {
         return null;
     }
 
     @Override
-    public PrimitiveElement getPrimitiveElement()
-    {
-        return null;
-    }
-
-
-    @Override
-    public PrimitiveElement getOrCreatePrimitiveElement()
-    {
-        return null;
-    }
-
-    @Override
-    public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap( Primitive primitive )
+    public ArrayMap<Integer, DefinedProperty> getOrCreateCowPropertyAddMap( Primitive primitive )
     {
         throw new NotInTransactionException();
     }
 
     @Override
-    public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap( Primitive primitive )
+    public ArrayMap<Integer, DefinedProperty> getOrCreateCowPropertyRemoveMap( Primitive primitive )
     {
         throw new NotInTransactionException();
     }
 
     @Override
-    public void deletePrimitive( Primitive primitive )
+    public void deleteNode( long id )
     {
         throw new NotInTransactionException();
     }
 
     @Override
-    public void removeNodeFromCache( long nodeId )
+    public void deleteRelationship( long id )
     {
+        throw new NotInTransactionException();
     }
 
     @Override
-    public void addRelationshipType( NameData type )
+    public void createNode( long id )
     {
+        throw new NotInTransactionException();
     }
 
     @Override
-    public void addPropertyIndex( NameData index )
+    public void createRelationship( long id )
     {
-    }
-
-    @Override
-    public void removeRelationshipFromCache( long id )
-    {
-    }
-
-    @Override
-    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
-                                               long secondNodeNextRelId )
-    {
-    }
-
-    @Override
-    public void removeRelationshipTypeFromCache( int id )
-    {
-    }
-
-    @Override
-    public void removeGraphPropertiesFromCache()
-    {
-    }
-
-    @Override
-    public void clearCache()
-    {
+        throw new NotInTransactionException();
     }
 
     @Override
@@ -190,37 +152,13 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void addPropertyIndex( PropertyIndex index )
-    {
-        throw new NotInTransactionException();
-    }
-
-    @Override
-    public PropertyIndex getPropertyIndex( String key )
-    {
-        return null;
-    }
-
-    @Override
-    public PropertyIndex getPropertyIndex( int keyId )
-    {
-        return null;
-    }
-    
-    @Override
-    public PropertyIndex[] getAddedPropertyIndexes()
-    {
-        return EMPTY_PROPERTY_INDEX_ARRAY;
-    }
-
-    @Override
-    public boolean isDeleted( Node node )
+    public boolean nodeIsDeleted( long nodeId )
     {
         return false;
     }
 
     @Override
-    public boolean isDeleted( Relationship relationship )
+    public boolean relationshipIsDeleted( long relationshipId )
     {
         return false;
     }
@@ -230,21 +168,45 @@ public class NoTransactionState implements TransactionState
     {
         return false;
     }
-    
+
     @Override
-    public void setRollbackOnly()
-    {
-    }
-    
-    @Override
-    public TxHook getTxHook()
+    public RemoteTxHook getTxHook()
     {
         return null;
     }
-    
+
     @Override
     public TxIdGenerator getTxIdGenerator()
     {
         return null;
+    }
+
+    @Override
+    public Set<Long> getCreatedNodes()
+    {
+        return emptySet();
+    }
+
+    @Override
+    public Set<Long> getCreatedRelationships()
+    {
+        return emptySet();
+    }
+
+    @Override
+    public Iterable<WritableTransactionState.CowNodeElement> getChangedNodes()
+    {
+        return Iterables.empty();
+    }
+
+    @Override
+    public boolean isRemotelyInitialized()
+    {
+        return false;
+    }
+
+    @Override
+    public void markAsRemotelyInitialized()
+    {
     }
 }

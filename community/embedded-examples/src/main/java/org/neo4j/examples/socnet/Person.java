@@ -18,10 +18,6 @@
  */
 package org.neo4j.examples.socnet;
 
-import static org.neo4j.examples.socnet.RelTypes.FRIEND;
-import static org.neo4j.examples.socnet.RelTypes.NEXT;
-import static org.neo4j.examples.socnet.RelTypes.STATUS;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,7 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
@@ -44,6 +39,10 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
+
+import static org.neo4j.examples.socnet.RelTypes.FRIEND;
+import static org.neo4j.examples.socnet.RelTypes.NEXT;
+import static org.neo4j.examples.socnet.RelTypes.STATUS;
 
 public class Person
 {
@@ -96,22 +95,13 @@ public class Person
 
     public void addFriend( Person otherPerson )
     {
-        Transaction tx = underlyingNode.getGraphDatabase().beginTx();
-        try
+        if ( !this.equals( otherPerson ) )
         {
-            if ( !this.equals( otherPerson ) )
+            Relationship friendRel = getFriendRelationshipTo( otherPerson );
+            if ( friendRel == null )
             {
-                Relationship friendRel = getFriendRelationshipTo( otherPerson );
-                if ( friendRel == null )
-                {
-                    underlyingNode.createRelationshipTo( otherPerson.getUnderlyingNode(), FRIEND );
-                }
-                tx.success();
+                underlyingNode.createRelationshipTo( otherPerson.getUnderlyingNode(), FRIEND );
             }
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -127,22 +117,13 @@ public class Person
 
     public void removeFriend( Person otherPerson )
     {
-        Transaction tx = underlyingNode.getGraphDatabase().beginTx();
-        try
+        if ( !this.equals( otherPerson ) )
         {
-            if ( !this.equals( otherPerson ) )
+            Relationship friendRel = getFriendRelationshipTo( otherPerson );
+            if ( friendRel != null )
             {
-                Relationship friendRel = getFriendRelationshipTo( otherPerson );
-                if ( friendRel != null )
-                {
-                    friendRel.delete();
-                }
-                tx.success();
+                friendRel.delete();
             }
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -221,33 +202,24 @@ public class Person
 
     public void addStatus( String text )
     {
-        Transaction tx = graphDb().beginTx();
-        try
+        StatusUpdate oldStatus;
+        if ( getStatus().iterator().hasNext() )
         {
-            StatusUpdate oldStatus;
-            if ( getStatus().iterator().hasNext() )
-            {
-                oldStatus = getStatus().iterator().next();
-            } else
-            {
-                oldStatus = null;
-            }
-
-            Node newStatus = createNewStatusNode( text );
-
-            if ( oldStatus != null )
-            {
-                underlyingNode.getSingleRelationship( RelTypes.STATUS, Direction.OUTGOING ).delete();
-                newStatus.createRelationshipTo( oldStatus.getUnderlyingNode(), RelTypes.NEXT );
-            }
-
-            underlyingNode.createRelationshipTo( newStatus, RelTypes.STATUS );
-            tx.success();
-        }
-        finally
+            oldStatus = getStatus().iterator().next();
+        } else
         {
-            tx.finish();
+            oldStatus = null;
         }
+
+        Node newStatus = createNewStatusNode( text );
+
+        if ( oldStatus != null )
+        {
+            underlyingNode.getSingleRelationship( RelTypes.STATUS, Direction.OUTGOING ).delete();
+            newStatus.createRelationshipTo( oldStatus.getUnderlyingNode(), RelTypes.NEXT );
+        }
+
+        underlyingNode.createRelationshipTo( newStatus, RelTypes.STATUS );
     }
 
     private GraphDatabaseService graphDb()
@@ -289,6 +261,7 @@ public class Person
 
     private class RankedComparer implements Comparator<RankedPerson>
     {
+        @Override
         public int compare( RankedPerson a, RankedPerson b )
         {
             return b.getRank() - a.getRank();

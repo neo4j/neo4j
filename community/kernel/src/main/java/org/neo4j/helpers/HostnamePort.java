@@ -19,9 +19,11 @@
  */
 package org.neo4j.helpers;
 
-import static java.lang.String.format;
-
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
+
+import static java.lang.String.format;
 
 /**
  * Represents a hostname and port, optionally with a port range.
@@ -99,7 +101,21 @@ public class HostnamePort
 
     public String getHost( String defaultHost )
     {
-        return host == null ? defaultHost : host;
+        if (host == null)
+            return defaultHost;
+
+        try
+        {
+            InetAddress ip = InetAddress.getByName( host );
+            if (ip == null)
+                return defaultHost;
+
+            return ip.getHostAddress();
+        }
+        catch ( UnknownHostException e )
+        {
+            return host;
+        }
     }
 
     /**
@@ -177,6 +193,8 @@ public class HostnamePort
             return false;
         }
 
-        return result && host.equalsIgnoreCase( toMatch.getHost() );
+        // URI always contains IP, so make sure we convert ours too
+
+        return result && getHost(null).equalsIgnoreCase( toMatch.getHost() );
     }
 }

@@ -19,19 +19,20 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.Map;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.server.configuration.PropertyFileConfigurator;
-import org.neo4j.server.helpers.ServerBuilder;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class DatabaseTuningDocIT extends ExclusiveServerTestBase
 {
@@ -39,12 +40,13 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldLoadAKnownGoodPropertyFile() throws IOException
     {
-        CommunityNeoServer server = ServerBuilder.server()
+        CommunityNeoServer server = CommunityServerBuilder.server()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withDefaultDatabaseTuning()
                 .build();
         server.start();
-        Map<Object, Object> params = null; // TODO This relies on internal stuff, which is no good: server.getDatabase().graph.getConfig().getParams();
+        Map<Object, Object> params = null; // TODO This relies on internal stuff,
+        // which is no good: server.getDatabase().graph.getConfig().getParams();
 
 
         assertTrue( propertyAndValuePresentIn( "neostore.nodestore.db.mapped_memory", "25M", params ) );
@@ -68,7 +70,7 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
     {
         InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
 
-        NeoServer server = ServerBuilder.server()
+        NeoServer server = CommunityServerBuilder.server()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withNonResolvableTuningFile()
                 .build();

@@ -24,11 +24,12 @@ import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 
-interface RecordField<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
+interface RecordField<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
 {
-    void checkConsistency( RECORD record, REPORT report, RecordAccess records );
+    void checkConsistency( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records );
 
     long valueFrom( RECORD record );
 
-    void checkChange( RECORD oldRecord, RECORD newRecord, REPORT report, DiffRecordAccess records );
+    void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
+                      DiffRecordAccess records );
 }

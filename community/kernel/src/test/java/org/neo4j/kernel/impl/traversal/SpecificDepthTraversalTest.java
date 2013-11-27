@@ -19,19 +19,30 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Traversal;
 
-public class SpecificDepthTraversalTest extends AbstractTestBase
+public class SpecificDepthTraversalTest extends TraversalTestBase
 {
+    private Transaction tx;
+
     @Before
     public void createTheGraph()
     {
         createGraph( "0 ROOT 1", "1 KNOWS 2", "2 KNOWS 3", "2 KNOWS 4",
                 "4 KNOWS 5", "5 KNOWS 6", "3 KNOWS 1" );
+        tx = beginTx();
+    }
+
+    @After
+    public void tearDown()
+    {
+        tx.finish();
     }
 
     @Test

@@ -20,16 +20,19 @@ package org.neo4j.examples;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * An example of unit testing with Neo4j.
@@ -80,33 +83,25 @@ public class Neo4jBasicDocTest
     public void shouldCreateNode()
     {
         // START SNIPPET: unitTest
-        Transaction tx = graphDb.beginTx();
-
         Node n = null;
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             n = graphDb.createNode();
             n.setProperty( "name", "Nancy" );
             tx.success();
         }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
-        finally
-        {
-            tx.finish();
-        }
 
-        // The node should have an id greater than 0, which is the id of the
-        // reference node.
-        assertThat( n.getId(), is( greaterThan( 0L ) ) );
+        // The node should have a valid id
+        assertThat( n.getId(), is( greaterThan( -1L ) ) );
 
         // Retrieve a node by using the id of the created node. The id's and
         // property should match.
-        Node foundNode = graphDb.getNodeById( n.getId() );
-        assertThat( foundNode.getId(), is( n.getId() ) );
-        assertThat( (String) foundNode.getProperty( "name" ), is( "Nancy" ) );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            Node foundNode = graphDb.getNodeById( n.getId() );
+            assertThat( foundNode.getId(), is( n.getId() ) );
+            assertThat( (String) foundNode.getProperty( "name" ), is( "Nancy" ) );
+        }
         // END SNIPPET: unitTest
     }
 }

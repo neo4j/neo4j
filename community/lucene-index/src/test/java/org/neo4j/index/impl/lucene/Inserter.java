@@ -34,7 +34,7 @@ public class Inserter
 	{
 		String path = args[0];
 		final GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(path );
-		final Index<Node> index = db.index().forNodes( "myIndex" );
+		final Index<Node> index = getIndex( db );
 		final String[] keys = new String[] { "apoc", "zion", "morpheus" };
 		final String[] values = new String[] { "hej", "yo", "something", "just a value", "anything" };
 		
@@ -71,4 +71,19 @@ public class Inserter
 		}
 		new File( path, "started" ).createNewFile();
 	}
+
+    private static Index<Node> getIndex( GraphDatabaseService db )
+    {
+        Transaction transaction = db.beginTx();
+        try
+        {
+            Index<Node> index = db.index().forNodes( "myIndex" );
+            transaction.success();
+            return index;
+        }
+        finally
+        {
+            transaction.finish();
+        }
+    }
 }

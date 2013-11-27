@@ -19,12 +19,10 @@
  */
 package examples;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -41,6 +39,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -68,18 +67,43 @@ import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+
 public class ImdbDocTest
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
+    
+    /*
+     * Since this is a doc test, the code in here will be publically visible in e.g. a manual.
+     * This test desires to print something to System.out and there's no point in this test,
+     * when executed, actually printing anything to System.out. So we fool it by creating this
+     * inner class with the same name and looks which it uses instead.
+     */
+    private static class System
+    {
+        static PrintStream out = new PrintStream( new OutputStream()
+        {
+            @Override
+            public void write( int b ) throws IOException
+            {   // silent
+            }
+        } );
+    }
 
     @BeforeClass
     public static void setUpDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings
                 .cache_type, WeakCacheProvider.NAME ).newGraphDatabase();
-        Transaction transaction = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: createIndexes
             IndexManager index = graphDb.index();
@@ -135,19 +159,18 @@ public class ImdbDocTest
             roles.add( role4, "name", role4.getProperty( "name" ) );
             // END SNIPPET: createRelationships
 
-            transaction.success();
+            tx.success();
         }
-        finally
+
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            transaction.finish();
+            String title = "Movie and Actor Graph";
+            try ( PrintWriter pw = AsciiDocGenerator.getPrintWriter( "target/docs/dev", title ) )
+            {
+                pw.println( AsciidocHelper.createGraphVizDeletingReferenceNode( title, graphDb, "initial" ) );
+                pw.flush();
+            }
         }
-        String title = "Movie and Actor Graph";
-        PrintWriter pw = AsciiDocGenerator.getPrintWriter( "target/docs/dev",
-                title );
-        pw.println( AsciidocHelper.createGraphVizDeletingReferenceNode( title,
-                graphDb, "initial" ) );
-        pw.flush();
-        pw.close();
     }
 
     @AfterClass
@@ -165,7 +188,7 @@ public class ImdbDocTest
     @After
     public void finishTx()
     {
-        tx.finish();
+        tx.close();
     }
 
     private void rollbackTx()
@@ -189,22 +212,25 @@ public class ImdbDocTest
     {
         GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest(
                 getClass() ).directory( "delete", true ).getAbsolutePath() );
-        Transaction transaction = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: delete
             IndexManager index = graphDb.index();
             Index<Node> actors = index.forNodes( "actors" );
             actors.delete();
             // END SNIPPET: delete
-            transaction.success();
+            tx.success();
         }
-        finally
-        {
-            transaction.finish();
-        }
-        assertFalse( graphDb.index().existsForNodes( "actors" ) );
+        assertFalse( indexExists( graphDb ) );
         graphDb.shutdown();
+    }
+
+    private boolean indexExists( GraphDatabaseService graphDb )
+    {
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            return graphDb.index().existsForNodes( "actors" );
+        }
     }
 
     @Test
@@ -319,7 +345,7 @@ public class ImdbDocTest
                 add( "Keanu Reeves" );
             }
         };
-        List<String> foundActors = new ArrayList<String>();
+        List<String> foundActors = new ArrayList<>();
 
         // START SNIPPET: getRelationships
         for ( Relationship role : roles.get( "name", "Neo" ) )
@@ -341,7 +367,7 @@ public class ImdbDocTest
         IndexManager index = graphDb.index();
         Index<Node> actors = index.forNodes( "actors" );
         Index<Node> movies = index.forNodes( "movies" );
-        Set<String> found = new HashSet<String>();
+        Set<String> found = new HashSet<>();
         @SuppressWarnings("serial") Set<String> expectedActors = new HashSet<String>()
         {
             {
@@ -450,7 +476,7 @@ public class ImdbDocTest
                 QueryContext.numericRange( "year-numeric", from, null )
                         .sortNumeric( "year-numeric", false ) );
         // END SNIPPET: sortedNumericRange
-        List<String> sortedMovies = new ArrayList<String>();
+        List<String> sortedMovies = new ArrayList<>();
         @SuppressWarnings("serial") List<String> expectedSortedMovies = new ArrayList<String>()
         {
             {
@@ -557,15 +583,18 @@ public class ImdbDocTest
         // and uncommitted index entries, so we'll commit before querying:
         tx.success();
         tx.finish();
+
         // and now we can search for it:
-        IndexHits<Relationship> typeHits;
-        typeHits = roles.query( "type:ACTS_IN AND name:Neo", null, theMatrix );
-        Relationship typeNeo = typeHits.iterator().next();
-        typeHits.close();
-        // END SNIPPET: queryForRelationshipType
-        assertEquals( "Neo", typeNeo.getProperty( "name" ) );
-        actor = matrixNeo.getStartNode();
-        assertEquals( reeves, actor );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            IndexHits<Relationship> typeHits = roles.query( "type:ACTS_IN AND name:Neo", null, theMatrix );
+            Relationship typeNeo = typeHits.iterator().next();
+            typeHits.close();
+            // END SNIPPET: queryForRelationshipType
+            assertThat(typeNeo, inTx( graphDb, hasProperty( "name" ).withValue( "Neo" ) ));
+            actor = matrixNeo.getStartNode();
+            assertEquals( reeves, actor );
+        }
     }
 
     @Test
@@ -625,11 +654,12 @@ public class ImdbDocTest
         // END SNIPPET: batchInsert
 
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( "target/neo4jdb-batchinsert" );
-        Index<Node> index = db.index()
-                .forNodes( "actors" );
-        Node reeves = index.get( "name", "Keanu Reeves" )
-                .next();
-        assertEquals( node, reeves.getId() );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Index<Node> index = db.index().forNodes( "actors" );
+            Node reeves = index.get( "name", "Keanu Reeves" ).next();
+            assertEquals( node, reeves.getId() );
+        }
         db.shutdown();
     }
 }

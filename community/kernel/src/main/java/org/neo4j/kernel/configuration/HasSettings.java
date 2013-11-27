@@ -28,5 +28,5 @@ public interface HasSettings
      *
      * @return a class or null if no settings are needed
      */
-    public Class getSettingsClass();
+    Class getSettingsClass();
 }

@@ -19,33 +19,52 @@
  */
 package org.neo4j.server.logging;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.text.MessageFormat;
-import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
+import org.neo4j.kernel.logging.ModuleConverter;
+
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
+import ch.qos.logback.core.CoreConstants;
+
 public class SimpleConsoleFormatter extends Formatter
 {
-    private Date date = new Date();
-    private final static String timestampFormat = "{0,date,short} {0,time}";
-    private final MessageFormat formatter = new MessageFormat( timestampFormat );
+    private final PatternLayoutEncoder encoder;
 
-    private final Object args[] = { date };
+    public SimpleConsoleFormatter()
+    {
+        LoggerContext context = new LoggerContext();
 
-    private static final String lineSeparator = System.getProperty( "line.separator" );
+        Map<String, String> converters = new HashMap<String, String>();
+        converters.put("module", ModuleConverter.class.getName());
+        context.putObject(CoreConstants.PATTERN_RULE_REGISTRY, converters);
+        encoder = new PatternLayoutEncoder();
+        encoder.setContext(context);
+        encoder.setPattern("%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%module] %message%n");
+        encoder.start();
+    }
 
     /**
      * Format the given LogRecord.
-     * 
+     *
      * @param record the log record to be formatted.
      * @return a formatted log record
      */
     @Override
     public synchronized String format( LogRecord record )
     {
-        StringBuffer sb = new StringBuffer();
+        ILoggingEvent event = new LoggingEvent(record.getLoggerName(), (Logger) LoggerFactory.getLogger(record.getLoggerName()), Level.toLevel(record.getLevel().getName()), record.getMessage(), record.getThrown(), record.getParameters());
+        return encoder.getLayout().doLayout(event);
+
+/*        StringBuffer sb = new StringBuffer();
 
         // Do the timestamp formatting
         date.setTime( record.getMillis() );
@@ -54,12 +73,6 @@ public class SimpleConsoleFormatter extends Formatter
 
         sb.append( text );
 
-        /*
-         * Since we are using our own class over the logger,
-         * the source class/method names are useless. If, however,
-         * everyone plays nice and names properly their logger, then
-         * the following should provide enough info.
-         */
         sb.append( " " );
         sb.append( record.getLoggerName() );
         sb.append( " " );
@@ -84,7 +97,7 @@ public class SimpleConsoleFormatter extends Formatter
             {
             }
         }
-        return sb.toString();
+        return sb.toString();*/
     }
 
 }

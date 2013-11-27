@@ -19,8 +19,6 @@
  */
 package examples;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,11 +29,15 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -43,18 +45,26 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+
 public class BatchInsertDocTest
 {
     @Test
-    public void insert() throws IOException
+    public void insert()
     {
         // START SNIPPET: insert
         BatchInserter inserter = BatchInserters.inserter( "target/batchinserter-example", fileSystem );
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Label personLabel = DynamicLabel.label( "Person" );
+        inserter.createDeferredSchemaIndex( personLabel ).on( "name" ).create();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "name", "Mattias" );
-        long mattiasNode = inserter.createNode( properties );
+        long mattiasNode = inserter.createNode( properties, personLabel );
         properties.put( "name", "Chris" );
-        long chrisNode = inserter.createNode( properties );
+        long chrisNode = inserter.createNode( properties, personLabel );
         RelationshipType knows = DynamicRelationshipType.withName( "KNOWS" );
         // To set properties on the relationship, use a properties map
         // instead of null as the last parameter.
@@ -65,18 +75,27 @@ public class BatchInsertDocTest
         // try it out from a normal db
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
                 "target/batchinserter-example" );
-        Node mNode = db.getNodeById( mattiasNode );
-        Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING )
-                .getEndNode();
-        assertEquals( "Chris", cNode.getProperty( "name" ) );
-        db.shutdown();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node mNode = db.getNodeById( mattiasNode );
+            Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING ).getEndNode();
+            assertThat( (String) cNode.getProperty( "name" ), is( "Chris" ) );
+            assertThat( db.schema()
+                    .getIndexes( personLabel )
+                    .iterator()
+                    .hasNext(), is( true ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     @Test
-    public void insertWithConfig() throws IOException
+    public void insertWithConfig()
     {
         // START SNIPPET: configuredInsert
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( "neostore.nodestore.db.mapped_memory", "90M" );
         BatchInserter inserter = BatchInserters.inserter(
                 "target/batchinserter-example-config", fileSystem, config );
@@ -88,37 +107,39 @@ public class BatchInsertDocTest
     @Test
     public void insertWithConfigFile() throws IOException
     {
-        Writer fw = fileSystem.openAsWriter( new File( "target/batchinsert-config" ), "utf-8", false );
-        
-        fw.append( "neostore.nodestore.db.mapped_memory=90M\n"
-                   + "neostore.relationshipstore.db.mapped_memory=3G\n"
-                   + "neostore.propertystore.db.mapped_memory=50M\n"
-                   + "neostore.propertystore.db.strings.mapped_memory=100M\n"
-                   + "neostore.propertystore.db.arrays.mapped_memory=0M" );
-        fw.close();
+        try ( Writer fw = fileSystem.openAsWriter( new File( "target/batchinsert-config" ), "utf-8", false ) )
+        {
+            fw.append( "neostore.nodestore.db.mapped_memory=90M\n"
+                       + "neostore.relationshipstore.db.mapped_memory=3G\n"
+                       + "neostore.propertystore.db.mapped_memory=50M\n"
+                       + "neostore.propertystore.db.strings.mapped_memory=100M\n"
+                       + "neostore.propertystore.db.arrays.mapped_memory=0M" );
+        }
 
         // START SNIPPET: configFileInsert
-        InputStream input = fileSystem.openAsInputStream(
-                new File( "target/batchinsert-config" ) );
-        Map<String, String> config = MapUtil.load( input );
-        BatchInserter inserter = BatchInserters.inserter(
-                "target/batchinserter-example-config", fileSystem, config );
-        // Insert data here ... and then shut down:
-        inserter.shutdown();
+        try ( InputStream input = fileSystem.openAsInputStream( new File( "target/batchinsert-config" ) ) )
+        {
+            Map<String, String> config = MapUtil.load( input );
+            BatchInserter inserter = BatchInserters.inserter(
+                    "target/batchinserter-example-config", fileSystem, config );
+            // Insert data here ... and then shut down:
+            inserter.shutdown();
+        }
         // END SNIPPET: configFileInsert
-        input.close();
     }
 
     @Test
-    public void batchDb() throws IOException
+    public void batchDb()
     {
         // START SNIPPET: batchDb
         GraphDatabaseService batchDb =
                 BatchInserters.batchDatabase( "target/batchdb-example", fileSystem );
-        Node mattiasNode = batchDb.createNode();
+        Label personLabel = DynamicLabel.label( "Person" );
+        Node mattiasNode = batchDb.createNode( personLabel );
         mattiasNode.setProperty( "name", "Mattias" );
         Node chrisNode = batchDb.createNode();
         chrisNode.setProperty( "name", "Chris" );
+        chrisNode.addLabel( personLabel );
         RelationshipType knows = DynamicRelationshipType.withName( "KNOWS" );
         mattiasNode.createRelationshipTo( chrisNode, knows );
         // END SNIPPET: batchDb
@@ -130,18 +151,24 @@ public class BatchInsertDocTest
         // try it out from a normal db
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
                 "target/batchdb-example" );
-        Node mNode = db.getNodeById( mattiasNodeId );
-        Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING )
-                .getEndNode();
-        assertEquals( "Chris", cNode.getProperty( "name" ) );
-        db.shutdown();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node mNode = db.getNodeById( mattiasNodeId );
+            Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING )
+                    .getEndNode();
+            assertThat( cNode, inTx( db, hasProperty( "name" ).withValue( "Chris" ) ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
     
     @Test
-    public void batchDbWithConfig() throws IOException
+    public void batchDbWithConfig()
     {
         // START SNIPPET: configuredBatchDb
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( "neostore.nodestore.db.mapped_memory", "90M" );
         GraphDatabaseService batchDb =
                 BatchInserters.batchDatabase( "target/batchdb-example-config", fileSystem, config );

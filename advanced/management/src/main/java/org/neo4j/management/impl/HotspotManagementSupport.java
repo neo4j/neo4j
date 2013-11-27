@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import javax.management.MBeanServer;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
@@ -38,10 +37,15 @@ import javax.management.remote.rmi.RMIConnectorServer;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.rmi.ssl.SslRMIServerSocketFactory;
 
+import org.neo4j.helpers.Service;
+import org.neo4j.jmx.impl.ManagementSupport;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
+import static java.lang.String.format;
+
+@Service.Implementation( ManagementSupport.class )
 public class HotspotManagementSupport extends AdvancedManagementSupport
 {
     @Override
@@ -56,9 +60,8 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
             try
             {
                 Method importRemoteFrom = cal.getMethod( "importRemoteFrom", int.class );
-                @SuppressWarnings("unchecked") Map<String, String> remote = (Map<String,
-                        String>) importRemoteFrom.invoke(
-                        null, Integer.valueOf( 0 ) );
+                @SuppressWarnings("unchecked")
+                Map<String, String> remote = (Map<String, String>) importRemoteFrom.invoke( null, 0 );
                 url = getUrlFrom( remote );
             }
             catch ( NoSuchMethodException ex )
@@ -68,7 +71,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
             if ( url == null )
             {
                 Method importFrom = cal.getMethod( "importFrom", int.class );
-                url = getUrlFrom( (String) importFrom.invoke( null, Integer.valueOf( 0 ) ) );
+                url = getUrlFrom( (String) importFrom.invoke( null, 0 ) );
             }
         }
         catch ( InvocationTargetException e )
@@ -86,32 +89,19 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
         // No previous connection server -- create one!
         if ( url == null )
         {
-            String portObj = kernel.getConfig().getParams().get( "jmx.port" );
             int port = 0;
-
             try
             {
-                port = Integer.parseInt( (String) portObj );
+                port = Integer.parseInt( kernel.getConfig().getParams().get( "jmx.port" ) );
             }
             catch ( NumberFormatException ok )
             {
                 // handled by 0-check
             }
-
             if ( port > 0 )
             {
-                Object useSslObj = kernel.getConfig().getParams().get( "jmx.use_ssl" );
-                boolean useSSL = false;
-                if ( useSslObj instanceof Boolean )
-                {
-                    useSSL = ((Boolean) useSslObj).booleanValue();
-                }
-                else if ( useSslObj instanceof String )
-                {
-                    useSSL = Boolean.parseBoolean( (String) useSslObj );
-                }
-                logger.debug(String.format("Creating new MBean server on port %s%s", new Object[]{
-                        Integer.valueOf( port ), useSSL ? " using ssl" : ""} ));
+                boolean useSSL = Boolean.parseBoolean( kernel.getConfig().getParams().get( "jmx.use_ssl" ) );
+                logger.debug( format( "Creating new MBean server on port %s%s", port, useSSL ? " using ssl" : "" ) );
                 JMXConnectorServer server = createServer( port, useSSL, logger );
                 if ( server != null )
                 {
@@ -169,7 +159,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
                 {
                     continue;
                 }
-                instances.add( Integer.valueOf( id ) );
+                instances.add( id );
             }
         }
         if ( !instances.isEmpty() )

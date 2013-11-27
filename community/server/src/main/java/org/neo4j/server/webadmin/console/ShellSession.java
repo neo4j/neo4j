@@ -65,6 +65,10 @@ public class ShellSession implements ScriptSession
         {
             throw new RuntimeException( "Unable to start shell client", e );
         }
+        catch ( ShellException e )
+        {
+            throw new RuntimeException( "Unable to start shell client", e );
+        }
     }
 
     private ShellServer getFallbackServer( GraphDatabaseAPI graph )

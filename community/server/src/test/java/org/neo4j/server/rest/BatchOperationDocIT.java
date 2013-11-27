@@ -19,61 +19,66 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.util.List;
 import java.util.Map;
 
 import org.json.JSONException;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 {
     /**
      * Execute multiple operations in batch.
-     * 
+     *
      * This lets you execute multiple API calls through a single HTTP call,
      * significantly improving performance for large insert and update
      * operations.
-     * 
+     *
      * The batch service expects an array of job descriptions as input, each job
      * description describing an action to be performed via the normal server
      * API.
-     * 
+     *
      * This service is transactional. If any of the operations performed fails
      * (returns a non-2xx HTTP status code), the transaction will be rolled back
      * and all changes will be undone.
-     * 
+     *
      * Each job description should contain a +to+ attribute, with a value
      * relative to the data API root (so http://localhost:7474/db/data/node becomes
      * just /node), and a +method+ attribute containing HTTP verb to use.
-     * 
+     *
      * Optionally you may provide a +body+ attribute, and an +id+ attribute to
      * help you keep track of responses, although responses are guaranteed to be
      * returned in the same order the job descriptions are received.
-     * 
+     *
      * The following figure outlines the different parts of the job
      * descriptions:
-     * 
+     *
      * image::batch-request-api.png[]
      */
     @Documented
     @SuppressWarnings( "unchecked" )
     @Test
     @Graph("Joe knows John")
-    public void shouldPerformMultipleOperations() throws Exception {
+    public void shouldPerformMultipleOperations() throws Exception
+    {
         long idJoe = data.get().get( "Joe" ).getId();
         String jsonString = new PrettyJSON()
             .array()
@@ -145,22 +150,23 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> body = (Map<String, Object>) getResult.get("body");
         assertEquals(1, ((Map<String, Object>) body.get("data")).get("age"));
 
-        
+
     }
-    
+
     /**
      * Refer to items created earlier in the same batch job.
-     * 
+     *
      * The batch operation API allows you to refer to the URI returned from a
      * created resource in subsequent job descriptions, within the same batch
      * call.
-     * 
+     *
      * Use the +{[JOB ID]}+ special syntax to inject URIs from created resources
      * into JSON strings in subsequent job descriptions.
      */
     @Documented
     @Test
-    public void shouldBeAbleToReferToCreatedResource() throws Exception {
+    public void shouldBeAbleToReferToCreatedResource() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -217,7 +223,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
 
         assertEquals(4, results.size());
-        
+
 //        String rels = gen.get()
 //                .expectedStatus( 200 ).get( getRelationshipIndexUri( "my_rels", "since", "2010")).entity();
 //        assertEquals(1, JsonHelper.jsonToList(  rels ).size());
@@ -226,12 +232,11 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     private String batchUri()
     {
         return getDataUri()+"batch";
-        
     }
 
     @Test
-    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception {
-
+    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception
+    {
         int originalNodeCount = countNodes();
 
         final String jsonString = new PrettyJSON()
@@ -260,14 +265,14 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldForwardUnderlyingErrors() throws Exception {
-
+    public void shouldForwardUnderlyingErrors() throws Exception
+    {
         JaxRsResponse response = RestRequest.req().post(batchUri(), new PrettyJSON()
             .array()
                 .object()
                     .key("method") .value("POST")
                     .key("to")     .value("/node")
-                    .key("body")   
+                    .key("body")
                         .object()
                             .key("age")
                                 .array()
@@ -283,10 +288,11 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 
         assertTrue(((String)res.get("message")).startsWith("Invalid JSON array in POST body"));
     }
-    
+
     @Test
-    public void shouldRollbackAllWhenGivenIncorrectRequest() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
+    public void shouldRollbackAllWhenGivenIncorrectRequest() throws ClientHandlerException,
+            UniformInterfaceException, JSONException
+    {
 
         String jsonString = new PrettyJSON()
             .array()
@@ -316,17 +322,17 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 
         assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
-
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldHandleUnicodeGetCorrectly() throws Exception {
+    public void shouldHandleUnicodeGetCorrectly() throws Exception
+    {
         String asianText = "\u4f8b\u5b50";
         String germanText = "öäüÖÄÜß";
-        
+
         String complicatedString = asianText + germanText;
-        
+
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -338,24 +344,25 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
                 .endObject()
             .endArray()
             .toString();
-        
+
         String entity = gen.get()
                 .expectedStatus( 200 )
                 .payload( jsonString )
                 .post( batchUri() )
                 .entity();
-        
+
         // Pull out the property value from the depths of the response
         Map<String, Object> response = (Map<String, Object>) JsonHelper.jsonToList(entity).get(0).get("body");
         String returnedValue = (String)((Map<String,Object>)response.get("data")).get(complicatedString);
-        
+
         // Ensure nothing was borked.
-        assertThat(returnedValue, is(complicatedString));
+        assertThat("Expected twisted unicode case to work, but response was: " + entity,
+                returnedValue, is(complicatedString));
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    public void shouldHandleFailingCypherStatementCorrectly() throws Exception {
+    public void shouldHandleFailingCypherStatementCorrectly() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -379,25 +386,25 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
                 .post( batchUri() )
                 .entity();
 
-        System.out.println("entity = " + entity);
         // Pull out the property value from the depths of the response
         Map<String, Object> result = JsonHelper.jsonToMap(entity);
         String exception = (String) result.get("exception");
         assertThat(exception, is("BatchOperationFailedException"));
         String innerException = (String) ((Map) JsonHelper.jsonToMap((String) result.get("message"))).get("exception");
-        assertThat(innerException, is("ParameterWrongTypeException"));
+        assertThat(innerException, is("CypherTypeException"));
     }
 
     @Test
     @Graph("Peter likes Jazz")
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
-            UniformInterfaceException, JSONException, PropertyValueException {
+            UniformInterfaceException, JSONException, PropertyValueException
+    {
     	String string = "Jazz";
         Node gnode = getNode( string );
-        assertEquals( gnode.getProperty( "name" ), string );
-        
+        assertThat( gnode, inTx(graphdb(), hasProperty( "name" ).withValue(string)) );
+
         String name = "string\\ and \"test\"";
-        
+
         String jsonString = new PrettyJSON()
         .array()
             .object()
@@ -415,7 +422,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
             .payload( jsonString )
             .post( batchUri() )
             .entity();
-        
+
         jsonString = new PrettyJSON()
         .array()
             .object()
@@ -429,14 +436,15 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
             .payload( jsonString )
             .post( batchUri() )
             .entity();
-        
+
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
         assertEquals(results.get(0).get("body"), name);
     }
 
     @Test
-    public void shouldRollbackAllWhenInsertingIllegalData() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
+    public void shouldRollbackAllWhenInsertingIllegalData() throws ClientHandlerException,
+            UniformInterfaceException, JSONException
+    {
 
         String jsonString = new PrettyJSON()
             .array()
@@ -473,8 +481,9 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRollbackAllOnSingle404() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
+    public void shouldRollbackAllOnSingle404() throws ClientHandlerException,
+            UniformInterfaceException, JSONException
+    {
 
         String jsonString = new PrettyJSON()
             .array()
@@ -499,11 +508,11 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
 
         assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
-
     }
-    
+
     @Test
-    public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception {
+    public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -536,17 +545,73 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
                     .key("id")      .value(2)
                 .endObject()
             .endArray().toString();
-        
+
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
         assertEquals(200, response.getStatus());
-        
+
+    }
+
+    @Test
+    public void shouldNotFailWhenRemovingAndAddingLabelsInOneBatch() throws Exception
+    {
+        // given
+
+        /*
+        curl -X POST http://localhost:7474/db/data/batch -H 'Content-Type: application/json'
+        -d '[
+           {"body":{"name":"Alice"},"to":"node","id":0,"method":"POST"},
+           {"body":["expert","coder"],"to":"{0}/labels","id":1,"method":"POST"},
+           {"body":["novice","chef"],"to":"{0}/labels","id":2,"method":"PUT"}
+        ]'
+        */
+
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("node")
+                    .key("id")      .value(0)
+                    .key("body")
+                    .object()
+                        .key("key").value("name")
+                        .key("value").value("Alice")
+                    .endObject()
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("{0}/labels")
+                    .key("id")      .value(1)
+                    .key("body")
+                    .array()
+                        .value( "expert" )
+                        .value( "coder" )
+                    .endArray()
+                .endObject()
+                .object()
+                    .key("method")  .value("PUT")
+                    .key("to")      .value("{0}/labels")
+                    .key("id")      .value(2)
+                    .key("body")
+                    .array()
+                        .value( "novice" )
+                        .value( "chef" )
+                    .endArray()
+                .endObject()
+             .endArray().toString();
+
+        // when
+        JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
+
+        // then
+        assertEquals(200, response.getStatus());
     }
 
     // It has to be possible to create relationships among created and not-created nodes
     // in batch operation.  Tests the fix for issue #690.
     @Test
-    public void shouldBeAbleToReferToNotCreatedUniqueEntities() throws Exception {
+    public void shouldBeAbleToReferToNotCreatedUniqueEntities() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -631,13 +696,12 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
                     .key("id")      .value(5)
                 .endObject()
             .endArray().toString();
-        
+
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
         assertEquals(200, response.getStatus());
 
         final String entity = response.getEntity();
-        System.out.println("entity = " + entity);
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
         assertEquals(6, results.size());
         Map<String, Object> andresResult1 = results.get(1);
@@ -660,14 +724,17 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
         body2 = (Map<String, Object>) andresResult1.get("body");
         assertEquals(body1.get("start"), body2.get("self"));
     }
-    
+
     private int countNodes()
     {
-        int count = 0;
-        for(Node node : graphdb().getAllNodes())
+        try ( Transaction tx = graphdb().beginTx() )
         {
-            count++;
+            int count = 0;
+            for(Node node : GlobalGraphOperations.at(graphdb()).getAllNodes())
+            {
+                count++;
+            }
+            return count;
         }
-        return count;
     }
 }

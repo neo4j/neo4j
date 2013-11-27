@@ -1,3 +1,47 @@
+2.0.0-RC1
+---------
+o BREAKING CHANGE: Removed deprecated method org.neo4j.server.AbstractNeoServer#stopServerOnly(). To stop the server use
+  org.neo4j.server.AbstractNeoServer#stop(). If you would like to disconnect the database life cycle from server control
+  use org.neo4j.server.WrappingNeoServer.
+o BREAKING CHANGE: org.neo4j.server.database.Database is now an interface. Direct uses of the class can be replaced by
+  one of its implementations.
+o Transactional endpoint status codes are now textual rather than numeric. Since the transactional endpoint was introduced
+  in the 2.0.0 series, it is not considered a breaking change. It will, however, require modifying client code that depends
+  on the numeric status codes.
+
+2.0.0-M04
+---------
+o Added support for extracting and returning the graph structure from the result of a Cypher query executed via the transactional endpoint
+
+2.0.0-M03
+---------
+o Added support for transaction keep-alive
+
+2.0.0-M02
+---------
+o REST transaction support
+
+2.0.0-M01
+---------
+o Added support for labels
+o Added support for the new label-based indexes
+
+1.9.5 (2013-11-11)
+------------------
+o Shutdown hook is now properly removed on normal shutdown, removing potential thread
+  leak which might prevent orderly exit of the VM process
+
+1.9.3
+-----
+o Reintroduces, deprecated, the Configurator.getThirdpartyJaxRsClasses. Fixes, among other things, the authentication-extension
+o Server now properly returns the version when asked through REST
+
+1.9.2 (2013-07-16)
+------------------
+o The Content-Type is now correctly used to set the text encoding, not Content-Encoding
+o Fixes concurrency issue with generation of JSON responses
+o HTTPS scheme is now properly propagated on batch requests
+
 1.9.1 (2013-06-24)
 ------------------
 o Fixes bug where the last security rule would be the only one respected, if multiple would

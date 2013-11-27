@@ -3,18 +3,19 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.2-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-server-examples</artifactId>
   <name>Neo4j Server Examples</name>
-  <version>1.9.2-SNAPSHOT</version>
+  <version>2.0-SNAPSHOT</version>
   <description>Neo4j Server Plugin Examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
 
   <properties>
     <short-name>neo4j-server-examples</short-name>
+    <version-package>examples.server.impl</version-package>
     <bundle.namespace>org.neo4j.examples.server</bundle.namespace>
     <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
@@ -111,7 +112,7 @@
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
-      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
     </site>
   </distributionManagement>
 

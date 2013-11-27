@@ -19,28 +19,28 @@
  */
 package org.neo4j.server.rest.security;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.net.URI;
-
 import javax.ws.rs.core.MediaType;
 
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class SecurityRulesDocIT extends ExclusiveServerTestBase
 {
@@ -55,7 +55,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     @After
     public void stopServer()
     {
-        if (server != null)
+        if ( server != null )
         {
             server.stop();
         }
@@ -67,7 +67,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
      * 'neo4j-server.properties':
      *
      * @@config
-     * 
+     *
      * with the rule source code of:
      * 
      * @@failingRule
@@ -84,14 +84,15 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     public void should401WithBasicChallengeWhenASecurityRuleFails()
             throws Exception
     {
-        server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName() )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
         server.start();
         gen.get().addSnippet(
                 "config",
-                "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRule\n----\n" );
+                "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules" +
+                        ".PermanentlyFailingSecurityRule\n----\n" );
         gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRule.class,
                 "failingRule" );
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -108,7 +109,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     public void should401WithBasicChallengeIfAnyOneOfTheRulesFails()
             throws Exception
     {
-        server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName(),
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
@@ -128,7 +129,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     public void shouldInvokeAllSecurityRules() throws Exception
     {
         // given
-        server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 NoAccessToDatabaseSecurityRule.class.getCanonicalName(),
                 NoAccessToWebAdminSecurityRule.class.getCanonicalName() )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
@@ -150,7 +151,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     public void shouldRespondWith201IfAllTheRulesPassWhenCreatingANode()
             throws Exception
     {
-        server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+        server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
@@ -190,7 +191,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
             throws Exception
     {
         String mountPoint = "/protected/tree/starts/here" + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT;
-        server = ServerBuilder.server().withDefaultDatabaseTuning()
+        server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         mountPoint )
                 .withSecurityRules(
@@ -202,7 +203,8 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         gen.get()
                 .addSnippet(
                         "config",
-                        "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRuleWithWildcardPath\n----\n" );
+                        "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules" +
+                                ".PermanentlyFailingSecurityRuleWithWildcardPath\n----\n" );
 
         gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRuleWithWildcardPath.class,
                 "failingRuleWithWildcardPath" );
@@ -239,8 +241,9 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     public void aComplexWildcardUriPathShould401OnAccessToProtectedSubPath()
             throws Exception
     {
-        String mountPoint = "/protected/wildcard_replacement/x/y/z/something/else/more_wildcard_replacement/a/b/c/final/bit";
-        server = ServerBuilder.server().withDefaultDatabaseTuning()
+        String mountPoint = "/protected/wildcard_replacement/x/y/z/something/else/more_wildcard_replacement/a/b/c" +
+                "/final/bit";
+        server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         mountPoint )
                 .withSecurityRules(
@@ -250,7 +253,8 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server.start();
         gen.get().addSnippet(
                 "config",
-                "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRuleWithComplexWildcardPath\n----\n" );
+                "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules" +
+                        ".PermanentlyFailingSecurityRuleWithComplexWildcardPath\n----\n" );
         gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRuleWithComplexWildcardPath.class,
                 "failingRuleWithComplexWildcardPath" );
         gen.get().setSection( "ops" );

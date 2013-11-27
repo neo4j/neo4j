@@ -19,13 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static java.util.concurrent.Executors.newCachedThreadPool;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -36,16 +29,25 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
 
 /**
  * Test for a problem where multiple threads getting an index for the first time
@@ -61,7 +63,7 @@ public class TestIndexCreation
     @Before
     public void before() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
@@ -117,7 +119,8 @@ public class TestIndexCreation
 
     private void verifyThatIndexCreationTransactionIsTheFirstOne() throws Exception
     {
-        XaDataSource ds = db.getXaDataSourceManager().getXaDataSource( LuceneDataSource.DEFAULT_NAME );
+        XaDataSource ds = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getXaDataSource(
+                LuceneDataSource.DEFAULT_NAME );
         long version = ds.getCurrentLogVersion();
         ds.rotateLogicalLog();
         ReadableByteChannel log = ds.getLogicalLog( version );
@@ -131,9 +134,8 @@ public class TestIndexCreation
                 return LuceneCommand.readCommand( byteChannel, buffer, null );
             }
         };
-        LogEntry entry = null;
         int creationIdentifier = -1;
-        while ( (entry = LogIoUtils.readEntry( buffer, log, cf ) ) != null )
+        for ( LogEntry entry; (entry = LogIoUtils.readEntry( buffer, log, cf )) != null; )
         {
             if ( entry instanceof LogEntry.Command && ((LogEntry.Command) entry).getXaCommand() instanceof LuceneCommand.CreateIndexCommand )
             {

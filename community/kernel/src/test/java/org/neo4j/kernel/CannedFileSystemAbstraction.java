@@ -25,27 +25,56 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class CannedFileSystemAbstraction implements FileSystemAbstraction
 {
+    public static Runnable NOTHING = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+        }
+    };
+    
+    public static Runnable callCounter( final AtomicInteger count )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                count.incrementAndGet();
+            }
+        };
+    }
+    
     private final boolean fileExists;
     private final IOException cannotCreateStoreDir;
     private final IOException cannotOpenLockFile;
     private final boolean lockSuccess;
+    private final Runnable onClose;
 
     public CannedFileSystemAbstraction( boolean fileExists,
                                         IOException cannotCreateStoreDir,
                                         IOException cannotOpenLockFile,
-                                        boolean lockSuccess )
+                                        boolean lockSuccess,
+                                        Runnable onClose )
     {
         this.fileExists = fileExists;
         this.cannotCreateStoreDir = cannotCreateStoreDir;
         this.cannotOpenLockFile = cannotOpenLockFile;
         this.lockSuccess = lockSuccess;
+        this.onClose = onClose;
     }
 
     @Override
@@ -56,8 +85,123 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
             throw cannotOpenLockFile;
         }
 
-        return null;
+        return emptyFileChannel;
     }
+    
+    private final FileChannel emptyFileChannel = new FileChannel()
+    {
+        @Override
+        public int read( ByteBuffer dst ) throws IOException
+        {
+            return 0;
+        }
+
+        @Override
+        public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
+        {
+            return 0;
+        }
+
+        @Override
+        public int write( ByteBuffer src ) throws IOException
+        {
+            throw unsupported();
+        }
+
+        @Override
+        public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
+        {
+            throw unsupported();
+        }
+
+        @Override
+        public long position() throws IOException
+        {
+            return 0;
+        }
+
+        @Override
+        public FileChannel position( long newPosition ) throws IOException
+        {
+            if ( newPosition != 0 )
+                throw unsupported();
+            return this;
+        }
+
+        @Override
+        public long size() throws IOException
+        {
+            return 0;
+        }
+
+        @Override
+        public FileChannel truncate( long size ) throws IOException
+        {
+            if ( size != 0 )
+                throw unsupported();
+            return this;
+        }
+
+        @Override
+        public void force( boolean metaData ) throws IOException
+        {
+        }
+
+        @Override
+        public long transferTo( long position, long count, WritableByteChannel target ) throws IOException
+        {
+            throw unsupported();
+        }
+
+        @Override
+        public long transferFrom( ReadableByteChannel src, long position, long count ) throws IOException
+        {
+            throw unsupported();
+        }
+
+        @Override
+        public int read( ByteBuffer dst, long position ) throws IOException
+        {
+            return 0;
+        }
+
+        @Override
+        public int write( ByteBuffer src, long position ) throws IOException
+        {
+            if ( position != 0 )
+                throw unsupported();
+            return 0;
+        }
+
+        @Override
+        public MappedByteBuffer map( MapMode mode, long position, long size ) throws IOException
+        {
+            throw unsupported();
+        }
+
+        @Override
+        public java.nio.channels.FileLock lock( long position, long size, boolean shared ) throws IOException
+        {
+            throw unsupported();
+        }
+
+        @Override
+        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared ) throws IOException
+        {
+            throw unsupported();
+        }
+
+        @Override
+        protected void implCloseChannel() throws IOException
+        {
+            onClose.run();
+        }
+        
+        private IOException unsupported()
+        {
+            return new IOException( "Unsupported" );
+        }
+    };
 
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
@@ -168,7 +312,14 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     {
         throw new UnsupportedOperationException( "TODO" );
     }
-    
+
+    @Override
+    public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>, K>
+            creator )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
     private static final FileLock SYMBOLIC_FILE_LOCK = new FileLock()
     {
         @Override

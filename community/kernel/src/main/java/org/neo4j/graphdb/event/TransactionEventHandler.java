@@ -51,7 +51,7 @@ import org.neo4j.graphdb.TransactionFailureException;
  * If {@link #beforeCommit(TransactionData)} isn't executed successfully, but
  * instead throws an exception the transaction won't be committed and a
  * {@link TransactionFailureException} will (eventually) be thrown from
- * {@link Transaction#finish()}. All handlers which at this point have had its
+ * {@link Transaction#close()}. All handlers which at this point have had its
  * {@link #beforeCommit(TransactionData)} method executed successfully will
  * receive a call to {@link #afterRollback(TransactionData, Object)}.
  * 
@@ -72,7 +72,7 @@ public interface TransactionEventHandler<T>
      *
      * If this method throws an exception the transaction will be rolled back
      * and a {@link TransactionFailureException} will be thrown from
-     * {@link Transaction#finish()}.
+     * {@link Transaction#close()}.
      *
      * The transaction is still open when this method is invoked, making it
      * possible to perform mutating operations in this method. This is however
@@ -113,7 +113,7 @@ public interface TransactionEventHandler<T>
      * @param <T> the type of object communicated from a successful
      * {@link #beforeCommit(TransactionData)} to {@link #afterCommit(TransactionData, Object)}.
      */
-    public class Adapter<T> implements TransactionEventHandler<T>
+    class Adapter<T> implements TransactionEventHandler<T>
     {
         @Override
         public T beforeCommit( TransactionData data ) throws Exception

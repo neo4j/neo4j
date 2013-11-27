@@ -151,4 +151,9 @@ public class ShellException extends Exception
         printWriter.close();
         return writer.getBuffer().toString();
     }
+
+    public String getStackTraceAsString()
+    {
+        return stackTraceAsString;
+    }
 }

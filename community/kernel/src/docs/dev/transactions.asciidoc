@@ -11,7 +11,7 @@ In order to fully maintain data integrity and ensure good transactional behavior
 
 Specifically:
 
-* All modifications to Neo4j data must be wrapped in transactions.
+* All database operations that access the graph, indexes, or the schema must be performed in a transaction.
 * The default isolation level is +READ_COMMITTED+.
 * Data retrieved by traversals is not protected from modification by other transactions.
 * Non-repeatable reads may occur (i.e., only write locks are acquired and held until the end of the transaction).
@@ -22,16 +22,16 @@ Specifically:
 [[transactions-interaction]]
 == Interaction cycle ==
 
-All write operations that work with the graph must be performed in a transaction.
+All database operations that access the graph, indexes, or the schema must be performed in a transaction.
 Transactions are thread confined and can be nested as “flat nested transactions”.
 Flat nested transactions means that all nested transactions are added to the scope of the top level transaction.
 A nested transaction can mark the top level transaction for rollback, meaning the entire transaction will be rolled back.
 To only rollback changes made in a nested transaction is not possible.
 
-When working with transactions the interaction cycle looks like this:
+The interaction cycle of working with transactions looks like this:
 
 . Begin a transaction.	
-. Operate on the graph performing write operations.
+. Perform database operations.
 . Mark the transaction as successful or not.
 . Finish the transaction.
 
@@ -112,27 +112,22 @@ The delete semantics can be summarized in the following bullets:
 In many use cases, a certain level of uniqueness is desired among entities.
 You could for instance imagine that only one user with a certain e-mail address may exist in a system.
 If multiple concurrent threads naively try to create the user, duplicates will be created.
-There are three main strategies for ensuring uniqueness, and they all work across HA and single-instance deployments.
+There are three main strategies for ensuring uniqueness, and they all work across High Availability and single-instance deployments.
 
 === Single thread ===
 By using a single thread, no two threads will even try to create a particular entity simultaneously.
-On HA, an external single-threaded client can perform the operations on the cluster.
+On High Availability, an external single-threaded client can perform the operations on the cluster.
 
 [[transactions-get-or-create]]
 === Get or create ===
-By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
-entity uniqueness can be guaranteed using an index.
-Here the index acts as the lock and will only lock the smallest part needed to guaranteed uniqueness across threads and transactions.
-To get the more high-level +get-or-create+ functionality make use of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
 
-.Example code
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/GetOrCreateDocIT.java
-classifier=test-sources
-tag=getOrCreate
-----
+The preferred way to get or create a unique node is to use unique constraints and Cypher. See <<tutorials-java-embedded-unique-get-or-create>> for more.
+
+By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
+entity uniqueness can be guaranteed using a legacy index. Here the legacy index acts as the lock and will only lock the smallest part needed to guaranteed uniqueness across threads and transactions.
+
+See <<tutorials-java-embedded-unique-get-or-create-with-factory>> for how to do this using the core Java API.
+When using the REST API, see <<rest-api-unique-indexes>>.
 
 === Pessimistic locking ===
 [IMPORTANT]
@@ -141,22 +136,7 @@ While this is a working solution, please consider using the preferred  <<transac
 By using explicit, pessimistic locking, unique creation of entities can be achieved in a multi-threaded environment.
 It is most commonly done by locking on a single or a set of common nodes.
 
-One might be tempted to use Java synchronization for this, but this is dangerous.
-By mixing locks in the Neo4j kernel and in the Java runtime, it is easy to produce deadlocks that are not detectable by Neo4j.
-As long as all locking is done by Neo4j, all deadlocks will be detected and avoided.
-Also, a solution using manual synchronization doesn't ensure uniqueness in an HA environment.
-
-.Example code
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/GetOrCreateDocIT.java
-classifier=test-sources
-tag=pessimisticLocking
-----
-
-The passed in +lockNode+ is only used for locking while creating user nodes in this case.
-You can for example create a node to use only for this purpose.
+See <<tutorials-java-embedded-unique-pessimistic>> for how to do this using the core Java API.
 
 [[transactions-events]]
 == Transaction events ==

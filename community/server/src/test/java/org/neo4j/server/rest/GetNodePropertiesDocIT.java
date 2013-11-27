@@ -19,24 +19,26 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.IOException;
 import java.util.Collections;
-
 import javax.ws.rs.core.MediaType;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.server.rest.web.PropertyValueException;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.*;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
 {
@@ -104,7 +106,8 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
 
         String complicatedString = asianText + germanText;
 
-        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", complicatedString));
+
+        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", complicatedString ));
         final RestRequest request = req;
         JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
         String response = (String) JsonHelper.jsonToSingleValue( request.get( getPropertyUri( createResponse.getLocation().toString(), "foo" ) ).getEntity() );
@@ -118,8 +121,8 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
 
         String complicatedString = asianText + germanText;
 
-        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", complicatedString));
-        final RestRequest request = req.header(StreamingJsonFormat.STREAM_HEADER,"true");
+        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", complicatedString ) );
+        final RestRequest request = req.header( StreamingJsonFormat.STREAM_HEADER,"true");
         JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
         String response = (String) JsonHelper.jsonToSingleValue( request.get( getPropertyUri( createResponse.getLocation().toString(), "foo" ) , new MediaType( "application","json", stringMap( "stream", "true" ) )).getEntity() );
         assertEquals( complicatedString, response );
@@ -137,7 +140,7 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         JaxRsResponse createResource = req.post(functionalTestHelper.dataUri() + "node/", entity);
         JaxRsResponse response = req.get(createResource.getLocation().toString() + "/properties");
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
     }
 
     @Test
@@ -150,7 +153,7 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Get property for node.
-     * 
+     *
      * Get a single node property from a node.
      */
     @Documented
@@ -176,12 +179,13 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
 
     @Test
     public void shouldBeJSONContentTypeOnPropertyResponse() throws JsonParseException {
-        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
+        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
 
         JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", entity);
 
         JaxRsResponse response = req.get(getPropertyUri(createResponse.getLocation().toString(), "foo"));
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+
+        assertThat( response.getType().toString(), containsString(MediaType.APPLICATION_JSON) );
 
         createResponse.close();
         response.close();

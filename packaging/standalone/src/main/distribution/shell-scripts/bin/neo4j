@@ -138,10 +138,15 @@ buildclasspath() {
 }
 
 detectrunning() {
-  ## This could be achieved with filtering using -sTCP:LISTEN but this option is not available
-  ## on lsof v4.78 which is the one bundled with some distros. So we have to do this grep below
-  newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
-  newpid=${newpid:1}
+  if [ $DIST_OS = "solaris" ] ; then
+      ## SmartOS has a different lsof command line arguments
+      newpid=$(lsof -o $NEO4J_SERVER_PORT | grep '::' | head -n1 | cut -d ' ' -f 1)
+  else
+      ## This could be achieved with filtering using -sTCP:LISTEN but this option is not available
+      ## on lsof v4.78 which is the one bundled with some distros. So we have to do this grep below
+      newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
+      newpid=${newpid:1}
+  fi
 }
 
 startit() {
@@ -184,14 +189,14 @@ startit() {
     CONSOLE_LOG="$NEO4J_LOG/console.log"
 
     if [ $UID == 0 ] ; then
-      su $NEO4J_USER -c "nohup $JAVACMD -cp '$CLASSPATH' $JAVA_OPTS \
+      su $NEO4J_USER -c "\"$JAVACMD\" -cp '$CLASSPATH' $JAVA_OPTS \
         -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
         -Dfile.encoding=UTF-8 \
         org.neo4j.server.Bootstrapper >> \"${CONSOLE_LOG}\" 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       checkwriteaccess
       echo "WARNING: not changing user"
-      nohup $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS  \
+      "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS  \
         -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
         -Dfile.encoding=UTF-8 \
         org.neo4j.server.Bootstrapper >> "${CONSOLE_LOG}" 2>&1 & echo $! > "${PID_FILE}"
@@ -236,7 +241,7 @@ startit() {
 	      fi
 
 	      echo " OK."
-        echo "Go to http://localhost:$NEO4J_SERVER_PORT/webadmin/ for administration interface."
+        echo "http://localhost:$NEO4J_SERVER_PORT/ is ready."
 	      exit 0
 	    fi
 
@@ -268,7 +273,7 @@ console() {
 
     echo "Using additional JVM arguments: " $JAVA_OPTS
 
-    $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS \
+    "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS \
         -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
         -Dfile.encoding=UTF-8 \
         org.neo4j.server.Bootstrapper
@@ -295,88 +300,6 @@ modify_user_config() {
   else
     echo "wrapper.user.created=${created}" >> "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"
   fi
-}
-
-installservice() {
-    detectos
-    findjava
-    selectinittool
-    if [ ! -x "$JAVACMD" ] ; then
-      if [[ $HEADLESS == false ]]; then
-        read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
-      else
-        yn='y'
-      fi
-      case $yn in
-              [yY]* ) echo "WARNING: Alright, but $FRIENDLY_NAME will fail to launch until Java has been properly installed and configured."
-              ;;
-      * ) echo "Aborting installation."
-          exit 1
-              ;;
-      esac
-    fi
-
-    if [[ -d "/etc/init.d" ]]; then
-      if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
-        echo "${SERVICE_NAME} already installed."
-      else
-        if [ $UID != 0 ] ; then
-          eval echo  'Must be root to perform this action.'
-          exit 1
-        else
-          checkstatus
-          if [ ! -z $NEO4J_PID ] ; then
-            stopit
-          fi
-          if [[ $NEO4J_USER == $wrapper_user ]]; then 
-            default_user=$wrapper_user
-          else
-            default_user=$DEFAULT_USER
-          fi
-
-          if [[ $HEADLESS == false ]]; then
-            read -p "Graph-like power should be handled carefully. What user should run Neo4j? [$default_user] " proposed_user
-          fi
-          proposed_user=${proposed_user:-$default_user}
-
-          if ! `id $proposed_user &> /dev/null` ; then
-            if [[ $HEADLESS == false ]]; then
-              read -p "User \"$proposed_user\" does not yet exist. Shall I create the account for you? [Yn]" yn
-            else
-              yn="y"
-            fi
-            case $yn in
-              [Nn]* ) echo "WARNING: Alright, but Neo4j will fail to launch until that user has been created."
-              set_user $proposed_user
-              ;;
-            * ) create_user $proposed_user
-              ;;
-            esac
-          else
-            modify_user_config $proposed_user
-          fi
-          ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
-          if [ $INIT_TOOL == 'chkconfig' ]; then
-            chkconfig --add ${SERVICE_NAME}
-          else
-            update-rc.d ${SERVICE_NAME} defaults
-          fi
-          chown -R $proposed_user: "$NEO4J_HOME/data" "$NEO4J_HOME/conf"
-        fi
-      fi
-    elif [[ $DIST_OS -eq "macosx" ]] ; then
-      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" -e "s^LAUNCHD_NAME^${LAUNCHD_NAME}^" <"${NEO4J_INSTANCE}/bin/org.neo4j.server.plist" >"${LAUNCHD_DIR}/${LAUNCHD_NAME}.plist"
-      launchctl load -w ${LAUNCHD_DIR}/${LAUNCHD_NAME}.plist
-      launchctl start ${LAUNCHD_NAME}
-    else
-      echo "Sorry, don't know how to install on ${DIST_OS}."
-    fi
-
-    if [ -x "$JAVACMD" ] ; then
-      if [[ $DIST_OS -ne "macosx" ]] ; then
-        startit
-      fi
-    fi
 }
 
 showinfo() {
@@ -457,13 +380,12 @@ case "${!OPTIND}" in
     exit 0
     ;;
   install)
-    WAIT=true
-    installservice
-    exit 0
+    echo "Legacy install now lives in the 'neo4j-installer' script"
+    exit 1
     ;;
   remove)
-    removeservice
-    exit 0
+    echo "Legacy remove now lives in the 'neo4j-installer' script"
+    exit 1
     ;;
   *)
     echo "Usage: neo4j { console | start | start-no-wait | stop | restart | status | info | install | remove }"

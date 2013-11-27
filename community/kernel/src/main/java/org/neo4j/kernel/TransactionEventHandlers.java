@@ -30,7 +30,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Handle the collection of transaction event handlers, and fire events as needed.
+ *
+ * @deprecated This will be moved to internal packages in the next major release.
  */
+@Deprecated
 public class TransactionEventHandlers
     implements Lifecycle
 {

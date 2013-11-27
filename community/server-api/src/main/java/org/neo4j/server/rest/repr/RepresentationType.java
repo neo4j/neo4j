@@ -27,10 +27,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
 public final class RepresentationType
 {
-    private static final Map<Class<?>, Class<?>> boxed = new HashMap<Class<?>, Class<?>>();
+    private static final Map<Class<?>, Class<?>> boxed = new HashMap<>();
 
     static
     {
@@ -44,32 +46,33 @@ public final class RepresentationType
         boxed.put( boolean.class, Boolean.class );
     }
 
-    private static final Map<String, RepresentationType> types = new HashMap<String, RepresentationType>();
-    private static final Map<Class<?>, RepresentationType> extended = new HashMap<Class<?>, RepresentationType>();
+    private static final Map<String, RepresentationType> types = new HashMap<>();
+    private static final Map<Class<?>, RepresentationType> extended = new HashMap<>();
     // Graph database types
     public static final RepresentationType
             GRAPHDB = new RepresentationType( "graphdb", null, GraphDatabaseService.class ),
             NODE = new RepresentationType( "node", "nodes", Node.class ),
             RELATIONSHIP = new RepresentationType( "relationship", "relationships", Relationship.class ),
             PATH = new RepresentationType( "path", "paths", Path.class ),
-            FULL_PATH = new RepresentationType( "full-path", "full-paths", FullPath.class ),
-            RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types",
-                    RelationshipType.class ),
+            FULL_PATH = new RepresentationType( "full-path", "full-paths", FullPath.class),
+            RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types", RelationshipType.class ),
             PROPERTIES = new RepresentationType( "properties" ),
             INDEX = new RepresentationType( "index" ),
             NODE_INDEX_ROOT = new RepresentationType( "node-index" ),
             RELATIONSHIP_INDEX_ROOT = new RepresentationType( "relationship-index" ),
+            INDEX_DEFINITION = new RepresentationType( "index-definition", "index-definitions", IndexDefinition.class ),
+            CONSTRAINT_DEFINITION = new RepresentationType( "constraint-definition", "constraint-definitions", ConstraintDefinition.class ),
             PLUGINS = new RepresentationType( "plugins" ),
             PLUGIN = new RepresentationType( "plugin" ),
             PLUGIN_DESCRIPTION = new RepresentationType( "plugin-point" ),
             SERVER_PLUGIN_DESCRIPTION = new RepresentationType( "server-plugin", null ),
             PLUGIN_PARAMETER = new RepresentationType( "plugin-parameter", "plugin-parameter-list" ),
-    // Value types
-    URI = new RepresentationType( "uri", null ),
+            // Value types
+            URI = new RepresentationType( "uri", null ),
             TEMPLATE = new RepresentationType( "uri-template" ),
             STRING = new RepresentationType( "string", "strings", String.class ),
-    // primitives
-    BYTE = new RepresentationType( "byte", "bytes", byte.class ),
+            // primitives
+            BYTE = new RepresentationType( "byte", "bytes", byte.class ),
             CHAR = new RepresentationType( "character", "characters", char.class ),
             SHORT = new RepresentationType( "short", "shorts", short.class ),
             INTEGER = new RepresentationType( "integer", "integers", int.class ),
@@ -78,9 +81,10 @@ public final class RepresentationType
             DOUBLE = new RepresentationType( "double", "doubles", double.class ),
             BOOLEAN = new RepresentationType( "boolean", "booleans", boolean.class ),
             NOTHING = new RepresentationType( "void", null ),
-    // System
-    EXCEPTION = new RepresentationType( "exception" ),
-            MAP = new RepresentationType( "map", "maps", Map.class );
+            // System
+            EXCEPTION = new RepresentationType( "exception" ),
+            MAP = new RepresentationType( "map", "maps", Map.class ),
+            NULL = new RepresentationType( "null", "nulls", Object.class );
 
 
     final String valueName;

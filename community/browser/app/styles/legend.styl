@@ -1,0 +1,48 @@
+@import 'nib'
+@import 'mixins'
+
+.legend
+  absolute: top 16px left 16px
+  user-select: none
+  cursor: default
+  padding-right: 32px
+
+  li
+    overflow: hidden
+    margin-bottom: 8px
+    &.faded
+      opacity: 0.3
+    .preview
+      preview-size = 29px
+      float: left
+      border-radius: 50%
+      display: inline-block
+      width: preview-size
+      height: preview-size
+      margin-right: 8px
+      .shade
+        stretch()
+        background-color: #fff
+        width: (preview-size / 2px)
+        opacity: 0.10
+
+    .contents
+      //overflow: hidden
+      float: left
+      line-height: 1em
+      position: relative
+      top: 3px
+      &.no-condition
+        top: -1px
+        line-height: 30px
+      .class-name
+        font-size: 13px
+      .condition
+        font-size: 10px
+        color: #888
+    .remove
+      display: none
+      padding: 2px 8px
+      margin-left: 12px
+    &:hover .remove
+        display: inline-block

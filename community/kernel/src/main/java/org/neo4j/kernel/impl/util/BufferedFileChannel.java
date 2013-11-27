@@ -51,12 +51,9 @@ public class BufferedFileChannel extends FileChannel
         while ( read < dst.limit() )
         {
             read += readAsMuchAsPossibleFromIntermediaryBuffer( dst );
-            if ( read < dst.limit() )
+            if ( read < dst.limit() && fillUpIntermediaryBuffer() == -1 )
             {
-                if ( fillUpIntermediaryBuffer() == -1 )
-                {
-                    break;
-                }
+                break;
             }
         }
         return read == 0 && dst.limit() > 0 ? -1 : read;

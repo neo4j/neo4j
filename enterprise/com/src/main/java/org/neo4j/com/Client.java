@@ -19,11 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -46,6 +41,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -55,13 +51,18 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.tooling.RealClock;
+
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
  * serializes requests and sends them to the server and waits for
  * a response back.
- * 
+ *
  * @see Server
  */
 public abstract class Client<T> extends LifecycleAdapter implements ChannelPipelineFactory
@@ -86,15 +87,15 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
 
-    private int chunkSize;
+    private final int chunkSize;
 
     public Client( String hostNameOrIp, int port, Logging logging,
-            StoreId storeId, int frameLength,
-            byte applicationProtocolVersion, long readTimeout,
-            int maxConcurrentChannels, int maxUnusedPoolSize, int chunkSize )
+                   StoreId storeId, int frameLength,
+                   byte applicationProtocolVersion, long readTimeout,
+                   int maxConcurrentChannels, int maxUnusedPoolSize, int chunkSize )
     {
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
-        
+
         this.msgLog = logging.getMessagesLog( getClass() );
         this.storeId = storeId;
         this.frameLength = frameLength;
@@ -112,12 +113,13 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     @Override
     public void start()
     {
-        executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address ) );
+        executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address
+        ) );
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels,
-                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( ResourcePool.DEFAULT_CHECK_INTERVAL, new RealClock() ),
-                new LoggingResourcePoolMonitor())
+                new ResourcePool.CheckStrategy.TimeoutCheckStrategy( ResourcePool.DEFAULT_CHECK_INTERVAL, SYSTEM_CLOCK ),
+                new LoggingResourcePoolMonitor( msgLog ))
         {
             @Override
             protected Triplet<Channel, ChannelBuffer, ByteBuffer> create()
@@ -134,7 +136,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                     return channel;
                 }
 
-                String msg = Client.this.getClass().getSimpleName()+" could not connect to " + address;
+                String msg = Client.this.getClass().getSimpleName() + " could not connect to " + address;
                 msgLog.logMessage( msg, true );
                 ComException exception = new ComException( msg );
                 // connectionLostHandler.handle( exception );
@@ -155,6 +157,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 Channel channel = resource.first();
                 if ( channel.isConnected() )
                 {
+                    msgLog.debug( "Closing channel: " + channel + ". Channel pool size is now " + channelPool.currentSize() );
                     channel.close();
                 }
             }
@@ -168,6 +171,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
          */
         resourcePoolReleaser = new ResourceReleaser()
         {
+            @Override
             public void release()
             {
                 channelPool.release();
@@ -332,7 +336,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         Triplet<Channel, ChannelBuffer, ByteBuffer> result = channelPool.acquire();
         if ( result == null )
         {
-            msgLog.logMessage( "Unable to acquire new channel for " + type );
+            msgLog.error( "Unable to acquire new channel for " + type );
             throw new ComException( "Unable to acquire new channel for " + type );
         }
         return result;
@@ -348,6 +352,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         channel.first().close().awaitUninterruptibly();
     }
 
+    @Override
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
@@ -436,26 +441,5 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     public void addMismatchingVersionHandler( MismatchingVersionHandler toAdd )
     {
         mismatchingVersionHandlers.add( toAdd );
-    }
-
-    private class LoggingResourcePoolMonitor extends ResourcePool.Monitor.Adapter<Triplet<Channel, ChannelBuffer, ByteBuffer>>
-    {
-        @Override
-        public void updatedCurrentPeakSize( int currentPeakSize )
-        {
-            msgLog.debug( "ResourcePool updated currentPeakSize to " + currentPeakSize );
-        }
-
-        @Override
-        public void created( Triplet<Channel, ChannelBuffer, ByteBuffer> resource  )
-        {
-            msgLog.debug( "ResourcePool create resource " + resource );
-        }
-
-        @Override
-        public void updatedTargetSize( int targetSize )
-        {
-            msgLog.debug( "ResourcePool updated targetSize to " + targetSize );
-        }
     }
 }

@@ -20,14 +20,15 @@
 package org.neo4j.server.enterprise.functional;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
@@ -50,6 +51,8 @@ public class EnterpriseServerIT
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
+    @Rule
+    public DumpPortListenerOnNettyBindFailure dumpPorts = new DumpPortListenerOnNettyBindFailure();
 
     @Test
     public void shouldBeAbleToStartInHAMode() throws Throwable
@@ -71,7 +74,7 @@ public class EnterpriseServerIT
 
             assertThat( server.getDatabase(), is( EnterpriseDatabase.class ) );
             assertThat( server.getDatabase().getGraph(), is( HighlyAvailableGraphDatabase.class ) );
-            
+
             Client client = Client.create();
             ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +
                     "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
@@ -84,8 +87,7 @@ public class EnterpriseServerIT
         }
     }
 
-    private File createNeo4jProperties() throws IOException,
-            FileNotFoundException
+    private File createNeo4jProperties() throws IOException
     {
         File tuningFile = folder.newFile( "neo4j-test.properties" );
         FileOutputStream fos = new FileOutputStream( tuningFile );
@@ -105,4 +107,9 @@ public class EnterpriseServerIT
         }
     }
 
+    @After
+    public void whoListensOn5001()
+    {
+        dumpPorts.dumpListenersOn( 5001 );
+    }
 }

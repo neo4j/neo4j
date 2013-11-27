@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.System.arraycopy;
-
 import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.Pair;
@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.lang.System.arraycopy;
+
 /**
  * Dynamic store that stores strings.
  */
@@ -44,14 +46,9 @@ public class DynamicArrayStore extends AbstractDynamicStore
     static final int NUMBER_HEADER_SIZE = 3;
     static final int STRING_HEADER_SIZE = 5;
     
-    public static abstract class Configuration
-        extends AbstractDynamicStore.Configuration
-    {
-    }
-    
     // store version, each store ends with this string (byte encoded)
-    public static final String VERSION = "ArrayPropertyStore v0.A.0";
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
+    public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
     public DynamicArrayStore(File fileName, Config configuration, IdType idType,
                              IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
@@ -62,7 +59,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     }
     
     @Override
-    public void accept( RecordStore.Processor processor, DynamicRecord record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
     {
         processor.processArray( this, record );
     }
@@ -73,12 +70,12 @@ public class DynamicArrayStore extends AbstractDynamicStore
         return TYPE_DESCRIPTOR;
     }
 
-    private Collection<DynamicRecord> allocateFromNumbers( long startBlock, Object array )
+    public static Collection<DynamicRecord> allocateFromNumbers( Object array, Iterator<DynamicRecord> recordsToUseFirst,
+                                                                 DynamicRecordAllocator recordAllocator )
     {
         Class<?> componentType = array.getClass().getComponentType();
         boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
         boolean isByteArray = componentType.equals( Byte.class ) || isPrimitiveByteArray;
-        byte[] bytes = null;
         ShortArray type = ShortArray.typeOf( array );
         if ( type == null ) throw new IllegalArgumentException( array + " not a valid array type." );
         
@@ -89,18 +86,18 @@ public class DynamicArrayStore extends AbstractDynamicStore
         int bitsUsedInLastByte = totalBits%8;
         bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
         numberOfBytes += NUMBER_HEADER_SIZE; // type + rest + requiredBits header. TODO no need to use full bytes
-        int length = arrayLength;
+        byte[] bytes;
         if ( isByteArray )
         {
-            bytes = new byte[NUMBER_HEADER_SIZE+length];
+            bytes = new byte[NUMBER_HEADER_SIZE+ arrayLength];
             bytes[0] = (byte) type.intValue();
             bytes[1] = (byte) bitsUsedInLastByte;
             bytes[2] = (byte) requiredBits;
-            if ( isPrimitiveByteArray ) arraycopy( (byte[]) array, 0, bytes, NUMBER_HEADER_SIZE, length );
+            if ( isPrimitiveByteArray ) arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE, arrayLength );
             else
             {
                 Byte[] source = (Byte[]) array;
-                for ( int i = 0; i < source.length; i++ ) bytes[NUMBER_HEADER_SIZE+i] = source[i].byteValue();
+                for ( int i = 0; i < source.length; i++ ) bytes[NUMBER_HEADER_SIZE+i] = source[i];
             }
         }
         else
@@ -109,16 +106,16 @@ public class DynamicArrayStore extends AbstractDynamicStore
             bits.put( (byte)type.intValue() );
             bits.put( (byte)bitsUsedInLastByte );
             bits.put( (byte)requiredBits );
-            type.writeAll(array,length,requiredBits,bits);
+            type.writeAll(array, arrayLength,requiredBits,bits);
             bytes = bits.asBytes();
         }
-        return allocateRecords( startBlock, bytes );
+        return allocateRecordsFromBytes( bytes, recordsToUseFirst, recordAllocator );
     }
 
-    private Collection<DynamicRecord> allocateFromString( long startBlock,
-        String[] array )
+    private static Collection<DynamicRecord> allocateFromString( String[] array, Iterator<DynamicRecord> recordsToUseFirst,
+                                                                 DynamicRecordAllocator recordAllocator )
     {
-        List<byte[]> stringsAsBytes = new ArrayList<byte[]>();
+        List<byte[]> stringsAsBytes = new ArrayList<>();
         int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
         for ( String string : array )
         {
@@ -135,10 +132,15 @@ public class DynamicArrayStore extends AbstractDynamicStore
             buf.putInt( stringAsBytes.length );
             buf.put( stringAsBytes );
         }
-        return allocateRecords( startBlock, buf.array() );
+        return allocateRecordsFromBytes( buf.array(), recordsToUseFirst, recordAllocator );
     }
 
-    public Collection<DynamicRecord> allocateRecords( long startBlock, Object array )
+    public Collection<DynamicRecord> allocateRecords( Object array )
+    {
+        return allocateRecords( array, Collections.<DynamicRecord>emptyList().iterator() );
+    }
+    
+    public Collection<DynamicRecord> allocateRecords( Object array, Iterator<DynamicRecord> recordsToUseFirst )
     {
         if ( !array.getClass().isArray() )
         {
@@ -148,15 +150,15 @@ public class DynamicArrayStore extends AbstractDynamicStore
         Class<?> type = array.getClass().getComponentType();
         if ( type.equals( String.class ) )
         {
-            return allocateFromString( startBlock, (String[]) array );
+            return allocateFromString( (String[]) array, recordsToUseFirst, recordAllocator );
         }
         else
         {
-            return allocateFromNumbers( startBlock, array );
+            return allocateFromNumbers( array, recordsToUseFirst, recordAllocator );
         }
     }
 
-    public Object getRightArray( Pair<byte[],byte[]> data )
+    public static Object getRightArray( Pair<byte[],byte[]> data )
     {
         byte[] header = data.first();
         byte[] bArray = data.other();
@@ -173,7 +175,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
                 int byteLength = dataBuffer.getInt();
                 byte[] stringByteArray = new byte[byteLength];
                 dataBuffer.get( stringByteArray );
-                result[i] = (String) PropertyStore.getStringFor( stringByteArray );
+                result[i] = PropertyStore.decodeString( stringByteArray );
             }
             return result;
         }
@@ -184,7 +186,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             int requiredBits = header[2];
             if ( requiredBits == 0 )
                 return type.createEmptyArray();
-            Object result = null;
+            Object result;
             if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
             {   // Optimization for byte arrays (probably large ones)
                 result = bArray;
@@ -199,4 +201,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
+    public Object getArrayFor( Iterable<DynamicRecord> records )
+    {
+        return getRightArray( readFullByteArray( records, PropertyType.ARRAY ) );
+    }
 }

@@ -20,14 +20,14 @@
 package org.neo4j.server.rrd.sampler;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.NodeManager;
 
 public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
 
-    public NodeIdsInUseSampleable( GraphDatabaseAPI db )
+    public NodeIdsInUseSampleable( NodeManager nodeManager )
     {
-        super( db );
+        super( nodeManager );
     }
 
     @Override public String getName()

@@ -19,18 +19,21 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
+import java.util.HashMap;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.test.ProcessStreamHandler;
 
 public class ProduceUncleanStore
 {
@@ -38,7 +41,10 @@ public class ProduceUncleanStore
     {
         String storeDir = args[0];
         boolean setGraphProperty = args.length > 1 ? Boolean.parseBoolean( args[1] ) : false;
-        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir )
+            GraphDatabaseService db = new EmbeddedGraphDatabase(
+                    storeDir, new HashMap<String, String>(), Iterables.<KernelExtensionFactory<?>,
+                    KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
+                    Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) )
         {
             @Override
             protected Logging createLogging()
@@ -49,23 +55,18 @@ public class ProduceUncleanStore
                 return new DevNullLoggingService();
             }
         };
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( "name", "Something" );
-        if ( setGraphProperty ) ((GraphDatabaseAPI)db).getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "name", "Something" );
+            if ( setGraphProperty )
+            {
+                //noinspection deprecation
+                ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NodeManager.class )
+                        .getGraphProperties().setProperty( "prop", "Some value" );
+            }
+            tx.success();
+        }
         System.exit( 0 );
-    }
-
-    public static void atPath( File path ) throws Exception
-    {
-        Process process = Runtime.getRuntime()
-            .exec( new String[]{
-                "java", "-cp", System.getProperty( "java.class.path" ),
-                ProduceUncleanStore.class.getName(), path.getAbsolutePath()
-            } );
-        int ret = new ProcessStreamHandler(process, true).waitForResult();
-        assertEquals( "ProduceUncleanStore terminated unsuccessfully", 0, ret );
     }
 }

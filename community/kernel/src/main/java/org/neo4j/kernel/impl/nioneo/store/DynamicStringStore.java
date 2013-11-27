@@ -32,15 +32,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class DynamicStringStore extends AbstractDynamicStore
 {
-    public static abstract class Configuration
-        extends AbstractDynamicStore.Configuration
-    {
-
-    }
-
     // store version, each store ends with this string (byte encoded)
-    public static final String VERSION = "StringPropertyStore v0.A.0";
     public static final String TYPE_DESCRIPTOR = "StringPropertyStore";
+    public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
     public DynamicStringStore( File fileName, Config configuration, IdType idType,
                                IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
@@ -51,7 +45,7 @@ public class DynamicStringStore extends AbstractDynamicStore
     }
     
     @Override
-    public void accept( RecordStore.Processor processor, DynamicRecord record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
     {
         processor.processString( this, record, idType );
     }
@@ -61,17 +55,4 @@ public class DynamicStringStore extends AbstractDynamicStore
     {
         return TYPE_DESCRIPTOR;
     }
-
-    @Override
-    public void setHighId( long highId )
-    {
-        super.setHighId( highId );
-    }
-
-    @Override
-    public long nextBlockId()
-    {
-        return super.nextBlockId();
-    }
-
 }

@@ -20,6 +20,8 @@
 package org.neo4j.consistency.store;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,12 +30,13 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 
 /**
@@ -48,7 +51,7 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     public DiffRecordStore( RecordStore<R> actual )
     {
         this.actual = actual;
-        this.diff = new HashMap<Long, R>();
+        this.diff = new HashMap<>();
     }
 
     @Override
@@ -60,11 +63,6 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     public void markDirty( long id )
     {
         if ( !diff.containsKey( id ) ) diff.put( id, null );
-    }
-
-    public boolean isModified( long id )
-    {
-        return diff.get( id ) != null;
     }
 
     public R forceGetRaw( R record )
@@ -115,9 +113,16 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         return Math.max( highId, actual.getHighId() );
     }
 
-    public long getRawHighId()
+    @Override
+    public long getHighestPossibleIdInUse()
     {
-        return actual.getHighId();
+        return Math.max( highId, actual.getHighestPossibleIdInUse() );
+    }
+
+    @Override
+    public long nextId()
+    {
+        return actual.nextId();
     }
 
     @Override
@@ -141,6 +146,24 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     }
 
     @Override
+    public Collection<R> getRecords( long id )
+    {
+        Collection<R> result = new ArrayList<>();
+        R record;
+        for ( Long nextId = id; nextId != null; nextId = getNextRecordReference( record ) )
+        {
+            result.add( record = forceGetRecord( nextId ) );
+        }
+        return result;
+    }
+
+    @Override
+    public Long getNextRecordReference( R record )
+    {
+        return actual.getNextRecordReference( record );
+    }
+
+    @Override
     public void updateRecord( R record )
     {
         if ( record.getLongId() > highId ) highId = record.getLongId();
@@ -154,9 +177,9 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     }
 
     @Override
-    public void accept( RecordStore.Processor processor, R record )
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, R record ) throws FAILURE
     {
-        actual.accept( new DispatchProcessor( this, processor ), record );
+        actual.accept( new DispatchProcessor<>( this, processor ), record );
     }
 
     @Override
@@ -177,58 +200,82 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         return diff.get( id );
     }
 
+    public boolean hasChanges()
+    {
+        return !diff.isEmpty();
+    }
+
     @SuppressWarnings( "unchecked" )
-    private static class DispatchProcessor extends RecordStore.Processor
+    private static class DispatchProcessor<FAILURE extends Exception> extends RecordStore.Processor<FAILURE>
     {
         private final DiffRecordStore<?> diffStore;
-        private final RecordStore.Processor processor;
+        private final RecordStore.Processor<FAILURE> processor;
 
-        DispatchProcessor( DiffRecordStore<?> diffStore, RecordStore.Processor processor )
+        DispatchProcessor( DiffRecordStore<?> diffStore, RecordStore.Processor<FAILURE> processor )
         {
             this.diffStore = diffStore;
             this.processor = processor;
         }
 
         @Override
-        public void processNode( RecordStore<NodeRecord> store, NodeRecord node )
+        public void processNode( RecordStore<NodeRecord> store, NodeRecord node ) throws FAILURE
         {
             processor.processNode( (RecordStore<NodeRecord>) diffStore, node );
         }
 
         @Override
-        public void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
+        public void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel ) throws FAILURE
         {
             processor.processRelationship( (RecordStore<RelationshipRecord>) diffStore, rel );
         }
 
         @Override
-        public void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
+        public void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property ) throws FAILURE
         {
             processor.processProperty( (RecordStore<PropertyRecord>) diffStore, property );
         }
 
         @Override
-        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType )
+        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string,
+                                   @SuppressWarnings( "deprecation") IdType idType ) throws FAILURE
         {
             processor.processString( (RecordStore<DynamicRecord>) diffStore, string, idType );
         }
 
         @Override
-        public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
+        public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array ) throws FAILURE
         {
             processor.processArray( (RecordStore<DynamicRecord>) diffStore, array );
         }
 
         @Override
-        public void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord record )
+        public void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord array ) throws FAILURE
         {
-            processor.processRelationshipType( (RecordStore<RelationshipTypeRecord>) diffStore, record );
+            processor.processLabelArrayWithOwner( (RecordStore<DynamicRecord>) diffStore, array );
         }
 
         @Override
-        public void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record )
+        public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema ) throws FAILURE
         {
-            processor.processPropertyIndex( (RecordStore<PropertyIndexRecord>) diffStore, record );
+            processor.processSchema( (RecordStore<DynamicRecord>) diffStore, schema );
+        }
+
+        @Override
+        public void processRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
+                                                  RelationshipTypeTokenRecord record ) throws FAILURE
+        {
+            processor.processRelationshipTypeToken( (RecordStore<RelationshipTypeTokenRecord>) diffStore, record );
+        }
+
+        @Override
+        public void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record ) throws FAILURE
+        {
+            processor.processPropertyKeyToken( (RecordStore<PropertyKeyTokenRecord>) diffStore, record );
+        }
+
+        @Override
+        public void processLabelToken(RecordStore<LabelTokenRecord> store, LabelTokenRecord record) throws FAILURE {
+            processor.processLabelToken((RecordStore<LabelTokenRecord>) diffStore, record);
         }
     }
 }

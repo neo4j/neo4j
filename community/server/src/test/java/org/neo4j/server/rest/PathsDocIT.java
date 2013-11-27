@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
@@ -76,11 +77,11 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * If no path algorithm is specified, a +ShortestPath+ algorithm with a max
+     * If no path algorithm is specified, a +shortestPath+ algorithm with a max
      * depth of 1 will be chosen. In this example, the +max_depth+ is set to +3+
-     * in order to find the shortest path between 3 linked nodes.
+     * in order to find the shortest path between a maximum of 3 linked nodes.
      */
-    @Title( "Find one of the shortest paths between nodes" )
+    @Title( "Find one of the shortest paths" )
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
     "c to g" } )
@@ -126,84 +127,120 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * This example is running a Dijkstra algorithm over a graph with different
-     * cost properties on different relationships.
+     * cost properties on different relationships. Note that the request URI
+     * ends with +/path+ which means a single path is what we want here.
      */
     @Test
-    @Graph( nodes = { @NODE( name = "start", setNameProperty = true ), @NODE( name = "a", setNameProperty = true ),
-            @NODE( name = "b", setNameProperty = true ), @NODE( name = "c", setNameProperty = true ),
-            @NODE( name = "d", setNameProperty = true ), @NODE( name = "e", setNameProperty = true ),
-            @NODE( name = "f", setNameProperty = true ), @NODE( name = "x", setNameProperty = true ),
-            @NODE( name = "y", setNameProperty = true ) }, relationships = {
-            @REL( start = "start", end = "a", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "a", end = "x", type = "to", properties = { @PROP( key = "cost", value = "9", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "a", end = "b", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "b", end = "x", type = "to", properties = { @PROP( key = "cost", value = "7", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "b", end = "c", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "c", end = "x", type = "to", properties = { @PROP( key = "cost", value = "5", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "c", end = "x", type = "to", properties = { @PROP( key = "cost", value = "4", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "c", end = "d", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "d", end = "x", type = "to", properties = { @PROP( key = "cost", value = "3", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "d", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "e", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "e", end = "f", type = "to", properties = { @PROP( key = "cost", value = "2", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "x", end = "y", type = "to", properties = { @PROP( key = "cost", value = "2", type = GraphDescription.PropType.DOUBLE ) } ) } )
-            @Title( "Execute a Dijkstra algorithm with weights on relationships" )
-            public void shouldGetCorrectDijkstraPathsWithWeights() throws Exception
-            {
+    @Graph( nodes = { @NODE( name = "a", setNameProperty = true ), @NODE( name = "b", setNameProperty = true ),
+            @NODE( name = "c", setNameProperty = true ), @NODE( name = "d", setNameProperty = true ),
+            @NODE( name = "e", setNameProperty = true ), @NODE( name = "f", setNameProperty = true ) }, relationships = {
+            @REL( start = "a", end = "b", type = "to", properties = { @PROP( key = "cost", value = "1.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "a", end = "c", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "a", end = "f", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "c", end = "d", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "d", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "b", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "f", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1.2", type = GraphDescription.PropType.DOUBLE ) } ) } )
+    @Title( "Execute a Dijkstra algorithm and get a single path" )
+    @Documented
+    public void shouldGetCorrectDijkstraPathWithWeights() throws Exception
+    {
         // Get cheapest paths using Dijkstra
-        long start = nodeId( data.get(), "start" );
-        long x = nodeId( data.get(), "x" );
-        String response = gen()
-        .expectedStatus( Status.OK.getStatusCode() )
-        .payload( getAllPathsUsingDijkstraPayLoad( x, false ) )
-        .post( "http://localhost:7474/db/data/node/" + start + "/path" )
-        .entity();
+        long a = nodeId( data.get(), "a" );
+        long e = nodeId( data.get(), "e" );
+        String response = gen().expectedStatus( Status.OK.getStatusCode() )
+                .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
+                .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+                .entity();
         //
         Map<?, ?> path = JsonHelper.jsonToMap( response );
-        assertThatPathStartsWith( path, start );
-        assertThatPathEndsWith( path, x );
-        assertThatPathHasLength( path, 6 );
-        assertEquals( 6.0, path.get( "weight" ) );
-            }
+        assertThatPathStartsWith( path, a );
+        assertThatPathEndsWith( path, e );
+        assertThatPathHasLength( path, 3 );
+        assertEquals( 1.5, path.get( "weight" ) );
+    }
+
+    /**
+     * This example is running a Dijkstra algorithm over a graph with different
+     * cost properties on different relationships. Note that the request URI
+     * ends with +/paths+ which means we want multiple paths returned, in case
+     * they exist.
+     */
+    @Test
+    @Graph( nodes = { @NODE( name = "a", setNameProperty = true ), @NODE( name = "b", setNameProperty = true ),
+            @NODE( name = "c", setNameProperty = true ), @NODE( name = "d", setNameProperty = true ),
+            @NODE( name = "e", setNameProperty = true ), @NODE( name = "f", setNameProperty = true ) }, relationships = {
+            @REL( start = "a", end = "b", type = "to", properties = { @PROP( key = "cost", value = "1.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "a", end = "c", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "a", end = "f", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "c", end = "d", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "d", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "b", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
+            @REL( start = "f", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1.0", type = GraphDescription.PropType.DOUBLE ) } ) } )
+    @Title( "Execute a Dijkstra algorithm and get multiple paths" )
+    @Documented
+    public void shouldGetCorrectDijkstraPathsWithWeights() throws Exception
+    {
+        // Get cheapest paths using Dijkstra
+        long a = nodeId( data.get(), "a" );
+        long e = nodeId( data.get(), "e" );
+        String response = gen().expectedStatus( Status.OK.getStatusCode() )
+                .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
+                .post( "http://localhost:7474/db/data/node/" + a + "/paths" )
+                .entity();
+        //
+        List<Map<String, Object>> list = JsonHelper.jsonToList( response );
+        assertEquals( 2, list.size() );
+        Map<String, Object> firstPath = list.get( 0 );
+        Map<String, Object> secondPath = list.get( 1 );
+        System.out.println( firstPath );
+        System.out.println( secondPath );
+        assertThatPathStartsWith( firstPath, a );
+        assertThatPathStartsWith( secondPath, a );
+        assertThatPathEndsWith( firstPath, e );
+        assertThatPathEndsWith( secondPath, e );
+        assertEquals( 1.5, firstPath.get( "weight" ) );
+        assertEquals( 1.5, secondPath.get( "weight" ) );
+        // 5 = 3 +2
+        assertEquals( 5, (Integer) firstPath.get( "length" ) + (Integer) secondPath.get( "length" ) );
+        assertThatPathHasLength( firstPath, 3 );
+        assertThatPathHasLength( secondPath, 2 );
+    }
 
     /**
      * The following is executing a Dijkstra search on a graph with equal
-     * weights on all relationships.
+     * weights on all relationships. This example is included to show the
+     * difference when the same graph structure is used, but the path weight is
+     * equal to the number of hops.
      */
     @Test
-    @Graph( nodes = { @NODE( name = "start", setNameProperty = true ), @NODE( name = "a", setNameProperty = true ),
+    @Graph( nodes = { @NODE( name = "a", setNameProperty = true ),
             @NODE( name = "b", setNameProperty = true ), @NODE( name = "c", setNameProperty = true ),
             @NODE( name = "d", setNameProperty = true ), @NODE( name = "e", setNameProperty = true ),
-            @NODE( name = "f", setNameProperty = true ), @NODE( name = "x", setNameProperty = true ),
-            @NODE( name = "y", setNameProperty = true ) }, relationships = {
-            @REL( start = "start", end = "a", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "a", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @NODE( name = "f", setNameProperty = true ) }, relationships = {
             @REL( start = "a", end = "b", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "b", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "b", end = "c", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "c", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "c", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "a", end = "c", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "a", end = "f", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
             @REL( start = "c", end = "d", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "d", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
             @REL( start = "d", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "e", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "e", end = "f", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
-            @REL( start = "x", end = "y", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ) } )
-            @Title( "Execute a Dijkstra algorithm with similar weights on relationships" )
-            public void shouldGetCorrectDijkstraPathsWithWeightsWithDefaultCost() throws Exception
+            @REL( start = "b", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "f", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ) } )
+    @Title( "Execute a Dijkstra algorithm with equal weights on relationships" )
+    @Documented
+    public void shouldGetCorrectDijkstraPathsWithEqualWeightsWithDefaultCost() throws Exception
             {
-        // Get cheapest paths using Dijkstra
-        long start = nodeId( data.get(), "start" );
-        long x = nodeId( data.get(), "x" );
+        // Get cheapest path using Dijkstra
+        long a = nodeId( data.get(), "a" );
+        long e = nodeId( data.get(), "e" );
         String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( getAllPathsUsingDijkstraPayLoad( x, false ) )
-        .post( "http://localhost:7474/db/data/node/" + start + "/path" )
+                .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
+                .post( "http://localhost:7474/db/data/node/" + a + "/path" )
         .entity();
         //
         Map<?, ?> path = JsonHelper.jsonToMap( response );
-        assertThatPathStartsWith( path, start );
-        assertThatPathEndsWith( path, x );
+        assertThatPathStartsWith( path, a );
+        assertThatPathEndsWith( path, e );
         assertThatPathHasLength( path, 2 );
         assertEquals( 2.0, path.get( "weight" ) );
             }

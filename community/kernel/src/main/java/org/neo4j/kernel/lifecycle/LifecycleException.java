@@ -26,8 +26,6 @@ package org.neo4j.kernel.lifecycle;
 public class LifecycleException
     extends RuntimeException
 {
-    private final LifecycleStatus from;
-    private final LifecycleStatus to;
 
     private static final String humanReadableMessage( Object instance, LifecycleStatus from, LifecycleStatus to )
     {
@@ -64,7 +62,5 @@ public class LifecycleException
     public LifecycleException( Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause )
     {
         super( humanReadableMessage( instance, from, to ), cause);
-        this.from = from;
-        this.to = to;
     }
 }

@@ -19,26 +19,31 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.index.Neo4jTestCase.assertContains;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.impl.lucene.Contains.contains;
 
 public class TestIndexDeletion
 {
@@ -54,7 +59,7 @@ public class TestIndexDeletion
     @BeforeClass
     public static void setUpStuff()
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterClass
@@ -71,7 +76,7 @@ public class TestIndexDeletion
         {
             worker.rollback();
             worker.die();
-            worker.shutdown();
+            worker.close();
         }
     }
 
@@ -107,7 +112,7 @@ public class TestIndexDeletion
         value = "my own value";
         node = graphDb.createNode();
         index.add( node, key, value );
-        workers = new ArrayList<WorkThread>();
+        workers = new ArrayList<>();
     }
 
     public void beginTx()
@@ -146,6 +151,7 @@ public class TestIndexDeletion
         restartTx();
         index.delete();
         rollbackTx();
+        beginTx();
         index.get( key, value );
     }
 
@@ -210,14 +216,18 @@ public class TestIndexDeletion
 		firstTx.deleteIndex();
 		firstTx.commit();
 
-		try
+        try
         {
-            secondTx.queryIndex(key, "some other value");
+            secondTx.queryIndex( key, "some other value" );
             fail( "Should throw exception" );
         }
-        catch ( Exception e ) { /* Good */ }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), instanceOf( IllegalStateException.class ) );
+            assertThat( e.getCause().getMessage(), is( "This index (Index[index,Node]) has been deleted" ) );
+        }
 
-		secondTx.rollback();
+        secondTx.rollback();
 
 		// Since $Before will start a tx, add a value and keep tx open and
 		// workers will delete the index so this test will fail in @After
@@ -231,13 +241,14 @@ public class TestIndexDeletion
         commitTx();
 
         WorkThread firstTx = createWorker( "First" );
-        WorkThread secondTx = createWorker( "Second" );
 
         firstTx.beginTransaction();
         firstTx.removeFromIndex( key, value );
 
-        IndexHits<Node> indexHits = secondTx.queryIndex( key, value );
+        Transaction transaction = graphDb.beginTx();
+        IndexHits<Node> indexHits = index.get( key, value );
         assertThat( indexHits, contains( node ) );
+        transaction.finish();
 
         firstTx.rollback();
     }
@@ -265,7 +276,7 @@ public class TestIndexDeletion
 
     private WorkThread createWorker( String name )
     {
-        WorkThread workThread = new WorkThread( "other thread", index, graphDb, node );
+        WorkThread workThread = new WorkThread( name, index, graphDb, node );
         workers.add( workThread );
         return workThread;
     }

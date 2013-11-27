@@ -19,12 +19,14 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.mockito.Mockito.verify;
-
 import org.junit.Test;
+
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class NeoStoreCheckTest
         extends RecordCheckTestBase<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport, NeoStoreCheck>
@@ -44,7 +46,7 @@ public class NeoStoreCheckTest
         ConsistencyReport.NeoStoreConsistencyReport report = check( record );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -58,7 +60,7 @@ public class NeoStoreCheckTest
         ConsistencyReport.NeoStoreConsistencyReport report = check( record );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -74,7 +76,7 @@ public class NeoStoreCheckTest
 
         // then
         verify( report ).propertyNotInUse( property );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -91,7 +93,7 @@ public class NeoStoreCheckTest
 
         // then
         verify( report ).propertyNotFirstInChain( property );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     // Change checking
@@ -113,7 +115,7 @@ public class NeoStoreCheckTest
         ConsistencyReport.NeoStoreConsistencyReport report = checkChange( oldRecord, newRecord );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -136,7 +138,7 @@ public class NeoStoreCheckTest
 
         // then
         verify( report ).propertyNotFirstInChain( property );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -154,6 +156,6 @@ public class NeoStoreCheckTest
 
         // then
         verify( report ).propertyNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 }

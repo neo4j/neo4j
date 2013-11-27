@@ -197,6 +197,8 @@ public interface TraversalDescription
      * @param initialState factory for supplying the initial traversal branches with
      * state values potentially used by the {@link PathExpander}.
      * @return a new traversal description with the new modifications.
+     *
+     * @deprecated Because InitialStateFactory is deprecated
      */
     <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialStateFactory<STATE> initialState );
     
@@ -224,6 +226,8 @@ public interface TraversalDescription
      *
      * @param expander the {@link RelationshipExpander} to use.
      * @return a new traversal description with the new modifications.
+     *
+     * @deprecated Because RelationshipExpander is deprecated
      */
     TraversalDescription expand( RelationshipExpander expander );
     

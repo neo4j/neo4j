@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -31,12 +29,14 @@ import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
+
 public class DiagnosticsLoggingTest
 {
     @Test
     public void shouldSeeHelloWorld()
     {
-        // We use an EmbeddedDatabase because Impermanent does not create the directory and returns 0 for disk space
         FakeDatabase db = new FakeDatabase();
         FakeLogger logger = db.getLogger();
         String messages = logger.getMessages();
@@ -61,7 +61,7 @@ public class DiagnosticsLoggingTest
         }
 
         @Override
-        public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+        public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
         {
             appendLine( msg );
             source.visit( new LineLogger()
@@ -133,6 +133,7 @@ public class DiagnosticsLoggingTest
         }
     }
 
+    @SuppressWarnings("deprecation")
     private class FakeDatabase extends ImpermanentGraphDatabase
     {
         @Override

@@ -19,36 +19,35 @@
  */
 package org.neo4j.management;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
-import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.test.ImpermanentDatabaseRule;
+
+import static org.junit.Assert.*;
 
 public class TestCacheBeans
 {
-    private GraphDatabaseService graphDb;
+    private GraphDatabaseAPI graphDb;
     private Collection<Cache> caches;
+
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( );
 
     @Before
     public synchronized void startGraphDb()
     {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "target" + File.separator + "var" + File.separator
-                + ManagementBeansTest.class.getSimpleName() );
-        caches = ((GraphDatabaseAPI)graphDb).
-                getDependencyResolver().
-                resolveDependency( JmxKernelExtension.class ).
+        graphDb = dbRule.getGraphDatabaseAPI();
+        caches = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class ).
                 getManagementBeans( Cache.class );
     }
 
@@ -72,17 +71,38 @@ public class TestCacheBeans
     @Test
     public void canMeasureSizeOfCache() throws Exception
     {
-        long[] before = get( CacheBean.NUMBER_OF_CACHED_ELEMENTS );
-        graphDb.getReferenceNode();
+        long [] before = get( CacheBean.NUMBER_OF_CACHED_ELEMENTS );
+        try(Transaction tx = graphDb.beginTx())
+        {
+            graphDb.createNode();
+            tx.success();
+        }
+
         assertChanged( "cache size not updated", before, get( CacheBean.NUMBER_OF_CACHED_ELEMENTS ) );
     }
 
     @Test
     public void canMeasureAmountsOfHitsAndMisses() throws Exception
     {
+        try(Transaction tx = graphDb.beginTx())
+        {
+            graphDb.createNode();
+            tx.success();
+        }
+
+        graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+
         long[] hits = get( CacheBean.HIT_COUNT ), miss = get( CacheBean.MISS_COUNT );
-        graphDb.getReferenceNode();
-        graphDb.getReferenceNode();
+        Transaction transaction = graphDb.beginTx();
+        try
+        {
+            graphDb.getNodeById(0);
+            graphDb.getNodeById(0);
+        }
+        finally
+        {
+            transaction.finish();
+        }
         assertChanged( "hit count not updated", hits, get( CacheBean.HIT_COUNT ) );
         assertChanged( "miss count not updated", miss, get( CacheBean.MISS_COUNT ) );
     }

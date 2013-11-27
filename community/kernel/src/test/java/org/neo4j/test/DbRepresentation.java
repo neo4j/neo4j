@@ -34,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -53,15 +54,23 @@ public class DbRepresentation implements Serializable
     
     public static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
     {
-        DbRepresentation result = new DbRepresentation();
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+        Transaction tx = db.beginTx();
+        try
         {
-            NodeRep nodeRep = new NodeRep( db, node, includeIndexes );
-            result.nodes.put( node.getId(), nodeRep );
-            result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
-            result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+            DbRepresentation result = new DbRepresentation();
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            {
+                NodeRep nodeRep = new NodeRep( db, node, includeIndexes );
+                result.nodes.put( node.getId(), nodeRep );
+                result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
+                result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+            }
+            return result;
         }
-        return result;
+        finally
+        {
+            tx.finish();
+        }
     }
 
     public static DbRepresentation of( File storeDir )

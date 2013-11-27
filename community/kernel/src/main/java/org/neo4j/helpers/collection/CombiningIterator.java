@@ -35,8 +35,13 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
 
     public CombiningIterator( Iterable<? extends Iterator<T>> iterators )
     {
-        this.iterators = iterators.iterator();
+        this( iterators.iterator() );
     }
+    
+   public CombiningIterator( Iterator<? extends Iterator<T>> iterators )
+   {
+        this.iterators = iterators;
+   }
 
     public CombiningIterator( T first, Iterator<T> rest )
     {
@@ -51,9 +56,8 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
     {
         if ( currentIterator == null || !currentIterator.hasNext() )
         {
-            while ( iterators.hasNext() )
+            while ( (currentIterator = nextIteratorOrNull()) != null )
             {
-                currentIterator = iterators.next();
                 if ( currentIterator.hasNext() )
                 {
                     break;
@@ -61,6 +65,15 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
             }
         }
         return currentIterator != null && currentIterator.hasNext() ? currentIterator.next() : null;
+    }
+
+    protected Iterator<T> nextIteratorOrNull()
+    {
+        if(iterators.hasNext())
+        {
+            return iterators.next();
+        }
+        return null;
     }
 
     protected Iterator<T> currentIterator()

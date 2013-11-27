@@ -106,7 +106,7 @@ public class NetworkMock
         Logging logging = new LogbackService( null, loggerContext );
 
         ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory(
-                new ClusterConfiguration( "default" ), logging );
+                new ClusterConfiguration( "default", StringLogger.SYSTEM ), logging );
 
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         electionCredentialsProvider.listeningAt( serverUri );
@@ -172,48 +172,25 @@ public class NetworkMock
         for ( Message message : messages )
         {
             String to = message.getHeader( Message.TO );
-            if ( to.equals( Message.BROADCAST ) )
+            long delay = 0;
+            if ( message.getHeader( Message.TO ).equals( message.getHeader( Message.FROM ) ) )
             {
-                for ( Map.Entry<String, TestProtocolServer> testServer : participants.entrySet() )
-                {
-                    if ( !testServer.getKey().equals( message.getHeader( Message.FROM ) ) )
-                    {
-                        long delay = strategy.messageDelay( message, testServer.getKey() );
-                        if ( delay == NetworkLatencyStrategy.LOST )
-                        {
-                            logger.debug( "Broadcasted message to " + testServer.getKey() + " was lost" );
-
-                        }
-                        else
-                        {
-                            logger.debug( "Broadcast to " + testServer.getKey() + ": " + message );
-                            messageDeliveries.add( new MessageDelivery( now + delay, message, testServer.getValue() ) );
-                        }
-                    }
-                }
+                logger.debug( "Sending message to itself; zero latency" );
             }
             else
             {
-                long delay = 0;
-                if ( message.getHeader( Message.TO ).equals( message.getHeader( Message.FROM ) ) )
-                {
-                    logger.debug( "Sending message to itself; zero latency" );
-                }
-                else
-                {
-                    delay = strategy.messageDelay( message, to );
-                }
+                delay = strategy.messageDelay( message, to );
+            }
 
-                if ( delay == NetworkLatencyStrategy.LOST )
-                {
-                    logger.debug( "Send message to " + to + " was lost" );
-                }
-                else
-                {
-                    TestProtocolServer server = participants.get( to );
-                    logger.debug( "Send to " + to + ": " + message );
-                    messageDeliveries.add( new MessageDelivery( now + delay, message, server ) );
-                }
+            if ( delay == NetworkLatencyStrategy.LOST )
+            {
+                logger.debug( "Send message to " + to + " was lost" );
+            }
+            else
+            {
+                TestProtocolServer server = participants.get( to );
+                logger.debug( "Send to " + to + ": " + message );
+                messageDeliveries.add( new MessageDelivery( now + delay, message, server ) );
             }
         }
 

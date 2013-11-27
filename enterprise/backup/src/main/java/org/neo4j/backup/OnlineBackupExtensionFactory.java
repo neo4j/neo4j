@@ -23,7 +23,10 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 @Service.Implementation(KernelExtensionFactory.class)
 public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineBackupExtensionFactory.Dependencies>
@@ -34,7 +37,13 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     {
         Config getConfig();
 
+        XaDataSourceManager xaDataSourceManager();
+
         GraphDatabaseAPI getGraphDatabaseAPI();
+
+        Logging logging();
+
+        KernelPanicEventGenerator kpeg();
     }
 
     public OnlineBackupExtensionFactory()
@@ -51,6 +60,6 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI() );
+        return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(), dependencies.xaDataSourceManager(), dependencies.kpeg(), dependencies.logging() );
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency.checking.incremental;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
@@ -28,8 +26,17 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.impl.index.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class FullDiffCheck extends DiffCheck
 {
@@ -43,6 +50,14 @@ public class FullDiffCheck extends DiffCheck
     {
         Config tuningConfiguration = new Config( stringMap(), GraphDatabaseSettings.class,
                 ConsistencyCheckSettings.class );
-        return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( diffs, logger );
+
+        String storeDir = tuningConfiguration.get( GraphDatabaseSettings.store_dir ).getAbsolutePath();
+        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        LabelScanStore labelScanStore =
+            new LuceneLabelScanStoreBuilder( storeDir, diffs.getRawNeoStore(), fileSystem, logger ).build();
+
+        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
+        DirectStoreAccess stores = new DirectStoreAccess( diffs, labelScanStore, indexes );
+        return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( stores, logger );
     }
 }

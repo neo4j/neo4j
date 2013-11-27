@@ -64,7 +64,7 @@ public class TransactionEventsSyncHook implements Synchronization
             e.printStackTrace();
         }
 
-        states = new ArrayList<TransactionEventHandlers.HandlerAndState>();
+        states = new ArrayList<>();
         handlers.beforeCompletion(transactionData, states);
     }
 

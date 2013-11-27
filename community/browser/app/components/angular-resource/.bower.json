@@ -1,0 +1,18 @@
+{
+  "name": "angular-resource",
+  "version": "1.0.8",
+  "main": "./angular-resource.js",
+  "dependencies": {
+    "angular": "1.0.8"
+  },
+  "homepage": "https://github.com/angular/bower-angular-resource",
+  "_release": "1.0.8",
+  "_resolution": {
+    "type": "version",
+    "tag": "v1.0.8",
+    "commit": "57119c33a79e9343daf0f50e58f8b73cf234bffb"
+  },
+  "_source": "git://github.com/angular/bower-angular-resource.git",
+  "_target": "~1.0.7",
+  "_originalSource": "angular-resource"
+}

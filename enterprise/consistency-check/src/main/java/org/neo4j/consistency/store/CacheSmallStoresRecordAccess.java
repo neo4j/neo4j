@@ -19,154 +19,63 @@
  */
 package org.neo4j.consistency.store;
 
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
-public class CacheSmallStoresRecordAccess implements DiffRecordAccess
+public class CacheSmallStoresRecordAccess extends DelegatingRecordAccess
 {
-    private final DiffRecordAccess delegate;
-    private final PropertyIndexRecord[] propertyRecords;
-    private final RelationshipTypeRecord[] relationshipLabels;
+    private final PropertyKeyTokenRecord[] propertyKeys;
+    private final RelationshipTypeTokenRecord[] relationshipTypes;
+    private final LabelTokenRecord[] labels;
 
     public CacheSmallStoresRecordAccess( DiffRecordAccess delegate,
-                                         PropertyIndexRecord[] propertyRecords,
-                                         RelationshipTypeRecord[] relationshipLabels )
+                                         PropertyKeyTokenRecord[] propertyKeys,
+                                         RelationshipTypeTokenRecord[] relationshipTypes,
+                                         LabelTokenRecord[] labels )
     {
-        this.delegate = delegate;
-        this.propertyRecords = propertyRecords;
-        this.relationshipLabels = relationshipLabels;
+        super(delegate);
+        this.propertyKeys = propertyKeys;
+        this.relationshipTypes = relationshipTypes;
+        this.labels = labels;
     }
 
     @Override
-    public RecordReference<NodeRecord> node( long id )
+    public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
     {
-        return delegate.node( id );
-    }
-
-    @Override
-    public RecordReference<RelationshipRecord> relationship( long id )
-    {
-        return delegate.relationship( id );
-    }
-
-    @Override
-    public RecordReference<PropertyRecord> property( long id )
-    {
-        return delegate.property( id );
-    }
-
-    @Override
-    public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
-    {
-        if ( id < relationshipLabels.length )
+        if ( id < relationshipTypes.length )
         {
-            return new DirectRecordReference<RelationshipTypeRecord>( relationshipLabels[id], this );
+            return new DirectRecordReference<>( relationshipTypes[id], this );
         }
         else
         {
-            return delegate.relationshipLabel( id );
+            return super.relationshipType( id );
         }
     }
 
     @Override
-    public RecordReference<PropertyIndexRecord> propertyKey( int id )
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
     {
-        if ( id < propertyRecords.length )
+        if ( id < propertyKeys.length )
         {
-            return new DirectRecordReference<PropertyIndexRecord>( propertyRecords[id], this );
+            return new DirectRecordReference<>( propertyKeys[id], this );
         }
         else
         {
-            return delegate.propertyKey( id );
+            return super.propertyKey( id );
         }
     }
 
     @Override
-    public RecordReference<DynamicRecord> string( long id )
+    public RecordReference<LabelTokenRecord> label( int id )
     {
-        return delegate.string( id );
-    }
-
-    @Override
-    public RecordReference<DynamicRecord> array( long id )
-    {
-        return delegate.array( id );
-    }
-
-    @Override
-    public RecordReference<DynamicRecord> relationshipLabelName( int id )
-    {
-        return delegate.relationshipLabelName( id );
-    }
-
-    @Override
-    public RecordReference<DynamicRecord> propertyKeyName( int id )
-    {
-        return delegate.propertyKeyName( id );
-    }
-
-    @Override
-    public RecordReference<NeoStoreRecord> graph()
-    {
-        return delegate.graph();
-    }
-
-    @Override
-    public RecordReference<NodeRecord> previousNode( long id )
-    {
-        return delegate.previousNode( id );
-    }
-
-    @Override
-    public RecordReference<RelationshipRecord> previousRelationship( long id )
-    {
-        return delegate.previousRelationship( id );
-    }
-
-    @Override
-    public RecordReference<PropertyRecord> previousProperty( long id )
-    {
-        return delegate.previousProperty( id );
-    }
-
-    @Override
-    public RecordReference<NeoStoreRecord> previousGraph()
-    {
-        return delegate.previousGraph();
-    }
-
-    @Override
-    public NodeRecord changedNode( long id )
-    {
-        return delegate.changedNode( id );
-    }
-
-    @Override
-    public RelationshipRecord changedRelationship( long id )
-    {
-        return delegate.changedRelationship( id );
-    }
-
-    @Override
-    public PropertyRecord changedProperty( long id )
-    {
-        return delegate.changedProperty( id );
-    }
-
-    @Override
-    public DynamicRecord changedString( long id )
-    {
-        return delegate.changedString( id );
-    }
-
-    @Override
-    public DynamicRecord changedArray( long id )
-    {
-        return delegate.changedArray( id );
+        if ( id < labels.length )
+        {
+            return new DirectRecordReference<>( labels[id], this );
+        }
+        else
+        {
+            return super.label( id );
+        }
     }
 }

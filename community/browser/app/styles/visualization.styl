@@ -1,0 +1,41 @@
+@import 'nib'
+@import 'variables'
+
+.graph-viz {
+  float: left;
+  width: 500px;
+}
+
+path.link {
+  fill: none;
+  stroke: #7F8C8D;
+  stroke-width: 2px;
+}
+
+text {
+  font-family: sans-serif;
+  pointer-events: none;
+}
+
+marker
+  fill: #D8DADC
+
+text
+  .faded
+    fill: #333
+
+.node
+  .outline
+    transform: scale(1)
+    transition: all 0.15s
+    transition-timing-function: cubic-bezier(0.694, 0.0482, 0.335, 1)
+  &:hover
+    .outline
+      transform: scale(1.4)
+
+.relationship
+  &:hover
+    stroke: color-link
+
+.outline, .overlay
+  cursor: pointer

@@ -19,8 +19,6 @@
  */
 package org.neo4j.index;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -35,7 +33,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.*;
 
 public class IndexConstraintsTest
 {
@@ -44,7 +44,7 @@ public class IndexConstraintsTest
     @Before
     public void setup() throws IOException
     {
-        this.graphDb = new ImpermanentGraphDatabase();
+        this.graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
@@ -58,7 +58,15 @@ public class IndexConstraintsTest
     {
         final int numThreads = 25;
         final String uuid = UUID.randomUUID().toString();
-        ExecutorCompletionService<Node> ecs = new ExecutorCompletionService<Node>(
+
+        final Node commonNode;
+        try(Transaction tx = graphDb.beginTx())
+        {
+            commonNode = graphDb.createNode();
+            tx.success();
+        }
+
+        ExecutorCompletionService<Node> ecs = new ExecutorCompletionService<>(
                 Executors.newFixedThreadPool( numThreads ) );
         for ( int i = 0; i < numThreads; i++ )
         {
@@ -70,9 +78,8 @@ public class IndexConstraintsTest
                     try
                     {
                         final Node node = graphDb.createNode();
-                        // Acquire write lock on common node
-                        graphDb.getReferenceNode().removeProperty(
-                                "NOT_EXISTING" );
+                        // Acquire lock
+                        tx.acquireWriteLock( commonNode );
                         Index<Node> index = graphDb.index().forNodes( "uuids" );
                         final Node existing = index.get( "uuid", uuid ).getSingle();
                         if ( existing != null )

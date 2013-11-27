@@ -71,8 +71,6 @@ public class IllBehavingXaDataSource extends XaDataSource
 
         public void destroy()
         {
-            // TODO Auto-generated method stub
-            
         }
 
         public XAResource getXaResource()
@@ -100,10 +98,6 @@ public class IllBehavingXaDataSource extends XaDataSource
         public byte[] getBranchId()
         {
             return UTF8.encode( "554342" );
-        }
-
-        public void setBranchId( byte[] branchId )
-        {
         }
 
         public void commit( Xid xid, boolean onePhase ) throws XAException
@@ -135,7 +129,6 @@ public class IllBehavingXaDataSource extends XaDataSource
 
         public int prepare( Xid xid ) throws XAException
         {
-            // TODO Auto-generated method stub
             return XAResource.XA_OK;
         }
 
@@ -151,7 +144,6 @@ public class IllBehavingXaDataSource extends XaDataSource
 
         public boolean setTransactionTimeout( int seconds ) throws XAException
         {
-            // TODO Auto-generated method stub
             return false;
         }
 

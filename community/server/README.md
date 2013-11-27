@@ -16,6 +16,10 @@ Run the server using:
 
     mvn exec:java
 
+If this fails, ensure you are not missing neo4j-home/conf/neo4j-server.properties
+with a line containing 'org.neo4j.server.database.location=<path-to-database-files>'.
+This may happen if you delete neo4j-home during development to reset the database.
+
 ## Webadmin development
 
 The web administration interface, webadmin, can be found in two places of the source tree:
@@ -57,7 +61,7 @@ To run the webdriver tests for webadmin:
 
 Or, to run all tests (both unit, functional and webdriver):
 
-    mvn clean test -Dtests=all
+    mvn clean verify -DfullBuild
 
 You can run the tests under different browsers using maven profiles. By default, Firefox is used. 
 Available profiles are:

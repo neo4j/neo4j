@@ -19,25 +19,29 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.Traversal.traversal;
-
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
-public class TestMultiPruneEvaluators extends AbstractTestBase
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.Traversal.traversal;
+
+public class TestMultiPruneEvaluators extends TraversalTestBase
 {
     @Before
     public void setupGraph()
@@ -66,11 +70,14 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
                 .evaluator( toDepth( 1 ) ).evaluator( lessThanThreeRels );
         Set<String> expectedNodes = new HashSet<String>(
                 asList( "a", "b", "c", "d", "e" ) );
+        Transaction tx = beginTx();
         for ( Path position : description.traverse( node( "a" ) ) )
         {
             String name = (String) position.endNode().getProperty( "name" );
             assertTrue( name + " shouldn't have been returned", expectedNodes.remove( name ) );
         }
+        tx.success();
+        tx.finish();
         assertTrue( expectedNodes.isEmpty() );
     }
 }

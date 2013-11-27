@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.storemigration.monitoring;
 
+import static java.lang.String.format;
+
 import java.io.PrintStream;
 
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
 {
-    private StringLogger logger;
+    private final StringLogger logger;
     private final PrintStream out;
 
     public VisibleMigrationProgressMonitor( StringLogger logger, PrintStream out )
@@ -34,28 +36,31 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
         this.out = out;
     }
 
+    @Override
     public void started()
     {
         String message = "Starting upgrade of database store files";
         out.println( message );
-        logger.info( message );
+        logger.logMessage( message, true );
     }
 
+    @Override
     public void percentComplete( int percent )
     {
         out.print( "." );
         out.flush();
         if (percent % 10 == 0)
         {
-            logger.info( String.format( "Store upgrade %d%% complete", percent ) );
+            logger.logMessage( format( "Store upgrade %d%% complete", percent ), true );
         }
     }
 
+    @Override
     public void finished()
     {
         String message = "Finished upgrade of database store files";
         out.println();
         out.println( message );
-        logger.info( message );
+        logger.logMessage( message, true );
     }
 }

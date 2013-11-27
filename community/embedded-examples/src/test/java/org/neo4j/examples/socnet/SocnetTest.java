@@ -18,53 +18,51 @@
  */
 package org.neo4j.examples.socnet;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Random;
 
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
+
 public class SocnetTest
 {
     private static final Random r = new Random( System.currentTimeMillis() );
-    private static GraphDatabaseService graphDb;
-    private static Index<Node> index;
-    private static PersonRepository personRepository;
-    private static int nrOfPersons;
+    private static final int nrOfPersons = 20;
 
-    @BeforeClass
-    public static void setup() throws Exception
+    private GraphDatabaseService graphDb;
+    private PersonRepository personRepository;
+
+    @Before
+    public void setup() throws Exception
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        index = graphDb.index().forNodes( "nodes" );
-        personRepository = new PersonRepository( graphDb, index );
-    }
-    
-    @Before
-    public void doBefore() throws Exception
-    {
-        deleteSocialGraph();
-        nrOfPersons = 20;
-        createPersons();
-        setupFriendsBetweenPeople( 10 );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            Index<Node> index = graphDb.index().forNodes( "nodes" );
+            personRepository = new PersonRepository( graphDb, index );
+            createPersons();
+            setupFriendsBetweenPeople( 10 );
+            tx.success();
+        }
     }
 
-    @AfterClass
-    public static void teardown()
+    @After
+    public void teardown()
     {
         graphDb.shutdown();
     }
@@ -72,82 +70,119 @@ public class SocnetTest
     @Test
     public void addStatusAndRetrieveIt() throws Exception
     {
-        Person person = getRandomPerson();
-        person.addStatus( "Testing!" );
+        Person person;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            person = getRandomPerson();
+            person.addStatus( "Testing!" );
+            tx.success();
+        }
 
-        StatusUpdate update = person.getStatus().iterator().next();
-
-        assertThat( update, notNullValue() );
-        assertThat( update.getStatusText(), equalTo( "Testing!" ) );
-        assertThat( update.getPerson(), equalTo( person ) );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            StatusUpdate update = person.getStatus().iterator().next();
+            assertThat( update, notNullValue() );
+            assertThat( update.getStatusText(), equalTo( "Testing!" ) );
+            assertThat( update.getPerson(), equalTo( person ) );
+        }
     }
 
     @Test
     public void multipleStatusesComeOutInTheRightOrder() throws Exception
     {
-        ArrayList<String> statuses = new ArrayList<String>();
+        ArrayList<String> statuses = new ArrayList<>();
         statuses.add( "Test1" );
         statuses.add( "Test2" );
         statuses.add( "Test3" );
 
-        Person person = getRandomPerson();
-        for ( String status : statuses )
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            person.addStatus( status );
-        }
+            Person person = getRandomPerson();
+            for ( String status : statuses )
+            {
+                person.addStatus( status );
+            }
 
-        int i = statuses.size();
-        for ( StatusUpdate update : person.getStatus() )
-        {
-            i--;
-            assertThat( update.getStatusText(), equalTo( statuses.get( i ) ) );
+            int i = statuses.size();
+            for ( StatusUpdate update : person.getStatus() )
+            {
+                i--;
+                assertThat( update.getStatusText(), equalTo( statuses.get( i ) ) );
+            }
         }
     }
 
     @Test
     public void removingOneFriendIsHandledCleanly()
     {
-        Person person1 = personRepository.getPersonByName( "person#1" );
-        Person person2 = personRepository.getPersonByName( "person#2" );
-        person1.addFriend( person2 );
+        Person person1;
+        Person person2;
+        int noOfFriends;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            person1 = personRepository.getPersonByName( "person#1" );
+            person2 = personRepository.getPersonByName( "person#2" );
+            person1.addFriend( person2 );
 
-        int noOfFriends = person1.getNrOfFriends();
+            noOfFriends = person1.getNrOfFriends();
+            tx.success();
+        }
 
-        person1.removeFriend( person2 );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            person1.removeFriend( person2 );
+            tx.success();
+        }
 
-        int noOfFriendsAfterChange = person1.getNrOfFriends();
-
-        assertThat( noOfFriends, equalTo( noOfFriendsAfterChange + 1 ) );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            int noOfFriendsAfterChange = person1.getNrOfFriends();
+            assertThat( noOfFriends, equalTo( noOfFriendsAfterChange + 1 ) );
+        }
     }
 
     @Test
     public void retrieveStatusUpdatesInDateOrder() throws Exception
     {
-        Person person = getRandomPersonWithFriends();
-        int numberOfStatuses = 20;
-
-        for ( int i = 0; i < numberOfStatuses; i++ )
+        Person person;
+        int numberOfStatuses;
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            Person friend = getRandomFriendOf( person );
-            friend.addStatus( "Dum-deli-dum..." );
+            person = getRandomPersonWithFriends();
+            numberOfStatuses = 20;
+
+            for ( int i = 0; i < numberOfStatuses; i++ )
+            {
+                Person friend = getRandomFriendOf( person );
+                friend.addStatus( "Dum-deli-dum..." );
+            }
+            tx.success();
         }
 
-        ArrayList<StatusUpdate> updates = fromIterableToArrayList( person.friendStatuses() );
-        assertThat( updates.size(), equalTo( numberOfStatuses ) );
-        assertUpdatesAreSortedByDate( updates );
+        ArrayList<StatusUpdate> updates;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            updates = fromIterableToArrayList( person.friendStatuses() );
+
+            assertThat( updates.size(), equalTo( numberOfStatuses ) );
+            assertUpdatesAreSortedByDate( updates );
+        }
     }
 
     @Test
     public void friendsOfFriendsWorks() throws Exception
     {
-        Person person = getRandomPerson();
-        Person friend = getRandomFriendOf( person );
-
-        for ( Person friendOfFriend : friend.getFriends() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            if ( !friendOfFriend.equals( person ) )
-            { // You can't be friends with yourself.
-                assertThat( person.getFriendsOfFriends(), hasItems( friendOfFriend ) );
+            Person person = getRandomPerson();
+            Person friend = getRandomFriendOf( person );
+
+            for ( Person friendOfFriend : friend.getFriends() )
+            {
+                if ( !friendOfFriend.equals( person ) )
+                { // You can't be friends with yourself.
+                    assertThat( person.getFriendsOfFriends(), hasItems( friendOfFriend ) );
+                }
             }
         }
     }
@@ -155,14 +190,17 @@ public class SocnetTest
     @Test
     public void shouldReturnTheCorrectPersonFromAnyStatusUpdate() throws Exception
     {
-        Person person = getRandomPerson();
-        person.addStatus( "Foo" );
-        person.addStatus( "Bar" );
-        person.addStatus( "Baz" );
-
-        for(StatusUpdate status : person.getStatus())
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            assertThat(status.getPerson(), equalTo( person ));
+            Person person = getRandomPerson();
+            person.addStatus( "Foo" );
+            person.addStatus( "Bar" );
+            person.addStatus( "Baz" );
+
+            for ( StatusUpdate status : person.getStatus() )
+            {
+                assertThat( status.getPerson(), equalTo( person ) );
+            }
         }
     }
 
@@ -170,82 +208,111 @@ public class SocnetTest
     public void getPathBetweenFriends() throws Exception
     {
         deleteSocialGraph();
-        Person start = personRepository.createPerson( "start" );
-        Person middleMan1 = personRepository.createPerson( "middle1" );
-        Person middleMan2 = personRepository.createPerson( "middle2" );
-        Person endMan = personRepository.createPerson( "endMan" );
 
-        // Start -> middleMan1 -> middleMan2 -> endMan
+        Person start;
+        Person middleMan1;
+        Person middleMan2;
+        Person endMan;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            start = personRepository.createPerson( "start" );
+            middleMan1 = personRepository.createPerson( "middle1" );
+            middleMan2 = personRepository.createPerson( "middle2" );
+            endMan = personRepository.createPerson( "endMan" );
 
-        start.addFriend( middleMan1 );
-        middleMan1.addFriend( middleMan2 );
-        middleMan2.addFriend( endMan );
+            // Start -> middleMan1 -> middleMan2 -> endMan
 
-        Iterable<Person> path = start.getShortestPathTo( endMan, 4 );
+            start.addFriend( middleMan1 );
+            middleMan1.addFriend( middleMan2 );
+            middleMan2.addFriend( endMan );
+            tx.success();
+        }
 
-        assertPathIs( path, start, middleMan1, middleMan2, endMan );
-        //assertThat( path, matchesPathByProperty(Person.NAME, "start", "middle1", "middle2", "endMan"));
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            Iterable<Person> path = start.getShortestPathTo( endMan, 4 );
+
+            assertPathIs( path, start, middleMan1, middleMan2, endMan );
+            //assertThat( path, matchesPathByProperty(Person.NAME, "start", "middle1", "middle2", "endMan"));
+        }
     }
 
     @Test
     public void singleFriendRecommendation() throws Exception
     {
         deleteSocialGraph();
-        Person a = personRepository.createPerson( "a" );
-        Person b = personRepository.createPerson( "b" );
-        Person c = personRepository.createPerson( "c" );
-        Person d = personRepository.createPerson( "d" );
-        Person e = personRepository.createPerson( "e" );
+        Person a;
+        Person e;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            a = personRepository.createPerson( "a" );
+            Person b = personRepository.createPerson( "b" );
+            Person c = personRepository.createPerson( "c" );
+            Person d = personRepository.createPerson( "d" );
+            e = personRepository.createPerson( "e" );
 
-        // A is friends with B,C and D
-        a.addFriend( b );
-        a.addFriend( c );
-        a.addFriend( d );
+            // A is friends with B,C and D
+            a.addFriend( b );
+            a.addFriend( c );
+            a.addFriend( d );
 
-        // E is also friend with B, C and D
-        e.addFriend( b );
-        e.addFriend( c );
-        e.addFriend( d );
+            // E is also friend with B, C and D
+            e.addFriend( b );
+            e.addFriend( c );
+            e.addFriend( d );
+            tx.success();
+        }
 
-        Person recommendation = IteratorUtil.single( a.getFriendRecommendation( 1 ).iterator() );
-
-        assertThat( recommendation, equalTo( e ) );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            Person recommendation = IteratorUtil.single( a.getFriendRecommendation( 1 ).iterator() );
+            assertThat( recommendation, equalTo( e ) );
+        }
     }
 
     @Test
     public void weightedFriendRecommendation() throws Exception
     {
         deleteSocialGraph();
-        Person a = personRepository.createPerson( "a" );
-        Person b = personRepository.createPerson( "b" );
-        Person c = personRepository.createPerson( "c" );
-        Person d = personRepository.createPerson( "d" );
-        Person e = personRepository.createPerson( "e" );
-        Person f = personRepository.createPerson( "f" );
+        Person a;
+        Person e;
+        Person f;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            a = personRepository.createPerson( "a" );
+            Person b = personRepository.createPerson( "b" );
+            Person c = personRepository.createPerson( "c" );
+            Person d = personRepository.createPerson( "d" );
+            e = personRepository.createPerson( "e" );
+            f = personRepository.createPerson( "f" );
 
 
-        // A is friends with B,C and D
-        a.addFriend( b );
-        a.addFriend( c );
-        a.addFriend( d );
+            // A is friends with B,C and D
+            a.addFriend( b );
+            a.addFriend( c );
+            a.addFriend( d );
 
-        // E is only friend with B
-        e.addFriend( b );
+            // E is only friend with B
+            e.addFriend( b );
 
-        // F is friend with B, C, D
-        f.addFriend( b );
-        f.addFriend( c );
-        f.addFriend( d );
+            // F is friend with B, C, D
+            f.addFriend( b );
+            f.addFriend( c );
+            f.addFriend( d );
+            tx.success();
+        }
 
-        ArrayList<Person> recommendations = fromIterableToArrayList( a.getFriendRecommendation( 2 ).iterator() );
-
-        assertThat( recommendations.get( 0 ), equalTo( f ));
-        assertThat( recommendations.get( 1 ), equalTo( e ));
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            ArrayList<Person> recommendations = fromIterableToArrayList( a.getFriendRecommendation( 2 ).iterator() );
+            assertThat( recommendations.get( 0 ), equalTo( f ));
+            assertThat( recommendations.get( 1 ), equalTo( e ));
+        }
     }
 
     private <T> ArrayList<T> fromIterableToArrayList( Iterator<T> iterable )
     {
-        ArrayList<T> collection = new ArrayList<T>();
+        ArrayList<T> collection = new ArrayList<>();
         IteratorUtil.addToCollection( iterable, collection );
         return collection;
     }
@@ -253,7 +320,7 @@ public class SocnetTest
     private void assertPathIs( Iterable<Person> path,
                                        Person... expectedPath )
     {
-        ArrayList<Person> pathArray = new ArrayList<Person>();
+        ArrayList<Person> pathArray = new ArrayList<>();
         IteratorUtil.addToCollection( path, pathArray );
         assertThat( pathArray.size(), equalTo( expectedPath.length ) );
         for ( int i = 0; i < expectedPath.length; i++ )
@@ -262,7 +329,7 @@ public class SocnetTest
         }
     }
 
-    private static void setupFriendsBetweenPeople( int maxNrOfFriendsEach )
+    private void setupFriendsBetweenPeople( int maxNrOfFriendsEach )
     {
         for ( Person person : personRepository.getAllPersons() )
         {
@@ -274,7 +341,7 @@ public class SocnetTest
         }
     }
 
-    private static Person getRandomPerson()
+    private Person getRandomPerson()
     {
         return personRepository.getPersonByName( "person#"
                 + r.nextInt( nrOfPersons ) );
@@ -282,15 +349,18 @@ public class SocnetTest
 
     private void deleteSocialGraph()
     {
-        for ( Person person : personRepository.getAllPersons() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            personRepository.deletePerson( person );
+            for ( Person person : personRepository.getAllPersons() )
+            {
+                personRepository.deletePerson( person );
+            }
         }
     }
 
     private Person getRandomFriendOf( Person p )
     {
-        ArrayList<Person> friends = new ArrayList<Person>();
+        ArrayList<Person> friends = new ArrayList<>();
         IteratorUtil.addToCollection( p.getFriends().iterator(), friends );
         return friends.get( r.nextInt( friends.size() ) );
     }
@@ -306,7 +376,7 @@ public class SocnetTest
         return p;
     }
 
-    private static void createPersons() throws Exception
+    private void createPersons() throws Exception
     {
         for ( int i = 0; i < nrOfPersons; i++ )
         {

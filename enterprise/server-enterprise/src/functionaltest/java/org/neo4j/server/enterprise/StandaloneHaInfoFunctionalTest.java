@@ -23,8 +23,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.Map;
 
+import org.apache.http.HttpStatus;
 import org.junit.Test;
-import org.mortbay.jetty.Response;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -40,7 +40,7 @@ public class StandaloneHaInfoFunctionalTest extends AbstractEnterpriseRestFuncti
         FunctionalTestHelper helper = new FunctionalTestHelper( server() );
 
         JaxRsResponse response = RestRequest.req().get( helper.managementUri() + MasterInfoService.BASE_PATH );
-        assertEquals( Response.SC_FORBIDDEN, response.getStatus() );
+        assertEquals( HttpStatus.SC_FORBIDDEN, response.getStatus() );
     }
 
     @Test
@@ -50,7 +50,7 @@ public class StandaloneHaInfoFunctionalTest extends AbstractEnterpriseRestFuncti
 
         JaxRsResponse response = RestRequest.req().get(helper.managementUri() +
                 MasterInfoService.BASE_PATH + MasterInfoService.IS_MASTER_PATH);
-        assertEquals( Response.SC_FORBIDDEN, response.getStatus() );
+        assertEquals( HttpStatus.SC_FORBIDDEN, response.getStatus() );
     }
 
     @Test
@@ -60,7 +60,7 @@ public class StandaloneHaInfoFunctionalTest extends AbstractEnterpriseRestFuncti
 
         JaxRsResponse response = RestRequest.req().get(helper.managementUri() +
                 MasterInfoService.BASE_PATH + MasterInfoService.IS_SLAVE_PATH );
-        assertEquals( Response.SC_FORBIDDEN, response.getStatus() );
+        assertEquals( HttpStatus.SC_FORBIDDEN, response.getStatus() );
     }
 
     @Test

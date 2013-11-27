@@ -32,9 +32,16 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+/**
+ * Uses {@link StoreMigrator} to upgrade automatically when starting up a database, given the right source database,
+ * environment and configuration for doing so. The migration will happen to a separate, isolated directory
+ * so that an incomplete migration will not affect the original database. Only when a successful migration
+ * has taken place the migrated store will replace the original database.
+ * 
+ * @see StoreMigrator
+ */
 public class StoreUpgrader
 {
     private final Config originalConfig;
@@ -42,18 +49,16 @@ public class StoreUpgrader
     private final UpgradableDatabase upgradableDatabase;
     private final StoreMigrator storeMigrator;
     private final DatabaseFiles databaseFiles;
-    private final StringLogger msgLog;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final FileSystemAbstraction fileSystemAbstraction;
+    private final FileSystemAbstraction fileSystem;
 
-    public StoreUpgrader( Config originalConfig, StringLogger msgLog, UpgradeConfiguration upgradeConfiguration,
+    public StoreUpgrader( Config originalConfig, UpgradeConfiguration upgradeConfiguration,
                           UpgradableDatabase upgradableDatabase, StoreMigrator storeMigrator,
                           DatabaseFiles databaseFiles, IdGeneratorFactory idGeneratorFactory,
-                          FileSystemAbstraction fileSystemAbstraction )
+                          FileSystemAbstraction fileSystem )
     {
-        this.msgLog = msgLog;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.fileSystemAbstraction = fileSystemAbstraction;
+        this.fileSystem = fileSystem;
         this.originalConfig = originalConfig;
         this.upgradeConfiguration = upgradeConfiguration;
         this.upgradableDatabase = upgradableDatabase;
@@ -81,8 +86,11 @@ public class StoreUpgrader
     {
         try
         {
-            fileSystemAbstraction.copyFile( new File( workingDirectory, "messages.log" ),
-                    new File( backupDirectory, "messages.log" ) );
+            File originalLog = new File( workingDirectory, StringLogger.DEFAULT_NAME );
+            if ( fileSystem.fileExists( originalLog ))
+            {
+                fileSystem.copyFile( originalLog, new File( backupDirectory, StringLogger.DEFAULT_NAME ) );
+            }
         }
         catch ( IOException e )
         {
@@ -95,14 +103,14 @@ public class StoreUpgrader
         if (upgradeDirectory.exists()) {
             try
             {
-                FileUtils.deleteRecursively( upgradeDirectory );
+                fileSystem.deleteRecursively( upgradeDirectory );
             }
             catch ( IOException e )
             {
                 throw new UnableToUpgradeException( e );
             }
         }
-        fileSystemAbstraction.mkdir( upgradeDirectory );
+        fileSystem.mkdir( upgradeDirectory );
 
         File upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME );
         Map<String, String> upgradeConfig = new HashMap<String, String>( originalConfig.getParams() );
@@ -111,20 +119,18 @@ public class StoreUpgrader
         Config upgradeConfiguration = new Config( upgradeConfig );
         
         NeoStore neoStore = new StoreFactory( upgradeConfiguration, idGeneratorFactory, new DefaultWindowPoolFactory(),
-                fileSystemAbstraction, StringLogger.DEV_NULL, null ).createNeoStore( upgradeFileName );
+                fileSystem, StringLogger.DEV_NULL, null ).createNeoStore( upgradeFileName );
         try
         {
-            storeMigrator.migrate( new LegacyStore( fileSystemAbstraction, storageFileName, StringLogger.DEV_NULL ),
+            storeMigrator.migrate( new LegacyStore( fileSystem, storageFileName ),
                     neoStore );
         }
         catch ( IOException e )
         {
-            e.printStackTrace();
             throw new UnableToUpgradeException( e );
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
             throw Exceptions.launderedException( e );
         }
         finally
@@ -143,6 +149,38 @@ public class StoreUpgrader
         public UnableToUpgradeException( String message )
         {
             super( message );
+        }
+    }
+
+    public static class UpgradeMissingStoreFilesException extends UnableToUpgradeException
+    {
+        private static final String MESSAGE = "Missing required store file '%s'.";
+
+        public UpgradeMissingStoreFilesException( String filenameExpectedToExist )
+        {
+            super( String.format( MESSAGE, filenameExpectedToExist ) );
+        }
+    }
+
+    public static class UpgradingStoreVersionNotFoundException extends UnableToUpgradeException
+    {
+        private static final String MESSAGE =
+                "'%s' does not contain a store version, please ensure that the original database was shut down in a clean state.";
+
+        public UpgradingStoreVersionNotFoundException( String filenameWithoutStoreVersion )
+        {
+            super( String.format( MESSAGE, filenameWithoutStoreVersion ) );
+        }
+    }
+
+    public static class UnexpectedUpgradingStoreVersionException extends UnableToUpgradeException
+    {
+        private static final String MESSAGE =
+                "'%s' has a store version number that we cannot upgrade from. Expected '%s' but file is version '%s'.";
+
+        public UnexpectedUpgradingStoreVersionException( String filename, String expectedVersion, String actualVersion )
+        {
+            super( String.format( MESSAGE, filename, expectedVersion, actualVersion ) );
         }
     }
 }

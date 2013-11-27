@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.internal.matchers.TypeSafeMatcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 
 public class CommandMatchers
 {
-
     public static Matcher<? extends LogEntry> nodeCommandEntry( final int identifier, final int nodeId)
     {
         return new TypeSafeMatcher<LogEntry.Command>() {

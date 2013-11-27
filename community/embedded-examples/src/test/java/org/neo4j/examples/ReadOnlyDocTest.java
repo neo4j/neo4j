@@ -26,10 +26,14 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.FileUtils;
+
+import static org.junit.Assert.fail;
 
 /**
  * How to get a read-only Neo4j instance.
@@ -53,7 +57,7 @@ public class ReadOnlyDocTest
                 "target/read-only-db/location" )
                 .shutdown();
         // START SNIPPET: createReadOnlyInstance
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( "read_only", "true" );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
                 "target/read-only-db/location" )
@@ -71,9 +75,25 @@ public class ReadOnlyDocTest
         graphDb.shutdown();
     }
 
-    @Test( expected = ReadOnlyDbException.class )
+    @Test
     public void makeSureDbIsOnlyReadable()
     {
-        graphDb.createNode();
+        Transaction tx = graphDb.beginTx();
+        // when
+        try
+        {
+            graphDb.createNode();
+
+            fail("expected exception");
+        }
+        // then
+        catch ( ReadOnlyDbException e )
+        {
+            // ok
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }

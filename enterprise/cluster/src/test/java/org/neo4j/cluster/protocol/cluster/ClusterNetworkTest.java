@@ -51,12 +51,14 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.test.LoggerRule;
@@ -166,11 +168,11 @@ public class ClusterNetworkTest
             final URI uri = new URI( "neo4j://localhost:800" + (i + 1) );
 
             NetworkedServerFactory factory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new ClusterConfiguration( "default" ),
+                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", StringLogger.SYSTEM ),
                             new LogbackService( null,
                                     (LoggerContext) LoggerFactory.getILoggerFactory() ) ),
                     new FixedTimeoutStrategy( 1000 ),
-                    logbackService );
+                    logbackService, new ObjectStreamFactory(), new ObjectStreamFactory() );
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             ProtocolServer server = factory.newNetworkedServer(

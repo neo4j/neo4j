@@ -47,7 +47,7 @@ import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.shell.util.json.JSONObject;
 
-public class Dbinfo extends ReadOnlyGraphDatabaseApp
+public class Dbinfo extends NonTransactionProvidingApp
 {
     {
         addOptionDefinition( "l", new OptionDefinition( OptionValueType.MAY,

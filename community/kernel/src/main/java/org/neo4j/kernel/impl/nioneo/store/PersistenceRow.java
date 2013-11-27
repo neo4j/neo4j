@@ -29,7 +29,7 @@ import java.nio.channels.FileChannel;
  * required record/block and it would be non efficient to create a large new
  * window to perform the required operation.
  */
-class PersistenceRow extends LockableWindow
+public class PersistenceRow extends LockableWindow
 {
     private State bufferState = State.EMPTY;
     private int recordSize = -1;
@@ -165,6 +165,13 @@ class PersistenceRow extends LockableWindow
         }
     }
 
+    @Override
+    synchronized void setClean()
+    {
+        super.setClean();
+        bufferState = State.CLEAN;
+    }
+
     private void writeContents()
     {
         if ( isDirty() )
@@ -192,6 +199,7 @@ class PersistenceRow extends LockableWindow
                 throw new UnderlyingStorageException( "Unable to write record["
                         + position + "] @[" + position * recordSize + "]", e );
             }
+            setClean();
         }
     }
 

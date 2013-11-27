@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.junit.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
@@ -26,14 +34,7 @@ import static org.neo4j.graphdb.traversal.Sorting.endNodeProperty;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.kernel.Traversal.traversal;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import org.junit.Test;
-import org.neo4j.graphdb.Node;
-
-public class TestSorting extends AbstractTestBase
+public class TestSorting extends TraversalTestBase
 {
     @Test
     public void sortFriendsByName() throws Exception
@@ -59,10 +60,13 @@ public class TestSorting extends AbstractTestBase
         createGraph( triplet( me, knows, abraham ), triplet( me, knows, george), triplet( george, knows, dan ),
                 triplet( me, knows, zack ), triplet( zack, knows, andreas ), triplet( george, knows, andreas ),
                 triplet( andreas, knows, nicholas ) );
-        
+
+        Transaction tx = beginTx();
         List<Node> nodes = asNodes( abraham, george, dan, zack, andreas, nicholas );
         assertEquals( nodes, asCollection( traversal().evaluator( excludeStartPosition() )
                 .sort( endNodeProperty( "name" ) ).traverse( getNodeWithName( me ) ).nodes() ) );
+        tx.success();
+        tx.finish();
     }
 
     private List<Node> asNodes( String abraham, String george, String dan, String zack, String andreas,

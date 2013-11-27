@@ -19,22 +19,23 @@
  */
 package org.neo4j.management.impl;
 
-import static org.junit.Assert.assertEquals;
-
 import javax.management.ObjectName;
 
 import org.junit.Test;
+
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
+import org.neo4j.jmx.StoreFile;
 import org.neo4j.jmx.impl.ManagementSupport;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.Cache;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.LockManager;
 import org.neo4j.management.MemoryMapping;
-import org.neo4j.management.StoreFile;
 import org.neo4j.management.TransactionManager;
 import org.neo4j.management.XaManager;
+
+import static org.junit.Assert.assertEquals;
 
 public class CodeDuplicationValidationTest
 {

@@ -23,10 +23,9 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.Traversal;
 
 /**
- * A traversal in the node space. A Traverser is an {@link Iterable} that
+ * A traversal in the graph. A Traverser is an {@link Iterable} that
  * encapsulates a number of traversal parameters (defined at traverser creation)
  * and returns an iterator of nodes that match those parameters. It is created
  * by invoking {@link Node#traverse Node.traverse(...)}. Upon creation, the
@@ -68,7 +67,7 @@ import org.neo4j.kernel.Traversal;
  * {@link Node}. Also because of the introduction of a new traversal framework
  * and the usage of it. The new way of doing traversals is by creating a
  * new {@link TraversalDescription} from
- * {@link Traversal#description()}, add rules and
+ * {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription()}, add rules and
  * behaviours to it and then calling
  * {@link TraversalDescription#traverse(Node...)}.
  */
@@ -89,7 +88,7 @@ public interface Traverser extends Iterable<Node>
      * the traversal should go next than a depth first traversal does. Depth
      * first traversals are thus more memory efficient.
      */
-    public static enum Order
+    static enum Order
     {
         /**
          * Sets a depth first traversal meaning the traverser will go as deep as
@@ -125,7 +124,7 @@ public interface Traverser extends Iterable<Node>
      *
      * @return The current traversal position
      */
-    public TraversalPosition currentPosition();
+    TraversalPosition currentPosition();
 
     /**
      * Returns a collection of all nodes for this traversal. It traverses
@@ -137,7 +136,7 @@ public interface Traverser extends Iterable<Node>
      *
      * @return A collection of all nodes for this this traversal.
      */
-    public Collection<Node> getAllNodes();
+    Collection<Node> getAllNodes();
 
     // Doc: especially remove() thing
     /**
@@ -153,5 +152,5 @@ public interface Traverser extends Iterable<Node>
     // Doc: does it create a new iterator or reuse the existing one? This is
     // very important! It must be re-use, how else would currentPosition()
     // make sense?
-    public Iterator<Node> iterator();
+    Iterator<Node> iterator();
 }

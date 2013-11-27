@@ -19,18 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.onePhaseCommitEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
-import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -52,13 +40,25 @@ import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.nio.ByteBuffer.allocate;
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.onePhaseCommitEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
+
 public class TestPartialTransactionCopier
 {
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    
+
     @SuppressWarnings( "unchecked" )
     @Test
-    public void testIt() throws Exception
+    public void shouldCopyRunningTransactionsToNewLog() throws Exception
     {
         // Given
         int masterId = -1;
@@ -90,18 +90,19 @@ public class TestPartialTransactionCopier
                 logEntries( fs.get(), newLogFile ),
                 containsExactly(
                         startEntry( brokenTxIdentifier, masterId, meId ),
-                        nodeCommandEntry( brokenTxIdentifier, /*nodeId=*/2 ),
-                        onePhaseCommitEntry( brokenTxIdentifier, /*txid=*/brokenTxIdentifier ),
-
-                        startEntry( 4, masterId, meId ),
-                        nodeCommandEntry( 4, /*nodeId=*/3),
-                        onePhaseCommitEntry( 4, /*txid=*/4 ),
-                        doneEntry( 4 ),
+                        nodeCommandEntry( brokenTxIdentifier, /*nodeId=*/1 ),
+                        onePhaseCommitEntry( brokenTxIdentifier, /*txid=*/3 ),
+                        // Missing done entry
 
                         startEntry( 5, masterId, meId ),
-                        nodeCommandEntry( 5, /*nodeId=*/4 ),
-                        onePhaseCommitEntry( 5, /*txid=*/5 ),
-                        doneEntry( 5 )
+                        nodeCommandEntry( 5, /*nodeId=*/2),
+                        onePhaseCommitEntry( 5, /*txid=*/4 ),
+                        doneEntry( 5 ),
+
+                        startEntry( 6, masterId, meId ),
+                        nodeCommandEntry( 6, /*nodeId=*/3 ),
+                        onePhaseCommitEntry( 6, /*txid=*/5 ),
+                        doneEntry( 6 )
                 ));
     }
 
@@ -110,7 +111,7 @@ public class TestPartialTransactionCopier
     private ArrayMap<Integer, LogEntry.Start> createXidMapWithOneStartEntry( int masterId, Integer brokenTxId )
     {
         ArrayMap<Integer, LogEntry.Start> xidentMap = new ArrayMap<Integer, LogEntry.Start>();
-        xidentMap.put( brokenTxId, new LogEntry.Start( null, brokenTxId, masterId, 3, 4, 5 ) );
+        xidentMap.put( brokenTxId, new LogEntry.Start( null, brokenTxId, masterId, 3, 4, 5, 6 ) );
         return xidentMap;
     }
 

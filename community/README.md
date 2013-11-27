@@ -23,7 +23,7 @@ Please use JDK 6 (OpenJDK is fine) to build Neo4j.
 In addition, you need to allow enough memory to the Maven build process,
 for example by adding before launching Maven:
 
-    export JAVA_OPTS='-Xms384M -Xmx512M -XX:MaxPermSize=256M'
+    export MAVEN_OPTS='-Xms384M -Xmx1g -XX:MaxPermSize=256M'
 
 At least on OpenJDK 1.6.0_23, building Neo4j with the default settings
 throws misleading exceptions such as: (reproduced here for your information)
@@ -68,7 +68,15 @@ build neo4j (this requires asciidoc toolchain and, currently, python with jpype 
 
 install the ASCIIDOC toolchain
 
-    brew install docbook asciidoc w3m fop graphviz && sudo docbook-register
+    brew install docbook asciidoc w3m fop graphviz
+
+register docbook dtd
+
+    sudo src/build/osx-register-docbook
+
+on os x, in the manual toplevel directory, please do
+
+   sudo src/build/osx-register-docbook
 
 
 Working with the source code in Eclipse IDE

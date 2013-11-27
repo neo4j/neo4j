@@ -27,7 +27,7 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.ha.InstanceAccessGuard;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -38,24 +38,26 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * that wants to know what is going on should register ClusterMemberListener implementations
  * which will receive callbacks on state changes.
  */
-public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability
+public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability,
+        AvailabilityGuard.AvailabilityRequirement
 {
     private final HighAvailabilityMemberContext context;
-    private final InstanceAccessGuard accessGuard;
+    private final AvailabilityGuard availabilityGuard;
     private final ClusterMemberEvents events;
     private StringLogger logger;
     private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
-    private HighAvailabilityMemberState state;
+    private volatile HighAvailabilityMemberState state;
     private StateMachineClusterEventListener eventsListener;
     private final ClusterMembers members;
     private final Election election;
 
-    public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context, InstanceAccessGuard accessGuard,
+    public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context,
+                                               AvailabilityGuard availabilityGuard,
                                                ClusterMembers members, ClusterMemberEvents events, Election election,
                                                StringLogger logger )
     {
         this.context = context;
-        this.accessGuard = accessGuard;
+        this.availabilityGuard = availabilityGuard;
         this.members = members;
         this.events = events;
         this.election = election;
@@ -85,7 +87,12 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 listener.instanceStops( event );
             }
         } );
-        accessGuard.setState( state );
+
+        if ( oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState.SLAVE )
+        {
+            availabilityGuard.deny(this);
+        }
+
         context.setAvailableHaMasterId( null );
     }
 
@@ -98,10 +105,16 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     {
         memberListeners = Listeners.removeListener( toRemove, memberListeners );
     }
-    
+
     public HighAvailabilityMemberState getCurrentState()
     {
         return state;
+    }
+
+    @Override
+    public String description()
+    {
+        return getClass().getSimpleName() + "[" + getCurrentState() + "]";
     }
 
     private class StateMachineClusterEventListener extends ClusterMemberListener.Adapter
@@ -113,24 +126,37 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             {
                 HighAvailabilityMemberState oldState = state;
                 InstanceId previousElected = context.getElectedMasterId();
-                state = state.masterIsElected( context, coordinatorId );
 
-                context.setElectedMasterId( coordinatorId );
-                final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state, coordinatorId,
-                        null );
-                Listeners.notifyListeners( memberListeners,
-                        new Listeners.Notification<HighAvailabilityMemberListener>()
-                        {
-                            @Override
-                            public void notify( HighAvailabilityMemberListener listener )
+                // Check if same coordinator was elected
+//                if ( !coordinatorId.equals( previousElected ) )
+                {
+                    state = state.masterIsElected( context, coordinatorId );
+
+
+                    context.setElectedMasterId( coordinatorId );
+                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
+                            state, coordinatorId,
+                            null );
+                    Listeners.notifyListeners( memberListeners,
+                            new Listeners.Notification<HighAvailabilityMemberListener>()
                             {
-                                listener.masterIsElected( event );
-                            }
-                        } );
-                context.setAvailableHaMasterId( null );
-                accessGuard.setState( state );
-                logger.debug( "Got masterIsElected(" + coordinatorId + "), changed " + oldState + " -> " +
-                        state + ". Previous elected master is " + previousElected );
+                                @Override
+                                public void notify( HighAvailabilityMemberListener listener )
+                                {
+                                    listener.masterIsElected( event );
+                                }
+                            } );
+                    context.setAvailableHaMasterId( null );
+
+                    if ( (oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState
+                            .SLAVE) && oldState != state )
+                    {
+                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
+                    }
+
+                    logger.debug( "Got masterIsElected(" + coordinatorId + "), changed " + oldState + " -> " +
+                            state + ". Previous elected master is " + previousElected );
+                }
             }
             catch ( Throwable t )
             {
@@ -145,7 +171,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             {
                 if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
                 {
-                    if ( !roleUri.equals( context.getAvailableHaMaster() ) )
+//                    if ( !roleUri.equals( context.getAvailableHaMaster() ) )
                     {
                         HighAvailabilityMemberState oldState = state;
                         context.setAvailableHaMasterId( roleUri );
@@ -163,7 +189,12 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                                         listener.masterIsAvailable( event );
                                     }
                                 } );
-                        accessGuard.setState( state );
+
+                        if ( oldState == HighAvailabilityMemberState.TO_MASTER && state ==
+                                HighAvailabilityMemberState.MASTER )
+                        {
+                            availabilityGuard.grant(HighAvailabilityMemberStateMachine.this);
+                        }
                     }
                 }
                 else if ( role.equals( HighAvailabilityModeSwitcher.SLAVE ) )
@@ -183,7 +214,12 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                                     listener.slaveIsAvailable( event );
                                 }
                             } );
-                    accessGuard.setState( state );
+
+                    if ( oldState == HighAvailabilityMemberState.TO_SLAVE &&
+                            state == HighAvailabilityMemberState.SLAVE )
+                    {
+                        availabilityGuard.grant(HighAvailabilityMemberStateMachine.this);
+                    }
                 }
             }
             catch ( Throwable throwable )
@@ -197,27 +233,33 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         {
             if ( getAliveCount() <= getTotalCount() / 2 )
             {
-                try
+                if ( state == HighAvailabilityMemberState.MASTER || state == HighAvailabilityMemberState.SLAVE )
                 {
-                    final HighAvailabilityMemberChangeEvent event =
-                            new HighAvailabilityMemberChangeEvent(
-                                    state, HighAvailabilityMemberState.PENDING, null, null );
-                    state = HighAvailabilityMemberState.PENDING;
-                    Listeners.notifyListeners( memberListeners, new Listeners
-                            .Notification<HighAvailabilityMemberListener>()
+                    try
                     {
-                        @Override
-                        public void notify( HighAvailabilityMemberListener listener )
+                        final HighAvailabilityMemberChangeEvent event =
+                                new HighAvailabilityMemberChangeEvent(
+                                        state, HighAvailabilityMemberState.PENDING, null, null );
+                        state = HighAvailabilityMemberState.PENDING;
+                        Listeners.notifyListeners( memberListeners, new Listeners
+                                .Notification<HighAvailabilityMemberListener>()
                         {
-                            listener.instanceStops( event );
-                        }
-                    } );
-                    accessGuard.setState( state );
-                    context.setAvailableHaMasterId( null );
-                }
-                catch ( Throwable throwable )
-                {
-                    throw new RuntimeException( throwable );
+                            @Override
+                            public void notify( HighAvailabilityMemberListener listener )
+                            {
+                                listener.instanceStops( event );
+                            }
+                        } );
+
+                        context.setAvailableHaMasterId( null );
+                        context.setElectedMasterId( null );
+
+                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
+                    }
+                    catch ( Throwable throwable )
+                    {
+                        throw new RuntimeException( throwable );
+                    }
                 }
             }
         }

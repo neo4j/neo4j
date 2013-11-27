@@ -23,13 +23,14 @@ import java.util.Collection;
 
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
-import org.junit.internal.matchers.TypeSafeMatcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
 
 public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
 {
-    private T[] expectedItems;
+    private final T[] expectedItems;
     private String message;
 
     public Contains( T... expectedItems )
@@ -38,9 +39,9 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
     }
 
     @Override
-    public boolean matchesSafely( IndexHits<T> tIndexHits )
+    public boolean matchesSafely( IndexHits<T> indexHits )
     {
-        Collection<T> collection = IteratorUtil.asCollection( tIndexHits );
+        Collection<T> collection = IteratorUtil.asCollection( indexHits.iterator() );
 
         if ( expectedItems.length != collection.size() )
         {
@@ -61,6 +62,7 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
         return true;
     }
 
+    @Override
     public void describeTo( Description description )
     {
         if (message != null)

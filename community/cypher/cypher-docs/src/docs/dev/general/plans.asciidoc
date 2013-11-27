@@ -1,0 +1,21 @@
+[[query-plans]]
+= Query Performance =
+
+Cypher works very hard to execute queries as fast as possible.
+
+However, when optimizing for maximum query execution performance, it may be helpful to rephrase queries using knowledge about the domain and the application.
+
+The overall goal of manual query performance optimization is to ensure that only necessary data is retrieved from the
+graph.
+At least data should get filtered out as early as possible in order to reduce the amount of work that has to be done at later stages of query execution.
+This also goes for what gets returned: avoid returning whole nodes and relationships -- instead, pick the data you need and return only that.
+You should also make sure to set an upper limit on variable length patterns, so they don't cover larger portions of the dataset than needed.
+
+Each Cypher query gets optimized and transformed into an execution plan by the Cypher execution engine.
+To minimize the resources used for this, make sure to use parameters instead of literals when possible.
+This allows Cypher to re-use your queries instead of having to parse and build new execution plans.
+
+[NOTE]
+When Cypher is building execution plans, it looks at the schema to see if it can find useful indexes.
+These index decisions are only valid until the schema changes, so adding or removing indexes leads to the execution plan cache being flushed.
+

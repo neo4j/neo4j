@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import java.util.Random;
 
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -37,6 +35,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
 public class TestTxEntries
 {
@@ -59,41 +62,34 @@ public class TestTxEntries
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         createSomeTransactions( db );
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                db.shutdown();
-            }
-        } );
-        
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
+
         new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
     }
-    
+
     @Test
     public void startEntryShouldBeUniqueIfEitherValueChanges() throws Exception
     {
         // Positive Xid hashcode
-        assertorrectChecksumEquality( randomXid( Boolean.TRUE ) );
-        
+        assertCorrectChecksumEquality( randomXid( Boolean.TRUE ) );
+
         // Negative Xid hashcode
-        assertorrectChecksumEquality( randomXid( Boolean.FALSE ) );
+        assertCorrectChecksumEquality( randomXid( Boolean.FALSE ) );
     }
 
-    private void assertorrectChecksumEquality( Xid refXid )
+    private void assertCorrectChecksumEquality( Xid refXid )
     {
-        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime ); 
-        assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime ) );
-        
+        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l );
+        assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l ) );
+
         // Different Xids
-        assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime ) );
+        assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime, 0l ) );
 
         // Different master
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster+1, refMe, startPosition, refTime ) );
+        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster+1, refMe, startPosition, refTime, 0l ) );
 
         // Different me
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster, refMe+1, startPosition, refTime ) );
+        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster, refMe+1, startPosition, refTime, 0l ) );
     }
 
     private void assertChecksumsNotEqual( Start ref, Start other )
@@ -111,14 +107,20 @@ public class TestTxEntries
         while ( true )
         {
             Xid xid = new XidImpl( randomBytes(), randomBytes() );
-            if ( trueForPositive == null || xid.hashCode() > 0 == trueForPositive.booleanValue() ) return xid;
+            if ( trueForPositive == null || xid.hashCode() > 0 == trueForPositive.booleanValue() )
+            {
+                return xid;
+            }
         }
     }
 
     private byte[] randomBytes()
     {
         byte[] bytes = new byte[random.nextInt( 10 )+5];
-        for ( int i = 0; i < bytes.length; i++ ) bytes[i] = (byte) random.nextInt( 255 );
+        for ( int i = 0; i < bytes.length; i++ )
+        {
+            bytes[i] = (byte) random.nextInt( 255 );
+        }
         return bytes;
     }
 

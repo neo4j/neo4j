@@ -79,7 +79,7 @@ public class SystemPropertiesConfiguration
                     }
                     catch( Throwable e )
                     {
-                        // Ignore
+                        continue;
                     }
                 }
             }

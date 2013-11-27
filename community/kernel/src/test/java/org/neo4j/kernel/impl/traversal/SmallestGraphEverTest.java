@@ -27,11 +27,12 @@ import static org.neo4j.kernel.Traversal.traversal;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
 
-public class SmallestGraphEverTest extends AbstractTestBase
+public class SmallestGraphEverTest extends TraversalTestBase
 {
     @Before
     public void setup()
@@ -125,14 +126,30 @@ public class SmallestGraphEverTest extends AbstractTestBase
 
     private void execute( TraversalDescription traversal, Uniqueness uniqueness )
     {
-        Traverser traverser = traversal.uniqueness( uniqueness ).traverse( node( "1" ) );
-        assertFalse( "empty traversal", count( traverser ) == 0 );
+        Transaction transaction = beginTx();
+        try
+        {
+            Traverser traverser = traversal.uniqueness( uniqueness ).traverse( node( "1" ) );
+            assertFalse( "empty traversal", count( traverser ) == 0 );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test
     public void testTraverseRelationshipsWithStartNodeNotIncluded() throws Exception
     {
-        TraversalDescription traversal = traversal().evaluator( excludeStartPosition() );
-        assertEquals( 1, count( traversal.traverse( node( "1" ) ).relationships() ) );
+        Transaction transaction = beginTx();
+        try
+        {
+            TraversalDescription traversal = traversal().evaluator( excludeStartPosition() );
+            assertEquals( 1, count( traversal.traverse( node( "1" ) ).relationships() ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
     }
 }

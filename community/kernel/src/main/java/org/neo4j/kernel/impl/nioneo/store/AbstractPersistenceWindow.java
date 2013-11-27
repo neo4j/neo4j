@@ -43,7 +43,6 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         this.recordSize = recordSize;
         this.windowSize = totalSize / recordSize;
         this.buffer = new Buffer( this, byteBuffer );
-        // this.buffer.setByteBuffer( byteBuffer );
     }
 
     @Override
@@ -131,7 +130,11 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     @Override
     public void force()
     {
-        writeContents();
+        if ( isDirty() )
+        {
+            writeContents();
+            setClean();
+        }
     }
 
     @Override

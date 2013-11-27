@@ -19,20 +19,24 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.Integer.MAX_VALUE;
-import static java.lang.String.valueOf;
-import static java.lang.System.currentTimeMillis;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.util.FileUtils;
+
+import static java.lang.Integer.MAX_VALUE;
+import static java.lang.String.valueOf;
+import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 public class GuardPerformanceImpact
 {
-
+    private static String dir = forTest( GuardPerformanceImpact.class ).graphDbDir( true ).getAbsolutePath();
     private static final int RUNS = 10;
     private static final int PER_TX = 10000;
     private static final int TX = 100;
@@ -51,33 +55,33 @@ public class GuardPerformanceImpact
     {
         switch ( type )
         {
-            case without:
-                for ( int i = 0; i < RUNS; i++ )
-                {
-                    System.err.println( withoutGuard() );
-                }
-                break;
+        case without:
+            for ( int i = 0; i < RUNS; i++ )
+            {
+                System.err.println( withoutGuard() );
+            }
+            break;
 
-            case enabled:
-                for ( int i = 0; i < RUNS; i++ )
-                {
-                    System.err.println( guardEnabled() );
-                }
-                break;
+        case enabled:
+            for ( int i = 0; i < RUNS; i++ )
+            {
+                System.err.println( guardEnabled() );
+            }
+            break;
 
-            case activeOpscount:
-                for ( int i = 0; i < RUNS; i++ )
-                {
-                    System.err.println( guardEnabledAndActiveOpsCount() );
-                }
-                break;
+        case activeOpscount:
+            for ( int i = 0; i < RUNS; i++ )
+            {
+                System.err.println( guardEnabledAndActiveOpsCount() );
+            }
+            break;
 
-            case activeTimeout:
-                for ( int i = 0; i < RUNS; i++ )
-                {
-                    System.err.println( guardEnabledAndActiveTimeout() );
-                }
-                break;
+        case activeTimeout:
+            for ( int i = 0; i < RUNS; i++ )
+            {
+                System.err.println( guardEnabledAndActiveTimeout() );
+            }
+            break;
         }
     }
 
@@ -91,7 +95,8 @@ public class GuardPerformanceImpact
             createData( db );
 
             return currentTimeMillis() - start;
-        } finally
+        }
+        finally
         {
             cleanup( db );
         }
@@ -99,12 +104,8 @@ public class GuardPerformanceImpact
 
     private static GraphDatabaseAPI prepare( boolean insertGuard ) throws IOException
     {
-        File tmpFile = File.createTempFile( "neo4j-test", "" );
-        tmpFile.delete();
-        return (GraphDatabaseAPI) new GraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( tmpFile.getCanonicalPath()).
-                setConfig( stringMap( "enable_execution_guard", valueOf( insertGuard ) ) ).
-                newGraphDatabase();
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
+                .setConfig( stringMap( "enable_execution_guard", valueOf( insertGuard ) ) ).newGraphDatabase();
     }
 
     private static void createData( final GraphDatabaseAPI db )
@@ -121,23 +122,10 @@ public class GuardPerformanceImpact
         }
     }
 
-    private static void cleanup( final GraphDatabaseAPI db )
+    private static void cleanup( final GraphDatabaseAPI db ) throws IOException
     {
         db.shutdown();
-        deleteFiles( new File( db.getStoreDir() ) );
-    }
-
-    private static void deleteFiles( final File directory )
-    {
-        final File[] files = directory.listFiles();
-        if ( files != null )
-        {
-            for ( File file : files )
-            {
-                deleteFiles( file );
-            }
-        }
-        directory.delete();
+        FileUtils.deleteRecursively( new File( dir ) );
     }
 
     private static long guardEnabled() throws IOException
@@ -149,7 +137,8 @@ public class GuardPerformanceImpact
 
             createData( db );
             return currentTimeMillis() - start;
-        } finally
+        }
+        finally
         {
             cleanup( db );
         }
@@ -162,12 +151,13 @@ public class GuardPerformanceImpact
         {
             final long start = currentTimeMillis();
 
-            db.getGuard().startOperationsCount( MAX_VALUE );
+            db.getDependencyResolver().resolveDependency( Guard.class ).startOperationsCount( MAX_VALUE );
 
             createData( db );
 
             return currentTimeMillis() - start;
-        } finally
+        }
+        finally
         {
             cleanup( db );
         }
@@ -180,12 +170,13 @@ public class GuardPerformanceImpact
         {
             final long start = currentTimeMillis();
 
-            db.getGuard().startTimeout( MAX_VALUE );
+            db.getDependencyResolver().resolveDependency( Guard.class ).startTimeout( MAX_VALUE );
 
             createData( db );
 
             return currentTimeMillis() - start;
-        } finally
+        }
+        finally
         {
             cleanup( db );
         }

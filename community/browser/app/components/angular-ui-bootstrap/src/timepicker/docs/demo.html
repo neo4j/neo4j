@@ -1,0 +1,12 @@
+<div ng-controller="TimepickerDemoCtrl">
+  <timepicker ng-model="mytime" hour-step="hstep" minute-step="mstep" show-meridian="ismeridian"></timepicker>
+
+  <pre>Time is: {{mytime | date:'shortTime' }}</pre>
+
+  <div>Hours step is: <select ng-model="hstep" ng-options="opt for opt in options.hstep"></select></div>
+  <div>Minutes step is: <select ng-model="mstep" ng-options="opt for opt in options.mstep"></select></div>
+
+  <button class="btn" ng-click="toggleMode()">12H / 24H</button>
+  <button class="btn" ng-click="update()">Set to 14:00</button>
+  <button class="btn btn-danger" ng-click="clear()">Clear</button>
+</div>

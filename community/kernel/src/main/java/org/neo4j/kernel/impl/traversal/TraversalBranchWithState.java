@@ -67,7 +67,8 @@ public class TraversalBranchWithState extends TraversalBranchImpl implements Bra
     @Override
     protected Iterator<Relationship> expandRelationshipsWithoutChecks( PathExpander expander )
     {
-        return expander.expand( this, this ).iterator();
+        Iterable<Relationship> iterable = expander.expand( this, this );
+        return iterable.iterator();
     }
     
     @Override

@@ -56,6 +56,11 @@ public class OldTraverserWrapper
             return currentPos;
         }
 
+        public int numberOfNodesReturned()
+        {
+            return count;
+        }
+
         public Collection<Node> getAllNodes()
         {
             List<Node> result = new ArrayList<Node>();
@@ -97,7 +102,7 @@ public class OldTraverserWrapper
         PositionImpl( TraverserImpl traverser, Path position )
         {
             this.position = position;
-            this.count = traverser.count;
+            this.count = traverser.numberOfNodesReturned();
         }
 
         public Node currentNode()

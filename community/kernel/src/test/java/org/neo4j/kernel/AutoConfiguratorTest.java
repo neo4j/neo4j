@@ -26,12 +26,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.mockito.Mockito;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -70,7 +74,7 @@ public class AutoConfiguratorTest
         long physicalMemory = 2 * availableMem;
         long vmMemory = (long) Math.ceil( physicalMemory - (availableMem / 0.85) );
 
-        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, true, physicalMemory * MiB, vmMemory * MiB );
+        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, true, physicalMemory * MiB, vmMemory * MiB, Mockito.mock(ConsoleLogger.class) );
 
         // when
         Map<String, String> configuration = autoConf.configure();
@@ -96,7 +100,7 @@ public class AutoConfiguratorTest
 
         long availableMem = 100000;
 
-        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, false, 10000 * GiB, 2 * availableMem * MiB );
+        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, false, 10000 * GiB, 2 * availableMem * MiB, Mockito.mock(ConsoleLogger.class) );
 
         // when
         Map<String, String> configuration = autoConf.configure();
@@ -125,7 +129,7 @@ public class AutoConfiguratorTest
         long physicalMemory = 2 * availableMem;
         long vmMemory = (long) Math.ceil( physicalMemory - (availableMem / 0.85) );
 
-        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, true, physicalMemory * MiB, vmMemory * MiB );
+        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, true, physicalMemory * MiB, vmMemory * MiB, Mockito.mock(ConsoleLogger.class) );
 
         // when
         Map<String, String> configuration = autoConf.configure();
@@ -151,7 +155,7 @@ public class AutoConfiguratorTest
 
         long availableMem = 100000;
 
-        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, false, 10000 * GiB, 2 * availableMem * MiB );
+        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, false, 10000 * GiB, 2 * availableMem * MiB, Mockito.mock(ConsoleLogger.class) );
 
         // when
         Map<String, String> configuration = autoConf.configure();
@@ -162,6 +166,32 @@ public class AutoConfiguratorTest
         assertMappedMemory( configuration, "12240M", "propertystore.db" );
         assertMappedMemory( configuration, "10404M", "propertystore.db.strings" );
         assertMappedMemory( configuration, "11791M", "propertystore.db.arrays" );
+    }
+
+    @Test
+    public void shouldProvideZeroMappedMemoryWhenPhysicalLessThanJVMMemory() throws Exception
+    {
+        // given
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        mockFileSize( fs, "nodestore.db", 0 );
+        mockFileSize( fs, "relationshipstore.db", 0 );
+        mockFileSize( fs, "propertystore.db", 0 );
+        mockFileSize( fs, "propertystore.db.strings", 0 );
+        mockFileSize( fs, "propertystore.db.arrays", 0 );
+
+        ConsoleLogger mock = Mockito.mock( ConsoleLogger.class );
+        AutoConfigurator autoConf = new AutoConfigurator( fs, storeDir, true, 128 * MiB, 256 * MiB, mock );
+
+        // when
+        Map<String, String> configuration = autoConf.configure();
+
+        // then
+        verify( mock ).log( startsWith( "WARNING!" ) );
+        assertMappedMemory( configuration, "0M", "relationshipstore.db" );
+        assertMappedMemory( configuration, "0M", "nodestore.db" );
+        assertMappedMemory( configuration, "0M", "propertystore.db" );
+        assertMappedMemory( configuration, "0M", "propertystore.db.strings" );
+        assertMappedMemory( configuration, "0M", "propertystore.db.arrays" );
     }
 
     private void assertMappedMemory( Map<String, String> configuration, String expected, String store )

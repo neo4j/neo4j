@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
-
 import javax.servlet.ServletOutputStream;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -35,82 +34,92 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 
-import org.mortbay.log.Log;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.server.database.Database;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 import org.neo4j.server.rest.batch.BatchOperationResults;
 import org.neo4j.server.rest.batch.NonStreamingBatchOperations;
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
+import org.neo4j.server.rest.repr.RepresentationWriteHandler;
+import org.neo4j.server.rest.repr.StreamingFormat;
+import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.server.web.WebServer;
 
 @Path("/batch")
 public class BatchOperationService {
 
+    private static final Logger LOGGER = Log.getLogger(BatchOperationService.class);
+
     private final OutputFormat output;
     private final WebServer webServer;
-    private final Database database;
+    private RepresentationWriteHandler representationWriteHandler = RepresentationWriteHandler.DO_NOTHING;
 
-    public BatchOperationService(@Context Database database,
-            @Context WebServer webServer, @Context OutputFormat output)
+    public BatchOperationService( @Context WebServer webServer, @Context OutputFormat output )
     {
         this.output = output;
         this.webServer = webServer;
-        this.database = database;
+    }
+
+    public void setRepresentationWriteHandler( RepresentationWriteHandler representationWriteHandler )
+    {
+        this.representationWriteHandler = representationWriteHandler;
     }
 
     @POST
     public Response performBatchOperations(@Context UriInfo uriInfo,
             @Context HttpHeaders httpHeaders, InputStream body)
-            throws BadInputException
     {
-        if (isStreaming(httpHeaders)) {
+        if ( isStreaming( httpHeaders ) )
+        {
             return batchProcessAndStream( uriInfo, httpHeaders, body );
-        } else {
-            return batchProcess( uriInfo, httpHeaders, body );
         }
+        return batchProcess( uriInfo, httpHeaders, body );
     }
 
     private Response batchProcessAndStream( final UriInfo uriInfo, final HttpHeaders httpHeaders, final InputStream body )
     {
         try
         {
-            final StreamingOutput stream = new StreamingOutput() {
-                public void write(final OutputStream output) throws IOException, WebApplicationException
+            final StreamingOutput stream = new StreamingOutput()
+            {
+                @Override
+                public void write( final OutputStream output ) throws IOException, WebApplicationException
                 {
-                    Transaction tx = database.getGraph().beginTx();
-                    try {
-                        final ServletOutputStream servletOutputStream = new ServletOutputStream() {
-                            public void write(int i) throws IOException {
-                                output.write(i);
+                    try
+                    {
+                        final ServletOutputStream servletOutputStream = new ServletOutputStream()
+                        {
+                            @Override
+                            public void write( int i ) throws IOException
+                            {
+                                output.write( i );
                             }
                         };
-                        new StreamingBatchOperations(webServer).readAndExecuteOperations( uriInfo, httpHeaders, body, servletOutputStream );
-                        tx.success();
-                    } catch (Exception e) {
-                        Log.warn( "Error executing batch request ", e );
-                        tx.failure();
-//                        if (e instanceof RuntimeException) throw (RuntimeException)e;
-//                        throw new WebApplicationException(e);
-                    } finally {
-                        tx.finish();
+                        new StreamingBatchOperations( webServer ).readAndExecuteOperations( uriInfo, httpHeaders, body,
+                                servletOutputStream );
+                        representationWriteHandler.onRepresentationWritten();
+                    }
+                    catch ( Exception e )
+                    {
+                        LOGGER.warn( "Error executing batch request ", e );
+                    }
+                    finally
+                    {
+                        representationWriteHandler.onRepresentationFinal();
                     }
                 }
             };
-
             return Response.ok(stream)
-                    .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
-                    .type( MediaType.APPLICATION_JSON ).build();
-        } catch (Exception e)
+                    .type( HttpHeaderUtils.mediaTypeWithCharsetUtf8(MediaType.APPLICATION_JSON_TYPE) ).build();
+        }
+        catch ( Exception e )
         {
-            return output.serverError(e);
+            return output.serverError( e );
         }
     }
 
     private Response batchProcess( UriInfo uriInfo, HttpHeaders httpHeaders, InputStream body )
     {
-        Transaction tx = database.getGraph().beginTx();
         try
         {
             NonStreamingBatchOperations batchOperations = new NonStreamingBatchOperations( webServer );
@@ -118,36 +127,34 @@ public class BatchOperationService {
 
             Response res = Response.ok().entity(results.toJSON())
                     .header(HttpHeaders.CONTENT_ENCODING, "UTF-8")
-                    .type( MediaType.APPLICATION_JSON).build();
-
-            tx.success();
+                    .type(HttpHeaderUtils.mediaTypeWithCharsetUtf8(MediaType.APPLICATION_JSON_TYPE)).build();
+            representationWriteHandler.onRepresentationWritten();
             return res;
-        } catch (Exception e)
+        }
+        catch ( Exception e )
         {
-            tx.failure();
-            return output.serverError(e);
-        } finally
+            return output.serverError( e );
+        }
+        finally
         {
-            tx.finish();
+            representationWriteHandler.onRepresentationFinal();
         }
     }
 
     private boolean isStreaming( HttpHeaders httpHeaders )
     {
-        if ("true".equalsIgnoreCase(httpHeaders.getRequestHeaders().getFirst(StreamingJsonFormat.STREAM_HEADER)))
+        if ( "true".equalsIgnoreCase( httpHeaders.getRequestHeaders().getFirst( StreamingFormat.STREAM_HEADER ) ) )
         {
             return true;
         }
-
         for ( MediaType mediaType : httpHeaders.getAcceptableMediaTypes() )
         {
             Map<String, String> parameters = mediaType.getParameters();
-            if ( parameters.containsKey( "stream" ) && "true".equalsIgnoreCase(parameters.get("stream")))
+            if ( parameters.containsKey( "stream" ) && "true".equalsIgnoreCase( parameters.get( "stream" ) ) )
             {
                 return true;
             }
         }
         return false;
     }
-
 }

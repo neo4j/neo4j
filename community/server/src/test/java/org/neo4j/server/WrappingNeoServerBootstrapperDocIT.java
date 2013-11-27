@@ -27,12 +27,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -40,12 +41,15 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.shell.ShellSettings;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse.Status;
+
+import static java.lang.String.format;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -57,12 +61,12 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
-    static InternalAbstractGraphDatabase myDb;
+    static GraphDatabaseAPI myDb;
 
     @BeforeClass
     public static void setup() throws IOException
     {
-        myDb = new ImpermanentGraphDatabase();
+        myDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterClass
@@ -71,18 +75,13 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         myDb.shutdown();
     }
 
-    private InternalAbstractGraphDatabase getGraphDb()
-    {
-        return myDb;
-    }
-
     @Test
     public void usingWrappingNeoServerBootstrapper()
     {
         // START SNIPPET: usingWrappingNeoServerBootstrapper
         // You provide the database, which must implement GraphDatabaseAPI.
         // Both EmbeddedGraphDatabase and HighlyAvailableGraphDatabase do this.
-        GraphDatabaseAPI graphdb = getGraphDb();
+        GraphDatabaseAPI graphdb = myDb;
 
         WrappingNeoServerBootstrapper srv;
         srv = new WrappingNeoServerBootstrapper( graphdb );
@@ -99,7 +98,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( "target/configDb" )
+                .newEmbeddedDatabaseBuilder( TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath() )
                 .setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE )
                 .newGraphDatabase();
         ServerConfigurator config;
@@ -118,7 +117,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
                 "{\"command\" : \"ls\",\"engine\":\"shell\"}" ).expectedStatus(
                 Status.OK.getStatusCode() ).post(
                 "http://127.0.0.1:7575/db/manage/server/console/" ).entity();
-        assertTrue( response.contains( "neo4j-sh (0)$" ) );
+        assertTrue( response.contains( "neo4j-sh (?)$" ) );
         srv.stop();
     }
 
@@ -126,13 +125,13 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     public void shouldAllowShellConsoleWithoutCustomConfig()
     {
         WrappingNeoServerBootstrapper srv;
-        srv = new WrappingNeoServerBootstrapper( getGraphDb() );
+        srv = new WrappingNeoServerBootstrapper( myDb );
         srv.start();
         String response = gen.get().payload(
                 "{\"command\" : \"ls\",\"engine\":\"shell\"}" ).expectedStatus(
                 Status.OK.getStatusCode() ).post(
                 "http://127.0.0.1:7474/db/manage/server/console/" ).entity();
-        assertTrue( response.contains( "neo4j-sh (0)$" ) );
+        assertTrue( response.contains( "neo4j-sh (?)$" ) );
         srv.stop();
     }
 
@@ -153,7 +152,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         try
         {
             gen.get().expectedStatus( Status.OK.getStatusCode() ).get(
-                    "http://127.0.0.1:7474/db/data/" );
+                    format( "http://%s:7474/db/data/", hostAddress ) );
             fail();
         }
         catch ( ClientHandlerException cee )
@@ -170,8 +169,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldResponseAndBeAbleToModifyDb()
     {
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
-                myDb );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
         srv.start();
 
         long originalNodeNumber = myDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
@@ -193,6 +191,9 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         srv.stop();
 
         // Should be able to still talk to the db
-        assertTrue( myDb.getReferenceNode() != null );
+        try ( Transaction tx = myDb.beginTx() )
+        {
+            assertTrue( myDb.createNode() != null );
+        }
     }
 }

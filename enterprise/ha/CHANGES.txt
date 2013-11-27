@@ -1,3 +1,30 @@
+
+2.0.0-RC1
+---------
+o The GCResistantCache is now called the HighPerformanceCache. The configuration for enabling it has changed from
+  'gcr' to 'hpc', although the old setting will remaing functional until the next major release.
+
+2.0.0.M06
+---------
+o Constraints can now be created in a running HA cluster
+
+1.9.5 (2013-11-11)
+------------------
+o Removed all usage of getHostName() that might lead to problems on instances with improperly
+  configured DNS
+o The master instance will now always send out masterIsAvailable messages in response to
+  masterIsElected, ensuring that instances in PENDING state will transition eventually to
+  SLAVE
+o Master instance now properly blocks transactions from starting after shutdown has started and
+  waits on a timeout for running transactions to finish and be pushed to slaves before stopping
+  completely. 
+
+1.9.3
+-----
+o Fix for wrong snapshot processing on cluster join, leading to failure to switch to Slave
+o Fix in SlaveIdGenerator which could lead to records being marked as not in use
+o Important cluster events are now properly included in the console
+
 1.9.1 (2013-06-24)
 ------------------
 o Access guard is now raised during recovery

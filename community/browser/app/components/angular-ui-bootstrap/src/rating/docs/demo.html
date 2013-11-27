@@ -1,0 +1,10 @@
+<div ng-controller="RatingDemoCtrl">
+    <rating value="rate" max="10" readonly="isReadonly"></rating>
+
+    <hr/>
+    <pre>Rate: <b>{{rate}}</b>  - Readonly is: <i>{{isReadonly}}</i></pre>
+
+    <hr/>
+    <button class="btn btn-small btn-danger" ng-click="rate = 0" ng-disabled="isReadonly">Clear</button>
+    <button class="btn btn-small" ng-click="isReadonly = ! isReadonly">Toggle Readonly</button>
+</div>

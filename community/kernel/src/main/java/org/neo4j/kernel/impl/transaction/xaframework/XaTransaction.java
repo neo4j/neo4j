@@ -159,7 +159,7 @@ public abstract class XaTransaction
      * Commits the transaction, loop through all commands and invoke 
      * <CODE>execute()</CODE>.
      * 
-     * @throws XAEXception
+     * @throws XAException
      *             If unable to commit
      */
     protected abstract void doCommit() throws XAException;

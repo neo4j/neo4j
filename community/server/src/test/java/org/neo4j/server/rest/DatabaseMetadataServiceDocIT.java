@@ -53,8 +53,8 @@ public class DatabaseMetadataServiceDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldReturn200OnGet()
     {
-        helper.createRelationship( "foo" );
-        helper.createRelationship( "bar" );
+        helper.createRelationship( "KNOWS" );
+        helper.createRelationship( "LOVES" );
 
         gen.get()
                 .expectedStatus( 200 )

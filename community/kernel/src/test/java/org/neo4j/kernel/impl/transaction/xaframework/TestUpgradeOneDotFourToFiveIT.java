@@ -19,18 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.CommonFactories.defaultLogBufferFactory;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-
 import java.io.File;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
+import static org.neo4j.kernel.CommonFactories.defaultLogBufferFactory;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.findDatabaseDirectory;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 public class TestUpgradeOneDotFourToFiveIT
 {
@@ -45,15 +49,16 @@ public class TestUpgradeOneDotFourToFiveIT
     @Test( expected=IllegalLogFormatException.class )
     public void cannotRecoverNoncleanShutdownDbWithOlderLogFormat() throws Exception
     {
-        copyRecursively( new File( TestUpgradeOneDotFourToFiveIT.class.getResource( "non-clean-1.4.2-db/neostore" ).getFile() ).getParentFile(), PATH );
+        copyRecursively( findDatabaseDirectory( getClass(), "non-clean-1.4.2-db" ), PATH );
 //        Map<Object, Object> config = new HashMap<Object, Object>();
 //        config.put( "store_dir", PATH.getAbsolutePath() );
 //        config.put( StringLogger.class, StringLogger.DEV_NULL );
 //        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
 //        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         
-        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(), defaultFileSystemAbstraction(), new DevNullLoggingService(),
-                LogPruneStrategies.NO_PRUNING, TransactionStateFactory.noStateFactory( new DevNullLoggingService() ) );
+        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(),
+                defaultFileSystemAbstraction(), new DevNullLoggingService(), LogPruneStrategies.NO_PRUNING,
+                TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), 25 * 1024 * 1024, ALLOW_ALL );
         log.open();
         fail( "Shouldn't be able to start" );
     }

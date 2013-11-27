@@ -11,5 +11,5 @@ include::get-non-existent-node.asciidoc[]
 
 include::delete-node.asciidoc[]
 
-include::nodes-with-relationships-can-not-be-deleted.asciidoc[]
+include::nodes-with-relationships-cannot-be-deleted.asciidoc[]
 

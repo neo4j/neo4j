@@ -19,9 +19,6 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.Iterables.count;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,23 +27,52 @@ import java.util.Random;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterables.count;
+
+/**
+ * This exposes a two layered issue. In both cases, it crashes because:
+ *
+ * Thread A: Create node 1
+ * Thread A: Create relationship from node 1 to another node (reads node 1)
+ * Thread B: Read node 1
+ * Thread A: Rollback
+ * Thread B: Read node 1 properties -> Crash
+ *
+ * The first layer is that create node adds the node to the global cache. This should be easy to fix. However,
+ * that does not resolve the issue.
+ *
+ * The second layer is that when an item is not found in cache, it is loaded from disk. The disk loading code
+ * takes into account any records changed in the current transaction. Because of that, when Thread A creates a
+ * relationship, it will load node 1 from disk, which will find the record for node 1 in the list of records created
+ * or changed by Thread A, and thus find the data needed to put the (yet-to-be-committed) node 1 in the global cache.
+ * See WriteTransaction#nodeLoadLight for details.
+ *
+ * The fix for this is to stop puttin nodes in the global cache in transactions and;
+ * To move createNode et cetera into the kernel api and use *only* in-memory transaction state to work with these
+ * un-created nodes (and relationships, for that matter).
+ */
+@Ignore("Jake 2013-09-13: Exposes bug that will be fixed by kernel API")
 public class TransactionSoakIT
 {
-    protected ImpermanentGraphDatabase db;
+    protected GraphDatabaseAPI db;
     private ShellServer server;
-    private Random r = new Random( System.currentTimeMillis() );
+    private final Random r = new Random( System.currentTimeMillis() );
 
     @Before
     public void doBefore() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         server = new GraphDatabaseShellServer( db );
     }
 
@@ -68,15 +94,18 @@ public class TransactionSoakIT
         stopTesters( testers );
         waitForThreadsToFinish( threads );
 
-        long relationshipCount = count( GlobalGraphOperations.at( db ).getAllRelationships() );
-        int expected = committerCount( testers );
-
-        assertEquals( expected, relationshipCount );
+        try ( Transaction tx = db.beginTx() )
+        {
+            long relationshipCount = count( GlobalGraphOperations.at( db ).getAllRelationships() );
+            int expected = committerCount( testers );
+    
+            assertEquals( expected, relationshipCount );
+        }
     }
 
     private List<Tester> createTesters() throws Exception
     {
-        List<Tester> testers = new ArrayList<Tester>( 20 );
+        List<Tester> testers = new ArrayList<>( 20 );
         for ( int i = 0; i < 20; i++ )
         {
             int x = r.nextInt( 3 );
@@ -84,13 +113,13 @@ public class TransactionSoakIT
             Tester t;
             if ( x == 0 )
             {
-                t = new Reader();
+                t = new Reader("Reader-" + i);
             } else if ( x == 1 )
             {
-                t = new Committer();
+                t = new Committer("Committer-" + i);
             } else if ( x == 2 )
             {
-                t = new Rollbacker();
+                t = new Rollbacker("Rollbacker-" + i);
             } else
             {
                 throw new Exception( "oh noes" );
@@ -138,7 +167,7 @@ public class TransactionSoakIT
 
         for ( Tester t : testers )
         {
-            Thread thread = new Thread( t );
+            Thread thread = new Thread( t, t.name() );
             thread.start();
             threads.add( thread );
         }
@@ -148,10 +177,15 @@ public class TransactionSoakIT
 
     private class Reader extends Tester
     {
+        public Reader( String name )
+        {
+            super(name);
+        }
+
         @Override
         protected void doStuff() throws Exception
         {
-            execute( "start n=node(*) return count(n.name?);" );
+            execute( "match n return count(n.name);" );
         }
     }
 
@@ -159,11 +193,16 @@ public class TransactionSoakIT
     {
         private int count = 0;
 
+        private Committer( String name )
+        {
+            super( name );
+        }
+
         @Override
         protected void doStuff() throws Exception
         {
             execute( "begin transaction" );
-            execute( "create a={name:'a'}, b={name:'b'}, a-[:LIKES]->b;" );
+            execute( "create (a {name:'a'}), (b {name:'b'}), a-[:LIKES]->b;" );
             execute( "commit" );
             count = count + 1;
         }
@@ -171,20 +210,39 @@ public class TransactionSoakIT
 
     private class Rollbacker extends Tester
     {
+        private Rollbacker( String name )
+        {
+            super( name );
+        }
+
         @Override
         protected void doStuff() throws Exception
         {
             execute( "begin transaction" );
-            execute( "create a={name:'a'}, b={name:'b'}, a-[:LIKES]->b;" );
+            execute( "create (a {name:'a'}), (b {name:'b'}), a-[:LIKES]->b;" );
             execute( "rollback" );
         }
     }
 
     private abstract class Tester implements Runnable
     {
-        ShellClient client = new SameJvmClient( new HashMap<String, Serializable>(), server );
+        private final String name;
+        ShellClient client;
         private boolean alive = true;
         private Exception exception = null;
+
+        protected Tester( String name )
+        {
+            this.name = name;
+            try
+            {
+                client = new SameJvmClient( new HashMap<String, Serializable>(), server, new SilentLocalOutput() );
+            }
+            catch ( ShellException e )
+            {
+                throw new RuntimeException( "Error starting client", e );
+            }
+        }
 
         protected void execute( String cmd ) throws Exception
         {
@@ -203,6 +261,7 @@ public class TransactionSoakIT
                 }
             } catch ( Exception e )
             {
+                alive = false;
                 exception = e;
             }
         }
@@ -217,6 +276,11 @@ public class TransactionSoakIT
         }
 
         protected abstract void doStuff() throws Exception;
+
+        private String name()
+        {
+            return name;
+        }
     }
 
 

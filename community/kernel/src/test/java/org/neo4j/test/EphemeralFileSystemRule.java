@@ -20,31 +20,25 @@
 package org.neo4j.test;
 
 import org.junit.rules.ExternalResource;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class EphemeralFileSystemRule extends ExternalResource
 {
-    private EphemeralFileSystemAbstraction fs;
-    
-    @Override
-    protected void before() throws Throwable
-    {
-        super.before();
-        fs = new EphemeralFileSystemAbstraction();
-    }
+    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
 
     @Override
     protected void after()
     {
         fs.shutdown();
-        super.after();
     }
-    
+
     public EphemeralFileSystemAbstraction get()
     {
         return fs;
     }
-    
+
     public EphemeralFileSystemAbstraction snapshot( Runnable action )
     {
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
@@ -58,5 +52,17 @@ public class EphemeralFileSystemRule extends ExternalResource
             fs = snapshot;
         }
         return fs;
+    }
+
+    public static Runnable shutdownDb( final GraphDatabaseService db )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                db.shutdown();
+            }
+        };
     }
 }

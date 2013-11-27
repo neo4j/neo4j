@@ -24,20 +24,20 @@ Here in the installation directory, you'll find:
 Make it go
 ----------
 
-To get started with ${server.fullname}, let's start the server and take a
-look at the web interface...
+For full instructions, see ${getting-started-server.url}
 
-1. open a console and navigate to the install directory
-2. start the server
-   * Windows: use `bin\Neo4j.bat`
-   * Linux/Mac: use `bin/neo4j start`
-3. in a browser, open [webadmin](http://localhost:${org.neo4j.webserver.port}/webadmin/)
-4. from any REST client or browser, open (http://localhost:${org.neo4j.webserver.port}/db/data) 
+To get started with ${server.fullname}, let's start the server and take a
+look at the web interface ...
+
+1. Open a console and navigate to the install directory.
+2. Start the server:
+   * Windows: use bin\Neo4j.bat
+   * Linux/Mac: use ./bin/neo4j console
+3. In a browser, open http://localhost:${org.neo4j.webserver.port}/
+4. From any REST client or browser, open http://localhost:${org.neo4j.webserver.port}/db/data
    in order to get a REST starting point, e.g.
-   `curl -v http://localhost:${org.neo4j.webserver.port}/db/data`
-5. shutdown the server
-   * Windows: type Ctrl-C to terminate the batch script
-   * Linux/Mac: use `bin/neo4j stop`
+   curl -v http://localhost:${org.neo4j.webserver.port}/db/data
+5. Shutdown the server by typing Ctrl-C in the console.
 
 Learn more
 ----------
@@ -47,13 +47,9 @@ and reference material.
 
 Out on the internets, you'll find:
 
-* [${neo4j-home.url.title}](${neo4j-home.url})
-* [${getting-started.url.title}](${getting-started.url})
-* [${neo4j-manual.title}](${neo4j-manual.url})
-* [${neo4j-components.url.title}](${neo4j-components.url})
-
-For more links, a handy [guide post](doc/guide-post.html) in the `doc` 
-directory will point you in the right direction.
+* ${neo4j-home.url.title}: ${neo4j-home.url}
+* ${getting-started.url.title}: ${getting-started.url}
+* ${neo4j-manual.title}: ${neo4j-manual.url}
 
 License(s)
 ----------

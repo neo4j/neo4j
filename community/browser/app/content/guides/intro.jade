@@ -1,0 +1,74 @@
+article.guide
+  carousel.deck.container-fluid
+    slide.row-fluid
+      .span3
+        h3 Introduction
+        p.lead Getting started with Neo4j Browser
+      .span9
+        p Neo4j Browser is a command driven client, like a web-based shell environment.
+          |  It is perfect for running ad-hoc graph queries, with just enough ability
+          | to prototype a Neo4j-based application.
+        ul.big
+          li Developer focused, for writing and running graph queries with Cypher
+          li Exportable tabular results of any query result
+          li Graph visualization of query results containing nodes and relationships
+          li Convenient exploration of Neo4j's REST API
+    slide.row-fluid
+      .span3
+        h3 Editor
+        p.lead Command editing and execution
+      .span5
+        p The editor is the primary interface for entering and running commands.
+          | Enter Cypher queries to work with graph data. Use client-side
+          | commands like
+          code :help
+          |  for other operations.
+        ul
+          li Single line editing for brief queries or commands
+          li Switch to multi-line editing with &lt;shift-enter&gt;
+          li Run a query with &lt;ctrl-enter&gt;
+          li History is kept for easily retrieving previous commands
+      .span4
+          img(src='images/screen_editor.png')
+    slide.row-fluid
+      .span3
+        h3 Stream
+        p.lead Scrolling series of result frames
+      .span5
+        p A result frame is created for each command execution, added to the top
+          | of the stream to create a scrollable collection in reverse chronological order.
+        ul
+          li Special frames like data visualization
+          li Expand a frame to full screen
+          li Remove a specific frame from the stream
+          li Clear the stream with the
+             code :clear
+             |  command
+      .span4
+        img(src='images/screen_stream.png')
+    slide.row-fluid
+      .span3
+        h3 Sidebar
+        p.lead Convenient clickable access
+      .span5
+        p The sidebar expands to reveal different functional panels
+          | for common queries and information.
+        ul
+          li Database metadata and basic information
+          li Saved scripts organized into folders
+          li Information links for docs and reference
+          li Credits and licensing information
+      .span4
+        img(src='images/screen_sidebar.png')
+    slide.row-fluid
+      .span3
+        h3 Next steps
+      .span9
+        p Neo4j is like a mashup of a REPL + lightweight IDE + graph visualization.  
+        ul.big
+          li
+            a(play-topic='graphs') Graphs
+            |  - learn basic concepts
+          li
+            a(play-topic='cypher') Cypher
+            |  - Neo4j's graph query language

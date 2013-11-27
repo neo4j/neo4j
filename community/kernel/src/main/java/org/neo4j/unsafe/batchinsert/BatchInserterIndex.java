@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 
 /**
  * The {@link BatchInserter} version of {@link Index}. Additions/updates to a

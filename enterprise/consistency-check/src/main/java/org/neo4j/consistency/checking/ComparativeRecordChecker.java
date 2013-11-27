@@ -23,7 +23,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 
-public interface ComparativeRecordChecker<RECORD extends AbstractBaseRecord, REFERRED extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
+public interface ComparativeRecordChecker<RECORD extends AbstractBaseRecord, REFERRED extends AbstractBaseRecord, REPORT extends ConsistencyReport>
 {
-    void checkReference( RECORD record, REFERRED referred, REPORT report, RecordAccess records );
+    void checkReference( RECORD record, REFERRED referred, CheckerEngine<RECORD, REPORT> engine, RecordAccess records );
 }

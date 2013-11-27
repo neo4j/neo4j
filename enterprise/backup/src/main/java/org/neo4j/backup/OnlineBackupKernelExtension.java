@@ -21,13 +21,19 @@ package org.neo4j.backup;
 
 import java.net.URI;
 
+import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
+import org.neo4j.com.ServerUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 
@@ -35,16 +41,25 @@ public class OnlineBackupKernelExtension implements Lifecycle
 {
     // This is the role used to announce that a cluster member can handle backups
     public static final String BACKUP = "backup";
+    // In this context, the IPv4 zero-address is understood as "any address on this host."
+    public static final String INADDR_ANY = "0.0.0.0";
 
     private Config config;
     private GraphDatabaseAPI graphDatabaseAPI;
+    private XaDataSourceManager xaDataSourceManager;
+    private KernelPanicEventGenerator kpeg;
+    private Logging logging;
     private BackupServer server;
-    private URI backupUri;
+    private volatile URI me;
 
-    public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI )
+    public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, XaDataSourceManager
+            xaDataSourceManager, KernelPanicEventGenerator kpeg, Logging logging )
     {
         this.config = config;
         this.graphDatabaseAPI = graphDatabaseAPI;
+        this.xaDataSourceManager = xaDataSourceManager;
+        this.kpeg = kpeg;
+        this.logging = logging;
     }
 
     @Override
@@ -57,12 +72,24 @@ public class OnlineBackupKernelExtension implements Lifecycle
     {
         if ( config.<Boolean>get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            TheBackupInterface backup = new BackupImpl( graphDatabaseAPI );
+            TheBackupInterface backup = new BackupImpl( logging.getMessagesLog( BackupImpl.class ), new BackupImpl.SPI()
+            {
+                @Override
+                public String getStoreDir()
+                {
+                    return graphDatabaseAPI.getStoreDir();
+                }
+
+                @Override
+                public StoreId getStoreId()
+                {
+                    return graphDatabaseAPI.storeId();
+                }
+            }, xaDataSourceManager, kpeg );
             try
             {
                 server = new BackupServer( backup,
-                        config.get( OnlineBackupSettings.online_backup_server ),
-                        graphDatabaseAPI.getDependencyResolver().resolveDependency( Logging.class ) );
+                        config.get( OnlineBackupSettings.online_backup_server ), logging );
                 server.init();
                 server.start();
 
@@ -70,12 +97,21 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 {
                     graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).addClusterMemberListener(
                             new StartBindingListener() );
+
+                    graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).addBindingListener( new BindingListener()
+                            {
+                                @Override
+                                public void listeningAt( URI myUri )
+                                {
+                                    me = myUri;
+                                }
+                            } );
                 }
                 catch ( NoClassDefFoundError e )
                 {
                     // Not running HA
                 }
-                catch ( IllegalArgumentException e )
+                catch ( IllegalArgumentException e ) // NOPMD
                 {
                     // HA available, but not used
                 }
@@ -98,14 +134,14 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
             try
             {
-                ClusterMemberAvailability client = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+                ClusterMemberAvailability client = getClusterMemberAvailability();
                 client.memberIsUnavailable( BACKUP );
             }
             catch ( NoClassDefFoundError e )
             {
                 // Not running HA
             }
-            catch ( IllegalArgumentException e )
+            catch ( IllegalArgumentException e ) // NOPMD
             {
                 // HA available, but not used
             }
@@ -130,8 +166,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 {
                     try
                     {
-                        ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
-                        backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
+                        URI backupUri = createBackupURI();
+                        ClusterMemberAvailability ha = getClusterMemberAvailability();
                         ha.memberIsAvailable( BACKUP, backupUri );
                     }
                     catch ( Throwable t )
@@ -152,8 +188,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 {
                     try
                     {
-                        ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
-                        backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
+                        ClusterMemberAvailability ha = getClusterMemberAvailability();
                         ha.memberIsUnavailable( BACKUP );
                     }
                     catch ( Throwable t )
@@ -163,5 +198,16 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 }
             }
         }
+    }
+
+    private ClusterMemberAvailability getClusterMemberAvailability() {
+        return graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+    }
+
+    private URI createBackupURI() {
+        String hostString = ServerUtil.getHostString( server.getSocketAddress() );
+        String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
+        int port = server.getSocketAddress().getPort();
+        return URI.create("backup://" + host + ":" + port);
     }
 }

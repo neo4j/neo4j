@@ -23,37 +23,54 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.helpers.Service;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public class Version extends Service
 {
-    protected static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
-    private static final Version KERNEL_VERSION;
-    static
+    public static Version getKernel()
     {
-        Version kernelVersion = null;
-        try
-        {
-            kernelVersion = Service.load( Version.class, KERNEL_ARTIFACT_ID );
-        }
-        catch ( NoSuchElementException ex )
-        {
-            // handled by null check
-        }
-        if ( kernelVersion == null ) kernelVersion = new Version( KERNEL_ARTIFACT_ID, "" );
-        KERNEL_VERSION = kernelVersion;
+        return KERNEL_VERSION;
     }
+
+    public static String getKernelRevision()
+    {
+        return getKernel().getRevision();
+    }
+
+    private final String artifactId;
     private final String title;
-    @SuppressWarnings( "unused" )
     private final String vendor;
     private final String version;
 
     @Override
     public String toString()
     {
+        StringBuilder result = new StringBuilder();
+        if ( title != null )
+        {
+            result.append( title );
+            if ( artifactId == null || !artifactId.equals( title ) )
+            {
+                result.append( " (" ).append( artifactId ).append( ')' );
+            }
+        }
+        else if ( artifactId != null )
+        {
+            result.append( artifactId );
+        }
+        else
+        {
+            result.append( "Unknown Component" );
+        }
+        result.append( ", " );
         if ( title == null )
         {
-            return "Neo4j Kernel, unpackaged version " + getVersion();
+            result.append( "unpackaged " );
         }
-        return title + " " + getVersion();
+        result.append( "version: " ).append( getVersion() );
+        return result.toString();
     }
 
     /**
@@ -61,18 +78,14 @@ public class Version extends Service
      *
      * @return the version of the neo4j kernel
      */
-    public String getVersion()
+    public final String getVersion()
     {
         if ( version == null || version.equals( "" ) )
         {
-            String revision = getRevision();
-            if ( revision == null || revision.equals( "" ) ) return "unknown";
             return "revision: " + getRevision();
         }
-        else if ( version.contains( "SNAPSHOT" ) )
+        else if ( version.endsWith( "-SNAPSHOT" ) )
         {
-            String revision = getRevision();
-            if ( revision == null || revision.equals( "" ) ) return version;
             return version + " (revision: " + getRevision() + ")";
         }
         else
@@ -81,42 +94,117 @@ public class Version extends Service
         }
     }
 
-    public String getReleaseVersion() {
+    public String getReleaseVersion()
+    {
         return version;
     }
-
 
     /**
      * Returns the build revision of the running neo4j kernel.
      *
      * @return build revision
      */
-    public String getRevision()
+    public final String getRevision()
     {
-        return "";
+        StringBuilder result = new StringBuilder( getReleaseVersion() );
+        result.append( ':' ).append( getBranchName() ).append( ':' );
+        String build = getBuildNumber();
+        if ( !(build.startsWith( "${" ) || build.startsWith( "{" )) )
+        {
+            result.append( build ).append( '/' );
+        }
+        result.append( getCommitId() );
+        if ( getCommitDescription().endsWith( "-dirty" ) )
+        {
+            result.append( "-dirty" );
+        }
+        return result.toString();
     }
 
-    protected Version( String atrifactId, String version )
+    protected String getCommitDescription()
     {
-        super( atrifactId );
+        return "{CommitDescription}";
+    }
+
+    protected String getBuildNumber()
+    {
+        return "{BuildNumber}";
+    }
+
+    protected String getCommitId()
+    {
+        return "{CommitId}";
+    }
+
+    protected String getBranchName()
+    {
+        return "{BranchName}";
+    }
+
+    protected Version( String artifactId, String version )
+    {
+        super( artifactId );
+        this.artifactId = artifactId;
         Package pkg = getClass().getPackage();
-        this.title = defaultValue( pkg.getImplementationTitle(), atrifactId );
+        this.title = defaultValue( pkg.getImplementationTitle(), artifactId );
         this.vendor = defaultValue( pkg.getImplementationVendor(), "Neo Technology" );
         this.version = defaultValue( pkg.getImplementationVersion(), version );
     }
 
     private static String defaultValue( String preferred, String fallback )
     {
-        return ( preferred == null || preferred.equals( "" ) ) ? fallback : preferred;
+        return (preferred == null || preferred.equals( "" )) ? fallback : preferred;
     }
 
-    public static Version getKernel()
+    /**
+     * A very nice to have main-method for quickly checking the version of a neo4j kernel,
+     * for example given a kernel jar file.
+     */
+    public static void main( String[] args )
     {
-        return KERNEL_VERSION;
+        Version kernelVersion = getKernel();
+        System.out.println( kernelVersion );
+        System.out.println( "Title: " + kernelVersion.title );
+        System.out.println( "Vendor: " + kernelVersion.vendor );
+        System.out.println( "ArtifactId: " + kernelVersion.artifactId );
+        System.out.println( "Version: " + kernelVersion.getVersion() );
+        System.out.println( "ReleaseVersion: " + kernelVersion.getReleaseVersion() );
+        System.out.println( "Revision: " + kernelVersion.getRevision() );
+        System.out.println( "CommitDescription: " + kernelVersion.getCommitDescription() );
+        System.out.println( "BuildNumber: " + kernelVersion.getBuildNumber() );
+        System.out.println( "BranchName: " + kernelVersion.getBranchName() );
+        System.out.println( "CommitId: " + kernelVersion.getCommitId() );
     }
 
-    public static String getKernelRevision()
+    static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
+    private static final Version KERNEL_VERSION;
+
+    static
     {
-        return KERNEL_VERSION.getRevision();
+        Version kernelVersion;
+        try
+        {
+            kernelVersion = Service.load( Version.class, KERNEL_ARTIFACT_ID );
+        }
+        catch ( NoSuchElementException ex )
+        {
+            kernelVersion = null;
+        }
+        if ( kernelVersion == null )
+        {
+            try
+            {
+                kernelVersion = (Version) Class.forName( "org.neo4j.kernel.impl.ComponentVersion" ).newInstance();
+            }
+            catch ( Exception e )
+            {
+                kernelVersion = null;
+            }
+        }
+        if ( kernelVersion == null )
+        {
+            kernelVersion = new Version( KERNEL_ARTIFACT_ID, "" );
+        }
+        KERNEL_VERSION = kernelVersion;
     }
 }

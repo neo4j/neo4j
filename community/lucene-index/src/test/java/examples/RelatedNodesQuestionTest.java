@@ -19,9 +19,8 @@
  */
 package examples;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -29,7 +28,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Trying out code from: http://stackoverflow.com/questions/5346011
@@ -41,9 +42,8 @@ public class RelatedNodesQuestionTest
     @Test
     public void question5346011()
     {
-        GraphDatabaseService service = new ImpermanentGraphDatabase();
-        Transaction transaction = service.beginTx();
-        try
+        GraphDatabaseService service = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try ( Transaction tx = service.beginTx() )
         {
             RelationshipIndex index = service.index().forRelationships( "exact" );
             // ...creation of the nodes and relationship
@@ -55,11 +55,7 @@ public class RelatedNodesQuestionTest
             // query
             IndexHits<Relationship> hits = index.get( "uuid", a_uuid, node1, node2 );
             assertEquals( 1, hits.size() );
-            transaction.success();
-        }
-        finally
-        {
-            transaction.finish();
+            tx.success();
         }
         service.shutdown();
     }

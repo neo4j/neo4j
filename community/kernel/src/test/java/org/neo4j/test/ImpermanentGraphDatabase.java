@@ -19,22 +19,13 @@
  */
 package org.neo4j.test;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -44,7 +35,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
+import static org.neo4j.helpers.Settings.FALSE;
+import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
+import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -56,7 +52,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * will get printed in an exception with the message "Unclosed database instance".
      */
     private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
-    private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<File, Exception>();
+    private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<>();
     
     static final String PATH = "target/test-data/impermanent-db";
 
@@ -80,7 +76,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     public ImpermanentGraphDatabase( String storeDir )
     {
-        super( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
+        this( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
     }
 
     /**
@@ -89,7 +85,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( PATH, withForcedInMemoryConfiguration( params ) );
+        this( PATH, withForcedInMemoryConfiguration( params ) );
     }
 
     /**
@@ -98,19 +94,23 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
     {
-        super( storeDir, withForcedInMemoryConfiguration( params ) );
+        this( storeDir, withForcedInMemoryConfiguration( params ),
+                Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
+                        KernelExtensionFactory.class ) ),
+                Service.load( CacheProvider.class ),
+                Service.load( TransactionInterceptorProvider.class ) );
     }
     
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
     @Deprecated
-    public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
+    public ImpermanentGraphDatabase( Map<String, String> params,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                      Iterable<CacheProvider> cacheProviders,
                                      Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( PATH, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
+        super( PATH, withForcedInMemoryConfiguration( params ), kernelExtensions, cacheProviders,
                 transactionInterceptorProviders );
         trackUnclosedUse( PATH );
     }
@@ -119,12 +119,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
     @Deprecated
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
-                                        Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                        Iterable<CacheProvider> cacheProviders,
-                                        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params,
+                                     Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                     Iterable<CacheProvider> cacheProviders,
+                                     Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( storeDir, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
+        super( storeDir, withForcedInMemoryConfiguration( params ), kernelExtensions, cacheProviders,
                 transactionInterceptorProviders );
         trackUnclosedUse( storeDir );
     }
@@ -133,10 +133,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
         {
-            Exception testThatDidntCloseDb = startedButNotYetClosed.put( new File( path ),
+            Exception testThatDidNotCloseDb = startedButNotYetClosed.put( new File( path ),
                     new Exception( "Unclosed database instance" ) );
-            if ( testThatDidntCloseDb != null )
-                testThatDidntCloseDb.printStackTrace();
+            if ( testThatDidNotCloseDb != null )
+                testThatDidNotCloseDb.printStackTrace();
         }
     }
     
@@ -157,8 +157,8 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
     {
-        // Because EphemeralFileChannel doesn't support memorymapping
-        Map<String, String> result = new HashMap<String, String>( params );
+        // Because EphemeralFileChannel doesn't support memory mapping
+        Map<String, String> result = new HashMap<>( params );
         result.put( use_memory_mapped_buffers.name(), FALSE );
 
         // To signal to index provides that we should be in-memory
@@ -167,65 +167,13 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
 
     @Override
-    protected boolean isEphemeral()
-    {
-        return true;
-    }
-
-    @Override
     protected Logging createLogging()
     {
         return life.add( new SingleLoggingService( StringLogger.loggerDirectory( fileSystem, storeDir ) ) );
     }
 
-    public void cleanContent( boolean retainReferenceNode )
-    {
-        Transaction tx = beginTx();
-        try
-        {
-            for ( Node node : GlobalGraphOperations.at( this ).getAllNodes() )
-            {
-                for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
-                {
-                    rel.delete();
-                }
-                if ( !node.hasRelationship() )
-                {
-                    if ( retainReferenceNode )
-                    {
-                        try
-                        {
-                            Node referenceNode = getReferenceNode();
-                            if ( !node.equals( referenceNode ) )
-                            {
-                                node.delete();
-                            }
-                        }
-                        catch ( NotFoundException nfe )
-                        {
-                            // no ref node
-                        }
-                    }
-                    else
-                    {
-                        node.delete();
-                    }
-                }
-            }
-            tx.success();
-        }
-        catch ( Exception e )
-        {
-            tx.failure();
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
     public void cleanContent()
     {
-        cleanContent( false );
+        cleanDatabaseContent( this );
     }
 }

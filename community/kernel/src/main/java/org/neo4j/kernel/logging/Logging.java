@@ -28,5 +28,7 @@ public interface Logging
 {
     StringLogger getMessagesLog( Class loggingClass );
 
+    // TODO: In our primary implementations of this, console log seems to be the same thing as messages log.
+    // Consolidate these two methods into one getLogger() method instead.
     ConsoleLogger getConsoleLog( Class loggingClass );
 }

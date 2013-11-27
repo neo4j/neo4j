@@ -26,6 +26,8 @@ import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorMessage;
@@ -89,7 +91,9 @@ public class MultiPaxosServerFactory
     public ProtocolServer newProtocolServer( InstanceId me, TimeoutStrategy timeoutStrategy, MessageSource input,
                                              MessageSender output, AcceptorInstanceStore acceptorInstanceStore,
                                              ElectionCredentialsProvider electionCredentialsProvider,
-                                             Executor stateMachineExecutor )
+                                             Executor stateMachineExecutor,
+                                             ObjectInputStreamFactory objectInputStreamFactory,
+                                             ObjectOutputStreamFactory objectOutputStreamFactory )
     {
         LatencyCalculator latencyCalculator = new LatencyCalculator( timeoutStrategy, input );
 
@@ -106,8 +110,9 @@ public class MultiPaxosServerFactory
         ProposerContext proposerContext = new ProposerContext();
 
         final ClusterContext clusterContext = new ClusterContext( me, proposerContext, learnerContext,
-                new ClusterConfiguration( initialConfig.getName(), initialConfig.getMemberURIs() ), timeouts, executor,
-                logging );
+                new ClusterConfiguration( initialConfig.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
+                        initialConfig.getMemberURIs() ), timeouts, executor,
+                logging, objectInputStreamFactory, objectOutputStreamFactory);
         final HeartbeatContext heartbeatContext = new HeartbeatContext( clusterContext, learnerContext, executor );
         clusterContext.setHeartbeatContext( heartbeatContext );
         final MultiPaxosContext context = new MultiPaxosContext( clusterContext, proposerContext, learnerContext,

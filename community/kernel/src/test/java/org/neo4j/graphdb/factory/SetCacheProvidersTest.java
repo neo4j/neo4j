@@ -19,23 +19,23 @@
  */
 package org.neo4j.graphdb.factory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 
 import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.*;
 
 public class SetCacheProvidersTest
 {
     @Test
     public void testSetNoCache()
     {
-        ArrayList<CacheProvider> cacheList = new ArrayList<CacheProvider>();
+        ArrayList<CacheProvider> cacheList = new ArrayList<>();
         TestGraphDatabaseFactory gdbf = new TestGraphDatabaseFactory();
         gdbf.setCacheProviders( cacheList );
         try
@@ -44,18 +44,21 @@ public class SetCacheProvidersTest
         }
         catch ( IllegalArgumentException iae )
         {
-            assertTrue( iae.getMessage().contains( "No cache type" ) );
+            assertTrue( iae.getMessage().contains( "No provider for cache type" ) );
+            assertTrue( iae.getMessage().contains( "register" ) );
+            assertTrue( iae.getMessage().contains( "missing" ) );
         }
     }
 
     @Test
     public void testSetSoftRefCache()
     {
-        ArrayList<CacheProvider> cacheList = new ArrayList<CacheProvider>();
+        ArrayList<CacheProvider> cacheList = new ArrayList<>();
         TestGraphDatabaseFactory gdbf = new TestGraphDatabaseFactory();
         cacheList.add( new SoftCacheProvider() );
         gdbf.setCacheProviders( cacheList );
         GraphDatabaseAPI db = (GraphDatabaseAPI) gdbf.newImpermanentDatabase();
-        assertEquals( SoftCacheProvider.NAME, db.getNodeManager().getCacheType().getName() );
+        assertEquals( SoftCacheProvider.NAME, db.getDependencyResolver().resolveDependency( NodeManager.class )
+                .getCacheType().getName() );
     }
 }

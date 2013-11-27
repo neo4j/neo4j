@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--[if lt IE 8]><html lang="en" class="ie"><![endif]-->
+<!--[if (gte IE 8)|(!IE)]><!--><html lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>JSON 3 Benchmark Suite</title>
+  <link href="assets/jsperf.css" rel="stylesheet">
+  <script>
+    document.documentElement.className += ' js';
+  </script>
+  <!--[if lt IE 9]>
+    <script src="assets/html5.js"></script>
+  <![endif]-->
+</head>
+<body>
+  <article>
+    <h1>JSON 3 Benchmark Suite</h1>
+    <section>
+      <h2>About</h2>
+      <p>This is a mirror of the <a href="http://jsperf.com/json3" rel="nofollow">JSON 3 benchmark suite</a> available on <a href="http://jsperf.com/" rel="nofollow">jsPerf</a>.</p>
+      <p>The following implementations support parsing and serializing:</p>
+      <ul>
+        <li><a href="http://bestiejs.github.io/json3" rel="nofollow">JSON 3</a>: Uses a modified, character-based recursive descent parser.</li>
+        <li><a href="https://github.com/douglascrockford/JSON-js" rel="nofollow">JSON 2</a>: Uses <code><span class="kw1">eval</span></code> and a series of validation RegExps.</li>
+      </ul>
+      <p>The following implementations only support parsing:</p>
+      <ul>
+        <li><code>json-parse</code>: Uses a character-based recursive descent parser.</li>
+        <li><code>json-parse-state</code>: Uses a state machine parser.</li>
+        <li><a href="http://code.google.com/p/json-sans-eval" rel="nofollow"><code>json-sans-eval</code></a>: Uses a non-validating RegExp.</li>
+        <li><a href="https://github.com/abozhilov/json" rel="nofollow"><code>evalJSON</code></a>: Uses a RegExp-based recursive descent parser.</li>
+      </ul>
+    </section>
+    <section id="runner">
+      <h2>Benchmark Runner</h2>
+      <p id="firebug">
+        <strong>
+          Warning! For accurate results, please disable Firebug before running the tests.
+          <a href="http://jsperf.com/faq#firebug-warning">(Why?)</a>
+        </strong>
+      </p>
+      <p id="java">
+        <strong>Java applet disabled.</strong>
+      </p>
+      <p id="status">
+        <noscript>
+          <strong>To run the tests, please <a href="http://enable-javascript.com/">enable JavaScript</a> and reload the page.</strong>
+        </noscript>
+      </p>
+      <div id="controls">
+        <button id="run" type="button"></button>
+      </div>
+      <table id="test-table">
+        <caption>Testing in <span id="user-agent"></span></caption>
+        <thead>
+          <tr>
+            <th colspan="2">Test</th>
+            <th title="Operations per second (higher is better)">Ops/sec</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- JSON 3. -->
+          <tr>
+            <th scope="row" id="title-1">
+              <div>JSON 3: <code>parse</code></div>
+            </th>
+            <td class="code">
+              <pre><code>JSON3.<span class="me1">parse</span><span class="br0">&#40;</span>&hellip;<span class="br0">&#41;</span><span class="sy0">;</span></code></pre>
+            </td>
+            <td id="results-1" class="results"></td>
+          </tr>
+          <!-- JSON 2. -->
+          <tr>
+            <th scope="row" id="title-2">
+              <div>JSON 2: <code>parse</code></div>
+            </th>
+            <td class="code">
+              <pre><code>JSON2.<span class="me1">parse</span><span class="br0">&#40;</span>&hellip;<span class="br0">&#41;</span><span class="sy0">;</span></code></pre>
+            </td>
+            <td id="results-2" class="results"></td>
+          </tr>
+          <!-- `json-parse-state`. -->
+          <tr>
+            <th scope="row" id="title-3">
+              <div><code>json-parse-state</code></div>
+            </th>
+            <td class="code">
+              <pre><code>json_parse_state<span class="br0">&#40;</span>&hellip;<span class="br0">&#41;</span><span class="sy0">;</span></code></pre>
+            </td>
+            <td id="results-3" class="results"></td>
+          </tr>
+          <!-- `json-parse`. -->
+          <tr>
+            <th scope="row" id="title-4">
+              <div><code>json-parse</code></div>
+            </th>
+            <td class="code">
+              <pre><code>json_parse<span class="br0">&#40;</span>&hellip;<span class="br0">&#41;</span><span class="sy0">;</span></code></pre>
+            </td>
+            <td id="results-4" class="results"></td>
+          </tr>
+          <!-- `json-sans-eval`. -->
+          <tr>
+            <th scope="row" id="title-5">
+              <div><code>json-sans-eval</code></div>
+            </th>
+            <td class="code">
+              <pre><code>jsonParse<span class="br0">&#40;</span>&hellip;<span class="br0">&#41;</span><span class="sy0">;</span></code></pre>
+            </td>
+            <td id="results-5" class="results"></td>
+          </tr>
+          <!-- `evalJSON`. -->
+          <tr>
+            <th scope="row" id="title-6">
+              <div><code>evalJSON</code></div>
+            </th>
+            <td class="code">
+              <pre><code>evalJSON<span class="br0">&#40;</span>&hellip;<span class="br0">&#41;</span><span class="sy0">;</span></code></pre>
+            </td>
+            <td id="results-6" class="results"></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </article>
+  <script src="../vendor/lodash.js"></script>
+  <script src="../vendor/platform.js"></script>
+  <script src="../vendor/benchmark.js"></script>
+  <script src="assets/ui.js"></script>
+  <script src="benchmark_json3.js"></script>
+</body>
+</html>

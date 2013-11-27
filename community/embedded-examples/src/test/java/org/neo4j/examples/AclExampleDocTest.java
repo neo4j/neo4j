@@ -18,17 +18,18 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
-
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
-public class AclExampleDocTest extends AbstractJavaDocTestbase
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
+
+public class AclExampleDocTest extends ImpermanentGraphJavaDocTestBase
 {
     
     /**
@@ -150,12 +151,12 @@ public class AclExampleDocTest extends AbstractJavaDocTestbase
      * 
      * @@result3
      * 
-     * The results listed above contain +null+ values for optional path segments, which can be mitigated by either asking several
+     * The results listed above contain +null+ for optional path segments, which can be mitigated by either asking several
      * queries or returning just the really needed values. 
      * 
      */
     @Documented
-    @Graph(autoIndexNodes=true, value = {
+    @Graph( value = {
             "Root has Role",
             "Role subRole SUDOers",
             "Role subRole User",
@@ -183,7 +184,7 @@ public class AclExampleDocTest extends AbstractJavaDocTestbase
         
         //Files
         //TODO: can we do open ended?
-        String query = "start root=node:node_auto_index(name = 'FileRoot') match root-[:contains*0..]->(parentDir)-[:leaf]->file return file";
+        String query = "match ({name: 'FileRoot'})-[:contains*0..]->(parentDir)-[:leaf]->(file) return file";
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         String result = engine.execute( query )
                 .dumpToString();
@@ -192,7 +193,7 @@ public class AclExampleDocTest extends AbstractJavaDocTestbase
                 .addSnippet( "result1", createQueryResultSnippet( result ) );
         
         //Ownership
-        query = "start root=node:node_auto_index(name = 'FileRoot') match root-[:contains*0..]->()-[:leaf]->file<-[:owns]-user return file, user";
+        query = "match ({name: 'FileRoot'})-[:contains*0..]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
         gen.get().addSnippet( "query2", createCypherSnippet( query ) );
         result = engine.execute( query )
                 .dumpToString();
@@ -206,9 +207,9 @@ public class AclExampleDocTest extends AbstractJavaDocTestbase
                 .addSnippet( "result2", createQueryResultSnippet( result ) );
         
         //ACL
-        query = "START file=node:node_auto_index('name:File*') " +
-        		"MATCH " +
-        		"file<-[:leaf]-()<-[:contains*0..]-dir<-[?:canRead]-role-[:member]->readUser " +
+        query = "MATCH (file)<-[:leaf]-()<-[:contains*0..]-(dir) " +
+        		"OPTIONAL MATCH (dir)<-[:canRead]-(role)-[:member]->(readUser) " +
+                "WHERE file.name =~ 'File.*' " +
         		"RETURN file.name, dir.name, role.name, readUser.name";
         gen.get().addSnippet( "query3", createCypherSnippet( query ) );
         result = engine.execute( query )

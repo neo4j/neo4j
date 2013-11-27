@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.domain;
 
-import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -34,22 +32,25 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.OrderedByTypeExpander;
 import org.neo4j.kernel.Traversal;
+import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
+
+import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 
 public class TraversalDescriptionBuilder
 {
 
     private final EvaluatorFactory evaluatorFactory;
 
-    public TraversalDescriptionBuilder(boolean enableSandboxing)
+    public TraversalDescriptionBuilder( boolean enableSandboxing )
     {
-        evaluatorFactory = new EvaluatorFactory( enableSandboxing );
+        this.evaluatorFactory = new EvaluatorFactory( enableSandboxing );
     }
 
     public TraversalDescription from( Map<String, Object> description )
     {
         try
         {
-            TraversalDescription result = Traversal.description();
+            TraversalDescription result = new MonoDirectionalTraversalDescription();
             result = describeOrder( result, description );
             result = describeUniqueness( result, description );
             result = describeExpander( result, description );
@@ -60,8 +61,7 @@ public class TraversalDescriptionBuilder
         catch ( NoClassDefFoundError e )
         {
             // This one can happen if you run on Java 5, but haven't included
-            // the
-            // backported javax.script jar file(s) on the classpath.
+            // the backported javax.script jar file(s) on the classpath.
             throw new EvaluationException( e );
         }
     }

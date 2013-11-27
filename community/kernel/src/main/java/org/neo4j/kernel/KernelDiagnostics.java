@@ -35,6 +35,10 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 abstract class KernelDiagnostics implements DiagnosticsProvider
 {
     static void register( DiagnosticsManager manager, InternalAbstractGraphDatabase graphdb, NeoStoreXaDataSource ds )
@@ -63,12 +67,13 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
             logger.logMessage( "Neo4j component versions:" );
             for ( Version componentVersion : Service.load( Version.class ) )
             {
-                logger.logMessage( "  " + componentVersion );
+                logger.logMessage( "  " + componentVersion + "; revision: " + componentVersion.getRevision() );
             }
         }
     }
 
-    private static class StoreFiles extends KernelDiagnostics implements Visitor<StringLogger.LineLogger>
+    private static class StoreFiles extends KernelDiagnostics implements Visitor<StringLogger.LineLogger,
+            RuntimeException>
     {
         private final File storeDir;
         private static String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";

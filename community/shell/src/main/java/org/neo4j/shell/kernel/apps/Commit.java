@@ -19,12 +19,11 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import static org.neo4j.shell.ShellException.wrapCause;
-
 import java.rmi.RemoteException;
 
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -33,11 +32,13 @@ import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.Variables;
+
+import static org.neo4j.shell.ShellException.wrapCause;
 
 @Service.Implementation(App.class)
-public class Commit extends ReadOnlyGraphDatabaseApp
+public class Commit extends NonTransactionProvidingApp
 {
-    public static final String TX_COUNT = "TX_COUNT";
 
     @Override
     public String getDescription()
@@ -49,9 +50,9 @@ public class Commit extends ReadOnlyGraphDatabaseApp
     {
         try
         {
-
-            return getServer().getDb().getTxManager().getTransaction();
-        } catch ( SystemException e )
+            return getServer().getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).getTransaction();
+        }
+        catch ( SystemException e )
         {
             throw wrapCause( e );
         }
@@ -67,7 +68,7 @@ public class Commit extends ReadOnlyGraphDatabaseApp
             return Continuation.INPUT_COMPLETE;
         }
 
-        Integer txCount = (Integer) session.get( TX_COUNT );
+        Integer txCount = session.getCommitCount();
 
         Transaction tx = getCurrectTransaction();
         if ( txCount == null || txCount.equals( 0 ) )
@@ -76,7 +77,8 @@ public class Commit extends ReadOnlyGraphDatabaseApp
             {
                 out.println( "Warning: committing a transaction not started by the shell" );
                 txCount = 1;
-            } else
+            }
+            else
             {
                 throw new ShellException( "Not in a transaction" );
             }
@@ -92,16 +94,18 @@ public class Commit extends ReadOnlyGraphDatabaseApp
             try
             {
                 tx.commit();
-                session.remove( TX_COUNT );
+                session.remove( Variables.TX_COUNT );
                 out.println( "Transaction committed" );
                 return Continuation.INPUT_COMPLETE;
-            } catch ( Exception e )
+            }
+            catch ( Exception e )
             {
                 throw fail( session, e.getMessage() );
             }
-        } else
+        }
+        else
         {
-            session.set( TX_COUNT, --txCount );
+            session.set( Variables.TX_COUNT, --txCount );
             out.println( String.format( "Nested transaction committed (Tx count: %d)", txCount ) );
             return Continuation.INPUT_COMPLETE;
         }
@@ -109,7 +113,7 @@ public class Commit extends ReadOnlyGraphDatabaseApp
 
     public static ShellException fail( Session session, String message ) throws ShellException
     {
-        session.remove( TX_COUNT );
+        session.remove( Variables.TX_COUNT );
         return new ShellException( message );
     }
 }

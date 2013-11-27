@@ -30,7 +30,10 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class TestTransactionEventDeadlocks
 {
@@ -41,8 +44,8 @@ public class TestTransactionEventDeadlocks
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception
     {
         GraphDatabaseService graphdb = database.getGraphDatabaseService();
-        final Node root = graphdb.getReferenceNode();
         Transaction tx = graphdb.beginTx();
+        final Node root = graphdb.createNode();
         try
         {
             root.setProperty( "counter", Long.valueOf( 0L ) );
@@ -59,6 +62,11 @@ public class TestTransactionEventDeadlocks
             @Override
             public Void beforeCommit( TransactionData data ) throws Exception
             {
+                // TODO Hmm, makes me think... should we really call transaction event handlers
+                // for these relationship type / property index transasctions?
+                if ( count( data.createdRelationships() ) == 0 )
+                    return null;
+                
                 root.setProperty( "counter", ( (Long) root.removeProperty( "counter" ) ) + 1 );
                 return null;
             }
@@ -89,6 +97,6 @@ public class TestTransactionEventDeadlocks
             tx.finish();
         }
 
-        assertEquals( 1L, root.getProperty( "counter" ) );
+        assertThat( root, inTx( graphdb, hasProperty( "counter" ).withValue( 1L ) ) );
     }
 }

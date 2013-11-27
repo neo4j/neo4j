@@ -20,30 +20,39 @@
 package org.neo4j.consistency.store;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 public interface RecordAccess
 {
+    RecordReference<DynamicRecord> schema( final long id );
+
     RecordReference<NodeRecord> node( final long id );
 
     RecordReference<RelationshipRecord> relationship( final long id );
 
     RecordReference<PropertyRecord> property( final long id );
 
-    RecordReference<RelationshipTypeRecord> relationshipLabel( final int id );
+    RecordReference<RelationshipTypeTokenRecord> relationshipType( final int id );
 
-    RecordReference<PropertyIndexRecord> propertyKey( final int id );
+    RecordReference<PropertyKeyTokenRecord> propertyKey( final int id );
 
     RecordReference<DynamicRecord> string( final long id );
 
     RecordReference<DynamicRecord> array( final long id );
 
-    RecordReference<DynamicRecord> relationshipLabelName( final int id );
+    RecordReference<DynamicRecord> relationshipTypeName( final int id );
+
+    RecordReference<DynamicRecord> nodeLabels( final long id );
+
+    RecordReference<LabelTokenRecord> label( final int id );
+
+    RecordReference<DynamicRecord> labelName( final int id );
 
     RecordReference<DynamicRecord> propertyKeyName( final int id );
 

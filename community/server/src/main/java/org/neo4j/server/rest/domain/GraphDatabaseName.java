@@ -40,6 +40,12 @@ public class GraphDatabaseName
         return getName();
     }
 
+    @Override
+    public int hashCode()
+    {
+        return name != null ? name.hashCode() : 0;
+    }
+
     public boolean equals( Object obj )
     {
         return obj instanceof GraphDatabaseName && ( (GraphDatabaseName) obj ).getName()

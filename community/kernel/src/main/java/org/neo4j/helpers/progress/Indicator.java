@@ -23,7 +23,7 @@ import java.io.PrintWriter;
 
 public abstract class Indicator
 {
-    static final Indicator NONE = new Indicator( 1 )
+    static final Indicator.OpenEnded NONE = new Indicator.OpenEnded( 1 )
     {
         @Override
         protected void progress( int from, int to )
@@ -31,6 +31,15 @@ public abstract class Indicator
             // do nothing
         }
     };
+
+    public static abstract class OpenEnded extends Indicator
+    {
+        public OpenEnded( int reportResolution )
+        {
+            super( reportResolution );
+        }
+    }
+
     private final int reportResolution;
 
     public Indicator( int reportResolution )
@@ -70,13 +79,20 @@ public abstract class Indicator
         // default: do nothing
     }
 
-    public static abstract class Decorator extends Indicator
+    public static abstract class Decorator extends Indicator.OpenEnded
     {
         private final Indicator indicator;
 
+        /** Constructor for regular indicators. */
         public Decorator( ProgressMonitorFactory factory, String process )
         {
             this( factory.newIndicator( process ) );
+        }
+
+        /** Constructor for open ended indicators. */
+        public Decorator( ProgressMonitorFactory factory, String process, int resolution )
+        {
+            this( factory.newOpenEndedIndicator( process, resolution ) );
         }
 
         public Decorator( Indicator indicator )
@@ -163,6 +179,65 @@ public abstract class Indicator
             if ( progress % 20 == 0 )
             {
                 out.printf( " %3d%%%n", progress / 2 );
+            }
+        }
+    }
+
+    static class OpenEndedTextual extends OpenEnded
+    {
+        private final String process;
+        private final PrintWriter out;
+        private int dots;
+
+        OpenEndedTextual( String process, PrintWriter out, int reportResolution )
+        {
+            super( reportResolution );
+            this.process = process;
+            this.out = out;
+        }
+
+        @Override
+        public void startProcess( long totalCount )
+        {
+            out.println( process );
+            out.flush();
+        }
+
+        @Override
+        public void completeProcess()
+        {
+            for ( int i = dots; i < 20; i++ )
+            {
+                out.print( " " );
+            }
+            out.println( "    done" );
+            out.flush();
+        }
+
+        @Override
+        protected void progress( int from, int to )
+        {
+            for ( int i = from; i < to; )
+            {
+                printProgress( ++i );
+            }
+            out.flush();
+        }
+
+        @Override
+        public void failure( Throwable cause )
+        {
+            cause.printStackTrace( out );
+        }
+
+        private void printProgress( int progress )
+        {
+            out.print( '.' );
+            dots++;
+            if ( progress % 20 == 0 )
+            {
+                out.printf( " %7d%n", ((long) progress) * reportResolution() );
+                dots = 0;
             }
         }
     }

@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import javax.transaction.SystemException;
+import javax.transaction.TransactionManager;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
@@ -40,6 +43,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
@@ -47,6 +51,7 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
@@ -60,6 +65,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
 
     final LuceneIndexImplementation service;
     private final IndexIdentifier identifier;
+    private final TransactionManager txManager;
     final IndexType type;
     private volatile boolean deleted;
 
@@ -68,10 +74,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     // allow for self-healing properties.
     final Collection<Long> abandonedIds = new CopyOnWriteArraySet<Long>();
 
-    LuceneIndex( LuceneIndexImplementation service, IndexIdentifier identifier )
+    LuceneIndex( LuceneIndexImplementation service, IndexIdentifier identifier, TransactionManager txManager )
     {
         this.service = service;
         this.identifier = identifier;
+        this.txManager = txManager;
         this.type = service.dataSource().getType( identifier, false );
     }
 
@@ -112,6 +119,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         this.abandonedIds.clear();
     }
 
+    @Override
     public String getName()
     {
         return this.identifier.indexName;
@@ -133,8 +141,10 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      * @param value the value in the key/value pair to associate with the
      * entity.
      */
+    @Override
     public void add( T entity, String key, Object value )
     {
+        assertInTransaction();
         LuceneXaConnection connection = getConnection();
         assertValidKey( key );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
@@ -146,8 +156,10 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     @Override
     public T putIfAbsent( T entity, String key, Object value )
     {
+        assertInTransaction();
         // TODO This should not be in NodeManager. Make a separate service that does this, which can be passed into index implementations
-        return ((GraphDatabaseAPI)service.graphDb()).getNodeManager().indexPutIfAbsent( this, entity, key, value );
+        return ((GraphDatabaseAPI)service.graphDb()).getDependencyResolver().resolveDependency( NodeManager.class )
+                .indexPutIfAbsent( this, entity, key, value );
     }
 
     private void assertValidKey( String key )
@@ -174,8 +186,10 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      * @param value the value in the key/value pair to dissociate from the
      * entity.
      */
+    @Override
     public void remove( T entity, String key, Object value )
     {
+        assertInTransaction();
         LuceneXaConnection connection = getConnection();
         assertValidKey( key );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
@@ -184,26 +198,34 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
     }
 
+    @Override
     public void remove( T entity, String key )
     {
+        assertInTransaction();
         LuceneXaConnection connection = getConnection();
         assertValidKey( key );
         connection.remove( this, entity, key );
     }
 
+    @Override
     public void remove( T entity )
     {
+        assertInTransaction();
         LuceneXaConnection connection = getConnection();
         connection.remove( this, entity );
     }
 
+    @Override
     public void delete()
     {
+        assertInTransaction();
         getConnection().deleteIndex( this );
     }
 
+    @Override
     public IndexHits<T> get( String key, Object value )
     {
+        assertInTransaction();
         return query( type.get( key, value ), key, value, null );
     }
 
@@ -220,8 +242,10 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      * in the result is disabled by default, but can be enabled using
      * {@link QueryContext#tradeCorrectnessForSpeed()}.
      */
+    @Override
     public IndexHits<T> query( String key, Object queryOrQueryObject )
     {
+        assertInTransaction();
         QueryContext context = queryOrQueryObject instanceof QueryContext ?
                 (QueryContext) queryOrQueryObject : null;
         return query( type.query( key, context != null ?
@@ -233,6 +257,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      *
      * @see #query(String, Object)
      */
+    @Override
     public IndexHits<T> query( Object queryOrQueryObject )
     {
         return query( null, queryOrQueryObject );
@@ -271,7 +296,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         {
             service.dataSource().releaseReadLock();
         }
-        
+
         if ( searcher != null )
         {
             boolean foundInCache = false;
@@ -281,7 +306,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                 cachedIdsMap = service.dataSource().getFromCache(
                         identifier, keyForDirectLookup );
                 foundInCache = fillFromCache( cachedIdsMap, ids,
-                        keyForDirectLookup, valueForDirectLookup.toString(), removedIds );
+                        valueForDirectLookup.toString(), removedIds );
             }
 
             if ( !foundInCache )
@@ -327,12 +352,33 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             {
                 abandonedIds.add( item );
             }
+
+            @Override
+            public boolean hasNext()
+            {
+                assertInTransaction();
+                return super.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                assertInTransaction();
+                return super.next();
+            }
+
+            @Override
+            public T getSingle()
+            {
+                assertInTransaction();
+                return super.getSingle();
+            }
         };
     }
 
     private boolean fillFromCache(
             LruCache<String, Collection<Long>> cachedNodesMap,
-            List<Long> ids, String key, String valueAsString,
+            List<Long> ids, String valueAsString,
             Collection<Long> deletedNodes )
     {
         boolean found = false;
@@ -429,13 +475,13 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
 
     static class NodeIndex extends LuceneIndex<Node>
     {
-        private GraphDatabaseService gdb;
 
+        private final GraphDatabaseService gdb;
         NodeIndex( LuceneIndexImplementation service,
                    GraphDatabaseService gdb,
-                IndexIdentifier identifier )
+                   IndexIdentifier identifier, TransactionManager txManager )
         {
-            super( service, identifier );
+            super( service, identifier, txManager );
             this.gdb = gdb;
         }
 
@@ -465,22 +511,23 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     ((Node) entity).getId(), key, value );
         }
 
+        @Override
         public Class<Node> getEntityType()
         {
             return Node.class;
         }
-    }
 
+    }
     static class RelationshipIndex extends LuceneIndex<Relationship>
             implements org.neo4j.graphdb.index.RelationshipIndex
     {
-        private GraphDatabaseService gdb;
 
+        private final GraphDatabaseService gdb;
         RelationshipIndex( LuceneIndexImplementation service,
                            GraphDatabaseService gdb,
-                IndexIdentifier identifier )
+                           IndexIdentifier identifier, TransactionManager txManager )
         {
-            super( service, identifier );
+            super( service, identifier, txManager );
             this.gdb = gdb;
         }
 
@@ -496,9 +543,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             return entity.getId();
         }
 
+        @Override
         public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,
                 Node endNodeOrNull )
         {
+            super.assertInTransaction();
             BooleanQuery query = new BooleanQuery();
             if ( key != null && valueOrNull != null )
             {
@@ -506,12 +555,14 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             }
             addIfNotNull( query, startNodeOrNull, KEY_START_NODE_ID );
             addIfNotNull( query, endNodeOrNull, KEY_END_NODE_ID );
-            return query( query, (String) null, null, null );
+            return query( query, null, null, null );
         }
 
+        @Override
         public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull,
                 Node startNodeOrNull, Node endNodeOrNull )
         {
+            super.assertInTransaction();
             QueryContext context = queryOrQueryObjectOrNull != null &&
                     queryOrQueryObjectOrNull instanceof QueryContext ?
                             (QueryContext) queryOrQueryObjectOrNull : null;
@@ -525,7 +576,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             }
             addIfNotNull( query, startNodeOrNull, KEY_START_NODE_ID );
             addIfNotNull( query, endNodeOrNull, KEY_END_NODE_ID );
-            return query( query, (String) null, null, context );
+            return query( query, null, null, context );
         }
 
         private static void addIfNotNull( BooleanQuery query, Node nodeOrNull, String field )
@@ -537,9 +588,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             }
         }
 
+        @Override
         public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull,
                 Node startNodeOrNull, Node endNodeOrNull )
         {
+            super.assertInTransaction();
             return query( null, queryOrQueryObjectOrNull, startNodeOrNull, endNodeOrNull );
         }
 
@@ -559,9 +612,28 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     RelationshipId.of( rel ), key, value );
         }
 
+        @Override
         public Class<Relationship> getEntityType()
         {
             return Relationship.class;
+        }
+    }
+
+    /**
+     * Copied from AbstractTransactionManager, couldn't find a good reuse
+     */
+    private void assertInTransaction()
+    {
+        try
+        {
+            if ( txManager.getTransaction() == null )
+            {
+                throw new NotInTransactionException();
+            }
+        }
+        catch ( SystemException e )
+        {
+            throw new IllegalStateException( "Unable to determine transaction state", e );
         }
     }
 }

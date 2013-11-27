@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -41,6 +40,11 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.server.SharedServerTestBase;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
+import static java.lang.String.format;
+import static java.net.URLEncoder.encode;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
+
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
     protected static final String NODES = "http://localhost:7474/db/data/node/";
@@ -58,18 +62,33 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         gen().setSection( getDocumentationSectionName() );
     }
 
-    protected String doCypherRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
-        data.get();
+    @Before
+    public void cleanContent()
+    {
+        cleanDatabase();
+        gen().setGraph( graphdb() );
+    }
+
+    @SafeVarargs
+    public final String doCypherRestCall( String endpoint, String scriptTemplate, Status status,
+            Pair<String, String>... params )
+    {
         String parameterString = createParameterString( params );
 
+        return doCypherRestCall( endpoint, scriptTemplate, status, parameterString );
+    }
+
+    public String doCypherRestCall( String endpoint, String scriptTemplate, Status status, String parameterString )
+    {
+        data.get();
 
         String script = createScript( scriptTemplate );
-        String queryString = "{\"query\": \"" + script + "\","
-                             + parameterString + "}";
+        String queryString = "{\"query\": \"" + script + "\",\"params\":{" + parameterString + "}}";
 
+        String snippet = org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier$.MODULE$.apply(script);
         gen().expectedStatus( status.getStatusCode() )
                 .payload( queryString )
-                .description( AsciidocHelper.createCypherSnippet( script ) );
+                .description( AsciidocHelper.createAsciiDocSnippet( "cypher", snippet ) );
         return gen().post( endpoint ).entity();
     }
     
@@ -84,24 +103,28 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
                + script + "----\n";
     }
     
-    private Long idFor( String name ) {
+    private Long idFor( String name )
+    {
         return data.get().get( name ).getId();
     }
     
-    protected String createParameterString( Pair<String, String>[] params ) {
-        String paramString = "\"params\": {";
-        for( Pair<String, String> param : params ) {
-            String delimiter = paramString.endsWith( "{" ) ? "" : ",";
+    private String createParameterString( Pair<String, String>[] params )
+    {
+        String paramString = "";
+        for ( Pair<String, String> param : params )
+        {
+            String delimiter = paramString.isEmpty() || paramString.endsWith( "{" ) ? "" : ",";
 
             paramString += delimiter + "\"" + param.first() + "\":\"" + param.other() + "\"";
         }
-        paramString += "}";
 
         return paramString;
     }
 
-    protected String createScript( String template ) {
-        for( String key : data.get().keySet() ) {
+    protected String createScript( String template )
+    {
+        for ( String key : data.get().keySet() )
+        {
             template = template.replace( "%" + key + "%", idFor( key ).toString() );
         }
         return template;
@@ -109,8 +132,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     
     protected String startGraph( String name )
     {
-        return AsciidocHelper.createGraphVizWithNodeId( "Starting Graph",
-                                                        graphdb(), name );
+        return AsciidocHelper.createGraphVizWithNodeId( "Starting Graph", graphdb(), name );
     }
 
     @Override
@@ -118,14 +140,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return server().getDatabase().getGraph();
     }
-
-    @Before
-    public void cleanContent()
-    {
-        cleanDatabase();
-        gen().setGraph( graphdb() );
-    }
-
+    
     protected String getDataUri()
     {
         return "http://localhost:7474/db/data/";
@@ -138,8 +153,14 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     protected String getNodeUri( Node node )
     {
-        return getDataUri() + "node/" + node.getId();
+        return getNodeUri(node.getId());
     }
+
+    protected String getNodeUri( long node )
+    {
+        return getDataUri() + "node/" + node;
+    }
+
     protected String getRelationshipUri( Relationship node )
     {
         return getDataUri() + "relationship/" + node.getId();
@@ -172,7 +193,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     protected Node[] getNodes( String... names )
     {
         Node[] nodes = {};
-        ArrayList<Node> result = new ArrayList<Node>();
+        ArrayList<Node> result = new ArrayList<>();
         for (String name : names)
         {
             result.add( getNode( name ) );
@@ -180,7 +201,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return result.toArray(nodes);
     }
     
-    public void assertSize(int expectedSize, String entity) {
+    public void assertSize( int expectedSize, String entity )
+    {
         Collection<?> hits;
         try
         {
@@ -189,8 +211,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         }
         catch ( PropertyValueException e )
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            throw new RuntimeException( e );
         }
     }
     
@@ -215,5 +236,55 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     
     protected String getDocumentationSectionName() {
         return "dev/rest-api";
+    }
+
+    public String getLabelsUri()
+    {
+        return format( "%slabels", getDataUri() );
+    }
+
+    public String getPropertyKeysUri()
+    {
+        return format( "%spropertykeys", getDataUri() );
+    }
+
+    public String getNodesWithLabelUri( String label )
+    {
+        return format( "%slabel/%s/nodes", getDataUri(), label );
+    }
+
+    public String getNodesWithLabelAndPropertyUri( String label, String property, Object value ) throws UnsupportedEncodingException
+    {
+        return format( "%slabel/%s/nodes?%s=%s", getDataUri(), label, property, encode( createJsonFrom( value ), "UTF-8" ) );
+    }
+
+    public String getSchemaIndexLabelUri( String label )
+    {
+        return getDataUri() + "schema/index/" + label;
+    }
+
+    public String getSchemaIndexLabelPropertyUri( String label, String property )
+    {
+        return getDataUri() + "schema/index/" + label + "/" + property;
+    }
+
+    public String getSchemaConstraintUri()
+    {
+        return getDataUri() + "schema/constraint/";
+    }
+
+    public String getSchemaConstraintLabelUri( String label )
+    {
+        return getDataUri() + "schema/constraint/" + label;
+    }
+
+    public String getSchemaConstraintLabelUniquenessUri( String label )
+    {
+        return getDataUri() + "schema/constraint/" + label + "/uniqueness/";
+    }
+
+    public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
+    {
+        return getDataUri() + "schema/constraint/" + label + "/uniqueness/" + property;
     }
 }

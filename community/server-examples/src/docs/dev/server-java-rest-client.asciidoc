@@ -24,7 +24,7 @@ classifier=sources
 ----
 
 If the status of the response is +200 OK+, then we know the server is running fine and we can continue.
-If the code fails to conenct to the server, then please have a look at <<server>>. 
+If the code fails to conenct to the server, then please have a look at <<operations>>. 
 
 NOTE: If you get any other response than +200 OK+ (particularly +4xx+ or +5xx+ responses) then please check your configuration and look in the log files in the 'data/log' directory.
 

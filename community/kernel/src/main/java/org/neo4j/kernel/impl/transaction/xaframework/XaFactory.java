@@ -28,12 +28,14 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
+
 /**
 * TODO
 */
 public class XaFactory
 {
-    private final Config config;
+    private Config config;
     private final TxIdGenerator txIdGenerator;
     private final AbstractTransactionManager txManager;
     private final LogBufferFactory logBufferFactory;
@@ -43,8 +45,8 @@ public class XaFactory
     private final LogPruneStrategy pruneStrategy;
 
     public XaFactory( Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
-            LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
-            Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
+                      LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
+                      Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
     {
         this.config = config;
         this.txIdGenerator = txIdGenerator;
@@ -57,7 +59,9 @@ public class XaFactory
     }
 
     public XaContainer newXaContainer( XaDataSource xaDataSource, File logicalLog, XaCommandFactory cf,
-            XaTransactionFactory tf, TransactionStateFactory stateFactory, TransactionInterceptorProviders providers )
+                                       InjectedTransactionValidator injectedTxValidator, XaTransactionFactory tf,
+                                       TransactionStateFactory stateFactory, TransactionInterceptorProviders providers,
+                                       boolean readOnly )
     {
         if ( logicalLog == null || cf == null || tf == null )
         {
@@ -69,15 +73,21 @@ public class XaFactory
         // TODO The dependencies between XaRM, LogicalLog and XaTF should be resolved to avoid the setter
         XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, recoveryVerifier, logicalLog.getName() );
 
+        long rotateAtSize = config.get( logical_log_rotation_threshold );
         XaLogicalLog log;
-        if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
+        if( readOnly)
+        {
+            log = new NoOpLogicalLog( logging );
+        }
+        else if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
         {
             log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, logBufferFactory,
-                    fileSystemAbstraction, logging, pruneStrategy, stateFactory );
+                    fileSystemAbstraction, logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator);
         }
         else
         {
-            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction, logging, pruneStrategy, stateFactory );
+            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction,
+                    logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator );
         }
 
         // TODO These setters should be removed somehow

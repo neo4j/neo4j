@@ -19,11 +19,16 @@
  */
 package org.neo4j.server.statistic;
 
-import org.mortbay.component.LifeCycle;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.FilterHolder;
+import java.util.EnumSet;
+
+import javax.servlet.DispatcherType;
+
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
+
 import org.neo4j.server.logging.Logger;
 
 /**
@@ -53,13 +58,13 @@ public class StatisticStartupListener implements LifeCycle.Listener
     {
         for ( Handler handler : jetty.getHandlers() )
         {
-            if ( handler instanceof Context )
+            if ( handler instanceof ServletContextHandler )
             {
-                final Context context = (Context) handler;
+                final ServletContextHandler context = (ServletContextHandler) handler;
                 final String path = context.getContextPath();
 
                 LOG.info( "adding statistic-filter to " + path );
-                context.addFilter( holder, "/*", Handler.ALL );
+                context.addFilter( holder, "/*", EnumSet.allOf(DispatcherType.class) );
             }
         }
     }
@@ -73,7 +78,11 @@ public class StatisticStartupListener implements LifeCycle.Listener
     public void lifeCycleStopping( final LifeCycle event )
     {
         LOG.info( "stopping filter" );
-        holder.doStop();
+        try {
+            holder.doStop();
+        } catch (Exception e) {
+            throw new RuntimeException(e); // TODO what's appropriate here?
+        }
     }
 
     @Override

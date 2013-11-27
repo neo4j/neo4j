@@ -16,9 +16,7 @@ They typically refer to different kinds of community contributions.
 Below is a list of such places, feel free to look into them and check for outdated or missing content!
 The easiest way to contribute fixes is to comment at the http://docs.neo4j.org/chunked/snapshot/[online HTML version].
 
-* <<tutorials-rest>>
-
 == Drivers and bindings to Neo4j ==
 
-* REST: see <<tutorials-rest>> for a list of active projects
+* REST: see <<languages>> for a list of active projects
 

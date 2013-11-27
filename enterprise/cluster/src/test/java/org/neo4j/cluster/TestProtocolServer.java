@@ -28,6 +28,7 @@ import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionListener;
@@ -46,18 +47,20 @@ public class TestProtocolServer
 
     protected ProtocolServer server;
     private final DelayedDirectExecutor stateMachineExecutor;
+    private URI serverUri;
 
     public TestProtocolServer( TimeoutStrategy timeoutStrategy, ProtocolServerFactory factory, URI serverUri,
                                InstanceId instanceId, AcceptorInstanceStore acceptorInstanceStore,
                                ElectionCredentialsProvider electionCredentialsProvider )
     {
+        this.serverUri = serverUri;
         this.receiver = new TestMessageSource();
         this.sender = new TestMessageSender();
 
         stateMachineExecutor = new DelayedDirectExecutor();
 
         server = factory.newProtocolServer( instanceId, timeoutStrategy, receiver, sender, acceptorInstanceStore,
-                electionCredentialsProvider, stateMachineExecutor );
+                electionCredentialsProvider, stateMachineExecutor, new ObjectStreamFactory(), new ObjectStreamFactory() );
 
         server.listeningAt( serverUri );
     }
@@ -124,6 +127,7 @@ public class TestProtocolServer
         @Override
         public boolean process( Message<? extends MessageType> message )
         {
+            message.setHeader( Message.FROM, serverUri.toASCIIString() );
             messages.add( message );
             return true;
         }

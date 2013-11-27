@@ -15,12 +15,16 @@ Extending Neo4j
 
 We encourage experimentation with Neo4j. You can build extensions to Neo4j, develop library or drivers atop the product, or make contributions directly to the product core. You'll need to sign a Contributor License Agreement in order for us to accept your patches.
 
+For a quick overview of the components in this repository,
+you can read the [RepositoryOverview.md](RepositoryOverview.md).
+
+
 *Please note* that this GitHub repository contains mixed GPL and AGPL code. Our Community edition (in the [community/](community/) directory) is GPL. Our Advanced and Enterprise editions ([advanced/](advanced/) and [enterprise/](enterprise/)) are differently licensed under the AGPL.
 
 Building Neo4j
 --------------
 
-Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.
+Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.0.x and a recent version of Java 7.
 
 * A plain `mvn clean install` will only build the individual jar files. 
 * Test execution is, of course, part of the build.

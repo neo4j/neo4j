@@ -19,21 +19,30 @@
  */
 package org.neo4j.consistency.checking;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
+
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.consistency.store.RecordAccessStub.SCHEMA_RECORD_TYPE;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({DynamicRecordCheckTest.StringStore.class, DynamicRecordCheckTest.ArrayStore.class})
+@Suite.SuiteClasses( {
+        DynamicRecordCheckTest.StringDynamicRecordCheckTest.class,
+        DynamicRecordCheckTest.ArrayDynamicRecordCheckTest.class,
+        DynamicRecordCheckTest.SchemaDynamicRecordCheckTest.class
+} )
 public abstract class DynamicRecordCheckTest
     extends RecordCheckTestBase<DynamicRecord,ConsistencyReport.DynamicConsistencyReport,DynamicRecordCheck>
 {
@@ -55,7 +64,7 @@ public abstract class DynamicRecordCheckTest
         ConsistencyReport.DynamicConsistencyReport report = check( property );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -68,7 +77,7 @@ public abstract class DynamicRecordCheckTest
         ConsistencyReport.DynamicConsistencyReport report = check( property );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -83,7 +92,7 @@ public abstract class DynamicRecordCheckTest
         ConsistencyReport.DynamicConsistencyReport report = check( property );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -99,7 +108,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).nextNotInUse( next );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -114,7 +123,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).selfReferentialNext();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -130,7 +139,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).recordNotFullReferencesNext();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -145,7 +154,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).invalidLength();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -159,7 +168,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).emptyBlock();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -175,7 +184,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).emptyNextBlock( next );
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     // change checking
@@ -200,7 +209,7 @@ public abstract class DynamicRecordCheckTest
         ConsistencyReport.DynamicConsistencyReport report = checkChange( oldProperty, newProperty );
 
         // then
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -215,7 +224,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).emptyBlock();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     @Test
@@ -234,7 +243,7 @@ public abstract class DynamicRecordCheckTest
 
         // then
         verify( report ).nextNotUpdated();
-        verifyOnlyReferenceDispatch( report );
+        verifyNoMoreInteractions( report );
     }
 
     // utilities
@@ -249,9 +258,9 @@ public abstract class DynamicRecordCheckTest
     abstract DynamicRecord record( long id );
 
     @RunWith(JUnit4.class)
-    public static class StringStore extends DynamicRecordCheckTest
+    public static class StringDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
-        public StringStore()
+        public StringDynamicRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.STRING ), 66 );
         }
@@ -271,9 +280,9 @@ public abstract class DynamicRecordCheckTest
     }
 
     @RunWith(JUnit4.class)
-    public static class ArrayStore extends DynamicRecordCheckTest
+    public static class ArrayDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
-        public ArrayStore()
+        public ArrayDynamicRecordCheckTest()
         {
             super( new DynamicRecordCheck( configureDynamicStore( 66 ), DynamicStore.ARRAY ), 66 );
         }
@@ -282,6 +291,31 @@ public abstract class DynamicRecordCheckTest
         DynamicRecord record( long id )
         {
             return array( new DynamicRecord( id ) );
+        }
+
+        @Override
+        DynamicRecord fill( DynamicRecord record, int size )
+        {
+            record.setLength( size );
+            return record;
+        }
+    }
+
+    @RunWith(JUnit4.class)
+    public static class SchemaDynamicRecordCheckTest extends DynamicRecordCheckTest
+    {
+        public SchemaDynamicRecordCheckTest()
+        {
+            super( new DynamicRecordCheck( configureDynamicStore( SchemaStore.BLOCK_SIZE ), DynamicStore.SCHEMA ),
+                   SchemaStore.BLOCK_SIZE );
+        }
+
+        @Override
+        DynamicRecord record( long id )
+        {
+            DynamicRecord result = new DynamicRecord( id );
+            result.setType( SCHEMA_RECORD_TYPE );
+            return result;
         }
 
         @Override

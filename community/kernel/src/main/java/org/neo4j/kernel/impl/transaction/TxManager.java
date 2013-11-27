@@ -38,6 +38,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
+import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
@@ -59,6 +60,38 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public class TxManager extends AbstractTransactionManager implements Lifecycle
 {
+    public interface Monitor
+    {
+        void txStarted( Xid xid );
+        void txCommitted( Xid xid );
+        void txRolledBack( Xid xid );
+
+        void txManagerStopped();
+
+        public static class Adapter implements Monitor
+        {
+            @Override
+            public void txStarted( Xid xid )
+            {
+            }
+
+            @Override
+            public void txCommitted( Xid xid )
+            {
+            }
+
+            @Override
+            public void txRolledBack( Xid xid )
+            {
+            }
+
+            @Override
+            public void txManagerStopped()
+            {
+            }
+        }
+    }
+
     private ThreadLocalWithSize<TransactionImpl> txThreadMap;
 
     private final File txLogDir;
@@ -66,9 +99,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private String txLog1FileName = "tm_tx_log.1";
     private String txLog2FileName = "tm_tx_log.2";
     private final int maxTxLogRecordCount = 1000;
-    private int eventIdentifierCounter = 0;
+    private final AtomicInteger eventIdentifierCounter = new AtomicInteger( 0 );
 
-    private final Map<RecoveredBranchInfo, Boolean> branches = new HashMap<RecoveredBranchInfo, Boolean>();
+    private final Map<RecoveredBranchInfo, Boolean> branches = new HashMap<>();
     private volatile TxLog txLog = null;
     private boolean tmOk = false;
     private Throwable tmNotOkCause;
@@ -89,6 +122,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
 
+    private final Monitor monitor;
+
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
                       KernelPanicEventGenerator kpe,
@@ -97,17 +132,30 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                       TransactionStateFactory stateFactory
     )
     {
+        this(txLogDir, xaDataSourceManager, kpe, log, fileSystem, stateFactory, new Monitor.Adapter());
+    }
+
+    public TxManager( File txLogDir,
+                      XaDataSourceManager xaDataSourceManager,
+                      KernelPanicEventGenerator kpe,
+                      StringLogger log,
+                      FileSystemAbstraction fileSystem,
+                      TransactionStateFactory stateFactory,
+                      Monitor monitor
+    )
+    {
         this.txLogDir = txLogDir;
         this.xaDataSourceManager = xaDataSourceManager;
         this.fileSystem = fileSystem;
         this.log = log;
         this.kpe = kpe;
         this.stateFactory = stateFactory;
+        this.monitor = monitor;
     }
 
-    synchronized int getNextEventIdentifier()
+    int getNextEventIdentifier()
     {
-        return eventIdentifierCounter++;
+        return eventIdentifierCounter.incrementAndGet();
     }
 
     private <E extends Exception> E logAndReturn( String msg, E exception )
@@ -115,12 +163,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         try
         {
             log.logMessage( msg, exception, true );
+            return exception;
         }
         catch ( Throwable t )
         {
-            // ignore
+            return exception;
         }
-        return exception;
     }
 
     private volatile boolean recovered = false;
@@ -134,7 +182,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     public synchronized void start()
             throws Throwable
     {
-        txThreadMap = new ThreadLocalWithSize<TransactionImpl>();
+        txThreadMap = new ThreadLocalWithSize<>();
         openLog();
         findPendingDatasources();
         dataSourceRegistrationListener = new TxManagerDataSourceRegistrationListener();
@@ -176,6 +224,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         recovered = false;
         xaDataSourceManager.removeDataSourceRegistrationListener( dataSourceRegistrationListener );
         closeLog();
+        monitor.txManagerStopped();
     }
 
     @Override
@@ -223,10 +272,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             }
             catch ( IOException e )
             {
-                log.logMessage( "Unable to close tx log[" + txLog.getName() + "]", e );
+                log.error( "Unable to close tx log[" + txLog.getName() + "]", e );
             }
         }
-        log.logMessage( "TM shutting down", true );
+        log.info( "TM shutting down" );
     }
 
     private void changeActiveLog( String newFileName ) throws IOException
@@ -238,18 +287,19 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         fc.write( buf );
         fc.force( true );
         fc.close();
-//        log.logMessage( "Active txlog set to " + newFileName, true );
     }
 
     synchronized void setTmNotOk( Throwable cause )
     {
         if ( !tmOk )
+        {
             return;
-        
+        }
+
         tmOk = false;
         tmNotOkCause = cause;
         log.logMessage( "setting TM not OK", cause );
-        kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
+        kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, tmNotOkCause );
     }
 
     @Override
@@ -261,7 +311,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
-        assertTmOk( "tx begin" );
+        assertTmOk();
         TransactionImpl tx = txThreadMap.get();
         if ( tx != null )
         {
@@ -276,15 +326,17 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             peakConcurrentTransactions = concurrentTxCount;
         }
         startedTxCount.incrementAndGet();
+
+        monitor.txStarted( new XidImpl( tx.getGlobalId(), new byte[0] ) );
         // start record written on resource enlistment
     }
 
-    private void assertTmOk( String source ) throws SystemException
+    private void assertTmOk() throws SystemException
     {
         if ( !tmOk )
         {
             SystemException ex = new SystemException( "TM has encountered some problem, "
-                    + "please perform neccesary action (tx recovery/restart)" );
+                    + "please perform necessary action (tx recovery/restart)" );
             if(tmNotOkCause != null)
             {
                 ex = Exceptions.withCause( ex, tmNotOkCause );
@@ -321,13 +373,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
         }
 
-        boolean hasAnyLocks = false;
         boolean successful = false;
         try
         {
-            assertTmOk( "tx commit" );
-            Thread thread = Thread.currentThread();
-            hasAnyLocks = tx.hasAnyLocks();
+            assertTmOk();
             if ( tx.getStatus() != Status.STATUS_ACTIVE
                     && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
             {
@@ -335,18 +384,17 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                         + getTxStatusAsString( tx.getStatus() ) ) );
             }
 
-
             tx.doBeforeCompletion();
             // delist resources?
             if ( tx.getStatus() == Status.STATUS_ACTIVE )
             {
                 comittedTxCount.incrementAndGet();
-                commit( thread, tx );
+                commit( tx );
             }
             else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
             {
                 rolledBackTxCount.incrementAndGet();
-                rollbackCommit( thread, tx );
+                rollbackCommit( tx );
             }
             else
             {
@@ -357,15 +405,28 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         finally
         {
+            monitor.txCommitted( new XidImpl( tx.getGlobalId(), new byte[0] ) );
             txThreadMap.remove();
-            if ( hasAnyLocks )
+            if ( successful )
             {
-                tx.finish( successful );
+                tx.finish( true );
+            }
+            else
+            {
+                try
+                {
+                    tx.finish( false );
+                }
+                catch ( RuntimeException e )
+                {
+                    log.error( "Failed to commit transaction, and was then subsequently unable to " +
+                            "finish the failed tx.", e );
+                }
             }
         }
     }
 
-    private void commit( Thread thread, TransactionImpl tx )
+    private void commit( TransactionImpl tx )
             throws SystemException, HeuristicMixedException,
             HeuristicRollbackException
     {
@@ -437,10 +498,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 {
                     log.logMessage( "Commit failed", t );
 
-                        setTmNotOk( t );
-                        // this should never be
-                        throw logAndReturn("TM error tx commit",new TransactionFailureException(
-                                "commit threw exception but status is committed?", t ));
+                    setTmNotOk( t );
+                    // this should never be
+                    throw logAndReturn("TM error tx commit",new TransactionFailureException(
+                            "commit threw exception but status is committed?", t ));
                 }
             }
 
@@ -496,18 +557,19 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 if ( commitFailureCause == null )
                 {
                     throw logAndReturn( "TM error tx commit", new HeuristicRollbackException(
-                            "Failed to commit, transaction rolledback ---> "
+                            "Failed to commit, transaction rolled back ---> "
                                     + "error code was: " + xaErrorCode ) );
                 }
                 else
                 {
                     throw logAndReturn( "TM error tx commit", Exceptions.withCause( new HeuristicRollbackException(
-                            "Failed to commit, transaction rolledback ---> " +
+                            "Failed to commit, transaction rolled back ---> " +
                                     commitFailureCause ), commitFailureCause ) );
                 }
             }
         }
         tx.doAfterCompletion();
+
         try
         {
             if ( tx.isGlobalStartRecordWritten() )
@@ -526,7 +588,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
     }
 
-    private void rollbackCommit( Thread thread, TransactionImpl tx )
+    private void rollbackCommit( TransactionImpl tx )
             throws HeuristicMixedException, RollbackException, SystemException
     {
         try
@@ -563,7 +625,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
         RollbackException rollbackException = new RollbackException(
-                "Failed to commit, transaction rolledback" );
+                "Failed to commit, transaction rolled back" );
         ExceptionCauseSetter.setCause( rollbackException, tx.getRollbackCause() );
         throw rollbackException;
     }
@@ -577,11 +639,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
         }
 
-        boolean hasAnyLocks = false;
         try
         {
-            assertTmOk( "tx rollback" );
-            hasAnyLocks = tx.hasAnyLocks();
+            assertTmOk();
             if ( tx.getStatus() == Status.STATUS_ACTIVE ||
                     tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
                     tx.getStatus() == Status.STATUS_PREPARING )
@@ -632,11 +692,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         finally
         {
             txThreadMap.remove();
-            if ( hasAnyLocks )
-            {
-                tx.finish( false );
-            }
+            tx.finish( false );
         }
+
+        monitor.txRolledBack( new XidImpl( tx.getGlobalId(), new byte[0] ) );
     }
 
     @Override
@@ -651,57 +710,54 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     @Override
-	public Transaction getTransaction() throws SystemException
+    public Transaction getTransaction() throws SystemException
     {
-        assertTmOk( "get transaction" );
+        assertTmOk();
         return txThreadMap.get();
     }
-    
+
     @Override
     public void resume( Transaction tx ) throws IllegalStateException,
             SystemException
     {
-        assertTmOk( "tx resume" );
-        if ( txThreadMap.get() != null )
+        assertTmOk();
+        Transaction associatedTx = txThreadMap.get();
+        if ( associatedTx != null )
         {
-            throw new IllegalStateException( "Transaction already associated" );
+            throw new ThreadAssociatedWithOtherTransactionException( Thread.currentThread(), associatedTx, tx );
         }
-        if ( tx != null )
+        
+        TransactionImpl txImpl = (TransactionImpl) tx;
+        if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
         {
-            TransactionImpl txImpl = (TransactionImpl) tx;
-            if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
+            if ( txImpl.isActive() )
             {
-                if ( txImpl.isActive() )
-                {
-                    throw new IllegalStateException( txImpl + " already active" );
-                }
-                txImpl.markAsActive();
-                txThreadMap.set( txImpl );
+                throw new TransactionAlreadyActiveException( Thread.currentThread(), tx );
             }
-            // generate pro-active event resume
+            txImpl.markAsActive();
+            txThreadMap.set( txImpl );
         }
     }
 
     @Override
     public Transaction suspend() throws SystemException
     {
-        assertTmOk( "tx suspend" );
+        assertTmOk();
         // check for ACTIVE/MARKED_ROLLBACK?
         TransactionImpl tx = txThreadMap.get();
         if ( tx != null )
         {
             txThreadMap.remove();
-
-            // generate pro-active event suspend
             tx.markAsSuspended();
         }
+        // OK to return null here according to the JTA spec (at least 1.1)
         return tx;
     }
 
     @Override
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
-        assertTmOk( "tx set rollback only" );
+        assertTmOk();
         TransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
@@ -713,7 +769,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void setTransactionTimeout( int seconds ) throws SystemException
     {
-        assertTmOk( "tx set timeout" );
+        assertTmOk();
         // ...
     }
 
@@ -760,14 +816,14 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
                 txLog = new TxLog( new File( txLogDir, txLog1FileName), fileSystem );
-                log.logMessage( "TM new log: " + txLog1FileName, true );
+                log.info( "TM new log: " + txLog1FileName );
                 fc.force( true );
                 fc.close();
             }
         }
         catch ( IOException e )
         {
-            log.logMessage( "Unable to start TM", e );
+            log.error( "Unable to start TM", e );
             throw logAndReturn( "TM startup failure",
                     new TransactionFailureException( "Unable to start TM", e ) );
         }
@@ -858,21 +914,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
     }
 
-    public synchronized void dumpTransactions()
-    {
-//        Iterator<TransactionImpl> itr = txThreadMap.values().iterator();
-//        if ( !itr.hasNext() )
-//        {
-//            System.out.println( "No uncompleted transactions" );
-//            return;
-//        }
-//        System.out.println( "Uncompleted transactions found: " );
-//        while ( itr.hasNext() )
-//        {
-//            System.out.println( itr.next() );
-//        }
-    }
-
     /**
      * @return The current transaction's event identifier or -1 if no
      *         transaction is currently running.
@@ -880,7 +921,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public int getEventIdentifier()
     {
-        TransactionImpl tx = null;
+        TransactionImpl tx;
         try
         {
             tx = (TransactionImpl) getTransaction();
@@ -955,7 +996,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         return tx != null ? ((TransactionImpl)tx).getState() : TransactionState.NO_STATE;
     }
-    
+
     private class TxManagerDataSourceRegistrationListener implements DataSourceRegistrationListener
     {
         @Override
@@ -969,7 +1010,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             }
             if ( everythingRegistered )
             {
-//                    openLog();
                 doRecovery();
             }
         }

@@ -18,29 +18,34 @@
  */
 package org.neo4j.examples.orderedpath;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaDocsGenerator;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 public class OrderedPathDocTest
 {
     private static OrderedPath orderedPath;
     private static JavaDocsGenerator gen;
+    private static GraphDatabaseService db;
 
     @BeforeClass
     public static void setUp() throws IOException
@@ -50,7 +55,8 @@ public class OrderedPathDocTest
         {
             FileUtils.deleteRecursively( dir );
         }
-        orderedPath = new OrderedPath( new ImpermanentGraphDatabase() );
+        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        orderedPath = new OrderedPath( db );
         gen = new JavaDocsGenerator( "ordered-path-java", "dev" );
     }
 
@@ -65,7 +71,10 @@ public class OrderedPathDocTest
     {
         Node A = orderedPath.createTheGraph();
         TraversalDescription traversalDescription = orderedPath.findPaths();
-        assertEquals( 1, count( traversalDescription.traverse( A ) ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( 1, count( traversalDescription.traverse( A ) ) );
+        }
         String output = orderedPath.printPaths( traversalDescription, A );
         assertTrue( output.contains( "(A)--[REL1]-->(B)--[REL2]-->(C)--[REL3]-->(D)" ) );
         String graph = AsciidocHelper.createGraphVizDeletingReferenceNode(

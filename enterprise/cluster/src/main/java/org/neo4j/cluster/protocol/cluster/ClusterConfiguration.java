@@ -32,6 +32,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Cluster configuration. Includes name of cluster, list of nodes, and role mappings
@@ -41,14 +42,16 @@ public class ClusterConfiguration
     public static final String COORDINATOR = "coordinator";
 
     private final String name;
+    private final StringLogger logger;
     private final List<URI> candidateMembers;
     private Map<InstanceId, URI> members;
     private Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
     private int allowedFailures = 1;
 
-    public ClusterConfiguration( String name, String... members )
+    public ClusterConfiguration( String name, StringLogger logger, String... members )
     {
         this.name = name;
+        this.logger = logger;
         this.candidateMembers = new ArrayList<URI>();
         for ( String node : members )
         {
@@ -64,9 +67,10 @@ public class ClusterConfiguration
         this.members = new HashMap<InstanceId, URI>();
     }
 
-    public ClusterConfiguration( String name, Collection<URI> members )
+    public ClusterConfiguration( String name, StringLogger logger, Collection<URI> members )
     {
         this.name = name;
+        this.logger = logger;
         this.candidateMembers = new ArrayList<URI>( members );
         this.members = new HashMap<InstanceId, URI>();
     }
@@ -74,6 +78,7 @@ public class ClusterConfiguration
     public ClusterConfiguration( ClusterConfiguration copy )
     {
         this.name = copy.name;
+        this.logger = copy.logger;
         this.candidateMembers = new ArrayList<URI>( copy.candidateMembers );
         this.roles = new HashMap<String, InstanceId>( copy.roles );
         this.members = new HashMap<InstanceId, URI>( copy.members );
@@ -92,6 +97,7 @@ public class ClusterConfiguration
 
     public void left( InstanceId leftInstanceId )
     {
+        logger.info( "Instance " + leftInstanceId + " is leaving the cluster" );
         this.members = new HashMap<InstanceId, URI>( members );
         members.remove( leftInstanceId );
 
@@ -103,6 +109,7 @@ public class ClusterConfiguration
 
             if ( roleEntry.getValue().equals( leftInstanceId ) )
             {
+                logger.info("Removed role " + roleEntry.getValue() + " from leaving instance " + roleEntry.getKey() );
                 entries.remove();
             }
         }
@@ -177,6 +184,7 @@ public class ClusterConfiguration
     {
         roles = new HashMap<String, InstanceId>( roles );
         InstanceId removed = roles.remove( roleName );
+        logger.info( "Removed role " + roleName + " from instance " + removed );
     }
 
     public InstanceId getElected( String roleName )

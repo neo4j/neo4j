@@ -27,33 +27,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
  * Test atomicity of Neo4j. How to get consistent results with or without locks?
  */
-@Ignore("unstable")
+@Ignore( "unstable" )
 public class TestIsolationMultipleThreads
 {
     GraphDatabaseService database;
 
     private static final int COUNT = 1000;
 
-    @Rule
-    public TemporaryFolder temp = new TemporaryFolder();
-
     @Before
     public void setup()
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabase( temp.getRoot().getAbsolutePath() );
+        database = new TestGraphDatabaseFactory().newImpermanentDatabase();
         Transaction tx = database.beginTx();
 
         for (int i = 0; i < COUNT; i++)
@@ -502,7 +497,7 @@ public class TestIsolationMultipleThreads
     private static class DataChecker2
         implements Runnable
     {
-        private int count;
+        private final int count;
         private final AtomicBoolean done;
         private final GraphDatabaseService database;
         protected Transaction tx;

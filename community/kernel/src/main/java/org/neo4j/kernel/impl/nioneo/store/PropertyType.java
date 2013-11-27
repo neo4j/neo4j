@@ -19,109 +19,109 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.util.Arrays;
+import java.util.concurrent.Callable;
+
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
+
 /**
  * Defines valid property types.
  */
+@SuppressWarnings("UnnecessaryBoxing")
 public enum PropertyType
 {
     BOOL( 1 )
     {
+        @Override
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
+        {
+            return Property.booleanProperty( propertyKeyId, getValue( block.getSingleValueLong() ) );
+        }
+
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
             return getValue( block.getSingleValueLong() );
         }
 
-        private Boolean getValue( long propBlock )
+        private boolean getValue( long propBlock )
         {
-            return ( propBlock & 0x1 ) == 1 ? Boolean.TRUE : Boolean.FALSE;
-        }
-
-        @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
-        {
-            // TODO : The masking off of bits should not happen here
-            return PropertyDatas.forBoolean( block.getKeyIndexId(), propertyId,
-                    getValue( block.getSingleValueLong() ).booleanValue() );
+            return ( propBlock & 0x1 ) == 1;
         }
     },
     BYTE( 2 )
     {
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
         {
-            return Byte.valueOf( (byte) block.getSingleValueByte() );
+            return Property.byteProperty( propertyKeyId, block.getSingleValueByte() );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            // TODO : The masking off of bits should not happen here
-            return PropertyDatas.forByte( block.getKeyIndexId(), propertyId,
-                    block.getSingleValueByte() );
+            return Byte.valueOf( block.getSingleValueByte() );
         }
     },
     SHORT( 3 )
     {
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
         {
-            return Short.valueOf( block.getSingleValueShort() );
+            return Property.shortProperty( propertyKeyId, block.getSingleValueShort() );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            // TODO : The masking off of bits should not happen here
-            return PropertyDatas.forShort( block.getKeyIndexId(), propertyId,
-                    block.getSingleValueShort() );
+            return Short.valueOf( block.getSingleValueShort() );
         }
     },
     CHAR( 4 )
     {
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
         {
-            return Character.valueOf( (char) block.getSingleValueShort() );
+            return Property.charProperty( propertyKeyId, (char) block.getSingleValueShort() );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            // TODO : The masking off of bits should not happen here
-            return PropertyDatas.forChar( block.getKeyIndexId(), propertyId,
-                    (char) block.getSingleValueShort() );
+            return Character.valueOf( (char) block.getSingleValueShort() );
         }
     },
     INT( 5 )
     {
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
         {
-            return Integer.valueOf( block.getSingleValueInt() );
+            return Property.intProperty( propertyKeyId, block.getSingleValueInt() );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            // TODO : The masking off of bits should not happen here
-            return PropertyDatas.forInt( block.getKeyIndexId(), propertyId,
-                    block.getSingleValueInt() );
+            return Integer.valueOf( block.getSingleValueInt() );
         }
     },
     LONG( 6 )
     {
         @Override
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
+        {
+            long firstBlock = block.getSingleValueBlock();
+            long value = valueIsInlined( firstBlock ) ? (block.getSingleValueLong() >>> 1) : block.getValueBlocks()[1];
+            return Property.longProperty( propertyKeyId, value );
+        }
+
+        @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
             return Long.valueOf( getLongValue( block ) );
         }
-        
+
         private long getLongValue( PropertyBlock block )
         {
             long firstBlock = block.getSingleValueBlock();
@@ -129,13 +129,6 @@ public enum PropertyType
                     block.getValueBlocks()[1];
         }
 
-        @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
-        {
-            return PropertyDatas.forLong( block.getKeyIndexId(), propertyId, getLongValue( block ) );
-        }
-        
         private boolean valueIsInlined( long firstBlock )
         {
             // [][][][][   i,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
@@ -151,6 +144,12 @@ public enum PropertyType
     FLOAT( 7 )
     {
         @Override
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
+        {
+            return Property.floatProperty( propertyKeyId, Float.intBitsToFloat( block.getSingleValueInt() ) );
+        }
+
+        @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
             return Float.valueOf( getValue( block.getSingleValueInt() ) );
@@ -158,19 +157,17 @@ public enum PropertyType
 
         private float getValue( int propBlock )
         {
-            return Float.intBitsToFloat( (int) propBlock );
-        }
-
-        @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
-        {
-            return PropertyDatas.forFloat( block.getKeyIndexId(), propertyId,
-                    getValue( block.getSingleValueInt() ) );
+            return Float.intBitsToFloat( propBlock );
         }
     },
     DOUBLE( 8 )
     {
+        @Override
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
+        {
+            return Property.doubleProperty( propertyKeyId, Double.longBitsToDouble( block.getValueBlocks()[1] ) );
+        }
+
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
@@ -183,14 +180,6 @@ public enum PropertyType
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
-        {
-            return PropertyDatas.forDouble( block.getKeyIndexId(), propertyId,
-                    getValue( block.getValueBlocks()[1] ) );
-        }
-
-        @Override
         public int calculateNumberOfBlocksUsed( long firstBlock )
         {
             return 2;
@@ -199,75 +188,91 @@ public enum PropertyType
     STRING( 9 )
     {
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public DefinedProperty readProperty( int propertyKeyId, final PropertyBlock block, final PropertyStore store )
         {
-            if ( store == null ) return null;
+            return Property.lazyStringProperty(propertyKeyId, new Callable<String>()
+            {
+                @Override
+                public String call() throws Exception
+                {
+                    return getValue( block, store );
+                }
+            });
+        }
+
+        @Override
+        public String getValue( PropertyBlock block, PropertyStore store )
+        {
+            if ( store == null )
+            {
+                return null;
+            }
             return store.getStringFor( block );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
-        {
-            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
-                    propertyId, extractedValue );
-        }
-        
-        @Override
         byte[] readDynamicRecordHeader( byte[] recordBytes )
         {
-            return new byte[0];
+            return EMPTY_BYTE_ARRAY;
         }
     },
     ARRAY( 10 )
     {
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public DefinedProperty readProperty( int propertyKeyId, final PropertyBlock block, final PropertyStore store )
         {
-            if ( store == null ) return null;
-            return store.getArrayFor( block );
+            return Property.lazyArrayProperty(propertyKeyId, new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
+                {
+                    return getValue( block, store );
+                }
+            });
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
-                    propertyId, extractedValue );
+            if ( store == null )
+            {
+                return null;
+            }
+            return store.getArrayFor( block );
         }
-        
+
         @Override
         byte[] readDynamicRecordHeader( byte[] recordBytes )
         {
             byte itemType = recordBytes[0];
             if ( itemType == STRING.byteValue() )
+            {
                 return headOf( recordBytes, DynamicArrayStore.STRING_HEADER_SIZE );
+            }
             else if ( itemType <= DOUBLE.byteValue() )
+            {
                 return headOf( recordBytes, DynamicArrayStore.NUMBER_HEADER_SIZE );
+            }
             throw new IllegalArgumentException( "Unknown array type " + itemType );
         }
 
         private byte[] headOf( byte[] bytes, int length )
         {
-            byte[] head = new byte[length];
-            System.arraycopy( bytes, 0, head, 0, length );
-            return head;
+            return Arrays.copyOf( bytes, length );
         }
     },
     SHORT_STRING( 11 )
     {
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
         {
-            return LongerShortString.decode( block );
+            return Property.stringProperty( propertyKeyId, LongerShortString.decode( block ) );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
-                    propertyId, getValue( block, null ) );
+            return LongerShortString.decode( block );
         }
 
         @Override
@@ -279,19 +284,18 @@ public enum PropertyType
     SHORT_ARRAY( 12 )
     {
         @Override
+        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store )
+        {
+            // TODO: Specialize per type
+            return Property.property( propertyKeyId, ShortArray.decode(block) );
+        }
+
+        @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
             return ShortArray.decode( block );
         }
 
-        @Override
-        public PropertyData newPropertyData( PropertyBlock block,
-                long propertyId, Object extractedValue )
-        {
-            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
-                    propertyId, getValue( block, null ) );
-        }
-        
         @Override
         public int calculateNumberOfBlocksUsed( long firstBlock )
         {
@@ -333,8 +337,7 @@ public enum PropertyType
 
     public abstract Object getValue( PropertyBlock block, PropertyStore store );
 
-    public abstract PropertyData newPropertyData( PropertyBlock block,
-            long propertyId, Object extractedValue );
+    public abstract DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, PropertyStore store );
 
     public static PropertyType getPropertyType( long propBlock, boolean nullOnIllegal )
     {
@@ -366,12 +369,15 @@ public enum PropertyType
             return SHORT_STRING;
         case 12:
             return SHORT_ARRAY;
-        default: if (nullOnIllegal) return null;
+        default: if (nullOnIllegal)
+        {
+            return null;
+        }
             throw new InvalidRecordException( "Unknown property type for type "
                                               + type );
         }
     }
-    
+
     // TODO In wait of a better place
     public static int getPayloadSize()
     {
@@ -398,9 +404,11 @@ public enum PropertyType
     {
         return 1;
     }
-    
+
     byte[] readDynamicRecordHeader( byte[] recordBytes )
     {
         throw new UnsupportedOperationException();
     }
+
+    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 }

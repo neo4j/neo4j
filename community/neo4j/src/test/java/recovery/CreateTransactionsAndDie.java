@@ -19,19 +19,13 @@
  */
 package recovery;
 
-import static java.lang.Integer.parseInt;
-import static java.lang.System.exit;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.LogTestUtils.EVERYTHING_BUT_DONE_RECORDS;
-import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
-import static org.neo4j.test.LogTestUtils.filterTxLog;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Ignore;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -44,7 +38,16 @@ import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
-@Ignore( "Used from another test case and isn't a test case in itself" )
+import static java.lang.Integer.parseInt;
+import static java.lang.System.exit;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.test.LogTestUtils.EVERYTHING_BUT_DONE_RECORDS;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
+import static org.neo4j.test.LogTestUtils.filterTxLog;
+
+@Ignore( "Used from another test case and is not a test case in itself" )
 public class CreateTransactionsAndDie
 {
     public static void main( String[] args )
@@ -61,34 +64,25 @@ public class CreateTransactionsAndDie
 
     private static void create1pcTx( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        try
+        try(Transaction tx = db.beginTx())
         {
             db.createNode();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
     private static void create2pcTx( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        try
+        try(Transaction tx = db.beginTx())
         {
             Node node = db.createNode();
             db.index().forNodes( "index" ).add( node, "key", "value" );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
     
-    public static String produceNonCleanDbWhichWillRecover2PCsOnStartup( String name, int nrOf2PcTransactionsToRecover ) throws Exception, IOException
+    public static String produceNonCleanDbWhichWillRecover2PCsOnStartup( String name, int nrOf2PcTransactionsToRecover )
+            throws Exception
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         String dir = TargetDirectory.forTest( CreateTransactionsAndDie.class ).directory( name, true ).getAbsolutePath();

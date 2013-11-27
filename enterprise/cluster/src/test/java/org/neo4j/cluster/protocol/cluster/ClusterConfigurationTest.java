@@ -32,6 +32,7 @@ import java.util.Collections;
 import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Created with IntelliJ IDEA.
@@ -58,7 +59,7 @@ public class ClusterConfigurationTest
         }
     }
 
-    ClusterConfiguration configuration = new ClusterConfiguration( "default", new ArrayList<URI>() );
+    ClusterConfiguration configuration = new ClusterConfiguration( "default", StringLogger.SYSTEM, new ArrayList<URI>() );
 
     @Test
     public void givenEmptyClusterWhenNodeAddedThenNodeWasAdded()

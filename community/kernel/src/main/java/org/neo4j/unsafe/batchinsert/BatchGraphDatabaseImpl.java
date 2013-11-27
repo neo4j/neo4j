@@ -23,9 +23,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -33,6 +35,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
@@ -41,60 +44,57 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
+import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.PlaceboTransaction;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+
+import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 class BatchGraphDatabaseImpl implements GraphDatabaseService
 {
     final BatchInserter batchInserter;
 
-    private final LruCache<Long,NodeBatchImpl> nodes =
-        new LruCache<Long,NodeBatchImpl>( "NodeCache", 10000 )
-        {
-            @Override
-            public void elementCleaned( NodeBatchImpl node )
+    private final LruCache<Long, NodeBatchImpl> nodes =
+            new LruCache<Long, NodeBatchImpl>( "NodeCache", 10000 )
             {
-                Map<String,Object> properties = node.getProperties();
-                if ( properties != null )
+                @Override
+                public void elementCleaned( NodeBatchImpl node )
                 {
-                    batchInserter.setNodeProperties( node.getId(), properties );
+                    Map<String, Object> properties = node.getProperties();
+                    if ( properties != null )
+                    {
+                        batchInserter.setNodeProperties( node.getId(), properties );
+                    }
                 }
-            }
-        };
+            };
 
-    private final LruCache<Long,RelationshipBatchImpl> rels =
-        new LruCache<Long,RelationshipBatchImpl>( "RelCache", 10000 )
-        {
-            @Override
-            public void elementCleaned( RelationshipBatchImpl rel )
+    private final LruCache<Long, RelationshipBatchImpl> rels =
+            new LruCache<Long, RelationshipBatchImpl>( "RelCache", 10000 )
             {
-                Map<String,Object> properties = rel.getProperties();
-                if ( properties != null )
+                @Override
+                public void elementCleaned( RelationshipBatchImpl rel )
                 {
-                    batchInserter.setRelationshipProperties( rel.getId(),
-                        properties );
+                    Map<String, Object> properties = rel.getProperties();
+                    if ( properties != null )
+                    {
+                        batchInserter.setRelationshipProperties( rel.getId(),
+                                properties );
+                    }
                 }
-            }
-        };
-
-    BatchGraphDatabaseImpl( String storeDir )
-    {
-        this.batchInserter = new BatchInserterImpl( storeDir );
-    }
-
-    BatchGraphDatabaseImpl( String storeDir, Map<String, String> stringParams )
-    {
-        this.batchInserter = new BatchInserterImpl( storeDir, stringParams );
-    }
+            };
 
     BatchGraphDatabaseImpl( String storeDir, FileSystemAbstraction fileSystem,
-            Map<String, String> stringParams )
+            Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        this.batchInserter = new BatchInserterImpl( storeDir, fileSystem, stringParams );
+        this.batchInserter = new BatchInserterImpl( storeDir, fileSystem, stringParams, kernelExtensions );
     }
-    
+
     /**
      * Intended for use in tests only.
      */
@@ -113,7 +113,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     {
         return new FakeTransaction();
     }
-    
+
     @Override
     public Node createNode()
     {
@@ -123,22 +123,36 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         return node;
     }
 
+    @Override
+    public Node createNode( Label... labels )
+    {
+        long id = batchInserter.createNode( null, labels );
+        NodeBatchImpl node = new NodeBatchImpl( id, this, emptyProps() );
+        nodes.put( id, node );
+        return node;
+    }
+
+    private static UnsupportedOperationException unsupportedOperation()
+    {
+        return new UnsupportedOperationException( "Batch inserter mode" );
+    }
+
     static Map<String,Object> emptyProps()
     {
-        return new HashMap<String,Object>();
+        return new HashMap<>();
     }
 
     @Override
     public Iterable<Node> getAllNodes()
     {
-        throw new UnsupportedOperationException( "Batch inserter mode" );
+        throw unsupportedOperation();
     }
 
     public Iterable<Relationship> getAllRelationships()
     {
-        throw new UnsupportedOperationException( "Batch inserter mode" );
+        throw unsupportedOperation();
     }
-    
+
     @Override
     public Node getNodeById( long id )
     {
@@ -147,8 +161,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         {
             try
             {
-                node = new NodeBatchImpl( id, this,
-                    batchInserter.getNodeProperties( id ) );
+                node = new NodeBatchImpl( id, this, mutableCopyOf( batchInserter.getNodeProperties( id ) ) );
                 nodes.put( id, node );
             }
             catch ( InvalidRecordException e )
@@ -159,10 +172,9 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         return node;
     }
 
-    @Override
-    public Node getReferenceNode()
+    private Map<String, Object> mutableCopyOf( Map<String, Object> source )
     {
-        return getNodeById( 0 );
+        return new HashMap<>( source );
     }
 
     @Override
@@ -174,10 +186,10 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             try
             {
                 BatchRelationship simpleRel =
-                    batchInserter.getRelationshipById( id );
-                Map<String,Object> props =
-                    batchInserter.getRelationshipProperties( id );
-                rel = new RelationshipBatchImpl( simpleRel, this, props );
+                        batchInserter.getRelationshipById( id );
+                Map<String, Object> props =
+                        batchInserter.getRelationshipProperties( id );
+                rel = new RelationshipBatchImpl( simpleRel, this, mutableCopyOf( props ) );
                 rels.put( id, rel );
             }
             catch ( InvalidRecordException e )
@@ -191,7 +203,13 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        throw new UnsupportedOperationException( "Batch inserter mode" );
+        throw unsupportedOperation();
+    }
+
+    @Override
+    public boolean isAvailable( long timeout )
+    {
+        return true;
     }
 
     @Override
@@ -207,11 +225,16 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         public void failure()
         {
             throw new NotInTransactionException( "Batch insert mode, " +
-                "failure is not an option." );
+                    "failure is not an option." );
         }
 
         @Override
         public void finish()
+        {
+        }
+        
+        @Override
+        public void close()
         {
         }
 
@@ -219,13 +242,13 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         public void success()
         {
         }
-        
+
         @Override
         public Lock acquireWriteLock( PropertyContainer entity )
         {
             return PlaceboTransaction.NO_LOCK;
         }
-        
+
         @Override
         public Lock acquireReadLock( PropertyContainer entity )
         {
@@ -238,10 +261,10 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         private final BatchGraphDatabaseImpl graphDbService;
 
         private final long id;
-        private final Map<String,Object> properties;
+        private final Map<String, Object> properties;
 
         NodeBatchImpl( long id, BatchGraphDatabaseImpl graphDbService,
-            Map<String,Object> properties )
+                       Map<String, Object> properties )
         {
             this.id = id;
             this.graphDbService = graphDbService;
@@ -256,10 +279,10 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
         @Override
         public Relationship createRelationshipTo( Node otherNode,
-            RelationshipType type )
+                                                  RelationshipType type )
         {
             long relId = graphDbService.getBatchInserter().createRelationship( id,
-                otherNode.getId(), type, null );
+                    otherNode.getId(), type, null );
             RelationshipBatchImpl rel = new RelationshipBatchImpl(
                     new BatchRelationship( relId, id, otherNode.getId(), type ),
                     graphDbService, emptyProps() );
@@ -267,7 +290,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             return rel;
         }
 
-        Map<String,Object> getProperties()
+        Map<String, Object> getProperties()
         {
             return properties;
         }
@@ -275,7 +298,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public void delete()
         {
-            throw new UnsupportedOperationException();
+            throw unsupportedOperation();
         }
 
         @Override
@@ -285,10 +308,10 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         }
 
         private RelIterator newRelIterator( Direction dir,
-            RelationshipType[] types )
+                                            RelationshipType[] types )
         {
             Iterable<Long> relIds =
-                graphDbService.getBatchInserter().getRelationshipIds( id );
+                    graphDbService.getBatchInserter().getRelationshipIds( id );
             return new RelIterator( graphDbService, relIds, id, dir, types );
         }
 
@@ -300,18 +323,18 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
         @Override
         public Iterable<Relationship> getRelationships(
-            RelationshipType... types )
+                RelationshipType... types )
         {
             return newRelIterator( Direction.BOTH, types );
         }
 
         @Override
         public Iterable<Relationship> getRelationships( Direction direction,
-                RelationshipType... types )
+                                                        RelationshipType... types )
         {
             return newRelIterator( direction, types );
         }
-        
+
         @Override
         public Iterable<Relationship> getRelationships( Direction dir )
         {
@@ -320,24 +343,24 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
         @Override
         public Iterable<Relationship> getRelationships( RelationshipType type,
-            Direction dir )
+                                                        Direction dir )
         {
-            return newRelIterator( dir, new RelationshipType[] { type } );
+            return newRelIterator( dir, new RelationshipType[]{type} );
         }
 
         @Override
         public Relationship getSingleRelationship( RelationshipType type,
-            Direction dir )
+                                                   Direction dir )
         {
             Iterator<Relationship> relItr =
-                newRelIterator( dir, new RelationshipType[] { type } );
+                    newRelIterator( dir, new RelationshipType[]{type} );
             if ( relItr.hasNext() )
             {
                 Relationship rel = relItr.next();
                 if ( relItr.hasNext() )
                 {
                     throw new NotFoundException( "More than one relationship[" +
-                        type + ", " + dir + "] found for " + this );
+                            type + ", " + dir + "] found for " + this );
                 }
                 return rel;
             }
@@ -361,19 +384,19 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         {
             return newRelIterator( direction, types ).hasNext();
         }
-        
+
         @Override
         public boolean hasRelationship( Direction dir )
         {
             Iterator<Relationship> relItr =
-                newRelIterator( dir, null );
+                    newRelIterator( dir, null );
             return relItr.hasNext();
         }
 
         @Override
         public boolean hasRelationship( RelationshipType type, Direction dir )
         {
-            return newRelIterator( dir, new RelationshipType[] { type } ).hasNext();
+            return newRelIterator( dir, new RelationshipType[]{type} ).hasNext();
         }
 
         /* Tentative expansion API
@@ -408,30 +431,61 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
         @Override
         public Traverser traverse( Order traversalOrder,
-            StopEvaluator stopEvaluator,
-            ReturnableEvaluator returnableEvaluator,
-            RelationshipType relationshipType, Direction direction )
+                                   StopEvaluator stopEvaluator,
+                                   ReturnableEvaluator returnableEvaluator,
+                                   RelationshipType relationshipType, Direction direction )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
         public Traverser traverse( Order traversalOrder,
-            StopEvaluator stopEvaluator,
-            ReturnableEvaluator returnableEvaluator,
-            RelationshipType firstRelationshipType, Direction firstDirection,
-            RelationshipType secondRelationshipType, Direction secondDirection )
+                                   StopEvaluator stopEvaluator,
+                                   ReturnableEvaluator returnableEvaluator,
+                                   RelationshipType firstRelationshipType, Direction firstDirection,
+                                   RelationshipType secondRelationshipType, Direction secondDirection )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
         public Traverser traverse( Order traversalOrder,
-            StopEvaluator stopEvaluator,
-            ReturnableEvaluator returnableEvaluator,
-            Object... relationshipTypesAndDirections )
+                                   StopEvaluator stopEvaluator,
+                                   ReturnableEvaluator returnableEvaluator,
+                                   Object... relationshipTypesAndDirections )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public void addLabel( Label label )
+        {
+           Set<Label> labelSet = asSet( graphDbService.batchInserter.getNodeLabels( getId() ) );
+           labelSet.add( label );
+           Label[] labelIds = new Label[ labelSet.size() ];
+           graphDbService.batchInserter.setNodeLabels( getId(), labelSet.toArray( labelIds ) );
+        }
+
+        @Override
+        public void removeLabel( Label label )
+        {
+            Set<Label> labelSet = asSet( graphDbService.batchInserter.getNodeLabels( getId() ) );
+            labelSet.remove( label );
+            Label[] labelIds = new Label[ labelSet.size() ];
+            graphDbService.batchInserter.setNodeLabels( getId(), labelSet.toArray( labelIds ) );
+        }
+
+        @Override
+        public boolean hasLabel( Label label )
+        {
+            return graphDbService.batchInserter.nodeHasLabel( getId(), label );
+        }
+        
+        @Override
+        public ResourceIterable<Label> getLabels()
+        {
+            final Iterable<Label> labels = graphDbService.batchInserter.getNodeLabels( getId() );
+            return asResourceIterable( labels );
         }
 
         @Override
@@ -460,12 +514,6 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         public Iterable<String> getPropertyKeys()
         {
             return properties.keySet();
-        }
-
-        @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return properties.values();
         }
 
         @Override
@@ -505,7 +553,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public int hashCode()
         {
-            return (int) ( id ^ ( id >>> 32 ) );
+            return (int) (id ^ (id >>> 32));
         }
     }
 
@@ -513,10 +561,10 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     {
         private final BatchRelationship rel;
         private final BatchGraphDatabaseImpl graphDbService;
-        private final Map<String,Object> properties;
+        private final Map<String, Object> properties;
 
         RelationshipBatchImpl( BatchRelationship rel,
-            BatchGraphDatabaseImpl graphDbService, Map<String,Object> properties )
+                               BatchGraphDatabaseImpl graphDbService, Map<String, Object> properties )
         {
             this.rel = rel;
             this.graphDbService = graphDbService;
@@ -529,7 +577,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             return graphDbService;
         }
 
-        Map<String,Object> getProperties()
+        Map<String, Object> getProperties()
         {
             return properties;
         }
@@ -537,7 +585,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public void delete()
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
@@ -555,7 +603,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public Node[] getNodes()
         {
-            return new Node[] { getStartNode(), getEndNode() };
+            return new Node[]{getStartNode(), getEndNode()};
         }
 
         @Override
@@ -589,7 +637,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public boolean isType( RelationshipType type )
         {
-            return rel.getType().equals( type );
+            return rel.getType().name().equals( type.name() );
         }
 
         @Override
@@ -618,12 +666,6 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         public Iterable<String> getPropertyKeys()
         {
             return properties.keySet();
-        }
-
-        @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return properties.values();
         }
 
         @Override
@@ -663,7 +705,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public int hashCode()
         {
-            return (int) ( rel.getId() ^ ( rel.getId() >>> 32 ) );
+            return (int) (rel.getId() ^ (rel.getId() >>> 32));
         }
     }
 
@@ -673,7 +715,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     }
 
     static class RelIterator implements
-        Iterable<Relationship>, Iterator<Relationship>
+            Iterable<Relationship>, Iterator<Relationship>
     {
 
         private final BatchGraphDatabaseImpl graphDbService;
@@ -686,7 +728,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         private Relationship nextElement;
 
         RelIterator( BatchGraphDatabaseImpl graphDbService, Iterable<Long> relIds,
-            long nodeId, Direction dir, RelationshipType[] types )
+                     long nodeId, Direction dir, RelationshipType[] types )
         {
             this.graphDbService = graphDbService;
             this.relIds = relIds;
@@ -731,14 +773,14 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             while ( nextElement == null && relItr.hasNext() )
             {
                 Relationship possibleRel =
-                    graphDbService.getRelationshipById( relItr.next() );
+                        graphDbService.getRelationshipById( relItr.next() );
                 if ( dir == Direction.OUTGOING &&
-                    possibleRel.getEndNode().getId() == nodeId )
+                        possibleRel.getEndNode().getId() == nodeId )
                 {
                     continue;
                 }
                 if ( dir == Direction.INCOMING &&
-                    possibleRel.getStartNode().getId() == nodeId )
+                        possibleRel.getStartNode().getId() == nodeId )
                 {
                     continue;
                 }
@@ -747,7 +789,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
                     for ( RelationshipType type : types )
                     {
                         if ( type.name().equals(
-                            possibleRel.getType().name() ) )
+                                possibleRel.getType().name() ) )
                         {
                             nextElement = possibleRel;
                             break;
@@ -796,6 +838,13 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     }
 
     @Override
+    public Schema schema()
+    {
+        throw
+            new UnsupportedOperationException("Schema modification is currently not available through the BatchDatabase  API.");
+    }
+
+    @Override
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
@@ -804,6 +853,24 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
     @Override
     public IndexManager index()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TraversalDescription traversalDescription()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BidirectionalTraversalDescription bidirectionalTraversalDescription()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ResourceIterable<Node> findNodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
         throw new UnsupportedOperationException();
     }

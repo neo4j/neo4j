@@ -64,7 +64,7 @@ public class NeoServletContainer extends ServletContainer
         {
             return new ClassNamesResourceConfig( props );
         }
-        
+
         return super.getDefaultResourceConfig( props, wc );
     }
 }

@@ -1,0 +1,1 @@
+<div class="accordion" ng-transclude></div>

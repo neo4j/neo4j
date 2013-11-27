@@ -21,8 +21,12 @@ package org.neo4j.server.rest.web;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -37,27 +41,37 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.EvaluationException;
+import org.neo4j.server.rest.domain.PropertySettingStrategy;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.ListEntityRepresentation;
+import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
-@Path("/")
+import static java.lang.String.format;
+
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.MapUtil.toMap;
+
+@Path( "/" )
 public class RestfulGraphDatabase
 {
-
     @SuppressWarnings("serial")
     public static class AmpersandSeparatedCollection extends LinkedHashSet<String>
     {
@@ -87,6 +101,12 @@ public class RestfulGraphDatabase
     private static final String PATH_NODE_TRAVERSE = PATH_NODE + "/traverse/{returnType}";
     private static final String PATH_NODE_PATH = PATH_NODE + "/path";
     private static final String PATH_NODE_PATHS = PATH_NODE + "/paths";
+    private static final String PATH_NODE_LABELS = PATH_NODE + "/labels";
+    private static final String PATH_NODE_LABEL = PATH_NODE + "/labels/{label}";
+
+    private static final String PATH_LABELS = "labels";
+
+    private static final String PATH_PROPERTY_KEYS = "propertykeys";
 
     protected static final String PATH_NODE_INDEX = "index/node";
     protected static final String PATH_NAMED_NODE_INDEX = PATH_NODE_INDEX + "/{indexName}";
@@ -110,6 +130,18 @@ public class RestfulGraphDatabase
     protected static final String PATH_AUTO_INDEXED_PROPERTIES = PATH_AUTO_INDEX + "/properties";
     protected static final String PATH_AUTO_INDEX_PROPERTY_DELETE = PATH_AUTO_INDEXED_PROPERTIES + "/{property}";
     protected static final String PATH_AUTO_INDEX_GET = PATH_AUTO_INDEX + "/{key}/{value}";
+
+    public static final String PATH_ALL_NODES_LABELED = "label/{label}/nodes";
+
+    public static final String PATH_SCHEMA = "schema";
+    public static final String PATH_SCHEMA_INDEX = PATH_SCHEMA + "/index";
+    public static final String PATH_SCHEMA_INDEX_LABEL = PATH_SCHEMA_INDEX + "/{label}";
+    public static final String PATH_SCHEMA_INDEX_LABEL_PROPERTY = PATH_SCHEMA_INDEX_LABEL + "/{property}";
+
+    public static final String PATH_SCHEMA_CONSTRAINT = PATH_SCHEMA + "/constraint";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL = PATH_SCHEMA_CONSTRAINT + "/{label}";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS = PATH_SCHEMA_CONSTRAINT_LABEL + "/uniqueness";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY = PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS + "/{property}";
 
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
@@ -145,10 +177,14 @@ public class RestfulGraphDatabase
         this.actions = actions;
     }
 
-    private static Response nothing()
+    public OutputFormat getOutputFormat()
     {
-        return Response.noContent()
-                .build();
+        return output;
+    }
+
+    private Response nothing()
+    {
+        return output.noContent();
     }
 
     private Long extractNodeIdOrNull( String uri ) throws BadInputException
@@ -166,11 +202,7 @@ public class RestfulGraphDatabase
         {
             return Long.parseLong( uri.substring( uri.lastIndexOf( "/" ) + 1 ) );
         }
-        catch ( NumberFormatException ex )
-        {
-            throw new BadInputException( ex );
-        }
-        catch ( NullPointerException ex )
+        catch ( NumberFormatException | NullPointerException ex )
         {
             throw new BadInputException( ex );
         }
@@ -222,10 +254,7 @@ public class RestfulGraphDatabase
 
     private Response generateBadRequestDueToMangledJsonResponse( String body )
     {
-        return Response.status( 400 )
-                .type( MediaType.TEXT_PLAIN )
-                .entity( "Invalid JSON array in POST body: " + body )
-                .build();
+        return output.badRequest( MediaType.TEXT_PLAIN_TYPE, "Invalid JSON array in POST body: " + body );
     }
 
     @GET
@@ -340,7 +369,8 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( actions( force ).getNodeProperty( nodeId, key ) );
+            Representation representation = actions( force ).getNodeProperty( nodeId, key );
+            return output.ok( representation );
         }
         catch ( NodeNotFoundException e )
         {
@@ -390,6 +420,146 @@ public class RestfulGraphDatabase
             return output.badRequest( e );
         }
         return nothing();
+    }
+
+    // Node Labels
+
+    @POST
+    @Path( PATH_NODE_LABELS )
+    public Response addNodeLabel( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+                                  @PathParam( "nodeId" ) long nodeId,
+                                  String body )
+    {
+        try
+        {
+            Object rawInput = input.readValue( body );
+            if ( rawInput instanceof String )
+            {
+                ArrayList<String> s = new ArrayList<String>();
+                s.add((String) rawInput);
+                actions( force ).addLabelToNode( nodeId, s );
+            }
+            else if(rawInput instanceof Collection)
+            {
+                actions( force ).addLabelToNode( nodeId, (Collection<String>) rawInput );
+            }
+            else
+            {
+                throw new BadInputException( format( "Label name must be a string. Got: '%s'", rawInput ) );
+            }
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( ArrayStoreException ase )
+        {
+            return generateBadRequestDueToMangledJsonResponse( body );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+        return nothing();
+    }
+
+    @PUT
+    @Path( PATH_NODE_LABELS )
+    public Response setNodeLabels( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+                                  @PathParam( "nodeId" ) long nodeId,
+                                  String body )
+    {
+        try
+        {
+            Object rawInput = input.readValue( body );
+            if ( !(rawInput instanceof Collection) )
+            {
+                throw new BadInputException( format( "Input must be an array of Strings. Got: '%s'", rawInput ) );
+            }
+            else
+            {
+                actions( force ).setLabelsOnNode( nodeId, (Collection<String>) rawInput );
+            }
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( ArrayStoreException ase )
+        {
+            return generateBadRequestDueToMangledJsonResponse( body );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+        return nothing();
+    }
+    
+    @DELETE
+    @Path( PATH_NODE_LABEL )
+    public Response removeNodeLabel( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+                                  @PathParam( "nodeId" ) long nodeId, @PathParam( "label" ) String labelName )
+    {
+        try
+        {
+            actions( force ).removeLabelFromNode( nodeId, labelName );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+        return nothing();
+    }
+    
+    @GET
+    @Path( PATH_NODE_LABELS )
+    public Response getNodeLabels( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+            @PathParam( "nodeId" ) long nodeId )
+    {
+        try
+        {
+            return output.ok( actions( force ).getNodeLabels( nodeId ) );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+    }
+
+    @GET
+    @Path( PATH_ALL_NODES_LABELED )
+    public Response getNodesWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
+    {
+        try
+        {
+            if ( labelName.isEmpty() )
+                throw new BadInputException( "Empty label name" );
+
+            Map<String, Object> properties = toMap( map( queryParamsToProperties, uriInfo.getQueryParameters().entrySet()));
+
+            return output.ok( actions.getNodesWithLabel( labelName, properties ) );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+    }
+
+    @GET
+    @Path( PATH_LABELS )
+    public Response getAllLabels( )
+    {
+        return output.ok( actions.getAllLabels() );
+    }
+
+    // Property keys
+
+    @GET
+    @Path( PATH_PROPERTY_KEYS )
+    public Response getAllPropertyKeys( )
+    {
+        return output.ok( actions.getAllPropertyKeys() );
     }
 
     // Relationships
@@ -1359,7 +1529,7 @@ public class RestfulGraphDatabase
     {
         if ( actions.removePagedTraverse( traverserId ) )
         {
-            return Response.ok().build();
+            return output.ok();
         }
         else
         {
@@ -1489,4 +1659,184 @@ public class RestfulGraphDatabase
             return output.badRequest( e );
         }
     }
+
+    @POST
+    @Path( PATH_SCHEMA_INDEX_LABEL )
+    public Response createSchemaIndex( @PathParam( "label" ) String labelName, String body )
+    {
+        try
+        {
+            Map<String, Object> data = input.readMap( body, "property_keys" );
+            Iterable<String> singlePropertyKey = singleOrList( data, "property_keys" );
+            if ( singlePropertyKey == null )
+            {
+                return output.badRequest( new IllegalArgumentException(
+                        "Supply single property key or list of property keys" ) );
+            }
+            return output.ok( actions.createSchemaIndex( labelName, singlePropertyKey ) );
+        }
+        catch( UnsupportedOperationException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+
+    private Iterable<String> singleOrList( Map<String, Object> data, String key )
+    {
+        Object propertyKeys = data.get( key );
+        Iterable<String> singlePropertyKey = null;
+        if ( propertyKeys instanceof List )
+            singlePropertyKey = (List<String>) propertyKeys;
+        else if ( propertyKeys instanceof String )
+            singlePropertyKey = Arrays.asList((String)propertyKeys);
+        return singlePropertyKey;
+    }
+    
+    @DELETE
+    @Path( PATH_SCHEMA_INDEX_LABEL_PROPERTY )
+    public Response dropSchemaIndex( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection properties )
+    {
+        // TODO assumption, only a single property key
+        if ( properties.size() != 1 )
+        {
+            return output.badRequest( new IllegalArgumentException( "Single property key assumed" ) );
+        }
+        
+        String property = single( properties );
+        try
+        {
+            if ( actions.dropSchemaIndex( labelName, property ) )
+                return nothing();
+            else
+                return output.notFound();
+        }
+        catch ( ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+    
+    @GET
+    @Path( PATH_SCHEMA_INDEX_LABEL )
+    public Response getSchemaIndexes( @PathParam( "label" ) String labelName )
+    {
+        return output.ok( actions.getSchemaIndexes( labelName ) );
+    }
+    
+    @POST
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
+    public Response createPropertyUniquenessConstraint( @PathParam( "label" ) String labelName, String body )
+    {
+        try
+        {
+            Map<String, Object> data = input.readMap( body, "property_keys" );
+            Iterable<String> singlePropertyKey = singleOrList( data, "property_keys" );
+            if ( singlePropertyKey == null )
+            {
+                return output.badRequest( new IllegalArgumentException(
+                        "Supply single property key or list of property keys" ) );
+            }
+            return output.ok( actions.createPropertyUniquenessConstraint( labelName, singlePropertyKey ) );
+        }
+        catch( UnsupportedOperationException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+    
+    @DELETE
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
+    public Response dropPropertyUniquenessConstraint( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection properties )
+    {
+        try
+        {
+            if ( actions.dropPropertyUniquenessConstraint( labelName, properties ) )
+                return nothing();
+            else
+                return output.notFound();
+        }
+        catch ( ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+    
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT )
+    public Response getSchemaConstraints()
+    {
+        return output.ok( actions.getConstraints() );
+    }
+
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL )
+    public Response getSchemaConstraintsForLabel( @PathParam( "label" ) String labelName )
+    {
+        return output.ok( actions.getLabelConstraints( labelName ) );
+    }
+    
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS )
+    public Response getSchemaConstraintsForLabelAndUniqueness( @PathParam( "label" ) String labelName )
+    {
+        return output.ok( actions.getLabelUniquenessConstraints( labelName ) );
+    }
+    
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
+    public Response getSchemaConstraintsForLabelAndPropertyUniqueness( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
+    {
+        try
+        {
+        	ListRepresentation constraints = actions.getPropertyUniquenessConstraint( labelName, propertyKeys );
+    		return output.ok( constraints );
+        }
+        catch ( IllegalArgumentException e )
+        {
+        	return output.notFound( e );
+        }
+    }
+
+    private final Function<Map.Entry<String,List<String>>,Pair<String,Object>> queryParamsToProperties =
+            new Function<Map.Entry<String, List<String>>, Pair<String, Object>>()
+    {
+        @Override
+        public Pair<String, Object> apply( Map.Entry<String, List<String>> queryEntry )
+        {
+            try
+            {
+                Object propertyValue = input.readValue( queryEntry.getValue().get( 0 ) );
+                if ( propertyValue instanceof Collection<?> )
+                {
+                    propertyValue = PropertySettingStrategy.convertToNativeArray( (Collection<?>) propertyValue );
+                }
+                return Pair.of( queryEntry.getKey(), propertyValue );
+            }
+            catch ( BadInputException e )
+            {
+                throw new IllegalArgumentException(
+                        String.format( "Unable to deserialize property value for %s.", queryEntry.getKey() ),
+                        e );
+            }
+        }
+    };
 }

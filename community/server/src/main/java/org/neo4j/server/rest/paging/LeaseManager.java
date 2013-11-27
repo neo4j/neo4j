@@ -22,11 +22,11 @@ package org.neo4j.server.rest.paging;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.tooling.Clock;
+import org.neo4j.helpers.Clock;
 
 public class LeaseManager
 {
-    private Clock clock;
+    private final Clock clock;
     private Map<String, Lease> leases = new ConcurrentHashMap<String, Lease>();
 
     public LeaseManager( Clock clock )
@@ -83,11 +83,6 @@ public class LeaseManager
     public Clock getClock()
     {
         return clock;
-    }
-
-    public void setClock( Clock clock )
-    {
-        this.clock = clock;
     }
 
     public void remove( String key )

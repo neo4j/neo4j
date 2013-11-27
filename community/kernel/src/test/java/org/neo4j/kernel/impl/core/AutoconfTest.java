@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertTrue;
@@ -35,7 +36,7 @@ public class AutoconfTest
     @Before
     public void given()
     {
-        this.db = new ImpermanentGraphDatabase();
+        this.db = (ImpermanentGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @Test

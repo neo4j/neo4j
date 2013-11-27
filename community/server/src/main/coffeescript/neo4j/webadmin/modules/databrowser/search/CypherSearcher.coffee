@@ -24,15 +24,11 @@ define ["neo4j/webadmin/utils/ItemUrlResolver"], (ItemUrlResolver) ->
 
     constructor : (server) ->
       @server = server
-      @urlResolver = new ItemUrlResolver(server)
-      @pattern = /// ^\s*
-                    (start|cypher|create) # Start with "start", "cypher" or "create"
-                    ([\s\S]+)  # followed by anything
-                    $
-                 ///i
 
-    match : (statement) =>
-      @pattern.test(statement)
+    match : (statement) ->
+      # Send them all,
+      # and let the parser sort them out!
+      yes
       
     exec : (statement) =>
       @server.query(statement)

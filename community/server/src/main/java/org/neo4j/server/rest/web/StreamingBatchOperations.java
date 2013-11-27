@@ -21,6 +21,7 @@ package org.neo4j.server.rest.web;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.util.Map;
@@ -30,7 +31,9 @@ import javax.servlet.ServletOutputStream;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
-import org.mortbay.log.Log;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 import org.neo4j.server.rest.batch.BatchOperations;
 import org.neo4j.server.rest.batch.StreamingBatchOperationResults;
 import org.neo4j.server.rest.domain.BatchOperationFailedException;
@@ -40,6 +43,7 @@ import org.neo4j.server.web.WebServer;
 public class StreamingBatchOperations extends BatchOperations
 {
 
+    private static final Logger LOGGER = Log.getLogger(StreamingBatchOperations.class);
     private StreamingBatchOperationResults results;
 
     public StreamingBatchOperations( WebServer webServer )
@@ -64,7 +68,7 @@ public class StreamingBatchOperations extends BatchOperations
             res = new BatchInternalJettyServletResponse(results.getServletOutputStream());
             webServer.invokeDirectly(targetUri.getPath(), req, res);
         } catch(Exception e) {
-            Log.warn( e );
+            LOGGER.warn( e );
             results.writeError( 500, e.getMessage() );
             throw new BatchOperationFailedException(500, e.getMessage(),e );
 
@@ -103,7 +107,7 @@ public class StreamingBatchOperations extends BatchOperations
 
         @Override
         public PrintWriter getWriter() throws IOException {
-            return new PrintWriter(output);
+            return new PrintWriter( new OutputStreamWriter( output, "UTF-8") );
         }
     }
 }

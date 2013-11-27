@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.TreeSet;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -38,14 +37,15 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.TextUtil;
 import org.neo4j.shell.impl.RelationshipToNodeIterable;
+
+import static org.neo4j.shell.TextUtil.lastWordOrQuoteOf;
 
 /**
  * Mimics the POSIX application with the same name, i.e. traverses to a node.
  */
 @Service.Implementation( App.class )
-public class Cd extends ReadOnlyGraphDatabaseApp
+public class Cd extends TransactionProvidingApp
 {
     private static final String START_ALIAS = "start";
     private static final String END_ALIAS = "end";
@@ -69,15 +69,14 @@ public class Cd extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    public List<String> completionCandidates( String partOfLine, Session session )
+    protected List<String> completionCandidatesInTx( String partOfLine, Session session ) throws ShellException
     {
-        String lastWord = TextUtil.lastWordOrQuoteOf( partOfLine, false );
+        String lastWord = lastWordOrQuoteOf( partOfLine, false );
         if ( lastWord.startsWith( "-" ) )
         {
             return super.completionCandidates( partOfLine, session );
         }
 
-        TreeSet<String> result = new TreeSet<String>();
         NodeOrRelationship current;
         try
         {
@@ -88,6 +87,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
             return Collections.emptyList();
         }
         
+        TreeSet<String> result = new TreeSet<>();
         if ( current.isNode() )
         {
             // TODO Check if -r is supplied
@@ -96,7 +96,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
                     node.getRelationships(), node ) )
             {
                 long otherNodeId = otherNode.getId();
-                String title = findTitle( getServer(), session, otherNode );
+                String title = findTitle( session, otherNode );
                 if ( title != null )
                 {
                     if ( !result.contains( title ) )
@@ -116,7 +116,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
             maybeAddCompletionCandidate( result, "" + rel.getStartNode().getId(), lastWord );
             maybeAddCompletionCandidate( result, "" + rel.getEndNode().getId(), lastWord );
         }
-        return new ArrayList<String>( result );
+        return new ArrayList<>( result );
     }
 
     private static void maybeAddCompletionCandidate( Collection<String> candidates,
@@ -137,17 +137,9 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         NodeOrRelationship newThing = null;
         if ( parser.arguments().isEmpty() )
         {
-            try
-            {
-                newThing = NodeOrRelationship.wrap( getServer().getDb().getReferenceNode() );
-                paths.clear();
-            }
-            catch ( NotFoundException nne )
-            {
-                clearCurrent( session );
-                writeCurrentWorkingDir( paths, session );
-                return Continuation.INPUT_COMPLETE;
-            }
+            clearCurrent( session );
+            writeCurrentWorkingDir( paths, session );
+            return Continuation.INPUT_COMPLETE;
         }
         else
         {
@@ -170,7 +162,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
                 }
             }
             else if ( arg.equals( "." ) )
-            {
+            {   // Do nothing
             }
             else if ( arg.equals( START_ALIAS ) || arg.equals( END_ALIAS ) )
             {
@@ -238,7 +230,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         return Continuation.INPUT_COMPLETE;
     }
 
-    private long findNodeWithTitle( Node node, String match, Session session )
+    private long findNodeWithTitle( Node node, String match, Session session ) throws ShellException
     {
         Object[] matchParts = splitNodeTitleAndId( match );
         if ( matchParts[1] != null )
@@ -249,7 +241,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         String titleMatch = (String) matchParts[0];
         for ( Node otherNode : RelationshipToNodeIterable.wrap( node.getRelationships(), node ) )
         {
-            String title = findTitle( getServer(), session, otherNode );
+            String title = findTitle( session, otherNode );
             if ( titleMatch.equals( title ) )
             {
                 return otherNode.getId();
@@ -299,7 +291,6 @@ public class Cd extends ReadOnlyGraphDatabaseApp
     }
 
     private boolean isConnected( NodeOrRelationship current, TypedId newId )
-        throws ShellException
     {
         if ( current.isNode() )
         {

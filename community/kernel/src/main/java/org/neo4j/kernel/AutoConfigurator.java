@@ -27,25 +27,39 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.logging.ConsoleLogger;
 
+/**
+ * @deprecated This will be moved to internal packages in the next major release.
+ */
+@Deprecated
 public class AutoConfigurator
 {
     private final int totalPhysicalMemMb;
     private final int maxVmUsageMb;
     private final File dbPath;
     private final boolean useMemoryMapped;
+    private final ConsoleLogger logger;
     private final FileSystemAbstraction fs;
 
-    public AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped )
+    public AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped, ConsoleLogger logger )
     {
-        this( fs, dbPath, useMemoryMapped, physicalMemory(), Runtime.getRuntime().maxMemory() );
+        this( fs, dbPath, useMemoryMapped, physicalMemory(), Runtime.getRuntime().maxMemory(), logger );
     }
 
-    AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped, long physicalMemory, long vmMemory )
+    AutoConfigurator( FileSystemAbstraction fs, File dbPath, boolean useMemoryMapped, long physicalMemory, long vmMemory,
+                      ConsoleLogger logger )
     {
+        if (physicalMemory < vmMemory)
+        {
+            logger.log( "WARNING! Physical memory("+(physicalMemory/(1024*1000))+"MB) is less than assigned JVM memory("+(vmMemory/(1024*1000))+"MB). Continuing but with available JVM memory set to available physical memory" );
+            vmMemory = physicalMemory;
+        }
+
         this.fs = fs;
         this.dbPath = dbPath;
         this.useMemoryMapped = useMemoryMapped;
+        this.logger = logger;
         if ( physicalMemory != -1 )
         {
             totalPhysicalMemMb = (int) (physicalMemory / 1024 / 1024);
@@ -61,7 +75,7 @@ public class AutoConfigurator
     {
         OperatingSystemMXBean osBean =
                 ManagementFactory.getOperatingSystemMXBean();
-        long mem = -1;
+        long mem;
         try
         {
             Class<?> beanClass =
@@ -71,10 +85,14 @@ public class AutoConfigurator
             mem = (Long) method.invoke( osBean );
         }
         catch ( Exception e )
-        { // ok we tried but probably 1.5 JVM or other class library implementation
+        {
+            // ok we tried but probably 1.5 JVM or other class library implementation
+            mem = -1; // Be explicit about how this error is handled.
         }
         catch ( LinkageError e )
-        { // ok we tried but probably 1.5 JVM or other class library implementation
+        {
+            // ok we tried but probably 1.5 JVM or other class library implementation
+            mem = -1; // Be explicit about how this error is handled.
         }
         return mem;
     }
@@ -114,7 +132,7 @@ public class AutoConfigurator
         }
         else if ( canExpand )
         {
-            if ( (storeSize * expand * 5 < memLeft * use) )
+            if ( storeSize * expand * 5 < memLeft * use )
             {
                 size = (int) (memLeft * use / 5);
             }

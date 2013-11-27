@@ -19,23 +19,27 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.fail;
 
 /**
  * Confirms that a nested {@link Transaction} can grab locks with its
@@ -44,12 +48,12 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
  */
 public class NestedTransactionLocksIT
 {
-    private ImpermanentGraphDatabase db;
+    private GraphDatabaseService db;
     
     @Before
     public void before() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
@@ -65,8 +69,10 @@ public class NestedTransactionLocksIT
             @Override
             public Lock doWork( Void state )
             {
-                Transaction tx = db.beginTx();
-                return tx.acquireWriteLock( resource );
+                try ( Transaction tx = db.beginTx() )
+                {
+                    return tx.acquireWriteLock( resource );
+                }
             }
         };
     }
@@ -75,18 +81,32 @@ public class NestedTransactionLocksIT
     public void nestedTransactionCanAcquireLocksFromTransactionObject() throws Exception
     {
         // given
-        Node resource = db.getReferenceNode();
-        Transaction realTx = db.beginTx();
-        Transaction nestedTx = db.beginTx();
-        assertNotSame( realTx, nestedTx );
-        OtherThreadExecutor<Void> otherTx = new OtherThreadExecutor<Void>( "other thread", null );
-        
-        // when
-        Lock lock = nestedTx.acquireWriteLock( resource );
-        Future<Lock> future = otherTx.executeDontWait( acquireWriteLock( resource ) );
-        otherTx.waitUntilWaiting();
-        
-        // then
+        Node resource = createNode();
+
+        try ( Transaction outerTx = db.beginTx(); Transaction nestedTx = db.beginTx() )
+        {
+            assertNotSame( outerTx, nestedTx );
+
+            try ( OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<>( "other thread", null ) )
+            {
+                // when
+                Lock lock = nestedTx.acquireWriteLock( resource );
+                Future<Lock> future = tryToAcquireSameLockOnAnotherThread( resource, otherThread );
+
+                // then
+                acquireOnOtherThreadTimesOut( future );
+
+                // and when
+                lock.release();
+
+                //then
+                assertNotNull( future.get() );
+            }
+        }
+    }
+
+    private void acquireOnOtherThreadTimesOut( Future<Lock> future ) throws InterruptedException, ExecutionException
+    {
         try
         {
             future.get( 1, SECONDS );
@@ -95,8 +115,22 @@ public class NestedTransactionLocksIT
         catch ( TimeoutException e )
         {   // Good
         }
-        lock.release();
-        assertNotNull( future.get() );
-        otherTx.shutdown();
+    }
+
+    private Future<Lock> tryToAcquireSameLockOnAnotherThread( Node resource, OtherThreadExecutor<Void> otherThread ) throws TimeoutException
+    {
+        Future<Lock> future = otherThread.executeDontWait( acquireWriteLock( resource ) );
+        otherThread.waitUntilWaiting();
+        return future;
+    }
+
+    private Node createNode()
+    {
+        try(Transaction tx = db.beginTx())
+        {
+            Node n = db.createNode();
+            tx.success();
+            return n;
+        }
     }
 }

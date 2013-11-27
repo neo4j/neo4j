@@ -19,64 +19,67 @@
  */
 package org.neo4j.consistency.report;
 
+import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 
 public class PendingReferenceCheck<REFERENCED extends AbstractBaseRecord>
 {
-    private ConsistencyReport report;
+    private CheckerEngine engine;
     private final ComparativeRecordChecker checker;
 
-    PendingReferenceCheck( ConsistencyReport report, ComparativeRecordChecker checker )
+    PendingReferenceCheck( CheckerEngine engine, ComparativeRecordChecker checker )
     {
-        this.report = report;
+        this.engine = engine;
         this.checker = checker;
     }
 
     @Override
     public synchronized String toString()
     {
-        if (report == null)
+        if ( engine == null )
         {
             return String.format( "CompletedReferenceCheck{%s}", checker );
-        } else {
-            return ConsistencyReporter.pendingCheckToString(report, checker);
+        }
+        else
+        {
+            return ConsistencyReporter.pendingCheckToString( engine, checker );
         }
     }
 
     public void checkReference( REFERENCED referenced, RecordAccess records )
     {
-        ConsistencyReporter.dispatchReference( report(), checker, referenced, records );
+        ConsistencyReporter.dispatchReference( engine(), checker, referenced, records );
     }
 
     public void checkDiffReference( REFERENCED oldReferenced, REFERENCED newReferenced, RecordAccess records )
     {
-        ConsistencyReporter.dispatchChangeReference( report(), checker, oldReferenced, newReferenced, records );
+        ConsistencyReporter.dispatchChangeReference( engine(), checker, oldReferenced, newReferenced, records );
     }
 
     public synchronized void skip()
     {
-        if ( report != null )
+        if ( engine != null )
         {
-            ConsistencyReporter.dispatchSkip( report );
-            report = null;
+            ConsistencyReporter.dispatchSkip( engine );
+            engine = null;
         }
     }
 
-    private synchronized ConsistencyReport report()
+    private synchronized CheckerEngine engine()
     {
-        if ( report == null )
+        if ( engine == null )
         {
             throw new IllegalStateException( "Reference has already been checked." );
         }
         try
         {
-            return report;
+            return engine;
         }
         finally
         {
-            report = null;
+            engine = null;
         }
     }
 }

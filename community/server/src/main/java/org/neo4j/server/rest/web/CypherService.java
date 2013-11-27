@@ -19,15 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.server.database.CypherExecutor;
@@ -36,12 +27,22 @@ import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.Map;
+
 @Path("/cypher")
 public class CypherService
 {
 
     private static final String PARAMS_KEY = "params";
     private static final String QUERY_KEY = "query";
+
+    private static final String INCLUDE_STATS_PARAM = "includeStats";
     private static final String INCLUDE_PLAN_PARAM = "includePlan";
     private static final String PROFILE_PARAM = "profile";
 
@@ -57,17 +58,22 @@ public class CypherService
         this.output = output;
     }
 
-    @POST
-    @SuppressWarnings({"unchecked"})
-    public Response cypher( String body,
-                            @QueryParam(INCLUDE_PLAN_PARAM) boolean includePlan,
-                            @QueryParam(PROFILE_PARAM) boolean profile ) throws BadInputException
+    public OutputFormat getOutputFormat()
     {
-        Map<String, Object> command = input.readMap( body );
+        return output;
+    }
 
-        if ( !command.containsKey( QUERY_KEY ) )
-        {
-            return output.badRequest( new BadInputException( "You have to provide the 'query' parameter." ) );
+    @POST
+    @SuppressWarnings({ "unchecked" })
+    public Response cypher(String body,
+                           @QueryParam( INCLUDE_STATS_PARAM ) boolean includeStats,
+                           @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
+                           @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException {
+
+        Map<String,Object> command = input.readMap( body );
+
+        if( !command.containsKey(QUERY_KEY) ) {
+            return output.badRequest(new BadInputException( "You have to provide the 'query' parameter." ));
         }
 
         String query = (String) command.get( QUERY_KEY );
@@ -87,12 +93,12 @@ public class CypherService
             if ( profile )
             {
                 ExecutionResult result = cypherExecutor.getExecutionEngine().profile( query, params );
-                return output.ok( new CypherResultRepresentation( result, true ) );
+                return output.ok(new CypherResultRepresentation( result, /* includeStats=*/includeStats, true ));
             }
             else
             {
                 ExecutionResult result = cypherExecutor.getExecutionEngine().execute( query, params );
-                return output.ok( new CypherResultRepresentation( result, includePlan ) );
+                return output.ok(new CypherResultRepresentation( result, /* includeStats=*/includeStats, includePlan ));
             }
         }
         catch ( Throwable e )

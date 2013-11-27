@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.2-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>advanced-build</artifactId>
-  <version>1.9.2-SNAPSHOT</version>
+  <version>2.0-SNAPSHOT</version>
   <name>Neo4j Advanced Build</name>
   <packaging>pom</packaging>
   <description>Project that builds the Neo4j Advanced distribution.</description>
@@ -19,6 +19,8 @@
   <properties>
     <short-name>advanced-build</short-name>
     <docs-plugin.skip>true</docs-plugin.skip>
+    <maven.site.skip>true</maven.site.skip>
+    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
 
   <scm>
@@ -56,7 +58,7 @@ terms of the relevant Commercial Agreement.
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
-      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
     </site>
   </distributionManagement>
 

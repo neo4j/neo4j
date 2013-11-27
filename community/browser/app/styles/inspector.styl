@@ -1,0 +1,169 @@
+@import 'mixins'
+
+inspector-bg-color = #0F1419
+inspector-font-color = #eee
+inspector-tab-bg-color = #33373C
+inspector-tab-font-color = #66696D
+inspector-tab-font-active-color = #b1b2b4
+inspector-divider-color = #242E3B
+
+.inspector
+  opacity: 0.95
+  -webkit-font-smoothing: initial
+  position: absolute
+  z-index: 5010
+  color: inspector-font-color
+  background-color: inspector-bg-color
+  border-radius: 6px
+  top: 24px
+  right: 24px
+  width: 320px
+
+  // Bootstrap overrides
+  ul.inline li:first-child
+    padding-left: 0
+  ul.inline li:last-child
+    padding-right: 0
+  ul.inline > li
+    padding-left: 3px
+    padding-right: 3px
+  .nav
+    margin-bottom: 0
+  .nav-tabs
+    border-bottom: 0
+    > li
+      margin-bottom: 0
+  .nav-tabs > .active > a
+    color: inspector-tab-font-active-color
+    background-color: inspector-bg-color
+    border: none
+  .nav-tabs > li > a
+    border: none
+    color: inspector-tab-font-color
+    background-color: inspector-tab-bg-color
+  li
+    line-height: 1px
+  .dropdown
+    display: inline
+
+  .header
+    -webkit-font-smoothing: antialiased
+    font-size: 15px
+    font-weight: bold
+    line-height: 34px
+    padding-left: 10px
+    overflow: hidden
+    user-select: none
+    cursor: move
+    .preview
+      width: 10px
+      height: 10px
+      border-radius: 50%
+      display: inline-block
+      margin-right: 6px
+    a.close
+      font-size: 13px
+      color: white
+      float: right
+      padding: 10px 12px
+
+  .nav
+    font-weight: bold
+    padding: 0 8px
+    background-color: inspector-tab-bg-color
+    padding-top: 6px
+    .name
+      display: none
+      margin-left: 8px
+    .active
+      .name
+        display: inline-block
+    i
+      font-size: 18px
+      position: relative;
+      top: 1px
+
+  .tab-content
+    overflow: visible
+
+  .tab-pane
+    .sections.scrollable
+        max-height: 450px
+        overflow: auto
+    .sections > li
+      line-height: 1.3em
+      padding: 18px 14px
+      border-bottom: 1px solid inspector-divider-color
+      a
+        color: inspector-font-color
+      .dropdown-menu > li > a
+        color: inspector-bg-color
+        &:hover
+          color: #fff
+      .dropdown-toggle
+        font-weight: bold
+      &:last-child
+        border-bottom: none
+      i
+        margin-top: -2px
+        vertical-align: middle
+        font-size: 18px
+        display: inline-block
+        width: 29px
+      &.colors, &.node-sizes, &.arrow-widths
+        padding-top: 10px
+        padding-bottom: 11px
+        a
+          position: relative
+          display: inline-block
+          background-color: #FFF
+          line-height: 0
+          overflow: hidden
+          opacity: 0.3
+          &:after
+            content: ' '
+            stretch()
+            background-color: #fff
+            width 50%
+            opacity: 0.20
+          &:hover, &.active
+            opacity: 1
+      &.colors, &.node-sizes
+        a
+          border-radius: 50%
+      &.colors
+        a
+          width: 30px
+          height: 30px
+          border: 3px solid inspector-bg-color
+          &:hover, &.active
+            width: 36px
+            height: 36px
+            border: none
+      &.arrow-widths
+        a
+          height: 30px
+
+      &.pair
+        overflow: hidden
+        .key
+          text-align: right
+          margin-right: 1em
+          width: 90px
+          float: left
+          color: darken(inspector-font-color, 30%)
+        .value
+          overflow: hidden
+      &.empty
+        color: darken(inspector-font-color, 30%)
+        text-align: center
+        font-style: italic
+
+  ul.tight
+    li.pair
+      padding-top: 10px
+      padding-bottom: 10px
+      &:first-child
+        padding-top: 14px
+      &:last-child
+        padding-bottom: 14px

@@ -1,0 +1,30 @@
+article.help
+  .container-fluid
+   section.row-fluid
+      .span4.branding
+        .logo
+        h1 Neo4j Enterprise
+      .span4.stats
+        dl.dl-horizontal
+          dt Hostname:
+          dd {{host}}
+          dt Database:
+          dd {{kernel.store_dir}}
+          dt Store location:
+          dd {{kernel.StoreDirectory}}
+          dt Memory:
+          dd {{kernel.all_stores_total_mapped_memory_size}}
+      .span4
+        h2 Commands
+          span something something
+        p
+          | Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.
+        p
+          a.btn(href='commands.html') {{cmdchar}}help commands »
+
+    section.row-fluid.footer
+      .license
+        | License GPLv3
+        a()  (Read more)
+        br
+        | Copyright 2013 Neo Technology

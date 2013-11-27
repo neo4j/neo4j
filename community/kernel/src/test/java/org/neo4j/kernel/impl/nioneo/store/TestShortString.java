@@ -28,7 +28,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @Ignore( "Not used anymore" )
-public class TestShortString
+public abstract class TestShortString
 {
 
     @Test
@@ -148,29 +148,7 @@ public class TestShortString
         assertCanEncode( string.toUpperCase() );
     }
 
-    @SuppressWarnings( "boxing" )
-    protected void assertCanEncode( String string )
-    {
-        /*
-        PropertyRecord target = new PropertyRecord( 0 );
-        assertTrue( "Could not encode \"" + string + "\"", ShortString.encode( 0, string, target ) );
-        long encoded = target.getSinglePropBlock();
-        String decoded = ShortString.decode( encoded );
-        assertEquals( String.format(
-                "Decoded string does not match original, encoded: 0x%s, expected.length=%s, actual.length=%s",
-                Long.toHexString( encoded ), string.length(), decoded.length() ), string, decoded );
-                */
-    }
-
-    protected void assertCannotEncode( String string )
-    {
-        /*
-        PropertyRecord target = new PropertyRecord( 0 );
-        long expected = target.getSinglePropBlock();
-        assertFalse( "Should not be able to encode \"" + string + "\"", ShortString.encode( 0, string, target ) );
-        assertEquals( "PropertyRecord was changed even though encoding failed", expected, target.getSinglePropBlock() );
-        */
-    }
+    abstract protected void assertCanEncode( String string );
 
     // === Micro benchmarking === [includes random tests]
 
@@ -223,11 +201,8 @@ public class TestShortString
         System.out.printf( "%.2f%% success rate%n", 100 * ( successes / ( (double) ( total ) ) ) );
     }
 
-    private static String roundtrip( String string )
+    private static String roundtrip( @SuppressWarnings("UnusedParameters") String string )
     {
-        PropertyRecord target = new PropertyRecord( 0 );
-        // if ( ShortString.encode( 0, string, target ) ) return
-        // ShortString.decode( target.getSinglePropBlock() );
         return null;
     }
 

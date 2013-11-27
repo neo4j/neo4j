@@ -9,14 +9,13 @@ The examples use Cypher queries a lot, read <<cypher-query-lang>> for more infor
 
 :leveloffset: 2
 
-include::examples/user-roles-in-graphs.asciidoc[]
-
-:leveloffset: 2
-
 include::examples/acl-structures-in-graphs.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-cypher-docs-jar/dev/ql/cookbook/index.asciidoc[]
+include::{importdir}/neo4j-cypher-docs-docs-jar/dev/ql/cookbook/index.asciidoc[]
 
+:leveloffset: 2
+
+include::examples/user-roles-in-graphs.asciidoc[]
 

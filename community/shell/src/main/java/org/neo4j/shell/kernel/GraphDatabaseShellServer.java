@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -35,20 +36,21 @@ import org.neo4j.shell.Response;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
-import org.neo4j.shell.SimpleAppServer;
-import org.neo4j.shell.impl.AbstractClient;
-import org.neo4j.shell.impl.BashVariableInterpreter;
+import org.neo4j.shell.Variables;
+import org.neo4j.shell.Welcome;
+import org.neo4j.shell.impl.AbstractAppServer;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
-import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
+import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
+
+import static org.neo4j.shell.Variables.PROMPT_KEY;
 
 /**
  * A {@link ShellServer} which contains common methods to use with a
  * graph database service.
  */
-public class GraphDatabaseShellServer extends SimpleAppServer
+public class GraphDatabaseShellServer extends AbstractAppServer
 {
     private final GraphDatabaseAPI graphDb;
-    private final BashVariableInterpreter bashInterpreter;
     private boolean graphDbCreatedHere;
     protected final Map<Serializable, Transaction> transactions = new ConcurrentHashMap<Serializable, Transaction>();
 
@@ -73,16 +75,15 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     {
         super();
         this.graphDb = readOnly ? new ReadOnlyGraphDatabaseProxy( graphDb ) : graphDb;
-        this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
         this.graphDbCreatedHere = false;
     }
 
     /*
-     * Since we don't know which thread we might happen to run on, we can't trust transactions
-     * to be stored in threads. Instead, we keep them around here, and suspend/resume in
-     * transactions before apps get to run.
-     */
+    * Since we don't know which thread we might happen to run on, we can't trust transactions
+    * to be stored in threads. Instead, we keep them around here, and suspend/resume in
+    * transactions before apps get to run.
+    */
     @Override
     public Response interpretLine( Serializable clientId, String line, Output out ) throws ShellException
     {
@@ -90,7 +91,8 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         try
         {
             return super.interpretLine( clientId, line, out );
-        } finally
+        }
+        finally
         {
             saveTransaction( clientId );
         }
@@ -100,15 +102,17 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     {
         try
         {
-            Transaction tx = getDb().getTxManager().suspend();
+            Transaction tx = getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).suspend();
             if ( tx == null )
             {
                 transactions.remove( clientId );
-            } else {
+            }
+            else
+            {
                 transactions.put( clientId, tx );
             }
-
-        } catch ( Exception e )
+        }
+        catch ( Exception e )
         {
             throw wrapException( e );
         }
@@ -121,7 +125,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         {
             try
             {
-                getDb().getTxManager().resume( tx );
+                getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).resume( tx );
             }
             catch ( Exception e )
             {
@@ -131,15 +135,27 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     }
 
     @Override
-    protected void initialPopulateSession( Session session )
+    protected void initialPopulateSession( Session session ) throws ShellException
     {
-        session.set( AbstractClient.PROMPT_KEY, getShellPrompt() );
-        session.set( AbstractClient.TITLE_KEYS_KEY, ".*name.*,.*title.*" );
-        session.set( AbstractClient.TITLE_MAX_LENGTH, "40" );
+        session.set( Variables.TITLE_KEYS_KEY, ".*name.*,.*title.*" );
+        session.set( Variables.TITLE_MAX_LENGTH, "40" );
+    }
+
+    @Override
+    protected String getPrompt( Session session ) throws ShellException
+    {
+        try ( org.neo4j.graphdb.Transaction transaction = this.getDb().beginTx() )
+        {
+            Object rawCustomPrompt = session.get( PROMPT_KEY );
+            String customPrompt = rawCustomPrompt != null ? rawCustomPrompt.toString() : getDefaultPrompt();
+            String output = bashInterpreter.interpret( customPrompt, this, session );
+            transaction.success();
+            return output;
+        }
     }
 
     private static GraphDatabaseAPI instantiateGraphDb( String path, boolean readOnly,
-                                                            String configFileOrNull )
+                                                        String configFileOrNull )
     {
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( path ).
@@ -151,7 +167,8 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         return (GraphDatabaseAPI) builder.newGraphDatabase();
     }
 
-    protected String getShellPrompt()
+    @Override
+    protected String getDefaultPrompt()
     {
         String name = "neo4j-sh";
         if ( this.graphDb instanceof ReadOnlyGraphDatabaseProxy )
@@ -166,12 +183,6 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     protected String getWelcomeMessage()
     {
         return "Welcome to the Neo4j Shell! Enter 'help' for a list of commands";
-    }
-
-    @Override
-    protected String getPrompt( Session session ) throws ShellException
-    {
-        return this.bashInterpreter.interpret( getShellPrompt(), this, session );
     }
 
     /**
@@ -189,19 +200,21 @@ public class GraphDatabaseShellServer extends SimpleAppServer
      */
     public static class WorkingDirReplacer implements Replacer
     {
+        @Override
         public String getReplacement( ShellServer server, Session session )
                 throws ShellException
         {
             try
             {
-                return GraphDatabaseApp.getDisplayName(
+                return TransactionProvidingApp.getDisplayName(
                         (GraphDatabaseShellServer) server, session,
-                        GraphDatabaseApp.getCurrent(
+                        TransactionProvidingApp.getCurrent(
                                 (GraphDatabaseShellServer) server, session ),
                         false );
-            } catch ( ShellException e )
+            }
+            catch ( ShellException e )
             {
-                return GraphDatabaseApp.getDisplayNameForNonExistent();
+                return TransactionProvidingApp.getDisplayNameForNonExistent();
             }
         }
     }
@@ -214,5 +227,16 @@ public class GraphDatabaseShellServer extends SimpleAppServer
             this.graphDb.shutdown();
         }
         super.shutdown();
+    }
+
+    @Override
+    public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException, ShellException
+    {
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
+        {
+            Welcome welcome = super.welcome( initialSession );
+            transaction.success();
+            return welcome;
+        }
     }
 }

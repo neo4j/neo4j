@@ -35,7 +35,7 @@ public interface PersistenceSource
      * @return a newly opened {@link NeoStoreTransaction} to this
      *         PersistenceSource
      */
-    public NeoStoreTransaction createTransaction( XaConnection connection );
+    NeoStoreTransaction createTransaction( XaConnection connection );
 
     /**
      * If the persistence source is responsible for id generation it must
@@ -45,11 +45,11 @@ public interface PersistenceSource
      *            the data structure to get next free unique id for
      * @return the next free unique id for <CODE>clazz</CODE>
      */
-    public long nextId( Class<?> clazz );
+    long nextId( Class<?> clazz );
 
-    public long getHighestPossibleIdInUse( Class<?> clazz );
+    long getHighestPossibleIdInUse( Class<?> clazz );
 
-    public long getNumberOfIdsInUse( Class<?> clazz );
+    long getNumberOfIdsInUse( Class<?> clazz );
     
-    public XaDataSource getXaDataSource();
+    XaDataSource getXaDataSource();
 }

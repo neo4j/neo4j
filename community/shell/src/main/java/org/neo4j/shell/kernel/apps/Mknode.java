@@ -31,7 +31,7 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 
 @Service.Implementation( App.class )
-public class Mknode extends GraphDatabaseApp
+public class Mknode extends TransactionProvidingApp
 {
     {
         addOptionDefinition( "np", new OptionDefinition( OptionValueType.MUST,
@@ -40,38 +40,22 @@ public class Mknode extends GraphDatabaseApp
                 "Go to the created node, like doing 'cd'" ) );
         addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
                 "Verbose mode: display created node" ) );
-//        addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
-//                "Sets this new node as the referende node for this database (if there is no reference node already set)" ) );
+        addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,
+                "Labels to attach to the created node, either a single label or a JSON array" ) );
     }
     
     @Override
     public String getDescription()
     {
         return "Creates a new node, f.ex:\n" +
-        		"mknode --cd --np \"{'name':'Neo'}\"";
+        		"mknode --cd --np \"{'name':'Neo'}\" -l PERSON";
     }
     
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         GraphDatabaseAPI db = getServer().getDb();
-        Node node = null;
-//        if ( parser.options().containsKey( "r" ) )
-//        {
-//            try
-//            {
-//                db.getReferenceNode();
-//                throw new ShellException( "Reference node already exists" );
-//            }
-//            catch ( NotFoundException e )
-//            {
-//                node = ((AbstractGraphDatabase)getServer().getDb()).getConfig().getGraphDbModule().createNewReferenceNode();
-//            }
-//        }
-//        else
-//        {
-            node = db.createNode();
-//        }
+        Node node = db.createNode( parseLabels( parser ) );
         
         setProperties( node, parser.option( "np", null ) );
         if ( parser.options().containsKey( "cd" ) ) cdTo( session, node );

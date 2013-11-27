@@ -24,6 +24,7 @@ import java.net.UnknownHostException;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
@@ -31,6 +32,7 @@ import org.neo4j.server.web.WebServer;
 import org.neo4j.server.webadmin.rest.JmxService;
 import org.neo4j.server.webadmin.rest.MonitorService;
 import org.neo4j.server.webadmin.rest.RootService;
+import org.neo4j.server.webadmin.rest.VersionAndEditionService;
 import org.neo4j.server.webadmin.rest.console.ConsoleService;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
@@ -39,25 +41,27 @@ public class ManagementApiModule implements ServerModule
 {
     private final Logger log = Logger.getLogger( ManagementApiModule.class );
 
-	private final Configuration config;
-	private final WebServer webServer;
+    private final Configuration config;
+    private final WebServer webServer;
 
-    public ManagementApiModule(WebServer webServer, Configuration config)
+    public ManagementApiModule( WebServer webServer, Configuration config )
     {
-    	this.webServer = webServer;
-    	this.config = config;
+        this.webServer = webServer;
+        this.config = config;
     }
 
     @Override
-	public void start( StringLogger logger )
+    public void start( StringLogger logger )
     {
         try
         {
             String serverMountPoint = managementApiUri().toString();
-            webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null);
+            webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
             log.info( "Mounted management API at [%s]", serverMountPoint );
             if ( logger != null )
+            {
                 logger.logMessage( "Mounted management API at: " + serverMountPoint );
+            }
         }
         catch ( UnknownHostException e )
         {
@@ -71,24 +75,25 @@ public class ManagementApiModule implements ServerModule
                 JmxService.class.getName(),
                 MonitorService.class.getName(),
                 RootService.class.getName(),
-                ConsoleService.class.getName() );
+                ConsoleService.class.getName(),
+                VersionAndEditionService.class.getName() );
     }
 
     @Override
-	public void stop()
+    public void stop()
     {
         try
         {
-	    	webServer.removeJAXRSClasses( getClassNames(),
-	                managementApiUri(  ).toString() );
-    	}
-	    catch ( UnknownHostException e )
-	    {
-	        log.warn( e );
-	    }
+            webServer.removeJAXRSClasses( getClassNames(),
+                    managementApiUri().toString() );
+        }
+        catch ( UnknownHostException e )
+        {
+            log.warn( e );
+        }
     }
 
-    private URI managementApiUri( ) throws UnknownHostException
+    private URI managementApiUri() throws UnknownHostException
     {
         return URI.create( config.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
                 Configurator.DEFAULT_MANAGEMENT_API_PATH ) );

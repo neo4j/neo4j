@@ -1,0 +1,95 @@
+@import 'variables'
+@import 'nib'
+@import 'mixins'
+
+
+.view-result
+  article.help, article.guide
+    background-color #fff
+    padding 0
+    padding: 30px
+    margin 0
+    [help-topic]
+      background-color: #F8F8F8
+      border-radius: 3px
+      border: 1px solid #DADADA
+      display: inline-block
+      font-family: mono-font-family
+      font-size: 12px
+      line-height: 18px
+      margin-bottom: 5px
+      margin-right: 5px
+      padding: 0 4px
+    p
+      font-size: 15px
+      line-height: 23px
+      color: #666
+    h1, h2, h3, h4, h5, dt
+      background none
+      display inline
+      padding 0
+    h2 span
+      display block
+      font-size 12pt
+      font-style italic
+    figure  {
+      display: block;
+      margin: 0;
+      margin-top: 16px;
+    }
+    figcaption {
+      padding: 5px;
+      font-size: 1em;
+      font-style: italic
+      font-weight: 300;
+      border: none;
+      background: transparent;
+      word-wrap:normal;
+      text-align: center;
+    }
+    pre.code
+      background: #F3F3F3
+      cursor: pointer
+      &:hover
+        background: lighten(color-link, 80%)
+        //outline: 2px solid color-link
+    &.manual
+      section
+      h1
+        font-size 12pt
+      h1 span
+        display block
+    ul
+      list-style: disc
+
+ul.big, ol.big
+  font-size: 18px
+  li
+    line-height: 28px
+ul.undecorated
+  list-style: none
+
+.carousel-indicators-wrapper
+  position: absolute
+  bottom: -20px
+  left: 7px
+  height: 12px
+  z-index: 45
+
+  .carousel-indicators
+    opacity: 1
+    position: relative
+    z-index: 5
+    margin: 0 auto
+    list-style: none
+    background: transparent
+    left: initial
+    height: 10px
+    display: inline-block
+    li
+      cursor: pointer
+      background-color: rgba(188, 195, 207, 0.64)
+      &.active
+        background-color: color-link
+
+

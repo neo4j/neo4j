@@ -40,6 +40,8 @@ abstract class LockableWindow implements PersistenceWindow
     private int marked = 0;
     protected boolean closed;
 
+    private boolean isDirty = false;
+
     LockableWindow( FileChannel fileChannel )
     {
         this.fileChannel = fileChannel;
@@ -108,6 +110,20 @@ abstract class LockableWindow implements PersistenceWindow
         lockingThread = currentThread;
         le.movedOn = true;
         marked--;
+        if ( operationType == OperationType.WRITE )
+        {
+            isDirty = true;
+        }
+    }
+    
+    synchronized boolean isDirty()
+    {
+        return isDirty;
+    }
+
+    synchronized void setClean()
+    {
+        isDirty = false;
     }
 
     synchronized void unLock()
@@ -115,8 +131,8 @@ abstract class LockableWindow implements PersistenceWindow
         Thread currentThread = Thread.currentThread();
         if ( !locked )
         {
-            throw new LockException( "" + currentThread
-                + " don't have window lock on " + this );
+            throw new LockException( currentThread
+                + " doesn't have window lock on " + this );
         }
         locked = false;
         lockingThread = null;

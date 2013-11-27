@@ -50,6 +50,8 @@ public interface DiffRecordAccess extends RecordAccess
 
     RecordReference<NeoStoreRecord> previousGraph();
 
+    DynamicRecord changedSchema( long id );
+
     NodeRecord changedNode( long id );
 
     RelationshipRecord changedRelationship( long id );

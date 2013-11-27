@@ -19,41 +19,52 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
 import org.junit.Test;
-import org.neo4j.server.helpers.ServerBuilder;
+
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
-import org.neo4j.server.web.Jetty6WebServer;
+import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 {
-
     @Test
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int contestedPort = 9999;
-        ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty6WebServer.DEFAULT_ADDRESS) );
-        InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
-        CommunityNeoServer server = ServerBuilder.server()
-                .onPort( contestedPort )
-                .onHost( Jetty6WebServer.DEFAULT_ADDRESS )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
-                .build();
-        server.start();
+        try ( ServerSocket ignored = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty9WebServer.DEFAULT_ADDRESS ) ) )
+        {
+            InMemoryAppender appender = new InMemoryAppender( AbstractNeoServer.log );
+            CommunityNeoServer server = CommunityServerBuilder.server()
+                    .onPort( contestedPort )
+                    .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                    .onHost( Jetty9WebServer.DEFAULT_ADDRESS )
+                    .build();
+            try
+            {
+                server.start();
 
-        // Don't include the SEVERE string since it's
-        // OS-regional-settings-specific
-        assertThat(
-                appender.toString(),
-                containsString( String.format( ": Failed to start Neo Server" ) ) );
-        socket.close();
-        server.stop();
+                fail( "Should have reported failure to start" );
+            }
+            catch ( ServerStartupException e )
+            {
+                assertThat( e.getMessage(), containsString( "Starting Neo4j Server failed" ) );
+            }
+
+            // Don't include the SEVERE string since it's
+            // OS-regional-settings-specific
+            assertThat(
+                    appender.toString(),
+                    containsString( String.format( ": Failed to start Neo Server" ) ) );
+            server.stop();
+        }
     }
 }

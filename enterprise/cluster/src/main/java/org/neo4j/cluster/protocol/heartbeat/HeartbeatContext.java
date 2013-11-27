@@ -19,18 +19,16 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
-import static org.neo4j.cluster.com.message.Message.timeout;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.helpers.Listeners;
@@ -92,13 +90,18 @@ public class HeartbeatContext
 
     public void suspect( final InstanceId node )
     {
-        logger.info( "Suspecting " + node );
         Set<InstanceId> serverSuspicions = getSuspicionsFor( clusterContext.getMyId() );
-        serverSuspicions.add( node );
+
+        if (!serverSuspicions.contains( node ))
+        {
+            serverSuspicions.add( node );
+
+            logger.info(clusterContext.getMyId()+"(me) is now suspecting "+node);
+        }
 
         if ( isFailed( node ) && !failed.contains( node ) )
         {
-            logger.info( "Notifying listeners that node " + node + " is failed" );
+            logger.info( "Notifying listeners that instance " + node + " is failed" );
             failed.add( node );
             Listeners.notifyListeners( listeners, executor, new Listeners.Notification<HeartbeatListener>()
             {
@@ -114,9 +117,30 @@ public class HeartbeatContext
     public void suspicions( InstanceId from, Set<InstanceId> suspicions )
     {
         Set<InstanceId> serverSuspicions = getSuspicionsFor( from );
-        serverSuspicions.clear();
-        serverSuspicions.addAll( suspicions );
 
+        // Check removals
+        Iterator<InstanceId> suspicionsIterator = serverSuspicions.iterator();
+        while ( suspicionsIterator.hasNext() )
+        {
+            InstanceId currentSuspicion = suspicionsIterator.next();
+            if (!suspicions.contains( currentSuspicion ))
+            {
+                logger.info(from+" is no longer suspecting "+currentSuspicion);
+                suspicionsIterator.remove();
+            }
+        }
+
+        // Check additions
+        for ( InstanceId suspicion : suspicions )
+        {
+            if (!serverSuspicions.contains( suspicion ))
+            {
+                logger.info(from+" is now suspecting "+suspicion);
+                serverSuspicions.add(suspicion);
+            }
+        }
+
+        // Check if anyone is considered failed
         for ( final InstanceId node : suspicions )
         {
             if ( isFailed( node ) && !failed.contains( node ) )
@@ -171,21 +195,6 @@ public class HeartbeatContext
         listeners = Listeners.removeListener( listener, listeners );
     }
 
-    public void startHeartbeatTimers( Message<?> message )
-    {
-        // Start timers for sending and receiving heartbeats
-        for ( InstanceId server : clusterContext.getConfiguration().getMemberIds() )
-        {
-            if ( !clusterContext.isMe( server ) )
-            {
-                clusterContext.timeouts.setTimeout( HeartbeatMessage.i_am_alive + "-" + server,
-                        timeout( HeartbeatMessage.timed_out, message, server ) );
-                clusterContext.timeouts.setTimeout( HeartbeatMessage.sendHeartbeat + "-" + server,
-                        timeout( HeartbeatMessage.sendHeartbeat, message, server ) );
-            }
-        }
-    }
-
     public void serverLeftCluster( InstanceId node )
     {
         failed.remove( node );
@@ -217,12 +226,13 @@ public class HeartbeatContext
     public List<InstanceId> getSuspicionsOf( InstanceId server )
     {
         List<InstanceId> suspicions = new ArrayList<InstanceId>();
-        for ( Map.Entry<InstanceId, Set<InstanceId>> uriSetEntry : nodeSuspicions.entrySet() )
+        for ( InstanceId member : clusterContext.getConfiguration().getMemberIds() )
         {
-            if ( !failed.contains( uriSetEntry.getKey() )
-                    && uriSetEntry.getValue().contains( server ) )
+            Set<InstanceId> memberSuspicions = nodeSuspicions.get( member );
+            if ( memberSuspicions != null && !failed.contains( member )
+                    && memberSuspicions.contains( server ) )
             {
-                suspicions.add( uriSetEntry.getKey() );
+                suspicions.add( member );
             }
         }
 

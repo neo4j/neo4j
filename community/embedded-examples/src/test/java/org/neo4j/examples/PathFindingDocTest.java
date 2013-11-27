@@ -20,13 +20,12 @@ package org.neo4j.examples;
 
 import java.io.File;
 import java.util.Iterator;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -42,14 +41,12 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.Traversal;
+import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class PathFindingDocTest
 {
-    @ClassRule
-    public static TemporaryFolder temp = new TemporaryFolder();
-
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
@@ -61,7 +58,7 @@ public class PathFindingDocTest
     @BeforeClass
     public static void startDb()
     {
-        String storeDir = temp.getRoot().getAbsolutePath();
+        String storeDir = TargetDirectory.forTest( PathFindingDocTest.class ).graphDbDir( true ).getAbsolutePath();
         deleteFileOrDirectory( new File( storeDir ) );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
@@ -177,6 +174,7 @@ public class PathFindingDocTest
                 properties );
     }
 
+    @SuppressWarnings( "unused" )
     @Test
     public void astarExample()
     {
@@ -190,6 +188,7 @@ public class PathFindingDocTest
 
         EstimateEvaluator<Double> estimateEvaluator = new EstimateEvaluator<Double>()
         {
+            @Override
             public Double getCost( final Node node, final Node goal )
             {
                 double dx = (Double) node.getProperty( "x" ) - (Double) goal.getProperty( "x" );

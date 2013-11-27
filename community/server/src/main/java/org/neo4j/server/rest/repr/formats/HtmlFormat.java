@@ -117,9 +117,8 @@ public class HtmlFormat extends RepresentationFormat
             @Override
             String render( Map<String, Object> serialized )
             {
-                Map<Object, Object> map = new HashMap<Object, Object>();
-                // TODO Remove the reference node from the next transfer() when it is removed completely
-                transfer( serialized, map, "index", "reference_node", "node_index", "relationship_index"/*, "extensions_info"*/);
+                Map<Object, Object> map = new HashMap<>();
+                transfer( serialized, map, "index", "node_index", "relationship_index"/*, "extensions_info"*/);
                 return HtmlHelper.from( map, HtmlHelper.ObjectType.ROOT );
             }
         },

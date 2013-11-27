@@ -22,9 +22,9 @@ package org.neo4j.server.plugins;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -37,11 +37,6 @@ public abstract class ParameterList
     public ParameterList( Map<String, Object> data )
     {
         this.data = data;
-    }
-
-    public Map<String, Object> asMap()
-    {
-        return Collections.unmodifiableMap( data );
     }
 
     private static abstract class Converter<T>
@@ -57,7 +52,7 @@ public abstract class ParameterList
     {
         Object value = data.get( name );
         if ( value == null ) return null;
-        List<T> result = new ArrayList<T>();
+        List<T> result = new ArrayList<>();
         if ( value instanceof Object[] )
         {
             for ( Object element : (Object[]) value )
@@ -368,19 +363,16 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Node convertNode( GraphDatabaseAPI graphDb,
-            Object value ) throws BadInputException;
+    protected abstract Node convertNode( GraphDatabaseAPI graphDb, Object value ) throws BadInputException;
 
-    public Relationship getRelationship( GraphDatabaseAPI graphDb,
-            String name ) throws BadInputException
+    public Relationship getRelationship( GraphDatabaseAPI graphDb, String name ) throws BadInputException
     {
         Object value = data.get( name );
         if ( value == null ) return null;
         return convertRelationship( graphDb, value );
     }
 
-    public Relationship[] getRelationshipList( GraphDatabaseAPI graphDb,
-            String name ) throws BadInputException
+    public Relationship[] getRelationshipList( GraphDatabaseAPI graphDb, String name ) throws BadInputException
     {
         return getList( name, graphDb, new Converter<Relationship>()
         {
@@ -399,8 +391,7 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Relationship convertRelationship(
-            GraphDatabaseAPI graphDb, Object value )
+    protected abstract Relationship convertRelationship( GraphDatabaseAPI graphDb, Object value )
             throws BadInputException;
 
     public URI getUri( String name ) throws BadInputException
@@ -450,10 +441,8 @@ public abstract class ParameterList
         }
         else if ( value instanceof String )
         {
-            throw new BadInputException(
-                    "Maps encoded as Strings not supported" );
+            throw new BadInputException( "Maps encoded as Strings not supported" );
         }
         return null;
-
     }
 }

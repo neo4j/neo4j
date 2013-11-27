@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.Math.max;
-import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static java.lang.Math.max;
+
+import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a
@@ -85,9 +86,9 @@ public class IdGeneratorImpl implements IdGenerator
     private final FileSystemAbstraction fs;
     private FileChannel fileChannel = null;
     // defragged ids read from file (freed in a previous session).
-    private final LinkedList<Long> idsReadFromFile = new LinkedList<Long>();
+    private final LinkedList<Long> idsReadFromFile = new LinkedList<>();
     // ids freed in this session that havn't been flushed to disk yet
-    private final LinkedList<Long> releasedIdList = new LinkedList<Long>();
+    private final LinkedList<Long> releasedIdList = new LinkedList<>();
     
     private final long max;
     private final boolean aggressiveReuse;
@@ -114,7 +115,7 @@ public class IdGeneratorImpl implements IdGenerator
      * {@link #nextId()}.
      * @param aggressiveReuse will reuse ids during the same session, not requiring
      * a restart to be able reuse ids freed with {@link #freeId(long)}.
-     * @param highId2 
+     * @param highId the highest id in use.
      * @throws UnderlyingStorageException
      *             If no such file exist or if the id generator is sticky
      */
@@ -145,6 +146,7 @@ public class IdGeneratorImpl implements IdGenerator
      *             If the capacity is exceeded
      * @throws IllegalStateException if this id generator has been closed
      */
+    @Override
     public synchronized long nextId()
     {
         assertStillOpen();
@@ -184,7 +186,7 @@ public class IdGeneratorImpl implements IdGenerator
             if ( id != null )
             {
                 defraggedIdCount--;
-                return id.longValue();
+                return id;
             }
         }
 
@@ -209,6 +211,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
     }
 
+    @Override
     public synchronized IdRange nextIdBatch( int size )
     {
         assertStillOpen();
@@ -231,11 +234,9 @@ public class IdGeneratorImpl implements IdGenerator
         defragIds = new long[count];
         System.arraycopy( tmpArray, 0, defragIds, 0, count );
 
-        int sizeLeftForRange = size-count;
+        int sizeLeftForRange = size - count;
         long start = highId.get();
-        long newHighId = start + sizeLeftForRange;
-        assertIdWithinCapacity( newHighId );
-        highId.set( newHighId );
+        setHighId( start + sizeLeftForRange );
         return new IdRange( defragIds, start, sizeLeftForRange );
     }
 
@@ -246,6 +247,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @param id
      *            The next free id
      */
+    @Override
     public void setHighId( long id )
     {
         assertIdWithinCapacity( id );
@@ -258,6 +260,7 @@ public class IdGeneratorImpl implements IdGenerator
      *
      * @return The next free "high" id
      */
+    @Override
     public long getHighId()
     {
         return highId.get();
@@ -275,9 +278,8 @@ public class IdGeneratorImpl implements IdGenerator
      *
      * @param id
      *            The id to be made available again
-     * @throws IOException
-     *             If id is negative or greater than the highest returned id
      */
+    @Override
     public synchronized void freeId( long id )
     {
         if ( id == INTEGER_MINUS_ONE )
@@ -309,10 +311,8 @@ public class IdGeneratorImpl implements IdGenerator
      * An invoke to the <CODE>nextId</CODE> or <CODE>freeId</CODE> after
      * this method has been invoked will result in an <CODE>IOException</CODE>
      * since the highest returned id has been set to a negative value.
-     *
-     * @throws IOException
-     *             If unable to close this id generator
      */
+    @Override
     public synchronized void close()
     {
         if ( highId.get() == -1 )
@@ -376,7 +376,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             long writePosition = HEADER_SIZE;
             long position = Math.min( readPosition, maxReadPosition );
-            int bytesRead = -1;
+            int bytesRead;
             do
             {
                 writeBuffer.clear();
@@ -411,8 +411,6 @@ public class IdGeneratorImpl implements IdGenerator
      *
      * @param fileName
      *            The name of the id generator
-     * @throws IOException
-     *             If unable to create the id generator
      */
     public static void createGenerator( FileSystemAbstraction fs, File fileName, long highId )
     {
@@ -579,9 +577,6 @@ public class IdGeneratorImpl implements IdGenerator
      * console. Do not call while running store using this id generator since it
      * could corrupt the id generator (not thread safe). This method will close
      * the id generator after being invoked.
-     *
-     * @throws IOException
-     *             If problem dumping free ids
      */
     public synchronized void dumpFreeIds()
     {
@@ -589,20 +584,21 @@ public class IdGeneratorImpl implements IdGenerator
         {
             readIdBatch();
         }
-        java.util.Iterator<Long> itr = idsReadFromFile.iterator();
-        while ( itr.hasNext() )
+        for ( Long id : idsReadFromFile )
         {
-            System.out.print( " " + itr.next() );
+            System.out.print( " " + id );
         }
         System.out.println( "\nNext free id: " + highId );
         close();
     }
 
+    @Override
     public synchronized long getNumberOfIdsInUse()
     {
         return highId.get() - defraggedIdCount;
     }
 
+    @Override
     public long getDefragCount()
     {
         return defraggedIdCount;

@@ -12,4 +12,3 @@ target
 *.iml
 .idea
 .DS_Store
-server-enterprise/data

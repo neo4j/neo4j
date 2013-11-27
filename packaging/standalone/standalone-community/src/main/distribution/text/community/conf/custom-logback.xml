@@ -23,10 +23,13 @@
   <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="info">
   </logger>
 
+  <conversionRule conversionWord="module"
+                  converterClass="org.neo4j.kernel.logging.ModuleConverter" />
+
   <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <filter class="org.neo4j.kernel.logging.ConsoleLoggingFilter" />
     <encoder>
-      <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %message%n</pattern>
+      <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%module] %message%n</pattern>
     </encoder>
   </appender>
 

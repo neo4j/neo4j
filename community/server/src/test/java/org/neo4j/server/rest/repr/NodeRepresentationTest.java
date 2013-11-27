@@ -19,18 +19,17 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
-
-import java.util.Collections;
 import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.graphdb.Node;
+
+import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
+import static org.neo4j.test.mocking.GraphMock.node;
+import static org.neo4j.test.mocking.Properties.properties;
 
 public class NodeRepresentationTest
 {
@@ -110,18 +109,16 @@ public class NodeRepresentationTest
         assertNotNull( repr );
         verifySerialisation( repr );
     }
+    
+    @Test
+    public void shouldHaveLabelsLink() throws BadInputException
+    {
+        assertUriMatches( uriPattern( "/labels" ), noderep( 1234 ).labelsUriTemplate() );
+    }
 
     private NodeRepresentation noderep( long id )
     {
-        return new NodeRepresentation( node( id ) );
-    }
-
-    private Node node( long id )
-    {
-        Node node = mock( Node.class );
-        when( node.getId() ).thenReturn( id );
-        when( node.getPropertyKeys() ).thenReturn( Collections.<String>emptySet() );
-        return node;
+        return new NodeRepresentation( node( id, properties() ) );
     }
 
     public static void verifySerialisation( Map<String, Object> noderep )
@@ -146,6 +143,7 @@ public class NodeRepresentationTest
                 .toString() );
         assertUriMatches( uriPattern( "/properties/\\{key\\}" ), (String) noderep.get( "property" ) );
         assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ), (String) noderep.get( "traverse" ) );
+        assertUriMatches( uriPattern( "/labels" ), (String) noderep.get( "labels" ) );
         assertNotNull( noderep.get( "data" ) );
     }
 }

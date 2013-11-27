@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 
-class PropertyStats extends RecordStore.Processor
+class PropertyStats extends RecordStore.Processor<RuntimeException>
 {
     Map<Integer, Long> sizeHistogram = new TreeMap<Integer, Long>();
     Map<PropertyType, Long> typeHistogram = new EnumMap<PropertyType, Long>( PropertyType.class );

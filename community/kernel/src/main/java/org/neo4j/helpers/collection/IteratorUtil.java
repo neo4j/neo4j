@@ -19,21 +19,33 @@
  */
 package org.neo4j.helpers.collection;
 
-import static java.util.Arrays.asList;
-
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.CloneableInPublic;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.PrimitiveLongPredicate;
+import org.neo4j.kernel.impl.util.AbstractPrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIteratorForArray;
+
+import static java.util.EnumSet.allOf;
+
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * Contains common functionality regarding {@link Iterator}s and
@@ -44,7 +56,7 @@ public abstract class IteratorUtil
     /**
      * Returns the given iterator's first element or {@code null} if no
      * element found.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the first element in the {@code iterator}, or {@code null} if no
@@ -54,25 +66,25 @@ public abstract class IteratorUtil
     {
         return iterator.hasNext() ? iterator.next() : null;
     }
-    
+
     /**
      * Returns the given iterator's first element. If no element is found a
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the first element in the {@code iterator}.
-     * @throws {@link NoSuchElementException} if no element found.
+     * @throws NoSuchElementException if no element found.
      */
     public static <T> T first( Iterator<T> iterator )
     {
         return assertNotNull( iterator, firstOrNull( iterator ) );
     }
-    
+
     /**
      * Returns the given iterator's last element or {@code null} if no
      * element found.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the last element in the {@code iterator}, or {@code null} if no
@@ -87,66 +99,57 @@ public abstract class IteratorUtil
         }
         return result;
     }
-    
+
     /**
      * Returns the given iterator's last element. If no element is found a
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the last element in the {@code iterator}.
-     * @throws {@link NoSuchElementException} if no element found.
+     * @throws NoSuchElementException if no element found.
      */
     public static <T> T last( Iterator<T> iterator )
     {
         return assertNotNull( iterator, lastOrNull( iterator ) );
     }
-    
+
     /**
      * Returns the given iterator's single element or {@code null} if no
      * element found. If there is more than one element in the iterator a
      * {@link NoSuchElementException} will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in {@code iterator}, or {@code null} if no
      * element found.
-     * @throws {@link NoSuchElementException} if more than one element was
-     * found.
+     * @throws NoSuchElementException if more than one element was found.
      */
     public static <T> T singleOrNull( Iterator<T> iterator )
     {
-        T result = iterator.hasNext() ? iterator.next() : null;
-        if ( iterator.hasNext() )
-        {
-            throw new NoSuchElementException( "More than one element in " +
-                iterator + ". First element is '" + result +
-                "' and the second element is '" + iterator.next() + "'" );
-        }
-        return result;
+        return single( iterator, null );
     }
-    
+
     /**
      * Returns the given iterator's single element. If there are no elements
      * or more than one element in the iterator a {@link NoSuchElementException}
      * will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in the {@code iterator}.
-     * @throws {@link NoSuchElementException} if there isn't exactly one
-     * element.
+     * @throws NoSuchElementException if there isn't exactly one element.
      */
     public static <T> T single( Iterator<T> iterator )
     {
         return assertNotNull( iterator, singleOrNull( iterator ) );
     }
-    
+
     /**
      * Returns the iterator's n:th item from the end of the iteration.
      * If the iterator has got less than n-1 items in it
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @param n the n:th item from the end to get.
@@ -161,7 +164,7 @@ public abstract class IteratorUtil
     /**
      * Returns the iterator's n:th item from the end of the iteration.
      * If the iterator has got less than n-1 items in it {@code null} is returned.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterator the {@link Iterator} to get elements from.
      * @param n the n:th item from the end to get.
@@ -170,7 +173,7 @@ public abstract class IteratorUtil
      */
     public static <T> T fromEndOrNull( Iterator<T> iterator, int n )
     {
-        Deque<T> trail = new ArrayDeque<T>( n );
+        Deque<T> trail = new ArrayDeque<>( n );
         while ( iterator.hasNext() )
         {
             if ( trail.size() > n )
@@ -185,22 +188,19 @@ public abstract class IteratorUtil
     /**
      * Iterates over the full iterators, and checks equality for each item in them. Note that this
      * will consume the iterators.
-     *
-     * @param first
-     * @param other
-     * @return
      */
-    public static boolean iteratorsEqual(Iterator<?> first, Iterator<?> other)
+    public static boolean iteratorsEqual( Iterator<?> first, Iterator<?> other )
     {
-        while(true)
+        while ( true )
         {
-            if(first.hasNext() && other.hasNext())
+            if ( first.hasNext() && other.hasNext() )
             {
-                if(!first.next().equals( other.next() ))
+                if ( !first.next().equals( other.next() ) )
                 {
                     return false;
                 }
-            } else
+            }
+            else
             {
                 return first.hasNext() == other.hasNext();
             }
@@ -215,11 +215,11 @@ public abstract class IteratorUtil
         }
         return result;
     }
-    
+
     /**
      * Returns the given iterable's first element or {@code null} if no
      * element found.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the first element in the {@code iterable}, or {@code null} if no
@@ -229,25 +229,25 @@ public abstract class IteratorUtil
     {
         return firstOrNull( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's first element. If no element is found a
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the first element in the {@code iterable}.
-     * @throws {@link NoSuchElementException} if no element found.
+     * @throws NoSuchElementException if no element found.
      */
     public static <T> T first( Iterable<T> iterable )
     {
         return first( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's last element or {@code null} if no
      * element found.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the last element in the {@code iterable}, or {@code null} if no
@@ -257,74 +257,190 @@ public abstract class IteratorUtil
     {
         return lastOrNull( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's last element. If no element is found a
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the last element in the {@code iterable}.
-     * @throws {@link NoSuchElementException} if no element found.
+     * @throws NoSuchElementException if no element found.
      */
     public static <T> T last( Iterable<T> iterable )
     {
         return last( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's single element or {@code null} if no
      * element found. If there is more than one element in the iterable a
      * {@link NoSuchElementException} will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in {@code iterable}, or {@code null} if no
      * element found.
-     * @throws {@link NoSuchElementException} if more than one element was
-     * found.
+     * @throws NoSuchElementException if more than one element was found.
      */
     public static <T> T singleOrNull( Iterable<T> iterable )
     {
         return singleOrNull( iterable.iterator() );
     }
-    
+
     /**
      * Returns the given iterable's single element. If there are no elements
      * or more than one element in the iterable a {@link NoSuchElementException}
      * will be thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the single element in the {@code iterable}.
-     * @throws {@link NoSuchElementException} if there isn't exactly one
-     * element.
+     * @throws NoSuchElementException if there isn't exactly one element.
      */
     public static <T> T single( Iterable<T> iterable )
     {
         return single( iterable.iterator() );
     }
-    
+
     /**
-     * Returns the iterator's n:th item from the end of the iteration.
-     * If the iterator has got less than n-1 items in it {@code null} is returned.
-     * 
-     * @param <T> the type of elements in {@code iterator}.
+     * Returns the given iterable's single element or {@code null} if no
+     * element found. If there is more than one element in the iterable a
+     * {@link NoSuchElementException} will be thrown.
+     *
+     * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
-     * @param countFromEnd the n:th item from the end to get.
-     * @return the iterator's n:th item from the end of the iteration,
-     * or {@code null} if the iterator doesn't contain that many items.
+     * @return the single element in {@code iterable}, or {@code null} if no
+     * element found.
+     * @throws NoSuchElementException if more than one element was found.
      */
-    public static <T> T fromEndOrNull( Iterable<T> iterable, int countFromEnd )
+    public static <T> T single( Iterable<T> iterable, T itemIfNone )
     {
-        return fromEndOrNull( iterable.iterator(), countFromEnd );
+        return single( iterable.iterator(), itemIfNone );
     }
-    
+
+    /**
+     * Returns the given iterator's single element or {@code itemIfNone} if no
+     * element found. If there is more than one element in the iterator a
+     * {@link NoSuchElementException} will be thrown.
+     *
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @return the single element in {@code iterator}, or {@code itemIfNone} if no
+     * element found.
+     * @throws NoSuchElementException if more than one element was found.
+     */
+    public static <T> T single( Iterator<T> iterator, T itemIfNone )
+    {
+        try
+        {
+            T result = iterator.hasNext() ? iterator.next() : itemIfNone;
+            if ( iterator.hasNext() )
+            {
+                throw new NoSuchElementException( "More than one element in " + iterator + ". First element is '"
+                        + result + "' and the second element is '" + iterator.next() + "'" );
+            }
+            return result;
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator )
+            {
+                ((ResourceIterator) iterator).close();
+            }
+        }
+    }
+
+    /**
+     * Returns the given iterator's single element or {@code itemIfNone} if no
+     * element found. If there is more than one element in the iterator a
+     * {@link NoSuchElementException} will be thrown.
+     *
+     * @param iterator the {@link Iterator} to get elements from.
+     * @return the single element in {@code iterator}, or {@code itemIfNone} if no
+     * element found.
+     * @throws NoSuchElementException if more than one element was found.
+     */
+    public static long single( PrimitiveLongIterator iterator, long itemIfNone )
+    {
+        if ( iterator.hasNext() )
+        {
+            long result = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                throw new NoSuchElementException( "More than one element in " +
+                        iterator + ". First element is '" + result +
+                        "' and the second element is '" + iterator.next() + "'" );
+            }
+            return result;
+        }
+        else
+        {
+            return itemIfNone;
+        }
+    }
+
+    /**
+     * Returns a new iterator with all elements found in the input iterator that are accepted by the given predicate
+     *
+     * @param predicate predicate to use for selecting elements
+     * @param iterator input source of elements to be filtered
+     * @return new iterator that contains exactly all elements from iterator that are accepted by predicate
+     */
+    public static PrimitiveLongIterator filter( final PrimitiveLongPredicate predicate,
+                                                final PrimitiveLongIterator iterator )
+    {
+        return new PrimitiveLongIterator()
+        {
+            long next = -1;
+            boolean hasNext = false;
+
+            {
+                computeNext();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return hasNext;
+            }
+
+            @Override
+            public long next()
+            {
+                if ( hasNext )
+                {
+                    long result = next;
+                    computeNext();
+                    return result;
+                }
+                else
+                {
+                    throw new NoSuchElementException();
+                }
+            }
+
+            private void computeNext()
+            {
+                while ( iterator.hasNext() )
+                {
+                    next = iterator.next();
+                    if ( predicate.accept( next ) )
+                    {
+                        hasNext = true;
+                        return;
+                    }
+                }
+                hasNext = false;
+            }
+        };
+    }
+
     /**
      * Returns the iterator's n:th item from the end of the iteration.
      * If the iterator has got less than n-1 items in it
      * {@link NoSuchElementException} is thrown.
-     * 
+     *
      * @param <T> the type of elements in {@code iterator}.
      * @param iterable the {@link Iterable} to get elements from.
      * @param n the n:th item from the end to get.
@@ -335,7 +451,7 @@ public abstract class IteratorUtil
     {
         return fromEnd( iterable.iterator(), n );
     }
-    
+
     /**
      * Adds all the items in {@code iterator} to {@code collection}.
      * @param <C> the type of {@link Collection} to add to items to.
@@ -358,6 +474,68 @@ public abstract class IteratorUtil
     /**
      * Adds all the items in {@code iterator} to {@code collection}.
      * @param <C> the type of {@link Collection} to add to items to.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<Long>> C addToCollection( PrimitiveLongIterator iterator, C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<Integer>> C addToCollection( PrimitiveIntIterator iterator, C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param <T> the type of items in the collection and iterator.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<T>,T> C addToCollectionUnique( Iterator<T> iterator,
+            C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            addUnique( collection, iterator.next() );
+        }
+        return collection;
+    }
+
+    private static <T, C extends Collection<T>> void addUnique( C collection, T item )
+    {
+        if ( !collection.add( item ) )
+        {
+            throw new IllegalStateException( "Encountered an already added item:" + item +
+                    " when adding items uniquely to a collection:" + collection );
+        }
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
      * @param <T> the type of items in the collection and iterator.
      * @param iterable the {@link Iterator} to grab the items from.
      * @param collection the {@link Collection} to add the items to.
@@ -367,7 +545,22 @@ public abstract class IteratorUtil
     public static <C extends Collection<T>,T> C addToCollection( Iterable<T> iterable,
             C collection )
     {
-        return addToCollection(iterable.iterator(), collection);
+        return addToCollection( iterable.iterator(), collection );
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param <T> the type of items in the collection and iterator.
+     * @param iterable the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<T>,T> C addToCollectionUnique( Iterable<T> iterable,
+            C collection )
+    {
+        return addToCollectionUnique( iterable.iterator(), collection );
     }
 
     /**
@@ -378,7 +571,7 @@ public abstract class IteratorUtil
      * instance for each call to {@code iterator()} on the returned
      * {@link Iterable} instance. This method exists to make it easy to use an
      * {@link Iterator} in a for-loop.
-     * 
+     *
      * @param <T> the type of items in the iterator.
      * @param iterator the iterator to expose as an {@link Iterable}.
      * @return the supplied iterator posing as an {@link Iterable}.
@@ -394,14 +587,14 @@ public abstract class IteratorUtil
             }
         };
     }
-    
+
     /**
      * Exposes {@code iterator} as an {@link Iterable}. It breaks the contract
      * of {@link Iterable} in that it returns the supplied iterator instance for
      * each call to {@code iterator()} on the returned {@link Iterable}
      * instance. This method mostly exists to make it easy to use an
      * {@link Iterator} in a for-loop.
-     * 
+     *
      * @param <T> the type of items in the iterator.
      * @param iterator the iterator to expose as an {@link Iterable}.
      * @return the supplied iterator posing as an {@link Iterable}.
@@ -411,7 +604,7 @@ public abstract class IteratorUtil
     {
         return loop( iterator );
     }
-    
+
     /**
      * Counts the number of items in the {@code iterator} by looping
      * through it.
@@ -432,7 +625,7 @@ public abstract class IteratorUtil
 
     /**
      * Counts the number of items in the {@code iterable} by looping through it.
-     * 
+     *
      * @param <T> the type of items in the iterator.
      * @param iterable the {@link Iterable} to count items in.
      * @return the number of found in {@code iterator}.
@@ -441,7 +634,6 @@ public abstract class IteratorUtil
     {
         return count( iterable.iterator() );
     }
-
 
     /**
      * Creates a collection from an iterable.
@@ -452,11 +644,23 @@ public abstract class IteratorUtil
      */
     public static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
-        List<T> list = new ArrayList<T>();
-        addToCollection( iterable, list );
-        return list;
+        return addToCollection( iterable, new ArrayList<T>() );
     }
-    
+    public static <T> Collection<T> asCollection( Iterator<T> iterable )
+    {
+        return addToCollection( iterable, new ArrayList<T>() );
+    }
+
+    public static <T> List<T> asList( Iterator<T> iterator )
+    {
+        return addToCollection( iterator, new ArrayList<T>() );
+    }
+
+    public static <T> List<T> asList( Iterable<T> iterator )
+    {
+        return addToCollection( iterator, new ArrayList<T>() );
+    }
+
     /**
      * Creates a {@link Set} from an {@link Iterable}.
      *
@@ -469,35 +673,145 @@ public abstract class IteratorUtil
         return addToCollection( iterable, new HashSet<T>() );
     }
 
+    public static <T> Set<T> asSet( Iterator<T> iterator )
+    {
+        return addToCollection( iterator, new HashSet<T>() );
+    }
+
+    /**
+     * Creates a {@link Set} from an {@link Iterable}.
+     *
+     * @param iterable The items to create the set from.
+     * @param <T> The generic type of items.
+     * @return a set containing all items from the {@link Iterable}.
+     */
+    public static <T> Set<T> asUniqueSet( Iterable<T> iterable )
+    {
+        return addToCollectionUnique( iterable, new HashSet<T>() );
+    }
+
     /**
      * Creates a {@link Set} from an array of items.
      *
      * @param items the items to add to the set.
      * @return the {@link Set} containing the items.
      */
+    @SafeVarargs
     public static <T> Set<T> asSet( T... items )
     {
-        return new HashSet<T>( asList( items ) );
+        return new HashSet<>( Arrays.asList( items ) );
     }
-    
+
+    public static <T> Set<T> emptySetOf( @SuppressWarnings("unused"/*just used as a type marker*/) Class<T> type )
+    {
+        return Collections.emptySet();
+    }
+
+    public static <T> List<T> emptyListOf( @SuppressWarnings("unused"/*just used as a type marker*/) Class<T> type )
+    {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Alias for asSet()
+     */
+    @SafeVarargs
+    public static <T> Set<T> set( T... items)
+    {
+        return asSet(items);
+    }
+
+    /**
+     * Creates a {@link Set} from an array of items.
+     *
+     * @param items the items to add to the set.
+     * @return the {@link Set} containing the items.
+     */
+    @SafeVarargs
+    public static <T> Set<T> asUniqueSet( T... items )
+    {
+        HashSet<T> set = new HashSet<>();
+        for ( T item : items )
+        {
+            addUnique( set, item );
+        }
+        return set;
+    }
+
+    /**
+     * Creates a {@link Set} from an array of items.
+     *
+     * @param items the items to add to the set.
+     * @return the {@link Set} containing the items.
+     */
+    public static <T> Set<T> asUniqueSet( Iterator<T> items )
+    {
+        HashSet<T> set = new HashSet<>();
+        while( items.hasNext() )
+        {
+            addUnique( set, items.next() );
+        }
+        return set;
+    }
+
+    /**
+     * Function for converting Enum to String
+     */
+    @SuppressWarnings( "rawtypes" )
+    public final static Function<Enum, String> ENUM_NAME = new Function<Enum, String>()
+    {
+        @Override
+        public String apply( Enum from )
+        {
+            return from.name();
+        }
+    };
+
+    /**
+     * Converts an {@link Iterable} of enums to {@link Set} of their names.
+     *
+     * @param enums the enums to convert.
+     * @return the set of enum names
+     */
+    @SuppressWarnings( "rawtypes" )
+    public static Set<String> asEnumNameSet( Iterable<Enum> enums )
+    {
+        return asSet( map( ENUM_NAME, enums ) );
+    }
+
+    /**
+     * Converts an enum class to to {@link Set} of the names of all valid enum values
+     *
+     * @param clazz enum class
+     * @param <E> enum type bound
+     * @return the set of enum names
+     */
+    public static <E extends Enum<E>> Set<String> asEnumNameSet( Class<E> clazz)
+    {
+        return asSet( map( ENUM_NAME, allOf( clazz ) ) );
+    }
+
     /**
      * Creates an {@link Iterable} for iterating over the lines of a text file.
      * @param file the file to get the lines for.
      * @return an {@link Iterable} for iterating over the lines of a text file.
      */
-    public static ClosableIterable<String> asIterable( final File file )
+    public static ClosableIterable<String> asIterable( final File file, final String encoding )
     {
         return new ClosableIterable<String>()
         {
             private ClosableIterator<String> mostRecentIterator;
-            
+
             @Override
             public Iterator<String> iterator()
             {
                 try
                 {
-                    if ( mostRecentIterator != null ) mostRecentIterator.close();
-                    mostRecentIterator = asIterator( file );
+                    if ( mostRecentIterator != null )
+                    {
+                        mostRecentIterator.close();
+                    }
+                    mostRecentIterator = asIterator( file, encoding );
                     return mostRecentIterator;
                 }
                 catch ( IOException e )
@@ -505,60 +819,449 @@ public abstract class IteratorUtil
                     throw new RuntimeException( e );
                 }
             }
-            
+
             @Override
             public void close()
             {
-                if ( mostRecentIterator != null ) mostRecentIterator.close();
+                if ( mostRecentIterator != null )
+                {
+                    mostRecentIterator.close();
+                }
             }
         };
     }
-    
+
     /**
      * Creates an {@link Iterator} for iterating over the lines of a text file.
      * The opened file is closed if an exception occurs during reading or when
      * the files has been read through all the way.
      * @param file the file to get the lines for.
+     * @param encoding to be used for reading the file
      * @return an {@link Iterator} for iterating over the lines of a text file.
      */
-    public static ClosableIterator<String> asIterator( File file ) throws IOException
+    public static ClosableIterator<String> asIterator( File file, String encoding ) throws IOException
     {
-        return new LinesOfFileIterator( file );
-    }
-    
-    public static <T> void streamToFile( Iterable<T> iterable, File file, String encoding ) throws IOException
-    {
-        streamToFile( iterable.iterator(), file, encoding );
+        return new LinesOfFileIterator( file, encoding );
     }
 
-    public static <T> void streamToFile( Iterator<T> iterator, File file, String encoding ) throws IOException
+    public static Iterable<Long> asIterable( final long... array )
     {
-        if ( file.exists() ) throw new IOException( "File '" + file + "' already exists" );
-        PrintStream out = null;
+        return new Iterable<Long>()
+        {
+            @Override
+            public Iterator<Long> iterator()
+            {
+                return asIterator( array );
+            }
+        };
+    }
+
+    @SafeVarargs
+    public static <T> Iterable<T> asIterable( final T... array )
+    {
+        return new Iterable<T>()
+        {
+            @Override
+            public Iterator<T> iterator()
+            {
+                return IteratorUtil.iterator( array );
+            }
+        };
+    }
+
+    public static Iterator<Long> asIterator( final long... array )
+    {
+        return new PrefetchingIterator<Long>()
+        {
+            private int index;
+
+            @Override
+            protected Long fetchNextOrNull()
+            {
+                try
+                {
+                    return index < array.length ? array[index] : null;
+                }
+                finally
+                {
+                    index++;
+                }
+            }
+        };
+    }
+
+    public static PrimitiveLongIterator asPrimitiveIterator( final long... array )
+    {
+        return new PrimitiveLongIteratorForArray( array );
+    }
+
+    public static PrimitiveIntIterator asPrimitiveIterator( final int... array )
+    {
+        return new PrimitiveIntIteratorForArray( array );
+    }
+
+    @SafeVarargs
+    public static <T> Iterator<T> asIterator( final int maxItems, final T... array )
+    {
+        return new PrefetchingIterator<T>()
+        {
+            private int index;
+
+            @Override
+            protected T fetchNextOrNull()
+            {
+                try
+                {
+                    return index < array.length && index < maxItems ? array[index] : null;
+                }
+                finally
+                {
+                    index++;
+                }
+            }
+        };
+    }
+
+    @SafeVarargs
+    public static <T> Iterator<T> iterator( T ... items )
+    {
+        return asIterator( items.length, items );
+    }
+
+    @SafeVarargs
+    public static <T> Iterator<T> iterator( int maxItems, T ... items )
+    {
+        return asIterator( maxItems, items );
+    }
+
+    public static PrimitiveLongIterator singletonPrimitiveLongIterator( final long item )
+    {
+        return new AbstractPrimitiveLongIterator()
+        {
+            {
+                next( item );
+            }
+
+            @Override
+            protected void computeNext()
+            {
+                endReached();
+            }
+        };
+    }
+
+    @SuppressWarnings( "rawtypes" )
+    private static final ResourceIterator EMPTY_ITERATOR = new ResourceIterator()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public Object next()
+        {
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close()
+        {
+            // do nothing
+        }
+    };
+
+    private static final PrimitiveLongIterator EMPTY_PRIMITIVE_LONG_ITERATOR = new PrimitiveLongIterator()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public long next()
+        {
+            throw new NoSuchElementException();
+        }
+    };
+
+    private static final PrimitiveIntIterator EMPTY_PRIMITIVE_INT_ITERATOR = new PrimitiveIntIterator()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public int next()
+        {
+            throw new NoSuchElementException();
+        }
+    };
+
+    @SuppressWarnings( "unchecked" )
+    public static <T> ResourceIterator<T> emptyIterator()
+    {
+        return EMPTY_ITERATOR;
+    }
+
+    public static PrimitiveLongIterator emptyPrimitiveLongIterator()
+    {
+        return EMPTY_PRIMITIVE_LONG_ITERATOR;
+    }
+
+    public static PrimitiveIntIterator emptyPrimitiveIntIterator()
+    {
+        return EMPTY_PRIMITIVE_INT_ITERATOR;
+    }
+
+    public static <T> boolean contains( Iterator<T> iterator, T item )
+    {
         try
         {
-            out = new PrintStream( file, encoding );
-            while ( iterator.hasNext() ) out.println( iterator.next().toString() );
+            for ( T element : loop( iterator ) )
+            {
+                if ( item == null ? element == null : item.equals( element ) )
+                {
+                    return true;
+                }
+            }
+            return false;
         }
         finally
         {
-            safeClose( out );
+            if ( iterator instanceof ResourceIterator<?> )
+            {
+                ((ResourceIterator<?>) iterator).close();
+            }
         }
     }
-    
-    private static void safeClose( Closeable closeable )
+
+    public static boolean contains( PrimitiveLongIterator iterator, long item )
     {
-        if ( closeable != null )
+        try
         {
-            try
+            while ( iterator.hasNext() )
             {
-                closeable.close();
+                if ( item == iterator.next() )
+                {
+                    return true;
+                }
             }
-            catch ( IOException e )
+            return false;
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator<?> )
             {
-                // What can we do?
-                e.printStackTrace();
+                ((ResourceIterator<?>) iterator).close();
             }
         }
+    }
+
+    public static boolean contains( PrimitiveIntIterator iterator, int item )
+    {
+        try
+        {
+            while ( iterator.hasNext() )
+            {
+                if ( item == iterator.next() )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator<?> )
+            {
+                ((ResourceIterator<?>) iterator).close();
+            }
+        }
+    }
+
+    public static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
+    {
+        return Iterables.map( new Function<T,T>()
+        {
+            @Override
+            public T apply( T from )
+            {
+                return itemClass.cast( from.clone() );
+            }
+        }, items );
+    }
+
+    public static <T> ResourceIterator<T> asResourceIterator( final Iterator<T> iterator )
+    {
+        return new WrappingResourceIterator<>( iterator );
+    }
+
+    @SuppressWarnings("UnusedDeclaration"/*Useful when debugging in tests, but not used outside of debugging sessions*/)
+    public static Iterator<Long> toJavaIterator( final PrimitiveLongIterator primIterator )
+    {
+        return new Iterator<Long>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return primIterator.hasNext();
+            }
+
+            @Override
+            public Long next()
+            {
+                return primIterator.next();
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException(  );
+            }
+        };
+    }
+
+    public static List<Long> primitivesList( PrimitiveLongIterator iterator )
+    {
+        ArrayList<Long> result = new ArrayList<>();
+        while ( iterator.hasNext() )
+        {
+            result.add( iterator.next() );
+        }
+        return result;
+    }
+
+    public static Set<Long> asSet( PrimitiveLongIterator iterator )
+    {
+        return internalAsSet( iterator, false );
+    }
+
+    private static Set<Long> internalAsSet( PrimitiveLongIterator iterator, boolean allowDuplicates )
+    {
+        Set<Long> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            long value = iterator.next();
+            if ( !set.add( value ) && !allowDuplicates )
+            {
+                throw new IllegalStateException( "Duplicates found. Tried to add " + value + " to " + set );
+            }
+        }
+        return set;
+    }
+
+    public static Set<Integer> asSet( PrimitiveIntIterator iterator )
+    {
+        Set<Integer> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            set.add( iterator.next() );
+        }
+        return set;
+    }
+
+    /**
+     * Creates a {@link Set} from an array of iterator.
+     *
+     * @param iterator the iterator to add to the set.
+     * @return the {@link Set} containing the iterator.
+     */
+    public static Set<Long> asUniqueSet( PrimitiveLongIterator iterator )
+    {
+        HashSet<Long> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            addUnique( set, iterator.next() );
+        }
+        return set;
+    }
+
+    public static PrimitiveLongIterator toPrimitiveLongIterator( final Iterator<Long> iterator )
+    {
+        return new PrimitiveLongIterator()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public long next()
+            {
+                Long nextValue = iterator.next();
+                if ( null == nextValue )
+                {
+                    throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
+                }
+                return nextValue;
+            }
+        };
+    }
+
+    public static PrimitiveIntIterator toPrimitiveIntIterator( final Iterator<Integer> iterator )
+    {
+        return new PrimitiveIntIterator()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public int next()
+            {
+                Integer nextValue = iterator.next();
+                if ( null == nextValue )
+                {
+                    throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
+                }
+                return nextValue;
+            }
+        };
+    }
+
+    public static PrimitiveLongIterator flatten( final Iterator<PrimitiveLongIterator> source )
+    {
+        return new PrimitiveLongIterator()
+        {
+            private PrimitiveLongIterator current;
+
+            @Override
+            public boolean hasNext()
+            {
+                while ( current == null || !current.hasNext() )
+                {
+                    if ( !source.hasNext() )
+                    {
+                        return false;
+                    }
+                    current = source.next();
+                }
+                return true;
+            }
+
+            @Override
+            public long next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                return current.next();
+            }
+        };
     }
 }

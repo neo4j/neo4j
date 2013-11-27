@@ -19,13 +19,9 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertNull;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -35,21 +31,21 @@ public class TransactionLifecycleTest
     @Rule
     public DatabaseRule database = new ImpermanentDatabaseRule();
 
-    @Test(expected=NotFoundException.class)
-    public void givenACallToFailATransactionSubsequentSuccessCallsShouldBeSwallowedSilently() {
+    @Test
+    public void givenACallToFailATransactionSubsequentSuccessCallsShouldBeSwallowedSilently()
+    {
         GraphDatabaseService graphdb = database.getGraphDatabaseService();
         Transaction tx = graphdb.beginTx();
-        Node someNode = null;
-        try {
-            someNode = graphdb.createNode();
+        try
+        {
+            graphdb.createNode();
             tx.failure();
-            
+
             tx.success();
-        } finally {
+        }
+        finally
+        {
             tx.finish();
         }
-        
-        // Belt and braces
-        assertNull(graphdb.getNodeById( someNode.getId() ));
     }
 }

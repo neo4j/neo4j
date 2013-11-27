@@ -30,8 +30,11 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+
+import org.neo4j.helpers.Pair;
 
 /**
  * Utility to create {@link Map}s.
@@ -392,5 +395,21 @@ public abstract class MapUtil
         Map<K, V> copy = new HashMap<K, V>( map );
         copy.remove( key );
         return copy;
+    }
+
+    public static <K,V> Map<K, V> toMap( Iterable<Pair<K, V>> pairs )
+    {
+        return toMap( pairs.iterator() );
+    }
+
+    public static <K,V> Map<K, V> toMap( Iterator<Pair<K, V>> pairs )
+    {
+        Map<K,V> result = new HashMap<K,V>();
+        while(pairs.hasNext())
+        {
+            Pair<K,V> pair = pairs.next();
+            result.put(pair.first(), pair.other());
+        }
+        return result;
     }
 }

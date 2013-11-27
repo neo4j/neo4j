@@ -2,59 +2,90 @@
 High Availability setup tutorial
 ================================
 
-This guide will help you understand the ways to configure and deploy a Neo4j High Availability cluster.
+This guide will help you understand how to configure and deploy a Neo4j High Availability cluster.
 Two scenarios will be considered:
-The first will be configuring 3 instances to be deployed on 3 separate machines, in a setting similar to what might be encountered in a production environment.
-The second will modify the former to make it possible to run a cluster of 3 instances on the same physical machine, a setup most useful during development of applications on top of Neo4j.
+o Configuring 3 instances to be deployed on 3 separate machines, in a setting similar to what might be encountered in a production environment.
+- Modifying the former to make it possible to run a cluster of 3 instances on the same physical machine, which is particularly useful during development.
 
 == Background ==
 
-A Neo4j HA cluster consists of a set of running Neo4j Enterprise instances.
-Each instance must be assigned an integer ID, which serves as its identifier in the cluster.
+Each instance in a Neo4j HA cluster must be assigned an integer ID, which serves as its unique identifier. At startup, a Neo4j
+instance contacts the other instances specified in the +ha.initial_hosts+ configuration option.
 
-At startup, a Neo4j instance contacts the other instances specified in the +ha.initial_hosts+ configuration option.
-When it establishes a connection to any one of these, it determines the current state of the cluster and ensures that it is eligible to join the cluster.
-To be eligible the Neo4j instance must be hosting the same database store as other members of the cluster (although it is allowed to be in an older state), or be a new deployment without a database store.
+When an instance establishes a connection to any other, it determines the current state of the cluster and ensures that
+it is eligible to join. To be eligible the Neo4j instance must host the same database store as other members of the
+cluster (although it is allowed to be in an older state), or be a new deployment without a database store.
 
-First, let's explain what settings exist and what values they accept.
+[WARNING]
+.Explicitly configure IP Addresses/Hostnames for a cluster
+=========
+Neo4j will attempt to configure IP addresses for itself in the absence of explicit configuration. However in
+typical operational environments where machines have multiple network cards and support IPv4 and IPv6 it is *strongly*
+recommended that the operator explicitly sets the IP address/hostname configuration for each machine in the cluster.
+=========
+
+Let's examine the available settings and the values they accept.
 
 === ha.server_id
 
-+ha.server_id+ is the cluster identification for each instance. It must be a positive integer, unique among all
-Neo4j instances in the cluster.
++ha.server_id+ is the cluster identifier for each instance. It must be a positive integer and must be unique among
+all Neo4j instances in the cluster.
+
+For example, +ha.server_id=1+.
 
 === ha.cluster_server
 
 +ha.cluster_server+ is an address/port setting that specifies where the Neo4j instance will listen for cluster
-communications. This is related with the +ha.initial_hosts+ setting. The default is +0.0.0.0:5001+, which is
-suitable for most deployments.
+communications (like hearbeat messages). The default port is +5001+. In the absence of a specified IP address, Neo4j
+will attempt to find a valid interface for binding. While this behavior typically results in a well-behaved server, it
+is *strongly* recommended that users explicitly choose an IP address bound to the network interface of their choosing
+to ensure a coherent cluster deployment.
 
-=== ha.server
-
-+ha.server+ is an additional address/port setting that specifies where the Neo4j instance will listen for content. It
-must be different from ha.cluster_server, typically with a different port. The default is +0.0.0.0:6361+, which is
-suitable for most deployments.
+For example, +ha.cluster_server=192.168.33.22:5001+ will listen for cluster communications on the network interface
+bound to the 192.168.33.0 subnet on port 5001.
 
 === ha.initial_hosts
 
-+ha.initial_hosts+ is a comma separated list of hostname/port pairs, which specify how to reach other Neo4j instances
++ha.initial_hosts+ is a comma separated list of address/port pairs, which specify how to reach other Neo4j instances
 in the cluster (as configured via their +ha.cluster_server+ option). These hostname/ports will be used when the Neo4j
-instances starts, to allow it up to find and join the cluster. Note the specifying the instances own address is
-permitted.
+instances starts, to allow it up to find and join the cluster. Specifying an instance's own address is permitted.
+
+[WARNING]
+====
+Do *not* use any whitespace in this configuration option.
+====
+
+For example, +ha.initial_hosts=192.168.33.22:5001,192.168.33.21:5001+ will attempt to reach Neo4j instances listening on
+192.168.33.22 on port 5001 and 192.168.33.21 on port 5001 on the 192.168.33.0 subnet.
+
+=== ha.server
+
++ha.server+ is an address/port setting that specifies where the Neo4j instance will listen for transactions
+(changes to the graph data) from the cluster master. The default port is +6001+. In the absence of a specified IP address, Neo4j will attempt
+to find a valid interface for binding. While this behavior typically results in a well-behaved server, it is *strongly* recommended that
+users explicitly choose an IP address bound to the network interface of their choosing to ensure a coherent cluster topology.
+
++ha.server+ must user a different port to +ha.cluster_server+.
+
+For example, +ha.server=192.168.33.22:6001+ will listen for cluster communications on the network interface
+bound to the 192.168.33.0 subnet on port 6001.
 
 [TIP]
 .Address/port format
 ==================
-The options +ha.cluster_server+ and +ha.server+ are specified as +<IP address>:<port>+. The IP address MUST be the
-address assigned to one of the servers network interfaces, or the value +0.0.0.0+, which will cause Neo4j to listen
-on every network interface.
+The +ha.cluster_server+ and +ha.server+ configuration options are specified as +<IP address>:<port>+.
+
+For +ha.server+ the IP address MUST be the address assigned to one of the host's network interfaces.
+
+For +ha.cluster_server+ the IP address MUST be the address assigned to one of the host's network interfaces,
+or the value +0.0.0.0+, which will cause Neo4j to listen on every network interface.
 
 Either the address or the port can be omitted, in which case the default for that part will be used. If the address
-is omitted, then the port must be preceeded with a colon (eg. +:5001+).
+is omitted, then the port must be preceded with a colon (eg. +:5001+).
 
-The port can also be configured as a range, like so: +<hostname>:<first port>[-<second port>]+. In this case, Neo4j
-will test each port in sequence, and select the first that is unused. Note that this usage is not permitted when the
-hostname is specified as +0.0.0.0+ (the "all interfaces" address).
+The syntax for setting the port range is: +<hostname>:<first port>[-<second port>]+. In this case, Neo4j will test
+each port in sequence, and select the first that is unused. Note that this usage is not permitted when the hostname is specified
+as +0.0.0.0+ (the "all interfaces" address).
 ==================
 
 == Getting started: Setting up a production cluster ==

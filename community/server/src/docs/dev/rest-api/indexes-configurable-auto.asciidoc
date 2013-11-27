@@ -1,5 +1,5 @@
 [[rest-api-configurable-auto-indexes]]
-== Configurable Automatic Indexing ==
+== Configurable Legacy Automatic Indexing ==
 
 Out of the box auto-indexing supports exact matches since they are created with the default configuration (see <<auto-indexing>>) the first time you access them. However it is possible to intervene in the lifecycle of the server before any auto indexes are created to change their configuration.
 

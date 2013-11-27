@@ -19,22 +19,23 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 /**
  * TODO
@@ -60,28 +61,28 @@ public class TestBasicHaOperations
     @Test
     public void testBasicFailover() throws Throwable
     {
-        // Given
+        // given
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "failover", true ), stringMap() );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
-
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
         // When
         long start = System.nanoTime();
         cluster.shutdown( master );
         logger.getLogger().warn( "Shut down master" );
 
-        // Then
         cluster.await( ClusterManager.masterAvailable() );
         long end = System.nanoTime();
 
-        logger.getLogger().warn( "Failover took:"+(end-start)/1000000+"ms" );
+        logger.getLogger().warn( "Failover took:" + (end - start) / 1000000 + "ms" );
 
+        // Then
         boolean slave1Master = slave1.isMaster();
         boolean slave2Master = slave2.isMaster();
 
@@ -98,7 +99,7 @@ public class TestBasicHaOperations
     @Test
     public void testBasicPropagationFromSlaveToMaster() throws Throwable
     {
-        // Given
+        // given
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "propagation", true ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
@@ -106,85 +107,67 @@ public class TestBasicHaOperations
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
-        // When
         long nodeId = 0;
-        Transaction tx = null;
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        try
+        try ( Transaction tx = slave.beginTx() )
         {
-            tx = slave.beginTx();
-
             Node node = slave.createNode();
             node.setProperty( "Hello", "World" );
             nodeId = node.getId();
 
             tx.success();
         }
-        catch ( Throwable ex )
-        {
-            ex.printStackTrace();
-            Assert.fail();
-        }
-        finally
-        {
-            tx.finish();
-        }
 
-        // Then
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-
-        String value = master.getNodeById( nodeId ).getProperty( "Hello" ).toString();
-        logger.getLogger().info( "Hello=" + value );
-        assertEquals( "World", value );
+        try ( Transaction tx = master.beginTx() )
+        {
+            String value = master.getNodeById( nodeId ).getProperty( "Hello" ).toString();
+            logger.getLogger().info( "Hello=" + value );
+            assertEquals( "World", value );
+            tx.success();
+        }
     }
 
     @Test
     public void testBasicPropagationFromMasterToSlave() throws Throwable
     {
-        // Given
+        // given
         clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "propagation", true ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
-        // When
         long nodeId = 0;
-        Transaction tx = null;
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        try
+        try ( Transaction tx = master.beginTx() )
         {
-            tx = master.beginTx();
-
             Node node = master.createNode();
             node.setProperty( "Hello", "World" );
             nodeId = node.getId();
 
             tx.success();
         }
-        catch ( Throwable ex )
-        {
-            ex.printStackTrace();
-            Assert.fail();
-        }
-        finally
-        {
-            tx.finish();
-        }
 
-        // Then
         // No need to wait, the push factor is 2
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
-
-        String value = slave1.getNodeById( nodeId ).getProperty( "Hello" ).toString();
-        logger.getLogger().info( "Hello=" + value );
-        assertEquals( "World", value );
-
+        String value;
+        try ( Transaction tx = slave1.beginTx() )
+        {
+            value = slave1.getNodeById( nodeId ).getProperty( "Hello" ).toString();
+            logger.getLogger().info( "Hello=" + value );
+            assertEquals( "World", value );
+            tx.success();
+        }
 
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave(slave1);
-
-        value = slave2.getNodeById( nodeId ).getProperty( "Hello" ).toString();
-        logger.getLogger().info( "Hello=" + value );
-        assertEquals( "World", value );
+        try ( Transaction tx = slave2.beginTx() )
+        {
+            value = slave2.getNodeById( nodeId ).getProperty( "Hello" ).toString();
+            logger.getLogger().info( "Hello=" + value );
+            assertEquals( "World", value );
+            tx.success();
+        }
     }
 }

@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.neo4j.kernel.Traversal.traversal;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Uniqueness;
 
-public class TestTraversalWithLoops extends AbstractTestBase
+import static org.neo4j.kernel.Traversal.traversal;
+
+public class TestTraversalWithLoops extends TraversalTestBase
 {
     @Test
     public void traverseThroughNodeWithLoop() throws Exception
@@ -41,19 +42,30 @@ public class TestTraversalWithLoops extends AbstractTestBase
          */
         
         createGraph( "a TO b", "b TO c", "c TO c", "c TO d", "d TO d", "d TO e" );
-        Node a = getNodeWithName( "a" );
-        final Node e = getNodeWithName( "e" );
-        Evaluator onlyEndNode = new Evaluator()
+
+        Transaction tx = beginTx();
+        try
         {
-            @Override
-            public Evaluation evaluate( Path path )
+            Node a = getNodeWithName( "a" );
+            final Node e = getNodeWithName( "e" );
+            Evaluator onlyEndNode = new Evaluator()
             {
-                return Evaluation.ofIncludes( path.endNode().equals( e ) );
-            }
-        };
-        TraversalDescription basicTraverser = traversal().evaluator( onlyEndNode );
-        expectPaths( basicTraverser.traverse( a ), "a,b,c,d,e" );
-        expectPaths( basicTraverser.uniqueness( Uniqueness.RELATIONSHIP_PATH ).traverse( a ),
-                "a,b,c,d,e", "a,b,c,c,d,e", "a,b,c,d,d,e", "a,b,c,c,d,d,e" );
+                @Override
+                public Evaluation evaluate( Path path )
+                {
+                    return Evaluation.ofIncludes( path.endNode().equals( e ) );
+                }
+            };
+            TraversalDescription basicTraverser = traversal().evaluator( onlyEndNode );
+            expectPaths( basicTraverser.traverse( a ), "a,b,c,d,e" );
+            expectPaths( basicTraverser.uniqueness( Uniqueness.RELATIONSHIP_PATH ).traverse( a ),
+                    "a,b,c,d,e", "a,b,c,c,d,e", "a,b,c,d,d,e", "a,b,c,c,d,d,e" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
     }
 }

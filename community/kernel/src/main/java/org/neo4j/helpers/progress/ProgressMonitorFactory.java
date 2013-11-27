@@ -20,7 +20,9 @@
 package org.neo4j.helpers.progress;
 
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,11 +36,24 @@ public abstract class ProgressMonitorFactory
         {
             return Indicator.NONE;
         }
+
+        @Override
+        protected Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution )
+        {
+            return Indicator.NONE;
+        }
     };
 
     public static ProgressMonitorFactory textual( final OutputStream out )
     {
-        return textual( new PrintWriter(out) );
+        try
+        {
+            return textual( new OutputStreamWriter( out, "UTF-8" ) );
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public static ProgressMonitorFactory textual( final Writer out )
@@ -48,14 +63,18 @@ public abstract class ProgressMonitorFactory
             @Override
             protected Indicator newIndicator( String process )
             {
-                if ( out instanceof PrintWriter )
-                {
-                    return new Indicator.Textual( process, (PrintWriter) out );
-                }
-                else
-                {
-                    return new Indicator.Textual( process, new PrintWriter( out ) );
-                }
+                return new Indicator.Textual( process, writer() );
+            }
+
+            @Override
+            protected Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution )
+            {
+                return new Indicator.OpenEndedTextual( process, writer(), resolution );
+            }
+
+            private PrintWriter writer()
+            {
+                return out instanceof PrintWriter ? (PrintWriter) out : new PrintWriter( out );
             }
         };
     }
@@ -70,9 +89,16 @@ public abstract class ProgressMonitorFactory
         return new ProgressListener.SinglePartProgressListener( newIndicator( process ), totalCount );
     }
 
+    public final ProgressListener openEnded( String process, int resolution )
+    {
+        return new ProgressListener.OpenEndedProgressListener( newOpenEndedIndicator( process, resolution ) );
+    }
+
     protected abstract Indicator newIndicator( String process );
 
-    public static final class MultiPartBuilder
+    protected abstract Indicator.OpenEnded newOpenEndedIndicator( String process, int resolution );
+
+    public static class MultiPartBuilder
     {
         private Aggregator aggregator;
         private Set<String> parts = new HashSet<String>();

@@ -19,96 +19,104 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
+import org.neo4j.kernel.impl.util.ArrayMap;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
-import java.util.Arrays;
-import java.util.Comparator;
-
-import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
-import org.neo4j.kernel.impl.cache.SizeOfs;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.util.ArrayMap;
-
 /**
- * A {@link Primitive} which uses a {@link PropertyData}[] for caching properties.
+ * A {@link Primitive} which uses a {@link DefinedProperty}[] for caching properties.
  * It's optimized for a small number of properties and takes less memory than, say
  * a Map based.
  * @author Mattias Persson
  */
 abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeObject
 {
-    private volatile PropertyData[] properties;
+    private volatile DefinedProperty[] properties;
     private volatile int registeredSize;
 
     ArrayBasedPrimitive( boolean newPrimitive )
     {
         super( newPrimitive );
     }
-    
+
     @Override
     public void setRegisteredSize( int size )
     {
         this.registeredSize = size;
     }
-    
+
     @Override
     public int getRegisteredSize()
     {
         return registeredSize;
     }
-    
+
+    @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
-        int size = SizeOfs.REFERENCE_SIZE/*properties reference*/ + 8/*registered size*/;
-        if ( properties != null )
+        int size = REFERENCE_SIZE/*properties reference*/ + 8/*registered size*/;
+        if ( properties != null && properties.length > 0 )
         {
             size = withArrayOverheadIncludingReferences( size, properties.length ); // the actual properties[] object
-            for ( PropertyData data : properties )
+            for ( DefinedProperty data : properties )
+            {
                 size += data.sizeOfObjectInBytesIncludingOverhead();
+            }
         }
         return withObjectOverhead( size );
     }
-    
-    abstract protected void updateSize( NodeManager nodeManager );
-    
+
     @Override
     protected void setEmptyProperties()
     {
         properties = NO_PROPERTIES;
     }
 
-    private PropertyData[] toPropertyArray( ArrayMap<Integer, PropertyData> loadedProperties )
+    private DefinedProperty[] toPropertyArray( Collection<DefinedProperty> loadedProperties )
     {
         if ( loadedProperties == null || loadedProperties.size() == 0 )
         {
             return NO_PROPERTIES;
         }
 
-        PropertyData[] result = new PropertyData[loadedProperties.size()];
+        DefinedProperty[] result = new DefinedProperty[loadedProperties.size()];
         int i = 0;
-        for ( PropertyData property : loadedProperties.values() )
+        for ( DefinedProperty property : loadedProperties )
         {
             result[i++] = property;
         }
         sort( result );
         return result;
     }
-    
-    private static void sort( PropertyData[] array )
+
+    private static void sort( Property[] array )
     {
         Arrays.sort( array, PROPERTY_DATA_COMPARATOR_FOR_SORTING );
     }
-    
-    private static final Comparator<PropertyData> PROPERTY_DATA_COMPARATOR_FOR_SORTING = new Comparator<PropertyData>()
+
+    private static final Comparator<Property> PROPERTY_DATA_COMPARATOR_FOR_SORTING = new Comparator<Property>()
     {
         @Override
-        public int compare( PropertyData o1, PropertyData o2 )
+        public int compare( Property o1, Property o2 )
         {
-            return o1.getIndex() - o2.getIndex();
+            return o1.propertyKeyId() - o2.propertyKeyId();
         }
     };
-    
+
     /* This is essentially a deliberate misuse of Comparator, knowing details about Arrays#binarySearch.
      * The signature is binarySearch( T[] array, T key, Comparator<T> ), but in this case we're
      * comparing PropertyData[] to an int as key. To avoid having to create a new object for
@@ -120,44 +128,89 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     static final Comparator PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH = new Comparator()
     {
         @Override
+        @SuppressWarnings("UnnecessaryUnboxing")
         public int compare( Object o1, Object o2 )
         {
-            return ((PropertyData)o1).getIndex() - ((Integer) o2).intValue();
+            return ((Property)o1).propertyKeyId() - ((Integer) o2).intValue();
         }
     };
 
     @Override
-    public void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager )
+    protected boolean hasLoadedProperties()
     {
-        this.properties = toPropertyArray( properties );
-        updateSize( nodeManager );
+        return properties != null;
     }
 
     @Override
-    protected PropertyData[] allProperties()
+    protected Iterator<DefinedProperty> getCachedProperties()
     {
-        return properties;
+        return iterator( properties );
+    }
+
+    @Override
+    protected PrimitiveLongIterator getCachedPropertyKeys()
+    {
+        return new PrimitiveLongIterator()
+        {
+            private final Property[] localProperties = properties;
+            private int i;
+
+            @Override
+            public long next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                return localProperties[i++].propertyKeyId();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return i < localProperties.length;
+            }
+        };
     }
 
     @SuppressWarnings( "unchecked" )
     @Override
-    protected PropertyData getPropertyForIndex( int keyId )
+    protected Property getCachedProperty( int key )
     {
-        PropertyData[] localProperties = properties;
+        Property[] localProperties = properties;
+        int index = Arrays.binarySearch( localProperties, key, PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH );
+        return index < 0 ? noProperty( key ) : localProperties[index];
+    }
+
+    protected abstract Property noProperty( int key );
+
+    @Override
+    protected void setProperties( Iterator<DefinedProperty> properties )
+    {
+        this.properties = toPropertyArray( asCollection( properties ) );
+    }
+
+    @Override
+    protected DefinedProperty getPropertyForIndex( int keyId )
+    {
+        DefinedProperty[] localProperties = properties;
         int index = Arrays.binarySearch( localProperties, keyId, PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH );
         return index < 0 ? null : localProperties[index];
     }
 
     @Override
     protected void commitPropertyMaps(
-            ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager )
+            ArrayMap<Integer, DefinedProperty> cowPropertyAddMap,
+            ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap, long firstProp )
     {
         synchronized ( this )
         {
             // Dereference the volatile once to avoid multiple barriers
-            PropertyData[] newArray = properties;
-            if ( newArray == null ) return;
+            DefinedProperty[] newArray = properties;
+            if ( newArray == null )
+            {
+                return;
+            }
 
             /*
              * add map will definitely be added in the properties array - all properties
@@ -179,8 +232,8 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
             // currently it can do two copies in the clone() case if it also compacts
             if ( extraLength > 0 )
             {
-                PropertyData[] oldArray = newArray;
-                newArray = new PropertyData[oldArray.length + extraLength];
+                DefinedProperty[] oldArray = newArray;
+                newArray = new DefinedProperty[oldArray.length + extraLength];
                 System.arraycopy( oldArray, 0, newArray, 0, oldArray.length );
             }
             else
@@ -194,8 +247,8 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
                 {
                     for ( int i = 0; i < newArraySize; i++ )
                     {
-                        PropertyData existingProperty = newArray[i];
-                        if ( existingProperty.getIndex() == keyIndex )
+                        Property existingProperty = newArray[i];
+                        if ( existingProperty.propertyKeyId() == keyIndex )
                         {
                             int swapWith = --newArraySize;
                             newArray[i] = newArray[swapWith];
@@ -208,14 +261,14 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
 
             if ( cowPropertyAddMap != null )
             {
-                for ( PropertyData addedProperty : cowPropertyAddMap.values() )
+                for ( DefinedProperty addedProperty : cowPropertyAddMap.values() )
                 {
                     for ( int i = 0; i < newArray.length; i++ )
                     {
-                        PropertyData existingProperty = newArray[i];
-                        if ( existingProperty == null || addedProperty.getIndex() == existingProperty.getIndex() )
+                        Property existingProperty = newArray[i];
+                        if ( existingProperty == null || addedProperty.propertyKeyId() == existingProperty.propertyKeyId() )
                         {
-                            newArray[i] = addedProperty;
+                            newArray[i] = Property.property( addedProperty.propertyKeyId(), addedProperty.value() );
                             if ( existingProperty == null )
                             {
                                 newArraySize++;
@@ -229,7 +282,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
             // these size changes are updated from lock releaser
             if ( newArraySize < newArray.length )
             {
-                PropertyData[] compactedNewArray = new PropertyData[newArraySize];
+                DefinedProperty[] compactedNewArray = new DefinedProperty[newArraySize];
                 System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
                 sort( compactedNewArray );
                 properties = compactedNewArray;
@@ -239,7 +292,6 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
                 sort( newArray );
                 properties = newArray;
             }
-            updateSize( nodeManager );
         }
     }
 }

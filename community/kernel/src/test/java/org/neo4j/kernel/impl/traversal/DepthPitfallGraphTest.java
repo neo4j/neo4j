@@ -32,11 +32,12 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
 
-public class DepthPitfallGraphTest extends AbstractTestBase
+public class DepthPitfallGraphTest extends TraversalTestBase
 {
     /* Layout:
      *    _(2)--__
@@ -99,18 +100,26 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     {
         Traverser traversal = traversal().traverse( node( "1" ) );
         int count = 0;
-        for ( Path position : traversal )
+        Transaction transaction = beginTx();
+        try
         {
-            count++;
-            assertNotNull( position );
-            assertNotNull( position.endNode() );
-            if ( position.length() > 0 )
+            for ( Path position : traversal )
             {
-                assertNotNull( position.lastRelationship() );
+                count++;
+                assertNotNull( position );
+                assertNotNull( position.endNode() );
+                if ( position.length() > 0 )
+                {
+                    assertNotNull( position.lastRelationship() );
+                }
+                assertNotNull( position.length() );
             }
-            assertNotNull( position.length() );
+            assertFalse( "empty traversal", count == 0 );
         }
-        assertFalse( "empty traversal", count == 0 );
+        finally
+        {
+            transaction.finish();
+        }
     }
 
     @Test

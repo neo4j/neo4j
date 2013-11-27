@@ -88,8 +88,7 @@ public final class GraphvizWriter
 		}
 		else
 		{
-			emit( walker, new GraphvizRenderer( style, new PrintStream(
-			    outputStream ) ) );
+			emit( walker, new GraphvizRenderer( style, new PrintStream( outputStream, true, "UTF-8" ) ) );
 		}
 	}
 

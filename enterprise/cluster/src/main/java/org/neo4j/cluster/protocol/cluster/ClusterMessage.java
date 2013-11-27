@@ -47,6 +47,8 @@ public enum ClusterMessage
 
     public static class ConfigurationRequestState implements Serializable, Comparable<ConfigurationRequestState>
     {
+        private static final long serialVersionUID = -221752558518247157L;
+
         private InstanceId joiningId;
         private URI joiningUri;
 
@@ -243,7 +245,10 @@ public enum ClusterMessage
                 return "Change cluster config, leave:" + leave;
             }
 
-            return "Change cluster config, elected:" + winner + " as " + roleWon;
+            if (roleWon != null)
+                return "Change cluster config, elected:" + winner + " as " + roleWon;
+            else
+                return "Change cluster config, unelected:" + loser + " as " + roleWon;
         }
     }
 

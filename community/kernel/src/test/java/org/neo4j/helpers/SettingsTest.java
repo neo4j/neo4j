@@ -19,9 +19,20 @@
  */
 package org.neo4j.helpers;
 
-import static junit.framework.Assert.fail;
+import java.io.File;
+import java.util.List;
+
+import org.junit.Test;
+
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.Functions.map;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -38,12 +49,6 @@ import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.range;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
-import java.io.File;
-import java.util.List;
-
-import org.junit.Test;
-import org.neo4j.graphdb.config.Setting;
 
 public class SettingsTest
 {
@@ -72,6 +77,9 @@ public class SettingsTest
     {
         Setting<List<Integer>> setting = setting( "foo", list( ",", INTEGER ), "1,2,3,4" );
         assertThat( setting.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4]" ) );
+
+        Setting<List<Integer>> setting2 = setting( "foo", list( ",", INTEGER ), "1,2,3,4," );
+        assertThat( setting2.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4]" ) );
     }
 
     @Test
@@ -261,5 +269,22 @@ public class SettingsTest
         Setting<String> y = setting( "Y", STRING, MANDATORY, x );
 
         y.apply( Functions.<String, String>nullFunction() );
+    }
+    
+    @Test
+    public void testLogicalLogRotationThreshold() throws Exception
+    {
+        // WHEN
+        Setting<Long> setting = GraphDatabaseSettings.logical_log_rotation_threshold;
+        long defaultValue = setting.apply( map( stringMap() ) );
+        long kiloValue = setting.apply( map( stringMap( setting.name(), "10k" ) ) );
+        long megaValue = setting.apply( map( stringMap( setting.name(), "10M" ) ) );
+        long gigaValue = setting.apply( map( stringMap( setting.name(), "10g" ) ) );
+        
+        // THEN
+        assertThat( defaultValue, greaterThan( 0L ) );
+        assertEquals( 10 * 1024, kiloValue );
+        assertEquals( 10 * 1024 * 1024, megaValue );
+        assertEquals( 10L * 1024 * 1024 * 1024, gigaValue );
     }
 }

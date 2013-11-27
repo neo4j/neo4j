@@ -19,14 +19,9 @@
  */
 package org.neo4j.server.rest.paging;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.MediaType;
@@ -41,11 +36,12 @@ import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
@@ -55,11 +51,15 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-import org.neo4j.tooling.FakeClock;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.test.Mute.muteAll;
 
 public class PagedTraverserDocIT extends ExclusiveServerTestBase
 {
-
     private static CommunityNeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
@@ -83,15 +83,23 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     }
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer() throws Exception
     {
         clock = new FakeClock();
-        server = ServerBuilder.server()
+        server = CommunityServerBuilder.server()
                 .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
                 .withClock( clock )
                 .build();
 
-        server.start();
+        muteAll().call( new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                server.start();
+                return null;
+            }
+        } );
         functionalTestHelper = new FunctionalTestHelper( server );
     }
 
@@ -102,9 +110,17 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     }
 
     @AfterClass
-    public static void stopServer()
+    public static void stopServer() throws Exception
     {
-        server.stop();
+        muteAll().call( new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                server.stop();
+                return null;
+            }
+        } );
     }
 
     @Test
@@ -136,7 +152,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         ResponseEntity entity = gen.get()
-                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedType( MediaType.valueOf( "application/json; charset=UTF-8" ) )
                 .expectedHeader( "Location" )
                 .expectedStatus( 201 )
                 .payload( traverserDescription() )
@@ -147,10 +163,9 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         assertThat( entity.response()
                 .getLocation()
                 .toString(), containsString( "/db/data/node/" + theStartNode.getId() + "/paged/traverse/node/" ) );
-        assertEquals( "application/json", entity.response()
+        assertEquals( "application/json; charset=UTF-8", entity.response()
                 .getType()
-                .toString()
-                .toLowerCase() );
+                .toString() );
     }
 
     /**
@@ -279,8 +294,8 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
         int negativeLeaseTime = -9;
         JaxRsResponse response = RestRequest.req().post(
-                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                        + String.valueOf( negativeLeaseTime ), traverserDescription() );
+                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime=" +
+                        String.valueOf( negativeLeaseTime ), traverserDescription() );
 
         assertEquals( 400, response.getStatus() );
     }
@@ -292,9 +307,8 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
         int negativePageSize = -99;
         JaxRsResponse response = RestRequest.req().post(
-                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
-                        + String.valueOf( negativePageSize ),
-                traverserDescription() );
+                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize=" +
+                        String.valueOf( negativePageSize ), traverserDescription() );
 
         assertEquals( 400, response.getStatus() );
     }
@@ -326,7 +340,6 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         JaxRsResponse response = createPagedTraverser();
 
         final RestRequest request = RestRequest.req();
-
         JaxRsResponse deleteResponse = request.delete( response.getLocation() );
         assertEquals( 200, deleteResponse.getStatus() );
 
@@ -343,9 +356,13 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         // when
         JaxRsResponse pagedTraverserResponse = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
 
+
+        System.out.println( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
+
         // then
         assertNotNull( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
-        assertEquals( "application/json; stream=true", pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ),
+                containsString( "application/json; charset=UTF-8; stream=true" ) );
     }
 
     private JaxRsResponse createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( int leaseTimeInSeconds,
@@ -372,7 +389,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         // then
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().getFirst( "Content-Type" ) );
-        assertEquals( MediaType.APPLICATION_JSON, response.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
     }
 
     @Test
@@ -389,21 +406,22 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         // then
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().getFirst( "Content-Type" ) );
-        assertEquals( MediaType.TEXT_HTML, response.getHeaders().getFirst( "Content-Type" ) );
+        assertThat( response.getType().toString(), containsString( MediaType.TEXT_HTML ) );
     }
 
     @Test
     public void shouldHaveTransportEncodingChunkedOnResponseHeader()
     {
         // given
-        theStartNode =  createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
+        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         // when
         JaxRsResponse response = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
 
         // then
         assertEquals( 201, response.getStatus() );
-        assertEquals( "application/json; stream=true", response.getHeaders().getFirst( "Content-Type" ) );
+        assertEquals( "application/json; charset=UTF-8; stream=true", response.getHeaders().getFirst( "Content-Type"
+        ) );
         assertThat( response.getHeaders().getFirst( "Transfer-Encoding" ), containsString( "chunked" ) );
     }
 
@@ -462,9 +480,8 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
     private Node createLinkedList( final int listLength, final Database db )
     {
-        Transaction tx = db.getGraph().beginTx();
         Node startNode = null;
-        try
+        try ( Transaction tx = db.getGraph().beginTx() )
         {
             Node previous = null;
             for ( int i = 0; i < listLength; i++ )
@@ -485,10 +502,6 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
             }
             tx.success();
             return startNode;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

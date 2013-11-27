@@ -27,11 +27,8 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -49,17 +46,17 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
  * a deadlock would occur when the transaction would wait for the resource. That
  * will guarantee that a deadlock never occurs on a RWLock basis.
  * <p>
- * Think of the resource allocation graph as a node space. We have two node
+ * Think of the resource allocation graph as a graph. We have two node
  * types, resource nodes (R) and tx/process nodes (T). When a transaction
  * acquires lock on some resource a relationship is added from the resource to
  * the tx (R->T) and when a transaction waits for a resource a relationship is
  * added from the tx to the resource (T->R). The only thing we need to do to see
  * if a deadlock occurs when some transaction waits for a resource is to
- * traverse node nodespace starting on the resource and see if we can get back
+ * traverse the graph starting on the resource and see if we can get back
  * to the tx ( T1 wants to wait on R1 and R1->T2->R2->T3->R8->T1 <==>
  * deadlock!).
  */
-public class RagManager implements Visitor<LineLogger>
+public class RagManager implements Visitor<LineLogger, RuntimeException>
 {
     // if a runtime exception is thrown from any method it means that the
     // RWLock class hasn't kept the contract to the RagManager
@@ -81,14 +78,7 @@ public class RagManager implements Visitor<LineLogger>
     private final ArrayMap<Transaction,Object> waitingTxMap =
         new ArrayMap<Transaction,Object>( (byte)5, false, true );
 
-    private final TransactionManager tm;
-
     private final AtomicInteger deadlockCount = new AtomicInteger();
-
-    public RagManager( TransactionManager tm )
-    {
-        this.tm = tm;
-    }
 
     long getDeadlockCount()
     {
@@ -201,7 +191,7 @@ public class RagManager implements Visitor<LineLogger>
         if ( lockingTx.equals( waitingTx ) )
         {
             StringBuffer circle = null;
-            Object resource = null;
+            Object resource;
             do
             {
                 lockingTx = (Transaction) graphStack.pop();
@@ -209,11 +199,11 @@ public class RagManager implements Visitor<LineLogger>
                 if ( circle == null )
                 {
                     circle = new StringBuffer();
-                    circle.append( lockingTx + " <-[:HELD_BY]- " + resource );
+                    circle.append( lockingTx ).append( " <-[:HELD_BY]- " ).append( resource );
                 }
                 else
                 {
-                    circle.append( " <-[:WAITING_FOR]- " + lockingTx + " <-[:HELD_BY]- " + resource );
+                    circle.append( " <-[:WAITING_FOR]- " ).append( lockingTx ).append( " <-[:HELD_BY]- " ).append( resource );
                 }
             }
             while ( !graphStack.isEmpty() );
@@ -238,16 +228,15 @@ public class RagManager implements Visitor<LineLogger>
             List<Transaction> lockingTxList = resourceMap.get( resource );
             if ( lockingTxList != null )
             {
-                Iterator<Transaction> itr = lockingTxList.iterator();
-                while ( itr.hasNext() )
+                for ( Transaction aLockingTxList : lockingTxList )
                 {
-                    lockingTx = itr.next();
+                    lockingTx = aLockingTxList;
                     // so we don't
                     if ( !checkedTransactions.contains( lockingTx ) )
                     {
                         graphStack.push( lockingTx );
                         checkWaitOnRecursive( lockingTx, waitingTx,
-                            checkedTransactions, graphStack );
+                                checkedTransactions, graphStack );
                         graphStack.pop();
                     }
                 }
@@ -307,18 +296,5 @@ public class RagManager implements Visitor<LineLogger>
             }
         }
         return true;
-    }
-
-    Transaction getCurrentTransaction()
-    {
-        try
-        {
-            return tm.getTransaction();
-        }
-        catch ( SystemException e )
-        {
-            throw new TransactionFailureException(
-                "Could not get current transaction.", e );
-        }
     }
 }

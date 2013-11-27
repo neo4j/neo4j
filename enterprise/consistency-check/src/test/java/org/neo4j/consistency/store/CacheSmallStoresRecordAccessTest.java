@@ -19,18 +19,20 @@
  */
 package org.neo4j.consistency.store;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
 public class CacheSmallStoresRecordAccessTest
 {
@@ -39,7 +41,7 @@ public class CacheSmallStoresRecordAccessTest
     {
         // given
         DiffRecordAccess delegate = mock( DiffRecordAccess.class );
-        CacheSmallStoresRecordAccess recordAccess = new CacheSmallStoresRecordAccess( delegate, null, null );
+        CacheSmallStoresRecordAccess recordAccess = new CacheSmallStoresRecordAccess( delegate, null, null, null );
 
         // when
         recordAccess.node( 42 );
@@ -61,31 +63,41 @@ public class CacheSmallStoresRecordAccessTest
     {
         // given
         DiffRecordAccess delegate = mock( DiffRecordAccess.class );
-        PropertyIndexRecord propertyKey0 = new PropertyIndexRecord( 0 );
-        RelationshipTypeRecord relationshipLabel0 = new RelationshipTypeRecord( 0 );
-        PropertyIndexRecord propertyKey1 = new PropertyIndexRecord( 1 );
-        RelationshipTypeRecord relationshipLabel1 = new RelationshipTypeRecord( 1 );
-        PropertyIndexRecord propertyKey2 = new PropertyIndexRecord( 2 );
-        RelationshipTypeRecord relationshipLabel2 = new RelationshipTypeRecord( 2 );
+        PropertyKeyTokenRecord propertyKey0 = new PropertyKeyTokenRecord( 0 );
+        PropertyKeyTokenRecord propertyKey2 = new PropertyKeyTokenRecord( 2 );
+        PropertyKeyTokenRecord propertyKey1 = new PropertyKeyTokenRecord( 1 );
+        RelationshipTypeTokenRecord relationshipType0 = new RelationshipTypeTokenRecord( 0 );
+        RelationshipTypeTokenRecord relationshipType1 = new RelationshipTypeTokenRecord( 1 );
+        RelationshipTypeTokenRecord relationshipType2 = new RelationshipTypeTokenRecord( 2 );
+        LabelTokenRecord label0 = new LabelTokenRecord( 0 );
+        LabelTokenRecord label1 = new LabelTokenRecord( 1 );
+        LabelTokenRecord label2 = new LabelTokenRecord( 2 );
 
         CacheSmallStoresRecordAccess recordAccess = new CacheSmallStoresRecordAccess(
-                delegate, new PropertyIndexRecord[]{
+                delegate, new PropertyKeyTokenRecord[]{
                 propertyKey0,
                 propertyKey1,
                 propertyKey2,
-        }, new RelationshipTypeRecord[]{
-                relationshipLabel0,
-                relationshipLabel1,
-                relationshipLabel2,
+        }, new RelationshipTypeTokenRecord[]{
+                relationshipType0,
+                relationshipType1,
+                relationshipType2,
+        }, new LabelTokenRecord[]{
+                label0,
+                label1,
+                label2,
         } );
 
         // when
         assertThat( recordAccess.propertyKey( 0 ), isDirectReferenceTo( propertyKey0 ) );
-        assertThat( recordAccess.relationshipLabel( 0 ), isDirectReferenceTo( relationshipLabel0 ) );
         assertThat( recordAccess.propertyKey( 1 ), isDirectReferenceTo( propertyKey1 ) );
-        assertThat( recordAccess.relationshipLabel( 1 ), isDirectReferenceTo( relationshipLabel1 ) );
         assertThat( recordAccess.propertyKey( 2 ), isDirectReferenceTo( propertyKey2 ) );
-        assertThat( recordAccess.relationshipLabel( 2 ), isDirectReferenceTo( relationshipLabel2 ) );
+        assertThat( recordAccess.relationshipType( 0 ), isDirectReferenceTo( relationshipType0 ) );
+        assertThat( recordAccess.relationshipType( 1 ), isDirectReferenceTo( relationshipType1 ) );
+        assertThat( recordAccess.relationshipType( 2 ), isDirectReferenceTo( relationshipType2 ) );
+        assertThat( recordAccess.label( 0 ), isDirectReferenceTo( label0 ) );
+        assertThat( recordAccess.label( 1 ), isDirectReferenceTo( label1 ) );
+        assertThat( recordAccess.label( 2 ), isDirectReferenceTo( label2 ) );
 
         // then
         verifyZeroInteractions( delegate );

@@ -18,21 +18,22 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createSqlSnippet;
-
 import java.sql.SQLException;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class CypherSqlDocIT extends AbstractJavaDocTestbase
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createSqlSnippet;
+
+public class CypherSqlDocIT extends ImpermanentGraphJavaDocTestBase
 {
     private static CypherSql cyperSql;
 
@@ -131,7 +132,7 @@ public class CypherSqlDocIT extends AbstractJavaDocTestbase
      * @@JoinEntity-cypher-result
      * 
      * An http://www.codinghorror.com/blog/2007/10/a-visual-explanation-of-sql-joins.html[outer join] is just as easy.
-     * Add a question mark `-[?:KNOWS]->` and it's an optional relationship between nodes -- the outer join of Cypher.
+     * Add +OPTIONAL+ before the match and it's an optional relationship between nodes -- the outer join of Cypher.
      * 
      * Whether it's a left outer join, or a right outer join is defined by which side of the pattern has a starting point.
      * This example is a left outer join, because the bound node is on the left side:

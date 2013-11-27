@@ -22,7 +22,9 @@ package org.neo4j.shell;
 import java.rmi.RemoteException;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.shell.kernel.ReadOnlyGraphDatabaseProxy;
@@ -34,24 +36,47 @@ public class TestReadOnlyServer extends AbstractShellTest
     {
         return new GraphDatabaseShellServer( new ReadOnlyGraphDatabaseProxy( db ) );
     }
-    
+
     @Test
     public void executeReadCommands() throws Exception
     {
         Relationship[] rels = createRelationshipChain( 3 );
-        executeCommand( "ls", "me", "TYPE" );
-        executeCommand( "cd " + rels[0].getEndNode().getId() );
+        executeCommand( "cd " + getStartNodeId(rels[0]) );
+        executeCommand( "ls" );
+        executeCommand( "cd " + getEndNodeId(rels[0]) );
         executeCommand( "ls", "<", ">" );
         executeCommand( "trav", "me" );
     }
-    
+
+    @Test
+    public void readOnlyTransactionsShouldNotFail() throws Exception
+    {
+        Relationship[] rels = createRelationshipChain( 3 );
+        executeCommand( "begin" );
+        executeCommand( "cd " + getStartNodeId(rels[0]) );
+        executeCommand( "ls" );
+        executeCommand( "commit" );
+    }
+
+    private long getEndNodeId( Relationship rel )
+    {
+        try ( Transaction ignore = db.beginTx() )
+        {
+            return rel.getEndNode().getId();
+        }
+    }
+
+    private long getStartNodeId( Relationship rel )
+    {
+        try ( Transaction ignore = db.beginTx() )
+        {
+            return rel.getStartNode().getId();
+        }
+    }
+
     @Test
     public void executeWriteCommands() throws Exception
     {
-        executeCommandExpectingException( "mkrel -ct KNOWS", "read only" );
         executeCommandExpectingException( "mknode", "read only" );
-        executeCommandExpectingException( "set name test", "read only" );
-        executeCommandExpectingException( "rm name", "read only" );
-        executeCommandExpectingException( "begin", "read only" );
     }
 }

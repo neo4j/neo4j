@@ -19,46 +19,52 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import javax.transaction.Transaction;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
+import org.neo4j.kernel.impl.util.StringLogger;
 
-public class SlaveTxHook implements TxHook
+public class SlaveTxHook implements RemoteTxHook
 {
     private final Master master;
     private final HaXaDataSourceManager xaDsm;
+    private final StringLogger log;
     private final RequestContextFactory contextFactory;
-    private final AbstractTransactionManager txManager;
+
+    private final Set<Integer> seen = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     public SlaveTxHook( Master master, HaXaDataSourceManager xaDsm,
-                        TxHookModeSwitcher.RequestContextFactoryResolver contextFactory, AbstractTransactionManager txManager )
+                        TxHookModeSwitcher.RequestContextFactoryResolver contextFactory, StringLogger log )
     {
         this.master = master;
         this.xaDsm = xaDsm;
-        this.txManager = txManager;
+        this.log = log;
         this.contextFactory = contextFactory.get();
     }
 
     @Override
-    public void initializeTransaction( int eventIdentifier )
+    public void remotelyInitializeTransaction( int eventIdentifier, TransactionState state )
     {
-        Response<Void> response = master.initializeTx( contextFactory.newRequestContext( eventIdentifier ) );
-        xaDsm.applyTransactions( response );
+        if(!state.isRemotelyInitialized())
+        {
+            // Mark first, to ensure we never create more than one transaction on the master (exception below could
+            // cause retries).
+            state.markAsRemotelyInitialized();
+
+            Response<Void> response = master.initializeTx( contextFactory.newRequestContext( eventIdentifier ) );
+            xaDsm.applyTransactions( response );
+        }
     }
 
     @Override
-    public boolean hasAnyLocks( Transaction tx )
-    {
-        return txManager.getTransactionState().hasLocks();
-    }
-
-    @Override
-    public void finishTransaction( int eventIdentifier, boolean success )
+    public void remotelyFinishTransaction( int eventIdentifier, boolean success )
     {
         Response<Void> response = master.finishTransaction(
                 contextFactory.newRequestContext( eventIdentifier ), success );

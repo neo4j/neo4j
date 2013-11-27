@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -36,8 +35,8 @@ import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DummyIndexExtensionFactory extends
@@ -92,7 +91,7 @@ public class DummyIndexExtensionFactory extends
     @Override
     public String getDataSourceName()
     {
-        return Config.DEFAULT_DATA_SOURCE_NAME;
+        return NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
     }
 
     @Override
@@ -139,11 +138,7 @@ public class DummyIndexExtensionFactory extends
         @Override
         public IndexHits<T> get( String key, Object value )
         {
-            if ( value.equals( "refnode" ) )
-            {
-                return new IteratorIndexHits<T>( Arrays.asList( (T) db.getReferenceNode() ) );
-            }
-            return new IteratorIndexHits<T>( Collections.<T>emptyList() );
+            return new IteratorIndexHits<>( Collections.<T>emptyList() );
         }
 
         @Override
@@ -286,7 +281,7 @@ public class DummyIndexExtensionFactory extends
         }
 
         @Override
-        public Iterator<T> iterator()
+        public IndexHits<T> iterator()
         {
             return this;
         }

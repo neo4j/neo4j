@@ -19,13 +19,12 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -152,9 +151,9 @@ public class TestClientThreadIsolation
         thread1.join();
         thread2.join();
 
-        assertTrue(
-                master.getReferenceNode().getRelationships(
-                        DynamicRelationshipType.withName( "test" ) ).iterator().hasNext() );
+//        assertTrue(
+//                master.getReferenceNode().getRelationships(
+//                        DynamicRelationshipType.withName( "test" ) ).iterator().hasNext() );
     }
 
     private static DebuggedThread txCopyingThread;

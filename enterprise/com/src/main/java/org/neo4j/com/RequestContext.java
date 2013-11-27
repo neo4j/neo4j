@@ -142,7 +142,7 @@ public final class RequestContext
         return this.hashCode;
     }
 
-    public static RequestContext EMPTY = new RequestContext( -1, -1, -1, new Tx[0], -1, -1 );
+    public static final RequestContext EMPTY = new RequestContext( -1, -1, -1, new Tx[0], -1, -1 );
 
     public static RequestContext anonymous( Tx[] lastAppliedTransactions )
     {

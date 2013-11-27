@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -39,6 +35,13 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static java.lang.String.format;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
 {
@@ -119,16 +122,35 @@ public class MigrationTestUtils
 
     public static File findOldFormatStoreDirectory()
     {
-        URL legacyStoreResource = LegacyStore.class.getResource( "exampledb/neostore" );
-        return new File( legacyStoreResource.getFile() ).getParentFile();
+        return findDatabaseDirectory( LegacyStore.class, "exampledb" );
+    }
+
+    public   static File findDatabaseDirectory( Class<?> resourceName, String directoryName )
+    {
+        URL legacyStoreResource = resourceName.getResource( directoryName + "/neostore" );
+        File storeFile = new File( legacyStoreResource.getFile() );
+        if ( ! storeFile.exists() )
+        {
+            throw new RuntimeException( format( "Cannot find %s", storeFile ) );
+        }
+        File parentFile = storeFile.getParentFile();
+        if ( parentFile == null )
+        {
+            throw new RuntimeException( format( "No parent for %s", storeFile ) );
+        }
+        if ( ! parentFile.exists() )
+        {
+            throw new RuntimeException( format( "Cannot find %s", parentFile ) );
+        }
+        return parentFile;
     }
 
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
             String version ) throws IOException
     {
-        for ( String fileName : StoreFiles.fileNames )
+        for ( StoreFile storeFile : StoreFile.legacyStoreFiles() )
         {
-            FileChannel channel = fileSystem.open( new File( workingDirectory, fileName ), "r" );
+            FileChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
             int length = UTF8.encode( version ).length;
             byte[] bytes = new byte[length];
             ByteBuffer buffer = ByteBuffer.wrap( bytes );
@@ -145,6 +167,31 @@ public class MigrationTestUtils
         return true;
     }
 
+    public static boolean containsAnyLogicalLogs( FileSystemAbstraction fileSystem, File directory )
+    {
+        boolean containsLogicalLog = false;
+        for ( File workingFile : fileSystem.listFiles( directory ) )
+        {
+            if ( workingFile.getName().contains( "nioneo_logical" ))
+            {
+                containsLogicalLog = true;
+            }
+        }
+        return containsLogicalLog;
+    }
+
+    public static boolean containsAnyStoreFiles( FileSystemAbstraction fileSystem, File directory )
+    {
+        for ( StoreFile file : StoreFile.values() )
+        {
+            if ( fileSystem.fileExists( new File( directory, file.storeFileName() ) ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original,
             File other ) throws IOException
     {
@@ -189,5 +236,10 @@ public class MigrationTestUtils
     public static UpgradeConfiguration alwaysAllowed()
     {
         return new AlwaysAllowedUpgradeConfiguration();
+    }
+
+    public static File isolatedMigrationDirectoryOf( File dbDirectory )
+    {
+        return new File( dbDirectory, "upgrade" );
     }
 }

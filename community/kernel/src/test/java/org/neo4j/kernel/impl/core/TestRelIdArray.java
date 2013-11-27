@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.BOTH;
 import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.INCOMING;
@@ -92,7 +94,7 @@ public class TestRelIdArray
         add.add( 5, OUTGOING );
         add.add( 6, OUTGOING );
         add.add( 7, OUTGOING );
-        Collection<Long> remove = new HashSet<Long>();
+        Collection<Long> remove = new HashSet<>();
         remove.add( 2L );
         remove.add( 6L );
         List<Long> allIds = asList( RelIdArray.from( source, add, remove ) );
@@ -118,7 +120,7 @@ public class TestRelIdArray
         array.add( verySmall+1, OUTGOING );
         
         Collection<Long> allIds = new HashSet<Long>( asList( array ) );
-        assertEquals( new HashSet<Long>( Arrays.asList(
+        assertEquals( new HashSet<>( Arrays.asList(
                 justUnderIntMax, justUnderIntMax+1,
                 justOverIntMax, justOverIntMax+1,
                 aBitOverIntMax, aBitOverIntMax+1,
@@ -141,8 +143,8 @@ public class TestRelIdArray
         all.addAll( array1 );
         all.addAll( array2 );
         
-        assertEquals( new HashSet<Long>( Arrays.asList(
-                0L, 1L, justOverIntMax, justOverIntMax+1 ) ), new HashSet<Long>( asList( all ) ) );
+        assertEquals( new HashSet<>( Arrays.asList(
+                0L, 1L, justOverIntMax, justOverIntMax+1 ) ), new HashSet<>( asList( all ) ) );
     }
     
     @Test
@@ -164,9 +166,19 @@ public class TestRelIdArray
         assertEquals( "Should see the added id after depleting two IdBlocks", asSet( 1L ), deplete( iterator ) );
     }
 
+    @Test
+    public void shouldAcceptAddsAfterAddAllInSameDirection() throws Exception
+    {
+        RelIdArray arrayTo = RelIdArray.empty( 1 );
+        RelIdArray arrayFrom = RelIdArray.empty( 1 );
+        arrayFrom.add( 1, DirectionWrapper.INCOMING );
+        arrayTo.addAll( arrayFrom );
+        arrayTo.add( 2, DirectionWrapper.INCOMING );
+    }
+
     private Set<Long> deplete( RelIdIterator iterator )
     {
-        HashSet<Long> set = new HashSet<Long>();
+        HashSet<Long> set = new HashSet<>();
         while ( iterator.hasNext() )
             set.add( iterator.next() );
         return set;
@@ -174,7 +186,7 @@ public class TestRelIdArray
     
     private List<Long> asList( RelIdArray ids )
     {
-        List<Long> result = new ArrayList<Long>();
+        List<Long> result = new ArrayList<>();
         for ( RelIdIterator iterator = ids.iterator( DirectionWrapper.BOTH ); iterator.hasNext(); )
         {
             result.add( iterator.next() );

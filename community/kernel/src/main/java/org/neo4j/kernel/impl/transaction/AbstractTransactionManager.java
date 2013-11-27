@@ -23,6 +23,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -31,7 +32,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * This interface extends the TransactionManager, with the rationale that it
  * additionally provides an init method that is used for recovery and a stop
  * method for shutting down. Implementations are to hold an actual
- * TrasactionManager and forward operations to it and additionally provide an
+ * TransactionManager and forward operations to it and additionally provide an
  * implementation specific way of initializing it, ensuring tx recovery and an
  * implementation specific way of shutting down, for resource reclamation.
  *
@@ -39,12 +40,23 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public abstract class AbstractTransactionManager implements TransactionManager, Lifecycle
 {
+    public abstract void doRecovery() throws Throwable;
+
+    /**
+     * Returns the {@link TransactionState} associated with the current transaction.
+     * If no transaction is active for the current thread {@link TransactionState#NO_STATE}
+     * should be returned.
+     *
+     * @return state associated with the current transaction for this thread.
+     */
+    public abstract TransactionState getTransactionState();
+
+    public abstract int getEventIdentifier();
+
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
         begin();
     }
-
-    public abstract void doRecovery() throws Throwable;
 
     /**
      * @return which {@link ForceMode} the transaction tied to the calling
@@ -54,17 +66,6 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
     {
         return ForceMode.forced;
     }
-    
-    /**
-     * Returns the {@link TransactionState} associated with the current transaction.
-     * If no transaction is active for the current thread {@link TransactionState#NO_STATE}
-     * should be returned.
-     * 
-     * @return state associated with the current transaction for this thread.
-     */
-    public abstract TransactionState getTransactionState();
-
-    public abstract int getEventIdentifier();
 
     /**
      * @return the error that happened during recovery, if recovery has taken place, null otherwise.
@@ -72,5 +73,20 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
     public Throwable getRecoveryError()
     {
         return null;
+    }
+
+    public void assertInTransaction()
+    {
+        try
+        {
+            if ( getTransaction() == null )
+            {
+                throw new NotInTransactionException();
+            }
+        }
+        catch ( SystemException e )
+        {
+            throw new IllegalStateException( "Unable to determine transaction state", e );
+        }
     }
 }

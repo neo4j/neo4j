@@ -20,7 +20,7 @@
 package org.neo4j.kernel;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
@@ -43,7 +43,7 @@ public class CommonFactories
         return new DefaultLogBufferFactory();
     }
 
-    public static TxHook defaultTxHook()
+    public static RemoteTxHook defaultTxHook()
     {
         return new DefaultTxHook();
     }

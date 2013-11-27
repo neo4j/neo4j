@@ -19,8 +19,6 @@
  */
 package org.neo4j.test;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -31,14 +29,17 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.junit.After;
 import org.junit.Before;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.SubProcess;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class AbstractSubProcessTestBase
 {
@@ -115,35 +116,6 @@ public class AbstractSubProcessTestBase
         }
     }
 
-    protected final void killSubprocesses()
-    {
-        synchronized ( instances )
-        {
-            for ( int i = 0; i < instances.length; i++ )
-            {
-                Pair<Instance, BreakPoint[]> instance = instances[i];
-                if ( instance != null )
-                {
-                    Thread.currentThread().interrupt();
-                    SubProcess.kill( instance.first() );
-                    Thread.interrupted();
-                }
-                instances[i] = null;
-            }
-        }
-    }
-
-    protected void enableAllBreakPoints()
-    {
-        for ( Pair<Instance, BreakPoint[]> instance : instances )
-        {
-            for ( BreakPoint breakPoint : instance.other() )
-            {
-                breakPoint.enable();
-            }
-        }
-    }
-
     protected Bootstrapper bootstrap( int id ) throws IOException
     {
         return bootstrap( id, new HashMap<String, String>() );
@@ -204,13 +176,13 @@ public class AbstractSubProcessTestBase
         private Map<String, String> addVitalConfig( Map<String, String> dbConfiguration )
         {
             return stringMap( new HashMap<String, String>( dbConfiguration ),
-                    GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
+                    GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
         }
 
         protected GraphDatabaseService startup()
         {
             return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( dbConfiguration )
-                    .newGraphDatabase();
+                   .newGraphDatabase();
         }
 
         protected void shutdown( GraphDatabaseService graphdb, boolean normal )
@@ -252,12 +224,6 @@ public class AbstractSubProcessTestBase
             super( test, instance, dbConfiguration );
         }
 
-        public KillAwareBootstrapper( AbstractSubProcessTestBase test, int instance )
-                throws IOException
-        {
-            super( test, instance );
-        }
-
         @Override
         protected void shutdown( GraphDatabaseService graphdb, boolean normal )
         {
@@ -272,10 +238,12 @@ public class AbstractSubProcessTestBase
     private static class ThreadTask implements Task
     {
         private final Task task;
+        private final Exception stackTraceOfOrigin;
 
         ThreadTask( Task task )
         {
             this.task = task;
+            this.stackTraceOfOrigin = new Exception("Stack trace of thread that created this ThreadTask");
         }
 
         @Override
@@ -286,7 +254,15 @@ public class AbstractSubProcessTestBase
                 @Override
                 public void run()
                 {
-                    task.run( graphdb );
+                    try
+                    {
+                        task.run( graphdb );
+                    }
+                    catch ( RuntimeException e )
+                    {
+                        e.addSuppressed( stackTraceOfOrigin );
+                        throw e;
+                    }
                 }
             }, task.toString() ).start();
         }

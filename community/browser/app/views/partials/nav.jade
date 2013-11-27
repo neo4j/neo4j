@@ -1,0 +1,15 @@
+#nav
+  ul.nav.nav-list
+    li.nav-header(ng-class='{active: showingDrawer("database") }')
+      .cover(ng-click='toggleDrawer("database")')
+      a Neo4j
+        .logo(fancy-logo ng-class='{loading: currentFrame.isLoading}')
+          .ball.one
+          .ball.two
+          .ball.three
+    li(ng-class='{active: showingDrawer("scripts") }')
+      a.icon-star(ng-click='toggleDrawer("scripts")')
+    li(ng-class='{active: showingDrawer("info") }')
+      a.icon-info-sign(ng-click='toggleDrawer("info")')
+    li.bottom(ng-class='{active: showingDrawer("credits") }')
+      a(ng-click='toggleDrawer("credits")') &copy;

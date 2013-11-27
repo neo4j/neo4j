@@ -19,17 +19,13 @@
  */
 package org.neo4j.consistency;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,38 +34,51 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.GraphStoreFixture;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
 
 public class ConsistencyCheckServiceIntegrationTest
 {
     @Test
-    public void shouldProduceNoLogFileIfStoreIsConsistent() throws Exception
+    public void shouldSucceedIfStoreIsConsistent() throws Exception
     {
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(),
-                new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
+                new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ),
+                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
-        assertFalse( new File( fixture.directory(), service.defaultLogFileName() ).exists() );
+        assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
+        File reportFile = new File( fixture.directory(), service.defaultLogFileName() );
+        assertFalse( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
 
     @Test
-    public void shouldWriteInconsistenciesToLogFileInStoreDirectory() throws Exception
+    public void shouldFailIfTheStoreInNotConsistent() throws Exception
     {
         // given
         breakNodeStore();
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(),
-                new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
+                new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ),
+                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
-        assertTrue( new File(fixture.directory(), service.defaultLogFileName()).exists() );
+        assertEquals( ConsistencyCheckService.Result.FAILURE, result );
+        File reportFile = new File(fixture.directory(), service.defaultLogFileName());
+        assertTrue( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
 
     @Test
@@ -87,7 +96,7 @@ public class ConsistencyCheckServiceIntegrationTest
                 ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
-        assertTrue( specificLogFile.exists() );
+        assertTrue( "Inconsistency report file " + specificLogFile + " not generated", specificLogFile.exists() );
     }
 
     private void breakNodeStore() throws IOException

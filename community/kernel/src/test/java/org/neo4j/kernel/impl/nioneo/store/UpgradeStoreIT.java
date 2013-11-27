@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -48,8 +42,15 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 @Ignore
 public class UpgradeStoreIT
@@ -228,7 +229,7 @@ public class UpgradeStoreIT
 
         try
         {
-            new BatchInserterImpl( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
+            BatchInserters.inserter( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
             fail( "Shouldn't be able to upgrade with batch inserter" );
         }
         catch ( IllegalArgumentException e )
@@ -295,7 +296,7 @@ public class UpgradeStoreIT
         buffer.flip();
         channel.write( buffer );
 
-        // It's the same length as the current version v0.9.9
+        // It's the same length as the current version
         channel.position( channel.size() - UTF8.encode( oldVersionToSet ).length );
         buffer = ByteBuffer.wrap( UTF8.encode( oldVersionToSet ) );
         channel.write( buffer );
@@ -305,36 +306,32 @@ public class UpgradeStoreIT
     private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
-        DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names"), null, IdType.RELATIONSHIP_TYPE_BLOCK,
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.SYSTEM );
-        RelationshipTypeStore store = new RelationshipTypeStoreWithOneOlderVersion( fileName, stringStore );
+        DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names"), null, IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
+        RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;
-            RelationshipTypeRecord record = new RelationshipTypeRecord( i );
+            RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( i );
             record.setCreated();
             record.setInUse( true );
-            int nameId = (int) store.nextNameId();
-            record.setNameId( nameId );
-            Collection<DynamicRecord> typeRecords = store.allocateNameRecords( nameId, PropertyStore.encodeString( name ) );
-            for ( DynamicRecord typeRecord : typeRecords )
-            {
-                record.addNameRecord( typeRecord );
-            }
+            Collection<DynamicRecord> typeRecords = store.allocateNameRecords( PropertyStore.encodeString( name ) );
+            record.setNameId( (int) first( typeRecords ).getId() );
+            record.addNameRecords( typeRecords );
             store.setHighId( store.getHighId()+1 );
             store.updateRecord( record );
         }
         store.close();
     }
 
-    private static class RelationshipTypeStoreWithOneOlderVersion extends RelationshipTypeStore
+    private static class RelationshipTypeTokenStoreWithOneOlderVersion extends RelationshipTypeTokenStore
     {
         private boolean versionCalled;
 
-        public RelationshipTypeStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
+        public RelationshipTypeTokenStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
         {
             super( fileName, new Config( stringMap() ), new NoLimitIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                    new DefaultFileSystemAbstraction(), StringLogger.SYSTEM, stringStore );
+                    new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, stringStore );
         }
 
         @Override
@@ -361,6 +358,7 @@ public class UpgradeStoreIT
     {
         private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
 
+        @Override
         public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
         {
             IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, Long.MAX_VALUE, false, highId );
@@ -368,11 +366,13 @@ public class UpgradeStoreIT
             return generator;
         }
 
+        @Override
         public IdGenerator get( IdType idType )
         {
             return generators.get( idType );
         }
 
+        @Override
         public void create( FileSystemAbstraction fs, File fileName, long highId )
         {
             IdGeneratorImpl.createGenerator( fs, fileName, highId );

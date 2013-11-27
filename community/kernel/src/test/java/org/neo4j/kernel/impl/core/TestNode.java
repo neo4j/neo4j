@@ -24,7 +24,9 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -32,20 +34,25 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class TestNode extends AbstractNeo4jTestCase
 {
     @Test
     public void testNodeCreateAndDelete()
     {
-        long nodeId = -1;
         Node node = getGraphDb().createNode();
-        nodeId = node.getId();
+        long nodeId = node.getId();
         getGraphDb().getNodeById( nodeId );
         node.delete();
         Transaction tx = getTransaction();
         tx.success();
+        //noinspection deprecation
         tx.finish();
         setTransaction( getGraphDb().beginTx() );
         try
@@ -167,7 +174,7 @@ public class TestNode extends AbstractNeo4jTestCase
         // test remove property
         assertEquals( int1, node1.removeProperty( key1 ) );
         assertEquals( string1, node2.removeProperty( key1 ) );
-        // test remove of non exsisting property
+        // test remove of non existing property
         try
         {
             if ( node2.removeProperty( key1 ) != null )
@@ -263,7 +270,6 @@ public class TestNode extends AbstractNeo4jTestCase
         String string = new String( "3" );
 
         Node node1 = getGraphDb().createNode();
-        assertTrue( !node1.getPropertyValues().iterator().hasNext() );
         try
         {
             node1.getProperty( key1 );
@@ -285,10 +291,6 @@ public class TestNode extends AbstractNeo4jTestCase
         node1.setProperty( key1, int1 );
         node1.setProperty( key2, int2 );
         node1.setProperty( key3, string );
-        Iterator<Object> values = node1.getPropertyValues().iterator();
-        values.next();
-        values.next();
-        values.next();
         Iterator<String> keys = node1.getPropertyKeys().iterator();
         keys.next();
         keys.next();
@@ -316,11 +318,13 @@ public class TestNode extends AbstractNeo4jTestCase
         node.setProperty( "test", "test" );
         Transaction tx = getTransaction();
         tx.success();
+        //noinspection deprecation
         tx.finish();
         tx = getGraphDb().beginTx();
         node.setProperty( "test2", "test2" );
         node.delete();
         tx.success();
+        //noinspection deprecation
         tx.finish();
         setTransaction( getGraphDb().beginTx() );
     }
@@ -382,21 +386,16 @@ public class TestNode extends AbstractNeo4jTestCase
             @Override
             public void run()
             {
-                Transaction tx = getGraphDb().beginTx();
-                try
+                try( Transaction tx = getGraphDb().beginTx() )
                 {
-                    getGraphDbAPI().getLockManager().getWriteLock( entity );
+                    tx.acquireWriteLock( entity );
                     gotTheLock.set( true );
                     tx.success();
                 }
-                catch ( RuntimeException e )
+                catch ( Exception e )
                 {
                     e.printStackTrace();
-                    throw e;
-                }
-                finally
-                {
-                    tx.failure();
+                    throw launderedException( e );
                 }
             }
         };

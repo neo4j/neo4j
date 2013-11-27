@@ -19,12 +19,6 @@
  */
 package recovery;
 
-import static java.lang.Integer.parseInt;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,15 +27,17 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -49,6 +45,15 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakPoint.Event;
+
+import static java.lang.Integer.parseInt;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.SillyUtils.nonNull;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Tries to trigger log file version errors that could happen if the db was killed
@@ -78,18 +83,25 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             BreakPoint.stackTraceMustContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", File.class, long.class );
     private final BreakPoint EXIT_RENAME_LOG_FILE_NIONEO = BreakPoint.thatCrashesTheProcess( Event.EXIT, breakpointNotification, 0,
             BreakPoint.stackTraceMustNotContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", File.class, long.class );
-    
+
     private final BreakPoint[] breakpoints = new BreakPoint[] {
-            SET_VERSION, RELEASE_CURRENT_LOG_FILE, RENAME_LOG_FILE,
-            SET_VERSION_2, RELEASE_CURRENT_LOG_FILE_2, RENAME_LOG_FILE_2, EXIT_RENAME_LOG_FILE_LUCENE, EXIT_RENAME_LOG_FILE_NIONEO };
-    
+            SET_VERSION,
+            RELEASE_CURRENT_LOG_FILE,
+            RENAME_LOG_FILE,
+            SET_VERSION_2,
+            RELEASE_CURRENT_LOG_FILE_2,
+            RENAME_LOG_FILE_2,
+            EXIT_RENAME_LOG_FILE_LUCENE,
+            EXIT_RENAME_LOG_FILE_NIONEO };
+
     @Override
     protected BreakPoint[] breakpoints( int id )
     {
         return breakpoints;
     }
     
-    private final Bootstrapper bootstrapper = killAwareBootstrapper( this, 0, stringMap( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE ) );
+    private final Bootstrapper bootstrapper = killAwareBootstrapper( this, 0, stringMap(
+            GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE ) );
     
     @Override
     protected Bootstrapper bootstrap( int id ) throws IOException
@@ -100,10 +112,9 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class DoSimpleTransaction implements Task
     {
         @Override
-        public void run( GraphDatabaseAPI graphdb )
+        public void run( @SuppressWarnings("deprecation") GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 Node parent = graphdb.createNode();
                 for ( int i = 0; i < 10; i++ )
@@ -113,20 +124,15 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
                 }
                 tx.success();
             }
-            finally
-            {
-                tx.finish();
-            }
         }
     }
     
     static class DoGraphAndIndexTransaction implements Task
     {
         @Override
-        public void run( GraphDatabaseAPI graphdb )
+        public void run( @SuppressWarnings("deprecation") GraphDatabaseAPI graphdb )
         {
-            Transaction tx = graphdb.beginTx();
-            try
+            try(Transaction tx = graphdb.beginTx())
             {
                 Node parent = graphdb.createNode();
                 graphdb.index().forNodes( "index" ).add( parent, "name", "test" );
@@ -137,16 +143,12 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
                 }
                 tx.success();
             }
-            finally
-            {
-                tx.finish();
-            }
         }
     }
     
     static class RotateLogs implements Task
     {
-        private final Set<String> dataSources = new HashSet<String>();
+        private final Set<String> dataSources = new HashSet<>();
         
         RotateLogs( String... dataSources )
         {
@@ -154,15 +156,16 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
+        @SuppressWarnings("deprecation")
         public void run( GraphDatabaseAPI graphdb )
         {
             try
             {
                 if ( dataSources.isEmpty() )
-                    graphdb.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
+                    dsManager( graphdb ).getNeoStoreDataSource().rotateLogicalLog();
                 else
                 {
-                    for ( XaDataSource ds : graphdb.getXaDataSourceManager().getAllRegisteredDataSources() )
+                    for ( XaDataSource ds : dsManager( graphdb ).getAllRegisteredDataSources() )
                     {
                         if ( dataSources.contains( ds.getName() ) )
                             ds.rotateLogicalLog();
@@ -176,7 +179,12 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             }
         }
     }
-    
+
+    private static XaDataSourceManager dsManager( @SuppressWarnings("deprecation") GraphDatabaseAPI graphdb )
+    {
+        return graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+    }
+
     static class GetCommittedTransactions implements Task
     {
         private final long highestLogVersion;
@@ -189,14 +197,15 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
+        @SuppressWarnings("deprecation")
         public void run( GraphDatabaseAPI graphdb )
         {
             try
             {
-                XaDataSource dataSource = graphdb.getXaDataSourceManager().getNeoStoreDataSource();
+                XaDataSource dataSource = dsManager( graphdb ).getNeoStoreDataSource();
                 for ( long logVersion = 0; logVersion < highestLogVersion; logVersion++ )
                 {
-                    dataSource.getLogicalLog( logVersion );
+                    dataSource.getLogicalLog( logVersion ).close();
                 }
                 
                 LogExtractor extractor = dataSource.getLogExtractor( 2, highestTxId );
@@ -222,7 +231,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class Shutdown implements Task
     {
         @Override
-        public void run( GraphDatabaseAPI graphdb )
+        public void run( @SuppressWarnings("deprecation") GraphDatabaseAPI graphdb )
         {
             graphdb.shutdown();
         }
@@ -240,9 +249,10 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
+        @SuppressWarnings("deprecation")
         public void run( GraphDatabaseAPI graphdb )
         {
-            assertEquals( tx, graphdb.getXaDataSourceManager().getXaDataSource( dataSource ).getLastCommittedTxId() );
+            assertEquals( tx, dsManager( graphdb ).getXaDataSource( dataSource ).getLastCommittedTxId() );
         }
     }
 
@@ -257,7 +267,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersion() throws Exception
     {
-        breakpoints[0].enable();
+        SET_VERSION.enable();
         run( new DoSimpleTransaction() );
         // tx(2) is the first one, for creating the relationship type
         // tx(3) is the second one, for doing the actual transaction in DoSimpleTransaction
@@ -267,7 +277,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeReleaseCurrentLogFile() throws Exception
     {
-        breakpoints[1].enable();
+        RELEASE_CURRENT_LOG_FILE.enable();
         run( new DoSimpleTransaction() );
         crashDuringRotateAndVerify( 1, 3 );
     }
@@ -275,7 +285,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustAfterSetActiveVersion() throws Exception
     {
-        breakpoints[2].enable();
+        RENAME_LOG_FILE.enable();
         run( new DoSimpleTransaction() );
         crashDuringRotateAndVerify( 1, 3 );
     }
@@ -283,7 +293,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersionTwoLogs() throws Exception
     {
-        breakpoints[3].enable();
+        SET_VERSION_2.enable();
         run( new DoSimpleTransaction() );
         run( new RotateLogs() );
         run( new DoSimpleTransaction() );
@@ -293,7 +303,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeReleaseCurrentLogFileTwoLogs() throws Exception
     {
-        breakpoints[4].enable();
+        RELEASE_CURRENT_LOG_FILE_2.enable();
         run( new DoSimpleTransaction() );
         run( new RotateLogs() );
         run( new DoSimpleTransaction() );
@@ -303,7 +313,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustAfterSetActiveVersionTwoLogs() throws Exception
     {
-        breakpoints[5].enable();
+        RENAME_LOG_FILE_2.enable();
         run( new DoSimpleTransaction() );
         run( new RotateLogs() );
         run( new DoSimpleTransaction() );
@@ -313,7 +323,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void nextLogVersionAfterCrashBetweenActiveSetToCleanAndRename() throws Exception
     {
-        breakpoints[2].enable();
+        RENAME_LOG_FILE.enable();
         runInThread( new Shutdown() );
         breakpointNotification.await();
         startSubprocesses();
@@ -323,7 +333,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void nextLogVersionAfterCrashBetweenRenameAndIncrementVersionInCloseShouldBeTheNextOne() throws Exception
     {
-        breakpoints[6].enable();
+        EXIT_RENAME_LOG_FILE_LUCENE.enable();
         runInThread( new Shutdown() );
         breakpointNotification.await();
         startSubprocesses();
@@ -334,7 +344,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void nextLogVersionAfterCrashBetweenRenameAndIncrementVersionInRotateShouldBeTheNextOne() throws Exception
     {
-        breakpoints[7].enable();
+        EXIT_RENAME_LOG_FILE_NIONEO.enable();
         run( new DoSimpleTransaction() );
         runInThread( new RotateLogs( LuceneDataSource.DEFAULT_NAME ) );
         breakpointNotification.await();
@@ -346,7 +356,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void lastLuceneTxAfterRecoveredCrashBetweenRenameAndIncrementVersionInCloseShouldBeCorrect() throws Exception
     {
-        breakpoints[6].enable();
+        EXIT_RENAME_LOG_FILE_LUCENE.enable();
         run( new DoGraphAndIndexTransaction() );
         runInThread( new Shutdown() );
         breakpointNotification.await();
@@ -357,21 +367,21 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void lastNeoTxAfterRecoveredCrashBetweenRenameAndIncrementVersionInCloseShouldBeCorrect() throws Exception
     {
-        breakpoints[7].enable();
+        EXIT_RENAME_LOG_FILE_NIONEO.enable();
         run( new DoSimpleTransaction() );
         runInThread( new Shutdown() );
         breakpointNotification.await();
         startSubprocesses();
-        run( new VerifyLastTxId( Config.DEFAULT_DATA_SOURCE_NAME, 3 ) );
+        run( new VerifyLastTxId( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME, 3 ) );
     }
     
     private void assertLuceneLogVersionsExists( int... versions ) throws Exception
     {
-        Set<Integer> versionSet = new HashSet<Integer>();
+        Set<Integer> versionSet = new HashSet<>();
         for ( int version : versions )
             versionSet.add( version );
         File path = new File( getStoreDir( this, 0, false ), "index" );
-        for ( File file : path.listFiles() )
+        for ( File file : nonNull( path.listFiles() ) )
         {
             if ( file.getName().contains( ".log.v" ) )
             {

@@ -19,9 +19,6 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -29,10 +26,12 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -45,6 +44,10 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertFalse;
+
+import static org.neo4j.test.TargetDirectory.forTest;
 
 /**
  * This test case ensures that updates in HA are first written out to the log
@@ -70,7 +73,12 @@ public class TestPullUpdatesApplied
         for ( int i = 0; i < dbs.length; i++ )
         {
             dbs[i] = newDb( i );
-            Thread.sleep( 1000 ); // Otherwise for some reason it races with the shutdown and causes NPEs
+        }
+
+        // Wait for all db's to become available
+        for ( HighlyAvailableGraphDatabase db : dbs )
+        {
+            db.isAvailable( 5000 );
         }
     }
 
@@ -116,24 +124,26 @@ public class TestPullUpdatesApplied
         final HighlyAvailableGraphDatabase masterDb = dbs[master];
         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener(
                 new ClusterListener.Adapter()
-        {
-            @Override
-            public void leftCluster( InstanceId member )
-            {
-                latch1.countDown();
-                masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeClusterListener( this );
-            }
-        } );
+                {
+                    @Override
+                    public void leftCluster( InstanceId member )
+                    {
+                        latch1.countDown();
+                        masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )
+                                .removeClusterListener( this );
+                    }
+                } );
 
         dbToKill.shutdown();
 
-        latch1.await();
+        if ( !latch1.await( 60, TimeUnit.SECONDS ) )
+        {
+            throw new IllegalStateException( "Timeout waiting for instance to leave cluster" );
+        }
 
         addNode( master ); // this will be pulled by tne next start up, applied
-                           // but not written to log.
+        // but not written to log.
         File targetDirectory = dir.directory( "" + toKill, false );
-
-        dbToKill.shutdown();
 
         // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
         // through the heartbeat and not through the cluster change as above.
@@ -141,17 +151,27 @@ public class TestPullUpdatesApplied
 
         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).addHeartbeatListener(
                 new HeartbeatListener.Adapter()
-        {
-            @Override
-            public void failed( InstanceId server )
-            {
-                latch2.countDown();
-                masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeHeartbeatListener( this );
-            }
-        });
+                {
+                    @Override
+                    public void failed( InstanceId server )
+                    {
+                        latch2.countDown();
+                        masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )
+                                .removeHeartbeatListener( this );
+                    }
+                } );
+
+        dbToKill.shutdown();
 
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
-        latch2.await();
+
+        if ( !latch2.await( 60, TimeUnit.SECONDS ) )
+        {
+            throw new IllegalStateException( "Timeout waiting for instance to fail" );
+        }
+
+        // This is to allow other instances to mark the dead instance as failed, otherwise on startup it will be denied.
+        Thread.sleep( 15000 );
 
         start( toKill, false ); // recovery and branching.
         boolean hasBranchedData = new File( targetDirectory, "branched" ).listFiles().length > 0;

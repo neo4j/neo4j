@@ -44,8 +44,7 @@ public class XidImpl implements Xid
     private final byte globalId[];
     // branchId assumes Xid.MAXBQUALSIZE >= 4
     private final byte branchId[];
-    private final int formatId;
-    
+
     private static final Random r = new Random( System.currentTimeMillis() );
 
     // resourceId.length = 4, unique for each XAResource
@@ -80,16 +79,10 @@ public class XidImpl implements Xid
     
     public XidImpl( byte globalId[], byte resourceId[] )
     {
-        this( globalId, resourceId, FORMAT_ID );
-    }
-
-    // create xid for transaction with more than one XAResource enlisted
-    public XidImpl( byte globalId[], byte resourceId[], int formatId )
-    {
         if ( globalId.length > Xid.MAXGTRIDSIZE )
         {
-            throw new IllegalArgumentException( "GlobalId length to long, "
-                + globalId.length );
+            throw new IllegalArgumentException(
+                    "GlobalId length to long: " + globalId.length + ". Max is " + Xid.MAXGTRIDSIZE );
         }
         if ( resourceId.length > Xid.MAXBQUALSIZE )
         {
@@ -98,7 +91,6 @@ public class XidImpl implements Xid
         }
         this.globalId = globalId;
         this.branchId = resourceId;
-        this.formatId = formatId;
     }
 
     public byte[] getGlobalTransactionId()

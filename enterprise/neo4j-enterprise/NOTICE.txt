@@ -30,8 +30,9 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   JTA 1.1
   Lucene Core
+  parboiled-core
+  parboiled-scala
   The Netty Project
-  zookeeper
 
 BSD - Scala License
   Scala Library

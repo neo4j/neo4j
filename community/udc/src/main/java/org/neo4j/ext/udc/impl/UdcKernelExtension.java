@@ -22,7 +22,6 @@ package org.neo4j.ext.udc.impl;
 import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -44,11 +43,12 @@ public class UdcKernelExtension implements Lifecycle
     private XaDataSourceManager xadsm;
     private KernelData kernelData;
 
-    public UdcKernelExtension( Config config, XaDataSourceManager xadsm, KernelData kernelData )
+    public UdcKernelExtension( Config config, XaDataSourceManager xadsm, KernelData kernelData, Timer timer )
     {
         this.config = config;
         this.xadsm = xadsm;
         this.kernelData = kernelData;
+        this.timer = timer;
     }
 
     @Override
@@ -59,11 +59,6 @@ public class UdcKernelExtension implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        if ( timer != null )
-        {
-            timer.cancel();
-        }
-
         if ( !config.get( UdcSettings.udc_enabled ) )
         {
             return;
@@ -71,12 +66,11 @@ public class UdcKernelExtension implements Lifecycle
 
         int firstDelay = config.get( UdcSettings.first_delay );
         int interval = config.get( UdcSettings.interval );
-        HostnamePort hostAddress = config.get( UdcSettings.udc_host );
+        String hostAddress = config.get(UdcSettings.udc_host);
 
         UdcInformationCollector collector = new DefaultUdcInformationCollector( config, xadsm, kernelData );
         UdcTimerTask task = new UdcTimerTask( hostAddress, collector );
 
-        timer = new Timer( "Neo4j UDC Timer", /*isDaemon=*/true );
         timer.scheduleAtFixedRate( task, firstDelay, interval );
     }
 

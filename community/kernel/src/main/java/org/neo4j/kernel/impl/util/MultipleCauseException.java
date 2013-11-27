@@ -29,14 +29,23 @@ public class MultipleCauseException extends Exception
 {
     private static final long serialVersionUID = -5556701516106141749L;
     private static final String ALSO_CAUSED_BY = "Also caused by: ";
-    private final List<Throwable> causes = new ArrayList<Throwable>();
+    private final List<Throwable> causes = new ArrayList<>();
 
     public MultipleCauseException( String message, Throwable firstCause )
     {
         super( message, firstCause );
         causes.add( firstCause );
     }
-    
+
+    public MultipleCauseException( String message, List<Throwable> causes )
+    {
+        super( message, causes.get( 0 ) );
+        for (Throwable cause : causes)
+        {
+            addCause( cause );
+        }
+    }
+
     public List<Throwable> getCauses()
     {
         return causes;

@@ -24,6 +24,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,11 +44,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class ElectionContext
 {
-    private List<ElectionRole> roles = new ArrayList<ElectionRole>();
-    private ClusterContext clusterContext;
-    private HeartbeatContext heartbeatContext;
+    private final List<ElectionRole> roles = new ArrayList<ElectionRole>();
+    private final ClusterContext clusterContext;
+    private final HeartbeatContext heartbeatContext;
 
-    private Map<String, Election> elections = new HashMap<String, Election>();
+    private final Map<String, Election> elections = new HashMap<String, Election>();
     private ElectionCredentialsProvider electionCredentialsProvider;
 
     public ElectionContext( Iterable<ElectionRole> roles, ClusterContext clusterContext,
@@ -120,7 +121,7 @@ public class ElectionContext
         elections.put( role, new Election( new WinnerStrategy()
         {
             @Override
-            public InstanceId pickWinner( List<Vote> voteList )
+            public InstanceId pickWinner( Collection<Vote> voteList )
             {
 
                 // Remove blank votes
@@ -159,7 +160,7 @@ public class ElectionContext
         elections.put( role, new Election( new WinnerStrategy()
         {
             @Override
-            public InstanceId pickWinner( List<Vote> voteList )
+            public InstanceId pickWinner( Collection<Vote> voteList )
             {
                 // Remove blank votes
                 List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
@@ -194,7 +195,7 @@ public class ElectionContext
         elections.put( role, new Election( new WinnerStrategy()
         {
             @Override
-            public InstanceId pickWinner( List<Vote> voteList )
+            public InstanceId pickWinner( Collection<Vote> voteList )
             {
 
                 // Remove blank votes
@@ -231,15 +232,15 @@ public class ElectionContext
     {
         if ( isElectionProcessInProgress( role ) )
         {
-            List<Vote> voteList = elections.get( role ).getVotes();
-            voteList.add( new Vote( suggestedNode, suggestionCredentials ) );
+            Map<InstanceId, Vote> votes = elections.get( role ).getVotes();
+            votes.put( suggestedNode, new Vote( suggestedNode, suggestionCredentials ) );
         }
     }
 
     public InstanceId getElectionWinner( String role )
     {
         Election election = elections.get( role );
-        if ( election == null || election.getVotes().isEmpty() )
+        if ( election == null || election.getVotes().size() != getNeededVoteCount() )
         {
             return null;
         }
@@ -259,7 +260,7 @@ public class ElectionContext
         Election election = elections.get( role );
         if ( election != null )
         {
-            List<Vote> voteList = election.getVotes();
+            Map<InstanceId, Vote> voteList = election.getVotes();
             if ( voteList == null )
             {
                 return 0;
@@ -355,6 +356,11 @@ public class ElectionContext
         return clusterContext.getLogger( ElectionState.class );
     }
 
+    public boolean hasCurrentlyElectedVoted( String role, InstanceId currentElected )
+    {
+        return elections.containsKey( role ) && elections.get(role).getVotes().containsKey( currentElected );
+    }
+
     private static class Vote
             implements Comparable<Vote>
     {
@@ -392,27 +398,28 @@ public class ElectionContext
 
     private static class Election
     {
-        private WinnerStrategy winnerStrategy;
-        List<Vote> votes = new ArrayList<Vote>();
+        private final WinnerStrategy winnerStrategy;
+//        List<Vote> votes = new ArrayList<Vote>();
+        private final Map<InstanceId, Vote> votes = new HashMap<InstanceId, Vote>();
 
         private Election( WinnerStrategy winnerStrategy )
         {
             this.winnerStrategy = winnerStrategy;
         }
 
-        public List<Vote> getVotes()
+        public Map<InstanceId, Vote> getVotes()
         {
             return votes;
         }
 
         public InstanceId pickWinner()
         {
-            return winnerStrategy.pickWinner( votes );
+            return winnerStrategy.pickWinner( votes.values() );
         }
     }
 
     interface WinnerStrategy
     {
-        InstanceId pickWinner( List<Vote> votes );
+        InstanceId pickWinner( Collection<Vote> votes );
     }
 }

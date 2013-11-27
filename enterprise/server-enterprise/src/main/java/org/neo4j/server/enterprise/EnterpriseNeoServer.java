@@ -38,69 +38,70 @@ import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.Iterables.mix;
 
-public class EnterpriseNeoServer extends AdvancedNeoServer {
+public class EnterpriseNeoServer extends AdvancedNeoServer
+{
 
-	public EnterpriseNeoServer( Configurator configurator )
+    public EnterpriseNeoServer( Configurator configurator )
     {
         this.configurator = configurator;
         init();
     }
 
     @Override
-	protected PreFlightTasks createPreflightTasks() 
+    protected PreFlightTasks createPreflightTasks()
     {
-		return new PreFlightTasks(
-				// TODO: This check should be done in the bootrapper,
-				// and verification of config should be done by the new
-				// config system.
-				//new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
-				new EnsurePreparedForHttpLogging(configurator.configuration()),
-				new PerformUpgradeIfNecessary(getConfiguration(), 
-						configurator.getDatabaseTuningProperties(), System.out),
-				new PerformRecoveryIfNecessary(getConfiguration(), 
-						configurator.getDatabaseTuningProperties(), System.out));
-	}
-    
-    @Override
-	protected Database createDatabase() 
-    {
-    	return new EnterpriseDatabase( configurator );
+        return new PreFlightTasks(
+                // TODO: This check should be done in the bootrapper,
+                // and verification of config should be done by the new
+                // config system.
+                //new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
+                new EnsurePreparedForHttpLogging(configurator.configuration()),
+                new PerformUpgradeIfNecessary(getConfiguration(),
+                        configurator.getDatabaseTuningProperties(), System.out),
+                new PerformRecoveryIfNecessary(getConfiguration(),
+                        configurator.getDatabaseTuningProperties(), System.out));
     }
-    
+
+    @Override
+    protected Database createDatabase()
+    {
+        return new EnterpriseDatabase( configurator );
+    }
+
     @SuppressWarnings( "unchecked" )
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
         return mix( asList(
-                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration() ) ), 
+                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration() ) ),
                 super.createServerModules() );
     }
-    
+
     @Override
-	protected InterruptThreadTimer createInterruptStartupTimer() 
+    protected InterruptThreadTimer createInterruptStartupTimer()
     {
-    	// If we are in HA mode, database startup can take a very long time, so
-    	// we default to disabling the startup timeout here, unless explicitly overridden
-    	// by configuration.
-    	if(getConfiguration().getString( Configurator.DB_MODE_KEY, "single" ).equalsIgnoreCase("ha"))
-    	{
-    		long startupTimeout = getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, 0) * 1000;
-    		InterruptThreadTimer stopStartupTimer;
-    		if(startupTimeout > 0) 
+        // If we are in HA mode, database startup can take a very long time, so
+        // we default to disabling the startup timeout here, unless explicitly overridden
+        // by configuration.
+        if(getConfiguration().getString( Configurator.DB_MODE_KEY, "single" ).equalsIgnoreCase("ha"))
+        {
+            long startupTimeout = getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, 0) * 1000;
+            InterruptThreadTimer stopStartupTimer;
+            if(startupTimeout > 0)
             {
-    			stopStartupTimer = InterruptThreadTimer.createTimer(
-    					startupTimeout,
-    					Thread.currentThread());
+                stopStartupTimer = InterruptThreadTimer.createTimer(
+                        startupTimeout,
+                        Thread.currentThread());
             } else
             {
-            	stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
+                stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
             }
-    		return stopStartupTimer;
-    	} else 
-    	{
-    		return super.createInterruptStartupTimer();
-    	}
-	}
+            return stopStartupTimer;
+        } else
+        {
+            return super.createInterruptStartupTimer();
+        }
+    }
 
     @Override
     public Iterable<AdvertisableService> getServices()

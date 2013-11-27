@@ -19,20 +19,21 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.index.Neo4jTestCase.assertContains;
-
 import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
 
 public class TestIndexNames
 {
@@ -42,7 +43,7 @@ public class TestIndexNames
     @BeforeClass
     public static void setUpStuff()
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterClass
@@ -55,11 +56,6 @@ public class TestIndexNames
     public void commitTx()
     {
         finishTx( true );
-    }
-
-    public void rollbackTx()
-    {
-        finishTx( false );
     }
 
     public void finishTx( boolean success )
@@ -92,6 +88,7 @@ public class TestIndexNames
     @Test
     public void makeSureIndexNamesCanBeRead()
     {
+        beginTx();
         assertEquals( 0, graphDb.index().nodeIndexNames().length );
         String name1 = "my-index-1";
         Index<Node> nodeIndex1 = graphDb.index().forNodes( name1 );
@@ -102,15 +99,18 @@ public class TestIndexNames
         graphDb.index().forRelationships( name1 );
         assertContains( Arrays.asList( graphDb.index().nodeIndexNames() ), name1, name2 );
         assertContains( Arrays.asList( graphDb.index().relationshipIndexNames() ), name1 );
-        
+        finishTx( true );
+
         restartTx();
         assertContains( Arrays.asList( graphDb.index().nodeIndexNames() ), name1, name2 );
         assertContains( Arrays.asList( graphDb.index().relationshipIndexNames() ), name1 );
         nodeIndex1.delete();
         assertContains( Arrays.asList( graphDb.index().nodeIndexNames() ), name1, name2 );
         assertContains( Arrays.asList( graphDb.index().relationshipIndexNames() ), name1 );
-        restartTx();
+        finishTx( true );
+        beginTx();
         assertContains( Arrays.asList( graphDb.index().nodeIndexNames() ), name2 );
         assertContains( Arrays.asList( graphDb.index().relationshipIndexNames() ), name1 );
+        finishTx( false );
     }
 }

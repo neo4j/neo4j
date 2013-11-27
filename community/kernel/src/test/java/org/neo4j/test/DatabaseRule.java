@@ -19,21 +19,75 @@
  */
 package org.neo4j.test;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.junit.rules.ExternalResource;
+
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.NodeManager;
 
 public abstract class DatabaseRule extends ExternalResource
 {
+    GraphDatabaseBuilder databaseBuilder;
     GraphDatabaseAPI database;
+    private String storeDir;
+
+    public <T> T when( Function<GraphDatabaseService, T> function )
+    {
+        return function.apply( getGraphDatabaseService() );
+    }
+
+    public <T> T executeAndCommit( Function<? super GraphDatabaseService, T> function )
+    {
+        return transaction( function, true );
+    }
+
+    public <T> T executeAndRollback( Function<? super GraphDatabaseService, T> function )
+    {
+        return transaction( function, false );
+    }
+
+    public <FROM, TO> AlgebraicFunction<FROM, TO> tx( final Function<FROM, TO> function )
+    {
+        return new AlgebraicFunction<FROM, TO>()
+        {
+            @Override
+            public TO apply( final FROM from )
+            {
+                return executeAndCommit( new Function<GraphDatabaseService, TO>()
+                {
+                    @Override
+                    public TO apply( GraphDatabaseService graphDb )
+                    {
+                        return function.apply( from );
+                    }
+                } );
+            }
+        };
+    }
+
+    private <T> T transaction( Function<? super GraphDatabaseService, T> function, boolean commit )
+    {
+        try ( Transaction tx = database.beginTx() )
+        {
+            T result = function.apply( database );
+
+            if ( commit )
+            {
+                tx.success();
+            }
+            return result;
+        }
+    }
 
     @Override
-    protected void before()
-        throws Throwable
+    protected void before() throws Throwable
     {
         create();
     }
@@ -44,19 +98,20 @@ public abstract class DatabaseRule extends ExternalResource
         shutdown();
     }
 
-    public void create()
-        throws IOException
+    @SuppressWarnings("deprecation")
+    public void create() throws IOException
     {
         createResources();
         try
         {
             GraphDatabaseFactory factory = newFactory();
             configure( factory );
-            GraphDatabaseBuilder builder = newBuilder( factory );
-            configure( builder );
-            database = (GraphDatabaseAPI) builder.newGraphDatabase();
+            databaseBuilder = newBuilder( factory );
+            configure( databaseBuilder );
+            database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
+            storeDir = database.getStoreDir();
         }
-        catch( RuntimeException e )
+        catch ( RuntimeException e )
         {
             deleteResources();
             throw e;
@@ -70,7 +125,7 @@ public abstract class DatabaseRule extends ExternalResource
     protected void createResources() throws IOException
     {
     }
-    
+
     protected abstract GraphDatabaseFactory newFactory();
 
     protected abstract GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory );
@@ -79,12 +134,12 @@ public abstract class DatabaseRule extends ExternalResource
     {
         // Override to configure the database factory
     }
-    
+
     protected void configure( GraphDatabaseBuilder builder )
     {
         // Override to configure the database
     }
-    
+
     public GraphDatabaseService getGraphDatabaseService()
     {
         return database;
@@ -94,13 +149,27 @@ public abstract class DatabaseRule extends ExternalResource
     {
         return database;
     }
+    
+    public static interface RestartAction
+    {
+        void run( File storeDirectory );
+    }
+
+    public void restartDatabase( RestartAction action )
+    {
+        database.shutdown();
+        action.run( new File( storeDir ) );
+        database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
+    }
 
     public void shutdown()
     {
         try
         {
-            if (database != null)
+            if ( database != null )
+            {
                 database.shutdown();
+            }
         }
         finally
         {
@@ -108,9 +177,9 @@ public abstract class DatabaseRule extends ExternalResource
             database = null;
         }
     }
-    
+
     public void clearCache()
     {
-        getGraphDatabaseAPI().getNodeManager().clearCache();
+        getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
     }
 }

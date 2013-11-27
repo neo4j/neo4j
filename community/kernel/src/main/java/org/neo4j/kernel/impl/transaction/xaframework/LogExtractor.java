@@ -119,7 +119,7 @@ public class LogExtractor
         }
     }
     
-    public static interface LogLoader
+    public interface LogLoader
     {
         ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position ) throws IOException;
         
@@ -352,7 +352,7 @@ public class LogExtractor
         return new long[] { version, committedTx };
     }
     
-    private static interface LogEntryCollector
+    private interface LogEntryCollector
     {
         LogEntry collect( LogEntry entry, LogBuffer target ) throws IOException;
 
@@ -422,12 +422,12 @@ public class LogExtractor
                 List<LogEntry> entries = transactions.get( identifier );
                 if ( entries == null ) return null;
                 entries.add( entry );
-                if ( nextExpectedTxId != startTxId )
+                if ( nextExpectedTxId != startTxId && commitTxId < nextExpectedTxId )
                 {   // Have returned some previous tx
                     // If we encounter an already extracted tx in the middle of the stream
                     // then just ignore it. This can happen when we do log rotation,
                     // where records are copied over from the active log to the new.
-                    if ( commitTxId < nextExpectedTxId ) return null;
+                    return null;
                 }
 
                 if ( commitTxId != nextExpectedTxId )
@@ -551,7 +551,7 @@ public class LogExtractor
                 if ( !fileSystem.fileExists( name ) )
                 {
                     name = activeLogFiles.get( version );
-                    if ( name == null ) throw new NoSuchLogVersionException( version, name.getPath() );
+                    if ( name == null ) throw new NoSuchLogVersionException( version );
                 }
                 FileChannel channel = fileSystem.open( name, "r" );
                 channel.position( position );
@@ -625,7 +625,7 @@ public class LogExtractor
         public XaCommand readCommand( ReadableByteChannel byteChannel,
                 ByteBuffer buffer ) throws IOException
         {
-            return Command.readCommand( null, byteChannel, buffer );
+            return Command.readCommand( null, null, byteChannel, buffer );
         }
     };
 }

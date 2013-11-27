@@ -19,14 +19,15 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.util.Map;
 
+import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * This class encapsulates the information needed to perform an online backup against a running Neo4j instance
@@ -194,7 +195,24 @@ public class OnlineBackup
      */
     public Map<String, Long> getLastCommittedTxs()
     {
-        return outcome.getLastCommittedTxs();
+        return outcome().getLastCommittedTxs();
+    }
+    
+    /**
+     * @return the consistency outcome of the last made backup. I
+     */
+    public boolean isConsistent()
+    {
+        return outcome().isConsistent();
+    }
+    
+    private BackupOutcome outcome()
+    {
+        if ( outcome == null )
+        {
+            throw new IllegalStateException( "No outcome yet. Please call full or incremental backup first" );
+        }
+        return outcome;
     }
 
     private Config defaultConfig()

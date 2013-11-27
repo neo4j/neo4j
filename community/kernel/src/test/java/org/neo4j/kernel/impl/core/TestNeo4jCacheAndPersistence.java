@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,12 +26,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 import javax.transaction.TransactionManager;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -46,6 +42,10 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
@@ -172,9 +172,6 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node node1 = getGraphDb().getNodeById( node1Id );
 
         assertTrue( !node1.hasProperty( null ) );
-        Iterator<Object> values = node1.getPropertyValues().iterator();
-        values.next();
-        values.next();
         Iterator<String> keys = node1.getPropertyKeys().iterator();
         keys.next();
         keys.next();
@@ -318,7 +315,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node1.setProperty( "someotherproptest", 2 );
         commit();
         TransactionManager txManager = 
-            getGraphDbAPI().getTxManager();
+            getGraphDbAPI().getDependencyResolver().resolveDependency( TransactionManager.class );
         
         txManager.begin();
         node.setProperty( "someotherproptest", "testing2" );

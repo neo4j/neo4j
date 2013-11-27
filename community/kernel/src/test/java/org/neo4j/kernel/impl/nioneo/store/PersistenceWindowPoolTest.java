@@ -19,35 +19,44 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ResourceCollection;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 public class PersistenceWindowPoolTest
 {
     private static final TargetDirectory target = TargetDirectory.forTest( MappedPersistenceWindowTest.class );
     @Rule
-    public final TargetDirectory.TestDirectory directory = target.testDirectory();
-    @Rule
     public final ResourceCollection resources = new ResourceCollection();
+    @Rule
+    public final TargetDirectory.TestDirectory directory = target.testDirectory();
     @Rule
     public final ExpectedException expectedUnderlyingException = ExpectedException.none();
 
@@ -57,7 +66,9 @@ public class PersistenceWindowPoolTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0, false, false, StringLogger.DEV_NULL );
+        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8,
+                file.getChannel(), 0, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
+                BrickElementFactory.DEFAULT, StringLogger.DEV_NULL );
 
         PersistenceWindow initialWindow = pool.acquire( 0, OperationType.READ );
         pool.release( initialWindow );
@@ -78,7 +89,9 @@ public class PersistenceWindowPoolTest
         String filename = new File( target.graphDbDir( true ), "dirty" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
         final int blockSize = 8;
-        final PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), blockSize, file.getChannel(), 0, false, false, StringLogger.DEV_NULL );
+        final PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), blockSize,
+                file.getChannel(), 0, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
+                BrickElementFactory.DEFAULT, StringLogger.DEV_NULL );
         
         // The gist:
         // T1 acquires position 0 as WRITE
@@ -89,7 +102,7 @@ public class PersistenceWindowPoolTest
         // Verify that what T1 wrote is on disk
         
         final PersistenceWindow t1Row = pool.acquire( 0, OperationType.WRITE );
-        OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<Void>( "other thread", null ); 
+        OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<>( "other thread", null );
         Future<Throwable> future = otherThread.executeDontWait( new WorkerCommand<Void, Throwable>()
         {
             @Override
@@ -123,53 +136,172 @@ public class PersistenceWindowPoolTest
         }
         Throwable failure = future.get();
         if ( failure != null )
+        {
             throw launderedException( failure );
+        }
         
         PersistenceWindow row = pool.acquire( 0, OperationType.READ );
         assertFalse( t1Row == row );
         assertBufferContents( blockSize, row );
         
         pool.close();
-        otherThread.shutdown();
+        otherThread.close();
         file.close();
     }
 
-    @Test()
+    @Test
     public void releaseShouldUnlockWindowEvenIfExceptionIsThrown() throws Exception
     {
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0, false, false, StringLogger.DEV_NULL );
+        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0,
+                false, false, new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT,
+                StringLogger.DEV_NULL );
 
-        PersistenceRow row = mock(PersistenceRow.class);
-        when(row.writeOutAndCloseIfFree(false)).thenThrow(new UnderlyingStorageException("Unable to write record"));
+        PersistenceRow row = mock( PersistenceRow.class );
+        when( row.writeOutAndCloseIfFree( false ) ).thenThrow(
+                new UnderlyingStorageException ("Unable to write record" ) );
 
-        expectedUnderlyingException.expect(UnderlyingStorageException.class);
+        expectedUnderlyingException.expect( UnderlyingStorageException.class );
+
         try
         {
-            pool.release(row);
+            pool.release( row );
         }
         finally
         {
-            verify(row).unLock();
+            verify( row ).unLock();
         }
-        
+
         pool.close();
         file.close();
     }
 
+    @Test
+    public void brickSizeZeroShouldNotCauseNPEWhenOtherThreadLoadsPersistenceRow() throws Exception
+    {
+        // Given
+        String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
+        RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
+        PersistenceRow window = new PersistenceRow( 0l, 10, file.getChannel() );
+
+        //noinspection unchecked
+        ConcurrentMap<Long, PersistenceRow> map = mock(ConcurrentMap.class);
+
+        // On the first lookup, pretend the row is not in memory, this makes the current thread decide to load
+        // the row itself. The second time this method is called will be when the acquire routine realizes another
+        // thread has loaded the window, and goes off to get that window.
+        when(map.get( 0l )).then(returnNullFirstTimeButAWindowSecondTime(window));
+
+        // TWIST! When the thread has loaded the row, it will try to insert it into the map, except now we pretend
+        // another thread has already put it in there, triggering a branch where our original thread will undo any
+        // locks it's grabbed as well as any memory it has allocated.
+        when( map.putIfAbsent( eq( 0l ), any( PersistenceRow.class ) ) ).thenReturn( window );
+
+        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0,
+                false, false, map, BrickElementFactory.DEFAULT, StringLogger.DEV_NULL );
+
+        // When
+        PersistenceWindow acquiredWindow = pool.acquire( 0l, OperationType.READ );
+
+        // Then
+        assertEquals(window, acquiredWindow);
+
+
+        pool.close();
+        file.close();
+    }
+    
+    @Test
+    public void shouldSeeEqualNumberBrickLockAndUnlock() throws Exception
+    {
+        // GIVEN
+        // -- a store file that has some records in it already
+        String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
+        RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
+        file.setLength( 8*10 );
+        // -- a pool with a brick factory that tracks calls to lock/unlock
+        final AtomicInteger lockedCount = new AtomicInteger(), unlockedCount = new AtomicInteger();
+        BrickElementFactory brickFactory = new BrickElementFactory()
+        {
+            @Override
+            public BrickElement create( final int index )
+            {
+                return new BrickElement( index )
+                {
+                    @Override
+                    synchronized void lock()
+                    {
+                        assertEquals( 0, index );
+                        super.lock();
+                        lockedCount.incrementAndGet();
+                    }
+                    
+                    @Override
+                    void unLock()
+                    {
+                        assertEquals( 0, index );
+                        super.unLock();
+                        unlockedCount.incrementAndGet();
+                    }
+                };
+            }
+        };
+        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8,
+                file.getChannel(), 10000, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
+                brickFactory, StringLogger.DEV_NULL );
+        
+        try
+        {
+            // WHEN
+            // -- we acquire/release a window for position 0 (which have not been mapped
+            //    and will therefore be of type PersistenceRow
+            pool.release( pool.acquire( 0, OperationType.READ ) );
+            
+            // THEN
+            // -- there should have been 
+            assertEquals( 1, lockedCount.get() );
+            assertEquals( 1, unlockedCount.get() );
+        }
+        finally
+        {
+            pool.close();
+        }
+    }
+
+    private Answer<PersistenceRow> returnNullFirstTimeButAWindowSecondTime(final PersistenceRow window)
+    {
+        return new Answer<PersistenceRow>()
+        {
+            int invocations = 0;
+
+            @Override
+            public PersistenceRow answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                if(invocations++ == 0)
+                {
+                    return null;
+                }
+                return window;
+            }
+        };
+    }
 
     private void writeBufferContents( final int blockSize, final PersistenceWindow t1Row )
     {
         Buffer buffer = t1Row.getBuffer();
         for ( int i = 0; i < blockSize; i++ )
+        {
             buffer.put( (byte) i );
+        }
     }
 
     private void assertBufferContents( final int blockSize, PersistenceWindow row )
     {
         Buffer buffer = row.getBuffer();
         for ( int i = 0; i < blockSize; i++ )
+        {
             assertEquals( (byte)i, buffer.get() );
+        }
     }
 }

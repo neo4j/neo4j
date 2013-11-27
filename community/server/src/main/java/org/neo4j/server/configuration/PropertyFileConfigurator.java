@@ -35,21 +35,21 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
+
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
-public class PropertyFileConfigurator implements Configurator
+public class PropertyFileConfigurator extends Configurator.Adapter
 {
-
     private static final String NEO4J_PROPERTIES_FILENAME = "neo4j.properties";
 
     public static final Logger log = Logger.getLogger( PropertyFileConfigurator.class );
 
-    private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
+    private final CompositeConfiguration serverConfiguration = new CompositeConfiguration();
     private File propertyFileDirectory;
 
-    private Validator validator = new Validator();
+    private final Validator validator = new Validator();
     private Map<String, String> databaseTuningProperties = null;
     private HashSet<ThirdPartyJaxRsPackage> thirdPartyPackages;
 
@@ -113,7 +113,7 @@ public class PropertyFileConfigurator implements Configurator
             {
                 log.info(
                         "No database tuning properties (org.neo4j.server.db.tuning.properties) found in [%s], using defaults.",
-                        databaseTuningPropertyFileLocation );
+                        configFile.getPath() );
                 return;
             }
         }
@@ -226,7 +226,7 @@ public class PropertyFileConfigurator implements Configurator
     @Override
     public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
     {
-        thirdPartyPackages = new HashSet<ThirdPartyJaxRsPackage>();
+        thirdPartyPackages = new HashSet<>();
         Properties properties = this.configuration()
                 .getProperties( THIRD_PARTY_PACKAGES_KEY );
         for ( Object key : properties.keySet() )

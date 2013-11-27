@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
 import static org.neo4j.test.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
 
 import java.io.File;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.AbstractClusterTest;
@@ -38,6 +39,7 @@ public class HaLoggingIT extends AbstractClusterTest
     {
         // GIVEN
         // -- look at the slave and see notices of startup diagnostics
+        cluster.await( masterSeesMembers( 3 ) );
         String logMessage = "Just a test for that logging continues as expected";
         HighlyAvailableGraphDatabase db = cluster.getAnySlave();
         StringLogger logger = db.getDependencyResolver().resolveDependency( StringLogger.class );
@@ -49,11 +51,12 @@ public class HaLoggingIT extends AbstractClusterTest
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         cluster.shutdown( master );
         cluster.await( masterAvailable( master ) );
+        cluster.await( masterSeesMembers( 2 ) );
         logger.logMessage( logMessage, true );
 
         // THEN
         int count = findLoggingLines( db, logMessage );
-        assertEquals( 2, count );
+        Assert.assertEquals( 2, count );
     }
 
     public HaLoggingIT()
@@ -64,7 +67,7 @@ public class HaLoggingIT extends AbstractClusterTest
     private int findLoggingLines( HighlyAvailableGraphDatabase db, String toLookFor )
     {
         int count = 0;
-        for ( String line : asIterable( new File( cluster.getStoreDir( db ), DEFAULT_NAME ) ) )
+        for ( String line : asIterable( new File( cluster.getStoreDir( db ), DEFAULT_NAME ), "UTF-8" ) )
             if ( line.endsWith( toLookFor ) )
                 count++;
         return count;

@@ -9,10 +9,12 @@ The main parts of the manual are:
 
 * <<introduction>> -- introducing graph database concepts and Neo4j.
 * <<tutorials>> -- learn how to use Neo4j.
+* <<cypher-query-lang>> -- details on the Cypher query language.
 * <<reference-documentation>> -- detailed information on Neo4j.
 * <<operations>> -- how to install and maintain Neo4j.
 * <<tools>> -- guides on tools.
 * <<community>> -- getting help from, contributing to.
+* <<advanced-usage>> -- using Neo4j in more advanced ways,
 * <<manpages>> -- command line documentation.
 
 The material is practical, technical, and focused on answering specific questions. 

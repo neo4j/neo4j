@@ -19,14 +19,20 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -42,15 +48,16 @@ public class FileUtils
 
     public static void deleteRecursively( File directory ) throws IOException
     {
-        Stack<File> stack = new Stack<File>();
-        List<File> temp = new LinkedList<File>();
+        Stack<File> stack = new Stack<>();
+        List<File> temp = new LinkedList<>();
         stack.push( directory.getAbsoluteFile() );
         while ( !stack.isEmpty() )
         {
             File top = stack.pop();
-            if ( top.listFiles() != null )
+            File[] files = top.listFiles();
+            if ( files != null )
             {
-                for ( File child : top.listFiles() )
+                for ( File child : files )
                 {
                     if ( child.isFile() )
                     {
@@ -65,7 +72,8 @@ public class FileUtils
                     }
                 }
             }
-            if ( top.listFiles() == null || top.listFiles().length == 0 )
+            files = top.listFiles();
+            if ( files == null || files.length == 0 )
             {
                 if ( !deleteFile( top ) )
                 {
@@ -91,7 +99,7 @@ public class FileUtils
             return true;
         }
         int count = 0;
-        boolean deleted = false;
+        boolean deleted;
         do
         {
             deleted = file.delete();
@@ -109,8 +117,13 @@ public class FileUtils
             throws IOException
     {
         Pattern pattern = Pattern.compile( regexPattern );
-        Collection<File> deletedFiles = new ArrayList<File>();
-        for ( File file : directory.listFiles() )
+        Collection<File> deletedFiles = new ArrayList<>();
+        File[] files = directory.listFiles();
+        if ( files == null )
+        {
+            throw new IllegalArgumentException( directory + " is not a directory" );
+        }
+        for ( File file : files )
         {
             if ( pattern.matcher( file.getName() ).find() )
             {
@@ -132,8 +145,7 @@ public class FileUtils
      * 
      * @param toMove The File object to move.
      * @param target Target file to move to.
-     * @return the new file, null iff the move was unsuccessful
-     * @throws IOException 
+     * @throws IOException
      */
     public static void moveFile( File toMove, File target ) throws IOException
     {
@@ -167,7 +179,7 @@ public class FileUtils
      * use {@link #renameFile(File, File)} instead.
      * 
      * @param toMove The File object to move.
-     * @param targetDirectory
+     * @param targetDirectory the destination directory
      * @return the new file, null iff the move was unsuccessful
      * @throws IOException 
      */
@@ -188,16 +200,18 @@ public class FileUtils
     {
         if ( !srcFile.exists() )
         {
-            throw new NotFoundException( "Source file[" + srcFile.getName()
-                    + "] not found" );
+            throw new NotFoundException( "Source file[" + srcFile.getName() + "] not found" );
         }
         if ( renameToFile.exists() )
         {
-            throw new NotFoundException( "Target file[" + renameToFile.getName()
-                    + "] already exists" );
+            throw new NotFoundException( "Target file[" + renameToFile.getName() + "] already exists" );
+        }
+        if ( !renameToFile.getParentFile().isDirectory() )
+        {
+            throw new NotFoundException( "Target directory[" + renameToFile.getParent() + "] does not exists" );
         }
         int count = 0;
-        boolean renamed = false;
+        boolean renamed;
         do
         {
             renamed = srcFile.renameTo( renameToFile );
@@ -240,14 +254,9 @@ public class FileUtils
 
     public static void truncateFile( File file, long position ) throws IOException
     {
-        RandomAccessFile access = new RandomAccessFile( file, "rw" );
-        try
+        try ( RandomAccessFile access = new RandomAccessFile( file, "rw" ) )
         {
             truncateFile( access.getChannel(), position );
-        }
-        finally
-        {
-            access.close();
         }
     }
 
@@ -312,13 +321,18 @@ public class FileUtils
 
     public static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
-        for ( File fromFile : fromDirectory.listFiles() )
+        copyRecursively( fromDirectory, toDirectory, null );
+    }
+
+    public static void copyRecursively( File fromDirectory, File toDirectory, FileFilter filter) throws IOException
+    {
+        for ( File fromFile : fromDirectory.listFiles( filter ) )
         {
             File toFile = new File( toDirectory, fromFile.getName() );
             if ( fromFile.isDirectory() )
             {
                 toFile.mkdir();
-                copyRecursively( fromFile, toFile );
+                copyRecursively( fromFile, toFile, filter );
             }
             else
             {
@@ -335,14 +349,33 @@ public class FileUtils
             target.createNewFile();
         }
 
-        Writer out = new OutputStreamWriter( new FileOutputStream( target, append ), "UTF-8" );
-        try
+        try ( Writer out = new OutputStreamWriter( new FileOutputStream( target, append ), "UTF-8" ) )
         {
             out.write( text );
         }
-        finally
+    }
+
+    public static BufferedReader newBufferedFileReader( File file, Charset charset ) throws FileNotFoundException
+    {
+        return new BufferedReader( new InputStreamReader( new FileInputStream( file ), charset) );
+    }
+
+    public static PrintWriter newFilePrintWriter( File file, Charset charset ) throws FileNotFoundException
+    {
+        return new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), charset) );
+    }
+
+    public static File path( String root, String... path )
+    {
+        return path( new File( root ), path );
+    }
+
+    public static File path( File root, String... path )
+    {
+        for ( String part : path )
         {
-            out.close();
+            root = new File( root, part );
         }
+        return root;
     }
 }

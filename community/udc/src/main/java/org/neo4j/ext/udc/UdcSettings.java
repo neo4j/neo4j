@@ -59,8 +59,7 @@ public class UdcSettings
      * The host address to which UDC updates will be sent.
      * Should be of the form hostname[:port].
      */
-    public static final Setting<HostnamePort> udc_host = setting( "neo4j.ext.udc.host", HOSTNAME_PORT,
-            "udc.neo4j.org" );
+    public static final Setting<String> udc_host = setting( "neo4j.ext.udc.host", STRING, "udc.neo4j.org" );
 
     /**
      * Configuration key for overriding the source parameter in UDC

@@ -20,6 +20,7 @@
 package org.neo4j.consistency;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -29,9 +30,15 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.impl.index.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -42,20 +49,21 @@ public class ConsistencyCheckService
 {
     private final Date timestamp = new Date();
 
-    public void runFullConsistencyCheck( String storeDir,
-                                         Config tuningConfiguration,
-                                         ProgressMonitorFactory progressFactory,
-                                         StringLogger logger ) throws ConsistencyCheckIncompleteException
+    public Result runFullConsistencyCheck( String storeDir,
+                                           Config tuningConfiguration,
+                                           ProgressMonitorFactory progressFactory,
+                                           StringLogger logger ) throws ConsistencyCheckIncompleteException
     {
         Map<String, String> params = tuningConfiguration.getParams();
         params.put( GraphDatabaseSettings.store_dir.name(), storeDir );
         tuningConfiguration.applyChanges( params );
 
+        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
-                        .windowPoolFactory( tuningConfiguration, logger ), new DefaultFileSystemAbstraction(), logger,
+                        .windowPoolFactory( tuningConfiguration, logger ), fileSystem, logger,
                 new DefaultTxHook() );
 
         ConsistencySummaryStatistics summary;
@@ -67,17 +75,46 @@ public class ConsistencyCheckService
         {
             neoStore.makeStoreOk();
             StoreAccess store = new StoreAccess( neoStore );
-            summary = new FullCheck( tuningConfiguration, progressFactory )
-                    .execute( store, StringLogger.tee( logger, report ) );
+            LabelScanStore labelScanStore = null;
+            try {
+
+                labelScanStore =
+                    new LuceneLabelScanStoreBuilder( storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
+                SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
+                DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
+                summary = new FullCheck( tuningConfiguration, progressFactory )
+                        .execute( stores, StringLogger.tee( logger, report ) );
+            }
+            finally
+            {
+                try
+                {
+                    if ( null != labelScanStore )
+                    {
+                        labelScanStore.shutdown();
+                    }
+                }
+                catch ( IOException e )
+                {
+                    logger.error( "Faiure during shutdown of label scan store", e );
+                }
+            }
         }
         finally
         {
+
+            report.close();
             neoStore.close();
         }
 
         if ( !summary.isConsistent() )
         {
             logger.logMessage( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
+            return Result.FAILURE;
+        }
+        else
+        {
+            return Result.SUCCESS;
         }
     }
 
@@ -93,8 +130,11 @@ public class ConsistencyCheckService
             if ( reportPath.isDirectory() )
             {
                 reportFile = new File( reportPath, defaultLogFileName() );
-            } else
+            }
+            else
+            {
                 reportFile = reportPath;
+            }
         }
         return reportFile;
     }
@@ -103,5 +143,22 @@ public class ConsistencyCheckService
     {
         return String.format( "inconsistencies-%s.report",
                 new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( timestamp ) );
+    }
+
+    public enum Result
+    {
+        FAILURE( false ), SUCCESS( true );
+        
+        private boolean successful;
+
+        private Result( boolean successful )
+        {
+            this.successful = successful;
+        }
+        
+        public boolean isSuccessful()
+        {
+            return this.successful;
+        }
     }
 }
