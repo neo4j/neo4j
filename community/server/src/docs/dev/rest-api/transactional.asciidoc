@@ -16,10 +16,6 @@ use the same transaction across multiple HTTP requests. The cypher endpoint alwa
 the end of each HTTP request.
 
 [NOTE]
-This is a new feature in the API, and is still experimental. Expect this API to change without notice, until this note
-is removed.
-
-[NOTE]
 The serialization format for cypher results is mostly the same as the <<rest-api-cypher,cypher endpoint>>.
 However, the format for raw entities is slightly less verbose and does not include hypermedia links.
 
@@ -49,4 +45,5 @@ include::return-results-in-graph-format.asciidoc[]
 
 include::handling-errors.asciidoc[]
 
+include::transactional-status-codes.asciidoc[]
 
