@@ -38,6 +38,7 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.cluster.ClusterEntryDeniedException;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.helpers.Args;
@@ -176,7 +177,7 @@ public final class HaBackupProvider extends BackupExtensionService
         {
             Throwable ex = Exceptions.peel( e, Exceptions.exceptionsOfType( LifecycleException.class ) );
 
-            if (ex != null && ex instanceof IllegalStateException)
+            if (ex != null && ex instanceof ClusterEntryDeniedException)
             {
                 // Someone else is doing a backup
                 throw new RuntimeException( "Another backup client is currently performing backup; concurrent backups are not allowed" );
