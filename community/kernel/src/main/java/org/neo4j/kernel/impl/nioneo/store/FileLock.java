@@ -69,12 +69,14 @@ public abstract class FileLock
         else if ( fileName.getName().equals( NeoStore.DEFAULT_NAME ) )
         {
             FileLock regular = wrapOrNull( channel.tryLock() );
-            if ( regular == null ) return null;
+            if ( regular == null )
+                throw new IOException( "Unable to lock " + channel );
+
             FileLock extra = getLockFileBasedFileLock( fileName.getParentFile() );
             if ( extra == null )
             {
                 regular.release();
-                return null;
+                throw new IOException( "Unable to lock lock file for " + fileName.getParentFile() );
             }
             return new DoubleFileLock( regular, extra );
         }
@@ -107,7 +109,7 @@ public abstract class FileLock
         if ( fileChannelLock == null )
         {
             fileChannel.close();
-            return null;
+            throw new IOException( "Couldn't create lock file " + lockFile.getAbsolutePath() );
         }
         return new WindowsFileLock( lockFile, fileChannel, fileChannelLock );
     }
