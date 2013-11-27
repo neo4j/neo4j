@@ -124,7 +124,7 @@ public class NetworkSenderReceiverTest
                     sem.release();
                     return null;
                 }
-            } ).when( loggerMock ).warn( anyString(), any( Exception.class ) );
+            } ).when( loggerMock ).warn( anyString() );
 
             receiver = new NetworkReceiver( new NetworkReceiver.Configuration()
             {
