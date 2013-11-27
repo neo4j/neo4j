@@ -444,13 +444,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         idGeneratorFactory = new HaIdGeneratorFactory( master, logging );
 
-        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-
         highAvailabilityModeSwitcher =
                 new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
                         clusterMemberAvailability, memberStateMachine, this,
                         (HaIdGeneratorFactory) idGeneratorFactory, config,
-                        logging, scheduledExecutorService );
+                        logging );
         /*
          * We always need the mode switcher and we need it to restart on switchover. So:
          * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover

@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -139,7 +140,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     public HighAvailabilityModeSwitcher( BindingNotifier bindingNotifier, DelegateInvocationHandler delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
-                                         HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging, ScheduledExecutorService scheduledExecutorService )
+                                         HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging)
     {
         this.bindingNotifier = bindingNotifier;
         this.delegateHandler = delegateHandler;
@@ -148,7 +149,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
         this.logging = logging;
-        this.scheduledExecutorService = scheduledExecutorService;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.life = new LifeSupport();
         this.stateHandler = stateHandler;
@@ -174,12 +174,18 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     @Override
     public synchronized void start() throws Throwable
     {
+        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(  );
+
         life.start();
     }
 
     @Override
     public synchronized void stop() throws Throwable
     {
+        scheduledExecutorService.shutdown();
+
+        scheduledExecutorService.awaitTermination( 60, TimeUnit.SECONDS );
+
         life.stop();
     }
 
