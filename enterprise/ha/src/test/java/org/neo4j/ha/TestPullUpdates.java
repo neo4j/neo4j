@@ -153,6 +153,8 @@ public class TestPullUpdates
                     .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup
                     .newGraphDatabase();
 
+            slave.beginTx().finish(); // Make sure switch to slave completes and so does the update pulling on startup
+
             assertEquals( "master", slave.getNodeById( nodeId ).getProperty( "from" ) );
         }
         finally
