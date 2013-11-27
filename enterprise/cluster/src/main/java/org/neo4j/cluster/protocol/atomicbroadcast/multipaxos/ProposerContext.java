@@ -19,39 +19,44 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.net.URI;
+import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.protocol.ConfigurationContext;
+import org.neo4j.cluster.protocol.LoggingContext;
+import org.neo4j.cluster.protocol.TimeoutsContext;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 
 /**
  * Context used by {@link ProposerState} state machine.
  */
-public class ProposerContext
+public interface ProposerContext
+    extends TimeoutsContext, LoggingContext, ConfigurationContext
 {
-    // Proposer/coordinator state
-    final Deque<Message> pendingValues = new LinkedList<Message>();
-    final Map<InstanceId, Message> bookedInstances = new HashMap<InstanceId, Message>();
+    InstanceId newInstanceId( );
 
-    public long nextInstanceId = 0;
+    PaxosInstance getPaxosInstance( InstanceId instanceId );
 
-    public InstanceId newInstanceId( long lastLearnedInstanceId )
-    {
-        // Never propose something lower than last received instance id
-        if ( lastLearnedInstanceId >= nextInstanceId )
-        {
-            nextInstanceId = lastLearnedInstanceId + 1;
-        }
+    void pendingValue( Message message );
 
-        return new InstanceId( nextInstanceId++ );
-    }
+    void bookInstance( InstanceId instanceId, Message message );
 
-    public void leave()
-    {
-        pendingValues.clear();
-        bookedInstances.clear();
-        nextInstanceId = 0;
-    }
+    int nrOfBookedInstances();
+
+    boolean canBookInstance();
+
+    Message getBookedInstance( InstanceId id );
+
+    Message<ProposerMessage> unbookInstance( InstanceId id );
+
+    void patchBookedInstances( ClusterMessage.ConfigurationChangeState value );
+
+    int getMinimumQuorumSize( List<URI> acceptors );
+
+    boolean hasPendingValues();
+
+    Message popPendingValue();
+
+    void leave();
 }

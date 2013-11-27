@@ -19,22 +19,25 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import sun.util.logging.resources.logging;
+import java.util.concurrent.Executor;
 
-import org.neo4j.cluster.protocol.LoggingContext;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.junit.Test;
+import org.mockito.Mockito;
 
-/**
- * Context used by AcceptorState
- */
-public interface AcceptorContext
-    extends LoggingContext
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.cluster.ClusterContext;
+import org.neo4j.cluster.timeout.Timeouts;
+
+public class ProposerStateTest
 {
-    AcceptorInstance getAcceptorInstance( InstanceId instanceId );
+    @Test
+    public void ifProposingWithClosedInstanceThenRetryWithNextInstance() throws Exception
+    {
+        ProposerState state = ProposerState.proposer;
 
-    void promise( AcceptorInstance instance, long ballot );
+        ProposerContext context = Mockito.mock(ProposerContext.class);
 
-    void accept( AcceptorInstance instance, Object value );
-
-    void leave();
+//        state.handle( context )
+    }
 }

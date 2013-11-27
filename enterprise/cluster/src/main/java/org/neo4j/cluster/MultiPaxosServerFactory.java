@@ -105,38 +105,21 @@ public class MultiPaxosServerFactory
         Timeouts timeouts = stateMachines.getTimeouts();
         stateMachines.addMessageProcessor( latencyCalculator );
 
-        AcceptorContext acceptorContext = new AcceptorContext( logging, acceptorInstanceStore );
-        LearnerContext learnerContext = new LearnerContext(acceptorInstanceStore);
-        ProposerContext proposerContext = new ProposerContext();
+        final MultiPaxosContext context = new MultiPaxosContext( me,
+                Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole(ClusterConfiguration.COORDINATOR )),
+                new ClusterConfiguration( initialConfig.getName(), initialConfig.getMemberURIs() ),executor, logging,
+                objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts);
 
-        final ClusterContext clusterContext = new ClusterContext( me, proposerContext, learnerContext,
-                new ClusterConfiguration( initialConfig.getName(), initialConfig.getMemberURIs() ), timeouts, executor,
-                logging, objectInputStreamFactory, objectOutputStreamFactory);
-        final HeartbeatContext heartbeatContext = new HeartbeatContext( clusterContext, learnerContext, executor );
-        clusterContext.setHeartbeatContext( heartbeatContext );
-        final MultiPaxosContext context = new MultiPaxosContext( clusterContext, proposerContext, learnerContext,
-                heartbeatContext, timeouts );
-        ElectionContext electionContext = new ElectionContext( Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole(
-                ClusterConfiguration.COORDINATOR ) ),
-                clusterContext, heartbeatContext );
-        SnapshotContext snapshotContext = new SnapshotContext( clusterContext, learnerContext );
-        AtomicBroadcastContext atomicBroadcastContext = new AtomicBroadcastContext( clusterContext, executor );
+        SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(), context.getLearnerContext() );
 
-        stateMachines.addStateMachine( new StateMachine( atomicBroadcastContext,
-                AtomicBroadcastMessage.class, AtomicBroadcastState.start, logging ) );
-        stateMachines.addStateMachine( new StateMachine( acceptorContext, AcceptorMessage.class,
-                AcceptorState.start, logging ) );
-        stateMachines.addStateMachine( new StateMachine( context, ProposerMessage.class,
-                ProposerState.start, logging ) );
-        stateMachines.addStateMachine( new StateMachine( context, LearnerMessage.class, LearnerState.start, logging ) );
-        stateMachines.addStateMachine( new StateMachine( heartbeatContext, HeartbeatMessage.class,
-                HeartbeatState.start, logging ) );
-        stateMachines.addStateMachine( new StateMachine( electionContext, ElectionMessage.class,
-                ElectionState.start, logging ) );
-        stateMachines.addStateMachine( new StateMachine( snapshotContext, SnapshotMessage.class,
-                SnapshotState.start, logging ) );
-        stateMachines.addStateMachine( new StateMachine( clusterContext, ClusterMessage.class,
-                ClusterState.start, logging ) );
+        stateMachines.addStateMachine( new StateMachine( context.getAtomicBroadcastContext(),AtomicBroadcastMessage.class, AtomicBroadcastState.start, logging ) );
+        stateMachines.addStateMachine( new StateMachine( context.getAcceptorContext(), AcceptorMessage.class,AcceptorState.start, logging ) );
+        stateMachines.addStateMachine( new StateMachine( context.getProposerContext(), ProposerMessage.class,ProposerState.start, logging ) );
+        stateMachines.addStateMachine( new StateMachine( context.getLearnerContext(), LearnerMessage.class, LearnerState.start, logging ) );
+        stateMachines.addStateMachine( new StateMachine( context.getHeartbeatContext(), HeartbeatMessage.class,HeartbeatState.start, logging ) );
+        stateMachines.addStateMachine( new StateMachine( context.getElectionContext(), ElectionMessage.class,ElectionState.start, logging ) );
+        stateMachines.addStateMachine( new StateMachine( snapshotContext, SnapshotMessage.class,SnapshotState.start, logging ) );
+        stateMachines.addStateMachine( new StateMachine( context.getClusterContext(), ClusterMessage.class,ClusterState.start, logging ) );
 
         final ProtocolServer server = new ProtocolServer( me, stateMachines, logging );
 
@@ -145,23 +128,23 @@ public class MultiPaxosServerFactory
             @Override
             public void listeningAt( URI me )
             {
-                clusterContext.setBoundAt( me );
+                context.getClusterContext().setBoundAt( me );
             }
         } );
 
         stateMachines.addMessageProcessor( new HeartbeatRefreshProcessor( stateMachines.getOutgoing
-                (), clusterContext ) );
+                (), context.getClusterContext() ) );
         input.addMessageProcessor( new HeartbeatIAmAliveProcessor( stateMachines.getOutgoing(),
-                clusterContext ) );
+                context.getClusterContext() ) );
 
         server.newClient( Cluster.class ).addClusterListener( new HeartbeatJoinListener( stateMachines
                 .getOutgoing() ) );
 
-        heartbeatContext.addHeartbeatListener( new HeartbeatReelectionListener( server.newClient( Election
+        context.getHeartbeatContext().addHeartbeatListener( new HeartbeatReelectionListener( server.newClient( Election
                 .class ), logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
-        clusterContext.addClusterListener( new ClusterLeaveReelectionListener( server.newClient( Election.class ),
+        context.getClusterContext().addClusterListener( new ClusterLeaveReelectionListener( server.newClient( Election.class ),
                 logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
-        electionContext.setElectionCredentialsProvider( electionCredentialsProvider );
+        context.getElectionContext().setElectionCredentialsProvider( electionCredentialsProvider );
 
         StateMachineRules rules = new StateMachineRules( stateMachines.getOutgoing() )
                 .rule( ClusterState.start, ClusterMessage.create, ClusterState.entered,

@@ -19,407 +19,71 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.protocol.cluster.ClusterContext;
-import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.cluster.protocol.ConfigurationContext;
+import org.neo4j.cluster.protocol.LoggingContext;
+import org.neo4j.cluster.protocol.TimeoutsContext;
 
 /**
  * Context used by {@link ElectionState}.
  */
-public class ElectionContext
+public interface ElectionContext
+    extends TimeoutsContext, LoggingContext, ConfigurationContext
 {
-    private final List<ElectionRole> roles = new ArrayList<ElectionRole>();
-    private final ClusterContext clusterContext;
-    private final HeartbeatContext heartbeatContext;
+    public void setElectionCredentialsProvider( ElectionCredentialsProvider electionCredentialsProvider );
 
-    private final Map<String, Election> elections = new HashMap<String, Election>();
-    private ElectionCredentialsProvider electionCredentialsProvider;
+    public void created();
 
-    public ElectionContext( Iterable<ElectionRole> roles, ClusterContext clusterContext,
-                            HeartbeatContext heartbeatContext )
-    {
-        this.heartbeatContext = heartbeatContext;
-        Iterables.addAll( this.roles, roles );
-        this.clusterContext = clusterContext;
-    }
-
-    public void setElectionCredentialsProvider( ElectionCredentialsProvider electionCredentialsProvider )
-    {
-        this.electionCredentialsProvider = electionCredentialsProvider;
-    }
-
-    public void created()
-    {
-        for ( ElectionRole role : roles )
-        {
-            // Elect myself for all roles
-            clusterContext.elected( role.getName(), clusterContext.getMyId() );
-        }
-    }
-
-    public List<ElectionRole> getPossibleRoles()
-    {
-        return roles;
-    }
+    public List<ElectionRole> getPossibleRoles();
 
     /*
      * Removes all roles from the provided node. This is expected to be the first call when receiving a demote
      * message for a node, since it is the way to ensure that election will happen for each role that node had
      */
-    public void nodeFailed( InstanceId node )
-    {
-        Iterable<String> rolesToDemote = getRoles( node );
-        for ( String role : rolesToDemote )
-        {
-            clusterContext.getConfiguration().removeElected( role );
-        }
-    }
+    public void nodeFailed( InstanceId node );
 
-    public Iterable<String> getRoles( InstanceId server )
-    {
-        return clusterContext.getConfiguration().getRolesOf( server );
-    }
+    public Iterable<String> getRoles( InstanceId server );
 
-    public ClusterContext getClusterContext()
-    {
-        return clusterContext;
-    }
+    public void unelect( String roleName );
 
-    public HeartbeatContext getHeartbeatContext()
-    {
-        return heartbeatContext;
-    }
+    public boolean isElectionProcessInProgress( String role );
 
-    public void unelect( String roleName )
-    {
-        clusterContext.getConfiguration().removeElected( roleName );
-    }
+    public void startDemotionProcess( String role, final InstanceId demoteNode );
 
-    public boolean isElectionProcessInProgress( String role )
-    {
-        return elections.containsKey( role );
-    }
+    public void startElectionProcess( String role );
 
-    public void startDemotionProcess( String role, final InstanceId demoteNode )
-    {
-        elections.put( role, new Election( new WinnerStrategy()
-        {
-            @Override
-            public InstanceId pickWinner( Collection<Vote> voteList )
-            {
+    public void startPromotionProcess( String role, final InstanceId promoteNode );
 
-                // Remove blank votes
-                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
-                {
-                    @Override
-                    public boolean accept( Vote item )
-                    {
-                        return !( item.getCredentials() instanceof NotElectableElectionCredentials );
-                    }
-                }, voteList ) );
+    public void voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials );
 
-                // Sort based on credentials
-                // The most suited candidate should come out on top
-                Collections.sort( filteredVoteList );
-                Collections.reverse( filteredVoteList );
+    public InstanceId getElectionWinner( String role );
 
-                for ( Vote vote : filteredVoteList )
-                {
-                    // Don't elect as winner the node we are trying to demote
-                    if ( !vote.getSuggestedNode().equals( demoteNode ) )
-                    {
-                        return vote.getSuggestedNode();
-                    }
-                }
+    public Comparable<Object> getCredentialsForRole( String role );
 
-                // No possible winner
-                return null;
-            }
-        } ) );
-    }
+    public int getVoteCount( String role );
 
-    public void startElectionProcess( String role )
-    {
-        clusterContext.getLogger( getClass() ).info( "Doing elections for role " + role );
-        elections.put( role, new Election( new WinnerStrategy()
-        {
-            @Override
-            public InstanceId pickWinner( Collection<Vote> voteList )
-            {
-                // Remove blank votes
-                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
-                {
-                    @Override
-                    public boolean accept( Vote item )
-                    {
-                        return !( item.getCredentials() instanceof NotElectableElectionCredentials );
-                    }
-                }, voteList ) );
+    public int getNeededVoteCount();
 
-                // Sort based on credentials
-                // The most suited candidate should come out on top
-                Collections.sort( filteredVoteList );
-                Collections.reverse( filteredVoteList );
+    public void cancelElection( String role );
 
-                clusterContext.getLogger( getClass() ).debug( "Elections ended up with list " + filteredVoteList );
+    public Iterable<String> getRolesRequiringElection();
 
-                for ( Vote vote : filteredVoteList )
-                {
-                    return vote.getSuggestedNode();
-                }
+    public boolean electionOk();
 
-                // No possible winner
-                return null;
-            }
-        } ) );
-    }
+    public boolean isInCluster();
 
-    public void startPromotionProcess( String role, final InstanceId promoteNode )
-    {
-        elections.put( role, new Election( new WinnerStrategy()
-        {
-            @Override
-            public InstanceId pickWinner( Collection<Vote> voteList )
-            {
+    public Iterable<InstanceId> getAlive();
 
-                // Remove blank votes
-                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
-                {
-                    @Override
-                    public boolean accept( Vote item )
-                    {
-                        return !( item.getCredentials() instanceof NotElectableElectionCredentials);
-                    }
-                }, voteList ) );
+    public boolean isElector();
 
-                // Sort based on credentials
-                // The most suited candidate should come out on top
-                Collections.sort( filteredVoteList );
-                Collections.reverse( filteredVoteList );
+    public boolean isFailed( InstanceId key );
 
-                for ( Vote vote : filteredVoteList )
-                {
-                    // Don't elect as winner the node we are trying to demote
-                    if ( !vote.getSuggestedNode().equals( promoteNode ) )
-                    {
-                        return vote.getSuggestedNode();
-                    }
-                }
+    public InstanceId getElected( String roleName );
 
-                // No possible winner
-                return null;
-            }
-        } ) );
-    }
+    public boolean hasCurrentlyElectedVoted( String role, InstanceId currentElected );
 
-    public void voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials )
-    {
-        if ( isElectionProcessInProgress( role ) )
-        {
-            Map<InstanceId, Vote> votes = elections.get( role ).getVotes();
-            votes.put( suggestedNode, new Vote( suggestedNode, suggestionCredentials ) );
-        }
-    }
-
-    public InstanceId getElectionWinner( String role )
-    {
-        Election election = elections.get( role );
-        if ( election == null || election.getVotes().size() != getNeededVoteCount() )
-        {
-            return null;
-        }
-
-        elections.remove( role );
-
-        return election.pickWinner();
-    }
-
-    public Comparable<Object> getCredentialsForRole( String role )
-    {
-        return electionCredentialsProvider.getCredentials( role );
-    }
-
-    public int getVoteCount( String role )
-    {
-        Election election = elections.get( role );
-        if ( election != null )
-        {
-            Map<InstanceId, Vote> voteList = election.getVotes();
-            if ( voteList == null )
-            {
-                return 0;
-            }
-
-            return voteList.size();
-        }
-        else
-        {
-            return 0;
-        }
-    }
-
-    public int getNeededVoteCount()
-    {
-        return clusterContext.getConfiguration().getMembers().size() - heartbeatContext.getFailed().size();
-    }
-
-    public void cancelElection( String role )
-    {
-        elections.remove( role );
-    }
-
-    public Iterable<String> getRolesRequiringElection()
-    {
-        return filter( new Predicate<String>() // Only include roles that are not elected
-        {
-            @Override
-            public boolean accept( String role )
-            {
-                return clusterContext.getConfiguration().getElected( role ) == null;
-            }
-        }, map( new Function<ElectionRole, String>() // Convert ElectionRole to String
-        {
-            @Override
-            public String apply( ElectionRole role )
-            {
-                return role.getName();
-            }
-        }, roles ) );
-    }
-
-    public boolean electionOk()
-    {
-        return heartbeatContext.getFailed().size() <= clusterContext.getConfiguration().getMembers().size() /2;
-    }
-
-    public boolean isInCluster()
-    {
-        return getClusterContext().isInCluster();
-    }
-
-    public Iterable<InstanceId> getAlive()
-    {
-        return getHeartbeatContext().getAlive();
-    }
-
-    public InstanceId getMyId()
-    {
-        return getClusterContext().getMyId();
-    }
-
-    public boolean isElector()
-    {
-        // Only the first alive server should try elections. Everyone else waits
-        List<InstanceId> aliveInstances = Iterables.toList( getAlive() );
-        Collections.sort( aliveInstances );
-        return aliveInstances.indexOf( getMyId() ) == 0;
-    }
-
-    public Map<InstanceId, URI> getMembers()
-    {
-        return getClusterContext().getConfiguration().getMembers();
-    }
-
-    public boolean isFailed( InstanceId key )
-    {
-        return getHeartbeatContext().getFailed().contains( key );
-    }
-
-    public InstanceId getElected( String roleName )
-    {
-        return getClusterContext().getConfiguration().getElected( roleName );
-    }
-
-    public void setTimeout( String key, Message<ElectionMessage> timeout )
-    {
-        getClusterContext().timeouts.setTimeout( key, timeout );
-    }
-
-    public StringLogger getLogger()
-    {
-        return clusterContext.getLogger( ElectionState.class );
-    }
-
-    public boolean hasCurrentlyElectedVoted( String role, InstanceId currentElected )
-    {
-        return elections.containsKey( role ) && elections.get(role).getVotes().containsKey( currentElected );
-    }
-
-    private static class Vote
-            implements Comparable<Vote>
-    {
-        private final InstanceId suggestedNode;
-        private final Comparable<Object> voteCredentials;
-
-        private Vote( InstanceId suggestedNode, Comparable<Object> voteCredentials )
-        {
-            this.suggestedNode = suggestedNode;
-            this.voteCredentials = voteCredentials;
-        }
-
-        public InstanceId getSuggestedNode()
-        {
-            return suggestedNode;
-        }
-
-        @Override
-        public int compareTo( Vote o )
-        {
-            return this.voteCredentials.compareTo( o.voteCredentials );
-        }
-
-        @Override
-        public String toString()
-        {
-            return suggestedNode + ":" + voteCredentials;
-        }
-
-        public Comparable<Object> getCredentials()
-        {
-            return voteCredentials;
-        }
-    }
-
-    private static class Election
-    {
-        private final WinnerStrategy winnerStrategy;
-//        List<Vote> votes = new ArrayList<Vote>();
-        private final Map<InstanceId, Vote> votes = new HashMap<InstanceId, Vote>();
-
-        private Election( WinnerStrategy winnerStrategy )
-        {
-            this.winnerStrategy = winnerStrategy;
-        }
-
-        public Map<InstanceId, Vote> getVotes()
-        {
-            return votes;
-        }
-
-        public InstanceId pickWinner()
-        {
-            return winnerStrategy.pickWinner( votes.values() );
-        }
-    }
-
-    interface WinnerStrategy
-    {
-        InstanceId pickWinner( Collection<Vote> votes );
-    }
+    Set<InstanceId> getFailed();
 }

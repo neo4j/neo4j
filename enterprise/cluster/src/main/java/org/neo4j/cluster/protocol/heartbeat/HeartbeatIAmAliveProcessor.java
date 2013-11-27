@@ -51,7 +51,7 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
             String from = message.getHeader( Message.FROM );
             if ( !from.equals( message.getHeader( Message.TO ) ) )
             {
-                InstanceId id = clusterContext.getConfiguration().getServerId( URI.create( from ) );
+                InstanceId id = clusterContext.getConfiguration().getIdForUri( URI.create( from ) );
 
                 if (id != null && !clusterContext.isMe( id ))
                 {

@@ -19,59 +19,18 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import java.util.concurrent.Executor;
-
+import org.neo4j.cluster.protocol.ConfigurationContext;
+import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.cluster.protocol.cluster.ClusterContext;
-import org.neo4j.helpers.Listeners;
 
 /**
- * Context shared by all Paxos state machines.
+ * Context for AtomicBroadcast statemachine.
  */
-public class AtomicBroadcastContext
+public interface AtomicBroadcastContext
+    extends TimeoutsContext, ConfigurationContext
 {
-    private final ClusterContext context;
-    private Executor executor;
-
-    private Iterable<AtomicBroadcastListener> listeners = Listeners.newListeners();
-
-    public AtomicBroadcastContext( ClusterContext context, Executor executor )
-    {
-        this.context = context;
-        this.executor = executor;
-    }
-
-    public void addAtomicBroadcastListener( AtomicBroadcastListener listener )
-    {
-        listeners = Listeners.addListener( listener, listeners );
-    }
-
-    public void removeAtomicBroadcastListener( AtomicBroadcastListener listener )
-    {
-        listeners = Listeners.removeListener( listener, listeners );
-    }
-
-    public void receive( final Payload value )
-    {
-        Listeners.notifyListeners( listeners, executor, new Listeners.Notification<AtomicBroadcastListener>()
-        {
-            @Override
-            public void notify( final AtomicBroadcastListener listener )
-            {
-                listener.receive( value );
-            }
-        } );
-    }
-
-    public org.neo4j.cluster.InstanceId getCoordinator()
-    {
-        return context.getConfiguration().getElected( ClusterConfiguration.COORDINATOR );
-    }
-
-    public ClusterContext getClusterContext()
-    {
-        return context;
-    }
+    void addAtomicBroadcastListener( AtomicBroadcastListener listener );
+    void removeAtomicBroadcastListener( AtomicBroadcastListener listener );
+    void receive( final Payload value );
 }

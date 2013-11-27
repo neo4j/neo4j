@@ -19,15 +19,6 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.cluster.protocol.election.ElectionMessage.demote;
-import static org.neo4j.cluster.protocol.election.ElectionMessage.performRoleElections;
-import static org.neo4j.cluster.protocol.election.ElectionState.election;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,11 +26,23 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.mockito.Matchers;
+import org.mockito.Mockito;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.cluster.protocol.election.ElectionMessage.demote;
+import static org.neo4j.cluster.protocol.election.ElectionMessage.performRoleElections;
+import static org.neo4j.cluster.protocol.election.ElectionState.election;
 
 public class ElectionStateTest
 {
@@ -101,7 +104,7 @@ public class ElectionStateTest
         when( context.getElected( role ) ).thenReturn( myInstanceId );
 
           // Required for logging
-        when( context.getLogger() ).thenReturn( mock( StringLogger.class ) );
+        when( context.getLogger( Mockito.<Class>any()) ).thenReturn( mock( StringLogger.class ) );
 
         // When
         election.handle( context,
