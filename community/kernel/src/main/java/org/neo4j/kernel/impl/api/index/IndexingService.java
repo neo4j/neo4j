@@ -82,8 +82,6 @@ public class IndexingService extends LifecycleAdapter
 {
     private final IndexMapReference indexMapReference = new IndexMapReference();
 
-    private boolean serviceRunning = false;
-
     private final JobScheduler scheduler;
     private final SchemaIndexProviderMap providerMap;
     private final IndexStoreView storeView;
@@ -92,6 +90,16 @@ public class IndexingService extends LifecycleAdapter
     private final StringLogger logger;
     private final UpdateableSchemaState updateableSchemaState;
     private final Set<Long> recoveredNodeIds = new HashSet<>();
+
+    enum State
+    {
+        NOT_STARTED,
+        STARTING,
+        RUNNING,
+        STOPPED
+    }
+
+    private volatile State state = State.NOT_STARTED;
 
     public IndexingService( JobScheduler scheduler,
                             SchemaIndexProviderMap providerMap,
@@ -169,6 +177,8 @@ public class IndexingService extends LifecycleAdapter
     @Override
     public void start() throws Exception
     {
+        state = State.STARTING;
+
         applyRecoveredUpdates();
         IndexMap indexMap = indexMapReference.getIndexMapCopy();
 
@@ -211,18 +221,18 @@ public class IndexingService extends LifecycleAdapter
             IndexDescriptor indexDescriptor = descriptors.first();
             SchemaIndexProvider.Descriptor providerDescriptor = descriptors.other();
             IndexProxy indexProxy =
-                createAndStartPopulatingIndexProxy( indexId, indexDescriptor, providerDescriptor, serviceRunning );
+                createAndStartPopulatingIndexProxy( indexId, indexDescriptor, providerDescriptor, state == State.RUNNING );
             indexMap.putIndexProxy( indexId, indexProxy );
         }
 
-        serviceRunning = true;
         indexMapReference.setIndexMap( indexMap );
+        state = State.RUNNING;
     }
 
     @Override
     public void stop()
     {
-        serviceRunning = false;
+        state = State.STOPPED;
         closeAllIndexes();
     }
 
@@ -257,7 +267,7 @@ public class IndexingService extends LifecycleAdapter
         final IndexDescriptor descriptor = createDescriptor( rule );
         SchemaIndexProvider.Descriptor providerDescriptor = rule.getProviderDescriptor();
         boolean constraint = rule.isConstraintIndex();
-        if ( serviceRunning )
+        if ( state == State.RUNNING )
         {
             try
             {
@@ -286,7 +296,7 @@ public class IndexingService extends LifecycleAdapter
 
     public void updateIndexes( IndexUpdates updates )
     {
-        if ( serviceRunning )
+        if ( state == State.RUNNING )
         {
             try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( IndexUpdateMode.ONLINE ) )
             {
@@ -295,7 +305,18 @@ public class IndexingService extends LifecycleAdapter
         }
         else
         {
-            recoveredNodeIds.addAll( updates.changedNodeIds() );
+            if( state == State.NOT_STARTED )
+            {
+                recoveredNodeIds.addAll( updates.changedNodeIds() );
+            }
+            else
+            {
+                // This is a temporary measure to resolve a corruption bug. We believe that it's caused by stray
+                // HA transactions, and we know that this measure will fix it. It appears, however, that the correct
+                // fix will be, as it is for several other issues, to modify the system to allow us to kill running
+                // transactions before state switches.
+                throw new IllegalStateException( "Cannot queue index updates while index service is " + state );
+            }
         }
     }
 
@@ -393,7 +414,7 @@ public class IndexingService extends LifecycleAdapter
     {
         long indexId = rule.getId();
         IndexProxy index = indexMapReference.removeIndexProxy( indexId );
-        if ( serviceRunning )
+        if ( state == State.RUNNING )
         {
             assert index != null : "Index " + rule + " doesn't exists";
             try
@@ -559,7 +580,7 @@ public class IndexingService extends LifecycleAdapter
         IndexProxy index = getProxyForRule( indexId );
         try
         {
-            if ( serviceRunning ) // don't do this during recovery.
+            if ( state == State.RUNNING ) // don't do this during recovery.
             {
                 index.awaitStoreScanCompleted();
                 index.activate();
