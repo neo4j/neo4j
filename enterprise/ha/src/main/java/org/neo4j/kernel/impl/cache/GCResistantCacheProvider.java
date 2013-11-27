@@ -23,6 +23,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 @Service.Implementation(CacheProvider.class)
@@ -36,7 +37,7 @@ public class GCResistantCacheProvider extends CacheProvider
     }
 
     @Override
-    public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config )
+    public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config, Monitors monitors )
     {
         Long node = config.get( GcrSettings.node_cache_size );
         if ( node == null )
@@ -53,11 +54,11 @@ public class GCResistantCacheProvider extends CacheProvider
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
         return new GCResistantCache<NodeImpl>( node, config.get( GcrSettings.node_cache_array_fraction ),
                 config.get( GcrSettings.log_interval ),
-                NODE_CACHE_NAME, logger );
+                NODE_CACHE_NAME, logger, monitors.newMonitor( GCResistantCache.Monitor.class ) );
     }
 
     @Override
-    public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config )
+    public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config, Monitors monitors )
     {
         Long node = config.get( GcrSettings.node_cache_size );
         if ( node == null )
@@ -74,7 +75,7 @@ public class GCResistantCacheProvider extends CacheProvider
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
         return new GCResistantCache<RelationshipImpl>( rel, config.get( GcrSettings
                 .relationship_cache_array_fraction ), config.get( GcrSettings.log_interval ),
-                RELATIONSHIP_CACHE_NAME, logger );
+                RELATIONSHIP_CACHE_NAME, logger, monitors.newMonitor( GCResistantCache.Monitor.class ) );
     }
 
     // TODO: Move into validation method of config setting?

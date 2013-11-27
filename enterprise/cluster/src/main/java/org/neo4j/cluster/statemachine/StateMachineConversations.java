@@ -19,10 +19,8 @@
  */
 package org.neo4j.cluster.statemachine;
 
-import java.net.URI;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 
 /**
@@ -32,8 +30,8 @@ import org.neo4j.cluster.InstanceId;
  */
 public class StateMachineConversations
 {
-    private AtomicLong nextConversationId = new AtomicLong();
-    private String serverId;
+    private final AtomicLong nextConversationId = new AtomicLong();
+    private final String serverId;
 
     public StateMachineConversations( InstanceId me )
     {
