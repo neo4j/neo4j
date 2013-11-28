@@ -2,7 +2,6 @@
 JVM Settings
 ============
 
-== Background ==
 
 There are two main memory parameters for the JVM, one controls the heap space and the other controls the stack space. The heap space parameter is the most important one for Neo4j, since this governs how many objects you can allocate. The stack space parameter governs the how deep the call stack of your application is allowed to get.
 

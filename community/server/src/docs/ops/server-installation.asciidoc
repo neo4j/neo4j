@@ -118,7 +118,7 @@ You will be asked to supply a username (defaulting to `neo4j`) and if that user 
 You are encouraged to create a dedicated user for running the service and for that reason it is suggested that you unpack the distribution package under '/opt' or your site specific optional packages directory.
 
 After installation you may have to do some platform specific configuration and performance tuning.
-For that, refer to <<linux-performance-guide>>.
+For that, refer to  <<configuration-linux-notes>>.
 
 To remove the server from the set of startup services, the proper commands are:
 

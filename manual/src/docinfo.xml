@@ -67,7 +67,7 @@
       </listitem>
       <listitem>
         <para>
-          <link linkend="operations-security">Security</link>
+          <link linkend="security-server">Server Security</link>
         </para>
       </listitem>
     </itemizedlist>

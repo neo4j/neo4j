@@ -19,7 +19,7 @@ include::transactions.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/cypherdoc/uniqueness.asciidoc[]
+include::uniqueness.asciidoc[]
 
 :leveloffset: 2
 

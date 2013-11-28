@@ -36,8 +36,6 @@ Collections
 
 Cypher has good support for collections.
 
-== Collections in general ==    
-
 A literal collection is created by using brackets and separating the elements in the collection with commas.
 
 ###

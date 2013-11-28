@@ -28,10 +28,6 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import static org.junit.Assert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-
 public class DatabaseMetadataServiceDocIT extends AbstractRestFunctionalTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
@@ -60,11 +56,8 @@ public class DatabaseMetadataServiceDocIT extends AbstractRestFunctionalTestBase
         helper.createRelationship( "KNOWS" );
         helper.createRelationship( "LOVES" );
 
-        String result = gen.get()
-                .noGraph() // add back the graph when we have a clean graph really
+        gen.get()
                 .expectedStatus( 200 )
-                .get( functionalTestHelper.dataUri() + "relationship/types" )
-                .entity();
-        assertThat( result, allOf( containsString( "KNOWS" ), containsString( "LOVES" ) ) );
+                .get( functionalTestHelper.dataUri() + "relationship/types" );
     }
 }

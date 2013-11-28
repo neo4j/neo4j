@@ -39,4 +39,6 @@ include::{importdir}/neo4j-kernel-docs-jar/ops/io-examples.asciidoc[]
 
 include::{importdir}/neo4j-kernel-docs-jar/ops/linux-performance.asciidoc[]
 
+include::{importdir}/neo4j-kernel-docs-jar/ops/linux-notes.asciidoc[]
+
 

@@ -48,7 +48,6 @@ public class ListPropertyKeysDocIT extends AbstractRestFunctionalTestBase
         data.get();
         String uri = getPropertyKeysUri();
         String body = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .get( uri )
                 .entity();

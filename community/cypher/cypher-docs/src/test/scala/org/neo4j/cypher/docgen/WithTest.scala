@@ -45,7 +45,7 @@ class WithTest extends DocumentingTestBase {
     testQuery(
       title = "Filter on aggregate function results",
       text = "Aggregated results have to pass through a `WITH` clause to be able to filter on.",
-      queryText = """match (david {name: "David"})--(otherPerson)-->() with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
+      queryText = """match (david)--(otherPerson)-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
       returns = """The person connected to David with the at least more than one outgoing relationship will be returned by the query.""",
       assertions = (p) => assertEquals(List(node("A")), p.columnAs[Node]("otherPerson").toList)
     )
@@ -64,7 +64,7 @@ class WithTest extends DocumentingTestBase {
     testQuery(
       title = "Limit branching of your path search",
       text = "You can match paths, limit to a certain number, and then match again using those paths as a base As well as any number of similar limited searches.",
-      queryText = """match (n {name: "Anders"})--(m) with m order by m.name desc limit 1 match (m)--(o) return o.name""",
+      queryText = """match (n)--(m) where n.name = 'Anders' with m order by m.name desc limit 1 match (m)--(o) return o.name""",
       returns = """Starting at Anders, find all matching nodes, order by name descending and get the top result, then find all the nodes connected to that top result, and return their names.""",
       assertions = (p) => assertEquals(List("Anders", "Bossman"), p.columnAs[String]("o.name").toList))
   }

@@ -4,9 +4,6 @@ Backup
 
 NOTE: The Backup features are only available in the Neo4j Enterprise Edition.
 
-[[backup-introduction]]
-== Introducing Backup ==
-
 Backups are performed over the network live from a running graph database onto a local copy.
 There are two types of backup: full and incremental.
 
@@ -36,7 +33,7 @@ makes the backup service available on the default port (6362).
 To enable the backup service on a different port use `online_backup_server=:9999`.
 
 [[backup-embedded-and-server]]
-== Server and Embedded ==
+== Embedded and Server ==
 
 To perform a backup from a running embedded or server database run:
 [source,shell]

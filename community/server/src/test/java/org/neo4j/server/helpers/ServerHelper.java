@@ -159,7 +159,18 @@ public class ServerHelper
                 {
                     rel.delete();
                 }
-                n.delete();
+                if ( n.getId() != 0 )
+                { // Don't delete the reference node - tests depend on it
+                    // :-(
+                    n.delete();
+                }
+                else
+                { // Remove all state from the reference node instead
+                    for ( String key : n.getPropertyKeys() )
+                    {
+                        n.removeProperty( key );
+                    }
+                }
             }
         }
 

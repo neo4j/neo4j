@@ -56,7 +56,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
     /**
      * A simple query returning all nodes connected to some node, returning the
-     * node and the name property, if it exists, otherwise `NULL`:
+     * node and the name property, if it exists, otherwise `null`:
      */
     @Test
     @Documented
@@ -70,7 +70,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
     public void testPropertyColumn() throws UnsupportedEncodingException {
-        String script = createScript( "MATCH (x {name: 'I'})-[r]->(n) RETURN type(r), n.name, n.age" );
+        String script = createScript( "START x  = node(%I%) MATCH x -[r]-> n RETURN type(r), n.name, n.age" );
 
         String response = cypherRestCall( script, Status.OK );
 
@@ -87,11 +87,11 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     @Test
     @Documented
     @Title( "Retrieve query metadata" )
-    @Graph( nodes = { @NODE( name = "I", setNameProperty = true, labels = { @LABEL( "Director" ) } ) } )
+    @Graph( nodes = { @NODE( name = "I", labels = { @LABEL("Director") } ) } )
     public void testQueryStatistics() throws JsonParseException
     {
         // Given
-        String script = createScript( "MATCH (n {name: 'I'}) SET n:Actor REMOVE n:Director RETURN labels(n)" );
+        String script = createScript( "START n = node(%I%) SET n:Actor REMOVE n:Director RETURN labels(n)" );
 
         // When
         Map<String, Object> output = jsonToMap(doCypherRestCall( cypherUri() + "?includeStats=true", script, Status.OK ));
@@ -140,7 +140,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     @Title( "Errors" )
     @Graph( "I know you" )
     public void error_gets_returned_as_json() throws Exception {
-        String response = cypherRestCall( "MATCH (x {name: 'I'}) RETURN x.dummy/0", Status.BAD_REQUEST );
+        String response = cypherRestCall( "START x = node(%I%) RETURN x.dummy/0", Status.BAD_REQUEST );
         Map<String, Object> output = jsonToMap( response );
         assertTrue( output.containsKey( "message" ) );
         assertTrue( output.containsKey( "exception" ) );
@@ -148,14 +148,16 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     }
 
     /**
-     * Paths can be returned just like other return types.
+     * Paths can be returned
+     * together with other return types by just
+     * specifying returns.
      */
     @Test
     @Documented
     @Title( "Return paths" )
     @Graph( "I know you" )
     public void return_paths() throws Exception {
-        String script = "MATCH path = (x {name: 'I'})--(friend) RETURN path, friend.name";
+        String script = "START x = node(%I%) MATCH path = (x--friend) RETURN path, friend.name";
         String response = cypherRestCall( script, Status.OK );
 
         assertEquals( 2, ( jsonToMap( response ) ).size() );
@@ -173,7 +175,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_parameters() throws Exception {
         data.get();
-        String script = "MATCH (x {name: {startName}})-[r]-(friend) WHERE friend"
+        String script = "START x  = node:node_auto_index(name={startName}) MATCH path = (x-[r]-friend) WHERE friend"
                         + ".name = {name} RETURN TYPE(r)";
         String response = cypherRestCall( script, Status.OK, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
@@ -308,14 +310,13 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void nested_results() throws Exception {
         data.get();
-        String script = "MATCH (n) WHERE n.name in ['I', 'you'] RETURN collect(n.name)";
-        String response = cypherRestCall(script, Status.OK);System.out.println();
+        String script = "START n = node(%I%,%you%) RETURN collect(n.name)";
+        String response = cypherRestCall(script, Status.OK);
 
         Map<String, Object> resultMap = jsonToMap( response );
         assertEquals( 2, resultMap.size() );
-        assertThat( response, anyOf( containsString( "\"I\",\"you\"" ), containsString(
-                "\"you\",\"I\"" ), containsString( "\"I\", \"you\"" ), containsString(
-                        "\"you\", \"I\"" )) );
+        assertThat( response, anyOf( containsString( "\"I\", \"you\"" ), containsString(
+                "\"I\",\"you\"" )) );
     }
 
     /**

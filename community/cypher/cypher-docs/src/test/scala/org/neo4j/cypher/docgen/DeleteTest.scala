@@ -41,7 +41,7 @@ class DeleteTest extends DocumentingTestBase {
     testQuery(
       title = "Delete single node",
       text = "To delete a node, use the +DELETE+ clause.",
-      queryText = "match (n {name: 'Peter'}) delete n",
+      queryText = "match (n) where n.name='Peter' delete n",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertIsDeleted(node("Peter")))
   }
