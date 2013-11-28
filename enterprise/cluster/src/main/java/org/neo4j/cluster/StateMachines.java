@@ -136,7 +136,7 @@ public class StateMachines
                             return; // No StateMachine registered for this MessageType type - Ignore this
                         }
 
-                        stateMachine.handle( message, outgoing );
+                        stateMachine.handle( message, temporaryOutgoing );
                         Message<? extends MessageType> tempMessage;
                         while ((tempMessage = temporaryOutgoing.nextOutgoingMessage()) != null)
                         {
