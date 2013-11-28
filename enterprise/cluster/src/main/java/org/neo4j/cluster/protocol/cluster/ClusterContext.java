@@ -38,6 +38,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 public interface ClusterContext
     extends LoggingContext, TimeoutsContext, ConfigurationContext
 {
+
     // Cluster API
     void addClusterListener( ClusterListener listener );
 

@@ -19,7 +19,10 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import sun.util.logging.resources.logging;
+
 import org.neo4j.cluster.protocol.LoggingContext;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Context used by AcceptorState

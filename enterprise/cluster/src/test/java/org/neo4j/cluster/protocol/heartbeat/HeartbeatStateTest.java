@@ -19,11 +19,6 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.net.URI;
 import java.util.concurrent.Executor;
 
@@ -37,13 +32,20 @@ import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.MultiPaxosContext;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class HeartbeatStateTest
 {
@@ -53,7 +55,8 @@ public class HeartbeatStateTest
         // Given
         InstanceId instanceId = new InstanceId( 1 );
         HeartbeatState heartbeat= HeartbeatState.heartbeat;
-        ClusterConfiguration configuration = new ClusterConfiguration("whatever", "cluster://1", "cluster://2" );
+        ClusterConfiguration configuration = new ClusterConfiguration("whatever", StringLogger.DEV_NULL,
+                                                                       "cluster://1", "cluster://2" );
         configuration.joined( instanceId, URI.create("cluster://1" ) );
         configuration.joined( new InstanceId( 2 ), URI.create("cluster://2" ));
 
@@ -85,7 +88,8 @@ public class HeartbeatStateTest
         InstanceId myId = new InstanceId( 1 );
         InstanceId foreignId = new InstanceId( 3 );
         HeartbeatState heartbeat= HeartbeatState.heartbeat;
-        ClusterConfiguration configuration = new ClusterConfiguration("whatever", "cluster://1", "cluster://2" );
+        ClusterConfiguration configuration = new ClusterConfiguration("whatever", StringLogger.DEV_NULL,
+                                                                      "cluster://1", "cluster://2" );
         configuration.joined( myId, URI.create("cluster://1" ) );
         configuration.joined( new InstanceId( 2 ), URI.create("cluster://2" ));
 

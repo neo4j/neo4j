@@ -19,6 +19,14 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.limit;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toList;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,14 +68,6 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.limit;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
@@ -441,7 +441,8 @@ public class MultiPaxosContext
         // Implementation
         public void created( String name )
         {
-            configuration = new ClusterConfiguration( name, Collections.singleton( boundAt ) );
+            configuration = new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ),
+                    Collections.singleton( boundAt ) );
             joined();
         }
 

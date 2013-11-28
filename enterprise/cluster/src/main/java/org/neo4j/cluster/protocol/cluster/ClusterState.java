@@ -151,7 +151,7 @@ public enum ClusterState
                                     !memberList.get( context.getMyId() ).equals( context.boundAt() ) )
                             {
                                 context.getLogger( ClusterState.class ).info( String.format( "%s joining:%s, " +
-                                        "last delivered:%d", context.myName(),
+                                        "last delivered:%d", context.getMyId().toString(),
                                         context.getConfiguration().toString(),
                                         state.getLatestReceivedInstanceId().getId() ) );
 
@@ -232,19 +232,21 @@ public enum ClusterState
                                      * We also start the cluster if we are the only configured instance. joiningInstances
                                      * does not contain us, ever.
                                      */
-                                    if (    // No one to join with
-                                            (count( context.getJoiningInstances() ) == 1 &&
-                                             discoveredInstances.contains( new ClusterMessage.ConfigurationRequestState( context.getMyId(), context.boundAt() ) )
-                                            && discoveredInstances.size() == 1)
-                                            // enough instances discovered (half or more - i don't count myself here)
-                                            || ( discoveredInstances.size() > count( context.getJoiningInstances() ) / 2
-                                            /*
-                                             * I am supposed to create the cluster (i am before the first in the list
-                                             * of the discovered instances). This won't run if there are no discovered
-                                             * instances so the get( 0 ) is safe.
-                                             */
-                                            && discoveredInstances.get( 0 ).getJoiningId().compareTo(context.getMyId() ) >= 0
-                                    ) )
+                                    ClusterMessage.ConfigurationRequestState ourRequestState =
+                                            new ClusterMessage.ConfigurationRequestState(context.getMyId(), context.boundAt());
+                                    // No one to join with
+                                    boolean imAlone =
+                                            count(context.getJoiningInstances()) == 1
+                                            && discoveredInstances.contains(ourRequestState)
+                                            && discoveredInstances.size() == 1;
+                                    // Enough instances discovered (half or more - i don't count myself here)
+                                    boolean haveDiscoveredMajority =
+                                            discoveredInstances.size() > count(context.getJoiningInstances()) / 2;
+                                    // I am supposed to create the cluster (i am before the first in the list of the discovered instances)
+                                    boolean wantToStartCluster =
+                                            !discoveredInstances.isEmpty()
+                                            && discoveredInstances.get( 0 ).getJoiningId().compareTo(context.getMyId() ) >= 0;
+                                    if ( imAlone || haveDiscoveredMajority && wantToStartCluster )
                                     {
                                         discoveredInstances.clear();
 
@@ -362,7 +364,7 @@ public enum ClusterState
                             if ( context.hasJoinBeenDenied() )
                             {
                                 outgoing.offer( internal( ClusterMessage.joinFailure,
-                                    new ClusterEntryDeniedException( context.getMyId(), context.getConfiguration()) ) );
+                                    new ClusterEntryDeniedException( context.getMyId(), context.getConfiguration() ) ) );
                                 return start;
                             }
 

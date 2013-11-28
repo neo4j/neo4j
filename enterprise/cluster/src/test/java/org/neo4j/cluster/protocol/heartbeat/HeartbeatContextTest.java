@@ -19,13 +19,6 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
@@ -44,6 +38,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
@@ -52,6 +47,9 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests basic sanity and various scenarios for HeartbeatContext.
@@ -82,7 +80,7 @@ public class HeartbeatContextTest
         {
             members.put( instanceIds[i], URI.create( initialHosts[i] ) );
         }
-        ClusterConfiguration config = new ClusterConfiguration( "clusterName", initialHosts );
+        ClusterConfiguration config = new ClusterConfiguration( "clusterName", StringLogger.DEV_NULL, initialHosts );
         config.setMembers( members );
 
         context = mock( ClusterContext.class );

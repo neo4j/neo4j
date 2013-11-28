@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 
 public interface ConfigurationContext
 {

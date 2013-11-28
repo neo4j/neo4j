@@ -100,7 +100,7 @@ public class MultiPaxosServerFactory
 
         final MultiPaxosContext context = new MultiPaxosContext( me,
                 Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole(ClusterConfiguration.COORDINATOR )),
-                new ClusterConfiguration( initialConfig.getName(), initialConfig.getMemberURIs() ),executor, logging,
+                new ClusterConfiguration( initialConfig.getName(), logging.getMessagesLog( ClusterConfiguration.class ), initialConfig.getMemberURIs() ),executor, logging,
                 objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts);
 
         SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(), context.getLearnerContext() );
