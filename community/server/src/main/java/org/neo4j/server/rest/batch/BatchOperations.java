@@ -67,10 +67,14 @@ public abstract class BatchOperations
             final String key = header.getKey();
             final List<String> value = header.getValue();
             if (value == null)
+            {
                 continue;
+            }
             if (value.size() != 1)
+            {
                 throw new IllegalArgumentException(
                         "expecting one value per header");
+            }
             if ( !key.equals( "Accept" ) && !key.equals( "Content-Type" ) )
             {
                 res.addHeader(key, value.get(0));
@@ -102,20 +106,27 @@ public abstract class BatchOperations
 
 
     private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d+)\\}");
-    
+
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )
     {
-        if (!str.contains( "{" )) return str;
+        if (!str.contains( "{" ))
+        {
+            return str;
+        }
         Matcher matcher = PLACHOLDER_PATTERN.matcher(str);
         StringBuffer sb=new StringBuffer();
         while (matcher.find()) {
             String id = matcher.group(1);
             String replacement = locations.get(Integer.valueOf(id));
             if (replacement!=null)
+            {
                 matcher.appendReplacement(sb,replacement);
-            else 
+            }
+            else
+            {
                 matcher.appendReplacement(sb,matcher.group());
+            }
         }
         matcher.appendTail(sb);
         return sb.toString();
@@ -140,19 +151,20 @@ public abstract class BatchOperations
                 {
                     String field = jp.getText();
                     jp.nextToken();
-                    if (field.equals(METHOD_KEY))
+                    switch ( field )
                     {
+                    case METHOD_KEY:
                         jobMethod = jp.getText().toUpperCase();
-                    } else if (field.equals(TO_KEY))
-                    {
+                        break;
+                    case TO_KEY:
                         jobPath = jp.getText();
-                    } else if (field.equals(ID_KEY))
-                    {
+                        break;
+                    case ID_KEY:
                         jobId = jp.getIntValue();
-                    } else if (field.equals(BODY_KEY))
-                    {
+                        break;
+                    case BODY_KEY:
                         jobBody = readBody( jp );
-
+                        break;
                     }
                 }
                 // Read one job description. Execute it.
@@ -180,7 +192,9 @@ public abstract class BatchOperations
         body = replaceLocationPlaceholders(body, locations);
         URI targetUri = calculateTargetUri(uriInfo, path);
 
-        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body);
+        InternalJettyServletResponse res = new InternalJettyServletResponse();
+        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res);
+        req.setScheme( targetUri.getScheme() );
         addHeaders( req, httpHeaders );
 
         InternalJettyServletResponse res = new InternalJettyServletResponse();
