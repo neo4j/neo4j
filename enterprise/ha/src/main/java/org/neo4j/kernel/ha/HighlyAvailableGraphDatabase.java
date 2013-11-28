@@ -46,6 +46,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -98,6 +99,8 @@ import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
@@ -466,7 +469,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Caches createCaches()
     {
-        return new HaCaches( logging.getMessagesLog( Caches.class ) );
+        return new HaCaches( logging.getMessagesLog( Caches.class ), monitors );
     }
 
     @Override
@@ -476,6 +479,20 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return new HighlyAvailableKernelData( this, members,
                 new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
                         lastUpdateTime ) );
+    }
+    
+    @Override
+    protected Factory<byte[]> createXidGlobalIdFactory()
+    {
+        final int serverId = config.get( ClusterSettings.server_id );
+        return new Factory<byte[]>()
+        {
+            @Override
+            public byte[] newInstance()
+            {
+                return getNewGlobalId( DEFAULT_SEED, serverId );
+            }
+        };
     }
 
     @Override

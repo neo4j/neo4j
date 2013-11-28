@@ -29,6 +29,7 @@ import java.util.Map;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -56,6 +57,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Collections.singletonMap;
+
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
 
 public abstract class GraphStoreFixture implements TestRule
 {
@@ -100,15 +103,15 @@ public abstract class GraphStoreFixture implements TestRule
     public static abstract class Transaction
     {
         public final long startTimestamp = System.currentTimeMillis();
-        public final byte[] globalId = XidImpl.getNewGlobalId();
+        public final byte[] globalId = XidImpl.getNewGlobalId( DEFAULT_SEED, -1 );
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
-        private ReadableByteChannel write( IdGenerator idGenerator, int localId, int masterId, int myId, long txId )
+        private ReadableByteChannel write( IdGenerator idGenerator, int identifier, int masterId, int myId, long txId )
                 throws IOException
         {
             InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-            TransactionWriter writer = new TransactionWriter( buffer, localId );
+            TransactionWriter writer = new TransactionWriter( buffer, identifier, myId );
             writer.start( globalId, masterId, myId, startTimestamp, txId );
 
             transactionData( new TransactionDataBuilder( writer ), idGenerator );
@@ -257,11 +260,11 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
-        public void update( NodeRecord before, NodeRecord node )
+        public void update( NodeRecord before, NodeRecord after )
         {
             try
             {
-                writer.update( before, node );
+                writer.update( before, after );
             }
             catch ( IOException e )
             {
