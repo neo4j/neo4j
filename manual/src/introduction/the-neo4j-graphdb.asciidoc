@@ -102,7 +102,8 @@ Oscar -> William [label="blocks" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"
 | get who a person is blocked by | incoming +blocks+ relationships, depth one
 |========================================================
 
-
+////
+// removed as it doesn't make sense unless you're into unix filesystems quite deeply.
 This example is a simple model of a file system, which includes symbolic links:
 
 ["dot", "graphdb-rels-filesys.svg"]
@@ -126,7 +127,7 @@ Depending on what you are looking for, you will use the direction and type of re
 |get all files in a directory, excluding symbolic links | outgoing +file+ relationships, depth one
 |get all files in a directory, recursively | outgoing +file+ and +symbolic link+ relationships
 |========================================================
-
+////
 
 [[graphdb-neo4j-properties]]
 == Properties ==
@@ -138,8 +139,8 @@ Property values can be either a primitive or an array of one primitive type.
 For example +String+, +int+ and +int[]+ values are valid for properties.
 
 [NOTE]
-+null+ is not a valid property value.
-Nulls can instead be modeled by the absence of a key.
++NULL+ is not a valid property value.
+++NULL++s can instead be modeled by the absence of a key.
 
 ["dot", "graphdb-properties.svg", "meta"]
 ----
@@ -243,14 +244,14 @@ Another path of length one:
 Traversing a graph means visiting its nodes, following relationships according to some rules.
 In most cases only a subgraph is visited, as you already know where in the graph the interesting nodes and relationships are found.
 
+Cypher provides a declarative way to query the graph powered by traversals and other techniques.
+See <<cypher-query-lang>> for more information.
+
 Neo4j comes with a callback based traversal API which lets you specify the traversal rules.
 At a basic level there's a choice between traversing breadth- or depth-first.
 
 For an in-depth introduction to the traversal framework, see <<tutorial-traversal>>.
 For Java code examples see <<tutorials-java-embedded-traversal>>.
-
-You can also use <<cypher-query-lang, The Cypher Query Language>> as a powerful declarative way to query the graph.
-
 
 [[graphdb-neo4j-schema]]
 == Schema ==
@@ -277,14 +278,14 @@ If something should go wrong with the index, it can end up in a *failed* state. 
 to speed up queries. To rebuild it, you can drop and recreate the index. Look at logs for clues about the failure.
 
 You can track the status of your index by asking for the index state through the API you are using.
-Note, however, that this is not yet possible through cypher.
+Note, however, that this is not yet possible through Cypher.
 
 How to use indexes in the different APIs:
 
 * <<query-schema-index, Cypher>>
-* <<tutorials-java-embedded-new-index, Java Core API>>
 * <<rest-api-schema-indexes, REST API>>
 * <<shell-listing-indexes-and-constraints, Listing Indexes via Shell>>
+* <<tutorials-java-embedded-new-index, Java Core API>>
 
 [[graphdb-neo4j-schema-constraints]]
 === Constraints ===
@@ -301,3 +302,4 @@ How to use constraints in the different APIs:
 * <<query-constraints, Cypher>>
 * <<rest-api-schema-constraints, REST API>>
 * <<shell-listing-indexes-and-constraints, Listing Constraints via Shell>>
+

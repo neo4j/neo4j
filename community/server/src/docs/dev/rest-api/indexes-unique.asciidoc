@@ -1,8 +1,11 @@
 [[rest-api-unique-indexes]]
 == Unique Indexing ==
 
-NOTE: As of Neo4j 2.0, unique constraints have been added. These make Neo4j enforce the uniqueness,
-guaranteeing that uniqueness is maintained. See <<graphdb-neo4j-schema-constraints>> for details about this.
+[NOTE]
+As of Neo4j 2.0, unique constraints have been added.
+These make Neo4j enforce the uniqueness, guaranteeing that uniqueness is maintained.
+See <<graphdb-neo4j-schema-constraints>> for details about this.
+For most cases, the unique constraints should be used rather than the features described below.
 
 For uniqueness enforcements, there are two modes:
 

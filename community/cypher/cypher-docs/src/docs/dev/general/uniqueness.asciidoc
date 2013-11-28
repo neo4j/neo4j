@@ -1,30 +1,3 @@
-[[cypher-uniqueness]]
-Uniqueness
-==========
+// this page has temporarily been moved to manual/src/cypher
+// it should live somewhere in cypher-docs later on.
 
-While pattern matching, Cypher makes sure to not include matches where the same graph relationship
-is found multiple times in a single pattern. In most use cases, this is a sensible thing to do.
-
-Example: looking for a users friends of friends should not return said user.
-
-[source,cypher]
-----
-MATCH (user)-[r1:FRIEND]-()-[r2:FRIEND]-(friend_of_a_friend)
-WHERE user.name = 'Adam'
-RETURN friend_of_a_friend
-----
-
-In this query, Cypher makes sure to not return matches where the pattern relationships r1 and r2 point to
-the same graph relationship.
-
-This is however not always desired. If the query should return the user, it is possible to spread the
-matching over multiple +MATCH+ clauses, like so:
-
-[source,cypher]
-----
-MATCH (user)-[r1:FRIEND]-(friend)
-WHERE user.name = 'Adam'
-WITH friend
-MATCH (friend)-[r2:FRIEND]-(friend_of_a_friend)
-RETURN friend_of_a_friend
-----

@@ -23,11 +23,11 @@ include::{importdir}/neo4j-server-docs-jar/ops/server-cloud.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-server-docs-jar/ops/server-debugging.asciidoc[]
+include::{importdir}/neo4j-docs-jar/ops/upgrades.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-docs-jar/ops/upgrades.asciidoc[]
+include::{importdir}/neo4j-server-docs-jar/ops/server-debugging.asciidoc[]
 
 :leveloffset: 2
 

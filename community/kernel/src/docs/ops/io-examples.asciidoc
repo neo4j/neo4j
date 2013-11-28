@@ -2,6 +2,8 @@
 Memory mapped IO settings
 =========================
 
+== Introduction ==
+
 Each file in the Neo4j store can use memory mapped I/O for reading/writing.
 Best performance is achieved if the full file can be memory mapped but if 
 there isn't enough memory for that Neo4j will try and make the best use of 

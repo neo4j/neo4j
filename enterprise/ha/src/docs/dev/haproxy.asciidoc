@@ -5,44 +5,8 @@ Setting up HAProxy as a load balancer
 In the Neo4j HA architecture, the cluster is typically fronted by a load balancer. In this section we will explore
 how to set up HAProxy to perform load balancing across the HA cluster.
 
-== Installing HAProxy ==
-
-For this tutorial we will assume a Linux environment. We will also be installing HAProxy from source, and we'll be
-using version 1.4.18. You need to ensure that your Linux server has a development environment set up. On
-Ubuntu/apt systems, simply do:
-
-[source,shell]
-----
-aptitude install build-essential
-----
-
-And on CentOS/yum systems do:
-
-[source,shell]
-----
-yum -y groupinstall 'Development Tools'
-----
-
-Then download the tarball from the http://haproxy.1wt.eu/[HAProxy website]. Once you've downloaded it,
-simply build and install HAProxy:
-
-[source,shell]
-----
-tar -zvxf haproxy-1.4.18.tar.gz
-cd haproxy-1.4.18
-make
-cp haproxy /usr/sbin/haproxy
-----
-
-Or specify a target for make (TARGET=linux26 for linux kernel 2.6 or above or linux24 for 2.4 kernel)
-
-[source,shell]
-----
-tar -zvxf haproxy-1.4.18.tar.gz
-cd haproxy-1.4.18
-make TARGET=linux26
-cp haproxy /usr/sbin/haproxy
-----
+For this tutorial we will assume a Linux environment with HAProxy already installed.
+See http://haproxy.1wt.eu/ for downloads and installation instructions.
 
 == Configuring HAProxy ==
 

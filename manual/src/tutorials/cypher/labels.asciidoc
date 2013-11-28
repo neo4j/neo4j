@@ -33,6 +33,7 @@ Indexes added: 1
 
 Indexes can be added at any time.
 Constraints can be added after a label is already in use, but that requires that the existing data complies with the constraints.
+Note that it will take some time for an index to come online when there's existing data.
 
 Now, let's add some data.
 
@@ -52,7 +53,7 @@ Labels added: 2
 
 Normally you don't specify indexes when querying for data.
 They will be used automatically.
-This means we can simply look up the Tom Hanks node, and the index will kick in behind the scenes.
+This means we can simply look up the Tom Hanks node, and the index will kick in behind the scenes to boost performance.
 
 [source,cypher]
 ----

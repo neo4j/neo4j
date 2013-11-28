@@ -117,7 +117,7 @@ div.navheader hr {
   display: none;
 }
 
-div.refentry body h2.title,div.refentry body h1.title,div.refentry div.refnamediv p,body>div.section h1,body>div.section h2,body>div.part h1,body>div.part h2,body>div.chapter h1,body>div.chapter h2,body>div.book h1,body>div.preface h2,body>div.appendix h2
+body div.refentry h2.title,body div.refentry h1.title,div.refentry div.refnamediv p,body>div.section h1,body>div.section h2,body>div.part h1,body>div.part h2,body>div.chapter h1,body>div.chapter h2,body>div.book h1,body>div.preface h2,body>div.preface h1,body>div.appendix h2
   {
   color: #ffffff;
   border-bottom: none;
@@ -146,8 +146,12 @@ body>div.book h1.title {
   margin-bottom: 0;
 }
 
-div.part h1.title {
+div.part h1.title,body>div.preface h1.title {
   margin-top: 1.5em;
+}
+
+body>div.preface h1.title {
+  margin-bottom: 1.5em;
 }
 
 div.titlepage h3.corpauthor {
@@ -337,6 +341,10 @@ div.informalfigure a img,div.figure a img {
   border: none;
 }
 
+div.informalfigure {
+  margin-bottom: 0.75em;
+}
+
 /* additional styles for slides */
 div.slide h1 {
   margin-top: 40px;
@@ -511,97 +519,97 @@ div.openblock+p.cypherconsole+button.cypherconsole {
 }
 
 a.resize-toggle {
-    position: absolute;
-    right: 0;
-    bottom: -26px;
+  position: absolute;
+  right: 0;
+  bottom: -26px;
 }
 
 a.resize-toggle {
-    position: absolute;
-    right: 0;
-    bottom: -39px;
+  position: absolute;
+  right: 0;
+  bottom: -39px;
 }
 
 span.resize-vertical-handle {
-    position: absolute;
-    bottom: -11px;
-    display: block;
-    height: 9px;
-    width: 100%;
-    background: #f9f9f9;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    cursor: s-resize;
+  position: absolute;
+  bottom: -11px;
+  display: block;
+  height: 9px;
+  width: 100%;
+  background: #f9f9f9;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  cursor: s-resize;
 }
 
 span.resize-vertical-handle span {
-    display: block;
-    margin: 4px auto;
-    height: 1px;
-    width: 30px;
-    background: #888888;
+  display: block;
+  margin: 4px auto;
+  height: 1px;
+  width: 30px;
+  background: #888888;
 }
 
 #resize-overlay {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 
-#console-wrapper, p.cypherdoc-console {
-    height: 23em;
+#console-wrapper,p.cypherdoc-console {
+  height: 23em;
 }
 
 #console-wrapper {
-    position: relative;
+  position: relative;
 }
 
 #console.cypherdoc-console {
-    height: 100%;
-    width: 100%;
+  height: 100%;
+  width: 100%;
 }
 
 #console-wrapper {
-    left: 0;
-    top: 0;
-    width: 100%;
-    z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
 }
 
 #console-wrapper.fixed-console {
-    position: fixed;
+  position: fixed;
 }
 
 #console-label {
-    display: none;
+  display: none;
 }
 
-p.cypherdoc-console.fixed-console > #console-label {
-    display: inline;
+p.cypherdoc-console.fixed-console>#console-label {
+  display: inline;
 }
 
 p.cypherdoc-console.fixed-console {
-    height: 24px;
-    margin-bottom: 24px;
+  height: 24px;
+  margin-bottom: 24px;
 }
 
 #content.internet-explorer #console-wrapper.fixed-console {
-    width: 98%;
+  width: 98%;
 }
 
 p.cypherdoc-console {
-    margin: 24px 0 48px 0;
-    background: #eeeeee url('loading.gif') no-repeat center center;
-    display: none;
+  margin: 24px 0 48px 0;
+  background: #eeeeee url('loading.gif') no-repeat center center;
+  display: none;
 }
 
 p.cypherdoc-console>span.loading {
-    display: block;
-    margin: 0 auto;
-    width: 100%;
-    padding: 4em 0 0 0;
-    text-align: center;
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  padding: 4em 0 0 0;
+  text-align: center;
 }
 
 a.btn {
@@ -614,7 +622,7 @@ a.btn {
   cursor: pointer;
 }
 
-.query-outer-wrapper > a.btn {
+.query-outer-wrapper>a.btn {
   margin-right: 8px;
   position: relative;
   top: -10px;

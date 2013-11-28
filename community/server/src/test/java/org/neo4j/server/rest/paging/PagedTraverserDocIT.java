@@ -139,7 +139,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     }
 
     /**
-     * Creating a paged traverser. Paged traversers are created by +POST+-ing a
+     * Creating a paged traverser. Paged traversers are created by ++POST++-ing a
      * traversal description to the link identified by the +paged_traverser+ key
      * in a node representation. When creating a paged traverser, the same
      * options apply as for a regular traverser, meaning that +node+, +path+,
@@ -319,8 +319,10 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     {
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
+        theStartNode = createLinkedList( 1, server.getDatabase() );
+        
         JaxRsResponse response = RestRequest.req().post(
-                functionalTestHelper.nodeUri( 0 ) + "/paged/traverse/node?pageSize=50",
+                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize=50",
                 "{"
                         + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
                         + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.getClass()" +

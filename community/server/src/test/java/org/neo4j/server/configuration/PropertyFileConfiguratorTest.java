@@ -99,13 +99,12 @@ public class PropertyFileConfiguratorTest
         // Sometimes the wrong log provider may get onto the class path and then fail this test,
         // to avoid that we accept both variants
         String actual = appender.toString();
+        String content = format( ": No database tuning file explicitly set, defaulting to [%s]",
+                tuningPropertiesFile.getAbsolutePath() );
         assertTrue( "Expected log message to contain hint about missing tuning file being replaced with defaults",
-                actual.contains( format(
-                        "INFO: No database tuning file explicitly set, defaulting to [%s]",
-                        tuningPropertiesFile.getAbsolutePath() ) ) ||
-                        actual.contains( format(
-                                "Information: No database tuning file explicitly set, defaulting to [%s]",
-                                tuningPropertiesFile.getAbsolutePath() ) )
+                actual.contains( "INFO" + content ) ||
+                actual.contains( "Information" + content ) ||
+                actual.contains( "Info" + content )
         );
     }
 
