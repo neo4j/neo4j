@@ -23,8 +23,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static java.util.Collections.emptyList;
+import org.neo4j.helpers.Predicate;
 
+import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 public class NodeRecord extends PrimitiveRecord
@@ -89,6 +91,11 @@ public class NodeRecord extends PrimitiveRecord
         return this.dynamicLabelRecords;
     }
 
+    public Iterable<DynamicRecord> getUsedDynamicLabelRecords()
+    {
+        return filter( RECORD_IN_USE, dynamicLabelRecords );
+    }
+
     @Override
     public String toString()
     {
@@ -132,4 +139,13 @@ public class NodeRecord extends PrimitiveRecord
         }
         return clone;
     }
+
+    public static final Predicate<DynamicRecord> RECORD_IN_USE = new Predicate<DynamicRecord>()
+    {
+        @Override
+        public boolean accept( DynamicRecord item )
+        {
+            return item.inUse();
+        }
+    };
 }
