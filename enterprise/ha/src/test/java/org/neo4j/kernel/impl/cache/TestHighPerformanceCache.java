@@ -19,13 +19,23 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+
+import static org.neo4j.kernel.impl.cache.HighPerformanceCache.*;
 
 public class TestHighPerformanceCache
 {
@@ -145,6 +155,26 @@ public class TestHighPerformanceCache
 
         // THEN
         assertTrue( version1 == cache.put( version2 ) );
+    }
+
+    @Test
+    public void shouldListenToPurges() throws Exception
+    {
+        // GIVEN
+        Monitor monitor = mock( Monitor.class );
+        cache = new HighPerformanceCache<>( 100, 1.0f, SECONDS.toMillis( 10 ), "purge test", StringLogger.DEV_NULL,
+                monitor );
+        cache.put( new Entity( 0, 10 ) );
+        cache.put( new Entity( 1, 50 ) );
+        cache.put( new Entity( 2, 10 ) );
+        cache.put( new Entity( 3, 10 ) );
+        verifyZeroInteractions( monitor );
+
+        // WHEN
+        cache.put( new Entity( 4, 50 ) );
+
+        // THEN
+        verify( monitor ).purged( 130L, 60L, 3 );
     }
 
     private static class Entity implements EntityWithSizeObject

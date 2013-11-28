@@ -196,7 +196,7 @@ public enum ClusterState
                             if ( context.hasJoinBeenDenied() )
                             {
                                 outgoing.offer( internal( ClusterMessage.joinFailure,
-                                        new IllegalStateException( "i was denied entry" ) ) );
+                                        new ClusterEntryDeniedException( context.me, context.configuration ) ) );
                                 return start;
                             }
                             ClusterMessage.ConfigurationTimeoutState state = message.getPayload();
@@ -317,7 +317,7 @@ public enum ClusterState
                         case joinDenied:
                         {
 //                            outgoing.offer( internal( ClusterMessage.joinFailure,
-//                                    new IllegalStateException( "i was denied entry" ) ) );
+//                                    new ClusterEntryDeniedException( context.me, context.configuration ) ) );
 //                            return start;
                             context.joinDenied();
                             return this;
@@ -366,7 +366,7 @@ public enum ClusterState
                             if ( context.hasJoinBeenDenied() )
                             {
                                 outgoing.offer( internal( ClusterMessage.joinFailure,
-                                    new IllegalStateException( "i was denied entry" ) ) );
+                                    new ClusterEntryDeniedException( context.me, context.configuration ) ) );
                                 return start;
                             }
 

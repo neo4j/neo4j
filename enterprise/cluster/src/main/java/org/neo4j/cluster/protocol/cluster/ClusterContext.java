@@ -59,18 +59,19 @@ public class ClusterContext
     HeartbeatContext heartbeatContext;
     public ClusterConfiguration configuration;
     public final Timeouts timeouts;
-    private Executor executor;
-    private Logging logging;
-    private List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage.ConfigurationRequestState>();
+
+    private final Executor executor;
+    private final Logging logging;
+    private final List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage.ConfigurationRequestState>();
     private String joiningClusterName; // for debugging
+
     private Iterable<URI> joiningInstances;
     URI boundAt;
     private boolean joinDenied;
     private Set<InstanceId> currentlyJoiningInstances = new HashSet<InstanceId>(  );
 
-
-    private ObjectInputStreamFactory objectInputStreamFactory;
-    private ObjectOutputStreamFactory objectOutputStreamFactory;
+    private final ObjectInputStreamFactory objectInputStreamFactory;
+    private final ObjectOutputStreamFactory objectOutputStreamFactory;
 
     public ClusterContext( InstanceId me, ProposerContext proposerContext,
                            LearnerContext learnerContext,

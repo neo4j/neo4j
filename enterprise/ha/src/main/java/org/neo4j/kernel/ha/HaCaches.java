@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.cache.HighPerformanceCacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings.node_cache_array_fraction;
@@ -41,10 +42,12 @@ public class HaCaches implements Caches
     private Cache<NodeImpl> node;
     private Cache<RelationshipImpl> relationship;
     private final StringLogger logger;
+    private final Monitors monitors;
 
-    public HaCaches( StringLogger logger )
+    public HaCaches( StringLogger logger, Monitors monitors )
     {
         this.logger = logger;
+        this.monitors = monitors;
     }
 
     @Override
@@ -52,8 +55,8 @@ public class HaCaches implements Caches
     {
         if ( !cacheConfigSame( newType, config ) )
         {
-            node = newType.newNodeCache( logger, config );
-            relationship = newType.newRelationshipCache( logger, config );
+            node = newType.newNodeCache( logger, config, monitors );
+            relationship = newType.newRelationshipCache( logger, config, monitors );
         }
         else
         {

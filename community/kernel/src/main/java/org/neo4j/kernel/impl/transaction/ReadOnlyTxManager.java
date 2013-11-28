@@ -29,6 +29,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -45,9 +46,13 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     private XaDataSourceManager xaDsManager = null;
     private final StringLogger logger;
 
-    public ReadOnlyTxManager( XaDataSourceManager xaDsManagerToUse, StringLogger logger )
+    private final Factory<byte[]> xidGlobalIdFactory;
+
+    public ReadOnlyTxManager( XaDataSourceManager xaDsManagerToUse, Factory<byte[]> xidGlobalIdFactory,
+            StringLogger logger )
     {
         xaDsManager = xaDsManagerToUse;
+        this.xidGlobalIdFactory = xidGlobalIdFactory;
         this.logger = logger;
     }
 
@@ -77,7 +82,6 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     {
     }
 
-
     @Override
     public void begin() throws NotSupportedException
     {
@@ -86,8 +90,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             throw new NotSupportedException(
                     "Nested transactions not supported" );
         }
-        ReadOnlyTransactionImpl tx = new ReadOnlyTransactionImpl( this, logger );
-        txThreadMap.set( tx );
+        txThreadMap.set( new ReadOnlyTransactionImpl( xidGlobalIdFactory.newInstance(), this, logger ) );
     }
 
     @Override

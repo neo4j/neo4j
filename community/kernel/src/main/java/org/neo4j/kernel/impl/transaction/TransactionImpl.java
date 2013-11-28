@@ -70,13 +70,13 @@ class TransactionImpl implements Transaction
 
     private final TransactionState state;
 
-    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory,
+    TransactionImpl( byte[] xidGlobalId, TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory,
                      StringLogger logger )
     {
         this.txManager = txManager;
         this.logger = logger;
         this.state = stateFactory.create( this );
-        globalId = XidImpl.getNewGlobalId();
+        globalId = xidGlobalId;
         eventIdentifier = txManager.getNextEventIdentifier();
         this.forceMode = forceMode;
         owner = Thread.currentThread();
@@ -170,6 +170,7 @@ class TransactionImpl implements Transaction
                         throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                 + " error writing transaction log" ), e );
                     }
+
                     return true;
                 }
                 Xid sameRmXid = null;
