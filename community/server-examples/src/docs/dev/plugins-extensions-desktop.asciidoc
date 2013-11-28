@@ -1,0 +1,13 @@
+[[plugins-extensions-desktop]]
+Installing Plugins and Extensions in Neo4j Desktop
+==================================================
+
+Neo4j Desktop can also be extended with server plugins and extensions. Neo4j
+Desktop will add all jars in '%ProgramFiles%\Neo4j Community\plugins' to the
+classpath, but please note that nested directories for plugins are currently
+not supported.
+
+Otherwise server plugins and extensions are subject to the same rules as usual.
+Please note when configuring server extensions that 'neo4j-server.properties'
+for Neo4j Desktop lives in '%APPDATA%\Neo4j Community'.
+

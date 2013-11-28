@@ -12,4 +12,7 @@ include::server-plugins.asciidoc[]
 
 include::server-unmanaged-extensions.asciidoc[]
 
+:leveloffset: 2
+
+include::plugins-extensions-desktop.asciidoc[]
 
