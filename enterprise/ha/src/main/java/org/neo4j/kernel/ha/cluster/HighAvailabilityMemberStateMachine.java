@@ -233,33 +233,30 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         {
             if ( getAliveCount() <= getTotalCount() / 2 )
             {
-                if ( state == HighAvailabilityMemberState.MASTER || state == HighAvailabilityMemberState.SLAVE )
+                try
                 {
-                    try
+                    final HighAvailabilityMemberChangeEvent event =
+                            new HighAvailabilityMemberChangeEvent(
+                                    state, HighAvailabilityMemberState.PENDING, null, null );
+                    state = HighAvailabilityMemberState.PENDING;
+                    Listeners.notifyListeners( memberListeners, new Listeners
+                            .Notification<HighAvailabilityMemberListener>()
                     {
-                        final HighAvailabilityMemberChangeEvent event =
-                                new HighAvailabilityMemberChangeEvent(
-                                        state, HighAvailabilityMemberState.PENDING, null, null );
-                        state = HighAvailabilityMemberState.PENDING;
-                        Listeners.notifyListeners( memberListeners, new Listeners
-                                .Notification<HighAvailabilityMemberListener>()
+                        @Override
+                        public void notify( HighAvailabilityMemberListener listener )
                         {
-                            @Override
-                            public void notify( HighAvailabilityMemberListener listener )
-                            {
-                                listener.instanceStops( event );
-                            }
-                        } );
+                            listener.instanceStops( event );
+                        }
+                    } );
 
-                        context.setAvailableHaMasterId( null );
-                        context.setElectedMasterId( null );
+                    context.setAvailableHaMasterId( null );
+                    context.setElectedMasterId( null );
 
-                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        throw new RuntimeException( throwable );
-                    }
+                    availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
+                }
+                catch ( Throwable throwable )
+                {
+                    throw new RuntimeException( throwable );
                 }
             }
         }
